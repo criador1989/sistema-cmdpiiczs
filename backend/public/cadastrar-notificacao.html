@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Notificação</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#d82327" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.warn('❌ Falha ao registrar SW:', err));
+      });
+    }
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    form {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 720px;
+      margin: auto;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #941a1d;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #444;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      background-color: #d82327;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #941a1d;
+      transform: scale(1.03);
+    }
+
+    .voltar-btn {
+      background-color: #6c757d;
+      margin-left: 10px;
+    }
+
+    .voltar-btn:hover {
+      background-color: #5a6268;
+    }
+
+    #valorNumerico {
+      font-weight: bold;
+      background-color: #eaeaea;
+    }
+
+    #valorNumerico.positivo {
+      background-color: #d4edda;
+    }
+
+    #valorNumerico.negativo {
+      background-color: #f8d7da;
+    }
+
+    #mensagem {
+      margin-top: 20px;
+      font-weight: bold;
+      text-align: center;
+      color: #222;
+    }
+
+    #detalhesMotivo {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      background: #f9f9f9;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <form id="formNotificacao">
+    <h2>Cadastro de Notificação Disciplinar</h2>
+
+    <label for="aluno">Aluno</label>
+    <select id="aluno" name="aluno" required></select>
+
+    <label for="tipo">Gravidade do Ato</label>
+    <select id="tipo" name="tipo" required>
+      <option value="">Selecione</option>
+      <option value="Leve">Leve</option>
+      <option value="Médio">Médio</option>
+      <option value="Grave">Grave</option>
+      <option value="Gravíssimo">Gravíssimo</option>
+    </select>
+
+    <label for="motivo">Motivo (Ato de indisciplina)</label>
+    <select id="motivo" name="motivo" required>
+      <option value="">Selecione uma gravidade</option>
+    </select>
+
+    <div id="detalhesMotivo">
+      <p><strong>Artigo:</strong> <span id="artigoTexto"></span></p>
+      <p><strong>Inciso:</strong> <span id="incisoTexto"></span></p>
+      <p><strong>Classificação:</strong> <span id="classificacaoTexto"></span></p>
+    </div>
+
+    <input type="hidden" name="artigo" id="artigo">
+    <input type="hidden" name="inciso" id="inciso">
+    <input type="hidden" name="classificacaoRegulamento" id="classificacaoRegulamento">
+
+    <label for="tipoMedida">Tipo de Medida</label>
+    <select id="tipoMedida" name="tipoMedida" required>
+      <option value="">Selecione</option>
+      <option value="Advertência Escrita">Advertência Escrita</option>
+      <option value="Repreensão">Repreensão</option>
+      <option value="A.E.C.D.E">A.E.C.D.E</option>
+      <option value="A.I.A">A.I.A</option>
+      <option value="Elogio Verbal">Elogio Verbal</option>
+      <option value="Elogio Individual">Elogio Individual</option>
+      <option value="Elogio Coletivo">Elogio Coletivo</option>
+      <option value="Média ≥ 8,5">Média ≥ 8,5</option>
+    </select>
+
+    <label for="quantidadeDias">Quantidade de Dias (se aplicável)</label>
+    <input type="number" id="quantidadeDias" name="quantidadeDias" min="1" />
+
+    <label for="valorNumerico">Valor Numérico</label>
+    <input type="text" step="0.01" id="valorNumerico" name="valorNumerico" readonly />
+
+    <label for="observacao">Observação</label>
+    <textarea id="observacao" name="observacao"></textarea>
+
+    <label for="data">Data</label>
+    <input type="date" id="data" name="data" required />
+
+    <button type="submit">Cadastrar</button>
+    <button type="button" class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+
+    <p id="mensagem"></p>
+  </form>
+
+  <script>
+    const medidas = {
+      'Advertência Escrita': -0.3,
+      'Repreensão': -0.5,
+      'A.E.C.D.E': -0.7,
+      'A.I.A': -1.2,
+      'Elogio Verbal': 0.15,
+      'Elogio Individual': 0.6,
+      'Elogio Coletivo': 0.2,
+      'Média ≥ 8,5': 0.4
+    };
+
+    let motivosPorTipo = {};
+    let listaCompletaMotivos = [];
+
+    async function carregarMotivos() {
+      try {
+        const resposta = await fetch('/api/motivos', { credentials: 'include' });
+        const motivos = await resposta.json();
+        listaCompletaMotivos = motivos;
+
+        motivosPorTipo = motivos.reduce((acc, item) => {
+          if (!acc[item.classificacao]) acc[item.classificacao] = [];
+          acc[item.classificacao].push(item.motivo);
+          return acc;
+        }, {});
+      } catch (err) {
+        console.error('Erro ao carregar motivos');
+      }
+    }
+
+    document.getElementById('tipo').addEventListener('change', function () {
+      const gravidade = this.value;
+      const motivoSelect = document.getElementById('motivo');
+      motivoSelect.innerHTML = '<option value="">Selecione</option>';
+      document.getElementById('detalhesMotivo').style.display = 'none';
+
+      if (motivosPorTipo[gravidade]) {
+        motivosPorTipo[gravidade].forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          motivoSelect.appendChild(opt);
+        });
+      }
+    });
+
+    document.getElementById('motivo').addEventListener('change', function () {
+      const motivoSelecionado = this.value;
+      const motivo = listaCompletaMotivos.find(m => m.motivo === motivoSelecionado);
+
+      if (motivo) {
+        document.getElementById('artigoTexto').textContent = motivo.artigo;
+        document.getElementById('incisoTexto').textContent = motivo.inciso;
+        document.getElementById('classificacaoTexto').textContent = motivo.classificacao;
+
+        document.getElementById('artigo').value = motivo.artigo;
+        document.getElementById('inciso').value = motivo.inciso;
+        document.getElementById('classificacaoRegulamento').value = motivo.classificacao;
+
+        document.getElementById('detalhesMotivo').style.display = 'block';
+      } else {
+        document.getElementById('detalhesMotivo').style.display = 'none';
+      }
+    });
+
+    document.getElementById('tipoMedida').addEventListener('change', () => {
+      const tipo = document.getElementById('tipoMedida').value;
+      const dias = parseInt(document.getElementById('quantidadeDias').value) || 1;
+      const base = medidas[tipo] || 0;
+      const valor = ['A.E.C.D.E', 'A.I.A'].includes(tipo) ? dias * base : base;
+      const campo = document.getElementById('valorNumerico');
+      campo.value = valor.toFixed(2);
+      campo.className = valor < 0 ? 'negativo' : valor > 0 ? 'positivo' : '';
+    });
+
+    document.getElementById('quantidadeDias').addEventListener('input', () => {
+      document.getElementById('tipoMedida').dispatchEvent(new Event('change'));
+    });
+
+    document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const dados = Object.fromEntries(new FormData(this).entries());
+      dados.valorNumerico = dados.valorNumerico.replace(',', '.');
+
+      try {
+        const resposta = await fetch('/api/notificacoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(dados)
+        });
+
+        const resultado = await resposta.json();
+
+        if (resposta.ok) {
+          document.getElementById('mensagem').textContent = '✅ Notificação cadastrada com sucesso!';
+          this.reset();
+          document.getElementById('detalhesMotivo').style.display = 'none';
+        } else {
+          document.getElementById('mensagem').textContent = resultado.mensagem || '❌ Erro ao cadastrar.';
+        }
+      } catch (err) {
+        document.getElementById('mensagem').textContent = '❌ Erro de conexão com o servidor.';
+      }
+    });
+
+    async function carregarAlunos() {
+      try {
+        const resposta = await fetch('/api/alunos', { credentials: 'include' });
+        const alunos = await resposta.json();
+        const select = document.getElementById('aluno');
+        alunos.forEach(aluno => {
+          const opt = document.createElement('option');
+          opt.value = aluno._id;
+          opt.textContent = `${aluno.nome} (${aluno.turma})`;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar alunos');
+      }
+    }
+
+    async function verificarAutenticado() {
+      try {
+        const resposta = await fetch('/api/usuario', {
+          credentials: 'include'
+        });
+        if (!resposta.ok) {
+          window.location.href = '/login.html';
+        }
+      } catch {
+        window.location.href = '/login.html';
+      }
+    }
+
+    verificarAutenticado();
+    carregarAlunos();
+    carregarMotivos();
+  </script>
+</body>
+</html>

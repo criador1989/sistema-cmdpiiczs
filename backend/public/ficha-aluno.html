@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha do Aluno</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial; background: #f9f9f9; padding: 20px;
+    }
+    .form {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    h2 {
+      color: #d82327;
+    }
+    textarea, input[type=text] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background: #d82327;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #941a1d;
+    }
+    .links {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .links a {
+      color: #d82327;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="form">
+    <h2>Nova Observação para o Aluno</h2>
+    <textarea id="texto" rows="5" placeholder="Digite a observação..."></textarea>
+    <input type="text" id="autor" placeholder="Nome do autor">
+    <button onclick="salvarObservacao()">Salvar Observação</button>
+
+    <div class="links">
+      <a href="/painel.html">🏠 Voltar ao Painel</a>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const alunoId = params.get('id');
+
+    if (!alunoId) {
+      alert('ID do aluno não encontrado na URL.');
+    }
+
+    async function salvarObservacao() {
+      const texto = document.getElementById('texto').value.trim();
+      const autor = document.getElementById('autor').value.trim();
+
+      if (!texto) {
+        alert('Digite uma observação antes de salvar.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/ficha/salvar/${alunoId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto, autor })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('✅ Observação salva com sucesso!');
+          document.getElementById('texto').value = '';
+        } else {
+          console.error(data);
+          alert(data.erro || 'Erro ao salvar observação.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro de conexão com o servidor.');
+      }
+    }
+
+    // Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

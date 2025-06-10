@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Colégio Militar Dom Pedro II</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      width: 320px;
+      max-width: 90vw;
+      text-align: center;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    .logo {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #d82327;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #941a1d;
+    }
+
+    .erro {
+      color: red;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .link-cadastro {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .link-cadastro a {
+      color: #d82327;
+      text-decoration: none;
+    }
+
+    .link-cadastro a:hover {
+      text-decoration: underline;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="/logo-cmdp.jpg" alt="Logo do Colégio Militar Dom Pedro II" class="logo" />
+    <h2>Login</h2>
+    <form id="login-form">
+      <div class="erro" id="erro"></div>
+      <input type="email" id="email" placeholder="E-mail institucional" required />
+      <input type="password" id="senha" placeholder="Senha" required />
+      <button type="submit">Entrar</button>
+    </form>
+
+    <div class="link-cadastro">
+      Ainda não tem conta? <a href="/cadastro-usuario.html">Cadastre-se</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+      const erroDiv = document.getElementById('erro');
+      erroDiv.textContent = '';
+
+      try {
+        const resposta = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+
+        const data = await resposta.json();
+
+        if (resposta.ok) {
+          if (data.nome) {
+            localStorage.setItem('nome', data.nome);
+          }
+          window.location.href = '/painel.html';
+        } else {
+          erroDiv.textContent = data.mensagem || 'Erro ao fazer login.';
+        }
+      } catch (err) {
+        erroDiv.textContent = 'Erro de conexão com o servidor.';
+      }
+    });
+
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

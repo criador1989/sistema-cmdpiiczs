@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de Notificações</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+    }
+
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      color: #333;
+      text-align: center;
+    }
+
+    h2 {
+      color: #941a1d;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      padding: 12px;
+      font-size: 16px;
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 12px 20px;
+      background-color: #d82327;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 5px;
+    }
+
+    button:hover {
+      background-color: #941a1d;
+    }
+
+    .mensagem {
+      margin-top: 15px;
+      color: red;
+    }
+
+    table {
+      margin: 20px auto 0;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 100%;
+      background: #fff;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      color: #333;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+
+      input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Consulta de Notificações</h2>
+    <p>Digite o código de acesso fornecido no momento do cadastro:</p>
+    <input type="text" id="codigo" placeholder="Código de Acesso" />
+    <br />
+    <button onclick="consultar()">Consultar</button>
+    <div class="mensagem" id="mensagem"></div>
+
+    <table id="tabela" style="display: none;">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Motivo</th>
+          <th>Tipo</th>
+          <th>Justificativa</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function consultar() {
+      const codigo = document.getElementById('codigo').value.trim();
+      const mensagem = document.getElementById('mensagem');
+      const tabela = document.getElementById('tabela');
+      const corpo = document.getElementById('corpo-tabela');
+      tabela.style.display = 'none';
+      corpo.innerHTML = '';
+      mensagem.textContent = '';
+
+      if (!codigo) {
+        mensagem.textContent = 'Digite um código de acesso válido.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/responsavel/${codigo}`);
+        if (!res.ok) throw new Error('Código inválido ou aluno não encontrado.');
+
+        const notificacoes = await res.json();
+        if (notificacoes.length === 0) {
+          mensagem.textContent = 'Nenhuma notificação encontrada para este aluno.';
+          return;
+        }
+
+        notificacoes.forEach(n => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
+            <td>${n.motivo}</td>
+            <td>${n.tipo}</td>
+            <td>${n.justificativa || '—'}</td>
+          `;
+          corpo.appendChild(tr);
+        });
+
+        tabela.style.display = '';
+      } catch (err) {
+        mensagem.textContent = err.message;
+      }
+    }
+
+    // Registrar Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

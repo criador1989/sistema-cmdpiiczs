@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Notificações Disciplinares</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 1000px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .actions button {
+      margin-right: 5px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .edit-btn {
+      background-color: #ffc107;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+    .pdf-btn {
+      background-color: #28a745;
+      color: white;
+    }
+    select {
+      padding: 6px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Notificações Disciplinares</h2>
+    <label for="filtroTurma">Filtrar por turma:</label>
+    <select id="filtroTurma">
+      <option value="">Todas</option>
+    </select>
+    <table>
+      <thead>
+        <tr>
+          <th>Aluno</th>
+          <th>Turma</th>
+          <th>Tipo</th>
+          <th>Motivo</th>
+          <th>Medida</th>
+          <th>Valor</th>
+          <th>Data</th>
+          <th>Observação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaNotificacoes"></tbody>
+    </table>
+  </div>
+  <script>
+    async function carregarNotificacoes() {
+      const resposta = await fetch('/api/notificacoes');
+      const lista = await resposta.json();
+      const corpo = document.getElementById('tabelaNotificacoes');
+      const filtroTurma = document.getElementById('filtroTurma');
+      const turmas = new Set();
+
+      corpo.innerHTML = '';
+      lista.forEach(n => {
+        if (!n.aluno) return;
+        turmas.add(n.aluno.turma);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${n.aluno.nome}</td>
+          <td>${n.aluno.turma}</td>
+          <td>${n.tipo}</td>
+          <td>${n.motivo}</td>
+          <td>${n.tipoMedida}</td>
+          <td>${n.valorNumerico}</td>
+          <td>${new Date(n.data).toLocaleDateString()}</td>
+          <td>${n.observacao || ''}</td>
+          <td class="actions">
+            <button class="edit-btn" onclick="editarNotificacao('${n._id}')">Editar</button>
+            <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
+            <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
+          </td>
+        `;
+        corpo.appendChild(tr);
+      });
+
+      filtroTurma.innerHTML = '<option value="">Todas</option>';
+      Array.from(turmas).sort().forEach(turma => {
+        const opt = document.createElement('option');
+        opt.value = turma;
+        opt.textContent = turma;
+        filtroTurma.appendChild(opt);
+      });
+
+      filtroTurma.addEventListener('change', () => {
+        const turmaSelecionada = filtroTurma.value;
+        Array.from(corpo.children).forEach(row => {
+          const turma = row.children[1].textContent;
+          row.style.display = turmaSelecionada === '' || turmaSelecionada === turma ? '' : 'none';
+        });
+      });
+    }
+
+    async function excluirNotificacao(id) {
+      if (!confirm('Tem certeza que deseja excluir esta notificação?')) return;
+      const res = await fetch(`/api/notificacoes/${id}`, { method: 'DELETE' });
+      if (res.ok) carregarNotificacoes();
+      else alert('Erro ao excluir notificação.');
+    }
+
+    function editarNotificacao(id) {
+      alert('Função de edição ainda será implementada.');
+    }
+
+    carregarNotificacoes();
+  </script>
+</body>
+</html>

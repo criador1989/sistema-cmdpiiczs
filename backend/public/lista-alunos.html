@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de Alunos</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      margin: 0;
+      padding: 30px 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 1080px;
+      margin: auto;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #941a1d;
+    }
+
+    h4 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    .turno {
+      margin-top: 40px;
+    }
+
+    .turma-btn {
+      display: inline-block;
+      margin: 5px;
+      padding: 10px 16px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .turma-btn:hover,
+    .turma-btn.ativa {
+      background-color: #0056b3;
+      transform: scale(1.03);
+    }
+
+    .turma-section {
+      display: none;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .actions button,
+    .actions a {
+      margin-right: 5px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+    }
+
+    .edit-btn {
+      background-color: #ffc107;
+      color: black;
+    }
+
+    .ficha-btn {
+      background-color: #17a2b8;
+      color: white;
+    }
+
+    .obs-btn {
+      background-color: #6f42c1;
+      color: white;
+    }
+
+    .voltar-btn, .voltar-turmas-btn {
+      margin-top: 25px;
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+
+    .voltar-btn:hover,
+    .voltar-turmas-btn:hover {
+      background-color: #5a6268;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Lista de Alunos</h2>
+
+    <div class="turno">
+      <h3>Turno da Manhã (Ensino Fundamental II)</h3>
+      <div id="botoesManha"></div>
+      <div id="turmasManha"></div>
+    </div>
+
+    <div class="turno">
+      <h3>Turno da Tarde (Ensino Médio)</h3>
+      <div id="botoesTarde"></div>
+      <div id="turmasTarde"></div>
+    </div>
+
+    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
+      const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+
+      const resposta = await fetch('/api/alunos', { credentials: 'include' });
+      const alunos = await resposta.json();
+
+      const grupos = {};
+      [...turmasManha, ...turmasTarde].forEach(t => grupos[t] = []);
+      alunos.forEach(aluno => {
+        if (grupos[aluno.turma]) grupos[aluno.turma].push(aluno);
+      });
+
+      function criarTabela(turma, alunos) {
+        const section = document.createElement('div');
+        section.classList.add('turma-section');
+        section.id = `turma-${turma}`;
+        section.innerHTML = `
+          <h4>Turma ${turma}</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Nome</th>
+                <th>Turma</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${alunos.map(aluno => `
+                <tr>
+                  <td><img src="/uploads/${aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
+                  <td>${aluno.nome}</td>
+                  <td>${aluno.turma}</td>
+                  <td class="actions">
+                    <a class="ficha-btn" href="ver-ficha.html?id=${aluno._id}">Ver Ficha</a>
+                    <a class="obs-btn" href="ficha-aluno.html?id=${aluno._id}">Adicionar Observação</a>
+                    <a class="edit-btn" href="editar-aluno.html?id=${aluno._id}">Editar</a>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <button class="voltar-turmas-btn" onclick="voltarParaTurmas()">← Voltar para Turmas</button>
+        `;
+        return section;
+      }
+
+      function criarBotoes(turmas, containerId, destinoId) {
+        const container = document.getElementById(containerId);
+        const destino = document.getElementById(destinoId);
+
+        turmas.forEach(turma => {
+          const btn = document.createElement('button');
+          btn.textContent = turma;
+          btn.className = 'turma-btn';
+          btn.onclick = () => {
+            document.querySelectorAll('.turma-section').forEach(div => div.style.display = 'none');
+            document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
+            btn.classList.add('ativa');
+            const sec = document.getElementById(`turma-${turma}`);
+            if (sec) sec.style.display = 'block';
+          };
+          container.appendChild(btn);
+
+          if (grupos[turma].length > 0) {
+            const sec = criarTabela(turma, grupos[turma]);
+            destino.appendChild(sec);
+          }
+        });
+      }
+
+      window.voltarParaTurmas = () => {
+        document.querySelectorAll('.turma-section').forEach(div => div.style.display = 'none');
+        document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
+        document.querySelectorAll('.turno').forEach(turno => turno.style.display = 'block');
+      };
+
+      criarBotoes(turmasManha, 'botoesManha', 'turmasManha');
+      criarBotoes(turmasTarde, 'botoesTarde', 'turmasTarde');
+    });
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastrar Notificação</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      width: 400px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <form id="formNotificacao">
+    <h2>Cadastrar Notificação</h2>
+
+    <label for="aluno">Aluno:</label>
+    <select id="aluno" required>
+      <option value="">Selecione o aluno</option>
+    </select>
+
+    <label for="motivo">Motivo da notificação:</label>
+    <input type="text" id="motivo" required />
+
+    <label for="tipo">Tipo:</label>
+    <select id="tipo" required>
+      <option value="">Tipo</option>
+      <option value="Leve">Leve</option>
+      <option value="Média">Média</option>
+      <option value="Grave">Grave</option>
+      <option value="Gravíssima">Gravíssima</option>
+    </select>
+
+    <label for="tipoMedida">Tipo de Medida Disciplinar:</label>
+    <select id="tipoMedida" required>
+      <option value="">Selecione</option>
+      <option value="Advertência Escrita">Advertência Escrita</option>
+      <option value="Repreensão">Repreensão</option>
+      <option value="AECD">AECD</option>
+      <option value="AIA">AIA</option>
+    </select>
+
+    <label for="valorNumerico">Valor Numérico:</label>
+    <input type="text" id="valorNumerico" required />
+
+    <label for="data">Data:</label>
+    <input type="date" id="data" required />
+
+    <label for="observacao">Observações adicionais:</label>
+    <textarea id="observacao" rows="3"></textarea>
+
+    <button type="submit">Salvar Notificação</button>
+  </form>
+
+  <script src="cadastro-notificacao.js"></script>
+</body>
+</html>

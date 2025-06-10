@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel - Sistema Escolar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #8e0000, #cc0000);
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .painel {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .menu a {
+      display: block;
+      margin: 8px 0;
+      text-decoration: none;
+      color: #b30000;
+    }
+    .menu a:hover {
+      text-decoration: underline;
+    }
+    button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background-color: #b30000;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #800000;
+    }
+    #infoUsuario {
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="painel">
+    <img src="logo cmdp ii czs.jpg" alt="Logo" width="80" />
+    <h1>Bem-vindo ao Sistema Escolar</h1>
+    <div id="infoUsuario">Carregando...</div>
+    <div class="menu" id="conteudo">
+      <!-- Links gerados dinamicamente -->
+    </div>
+    <button id="logoutBtn">Sair</button>
+  </div>
+
+  <script src="painel.js"></script>
+</body>
+</html>

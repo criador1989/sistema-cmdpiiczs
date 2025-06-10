@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar Aluno</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    form {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #b22222;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 15px;
+      display: block;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #b22222;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #8b0000;
+    }
+    .voltar-btn {
+      background-color: #666;
+      margin-left: 10px;
+    }
+    .voltar-btn:hover {
+      background-color: #444;
+    }
+    #mensagem {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <form id="formAluno" enctype="multipart/form-data">
+    <h2>Editar Cadastro do Aluno</h2>
+
+    <label for="nome">Nome Completo</label>
+    <input type="text" id="nome" name="nome" required>
+
+    <label for="turma">Turma</label>
+    <input type="text" id="turma" name="turma" required>
+
+    <label for="dataEntrada">Data de Entrada</label>
+    <input type="date" id="dataEntrada" name="dataEntrada" required>
+
+    <label for="email">E-mail do Aluno</label>
+    <input type="email" id="email" name="email">
+
+    <label for="nomePai">Nome do Pai</label>
+    <input type="text" id="nomePai" name="nomePai">
+
+    <label for="nomeMae">Nome da Mãe</label>
+    <input type="text" id="nomeMae" name="nomeMae">
+
+    <label for="telefone">Telefone dos Pais</label>
+    <input type="tel" id="telefone" name="telefone">
+
+    <label for="nascimento">Data de Nascimento</label>
+    <input type="date" id="nascimento" name="nascimento">
+
+    <label for="foto">Atualizar Foto</label>
+    <input type="file" id="foto" name="foto" accept="image/*">
+
+    <button type="submit">Salvar</button>
+    <button type="button" class="voltar-btn" onclick="window.location.href='alunos.html'">Voltar</button>
+    <p id="mensagem"></p>
+  </form>
+
+  <script>
+    const id = new URLSearchParams(window.location.search).get('id');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch(`/api/alunos/${id}`, { credentials: 'include' });
+        const aluno = await res.json();
+
+        document.getElementById('nome').value = aluno.nome;
+        document.getElementById('turma').value = aluno.turma;
+        document.getElementById('dataEntrada').value = aluno.dataEntrada?.split('T')[0];
+        document.getElementById('email').value = aluno.email || '';
+        document.getElementById('nomePai').value = aluno.nomePai || '';
+        document.getElementById('nomeMae').value = aluno.nomeMae || '';
+        document.getElementById('telefone').value = aluno.telefone || '';
+        document.getElementById('nascimento').value = aluno.nascimento?.split('T')[0] || '';
+      } catch {
+        document.getElementById('mensagem').textContent = 'Erro ao carregar aluno.';
+      }
+    });
+
+    document.getElementById('formAluno').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = document.getElementById('formAluno');
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch(`/api/alunos/${id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          body: formData
+        });
+
+        if (res.ok) {
+          document.getElementById('mensagem').textContent = '✅ Aluno atualizado com sucesso';
+          setTimeout(() => window.location.href = 'alunos.html', 1500);
+        } else {
+          document.getElementById('mensagem').textContent = 'Erro ao atualizar aluno';
+        }
+      } catch (err) {
+        document.getElementById('mensagem').textContent = 'Erro ao enviar dados';
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar o Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

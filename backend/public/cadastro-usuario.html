@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Usuário - Colégio Militar Dom Pedro II</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      width: 340px;
+      text-align: center;
+    }
+
+    .logo {
+      width: 100px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #d82327;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #941a1d;
+    }
+
+    .mensagem {
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .voltar {
+      margin-top: 15px;
+      display: block;
+      font-size: 14px;
+      color: #d82327;
+      text-decoration: none;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="/logo.png" alt="Logo do Colégio" class="logo" />
+    <h2>Cadastrar Usuário</h2>
+    <form id="formCadastro">
+      <input type="text" id="nome" placeholder="Nome completo" required />
+      <input type="email" id="email" placeholder="E-mail institucional" required />
+      <input type="password" id="senha" placeholder="Senha" required />
+      <input type="text" id="instituicao" placeholder="Instituição (ex: Colégio Militar D. Pedro II)" required />
+      <button type="submit">Cadastrar</button>
+      <div class="mensagem" id="mensagem"></div>
+    </form>
+    <a href="/login.html" class="voltar">⬅ Voltar para o login</a>
+  </div>
+
+  <script>
+    document.getElementById('formCadastro').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const nome = document.getElementById('nome').value;
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+      const instituicao = document.getElementById('instituicao').value;
+      const mensagem = document.getElementById('mensagem');
+
+      try {
+        const resposta = await fetch('/auth/cadastrar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, senha, instituicao })
+        });
+
+        const resultado = await resposta.json();
+
+        if (resposta.ok) {
+          mensagem.style.color = 'green';
+          mensagem.textContent = 'Usuário cadastrado com sucesso! Vá para o login.';
+          document.getElementById('formCadastro').reset();
+        } else {
+          mensagem.style.color = 'red';
+          mensagem.textContent = resultado.mensagem || 'Erro ao cadastrar.';
+        }
+      } catch (erro) {
+        mensagem.style.color = 'red';
+        mensagem.textContent = 'Erro de conexão com o servidor.';
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar o Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

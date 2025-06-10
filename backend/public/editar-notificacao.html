@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar Notificação</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #941a1d;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .voltar-btn {
+      background-color: #6c757d;
+      margin-left: 10px;
+    }
+    .voltar-btn:hover {
+      background-color: #5a6268;
+    }
+    #mensagem {
+      margin-top: 15px;
+      font-weight: bold;
+      text-align: center;
+    }
+    #fotoAluno {
+      display: block;
+      margin: 15px auto 10px;
+      border-radius: 6px;
+      max-height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <form id="formEdicao">
+    <h2>Editar Notificação</h2>
+
+    <label for="aluno">Aluno</label>
+    <select id="aluno" name="aluno" required></select>
+
+    <img id="fotoAluno" src="" alt="Foto do aluno" style="display: none;" />
+
+    <label for="tipo">Gravidade do Ato</label>
+    <select id="tipo" name="tipo" required>
+      <option value="Leve">Leve</option>
+      <option value="Médio">Médio</option>
+      <option value="Grave">Grave</option>
+      <option value="Gravíssimo">Gravíssimo</option>
+    </select>
+
+    <label for="motivo">Motivo (Ato de Indisciplina)</label>
+    <input type="text" id="motivo" name="motivo" required />
+
+    <label for="tipoMedida">Tipo de Medida</label>
+    <select id="tipoMedida" name="tipoMedida" required>
+      <option value="Advertência Escrita">Advertência Escrita</option>
+      <option value="Repreensão">Repreensão</option>
+      <option value="A.E.C.D.E">A.E.C.D.E</option>
+      <option value="A.I.A">A.I.A</option>
+      <option value="Elogio Verbal">Elogio Verbal</option>
+      <option value="Elogio Individual">Elogio Individual</option>
+      <option value="Elogio Coletivo">Elogio Coletivo</option>
+      <option value="Média ≥ 8,5">Média ≥ 8,5</option>
+    </select>
+
+    <label for="valorNumerico">Valor Numérico</label>
+    <input type="text" id="valorNumerico" name="valorNumerico" required />
+
+    <label for="observacao">Observação</label>
+    <textarea id="observacao" name="observacao" rows="3"></textarea>
+
+    <label for="data">Data</label>
+    <input type="date" id="data" name="data" required />
+
+    <button type="submit">Salvar Alterações</button>
+    <button type="button" class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+
+    <p id="mensagem"></p>
+  </form>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    async function carregarAlunos() {
+      try {
+        const res = await fetch('/api/alunos', { credentials: 'include' });
+        const alunos = await res.json();
+        const select = document.getElementById('aluno');
+        alunos.forEach(aluno => {
+          const opt = document.createElement('option');
+          opt.value = aluno._id;
+          opt.textContent = `${aluno.nome} (${aluno.turma})`;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        document.getElementById('mensagem').textContent = '❌ Erro ao carregar alunos.';
+      }
+    }
+
+    async function carregarNotificacao() {
+      try {
+        const res = await fetch(`/api/notificacoes/${id}`, { credentials: 'include' });
+        const n = await res.json();
+
+        document.getElementById('aluno').value = n.aluno._id;
+        document.getElementById('tipo').value = n.tipo;
+        document.getElementById('motivo').value = n.motivo;
+        document.getElementById('tipoMedida').value = n.tipoMedida;
+        document.getElementById('valorNumerico').value = n.valorNumerico;
+        document.getElementById('observacao').value = n.observacao || '';
+        document.getElementById('data').value = n.data ? new Date(n.data).toISOString().split('T')[0] : '';
+
+        const foto = n.aluno.foto ? `/uploads/${n.aluno.foto}` : '/uploads/sem-foto.png';
+        const fotoImg = document.getElementById('fotoAluno');
+        fotoImg.src = foto;
+        fotoImg.style.display = 'block';
+
+      } catch (err) {
+        document.getElementById('mensagem').textContent = '❌ Erro ao carregar notificação.';
+      }
+    }
+
+    document.getElementById('formEdicao').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const dados = Object.fromEntries(new FormData(this).entries());
+
+      if (dados.valorNumerico) {
+        dados.valorNumerico = dados.valorNumerico.replace(',', '.');
+      }
+
+      try {
+        const res = await fetch(`/api/notificacoes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(dados)
+        });
+
+        if (res.ok) {
+          document.getElementById('mensagem').textContent = '✅ Notificação atualizada com sucesso!';
+          setTimeout(() => window.location.href = 'painel.html', 1500);
+        } else {
+          const erro = await res.json();
+          document.getElementById('mensagem').textContent = '❌ ' + (erro.message || 'Erro ao atualizar.');
+        }
+      } catch (err) {
+        document.getElementById('mensagem').textContent = '❌ Erro ao atualizar notificação.';
+      }
+    });
+
+    (async () => {
+      await carregarAlunos();
+      await carregarNotificacao();
+    })();
+
+    // Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

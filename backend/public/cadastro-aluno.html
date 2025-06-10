@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastrar Aluno - Colégio Militar Dom Pedro II</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+      width: 380px;
+      text-align: center;
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    .logo {
+      width: 80px;
+      margin-bottom: 10px;
+      animation: flutuar 3s ease-in-out infinite;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    form input, form select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    form button {
+      width: 100%;
+      padding: 12px;
+      background-color: #d82327;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    form button:hover {
+      background-color: #941a1d;
+      transform: scale(1.03);
+    }
+
+    .mensagem {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .voltar {
+      display: block;
+      margin-top: 20px;
+      color: #d82327;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+
+    .campo-label {
+      font-size: 13px;
+      color: #555;
+      display: block;
+      text-align: left;
+      margin-bottom: 5px;
+    }
+
+    .campo-label small {
+      font-weight: normal;
+      font-size: 12px;
+      color: #777;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes flutuar {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="img/logo.png" alt="Logo" class="logo" />
+    <h2>Cadastrar Novo Aluno</h2>
+    <form id="form-aluno" enctype="multipart/form-data">
+      <input type="text" id="nome" name="nome" placeholder="Nome do aluno" required />
+      <input type="text" id="turma" name="turma" placeholder="Turma" required />
+
+      <label class="campo-label">
+        Data de entrada no colégio
+        <small>(pergunte ao aluno a data em que ingressou)</small>
+      </label>
+      <input type="date" id="dataEntrada" name="dataEntrada" required />
+
+      <label class="campo-label">
+        Telefone do responsável
+        <small>(com DDD, sem espaços ou traços. Ex: 5599999999999)</small>
+      </label>
+      <input type="tel" id="telefone" name="telefone" placeholder="Ex: 5599999999999" required />
+
+      <label class="campo-label">Foto do aluno (opcional)</label>
+      <input type="file" id="foto" name="foto" accept="image/*" capture="environment" />
+
+      <input type="hidden" id="instituicao" name="instituicao" />
+
+      <button type="submit">Cadastrar</button>
+      <div class="mensagem" id="mensagem"></div>
+    </form>
+    <a href="/painel.html" class="voltar">⬅ Voltar ao Painel</a>
+  </div>
+
+  <script>
+    async function verificarAutenticacao() {
+      try {
+        const res = await fetch('/api/usuario', { credentials: 'include' });
+        if (!res.ok) return window.location.href = '/login.html';
+        const usuario = await res.json();
+
+        const campoInstituicao = document.getElementById('instituicao');
+        if (usuario.instituicao && campoInstituicao) {
+          campoInstituicao.value = usuario.instituicao;
+        }
+      } catch {
+        window.location.href = '/login.html';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await verificarAutenticacao();
+    });
+
+    document.getElementById('form-aluno').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const form = document.getElementById('form-aluno');
+      const mensagem = document.getElementById('mensagem');
+      const instituicao = document.getElementById('instituicao').value;
+
+      if (!instituicao || instituicao === 'undefined') {
+        mensagem.textContent = 'Erro: instituição não definida.';
+        mensagem.style.color = 'red';
+        return;
+      }
+
+      const formData = new FormData(form);
+      mensagem.textContent = '';
+      mensagem.style.color = '';
+
+      try {
+        const resposta = await fetch('/api/alunos', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+
+        if (resposta.ok) {
+          const aluno = await resposta.json();
+          mensagem.style.color = 'green';
+          mensagem.innerHTML = `
+            ✅ Aluno cadastrado com sucesso!<br>
+            <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}
+          `;
+          form.reset();
+        } else {
+          const erro = await resposta.json();
+          mensagem.style.color = 'red';
+          mensagem.textContent = erro.message || 'Erro ao criar aluno';
+        }
+      } catch (err) {
+        mensagem.style.color = 'red';
+        mensagem.textContent = 'Erro de conexão com o servidor.';
+      }
+    });
+
+    // Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+    }
+  </script>
+</body>
+</html>

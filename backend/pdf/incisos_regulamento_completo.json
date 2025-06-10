@@ -1,0 +1,442 @@
+{
+  "§ 1º - I": {
+    "texto": "Usar distintivos, insígnias, símbolos ou tarjetas indevidos",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - II": {
+    "texto": "Fazer qualquer tipo de marca (externamente) na(s) peça(s) do uniforme de maneira que fique diferente do previsto no regulamento de uniformes",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - III": {
+    "texto": "Usar óculos esportivos (escuros ou similares) ou outros adornos não previstos no Regulamento de Uniformes, quando fardado",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - IV": {
+    "texto": "Trocar de uniforme em local não apropriado",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - V": {
+    "texto": "Ingressar nas dependências do Colégio sem estar devidamente uniformizado",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - VI": {
+    "texto": "Usar o uniforme faltando quaisquer de suas peças (tarjeta, distintivos de bolso, de boina ou série, entre outras) ou usando as mesmas de forma inapropriada dentro ou fora do Colégio",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - VII": {
+    "texto": "Apresentar-se para as atividades escolares demonstrando não cuidar do asseio próprio ou em condições que, de qualquer forma, contrarie os padrões estabelecidos pelo Colégio tais como uniforme sujo, amassado, amarrotado e outros",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - VIII": {
+    "texto": "Usar as instalações ou equipamentos esportivos do Colégio sem estar apropriadamente uniformizado",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - IX": {
+    "texto": "Escrever, desenhar e carimbar em qualquer parte visível do corpo objetos e outras grafias, hennas ou imagens afins",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - X": {
+    "texto": "Mexer-se ou conversar excessivamente, quando em forma",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XI": {
+    "texto": "Utilizar-se, durante a aula, de qualquer publicação estranha a sua atividade escolar",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XII": {
+    "texto": "Tomar parte em jogos proibidos ou em apostas no interior do Colégio",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XIII": {
+    "texto": "Permanecer fora da sala de aula sem autorização",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XIV": {
+    "texto": "Usar as instalações ou equipamentos esportivos do Colégio sem a devida autorização",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XV": {
+    "texto": "Executar toques ou sinais regulamentares, sem ordem para tal",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XVI": {
+    "texto": "Entrar ou sair de local onde estejam presentes todos os elencados no §1º, art. 5º, sem a devida permissão regulamentar",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XVII": {
+    "texto": "Deixar de realizar tarefa escolar sem motivo justificável",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XVIII": {
+    "texto": "Consumir alimentos, balas, doces ou mascar chicletes durante as atividades escolares ou nas dependências de qualquer seção do Colégio, salvo quando devidamente autorizado",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XIX": {
+    "texto": "Não apresentar material escolar pré-determinado",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XX": {
+    "texto": "Portar telefone celular ou qualquer outro aparelho eletrônico sobreposto ao uniforme",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XXI": {
+    "texto": "Comercializar qualquer produto no colégio, divulgar impressos, promover rifas, convites, dentre outros, sem autorização",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 1º - XXII": {
+    "texto": "Utilizar as dependências do CMDPII/CBMAC como espaço para namoro",
+    "classificacao": "Leve",
+    "paragrafo": "§ 1º"
+  },
+  "§ 2º - 1": {
+    "texto": "Apresentar-se com o cabelo em desalinho ou fora do padrão estabelecido pelo Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 2": {
+    "texto": "Sair de forma sem permissão de quem de direito",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 3": {
+    "texto": "Portar-se de maneira desrespeitosa ou inconveniente durante a aula ou qualquer atividade escolar",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 4": {
+    "texto": "Usar telefone celular ou qualquer outro aparelho eletrônico durante a aula ou qualquer outra atividade escolar, sem autorização",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 5": {
+    "texto": "Captar imagem ou áudio de alunos, servidores ou das dependências do Colégio, sem autorização da Direção",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 6": {
+    "texto": "Publicar imagens, áudio ou qualquer tipo de publicação em qualquer meio de comunicação referente ao Colégio, servidores ou alunos, sem autorização da Direção",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 7": {
+    "texto": "Deixar de entregar ao pai ou responsável documento que lhe foi encaminhado pelo Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 8": {
+    "texto": "Deixar de devolver, no prazo fixado, comunicados, avisos ou outros documentos emitidos pelo Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 9": {
+    "texto": "Chegar atrasado à aula, formatura, atividade, ou qualquer evento fora do colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 10": {
+    "texto": "Perturbar, com conversas paralelas, ruídos ou brincadeiras, o desenvolvimento da aula ou de estudo dos colegas",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 11": {
+    "texto": "Utilizar-se do anonimato na divulgação de cartas, bilhetes, impressos ou qualquer meio de divulgação, com o intuito de denegrir a imagem do Colégio, dos colegas ou dos servidores",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 12": {
+    "texto": "Abandonar, injustificadamente, atividade escolar de que participava",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 13": {
+    "texto": "Danificar ou perder material pertencente ao Colégio, servidor ou outro aluno",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 14": {
+    "texto": "Deixar de entregar na sala do Comando do Corpo de Alunos, qualquer objeto que não lhe pertença e que tenha encontrado no Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 15": {
+    "texto": "Portar-se de maneira desrespeitosa ou inconveniente nos eventos sociais ou esportivos promovidos no Colégio ou fora dele",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 16": {
+    "texto": "Deixar de executar atribuições recebidas da Direção, Corpo de Alunos ou Monitoria",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 17": {
+    "texto": "Retirar-se das dependências do CMDPII/CBMAC antes do término das aulas ou de outra atividade, sem permissão de quem de direito",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 18": {
+    "texto": "Concorrer para a discórdia, desarmonia ou cultivar inimizade entre colegas ou profissionais do Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 19": {
+    "texto": "Faltar a qualquer escala de representação do CMDPII/CBMAC",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 20": {
+    "texto": "Estar realizando atividade diversa da aula no momento lecionada",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 21": {
+    "texto": "Rasurar ou amassar documentos (provas, avisos, N.M.D, panfletos, folders entre outros)",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 22": {
+    "texto": "Danificar e/ou não devolver os livros do acervo da biblioteca do colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 23": {
+    "texto": "Fazer uso de material sem fins pedagógicos (...) dentro ou fora da sala de aula, salvo devidamente autorizado",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 24": {
+    "texto": "Dirigir-se, referir-se ou responder ao professor ou funcionários do Colégio, de modo desrespeitoso ou desatencioso",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 25": {
+    "texto": "Sair da sala de aula sem permissão de quem de direito",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 26": {
+    "texto": "Transitar ou fazer uso das vias de acesso não permitidas aos alunos",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 27": {
+    "texto": "Deixar de prestar os sinais de deferência a qualquer servidor, militar ou civil e aos demais alunos",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 28": {
+    "texto": "Proferir palavras ofensivas ou grafá-las em qualquer lugar",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 29": {
+    "texto": "Ofender a moral por atos, gestos ou palavras",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 30": {
+    "texto": "Esquecer material didático, parte do uniforme ou qualquer outro objeto de uso individual",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 31": {
+    "texto": "Faltar a qualquer aula ou formatura, estando no Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 32": {
+    "texto": "Fazer uso do uniforme do colégio com acessórios não permitidos, maquiagem ou esmalte em desacordo",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 33": {
+    "texto": "Faltar a qualquer formatura ou atividade para a qual tenha sido voluntário",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 34": {
+    "texto": "Promover algazarra no recinto do Colégio ou fora dele, enquanto uniformizado",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 35": {
+    "texto": "Contribuir para má apresentação da sala de aula, atirar papeis ou lixo fora do local correto",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 36": {
+    "texto": "Não cortar o cabelo nas inspeções previstas",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - 37": {
+    "texto": "Usar prendedor de cabelo de cor diferente do previsto pelo Colégio",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 2º - XXXVIII": {
+    "texto": "Faltar a qualquer aula ou formatura",
+    "classificacao": "Médio",
+    "paragrafo": "§ 2º"
+  },
+  "§ 3º - 1": {
+    "texto": "Faltar com a verdade",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 2": {
+    "texto": "Discutir, desobedecer ou resistir ao atendimento de ordens",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 3": {
+    "texto": "Fazer apologia a qualquer fato que constitua crime ou contravenção",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 4": {
+    "texto": "Dirigir-se ou referir-se a qualquer servidor, militar ou civil e aos demais alunos usando apelidos ou palavrões",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 5": {
+    "texto": "Usar o nome do Colégio para qualquer tipo de propaganda, campanha ou promoção, sem autorização expressa da Direção",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 6": {
+    "texto": "Praticar gestos obscenos dentro ou fora do Colégio",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 7": {
+    "texto": "Não ter o devido respeito para com os símbolos nacionais",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 8": {
+    "texto": "Faltar ao desfile cívico de 07 de setembro sem justificativa",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 9": {
+    "texto": "Não manter a compostura quando estiver participando ou representando a qualquer evento realizado pelo CMDPII/CBMAC",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 10": {
+    "texto": "Agredir moralmente a qualquer servidor militar ou civil, bem como qualquer aluno do Colégio utilizando-se das redes sociais pela internet ou outro meio de comunicação",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 11": {
+    "texto": "Espalhar boatos ou notícias tendenciosas, causando constrangimento a outro aluno ou a qualquer servidor do Colégio",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 12": {
+    "texto": "Ausentar-se do Colégio em horário de sua atividade escolar sem autorização",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 13": {
+    "texto": "Praticar brincadeiras que possam causar danos psíquicos ou físicos a outro aluno",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 14": {
+    "texto": "Portar, introduzir, ler ou distribuir, dentro do Colégio ou nas suas imediações, publicações, estampas ou jornais que atentem contra a disciplina, a moral e aos bons costumes",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 15": {
+    "texto": "Promover ou tomar parte em qualquer manifestação coletiva seja de caráter reivindicatório ou político-partidário, quando fardado ou representando o Colégio",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 16": {
+    "texto": "Comunicar-se com outro aluno ou utilizar-se de qualquer meio não permitido durante as provas",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 17": {
+    "texto": "Sujar ou danificar deliberadamente as dependências ou bens pertencentes ao Colégio",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 18": {
+    "texto": "Incitar briga no interior ou fora do colégio",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 3º - 19": {
+    "texto": "Deixar de comunicar à Coordenação do Corpo de Alunos de qualquer ato de indisciplina que tenha visto sido praticado por outro aluno do CMDPII/CBMAC",
+    "classificacao": "Grave",
+    "paragrafo": "§ 3º"
+  },
+  "§ 4º - 1": {
+    "texto": "Portar estiletes, seringas, tesoura de ponta, canivete ou qualquer outro tipo de material que possa atentar contra a segurança do Colégio, sem a devida autorização do C.A.",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 2": {
+    "texto": "Portar, introduzir ou fazer uso de qualquer tipo de bebida alcoólica, fumar ou portar cigarro ou droga ilícita no interior do Colégio",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 3": {
+    "texto": "Valer-se de meios ilícitos ou fraudulentos para a resolução dos trabalhos escolares e provas",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 4": {
+    "texto": "Violar ou adulterar documentos emitidos pelo Colégio, assim como atestados médicos, declarações ou qualquer outro documento que tenha fé pública",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 5": {
+    "texto": "Agredir fisicamente outro aluno ou qualquer servidor do Colégio, militar ou civil",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 6": {
+    "texto": "Praticar qualquer ato infracional ou crime, estando ou não no interior do Colégio",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 7": {
+    "texto": "Comparecer ao colégio ou a qualquer atividade escolar em estado de embriaguez alcoólica ou sob efeito de substância entorpecente",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 8": {
+    "texto": "Falsificar assinatura ou rubrica dos pais/responsável ou de qualquer outra pessoa",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  },
+  "§ 4º - 9": {
+    "texto": "Praticar bullying contra seus colegas de classe, ou contra qualquer outro discente do CMDPII/CBMAC",
+    "classificacao": "Gravíssimo",
+    "paragrafo": "§ 4º"
+  }
+}

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notificações Disciplinares</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      margin: 0;
+      padding: 40px 15px;
+    }
+
+    .container {
+      background: white;
+      max-width: 1200px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    h2 {
+      text-align: center;
+      color: #941a1d;
+      margin-bottom: 25px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #333;
+    }
+
+    select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #B22222;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .actions button, .actions a {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .edit-btn {
+      background-color: #ffc107;
+      color: white;
+    }
+
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .pdf-btn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .voltar-btn {
+      margin-top: 20px;
+      background-color: #6c757d;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .voltar-btn:hover {
+      background-color: #5a6268;
+      transform: scale(1.03);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Notificações Disciplinares</h2>
+
+    <label for="filtroTurma">Filtrar por turma:</label>
+    <select id="filtroTurma">
+      <option value="">Todas</option>
+    </select>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Aluno</th>
+          <th>Turma</th>
+          <th>Tipo</th>
+          <th>Motivo</th>
+          <th>Medida</th>
+          <th>Valor</th>
+          <th>Data</th>
+          <th>Observação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaNotificacoes"></tbody>
+    </table>
+
+    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+  </div>
+
+  <script>
+    async function carregarNotificacoes() {
+      const resposta = await fetch('/api/notificacoes');
+      const lista = await resposta.json();
+      const corpo = document.getElementById('tabelaNotificacoes');
+      const filtroTurma = document.getElementById('filtroTurma');
+      const turmas = new Set();
+
+      corpo.innerHTML = '';
+      lista.forEach(n => {
+        if (!n.aluno) return;
+        turmas.add(n.aluno.turma);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${n.aluno.nome}</td>
+          <td>${n.aluno.turma}</td>
+          <td>${n.tipo}</td>
+          <td>${n.motivo}</td>
+          <td>${n.tipoMedida}</td>
+          <td>${n.valorNumerico?.toFixed(2) || '—'}</td>
+          <td>${new Date(n.data).toLocaleDateString()}</td>
+          <td>${n.observacao || '—'}</td>
+          <td class="actions">
+            <button class="edit-btn" onclick="editarNotificacao('${n._id}')">Editar</button>
+            <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
+            <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
+          </td>
+        `;
+        corpo.appendChild(tr);
+      });
+
+      filtroTurma.innerHTML = '<option value="">Todas</option>';
+      Array.from(turmas).sort().forEach(turma => {
+        const opt = document.createElement('option');
+        opt.value = turma;
+        opt.textContent = turma;
+        filtroTurma.appendChild(opt);
+      });
+
+      filtroTurma.addEventListener('change', () => {
+        const turmaSelecionada = filtroTurma.value;
+        Array.from(corpo.children).forEach(row => {
+          const turma = row.children[1].textContent;
+          row.style.display = turmaSelecionada === '' || turmaSelecionada === turma ? '' : 'none';
+        });
+      });
+    }
+
+    async function excluirNotificacao(id) {
+      if (!confirm('Tem certeza que deseja excluir esta notificação?')) return;
+      const res = await fetch(`/api/notificacoes/${id}`, { method: 'DELETE' });
+      if (res.ok) carregarNotificacoes();
+      else alert('Erro ao excluir notificação.');
+    }
+
+    function editarNotificacao(id) {
+      window.location.href = `/editar-notificacao.html?id=${id}`;
+    }
+
+    carregarNotificacoes();
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Ficha do Aluno</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      padding: 30px 20px;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 850px;
+      margin: auto;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    h2 {
+      color: #941a1d;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .dados, .secao {
+      margin-bottom: 25px;
+    }
+
+    .secao h3 {
+      color: #333;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .observacao, .notificacao {
+      background: #f9f9f9;
+      padding: 12px;
+      border-left: 5px solid #d82327;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .voltar {
+      margin-top: 30px;
+      display: inline-block;
+      color: #d82327;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+
+    .botao-pdf {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      margin-top: 10px;
+      font-weight: bold;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .botao-pdf:hover {
+      background: #218838;
+      transform: scale(1.04);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      .botao-pdf {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Ficha Comportamental Completa</h2>
+
+    <div id="dadosAluno" class="dados"></div>
+
+    <div class="secao">
+      <h3>Observações</h3>
+      <div id="listaObservacoes"></div>
+    </div>
+
+    <div class="secao">
+      <h3>Notificações Disciplinares</h3>
+      <div id="listaNotificacoes"></div>
+    </div>
+
+    <div style="text-align: center;">
+      <a id="btnPDF" class="botao-pdf" target="_blank">📄 Gerar Ficha em PDF</a>
+    </div>
+
+    <a class="voltar" href="lista-alunos.html">← Voltar à Lista de Alunos</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const alunoId = params.get('id');
+
+    if (!alunoId) {
+      alert("ID do aluno não encontrado na URL.");
+    }
+
+    async function carregarFicha() {
+      try {
+        const resposta = await fetch(`/ficha/dados/${alunoId}`);
+        if (!resposta.ok) throw new Error('Erro ao carregar ficha');
+        const { aluno, observacoes, notificacoes } = await resposta.json();
+
+        // Dados do Aluno
+        document.getElementById('dadosAluno').innerHTML = `
+          <strong>Nome:</strong> ${aluno.nome} <br>
+          <strong>Turma:</strong> ${aluno.turma} <br>
+          <strong>Data de Entrada:</strong> ${new Date(aluno.dataEntrada).toLocaleDateString()} <br>
+          <strong>Nota de Comportamento:</strong> ${aluno.comportamento?.toFixed(2) ?? '—'}
+        `;
+
+        // Observações
+        const obsDiv = document.getElementById('listaObservacoes');
+        obsDiv.innerHTML = observacoes.length > 0
+          ? observacoes.map(o => `
+              <div class="observacao">
+                <strong>${new Date(o.criadoEm).toLocaleDateString()}:</strong> ${o.texto}
+                <div><em>Autor: ${o.autor || '—'}</em></div>
+              </div>`).join('')
+          : '<p>Nenhuma observação registrada.</p>';
+
+        // Notificações
+        const notifDiv = document.getElementById('listaNotificacoes');
+        notifDiv.innerHTML = notificacoes.length > 0
+          ? notificacoes.map(n => `
+              <div class="notificacao">
+                <strong>${n.tipoMedida} (${n.tipo})</strong><br>
+                Motivo: ${n.motivo}<br>
+                Valor: ${n.valorNumerico?.toFixed(2) || '—'} | Dias: ${n.quantidadeDias || 1}<br>
+                Nota: ${n.notaAnterior?.toFixed(2) || '—'} → ${n.notaAtual?.toFixed(2) || '—'}<br>
+                Data: ${new Date(n.data).toLocaleDateString()}<br>
+                Observação: ${n.observacao || '—'}
+              </div>`).join('')
+          : '<p>Nenhuma notificação registrada.</p>';
+
+        // PDF
+        document.getElementById('btnPDF').href = `/api/ficha/${alunoId}`;
+
+      } catch (e) {
+        alert('Erro ao carregar os dados da ficha.');
+        console.error(e);
+      }
+    }
+
+    carregarFicha();
+  </script>
+</body>
+</html>

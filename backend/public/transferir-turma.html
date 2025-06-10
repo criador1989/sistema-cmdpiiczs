@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transferência de Turma</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: auto;
+      background: white;
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    h2 {
+      text-align: center;
+      color: #941a1d;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    select, input[type=text] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 25px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #B22222;
+      color: white;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8f8f8;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      margin-top: 30px;
+    }
+
+    #transferirBtn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    #transferirBtn:hover {
+      background-color: #218838;
+      transform: scale(1.04);
+    }
+
+    .voltar-btn {
+      background-color: #6c757d;
+      color: white;
+      margin-left: 10px;
+    }
+
+    .voltar-btn:hover {
+      background-color: #5a6268;
+      transform: scale(1.04);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      table, th, td {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Transferência de Alunos em Lote</h2>
+
+    <label for="turmaAtual">Turma Atual:</label>
+    <select id="turmaAtual"></select>
+
+    <label for="novaTurma">Nova Turma:</label>
+    <input type="text" id="novaTurma" placeholder="Ex: 7ºA" />
+
+    <table>
+      <thead>
+        <tr>
+          <th>Selecionar</th>
+          <th>Nome</th>
+          <th>Turma</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaAlunos"></tbody>
+    </table>
+
+    <button id="transferirBtn">Transferir Selecionados</button>
+    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+  </div>
+
+  <script src="/transferir-turma.js"></script>
+
+  <!-- Registro do Service Worker para PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

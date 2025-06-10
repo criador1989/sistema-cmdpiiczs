@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel - Sistema Escolar</title>
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #8B0000, #B22222);
+      margin: 0;
+      padding: 0;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    .boas-vindas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(255,255,255,0.95);
+      color: #8B0000;
+      font-weight: bold;
+      text-align: center;
+      padding: 15px 0;
+      z-index: 999;
+      animation: fadeOut 2s ease 2.5s forwards;
+    }
+
+    .painel {
+      max-width: 600px;
+      margin: 120px auto 80px;
+      background: white;
+      padding: 40px 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      text-align: center;
+      animation: fadeInUp 0.9s ease-out;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .painel img {
+      max-width: 100px;
+      margin-bottom: 20px;
+      animation: flutuar 3s ease-in-out infinite;
+    }
+
+    .menu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .menu a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background-color: #f2f2f2;
+      border: 2px solid #B22222;
+      border-radius: 10px;
+      color: #B22222;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .menu a:hover {
+      background-color: #B22222;
+      color: white;
+      transform: scale(1.06);
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .logout-btn {
+      margin-top: 30px;
+      background-color: #B22222;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .logout-btn:hover {
+      background-color: #8B0000;
+      transform: scale(1.04);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateY(-100%);
+        display: none;
+      }
+    }
+
+    @keyframes flutuar {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="boas-vindas" id="mensagemBoasVindas">
+    👋 Bem-vindo ao Sistema Escolar!
+  </div>
+
+  <div class="painel">
+    <img src="img/logo.png" alt="Logo do Colégio Militar" />
+    <h1>Bem-vindo ao Sistema Escolar</h1>
+    <p>Olá, <span id="nomeUsuario">Usuário</span></p>
+
+    <div class="menu">
+      <a href="cadastro-aluno.html">📋 Cadastrar Aluno</a>
+      <a href="cadastrar-notificacao.html">📝 Notificação</a>
+      <a href="/notificacoes">📄 Ver Notificações</a>
+      <a href="lista-alunos.html">👥 Ver Alunos</a>
+      <a href="transferir-turma.html">🔁 Transferir Turma</a>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">🚪 Sair</button>
+  </div>
+
+  <script>
+    async function verificarUsuario() {
+      try {
+        const resposta = await fetch('/api/usuario', { credentials: 'include' });
+        if (!resposta.ok) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const dados = await resposta.json();
+        const nome = dados.nome || 'Usuário';
+        document.getElementById('nomeUsuario').textContent = nome;
+        const mensagem = document.getElementById('mensagemBoasVindas');
+        if (mensagem) {
+          mensagem.textContent = `👋 Bem-vindo, ${nome}!`;
+        }
+      } catch (err) {
+        window.location.href = '/login.html';
+      }
+    }
+
+    async function logout() {
+      await fetch('/auth/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    }
+
+    verificarUsuario();
+
+    // Registrar Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Falha ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>

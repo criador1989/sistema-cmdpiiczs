@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de Notificação</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #valorNumerico {
+      font-weight: bold;
+    }
+    #valorNumerico.positivo {
+      background-color: #d4edda;
+    }
+    #valorNumerico.negativo {
+      background-color: #f8d7da;
+    }
+  </style>
+</head>
+<body>
+  <form id="formNotificacao">
+    <h2>Cadastro de Notificação Disciplinar</h2>
+
+    <label for="aluno">Aluno</label>
+    <select id="aluno" name="aluno" required></select>
+
+    <label for="tipo">Gravidade do Ato</label>
+    <select id="tipo" name="tipo" required>
+      <option value="">Selecione</option>
+      <option value="Leve">Leve</option>
+      <option value="Médio">Médio</option>
+      <option value="Grave">Grave</option>
+      <option value="Gravíssimo">Gravíssimo</option>
+    </select>
+
+    <label for="motivo">Motivo (Ato de indisciplina)</label>
+    <select id="motivo" name="motivo" required></select>
+
+    <label for="tipoMedida">Tipo de Medida</label>
+    <select id="tipoMedida" name="tipoMedida" required>
+      <option value="">Selecione</option>
+      <option value="Advertência Escrita">Advertência Escrita</option>
+      <option value="Repreensão">Repreensão</option>
+      <option value="A.E.C.D.E">A.E.C.D.E</option>
+      <option value="A.I.A">A.I.A</option>
+      <option value="Elogio Verbal">Elogio Verbal</option>
+      <option value="Elogio Individual">Elogio Individual</option>
+      <option value="Elogio Coletivo">Elogio Coletivo</option>
+      <option value="Média ≥ 8,5">Média ≥ 8,5</option>
+    </select>
+
+    <label for="valorNumerico">Valor Numérico</label>
+    <input type="number" step="0.01" id="valorNumerico" name="valorNumerico" readonly />
+
+    <label for="observacao">Observação</label>
+    <textarea id="observacao" name="observacao"></textarea>
+
+    <label for="data">Data</label>
+    <input type="date" id="data" name="data" required />
+
+    <button type="submit">Cadastrar</button>
+    <p id="mensagem"></p>
+  </form>
+
+  <script>
+    const motivos = {
+      'Leve': [...Array(22).keys()].map(i => 'Ato Leve ' + (i + 1)),
+      'Médio': [...Array(39).keys()].map(i => 'Ato Médio ' + (i + 1)),
+      'Grave': [...Array(19).keys()].map(i => 'Ato Grave ' + (i + 1)),
+      'Gravíssimo': [...Array(9).keys()].map(i => 'Ato Gravíssimo ' + (i + 1))
+    };
+
+    const medidas = {
+      "Advertência Escrita": -0.3,
+      "Repreensão": -0.5,
+      "A.E.C.D.E": -0.7,
+      "A.I.A": -1.2,
+      "Elogio Verbal": 0.15,
+      "Elogio Individual": 0.6,
+      "Elogio Coletivo": 0.2,
+      "Média ≥ 8,5": 0.4
+    };
+
+    document.getElementById('tipo').addEventListener('change', function () {
+      const tipoSelecionado = this.value;
+      const motivoSelect = document.getElementById('motivo');
+      motivoSelect.innerHTML = '<option value="">Selecione</option>';
+      if (motivos[tipoSelecionado]) {
+        motivos[tipoSelecionado].forEach(m => {
+          const option = document.createElement('option');
+          option.value = m;
+          option.textContent = m;
+          motivoSelect.appendChild(option);
+        });
+      }
+    });
+
+    document.getElementById('tipoMedida').addEventListener('change', function () {
+      const valor = medidas[this.value] || 0;
+      const input = document.getElementById('valorNumerico');
+      input.value = valor;
+      input.className = valor < 0 ? 'negativo' : valor > 0 ? 'positivo' : '';
+    });
+
+    document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const dados = Object.fromEntries(new FormData(this).entries());
+
+      try {
+        const resposta = await fetch('/api/notificacoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados)
+        });
+        const resultado = await resposta.json();
+        document.getElementById('mensagem').textContent = '✅ Notificação cadastrada com sucesso!';
+        this.reset();
+      } catch (erro) {
+        document.getElementById('mensagem').textContent = '❌ Erro ao cadastrar notificação.';
+      }
+    });
+
+    async function carregarAlunos() {
+      const resposta = await fetch('/api/alunos');
+      const alunos = await resposta.json();
+      const select = document.getElementById('aluno');
+      alunos.forEach(aluno => {
+        const opt = document.createElement('option');
+        opt.value = aluno._id;
+        opt.textContent = `${aluno.nome} (${aluno.turma})`;
+        select.appendChild(opt);
+      });
+    }
+
+    carregarAlunos();
+  </script>
+</body>
+</html>

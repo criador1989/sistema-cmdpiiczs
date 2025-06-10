@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de Alunos</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#990000" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background-color: #d82327;
+      color: white;
+    }
+    img.foto {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    a.btn {
+      padding: 5px 10px;
+      background-color: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    a.btn:hover {
+      background-color: #0056b3;
+    }
+    .voltar {
+      display: inline-block;
+      margin-top: 20px;
+      color: #d82327;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .voltar:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h2>Alunos Cadastrados</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Foto</th>
+        <th>Nome</th>
+        <th>Turma</th>
+        <th>Comportamento</th>
+        <th>Telefone</th>
+        <th>E-mail</th>
+        <th>Pai</th>
+        <th>Mãe</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaAlunos"></tbody>
+  </table>
+
+  <a class="voltar" href="/painel.html">← Voltar ao Painel</a>
+
+  <script>
+    async function carregarAlunos() {
+      try {
+        const res = await fetch('/api/alunos', { credentials: 'include' });
+        if (!res.ok) throw new Error('Erro ao buscar alunos');
+
+        const alunos = await res.json();
+        const tbody = document.getElementById('tabelaAlunos');
+        tbody.innerHTML = '';
+
+        alunos.forEach(aluno => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><img class="foto" src="/${aluno.foto || 'uploads/sem-foto.png'}" alt="Foto do aluno" /></td>
+            <td>${aluno.nome}</td>
+            <td>${aluno.turma}</td>
+            <td>${aluno.comportamento?.toFixed(2) ?? '—'}</td>
+            <td>${aluno.telefone || '—'}</td>
+            <td>${aluno.email || '—'}</td>
+            <td>${aluno.nomePai || '—'}</td>
+            <td>${aluno.nomeMae || '—'}</td>
+            <td><a class="btn" href="/editar-aluno.html?id=${aluno._id}">Editar</a></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        alert('Erro ao carregar alunos.');
+      }
+    }
+
+    carregarAlunos();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+    }
+  </script>
+</body>
+</html>

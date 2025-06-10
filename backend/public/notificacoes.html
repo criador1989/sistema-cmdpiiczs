@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notificações Disciplinares</title>
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 1200px;
+      margin: auto;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.8s ease;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #941a1d;
+    }
+
+    label {
+      display: block;
+      margin: 20px 0 10px;
+      font-weight: bold;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 40px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background: #d82327;
+      color: white;
+    }
+
+    .actions button,
+    .actions a {
+      margin: 2px;
+      padding: 6px 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .delete-btn { background: #dc3545; color: white; }
+    .pdf-btn { background: #007bff; color: white; }
+    .edit-btn { background: #ffc107; color: black; }
+
+    .voltar-btn {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      display: block;
+      margin: 30px auto 0;
+    }
+
+    .voltar-btn:hover {
+      background-color: #5a6268;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Notificações Disciplinares</h2>
+    <label for="filtroTurma">Filtrar por turma:</label>
+    <select id="filtroTurma">
+      <option value="">Todas</option>
+    </select>
+
+    <h3>Turno da Manhã (Ensino Fundamental II)</h3>
+    <table id="tabelaManha">
+      <thead>
+        <tr>
+          <th>Foto</th>
+          <th>Aluno</th>
+          <th>Turma</th>
+          <th>Tipo</th>
+          <th>Motivo</th>
+          <th>Medida</th>
+          <th>Valor</th>
+          <th>Nota</th>
+          <th>Data</th>
+          <th>Artigo</th>
+          <th>Inciso</th>
+          <th>Classificação</th>
+          <th>Observação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Turno da Tarde (Ensino Médio)</h3>
+    <table id="tabelaTarde">
+      <thead>
+        <tr>
+          <th>Foto</th>
+          <th>Aluno</th>
+          <th>Turma</th>
+          <th>Tipo</th>
+          <th>Motivo</th>
+          <th>Medida</th>
+          <th>Valor</th>
+          <th>Nota</th>
+          <th>Data</th>
+          <th>Artigo</th>
+          <th>Inciso</th>
+          <th>Classificação</th>
+          <th>Observação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const tabelaManha = document.querySelector('#tabelaManha tbody');
+      const tabelaTarde = document.querySelector('#tabelaTarde tbody');
+      const filtroTurma = document.getElementById('filtroTurma');
+
+      const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
+      const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+
+      async function carregarNotificacoes() {
+        try {
+          const resposta = await fetch('/api/notificacoes', { credentials: 'include' });
+          if (!resposta.ok) return window.location.href = '/login.html';
+
+          const lista = await resposta.json();
+          const turmas = new Set();
+          tabelaManha.innerHTML = '';
+          tabelaTarde.innerHTML = '';
+
+          lista.forEach(n => {
+            if (!n.aluno) return;
+            const turma = n.aluno.turma;
+            turmas.add(turma);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
+              <td>${n.aluno.nome}</td>
+              <td>${turma}</td>
+              <td>${n.tipo}</td>
+              <td>${n.motivo}</td>
+              <td>${n.tipoMedida}</td>
+              <td>${n.valorNumerico?.toFixed(2) || '—'}</td>
+              <td>${n.notaAnterior?.toFixed(2) || '—'} → ${n.notaAtual?.toFixed(2) || '—'}</td>
+              <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
+              <td>${n.artigo || '—'}</td>
+              <td>${n.inciso || '—'}</td>
+              <td>${n.classificacaoRegulamento || '—'}</td>
+              <td>${n.observacao || '—'}</td>
+              <td class="actions">
+                <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
+                <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
+                <a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>
+              </td>
+            `;
+
+            if (turmasManha.includes(turma)) tabelaManha.appendChild(tr);
+            else if (turmasTarde.includes(turma)) tabelaTarde.appendChild(tr);
+          });
+
+          filtroTurma.innerHTML = '<option value="">Todas</option>';
+          Array.from(turmas).sort().forEach(turma => {
+            const opt = document.createElement('option');
+            opt.value = turma;
+            opt.textContent = turma;
+            filtroTurma.appendChild(opt);
+          });
+
+          filtroTurma.addEventListener('change', () => {
+            const turmaSelecionada = filtroTurma.value;
+            [tabelaManha, tabelaTarde].forEach(tabela => {
+              Array.from(tabela.children).forEach(row => {
+                const turma = row.children[2].textContent;
+                row.style.display = turmaSelecionada === '' || turmaSelecionada === turma ? '' : 'none';
+              });
+            });
+          });
+        } catch {
+          alert('Erro ao carregar notificações.');
+        }
+      }
+
+      window.excluirNotificacao = async function (id) {
+        if (!confirm('Deseja excluir esta notificação?')) return;
+        try {
+          const res = await fetch(`/api/notificacoes/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          if (res.ok) carregarNotificacoes();
+          else alert('Erro ao excluir a notificação.');
+        } catch {
+          alert('Erro ao conectar com o servidor.');
+        }
+      };
+
+      carregarNotificacoes();
+    });
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>
