@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
-const Observacao = require('../../models/observacao');
+const Observacao = require('../../models/Observacao');
 
 // Gera PDF completo da ficha do aluno
 router.get('/ficha/:id', async (req, res) => {
