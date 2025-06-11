@@ -40,6 +40,30 @@ app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
+// ✅ ROTA DE CADASTRO DE USUÁRIO
+app.post('/auth/cadastrar', async (req, res) => {
+  const { nome, email, senha, instituicao } = req.body;
+
+  if (!nome || !email || !senha || !instituicao) {
+    return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
+  }
+
+  try {
+    const usuarioExistente = await Usuario.findOne({ email });
+    if (usuarioExistente) {
+      return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
+    }
+
+    const novoUsuario = new Usuario({ nome, email, senha, instituicao });
+    await novoUsuario.save();
+
+    res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
+  } catch (erro) {
+    console.error('Erro no cadastro:', erro);
+    res.status(500).json({ mensagem: 'Erro no servidor ao cadastrar usuário.' });
+  }
+});
+
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
