@@ -128,6 +128,9 @@
   <form id="formNotificacao">
     <h2>Cadastro de Notificação Disciplinar</h2>
 
+    <label for="pesquisaAluno">Pesquisar aluno</label>
+    <input type="text" id="pesquisaAluno" placeholder="Digite o nome do aluno..." />
+
     <label for="aluno">Aluno</label>
     <select id="aluno" name="aluno" required></select>
 
@@ -298,12 +301,24 @@
         const resposta = await fetch('/api/alunos', { credentials: 'include' });
         const alunos = await resposta.json();
         const select = document.getElementById('aluno');
-        alunos.forEach(aluno => {
-          const opt = document.createElement('option');
-          opt.value = aluno._id;
-          opt.textContent = `${aluno.nome} (${aluno.turma})`;
-          select.appendChild(opt);
-        });
+        const pesquisa = document.getElementById('pesquisaAluno');
+
+        let todosAlunos = alunos;
+
+        function atualizarOpcoes(filtro = '') {
+          select.innerHTML = '';
+          todosAlunos
+            .filter(aluno => aluno.nome.toLowerCase().includes(filtro.toLowerCase()))
+            .forEach(aluno => {
+              const opt = document.createElement('option');
+              opt.value = aluno._id;
+              opt.textContent = `${aluno.nome} (${aluno.turma})`;
+              select.appendChild(opt);
+            });
+        }
+
+        pesquisa.addEventListener('input', () => atualizarOpcoes(pesquisa.value));
+        atualizarOpcoes();
       } catch (err) {
         console.error('Erro ao carregar alunos');
       }
