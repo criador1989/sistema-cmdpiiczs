@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 
@@ -94,6 +93,17 @@ router.post('/', autenticar, async (req, res) => {
     const dadosRegulamento = obterDadosDoRegulamento(motivo);
     console.log('🔍 Regulamento encontrado:', dadosRegulamento);
 
+    const anoAtual = new Date(data).getFullYear();
+    const totalDoAno = await Notificacao.countDocuments({
+      instituicao: req.usuario.instituicao,
+      data: {
+        $gte: new Date(`${anoAtual}-01-01T00:00:00.000Z`),
+        $lte: new Date(`${anoAtual}-12-31T23:59:59.999Z`)
+      }
+    });
+
+    const numeroNotificacao = `${String(totalDoAno + 1).padStart(2, '0')}/${anoAtual}`;
+
     const novaNotificacao = new Notificacao({
       aluno,
       motivo,
@@ -109,7 +119,8 @@ router.post('/', autenticar, async (req, res) => {
       paragrafo: dadosRegulamento.paragrafo,
       inciso: dadosRegulamento.inciso,
       classificacaoRegulamento: dadosRegulamento.classificacao,
-      instituicao: req.usuario.instituicao
+      instituicao: req.usuario.instituicao,
+      numeroNotificacao
     });
 
     await novaNotificacao.save();
