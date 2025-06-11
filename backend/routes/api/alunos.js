@@ -42,9 +42,17 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
       nomeMae
     } = req.body;
 
+    // ⚠️ Normalização do campo turma para evitar problemas com "º", "ª", etc.
+    const turmaNormalizada = turma
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/[º°]/g, "º")          // substitui variações por º
+      .replace(/[ª]/g, "ª")           // substitui variações por ª
+      .trim();
+
     const novoAluno = new Aluno({
       nome,
-      turma,
+      turma: turmaNormalizada,
       dataEntrada,
       nascimento,
       telefone,
@@ -81,6 +89,16 @@ router.get('/:id', autenticar, async (req, res) => {
 router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
   try {
     const dadosAtualizados = req.body;
+
+    if (dadosAtualizados.turma) {
+      dadosAtualizados.turma = dadosAtualizados.turma
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[º°]/g, "º")
+        .replace(/[ª]/g, "ª")
+        .trim();
+    }
+
     if (req.file) {
       dadosAtualizados.foto = req.file.filename;
     }
