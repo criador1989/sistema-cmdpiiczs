@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', async () => {
   const corpo = document.getElementById('tabelaNotificacoes');
   const filtroTurma = document.getElementById('filtroTurma');
@@ -20,22 +19,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         turmas.add(n.aluno.turma);
 
         const tr = document.createElement('tr');
-        tr.innerHTML = \`
-          <td><img src="/uploads/\${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
-          <td>\${n.aluno.nome}</td>
-          <td>\${n.aluno.turma}</td>
-          <td>\${n.tipo}</td>
-          <td>\${n.motivo}</td>
-          <td>\${n.tipoMedida}</td>
-          <td>\${n.valorNumerico}</td>
-          <td>\${new Date(n.data).toLocaleDateString()}</td>
-          <td>\${n.observacao || ''}</td>
+        tr.innerHTML = `
+          <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
+          <td>${n.aluno.nome}</td>
+          <td>${n.aluno.turma}</td>
+          <td>${n.tipo}</td>
+          <td>${n.motivo}</td>
+          <td>${n.tipoMedida}</td>
+          <td>${n.valorNumerico}</td>
+          <td>${new Date(n.data).toLocaleDateString()}</td>
+          <td>${n.observacao ? n.observacao.substring(0, 30) + '...' : ''}</td>
           <td class="actions">
-            <button class="delete-btn" onclick="excluirNotificacao(this, '\${n._id}')">Excluir</button>
-            <a class="pdf-btn" href="/api/pdf/\${n._id}" target="_blank">PDF</a>
-            <a class="edit-btn" href="editar-notificacao.html?id=\${n._id}">Editar</a>
+            <button class="delete-btn" onclick="excluirNotificacao(this, '${n._id}')">Excluir</button>
+            <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
+            <a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>
           </td>
-        \`;
+        `;
         corpo.appendChild(tr);
       });
 
@@ -66,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.innerHTML = '<span class="spinner"></span> Excluindo...';
 
     try {
-      const res = await fetch(\`/api/notificacoes/\${id}\`, {
+      const res = await fetch(`/api/notificacoes/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -90,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /* Estilo do Spinner */
 const estilo = document.createElement('style');
-estilo.innerHTML = \`
+estilo.innerHTML = `
 .spinner {
   display: inline-block;
   width: 12px;
@@ -105,5 +104,5 @@ estilo.innerHTML = \`
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-\`;
+`;
 document.head.appendChild(estilo);
