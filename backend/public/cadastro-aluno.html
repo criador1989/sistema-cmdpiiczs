@@ -125,7 +125,36 @@
     <h2>Cadastrar Novo Aluno</h2>
     <form id="form-aluno" enctype="multipart/form-data">
       <input type="text" id="nome" name="nome" placeholder="Nome do aluno" required />
-      <input type="text" id="turma" name="turma" placeholder="Turma" required />
+      
+      <label class="campo-label">Turma</label>
+      <select id="turma" name="turma" required>
+        <optgroup label="Fundamental II">
+          <option value="6ºA">6ºA</option>
+          <option value="6ºB">6ºB</option>
+          <option value="7ºA">7ºA</option>
+          <option value="7ºB">7ºB</option>
+          <option value="7ºC">7ºC</option>
+          <option value="7ºD">7ºD</option>
+          <option value="8ºA">8ºA</option>
+          <option value="8ºB">8ºB</option>
+          <option value="9ºA">9ºA</option>
+          <option value="9ºB">9ºB</option>
+          <option value="9ºC">9ºC</option>
+        </optgroup>
+        <optgroup label="Ensino Médio">
+          <option value="1ºA">1ºA</option>
+          <option value="1ºB">1ºB</option>
+          <option value="1ºC">1ºC</option>
+          <option value="1ºD">1ºD</option>
+          <option value="2ºA">2ºA</option>
+          <option value="2ºB">2ºB</option>
+          <option value="2ºC">2ºC</option>
+          <option value="3ºA">3ºA</option>
+          <option value="3ºB">3ºB</option>
+          <option value="3ºC">3ºC</option>
+          <option value="3ºD">3ºD</option>
+        </optgroup>
+      </select>
 
       <label class="campo-label">
         Data de entrada no colégio
