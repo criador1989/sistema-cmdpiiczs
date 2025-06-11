@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!n.aluno) return;
         turmas.add(n.aluno.turma);
 
+        const observacaoLimite = n.observacao 
+          ? n.observacao.length > 30 
+            ? n.observacao.substring(0, 30) + '...' 
+            : n.observacao 
+          : '';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
@@ -28,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>${n.tipoMedida}</td>
           <td>${n.valorNumerico}</td>
           <td>${new Date(n.data).toLocaleDateString()}</td>
-          <td>${n.observacao ? n.observacao.substring(0, 30) + '...' : ''}</td>
+          <td title="${n.observacao || ''}">${observacaoLimite}</td>
           <td class="actions">
             <button class="delete-btn" onclick="excluirNotificacao(this, '${n._id}')">Excluir</button>
             <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
