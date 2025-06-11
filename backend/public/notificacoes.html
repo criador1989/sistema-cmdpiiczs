@@ -185,6 +185,9 @@
             const turma = n.aluno.turma;
             turmas.add(turma);
 
+            const obs = n.observacao || '—';
+            const obsCurta = obs.length > 30 ? obs.substring(0, 30) + '...' : obs;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
@@ -199,7 +202,7 @@
               <td>${n.artigo || '—'}</td>
               <td>${n.inciso || '—'}</td>
               <td>${n.classificacaoRegulamento || '—'}</td>
-              <td>${n.observacao || '—'}</td>
+              <td>${obsCurta}</td>
               <td class="actions">
                 <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
                 <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
