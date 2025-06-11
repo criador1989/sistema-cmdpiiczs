@@ -36,7 +36,7 @@
       font-weight: bold;
     }
 
-    select {
+    select, input[type="text"] {
       width: 100%;
       padding: 10px;
       margin-bottom: 20px;
@@ -112,6 +112,9 @@
       <option value="">Todas</option>
     </select>
 
+    <label for="pesquisaNome">Pesquisar por nome:</label>
+    <input type="text" id="pesquisaNome" placeholder="Digite o nome do aluno..." />
+
     <h3>Turno da Manhã (Ensino Fundamental II)</h3>
     <table id="tabelaManha">
       <thead>
@@ -166,6 +169,7 @@
       const tabelaManha = document.querySelector('#tabelaManha tbody');
       const tabelaTarde = document.querySelector('#tabelaTarde tbody');
       const filtroTurma = document.getElementById('filtroTurma');
+      const pesquisaNome = document.getElementById('pesquisaNome');
 
       const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
       const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
@@ -183,6 +187,7 @@
           lista.forEach(n => {
             if (!n.aluno) return;
             const turma = n.aluno.turma;
+            const nome = n.aluno.nome.toLowerCase();
             turmas.add(turma);
 
             const obs = n.observacao || '—';
@@ -210,6 +215,9 @@
               </td>
             `;
 
+            tr.dataset.nome = nome;
+            tr.dataset.turma = turma;
+
             if (turmasManha.includes(turma)) tabelaManha.appendChild(tr);
             else if (turmasTarde.includes(turma)) tabelaTarde.appendChild(tr);
           });
@@ -222,18 +230,25 @@
             filtroTurma.appendChild(opt);
           });
 
-          filtroTurma.addEventListener('change', () => {
-            const turmaSelecionada = filtroTurma.value;
-            [tabelaManha, tabelaTarde].forEach(tabela => {
-              Array.from(tabela.children).forEach(row => {
-                const turma = row.children[2].textContent;
-                row.style.display = turmaSelecionada === '' || turmaSelecionada === turma ? '' : 'none';
-              });
-            });
-          });
+          filtroTurma.addEventListener('change', aplicarFiltros);
+          pesquisaNome.addEventListener('input', aplicarFiltros);
         } catch {
           alert('Erro ao carregar notificações.');
         }
+      }
+
+      function aplicarFiltros() {
+        const filtroNome = pesquisaNome.value.toLowerCase();
+        const turmaSelecionada = filtroTurma.value;
+        [tabelaManha, tabelaTarde].forEach(tabela => {
+          Array.from(tabela.children).forEach(row => {
+            const nome = row.dataset.nome || '';
+            const turma = row.dataset.turma || '';
+            const condNome = nome.includes(filtroNome);
+            const condTurma = turmaSelecionada === '' || turmaSelecionada === turma;
+            row.style.display = condNome && condTurma ? '' : 'none';
+          });
+        });
       }
 
       window.excluirNotificacao = async function (id) {
@@ -253,7 +268,6 @@
       carregarNotificacoes();
     });
 
-    // Registrar Service Worker para PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')
