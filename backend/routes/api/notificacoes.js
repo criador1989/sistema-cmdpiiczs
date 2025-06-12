@@ -8,7 +8,7 @@ const enviarWhatsapp = require('../../utils/twilio');
 const autenticar = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 
-// GET /api/notificacoes - lista notificações da instituição com aluno populado
+// GET /api/notificacoes
 router.get('/', autenticar, async (req, res) => {
   try {
     const notificacoes = await Notificacao.find({ instituicao: req.usuario.instituicao })
@@ -23,7 +23,7 @@ router.get('/', autenticar, async (req, res) => {
   }
 });
 
-// POST /api/notificacoes - cria nova notificação com vínculo institucional
+// POST /api/notificacoes
 router.post('/', autenticar, async (req, res) => {
   try {
     const {
@@ -142,7 +142,7 @@ Nota atual de comportamento: ${notaAtual.toFixed(2)}.`;
   }
 });
 
-// GET /api/notificacoes/:id - busca notificação específica com validação institucional
+// GET /api/notificacoes/:id
 router.get('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -160,7 +160,7 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-// DELETE /api/notificacoes/:id - exclui notificação e recalcula nota do aluno
+// DELETE /api/notificacoes/:id
 router.delete('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -190,11 +190,7 @@ router.delete('/:id', autenticar, async (req, res) => {
       instituicao: req.usuario.instituicao
     }).sort({ data: 1 });
 
-    let notaFinal = 8.0;
-
-    if (notificacoesRestantes.length > 0) {
-      notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoesRestantes);
-    }
+    const notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoesRestantes);
 
     aluno.comportamento = parseFloat(notaFinal.toFixed(2));
     await aluno.save();
@@ -206,7 +202,7 @@ router.delete('/:id', autenticar, async (req, res) => {
   }
 });
 
-// PUT /api/notificacoes/:id - atualiza notificação existente com validação institucional
+// PUT /api/notificacoes/:id
 router.put('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
