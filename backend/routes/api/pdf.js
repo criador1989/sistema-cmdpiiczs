@@ -23,6 +23,7 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     // DADOS PARA O DOCUMENTO
     const dados = {
       numero: notificacao._id.toString().slice(-6).toUpperCase(),
+      numeroSequencial: notificacao.numeroSequencial,
       aluno: notificacao.aluno.nome,
       turma: notificacao.aluno.turma,
       artigo: notificacao.artigo || '',
