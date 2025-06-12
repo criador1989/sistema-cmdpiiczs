@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notificações Disciplinares</title>
-  <meta name="theme-color" content="#941a1d" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#941a1d">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -119,6 +119,7 @@
     <table id="tabelaManha">
       <thead>
         <tr>
+          <th>Nº</th>
           <th>Foto</th>
           <th>Aluno</th>
           <th>Turma</th>
@@ -142,6 +143,7 @@
     <table id="tabelaTarde">
       <thead>
         <tr>
+          <th>Nº</th>
           <th>Foto</th>
           <th>Aluno</th>
           <th>Turma</th>
@@ -174,82 +176,85 @@
       const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
       const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
 
+      let lista = [];
+
       async function carregarNotificacoes() {
         try {
           const resposta = await fetch('/api/notificacoes', { credentials: 'include' });
           if (!resposta.ok) return window.location.href = '/login.html';
 
-          const lista = await resposta.json();
-          const turmas = new Set();
-          tabelaManha.innerHTML = '';
-          tabelaTarde.innerHTML = '';
+          lista = await resposta.json();
+          lista.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-          lista.forEach(n => {
-            if (!n.aluno) return;
-            const turma = n.aluno.turma;
-            const nome = n.aluno.nome.toLowerCase();
-            turmas.add(turma);
-
-            const obs = n.observacao || '—';
-            const obsCurta = obs.length > 30 ? obs.substring(0, 30) + '...' : obs;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
-              <td>${n.aluno.nome}</td>
-              <td>${turma}</td>
-              <td>${n.tipo}</td>
-              <td>${n.motivo}</td>
-              <td>${n.tipoMedida}</td>
-              <td>${n.valorNumerico?.toFixed(2) || '—'}</td>
-              <td>${n.notaAnterior?.toFixed(2) || '—'} → ${n.notaAtual?.toFixed(2) || '—'}</td>
-              <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
-              <td>${n.artigo || '—'}</td>
-              <td>${n.inciso || '—'}</td>
-              <td>${n.classificacaoRegulamento || '—'}</td>
-              <td>${obsCurta}</td>
-              <td class="actions">
-                <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
-                <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
-                <a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>
-              </td>
-            `;
-
-            tr.dataset.nome = nome;
-            tr.dataset.turma = turma;
-
-            if (turmasManha.includes(turma)) tabelaManha.appendChild(tr);
-            else if (turmasTarde.includes(turma)) tabelaTarde.appendChild(tr);
-          });
-
-          filtroTurma.innerHTML = '<option value="">Todas</option>';
-          Array.from(turmas).sort().forEach(turma => {
-            const opt = document.createElement('option');
-            opt.value = turma;
-            opt.textContent = turma;
-            filtroTurma.appendChild(opt);
-          });
-
-          filtroTurma.addEventListener('change', aplicarFiltros);
-          pesquisaNome.addEventListener('input', aplicarFiltros);
+          renderizar();
         } catch {
           alert('Erro ao carregar notificações.');
         }
       }
 
-      function aplicarFiltros() {
-        const filtroNome = pesquisaNome.value.toLowerCase();
+      function renderizar() {
+        const termo = pesquisaNome.value.toLowerCase();
         const turmaSelecionada = filtroTurma.value;
-        [tabelaManha, tabelaTarde].forEach(tabela => {
-          Array.from(tabela.children).forEach(row => {
-            const nome = row.dataset.nome || '';
-            const turma = row.dataset.turma || '';
-            const condNome = nome.includes(filtroNome);
-            const condTurma = turmaSelecionada === '' || turmaSelecionada === turma;
-            row.style.display = condNome && condTurma ? '' : 'none';
-          });
+        const turmas = new Set();
+
+        tabelaManha.innerHTML = '';
+        tabelaTarde.innerHTML = '';
+
+        lista.forEach(n => {
+          if (!n.aluno) return;
+
+          const turma = n.aluno.turma;
+          const nome = n.aluno.nome.toLowerCase();
+          const numero = n.numeroSequencial || '—';
+
+          if (!nome.includes(termo)) return;
+          if (turmaSelecionada && turmaSelecionada !== turma) return;
+
+          turmas.add(turma);
+          const obs = n.observacao || '—';
+          const obsCurta = obs.length > 30 ? obs.substring(0, 30) + '...' : obs;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${numero}</td>
+            <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
+            <td>${n.aluno.nome}</td>
+            <td>${turma}</td>
+            <td>${n.tipo}</td>
+            <td>${n.motivo}</td>
+            <td>${n.tipoMedida}</td>
+            <td>${n.valorNumerico?.toFixed(2) || '—'}</td>
+            <td>${n.notaAnterior?.toFixed(2) || '—'} → ${n.notaAtual?.toFixed(2) || '—'}</td>
+            <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
+            <td>${n.artigo || '—'}</td>
+            <td>${n.inciso || '—'}</td>
+            <td>${n.classificacaoRegulamento || '—'}</td>
+            <td>${obsCurta}</td>
+            <td class="actions">
+              <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
+              <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
+              <a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>
+            </td>
+          `;
+
+          tr.dataset.nome = nome;
+          tr.dataset.turma = turma;
+
+          if (turmasManha.includes(turma)) tabelaManha.appendChild(tr);
+          else if (turmasTarde.includes(turma)) tabelaTarde.appendChild(tr);
+        });
+
+        filtroTurma.innerHTML = '<option value="">Todas</option>';
+        Array.from(turmas).sort().forEach(turma => {
+          const opt = document.createElement('option');
+          opt.value = turma;
+          opt.textContent = turma;
+          filtroTurma.appendChild(opt);
         });
       }
+
+      filtroTurma.addEventListener('change', renderizar);
+      pesquisaNome.addEventListener('input', renderizar);
 
       window.excluirNotificacao = async function (id) {
         if (!confirm('Deseja excluir esta notificação?')) return;
@@ -267,14 +272,6 @@
 
       carregarNotificacoes();
     });
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
-      });
-    }
   </script>
 </body>
 </html>

@@ -102,7 +102,7 @@ router.post('/', autenticar, async (req, res) => {
       }
     });
 
-    const numeroNotificacao = `${String(totalDoAno + 1).padStart(2, '0')}/${anoAtual}`;
+    const numeroSequencial = `${String(totalDoAno + 1).padStart(2, '0')}/${anoAtual}`;
 
     const novaNotificacao = new Notificacao({
       aluno,
@@ -120,7 +120,7 @@ router.post('/', autenticar, async (req, res) => {
       inciso: dadosRegulamento.inciso,
       classificacaoRegulamento: dadosRegulamento.classificacao,
       instituicao: req.usuario.instituicao,
-      numeroNotificacao
+      numeroSequencial
     });
 
     await novaNotificacao.save();

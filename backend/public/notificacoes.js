@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         tr.innerHTML = `
           <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
           <td>${n.aluno.nome}</td>
+          <td>${n.numeroSequencial || '-'}</td>
           <td>${n.aluno.turma}</td>
           <td>${n.tipo}</td>
           <td>${n.motivo}</td>
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       filtroTurma.addEventListener('change', () => {
         const turmaSelecionada = filtroTurma.value;
         Array.from(corpo.children).forEach(row => {
-          const turma = row.children[2].textContent;
+          const turma = row.children[3].textContent;
           row.style.display = turmaSelecionada === '' || turmaSelecionada === turma ? '' : 'none';
         });
       });
