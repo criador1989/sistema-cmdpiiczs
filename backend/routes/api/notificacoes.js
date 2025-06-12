@@ -75,7 +75,6 @@ router.post('/', autenticar, async (req, res) => {
       data: { $lt: new Date(data) }
     }).sort({ data: -1 });
 
-    const datasInfracoes = notificacoesAnteriores.map(n => n.data);
     let notaAnterior = 8.0;
 
     if (notificacoesAnteriores.length > 0) {
@@ -161,10 +160,10 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-// DELETE /api/notificacoes/:id - exclui notificação com validação institucional
+// DELETE /api/notificacoes/:id - exclui notificação e recalcula nota do aluno
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    const notificacao = await Notificacao.findOneAndDelete({
+    const notificacao = await Notificacao.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
     });
@@ -173,7 +172,34 @@ router.delete('/:id', autenticar, async (req, res) => {
       return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
     }
 
-    res.json({ message: 'Notificação excluída com sucesso.' });
+    const alunoId = notificacao.aluno;
+
+    await notificacao.deleteOne();
+
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      instituicao: req.usuario.instituicao
+    });
+
+    if (!aluno) {
+      return res.status(404).json({ message: 'Aluno não encontrado.' });
+    }
+
+    const notificacoesRestantes = await Notificacao.find({
+      aluno: alunoId,
+      instituicao: req.usuario.instituicao
+    }).sort({ data: 1 });
+
+    let notaFinal = 8.0;
+
+    if (notificacoesRestantes.length > 0) {
+      notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoesRestantes);
+    }
+
+    aluno.comportamento = parseFloat(notaFinal.toFixed(2));
+    await aluno.save();
+
+    res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
   } catch (err) {
     console.error('Erro ao excluir notificação:', err);
     res.status(500).json({ message: 'Erro ao excluir notificação.' });
