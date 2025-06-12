@@ -28,7 +28,7 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       turma: notificacao.aluno.turma,
       artigo: notificacao.artigo || '',
       paragrafo: notificacao.inciso?.split('–')[0]?.trim() || '§ 3º',
-      inciso: notificacao.inciso?.split('–')[1]?.trim() || '1',
+      descricaoInciso: notificacao.inciso || '',
       classificacaoRegulamento: notificacao.classificacaoRegulamento || '',
       tipoMedida: notificacao.tipoMedida,
       observacao: notificacao.observacao || '-',
