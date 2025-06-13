@@ -60,7 +60,7 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
       nomePai,
       nomeMae,
       instituicao: req.usuario.instituicao,
-      foto: req.file ? req.file.filename : null
+      foto: req.file ? `uploads/${req.file.filename}` : null
     });
 
     const alunoSalvo = await novoAluno.save();
