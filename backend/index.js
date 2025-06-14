@@ -17,7 +17,7 @@ const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const responsavelRoutes = require('./routes/api/responsavel');
-const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ NOVO
+const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ pública
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
@@ -200,8 +200,10 @@ app.use('/api', autenticar, pdfRoutes);
 app.use('/api', autenticar, fichaPdfRoutes);
 app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
-app.use('/api/responsavel', responsavelRoutes);
-app.use('/api/responsavel', fichaResponsavelRoute); // ✅ rota pública para ficha do responsável
+
+app.use('/api/responsavel', autenticar, responsavelRoutes); // 🔒 protegida
+app.use('/api/ficha/responsavel', fichaResponsavelRoute);  // 🌐 pública
+
 app.use('/api/motivos', motivosRoutes);
 
 const PORT = process.env.PORT || 5000;
