@@ -17,11 +17,11 @@ const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const responsavelRoutes = require('./routes/api/responsavel');
+const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ NOVO
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
-const motivosRoutes = require('./routes/api/motivos'); // << NOVO
-const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ NOVO
+const motivosRoutes = require('./routes/api/motivos');
 
 dotenv.config();
 
@@ -201,8 +201,8 @@ app.use('/api', autenticar, fichaPdfRoutes);
 app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', responsavelRoutes);
-app.use('/api/motivos', motivosRoutes); // << NOVO
-app.use('/api/responsavel', fichaResponsavelRoute); // ✅ NOVA ROTA PÚBLICA
+app.use('/api/responsavel', fichaResponsavelRoute); // ✅ rota pública para ficha do responsável
+app.use('/api/motivos', motivosRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
