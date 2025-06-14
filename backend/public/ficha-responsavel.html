@@ -1,114 +1,70 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ficha do Aluno</title>
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#941a1d" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#941a1d">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
+      background: #941a1d;
+      color: white;
       margin: 0;
-      padding: 30px 20px;
+      padding: 20px;
     }
-
     .container {
       background: white;
-      padding: 30px;
-      border-radius: 16px;
+      color: black;
       max-width: 800px;
       margin: auto;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      animation: fadeInUp 0.9s ease-out;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 16px rgba(0,0,0,0.3);
     }
-
-    h2 {
-      color: #941a1d;
+    h2, h3 {
       text-align: center;
+      color: #941a1d;
+    }
+    .info {
       margin-bottom: 20px;
     }
-
-    .info {
-      margin-bottom: 25px;
-    }
-
     .info p {
       margin: 8px 0;
-      font-size: 16px;
-      color: #333;
     }
-
-    .info strong {
-      color: #000;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
     }
-
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       padding: 10px;
       text-align: left;
-      font-size: 14px;
     }
-
     th {
-      background-color: #007BFF;
+      background-color: #941a1d;
       color: white;
     }
-
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-
-    .voltar-btn {
-      margin-top: 30px;
-      background-color: #6c757d;
+    .erro {
       color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      transition: background 0.2s;
-    }
-
-    .voltar-btn:hover {
-      background-color: #5a6268;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      text-align: center;
+      background: #c0392b;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="conteudo">
     <h2>Ficha do Aluno</h2>
-
-    <div class="info" id="infoAluno">
-      <!-- Dados do aluno serão inseridos aqui -->
-    </div>
-
+    <div class="info" id="dadosAluno"></div>
     <h3>Histórico de Notificações</h3>
-    <table id="tabelaNotificacoes">
+    <table id="tabela">
       <thead>
         <tr>
           <th>Data</th>
@@ -118,65 +74,63 @@
           <th>Valor</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Notificações aqui -->
-      </tbody>
+      <tbody></tbody>
     </table>
-
-    <button class="voltar-btn" onclick="window.location.href='/'">← Voltar ao Início</button>
   </div>
 
-  <script>
-    function obterClassificacao(nota) {
-      const n = parseFloat(nota);
-      if (n >= 9.01) return 'Excepcional';
-      if (n >= 8.01) return 'Ótimo';
-      if (n >= 7.00) return 'Bom';
-      if (n >= 5.00) return 'Regular';
-      if (n >= 3.00) return 'Insuficiente';
-      return 'Incompatível';
-    }
+  <div id="erro" class="erro" style="display: none;">Erro ao carregar ficha do aluno.</div>
 
-    async function carregarFicha() {
-      const url = new URL(window.location.href);
-      const codigo = url.searchParams.get("codigo");
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const codigo = urlParams.get('codigo');
 
       if (!codigo) {
-        document.body.innerHTML = "<h2 style='color:white; text-align:center;'>Código de acesso não fornecido.</h2>";
+        document.getElementById('conteudo').style.display = 'none';
+        document.getElementById('erro').style.display = 'block';
         return;
       }
 
       try {
-        const resposta = await fetch(`/api/responsavel/${codigo}`);
+        const resposta = await fetch(`/api/responsavel/ficha/${codigo}`);
         if (!resposta.ok) throw new Error('Erro ao buscar ficha.');
 
-        const dados = await resposta.json();
+        const { aluno, notificacoes } = await resposta.json();
 
-        const classificacao = obterClassificacao(dados.comportamento);
+        const classificacao = (nota) => {
+          if (nota >= 9.5) return 'Excepcional';
+          if (nota >= 8.5) return 'Ótimo';
+          if (nota >= 7.5) return 'Bom';
+          if (nota >= 6.0) return 'Regular';
+          if (nota >= 4.0) return 'Insuficiente';
+          return 'Incompatível';
+        };
 
-        document.getElementById("infoAluno").innerHTML = `
-          <p><strong>Nome:</strong> ${dados.nome}</p>
-          <p><strong>Turma:</strong> ${dados.turma}</p>
-          <p><strong>Nota de Comportamento:</strong> ${dados.comportamento} (${classificacao})</p>
+        const dadosDiv = document.getElementById('dadosAluno');
+        dadosDiv.innerHTML = `
+          <p><strong>Nome:</strong> ${aluno.nome}</p>
+          <p><strong>Turma:</strong> ${aluno.turma}</p>
+          <p><strong>Código de Acesso:</strong> ${aluno.codigoAcesso}</p>
+          <p><strong>Nota de Comportamento:</strong> ${aluno.comportamento?.toFixed(2) || '8.00'} (${classificacao(aluno.comportamento)})</p>
         `;
 
-        const tbody = document.querySelector("#tabelaNotificacoes tbody");
-        tbody.innerHTML = dados.notificacoes.map(n => `
+        const corpoTabela = document.querySelector('#tabela tbody');
+        corpoTabela.innerHTML = notificacoes.map(n => `
           <tr>
-            <td>${n.data}</td>
+            <td>${new Date(n.data || n.createdAt).toLocaleDateString('pt-BR')}</td>
             <td>${n.tipo}</td>
             <td>${n.tipoMedida}</td>
             <td>${n.motivo}</td>
-            <td>${n.valor}</td>
+            <td>${n.valorNumerico.toFixed(2)}</td>
           </tr>
         `).join('');
-      } catch (erro) {
-        console.error("Erro:", erro);
-        document.body.innerHTML = "<h2 style='color:white; text-align:center;'>Erro ao carregar ficha do aluno.</h2>";
-      }
-    }
 
-    carregarFicha();
+      } catch (erro) {
+        console.error('Erro:', erro);
+        document.getElementById('conteudo').style.display = 'none';
+        document.getElementById('erro').style.display = 'block';
+      }
+    });
   </script>
 </body>
 </html>
