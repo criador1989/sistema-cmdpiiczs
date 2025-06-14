@@ -4,7 +4,7 @@ const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 
 // GET /api/responsavel/ficha/:codigo
-router.get('/ficha/:codigo', async (req, res) => {
+router.get('/:codigo', async (req, res) => {
   try {
     const codigo = req.params.codigo.trim().toUpperCase();
     
