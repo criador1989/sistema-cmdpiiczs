@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerar Link de Acesso - Responsável</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 2rem;
+      text-align: center;
+    }
+    input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      background-color: #941a1d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #linkArea {
+      margin-top: 2rem;
+    }
+    #qrcode {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gerar Link de Acesso para o Responsável</h1>
+
+  <input type="text" id="codigoInput" placeholder="Digite o código de acesso do aluno" />
+  <br>
+  <button onclick="gerarLink()">Gerar Link</button>
+
+  <div id="linkArea"></div>
+  <div id="qrcode"></div>
+
+  <script>
+    function gerarLink() {
+      const codigo = document.getElementById('codigoInput').value.trim();
+      if (!codigo) {
+        alert('Digite um código válido.');
+        return;
+      }
+      const link = `https://sistema-cmdpiiczs.onrender.com/ficha-responsavel.html?codigo=${codigo}`;
+      document.getElementById('linkArea').innerHTML = `<p>Link gerado:</p><a href="${link}" target="_blank">${link}</a>`;
+      QRCode.toCanvas(document.getElementById('qrcode'), link, error => {
+        if (error) console.error(error);
+      });
+    }
+  </script>
+</body>
+</html>

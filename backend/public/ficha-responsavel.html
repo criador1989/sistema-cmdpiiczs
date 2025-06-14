@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ficha do Aluno - Responsável</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #941a1d;
+    }
+
+    .input-group {
+      display: flex;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #941a1d;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #7a1619;
+    }
+
+    .erro {
+      color: red;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .ficha {
+      display: none;
+    }
+
+    .ficha h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #941a1d;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Consulta da Ficha do Aluno</h1>
+
+    <div class="input-group">
+      <input type="text" id="codigo" placeholder="Digite o código de acesso do aluno" />
+      <button onclick="buscarFicha()">Buscar</button>
+    </div>
+
+    <div class="erro" id="erro"></div>
+
+    <div class="ficha" id="ficha">
+      <h2 id="dadosAluno"></h2>
+      <p><strong>Nota de Comportamento:</strong> <span id="notaComportamento"></span></p>
+
+      <h3>Histórico de Notificações</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Medida</th>
+            <th>Motivo</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaNotificacoes"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function buscarFicha() {
+      const codigo = document.getElementById('codigo').value.trim();
+      const erro = document.getElementById('erro');
+      const ficha = document.getElementById('ficha');
+      const tabela = document.getElementById('tabelaNotificacoes');
+      const dadosAluno = document.getElementById('dadosAluno');
+      const notaComportamento = document.getElementById('notaComportamento');
+
+      erro.textContent = '';
+      ficha.style.display = 'none';
+      tabela.innerHTML = '';
+      dadosAluno.textContent = '';
+      notaComportamento.textContent = '';
+
+      if (!codigo) {
+        erro.textContent = 'Informe o código de acesso.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/ficha/responsavel/${codigo}`);
+        if (!res.ok) {
+          const dados = await res.json();
+          erro.textContent = dados.erro || 'Erro ao buscar ficha.';
+          return;
+        }
+
+        const dados = await res.json();
+        dadosAluno.textContent = `${dados.nome} - Turma ${dados.turma}`;
+        notaComportamento.textContent = dados.comportamento;
+
+        dados.notificacoes.forEach(n => {
+          const linha = document.createElement('tr');
+          linha.innerHTML = `
+            <td>${n.data}</td>
+            <td>${n.tipo}</td>
+            <td>${n.tipoMedida}</td>
+            <td>${n.motivo}</td>
+            <td>${n.valor}</td>
+          `;
+          tabela.appendChild(linha);
+        });
+
+        ficha.style.display = 'block';
+      } catch (err) {
+        erro.textContent = 'Erro na comunicação com o servidor.';
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -112,6 +112,11 @@
       color: white;
     }
 
+    .link-btn {
+      background-color: #28a745;
+      color: white;
+    }
+
     .voltar-btn, .voltar-turmas-btn {
       margin-top: 25px;
       background-color: #6c757d;
@@ -190,18 +195,22 @@
               </tr>
             </thead>
             <tbody>
-              ${alunos.map(aluno => `
-                <tr>
-                  <td><img src="/uploads/${aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
-                  <td>${aluno.nome}</td>
-                  <td>${aluno.turma}</td>
-                  <td class="actions">
-                    <a class="ficha-btn" href="ver-ficha.html?id=${aluno._id}">Ver Ficha</a>
-                    <a class="obs-btn" href="ficha-aluno.html?id=${aluno._id}">Adicionar Observação</a>
-                    <a class="edit-btn" href="editar-aluno.html?id=${aluno._id}">Editar</a>
-                  </td>
-                </tr>
-              `).join('')}
+              ${alunos.map(aluno => {
+                const url = `https://sistema-cmdpiiczs.onrender.com/ficha-responsavel.html?codigo=${aluno.codigoAcesso}`;
+                return `
+                  <tr>
+                    <td><img src="/uploads/${aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
+                    <td>${aluno.nome}</td>
+                    <td>${aluno.turma}</td>
+                    <td class="actions">
+                      <a class="ficha-btn" href="ver-ficha.html?id=${aluno._id}">Ver Ficha</a>
+                      <a class="obs-btn" href="ficha-aluno.html?id=${aluno._id}">Observação</a>
+                      <a class="edit-btn" href="editar-aluno.html?id=${aluno._id}">Editar</a>
+                      <a class="link-btn" target="_blank" href="${url}">Gerar Link</a>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
           <button class="voltar-turmas-btn" onclick="voltarParaTurmas()">← Voltar para Turmas</button>
@@ -243,7 +252,7 @@
       criarBotoes(turmasTarde, 'botoesTarde', 'turmasTarde');
     });
 
-    // Registrar Service Worker para PWA
+    // Service Worker para PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')

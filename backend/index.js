@@ -21,6 +21,7 @@ const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
 const motivosRoutes = require('./routes/api/motivos'); // << NOVO
+const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ NOVO
 
 dotenv.config();
 
@@ -201,6 +202,7 @@ app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', responsavelRoutes);
 app.use('/api/motivos', motivosRoutes); // << NOVO
+app.use('/api/ficha/responsavel', fichaResponsavelRoute); // ✅ NOVA ROTA PÚBLICA
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
