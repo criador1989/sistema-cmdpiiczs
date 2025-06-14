@@ -193,18 +193,17 @@ function getClassificacao(nota) {
   return 'Incompatível';
 }
 
-app.use('/api/responsavel/ficha', fichaResponsavelRoute); // ✅ pública e funcional
+// ✅ ROTA PÚBLICA — deve vir antes da protegida
+app.use('/api/responsavel/ficha', fichaResponsavelRoute);
 
-// Rotas protegidas e públicas
+// Rotas protegidas
 app.use('/api/alunos', autenticar, alunoRoutes);
 app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
 app.use('/api', autenticar, pdfRoutes);
 app.use('/api', autenticar, fichaPdfRoutes);
 app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
-
-app.use('/api/responsavel', autenticar, responsavelRoutes); // 🔒 protegida
-
+app.use('/api/responsavel', autenticar, responsavelRoutes); // rota protegida
 app.use('/api/motivos', motivosRoutes);
 
 const PORT = process.env.PORT || 5000;
