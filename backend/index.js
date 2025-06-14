@@ -202,7 +202,7 @@ app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', responsavelRoutes);
 app.use('/api/motivos', motivosRoutes); // << NOVO
-app.use('/api/ficha/responsavel', fichaResponsavelRoute); // ✅ NOVA ROTA PÚBLICA
+app.use('/api/responsavel', fichaResponsavelRoute); // ✅ NOVA ROTA PÚBLICA
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
