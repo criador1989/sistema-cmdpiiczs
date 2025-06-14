@@ -2,172 +2,181 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ficha do Aluno - Responsável</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ficha do Aluno</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #941a1d, #d82327);
       margin: 0;
-      padding: 30px;
+      padding: 30px 20px;
     }
 
     .container {
-      max-width: 700px;
-      margin: auto;
-      background-color: #fff;
+      background: white;
       padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      max-width: 800px;
+      margin: auto;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      animation: fadeInUp 0.9s ease-out;
     }
 
-    h1 {
-      text-align: center;
+    h2 {
       color: #941a1d;
-    }
-
-    .input-group {
-      display: flex;
-      margin-bottom: 20px;
-      gap: 10px;
-    }
-
-    input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      padding: 10px 20px;
-      background-color: #941a1d;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    button:hover {
-      background-color: #7a1619;
-    }
-
-    .erro {
-      color: red;
       text-align: center;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
 
-    .ficha {
-      display: none;
+    .info {
+      margin-bottom: 25px;
     }
 
-    .ficha h2 {
-      margin-top: 0;
+    .info p {
+      margin: 8px 0;
+      font-size: 16px;
       color: #333;
+    }
+
+    .info strong {
+      color: #000;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
+      margin-top: 20px;
     }
 
     th, td {
       border: 1px solid #ccc;
       padding: 10px;
-      text-align: center;
+      text-align: left;
+      font-size: 14px;
     }
 
     th {
-      background-color: #941a1d;
+      background-color: #007BFF;
       color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .voltar-btn {
+      margin-top: 30px;
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      transition: background 0.2s;
+    }
+
+    .voltar-btn:hover {
+      background-color: #5a6268;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Consulta da Ficha do Aluno</h1>
+    <h2>Ficha do Aluno</h2>
 
-    <div class="input-group">
-      <input type="text" id="codigo" placeholder="Digite o código de acesso do aluno" />
-      <button onclick="buscarFicha()">Buscar</button>
+    <div class="info" id="infoAluno">
+      <!-- Dados do aluno serão inseridos aqui -->
     </div>
 
-    <div class="erro" id="erro"></div>
+    <h3>Histórico de Notificações</h3>
+    <table id="tabelaNotificacoes">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Medida</th>
+          <th>Motivo</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Notificações aqui -->
+      </tbody>
+    </table>
 
-    <div class="ficha" id="ficha">
-      <h2 id="dadosAluno"></h2>
-      <p><strong>Nota de Comportamento:</strong> <span id="notaComportamento"></span></p>
-
-      <h3>Histórico de Notificações</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Tipo</th>
-            <th>Medida</th>
-            <th>Motivo</th>
-            <th>Valor</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaNotificacoes"></tbody>
-      </table>
-    </div>
+    <button class="voltar-btn" onclick="window.location.href='/'">← Voltar ao Início</button>
   </div>
 
   <script>
-    async function buscarFicha() {
-      const codigo = document.getElementById('codigo').value.trim();
-      const erro = document.getElementById('erro');
-      const ficha = document.getElementById('ficha');
-      const tabela = document.getElementById('tabelaNotificacoes');
-      const dadosAluno = document.getElementById('dadosAluno');
-      const notaComportamento = document.getElementById('notaComportamento');
+    function obterClassificacao(nota) {
+      const n = parseFloat(nota);
+      if (n >= 9.01) return 'Excepcional';
+      if (n >= 8.01) return 'Ótimo';
+      if (n >= 7.00) return 'Bom';
+      if (n >= 5.00) return 'Regular';
+      if (n >= 3.00) return 'Insuficiente';
+      return 'Incompatível';
+    }
 
-      erro.textContent = '';
-      ficha.style.display = 'none';
-      tabela.innerHTML = '';
-      dadosAluno.textContent = '';
-      notaComportamento.textContent = '';
+    async function carregarFicha() {
+      const url = new URL(window.location.href);
+      const codigo = url.searchParams.get("codigo");
 
       if (!codigo) {
-        erro.textContent = 'Informe o código de acesso.';
+        document.body.innerHTML = "<h2 style='color:white; text-align:center;'>Código de acesso não fornecido.</h2>";
         return;
       }
 
       try {
-        const res = await fetch(`/api/ficha/responsavel/${codigo}`);
-        if (!res.ok) {
-          const dados = await res.json();
-          erro.textContent = dados.erro || 'Erro ao buscar ficha.';
-          return;
-        }
+        const resposta = await fetch(`/api/responsavel/${codigo}`);
+        if (!resposta.ok) throw new Error('Erro ao buscar ficha.');
 
-        const dados = await res.json();
-        dadosAluno.textContent = `${dados.nome} - Turma ${dados.turma}`;
-        notaComportamento.textContent = dados.comportamento;
+        const dados = await resposta.json();
 
-        dados.notificacoes.forEach(n => {
-          const linha = document.createElement('tr');
-          linha.innerHTML = `
+        const classificacao = obterClassificacao(dados.comportamento);
+
+        document.getElementById("infoAluno").innerHTML = `
+          <p><strong>Nome:</strong> ${dados.nome}</p>
+          <p><strong>Turma:</strong> ${dados.turma}</p>
+          <p><strong>Nota de Comportamento:</strong> ${dados.comportamento} (${classificacao})</p>
+        `;
+
+        const tbody = document.querySelector("#tabelaNotificacoes tbody");
+        tbody.innerHTML = dados.notificacoes.map(n => `
+          <tr>
             <td>${n.data}</td>
             <td>${n.tipo}</td>
             <td>${n.tipoMedida}</td>
             <td>${n.motivo}</td>
             <td>${n.valor}</td>
-          `;
-          tabela.appendChild(linha);
-        });
-
-        ficha.style.display = 'block';
-      } catch (err) {
-        erro.textContent = 'Erro na comunicação com o servidor.';
-        console.error(err);
+          </tr>
+        `).join('');
+      } catch (erro) {
+        console.error("Erro:", erro);
+        document.body.innerHTML = "<h2 style='color:white; text-align:center;'>Erro ao carregar ficha do aluno.</h2>";
       }
     }
+
+    carregarFicha();
   </script>
 </body>
 </html>
