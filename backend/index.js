@@ -193,6 +193,8 @@ function getClassificacao(nota) {
   return 'Incompatível';
 }
 
+app.use('/api/responsavel/ficha', fichaResponsavelRoute); // ✅ pública e funcional
+
 // Rotas protegidas e públicas
 app.use('/api/alunos', autenticar, alunoRoutes);
 app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
@@ -202,7 +204,6 @@ app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
 
 app.use('/api/responsavel', autenticar, responsavelRoutes); // 🔒 protegida
-app.use('/api/ficha/responsavel', fichaResponsavelRoute);  // 🌐 pública
 
 app.use('/api/motivos', motivosRoutes);
 
