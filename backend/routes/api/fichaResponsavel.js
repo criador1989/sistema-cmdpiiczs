@@ -3,7 +3,8 @@ const router = express.Router();
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 
-router.get('/ficha/:codigo', async (req, res) => {
+// rota correta: /api/ficha/:codigo
+router.get('/:codigo', async (req, res) => {
   try {
     const codigo = req.params.codigo?.trim().toUpperCase();
     console.log("🔍 Código recebido:", codigo);
