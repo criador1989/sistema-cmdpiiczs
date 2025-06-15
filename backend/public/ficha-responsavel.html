@@ -1,115 +1,79 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ficha do Aluno - Responsável</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ficha do Aluno</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
       padding: 20px;
-      background-color: #f6f6f6;
     }
-    .container {
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 700px;
+    .ficha {
+      max-width: 600px;
       margin: auto;
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    h2 {
-      color: #941a1d;
-      margin-bottom: 10px;
-    }
-    .info {
-      margin-bottom: 20px;
-    }
-    .notificacao {
-      border-left: 4px solid #941a1d;
-      background: #f0f0f0;
-      padding: 12px;
-      margin-bottom: 10px;
+    h1 {
+      text-align: center;
+      color: #8B0000;
     }
     .erro {
       color: red;
+      text-align: center;
       margin-top: 20px;
     }
-    .voltar {
-      margin-top: 30px;
-      text-align: center;
-    }
-    .voltar a {
-      text-decoration: none;
-      color: #fff;
-      background-color: #941a1d;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-weight: bold;
+    ul {
+      padding-left: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Ficha do Aluno</h2>
-    <div id="infoAluno" class="info"></div>
-    <div id="listaNotificacoes"></div>
-    <div id="mensagemErro" class="erro"></div>
-    <div class="voltar">
-      <a href="/codigo-responsavel.html">Voltar</a>
-    </div>
+  <div class="ficha">
+    <h1>Ficha do Aluno</h1>
+    <div id="conteudo">Carregando...</div>
   </div>
 
   <script>
     async function carregarFicha() {
-      const params = new URLSearchParams(window.location.search);
-      const codigo = params.get('codigo');
-
-      if (!codigo) {
-        document.getElementById('mensagemErro').textContent = 'Código de acesso não informado na URL.';
-        return;
-      }
+      const url = new URL(window.location.href);
+      const codigo = url.searchParams.get("codigo") || "TESTE01";
+      console.log("🔍 Código recebido:", codigo);
 
       try {
         const resposta = await fetch(`/api/ficha/${codigo}`);
-        if (!resposta.ok) throw new Error('Código inválido ou aluno não encontrado.');
+        if (!resposta.ok) throw new Error("Código inválido");
 
-        const { aluno, notificacoes } = await resposta.json();
+        const dados = await resposta.json();
+        console.log("📦 Dados recebidos:", dados);
 
-        const info = `
-          <strong>Nome:</strong> ${aluno.nome}<br/>
-          <strong>Turma:</strong> ${aluno.turma}<br/>
-          <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}<br/>
-          <strong>Nota de Comportamento:</strong> ${aluno.comportamento.toFixed(2)} (${classificarNota(aluno.comportamento)})
+        const container = document.getElementById("conteudo");
+
+        const aluno = dados.aluno || {};
+        const notificacoes = Array.isArray(dados.notificacoes) ? dados.notificacoes : [];
+
+        container.innerHTML = `
+          <p><strong>Nome:</strong> ${aluno.nome || '-'}</p>
+          <p><strong>Turma:</strong> ${aluno.turma || '-'}</p>
+          <p><strong>Comportamento:</strong> ${aluno.comportamento?.toFixed(2) || '-'}</p>
+          <h3>Notificações:</h3>
+          <ul>
+            ${notificacoes.map(n => `
+              <li>
+                <strong>${n.tipo}</strong> - ${n.tipoMedida} (${n.motivo}) - Perda: ${n.valorNumerico}
+              </li>
+            `).join('')}
+          </ul>
         `;
-        document.getElementById('infoAluno').innerHTML = info;
-
-        if (notificacoes.length === 0) {
-          document.getElementById('listaNotificacoes').innerHTML = '<p>Sem notificações registradas.</p>';
-        } else {
-          const blocos = notificacoes.map(n => `
-            <div class="notificacao">
-              <strong>Data:</strong> ${new Date(n.createdAt).toLocaleDateString()}<br/>
-              <strong>Motivo:</strong> ${n.motivo}<br/>
-              <strong>Medida:</strong> ${n.tipoMedida} (${n.tipo})<br/>
-              <strong>Desconto:</strong> ${n.valorNumerico.toFixed(2)} pontos
-            </div>
-          `).join('');
-          document.getElementById('listaNotificacoes').innerHTML = blocos;
-        }
-
       } catch (erro) {
-        document.getElementById('mensagemErro').textContent = erro.message;
+        console.error("❌ Erro ao carregar ficha:", erro);
+        document.getElementById("conteudo").innerHTML = '<p class="erro">Código inválido ou aluno não encontrado.</p>';
       }
-    }
-
-    function classificarNota(nota) {
-      if (nota >= 9.5) return 'Excepcional';
-      if (nota >= 9.0) return 'Ótimo';
-      if (nota >= 8.0) return 'Bom';
-      if (nota >= 6.0) return 'Regular';
-      if (nota >= 4.0) return 'Insuficiente';
-      return 'Incompatível';
     }
 
     carregarFicha();
