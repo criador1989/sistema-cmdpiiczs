@@ -22,13 +22,13 @@ router.get('/ficha/:codigo', async (req, res) => {
         nome: aluno.nome,
         turma: aluno.turma,
         codigoAcesso: aluno.codigoAcesso,
-        comportamento: aluno.comportamento || 8.00
+        comportamento: aluno.comportamento || 8.0
       },
       notificacoes
     });
   } catch (erro) {
     console.error('Erro ao buscar ficha do aluno para responsável:', erro);
-    res.status(500).json({ erro: 'Erro interno ao buscar ficha do aluno.' });
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });
 

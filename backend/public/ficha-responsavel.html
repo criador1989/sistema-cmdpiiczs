@@ -1,136 +1,102 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ficha do Aluno</title>
-  <meta name="theme-color" content="#941a1d">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icons/icon-192x192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ficha do Aluno - Responsável</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #941a1d;
-      color: white;
-      margin: 0;
       padding: 20px;
+      background-color: #f6f6f6;
     }
     .container {
-      background: white;
-      color: black;
-      max-width: 800px;
-      margin: auto;
-      padding: 30px;
+      background: #fff;
+      padding: 24px;
       border-radius: 12px;
-      box-shadow: 0 0 16px rgba(0,0,0,0.3);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 700px;
+      margin: auto;
     }
-    h2, h3 {
-      text-align: center;
+    h2 {
       color: #941a1d;
     }
     .info {
       margin-bottom: 20px;
     }
-    .info p {
-      margin: 8px 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-    }
-    th {
-      background-color: #941a1d;
-      color: white;
+    .notificacao {
+      border-left: 4px solid #941a1d;
+      background: #f0f0f0;
+      padding: 12px;
+      margin-bottom: 10px;
     }
     .erro {
-      color: white;
-      text-align: center;
-      background: #c0392b;
-      padding: 20px;
-      border-radius: 10px;
-      font-size: 18px;
+      color: red;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="container" id="conteudo">
+  <div class="container">
     <h2>Ficha do Aluno</h2>
-    <div class="info" id="dadosAluno"></div>
-    <h3>Histórico de Notificações</h3>
-    <table id="tabela">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Tipo</th>
-          <th>Medida</th>
-          <th>Motivo</th>
-          <th>Valor</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="infoAluno" class="info"></div>
+    <div id="listaNotificacoes"></div>
+    <div id="mensagemErro" class="erro"></div>
   </div>
 
-  <div id="erro" class="erro" style="display: none;">Erro ao carregar ficha do aluno.</div>
-
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const codigo = urlParams.get('codigo');
+    async function carregarFicha() {
+      const params = new URLSearchParams(window.location.search);
+      const codigo = params.get('codigo');
 
       if (!codigo) {
-        document.getElementById('conteudo').style.display = 'none';
-        document.getElementById('erro').style.display = 'block';
+        document.getElementById('mensagemErro').textContent = 'Código de acesso não informado na URL.';
         return;
       }
 
       try {
-        const resposta = await fetch(`/api/responsavel/ficha/${codigo}`);
-        if (!resposta.ok) throw new Error('Erro ao buscar ficha.');
+        const resposta = await fetch(`/api/ficha/${codigo}`); // ✅ Rota pública atualizada
+        if (!resposta.ok) throw new Error('Código inválido ou aluno não encontrado.');
 
         const { aluno, notificacoes } = await resposta.json();
 
-        const classificacao = (nota) => {
-          if (nota >= 9.5) return 'Excepcional';
-          if (nota >= 8.5) return 'Ótimo';
-          if (nota >= 7.5) return 'Bom';
-          if (nota >= 6.0) return 'Regular';
-          if (nota >= 4.0) return 'Insuficiente';
-          return 'Incompatível';
-        };
-
-        const dadosDiv = document.getElementById('dadosAluno');
-        dadosDiv.innerHTML = `
-          <p><strong>Nome:</strong> ${aluno.nome}</p>
-          <p><strong>Turma:</strong> ${aluno.turma}</p>
-          <p><strong>Código de Acesso:</strong> ${aluno.codigoAcesso}</p>
-          <p><strong>Nota de Comportamento:</strong> ${aluno.comportamento?.toFixed(2) || '8.00'} (${classificacao(aluno.comportamento)})</p>
+        const info = `
+          <strong>Nome:</strong> ${aluno.nome}<br/>
+          <strong>Turma:</strong> ${aluno.turma}<br/>
+          <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}<br/>
+          <strong>Nota de Comportamento:</strong> ${aluno.comportamento.toFixed(2)} (${classificarNota(aluno.comportamento)})
         `;
+        document.getElementById('infoAluno').innerHTML = info;
 
-        const corpoTabela = document.querySelector('#tabela tbody');
-        corpoTabela.innerHTML = notificacoes.map(n => `
-          <tr>
-            <td>${new Date(n.data || n.createdAt).toLocaleDateString('pt-BR')}</td>
-            <td>${n.tipo}</td>
-            <td>${n.tipoMedida}</td>
-            <td>${n.motivo}</td>
-            <td>${n.valorNumerico.toFixed(2)}</td>
-          </tr>
-        `).join('');
+        if (notificacoes.length === 0) {
+          document.getElementById('listaNotificacoes').innerHTML = '<p>Sem notificações registradas.</p>';
+        } else {
+          const blocos = notificacoes.map(n => `
+            <div class="notificacao">
+              <strong>Data:</strong> ${new Date(n.createdAt).toLocaleDateString()}<br/>
+              <strong>Motivo:</strong> ${n.motivo}<br/>
+              <strong>Medida:</strong> ${n.tipoMedida} (${n.tipo})<br/>
+              <strong>Desconto:</strong> ${n.valorNumerico.toFixed(2)} pontos
+            </div>
+          `).join('');
+          document.getElementById('listaNotificacoes').innerHTML = blocos;
+        }
 
       } catch (erro) {
-        console.error('Erro:', erro);
-        document.getElementById('conteudo').style.display = 'none';
-        document.getElementById('erro').style.display = 'block';
+        document.getElementById('mensagemErro').textContent = erro.message;
       }
-    });
+    }
+
+    function classificarNota(nota) {
+      if (nota >= 9.5) return 'Excepcional';
+      if (nota >= 9.0) return 'Ótimo';
+      if (nota >= 8.0) return 'Bom';
+      if (nota >= 6.0) return 'Regular';
+      if (nota >= 4.0) return 'Insuficiente';
+      return 'Incompatível';
+    }
+
+    carregarFicha();
   </script>
 </body>
 </html>
