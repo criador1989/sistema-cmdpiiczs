@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -18,6 +19,7 @@ const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const responsavelRoutes = require('./routes/api/responsavel');
 const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ pública
+const fichaTesteRoute = require('./routes/api/fichaTeste'); // ✅ nova rota pública
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
@@ -193,10 +195,11 @@ function getClassificacao(nota) {
   return 'Incompatível';
 }
 
-// ✅ Corrigido: rota pública da ficha para os pais
-app.use('/api/ficha', fichaResponsavelRoute); // Ex: /api/ficha/ABC123
+// ✅ ROTAS PÚBLICAS
+app.use('/api/ficha', fichaResponsavelRoute);
+app.use('/api', fichaTesteRoute);
 
-// Rotas protegidas
+// ✅ ROTAS PROTEGIDAS
 app.use('/api/alunos', autenticar, alunoRoutes);
 app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
 app.use('/api', autenticar, pdfRoutes);

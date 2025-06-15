@@ -1,5 +1,8 @@
+
 const express = require('express');
 const router = express.Router();
+
+console.log("🧪 Rota de teste carregada");
 
 // Rota pública de teste para simular ficha de aluno
 router.get('/teste/:codigo', (req, res) => {
