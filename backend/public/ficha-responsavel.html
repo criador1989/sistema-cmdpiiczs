@@ -20,6 +20,7 @@
     }
     h2 {
       color: #941a1d;
+      margin-bottom: 10px;
     }
     .info {
       margin-bottom: 20px;
@@ -34,6 +35,18 @@
       color: red;
       margin-top: 20px;
     }
+    .voltar {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .voltar a {
+      text-decoration: none;
+      color: #fff;
+      background-color: #941a1d;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -42,6 +55,9 @@
     <div id="infoAluno" class="info"></div>
     <div id="listaNotificacoes"></div>
     <div id="mensagemErro" class="erro"></div>
+    <div class="voltar">
+      <a href="/codigo-responsavel.html">Voltar</a>
+    </div>
   </div>
 
   <script>
@@ -55,7 +71,7 @@
       }
 
       try {
-        const resposta = await fetch(`/api/ficha/${codigo}`); // ✅ Rota pública atualizada
+        const resposta = await fetch(`/api/ficha/${codigo}`);
         if (!resposta.ok) throw new Error('Código inválido ou aluno não encontrado.');
 
         const { aluno, notificacoes } = await resposta.json();
