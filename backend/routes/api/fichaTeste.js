@@ -1,75 +1,42 @@
 
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ficha do Aluno (Teste)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f8f8f8;
-      padding: 20px;
-    }
-    .ficha {
-      max-width: 600px;
-      margin: auto;
-      background-color: white;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #8B0000;
-    }
-    .erro {
-      color: red;
-      text-align: center;
-      margin-top: 20px;
-    }
-    ul {
-      padding-left: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="ficha">
-    <h1>Ficha do Aluno</h1>
-    <div id="conteudo"></div>
-  </div>
+const express = require('express');
+const router = express.Router();
 
-  <script>
-    async function carregarFicha() {
-      const url = new URL(window.location.href);
-      const codigo = url.searchParams.get("codigo") || "TESTE01";
+console.log("🧪 Rota de teste carregada");
 
-      try {
-        const resposta = await fetch(`/api/teste/${codigo}`);
-        if (!resposta.ok) throw new Error("Código inválido");
+// Rota pública de teste para simular ficha de aluno
+router.get('/teste/:codigo', (req, res) => {
+  const codigo = req.params.codigo?.trim().toUpperCase();
+  console.log("🧪 Código recebido na rota de teste:", codigo);
 
-        const dados = await resposta.json();
+  if (codigo !== 'TESTE01') {
+    return res.status(404).json({ erro: 'Código de teste inválido.' });
+  }
 
-        const container = document.getElementById("conteudo");
-        container.innerHTML = `
-          <p><strong>Nome:</strong> ${dados.aluno.nome}</p>
-          <p><strong>Turma:</strong> ${dados.aluno.turma}</p>
-          <p><strong>Comportamento:</strong> ${dados.aluno.comportamento.toFixed(2)}</p>
-          <h3>Notificações:</h3>
-          <ul>
-            ${dados.notificacoes.map(n => `
-              <li>
-                <strong>${n.tipo}</strong> - ${n.tipoMedida} (${n.motivo}) - Perda: ${n.valorNumerico}
-              </li>
-            `).join('')}
-          </ul>
-        `;
-      } catch (erro) {
-        document.getElementById("conteudo").innerHTML = '<p class="erro">Código inválido ou aluno não encontrado.</p>';
+  return res.json({
+    aluno: {
+      nome: 'Aluno de Teste',
+      turma: '7ºA',
+      codigoAcesso: 'TESTE01',
+      comportamento: 8.75
+    },
+    notificacoes: [
+      {
+        tipo: 'Advertência',
+        tipoMedida: 'Advertência Escrita',
+        motivo: 'Uso indevido de uniforme',
+        valorNumerico: 0.3,
+        createdAt: new Date()
+      },
+      {
+        tipo: 'Repreensão',
+        tipoMedida: 'Repreensão',
+        motivo: 'Descumprimento de ordem',
+        valorNumerico: 0.5,
+        createdAt: new Date()
       }
-    }
+    ]
+  });
+});
 
-    carregarFicha();
-  </script>
-</body>
-</html>
+module.exports = router;
