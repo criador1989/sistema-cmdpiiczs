@@ -1,15 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-// Rota de teste fixa para simular uma ficha de aluno
-router.get('/teste/:codigo', async (req, res) => {
+// Rota pública de teste para simular ficha de aluno
+router.get('/teste/:codigo', (req, res) => {
   const codigo = req.params.codigo?.trim().toUpperCase();
-
-  console.log("🧪 Acessando ficha de teste com código:", codigo);
-
-  if (!codigo) {
-    return res.status(400).json({ erro: 'Código não informado.' });
-  }
+  console.log("🧪 Código recebido na rota de teste:", codigo);
 
   if (codigo !== 'TESTE01') {
     return res.status(404).json({ erro: 'Código de teste inválido.' });
