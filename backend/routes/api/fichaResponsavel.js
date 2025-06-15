@@ -39,7 +39,7 @@ router.get('/ficha/:codigo', async (req, res) => {
 
   } catch (erro) {
     console.error("❌ ERRO GRAVE NA ROTA /api/ficha/:codigo:", erro);
-    return res.status(500).json({ erro: 'Erro interno no servidor.' });
+    return res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });
 
