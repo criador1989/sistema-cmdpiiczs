@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -18,8 +17,9 @@ const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const responsavelRoutes = require('./routes/api/responsavel');
-const fichaResponsavelRoute = require('./routes/api/fichaResponsavel'); // ✅ pública
-const fichaTesteRoute = require('./routes/api/fichaTeste'); // ✅ nova rota pública
+const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
+const fichaTesteRoute = require('./routes/api/fichaTeste');
+const cartoesRoutes = require('./routes/api/cartoes'); // <- nova rota
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
@@ -43,23 +43,19 @@ app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// ✅ ROTA DE CADASTRO DE USUÁRIO
+// ROTA DE CADASTRO DE USUÁRIO
 app.post('/auth/cadastrar', async (req, res) => {
   const { nome, email, senha, instituicao } = req.body;
-
   if (!nome || !email || !senha || !instituicao) {
     return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
   }
-
   try {
     const usuarioExistente = await Usuario.findOne({ email });
     if (usuarioExistente) {
       return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
     }
-
     const novoUsuario = new Usuario({ nome, email, senha, instituicao });
     await novoUsuario.save();
-
     res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
   } catch (erro) {
     console.error('Erro no cadastro:', erro);
@@ -70,7 +66,6 @@ app.post('/auth/cadastrar', async (req, res) => {
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
-
   try {
     const verificado = jwt.verify(token, process.env.JWT_SECRET);
     req.usuario = verificado;
@@ -87,7 +82,6 @@ app.post('/auth/login', async (req, res) => {
     if (!usuario || !(await usuario.compararSenha(senha))) {
       return res.status(401).json({ mensagem: 'E-mail ou senha inválidos.' });
     }
-
     const token = jwt.sign({
       id: usuario._id,
       nome: usuario.nome,
@@ -148,9 +142,7 @@ app.get('/api/pdf/:id', autenticar, async (req, res) => {
       notaAnterior: notaAnterior.toFixed(2),
       notaAtual: notaAtual.toFixed(2),
       dataHora: new Date().toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
+        day: '2-digit', month: 'long', year: 'numeric'
       })
     };
 
@@ -195,11 +187,11 @@ function getClassificacao(nota) {
   return 'Incompatível';
 }
 
-// ✅ ROTAS PÚBLICAS
+// ROTAS PÚBLICAS
 app.use('/api/ficha', fichaResponsavelRoute);
 app.use('/api', fichaTesteRoute);
 
-// ✅ ROTAS PROTEGIDAS
+// ROTAS PROTEGIDAS
 app.use('/api/alunos', autenticar, alunoRoutes);
 app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
 app.use('/api', autenticar, pdfRoutes);
@@ -208,6 +200,7 @@ app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', autenticar, responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
+app.use('/api/cartoes', autenticar, cartoesRoutes); // nova rota ativada
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
