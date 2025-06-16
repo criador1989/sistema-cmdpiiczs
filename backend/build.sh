@@ -1,5 +1,4 @@
 #!/bin/bash
 
-cd backend
 npm install
-pip install -r ./pdf/requirements.txt
+pip install -r pdf/requirements.txt
