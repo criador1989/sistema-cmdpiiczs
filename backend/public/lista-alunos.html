@@ -185,6 +185,7 @@
         section.id = `turma-${turma}`;
         section.innerHTML = `
           <h4>Turma ${turma}</h4>
+          <button class="voltar-turmas-btn" style="margin-bottom: 15px" onclick="window.open('/api/cartoes/turma/${encodeURIComponent(turma)}')">📇 Gerar Cartões com QR Code</button>
           <table>
             <thead>
               <tr>
