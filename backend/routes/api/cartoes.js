@@ -6,48 +6,46 @@ const path = require('path');
 const fs = require('fs');
 
 router.get('/turma/:turma', async (req, res) => {
-  const turma = decodeURIComponent(req.params.turma);
   try {
-    // Buscar todos os alunos da turma
-    const alunos = await Aluno.find({ turma }).select('nome turma codigoAcesso');
+    const turma = req.params.turma;
+    const alunos = await Aluno.find({ turma });
 
-    if (!alunos.length) {
-      return res.status(404).json({ erro: 'Nenhum aluno encontrado para essa turma.' });
+    if (alunos.length === 0) {
+      return res.status(404).json({ erro: 'Nenhum aluno encontrado para esta turma.' });
     }
 
-    // Caminho do script Python
     const scriptPath = path.join(__dirname, '../../pdf/generate_cartoes.py');
+    const python = spawn('python', [scriptPath], { shell: true });
 
-    // Processar com spawn
-    const python = spawn('python3', [scriptPath], { shell: true });
-    let resultado = '';
-    let erroPython = '';
+    let zipPath = '';
+    let stderr = '';
 
     python.stdout.on('data', (data) => {
-      resultado += data.toString();
+      zipPath = data.toString().trim();
     });
 
     python.stderr.on('data', (data) => {
-      erroPython += data.toString();
+      stderr += data.toString();
     });
 
     python.on('close', (code) => {
-      if (code !== 0 || !fs.existsSync(resultado.trim())) {
-        console.error("Erro ao gerar os cartões:", erroPython);
-        return res.status(500).json({ erro: 'Erro ao gerar os cartões.' });
+      if (code !== 0 || !fs.existsSync(zipPath)) {
+        console.error('Erro Python:', stderr);
+        return res.status(500).json({ erro: 'Falha na geração do arquivo ZIP.' });
       }
 
-      // Enviar o ZIP gerado
-      res.download(resultado.trim(), `cartoes_${turma}.zip`);
+      res.download(zipPath, 'cartoes_turma.zip', (err) => {
+        if (err) console.error('Erro ao enviar ZIP:', err);
+        fs.unlink(zipPath, () => {});
+      });
     });
 
-    // Enviar os dados ao script
     python.stdin.write(JSON.stringify(alunos));
     python.stdin.end();
 
-  } catch (err) {
-    console.error("Erro na rota de geração de cartões:", err);
-    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  } catch (erro) {
+    console.error("Erro ao gerar os cartões:", erro);
+    res.status(500).json({ erro: 'Erro ao gerar os cartões.' });
   }
 });
 
