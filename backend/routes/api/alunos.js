@@ -42,12 +42,11 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
       nomeMae
     } = req.body;
 
-    // ⚠️ Normalização do campo turma para evitar problemas com "º", "ª", etc.
     const turmaNormalizada = turma
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, '') // remove acentos
-      .replace(/[º°]/g, "º")          // substitui variações por º
-      .replace(/[ª]/g, "ª")           // substitui variações por ª
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[º°]/g, "º")
+      .replace(/[ª]/g, "ª")
       .trim();
 
     const novoAluno = new Aluno({
@@ -100,7 +99,7 @@ router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
     }
 
     if (req.file) {
-      dadosAtualizados.foto = req.file.filename;
+      dadosAtualizados.foto = `uploads/${req.file.filename}`; // ✅ CORREÇÃO AQUI
     }
 
     const alunoAtualizado = await Aluno.findOneAndUpdate(
