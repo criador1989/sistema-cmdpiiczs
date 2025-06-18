@@ -40,21 +40,48 @@ const notificacaoSchema = new mongoose.Schema({
     type: Number
   },
   artigo: {
-    type: String // Ex: "Art. 14"
+    type: String
   },
   paragrafo: {
-    type: String // Ex: "§ 1º"
+    type: String
   },
   inciso: {
-    type: String // Ex: "Inciso II"
+    type: String
   },
   classificacaoRegulamento: {
-    type: String // Ex: "Grave"
+    type: String
+  },
+  numeroSequencial: {
+    type: String,
+    required: true,
+    unique: true
   },
   instituicao: {
     type: String,
     required: true
+  },
+
+  // 🔽 Novos campos para controle de monitor e fluxo
+  status: {
+    type: String,
+    enum: ['pendente', 'deferido', 'revisao_solicitada', 'arquivado'],
+    default: 'pendente'
+  },
+  avaliador: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario'
+  },
+  comentarioMonitor: {
+    type: String
+  },
+  comentarioRevisao: {
+    type: String // Comentário do coordenador solicitando revisão
+  },
+  devolvidoPeloAluno: {
+    type: Boolean,
+    default: false // Se o aluno devolveu fisicamente a notificação
   }
+
 }, {
   timestamps: true
 });

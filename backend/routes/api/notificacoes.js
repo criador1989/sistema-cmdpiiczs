@@ -8,16 +8,32 @@ const enviarWhatsapp = require('../../utils/twilio');
 const autenticar = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 
-// GET /api/notificacoes
+// GET /api/notificacoes?page=1&limit=10
 router.get('/', autenticar, async (req, res) => {
   try {
-    const notificacoes = await Notificacao.find({ instituicao: req.usuario.instituicao })
+    const { page = 1, limit = 10 } = req.query;
+
+    const filtro = { instituicao: req.usuario.instituicao };
+
+    const total = await Notificacao.countDocuments(filtro);
+
+    const notificacoes = await Notificacao.find(filtro)
+      .sort({ data: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
       .populate({
         path: 'aluno',
         match: { instituicao: req.usuario.instituicao }
       });
 
-    res.json(notificacoes.filter(n => n.aluno));
+    const notificacoesComAluno = notificacoes.filter(n => n.aluno);
+
+    res.json({
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      data: notificacoesComAluno
+    });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao buscar notificações.' });
   }
@@ -36,8 +52,6 @@ router.post('/', autenticar, async (req, res) => {
       quantidadeDias,
       valorNumerico
     } = req.body;
-
-    console.log('📥 Dados recebidos:', req.body);
 
     const valores = {
       'Advertência Escrita': -0.30,
@@ -90,7 +104,6 @@ router.post('/', autenticar, async (req, res) => {
     await alunoRelacionado.save();
 
     const dadosRegulamento = obterDadosDoRegulamento(motivo);
-    console.log('🔍 Regulamento encontrado:', dadosRegulamento);
 
     const anoAtual = new Date(data).getFullYear();
     const totalDoAno = await Notificacao.countDocuments({
@@ -119,25 +132,20 @@ router.post('/', autenticar, async (req, res) => {
       inciso: dadosRegulamento.inciso,
       classificacaoRegulamento: dadosRegulamento.classificacao,
       instituicao: req.usuario.instituicao,
-      numeroSequencial
+      numeroSequencial,
+      status: 'pendente'
     });
 
     await novaNotificacao.save();
 
     if (alunoRelacionado.telefone) {
-      const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.
-
-Foi registrada uma notificação disciplinar:
-🔸 Motivo: ${motivo}
-🔸 Medida: ${tipoMedida}
-
-Nota atual de comportamento: ${notaAtual.toFixed(2)}.`;
+      const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.\n\nFoi registrada uma notificação disciplinar:\n🔸 Motivo: ${motivo}\n🔸 Medida: ${tipoMedida}\n\nNota atual de comportamento: ${notaAtual.toFixed(2)}.`;
       await enviarWhatsapp(alunoRelacionado.telefone, mensagem);
     }
 
     res.status(201).json(novaNotificacao);
   } catch (err) {
-    console.error('❌ Erro ao criar notificação:', err);
+    console.error('Erro ao criar notificação:', err);
     res.status(500).json({ error: 'Erro ao criar notificação: ' + err.message });
   }
 });
@@ -157,6 +165,59 @@ router.get('/:id', autenticar, async (req, res) => {
     res.json(notificacao);
   } catch (err) {
     res.status(500).json({ message: 'Erro ao carregar notificação.' });
+  }
+});
+
+// PUT /api/notificacoes/:id
+router.put('/:id', autenticar, async (req, res) => {
+  try {
+    const notificacao = await Notificacao.findOne({
+      _id: req.params.id,
+      instituicao: req.usuario.instituicao
+    });
+
+    if (!notificacao) {
+      return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
+    }
+
+    const camposEditaveis = [
+      'aluno', 'tipo', 'motivo', 'tipoMedida', 'valorNumerico',
+      'observacao', 'data', 'quantidadeDias', 'comentarioMonitor'
+    ];
+
+    for (const campo of camposEditaveis) {
+      if (req.body[campo] !== undefined) {
+        notificacao[campo] = req.body[campo];
+      }
+    }
+
+    await notificacao.save();
+    res.json({ message: 'Notificação atualizada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao atualizar notificação:', err);
+    res.status(500).json({ message: 'Erro ao atualizar notificação.' });
+  }
+});
+
+// PUT /api/notificacoes/:id/reenviar
+router.put('/:id/reenviar', autenticar, async (req, res) => {
+  try {
+    const notificacao = await Notificacao.findOne({
+      _id: req.params.id,
+      instituicao: req.usuario.instituicao
+    });
+
+    if (!notificacao) {
+      return res.status(404).json({ message: 'Notificação não encontrada.' });
+    }
+
+    notificacao.status = 'pendente';
+    await notificacao.save();
+
+    res.json({ message: 'Notificação reenviada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao reenviar notificação:', err);
+    res.status(500).json({ message: 'Erro ao reenviar notificação.' });
   }
 });
 
@@ -181,17 +242,12 @@ router.delete('/:id', autenticar, async (req, res) => {
       instituicao: req.usuario.instituicao
     });
 
-    if (!aluno) {
-      return res.status(404).json({ message: 'Aluno não encontrado.' });
-    }
-
     const notificacoesRestantes = await Notificacao.find({
       aluno: alunoId,
       instituicao: req.usuario.instituicao
     }).sort({ data: 1 });
 
     const notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoesRestantes);
-
     aluno.comportamento = parseFloat(notaFinal.toFixed(2));
     await aluno.save();
 
@@ -199,37 +255,6 @@ router.delete('/:id', autenticar, async (req, res) => {
   } catch (err) {
     console.error('Erro ao excluir notificação:', err);
     res.status(500).json({ message: 'Erro ao excluir notificação.' });
-  }
-});
-
-// PUT /api/notificacoes/:id
-router.put('/:id', autenticar, async (req, res) => {
-  try {
-    const notificacao = await Notificacao.findOne({
-      _id: req.params.id,
-      instituicao: req.usuario.instituicao
-    });
-
-    if (!notificacao) {
-      return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
-    }
-
-    const camposEditaveis = [
-      'aluno', 'tipo', 'motivo', 'tipoMedida', 'valorNumerico',
-      'observacao', 'data', 'quantidadeDias'
-    ];
-
-    for (const campo of camposEditaveis) {
-      if (req.body[campo] !== undefined) {
-        notificacao[campo] = req.body[campo];
-      }
-    }
-
-    await notificacao.save();
-    res.json({ message: 'Notificação atualizada com sucesso.' });
-  } catch (err) {
-    console.error('Erro ao atualizar notificação:', err);
-    res.status(500).json({ message: 'Erro ao atualizar notificação.' });
   }
 });
 

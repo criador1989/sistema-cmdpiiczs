@@ -1,3 +1,5 @@
+<!-- Substitua todo o conteúdo anterior deste arquivo pelo conteúdo abaixo -->
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -97,25 +99,11 @@
       font-size: 14px;
     }
 
-    .edit-btn {
-      background-color: #ffc107;
-      color: black;
-    }
-
-    .ficha-btn {
-      background-color: #17a2b8;
-      color: white;
-    }
-
-    .obs-btn {
-      background-color: #6f42c1;
-      color: white;
-    }
-
-    .link-btn {
-      background-color: #28a745;
-      color: white;
-    }
+    .edit-btn { background-color: #ffc107; color: black; }
+    .ficha-btn { background-color: #17a2b8; color: white; }
+    .obs-btn { background-color: #6f42c1; color: white; }
+    .link-btn { background-color: #28a745; color: white; }
+    .delete-btn { background-color: #dc3545; color: white; }
 
     .voltar-btn, .voltar-turmas-btn {
       margin-top: 25px;
@@ -135,14 +123,8 @@
     }
 
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -206,6 +188,7 @@
                     <a class="obs-btn" href="ficha-aluno.html?id=${aluno._id}">Adicionar Observação</a>
                     <a class="edit-btn" href="editar-aluno.html?id=${aluno._id}">Editar</a>
                     <a class="link-btn" href="ficha-responsavel.html?codigo=${aluno.codigoAcesso}" target="_blank">Gerar Link para os Pais</a>
+                    <button class="delete-btn" onclick="excluirAluno('${aluno._id}')">Excluir</button>
                   </td>
                 </tr>
               `).join('')}
@@ -244,6 +227,20 @@
         document.querySelectorAll('.turma-section').forEach(div => div.style.display = 'none');
         document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
         document.querySelectorAll('.turno').forEach(turno => turno.style.display = 'block');
+      };
+
+      window.excluirAluno = async (id) => {
+        if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
+        try {
+          const resposta = await fetch(`/api/alunos/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          if (resposta.ok) location.reload();
+          else alert('Erro ao excluir aluno.');
+        } catch {
+          alert('Erro ao excluir aluno.');
+        }
       };
 
       criarBotoes(turmasManha, 'botoesManha', 'turmasManha');

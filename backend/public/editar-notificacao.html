@@ -113,7 +113,7 @@
     <input type="date" id="data" name="data" required />
 
     <button type="submit">Salvar Alterações</button>
-    <button type="button" class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+    <button type="button" class="voltar-btn" onclick="window.location.href='notificacoes.html'">← Ver Notificações</button>
 
     <p id="mensagem"></p>
   </form>
@@ -179,7 +179,7 @@
 
         if (res.ok) {
           document.getElementById('mensagem').textContent = '✅ Notificação atualizada com sucesso!';
-          setTimeout(() => window.location.href = 'painel.html', 1500);
+          setTimeout(() => window.location.href = 'notificacoes.html', 1500);
         } else {
           const erro = await res.json();
           document.getElementById('mensagem').textContent = '❌ ' + (erro.message || 'Erro ao atualizar.');

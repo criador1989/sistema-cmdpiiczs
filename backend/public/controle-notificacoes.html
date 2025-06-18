@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Notificações - CMDPII</title>
+  <meta name="theme-color" content="#941a1d">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    .container {
+      background-color: white;
+      color: black;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    .btn {
+      margin-right: 5px;
+    }
+    .modal textarea {
+      resize: none;
+    }
+    .table td {
+      color: black;
+    }
+    .modal-body p {
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="mb-4 text-center">🛡️ Controle de Notificações Emitidas</h2>
+
+    <div class="mb-3 d-flex justify-content-between">
+      <div>
+        <label for="filtroData" class="form-label">Filtrar por Data:</label>
+        <input type="date" id="filtroData" class="form-control">
+      </div>
+      <div class="align-self-end">
+        <button class="btn btn-dark" onclick="carregarNotificacoes()">🔄 Atualizar</button>
+        <a href="/painel.html" class="btn btn-secondary">⬅️ Voltar</a>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+          <tr>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Motivo</th>
+            <th>Tipo</th>
+            <th>Emissão</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaControle"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">📄 Detalhes da Notificação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="conteudoDetalhes"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    async function carregarNotificacoes() {
+      const tabela = document.getElementById('tabelaControle');
+      tabela.innerHTML = '';
+      const data = document.getElementById('filtroData').value;
+      const resposta = await fetch('/api/controle-notificacoes' + (data ? `?data=${data}` : ''), { credentials: 'include' });
+      const lista = await resposta.json();
+
+      if (lista.length === 0) {
+        tabela.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma notificação pendente.</td></tr>';
+        return;
+      }
+
+      lista.forEach(n => {
+        const linha = document.createElement('tr');
+        linha.innerHTML = `
+          <td>${n.aluno?.nome || ''}</td>
+          <td>${n.aluno?.turma || ''}</td>
+          <td>${n.motivo}</td>
+          <td>${n.tipoMedida}</td>
+          <td>${new Date(n.createdAt).toLocaleString('pt-BR')}</td>
+          <td>
+            <button class="btn btn-info btn-sm" onclick='verDetalhes(${JSON.stringify(n)})'>Ver</button>
+            <button class="btn btn-success btn-sm" onclick="deferir('${n._id}')">Deferir</button>
+            <button class="btn btn-warning btn-sm" onclick="abrirModalRevisao('${n._id}')">Revisar</button>
+            <button class="btn btn-secondary btn-sm" onclick="arquivar('${n._id}')">Arquivar</button>
+            <button class="btn btn-danger btn-sm" onclick="excluir('${n._id}')">Excluir</button>
+          </td>
+        `;
+        tabela.appendChild(linha);
+      });
+    }
+
+    function verDetalhes(n) {
+      const html = `
+        <p><strong>Aluno:</strong> ${n.aluno?.nome || ''}</p>
+        <p><strong>Turma:</strong> ${n.aluno?.turma || ''}</p>
+        <p><strong>Tipo:</strong> ${n.tipo}</p>
+        <p><strong>Motivo:</strong> ${n.motivo}</p>
+        <p><strong>Tipo de Medida:</strong> ${n.tipoMedida}</p>
+        <p><strong>Valor:</strong> ${n.valorNumerico?.toFixed(2) || ''}</p>
+        <p><strong>Data de Emissão:</strong> ${new Date(n.createdAt).toLocaleString('pt-BR')}</p>
+        <p><strong>Artigo:</strong> ${n.artigo || '-'}</p>
+        <p><strong>Parágrafo:</strong> ${n.paragrafo || '-'}</p>
+        <p><strong>Inciso:</strong> ${n.inciso || '-'}</p>
+        <p><strong>Classificação:</strong> ${n.classificacaoRegulamento || '-'}</p>
+        <p><strong>Observação:</strong> ${n.observacao || '-'}</p>
+        <p><strong>Comentário do Coordenador:</strong> ${n.comentarioMonitor || '-'}</p>
+      `;
+      document.getElementById('conteudoDetalhes').innerHTML = html;
+      new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
+    }
+
+    async function deferir(id) {
+      await fetch(`/api/controle-notificacoes/${id}/deferir`, {
+        method: 'PUT', credentials: 'include'
+      });
+      carregarNotificacoes();
+    }
+
+    function abrirModalRevisao(id) {
+      const comentario = prompt('Digite o motivo da devolução:');
+      if (!comentario) return;
+      fetch(`/api/controle-notificacoes/${id}/revisar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ comentario })
+      }).then(() => carregarNotificacoes());
+    }
+
+    async function arquivar(id) {
+      await fetch(`/api/controle-notificacoes/${id}/arquivar`, {
+        method: 'PUT', credentials: 'include'
+      });
+      carregarNotificacoes();
+    }
+
+    async function excluir(id) {
+      if (confirm('Tem certeza que deseja excluir esta notificação?')) {
+        await fetch(`/api/controle-notificacoes/${id}`, {
+          method: 'DELETE', credentials: 'include'
+        });
+        carregarNotificacoes();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', carregarNotificacoes);
+  </script>
+</body>
+</html>

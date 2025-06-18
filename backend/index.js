@@ -19,11 +19,12 @@ const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const responsavelRoutes = require('./routes/api/responsavel');
 const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
 const fichaTesteRoute = require('./routes/api/fichaTeste');
-const cartoesRoutes = require('./routes/api/cartoes'); // <- nova rota
+const cartoesRoutes = require('./routes/api/cartoes');
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
 const motivosRoutes = require('./routes/api/motivos');
+const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes'); // ✅ nova rota
 
 dotenv.config();
 
@@ -200,7 +201,8 @@ app.use('/notificacoes', autenticar, notificacoesViewRoutes);
 app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', autenticar, responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
-app.use('/api/cartoes', autenticar, cartoesRoutes); // nova rota ativada
+app.use('/api/cartoes', autenticar, cartoesRoutes);
+app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes); // ✅ nova rota incluída
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

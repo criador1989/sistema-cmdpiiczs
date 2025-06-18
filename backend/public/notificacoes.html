@@ -47,7 +47,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
     }
 
     th, td {
@@ -75,6 +75,7 @@
     .delete-btn { background: #dc3545; color: white; }
     .pdf-btn { background: #007bff; color: white; }
     .edit-btn { background: #ffc107; color: black; }
+    .reenviar-btn { background: #28a745; color: white; }
 
     .voltar-btn {
       background-color: #6c757d;
@@ -90,6 +91,20 @@
 
     .voltar-btn:hover {
       background-color: #5a6268;
+    }
+
+    .destaque-revisao {
+      background-color: #fff3cd;
+    }
+
+    #paginacao {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #paginacao button {
+      margin: 0 5px;
+      padding: 5px 12px;
     }
 
     @keyframes fadeInUp {
@@ -108,87 +123,71 @@
   <div class="container">
     <h2>Notificações Disciplinares</h2>
     <label for="filtroTurma">Filtrar por turma:</label>
-    <select id="filtroTurma">
-      <option value="">Todas</option>
-    </select>
+    <select id="filtroTurma"><option value="">Todas</option></select>
 
     <label for="pesquisaNome">Pesquisar por nome:</label>
     <input type="text" id="pesquisaNome" placeholder="Digite o nome do aluno..." />
 
-    <h3>Turno da Manhã (Ensino Fundamental II)</h3>
-    <table id="tabelaManha">
-      <thead>
-        <tr>
-          <th>Nº</th>
-          <th>Foto</th>
-          <th>Aluno</th>
-          <th>Turma</th>
-          <th>Tipo</th>
-          <th>Motivo</th>
-          <th>Medida</th>
-          <th>Valor</th>
-          <th>Nota</th>
-          <th>Data</th>
-          <th>Artigo</th>
-          <th>Inciso</th>
-          <th>Classificação</th>
-          <th>Observação</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="tabelasNotificacoes"></div>
 
-    <h3>Turno da Tarde (Ensino Médio)</h3>
-    <table id="tabelaTarde">
-      <thead>
-        <tr>
-          <th>Nº</th>
-          <th>Foto</th>
-          <th>Aluno</th>
-          <th>Turma</th>
-          <th>Tipo</th>
-          <th>Motivo</th>
-          <th>Medida</th>
-          <th>Valor</th>
-          <th>Nota</th>
-          <th>Data</th>
-          <th>Artigo</th>
-          <th>Inciso</th>
-          <th>Classificação</th>
-          <th>Observação</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="paginacao"></div>
 
     <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      const tabelaManha = document.querySelector('#tabelaManha tbody');
-      const tabelaTarde = document.querySelector('#tabelaTarde tbody');
       const filtroTurma = document.getElementById('filtroTurma');
       const pesquisaNome = document.getElementById('pesquisaNome');
-
-      const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
-      const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+      const tabelasNotificacoes = document.getElementById('tabelasNotificacoes');
+      const paginacao = document.getElementById('paginacao');
 
       let lista = [];
+      let paginaAtual = 1;
+      const porPagina = 10;
+      let totalPaginas = 1;
 
       async function carregarNotificacoes() {
         try {
-          const resposta = await fetch('/api/notificacoes', { credentials: 'include' });
-          if (!resposta.ok) return window.location.href = '/login.html';
-
-          lista = await resposta.json();
-          lista.sort((a, b) => new Date(a.data) - new Date(b.data));
-
+          const resposta = await fetch(`/api/notificacoes?page=${paginaAtual}&limit=${porPagina}`, {
+            credentials: 'include'
+          });
+          if (!resposta.ok) throw new Error();
+          const resultado = await resposta.json();
+          lista = resultado.data;
+          totalPaginas = resultado.totalPages;
           renderizar();
+          renderizarPaginacao();
         } catch {
           alert('Erro ao carregar notificações.');
+        }
+      }
+
+      async function reenviarNotificacao(id) {
+        try {
+          const resposta = await fetch(`/api/notificacoes/${id}/reenviar`, {
+            method: 'PUT',
+            credentials: 'include'
+          });
+          const json = await resposta.json();
+          if (resposta.ok) carregarNotificacoes();
+          else alert(json.message || 'Erro ao reenviar.');
+        } catch {
+          alert('Erro ao reenviar a notificação.');
+        }
+      }
+
+      function renderizarPaginacao() {
+        paginacao.innerHTML = '';
+        for (let i = 1; i <= totalPaginas; i++) {
+          const btn = document.createElement('button');
+          btn.textContent = i;
+          btn.disabled = i === paginaAtual;
+          btn.onclick = () => {
+            paginaAtual = i;
+            carregarNotificacoes();
+          };
+          paginacao.appendChild(btn);
         }
       }
 
@@ -197,51 +196,61 @@
         const turmaSelecionada = filtroTurma.value;
         const turmas = new Set();
 
-        tabelaManha.innerHTML = '';
-        tabelaTarde.innerHTML = '';
+        tabelasNotificacoes.innerHTML = '';
 
         lista.forEach(n => {
           if (!n.aluno) return;
 
           const turma = n.aluno.turma;
           const nome = n.aluno.nome.toLowerCase();
-          const numero = n.numeroSequencial || '—';
 
           if (!nome.includes(termo)) return;
           if (turmaSelecionada && turmaSelecionada !== turma) return;
 
           turmas.add(turma);
-          const obs = n.observacao || '—';
-          const obsCurta = obs.length > 30 ? obs.substring(0, 30) + '...' : obs;
 
+          const divTurma = document.getElementById('turma-' + turma) || document.createElement('div');
+          if (!divTurma.id) {
+            divTurma.id = 'turma-' + turma;
+            divTurma.innerHTML = `<h3>${turma}</h3><table class="table"><thead><tr><th>Aluno</th><th>Motivo</th><th>Tipo</th><th>Medida</th><th>Valor</th><th>Nota</th><th>Data</th><th>Status</th><th>Comentário</th><th>Ações</th></tr></thead><tbody></tbody></table>`;
+            tabelasNotificacoes.appendChild(divTurma);
+          }
+
+          const tbody = divTurma.querySelector('tbody');
           const tr = document.createElement('tr');
+          if (n.status === 'revisao_solicitada') tr.classList.add('destaque-revisao');
+
+          const statusLabel = {
+            'pendente': '⏳ Pendente',
+            'deferido': '✅ Deferido',
+            'revisao_solicitada': '🔁 Devolvida',
+            'arquivado': '📁 Arquivado'
+          }[n.status] || '—';
+
+          const acoes = [
+            `<a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>`,
+            `<a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>`,
+            `<button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>`
+          ];
+
+          if (n.status === 'revisao_solicitada') {
+            acoes.push(`<button class="reenviar-btn" onclick="reenviarNotificacao('${n._id}')">Reenviar</button>`);
+          }
+
           tr.innerHTML = `
-            <td>${numero}</td>
-            <td><img src="/uploads/${n.aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
             <td>${n.aluno.nome}</td>
-            <td>${turma}</td>
-            <td>${n.tipo}</td>
             <td>${n.motivo}</td>
+            <td>${n.tipo}</td>
             <td>${n.tipoMedida}</td>
             <td>${n.valorNumerico?.toFixed(2) || '—'}</td>
             <td>${n.notaAnterior?.toFixed(2) || '—'} → ${n.notaAtual?.toFixed(2) || '—'}</td>
             <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
-            <td>${n.artigo || '—'}</td>
-            <td>${n.inciso || '—'}</td>
-            <td>${n.classificacaoRegulamento || '—'}</td>
-            <td>${obsCurta}</td>
-            <td class="actions">
-              <button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>
-              <a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>
-              <a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>
-            </td>
+            <td>${statusLabel}</td>
+            <td>${n.comentarioMonitor || '—'}</td>
+            <td class="actions">${acoes.join(' ')}</td>
           `;
 
-          tr.dataset.nome = nome;
-          tr.dataset.turma = turma;
-
-          if (turmasManha.includes(turma)) tabelaManha.appendChild(tr);
-          else if (turmasTarde.includes(turma)) tabelaTarde.appendChild(tr);
+          tbody.appendChild(tr);
         });
 
         filtroTurma.innerHTML = '<option value="">Todas</option>';
@@ -269,6 +278,8 @@
           alert('Erro ao conectar com o servidor.');
         }
       };
+
+      window.reenviarNotificacao = reenviarNotificacao;
 
       carregarNotificacoes();
     });
