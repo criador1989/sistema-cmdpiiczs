@@ -49,7 +49,7 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
       endereco,
       codigoAcesso: gerarCodigoAcesso(),
       foto: req.file ? req.file.filename : null,
-      instituicao: req.usuario.instituicao // ✅ importante
+      instituicao: req.usuario.instituicao
     });
 
     const alunoSalvo = await novoAluno.save();
@@ -59,7 +59,26 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
   }
 });
 
-// ✅ [3] Buscar aluno por ID
+// ✅ [3] TRANSFERÊNCIA EM LOTE — movida para cima
+router.put('/transferir', autenticar, async (req, res) => {
+  const { ids, novaTurma } = req.body;
+
+  if (!ids || !Array.isArray(ids) || !novaTurma) {
+    return res.status(400).json({ erro: 'Dados inválidos para transferência.' });
+  }
+
+  try {
+    const resultado = await Aluno.updateMany(
+      { _id: { $in: ids }, instituicao: req.usuario.instituicao },
+      { $set: { turma: novaTurma } }
+    );
+    res.json({ mensagem: `Alunos transferidos para a turma ${novaTurma}.`, resultado });
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao transferir alunos.', error: error.message });
+  }
+});
+
+// ✅ [4] Buscar aluno por ID
 router.get('/:id', autenticar, async (req, res) => {
   try {
     const aluno = await Aluno.findOne({
@@ -73,7 +92,7 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-// ✅ [4] Atualizar aluno
+// ✅ [5] Atualizar aluno
 router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
   try {
     const atualizacao = { ...req.body };
@@ -95,7 +114,7 @@ router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
   }
 });
 
-// ✅ [5] Deletar aluno
+// ✅ [6] Deletar aluno
 router.delete('/:id', autenticar, async (req, res) => {
   try {
     const alunoDeletado = await Aluno.findOneAndDelete({
@@ -106,25 +125,6 @@ router.delete('/:id', autenticar, async (req, res) => {
     res.json({ message: 'Aluno deletado com sucesso' });
   } catch (error) {
     res.status(500).json({ message: 'Erro ao deletar aluno', error: error.message });
-  }
-});
-
-// ✅ [6] Transferência em lote
-router.put('/transferir', autenticar, async (req, res) => {
-  const { ids, novaTurma } = req.body;
-
-  if (!ids || !Array.isArray(ids) || !novaTurma) {
-    return res.status(400).json({ erro: 'Dados inválidos para transferência.' });
-  }
-
-  try {
-    const resultado = await Aluno.updateMany(
-      { _id: { $in: ids }, instituicao: req.usuario.instituicao },
-      { $set: { turma: novaTurma } }
-    );
-    res.json({ mensagem: `Alunos transferidos para a turma ${novaTurma}.`, resultado });
-  } catch (error) {
-    res.status(500).json({ erro: 'Erro ao transferir alunos.', error: error.message });
   }
 });
 

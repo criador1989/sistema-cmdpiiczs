@@ -31,19 +31,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nova = novaTurma.value.trim();
     if (!nova) return alert("Digite a nova turma");
 
+    const novaNormalizada = nova
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[º°]/g, "º")
+      .replace(/[ª]/g, "ª")
+      .trim();
+
     const selecionados = [...document.querySelectorAll("input[type=checkbox]:checked")].map(c => c.value);
     if (selecionados.length === 0) return alert("Selecione pelo menos um aluno.");
 
-    const res = await fetch("/api/alunos/transferir", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ ids: selecionados, novaTurma: nova })
-    });
+    try {
+      const res = await fetch("/api/alunos/transferir", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ids: selecionados, novaTurma: novaNormalizada })
+      });
 
-    const data = await res.json();
-    alert(data.mensagem || "Transferência concluída!");
-    carregarAlunos();
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Erro:", data);
+        return alert(data.mensagem || "Erro ao transferir alunos.");
+      }
+
+      alert(data.mensagem || "Transferência concluída!");
+      carregarAlunos();
+    } catch (err) {
+      console.error("Erro inesperado:", err);
+      alert("Erro ao conectar com o servidor.");
+    }
   });
 
   carregarAlunos();
