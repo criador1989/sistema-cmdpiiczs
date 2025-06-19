@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
@@ -99,7 +100,7 @@ router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
     }
 
     if (req.file) {
-      dadosAtualizados.foto = `uploads/${req.file.filename}`; // ✅ CORREÇÃO AQUI
+      dadosAtualizados.foto = `uploads/${req.file.filename}`;
     }
 
     const alunoAtualizado = await Aluno.findOneAndUpdate(
@@ -127,6 +128,36 @@ router.delete('/:id', autenticar, async (req, res) => {
     res.json({ message: 'Aluno deletado com sucesso' });
   } catch (error) {
     res.status(500).json({ message: 'Erro ao deletar aluno', error });
+  }
+});
+
+// PUT /api/alunos/transferir - Transfere vários alunos de turma
+router.put('/transferir', autenticar, async (req, res) => {
+  try {
+    const { ids, novaTurma } = req.body;
+
+    if (!Array.isArray(ids) || !novaTurma) {
+      return res.status(400).json({ mensagem: 'IDs e nova turma são obrigatórios.' });
+    }
+
+    const objectIds = ids.map(id => new mongoose.Types.ObjectId(id));
+
+    const turmaNormalizada = novaTurma
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[º°]/g, "º")
+      .replace(/[ª]/g, "ª")
+      .trim();
+
+    const resultado = await Aluno.updateMany(
+      { _id: { $in: objectIds }, instituicao: req.usuario.instituicao },
+      { $set: { turma: turmaNormalizada } }
+    );
+
+    res.json({ mensagem: `✅ ${resultado.modifiedCount} aluno(s) transferido(s) com sucesso.` });
+  } catch (error) {
+    console.error('Erro ao transferir alunos:', error);
+    res.status(500).json({ mensagem: 'Erro interno ao transferir alunos.', error });
   }
 });
 
