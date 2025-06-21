@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 
@@ -7,6 +6,7 @@ const Notificacao = require('../../models/Notificacao');
 const upload = require('../../middleware/upload');
 const autenticar = require('../../middleware/autenticacao');
 const calcularNotaComportamento = require('../../utils/calcularNota');
+const Log = require('../../models/Log'); // ✅ Adicionado
 
 // GET /api/alunos - Lista alunos da mesma instituição
 router.get('/', autenticar, async (req, res) => {
@@ -64,13 +64,22 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
     });
 
     const alunoSalvo = await novoAluno.save();
+
+    // ✅ Log de criação
+    await Log.create({
+      usuario: req.usuario._id,
+      acao: 'Cadastro de Aluno',
+      entidade: 'Aluno',
+      entidadeId: alunoSalvo._id
+    });
+
     res.status(201).json(alunoSalvo);
   } catch (error) {
     res.status(400).json({ message: 'Erro ao criar aluno', error });
   }
 });
 
-// ✅ PUT /api/alunos/transferir - Transfere vários alunos de turma (ESSA DEVE VIR ANTES DE /:id)
+// ✅ PUT /api/alunos/transferir - Transfere vários alunos de turma
 router.put('/transferir', autenticar, async (req, res) => {
   try {
     const { ids, novaTurma } = req.body;
@@ -138,6 +147,15 @@ router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
     );
 
     if (!alunoAtualizado) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    // ✅ Log de edição
+    await Log.create({
+      usuario: req.usuario._id,
+      acao: 'Edição de Aluno',
+      entidade: 'Aluno',
+      entidadeId: alunoAtualizado._id
+    });
+
     res.json(alunoAtualizado);
   } catch (error) {
     res.status(400).json({ message: 'Erro ao atualizar aluno', error });
@@ -153,6 +171,15 @@ router.delete('/:id', autenticar, async (req, res) => {
     });
 
     if (!alunoDeletado) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    // ✅ Log de exclusão
+    await Log.create({
+      usuario: req.usuario._id,
+      acao: 'Exclusão de Aluno',
+      entidade: 'Aluno',
+      entidadeId: alunoDeletado._id
+    });
+
     res.json({ message: 'Aluno deletado com sucesso' });
   } catch (error) {
     res.status(500).json({ message: 'Erro ao deletar aluno', error });

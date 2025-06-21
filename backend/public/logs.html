@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logs do Sistema</title>
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #8B0000;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #8B0000;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .voltar {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 15px;
+      background-color: #B22222;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+    .voltar:hover {
+      background-color: #8B0000;
+    }
+  </style>
+</head>
+<body>
+  <h1>📜 Logs de Auditoria</h1>
+  <table id="tabelaLogs">
+    <thead>
+      <tr>
+        <th>Usuário</th>
+        <th>Ação</th>
+        <th>Entidade</th>
+        <th>ID da Entidade</th>
+        <th>Data/Hora</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <a href="painel.html" class="voltar">⬅️ Voltar ao Painel</a>
+
+  <script>
+    async function carregarLogs() {
+      try {
+        const resposta = await fetch('/api/logs', { credentials: 'include' });
+        if (!resposta.ok) throw new Error('Erro ao buscar logs');
+
+        const logs = await resposta.json();
+        const tbody = document.querySelector('#tabelaLogs tbody');
+        tbody.innerHTML = '';
+
+        logs.forEach(log => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${log.usuario?.nome || 'Desconhecido'}</td>
+            <td>${log.acao}</td>
+            <td>${log.entidade}</td>
+            <td>${log.entidadeId}</td>
+            <td>${new Date(log.data).toLocaleString('pt-BR')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (erro) {
+        alert('Erro ao carregar logs.');
+        console.error(erro);
+      }
+    }
+
+    carregarLogs();
+  </script>
+</body>
+</html>

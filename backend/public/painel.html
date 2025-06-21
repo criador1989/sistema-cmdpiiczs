@@ -159,6 +159,7 @@
       <a href="controle-notificacoes.html">📋 Controle de Notificações</a>
       <a id="btnNovoUsuario" href="cadastro-usuario.html" style="display: none;">👤 Novo Usuário</a>
       <a id="btnGerenciarUsuarios" href="usuarios.html" style="display: none;">⚙️ Gerenciar Usuários</a>
+      <a id="btnVerLogs" href="logs.html" style="display: none;">📜 Ver Logs</a>
     </div>
 
     <button class="logout-btn" onclick="logout()">🚪 Sair</button>
@@ -197,6 +198,7 @@
         if (usuario.tipo === 'admin') {
           document.getElementById('btnNovoUsuario').style.display = 'flex';
           document.getElementById('btnGerenciarUsuarios').style.display = 'flex';
+          document.getElementById('btnVerLogs').style.display = 'flex';
         }
       } catch (erro) {
         console.error('Erro ao verificar tipo de usuário:', erro);

@@ -10,6 +10,7 @@ const fs = require('fs');
 const Aluno = require('./models/Aluno');
 const Notificacao = require('./models/Notificacao');
 const Usuario = require('./models/Usuario');
+const Log = require('./models/Log'); // ✅ modelo de logs
 
 // Rotas
 const alunoRoutes = require('./routes/alunoRoutes');
@@ -24,7 +25,8 @@ const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
 const motivosRoutes = require('./routes/api/motivos');
 const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
-const usuariosRoutes = require('./routes/api/usuarios'); // ✅ nova rota de usuários
+const usuariosRoutes = require('./routes/api/usuarios');
+const logsRoutes = require('./routes/api/logs'); // ✅ nova rota de logs
 
 dotenv.config();
 
@@ -220,7 +222,8 @@ app.use('/api/responsavel', autenticar, responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', autenticar, cartoesRoutes);
 app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes);
-app.use('/api/usuarios', autenticar, usuariosRoutes); // ✅ nova rota protegida
+app.use('/api/usuarios', autenticar, usuariosRoutes);
+app.use('/api/logs', autenticar, logsRoutes); // ✅ nova rota de logs
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
