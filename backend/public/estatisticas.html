@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estatísticas do Sistema Escolar</title>
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h3 {
+      text-align: center;
+      color: #8B0000;
+    }
+    .filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .filtros input, .filtros select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    .grafico-container {
+      margin-top: 40px;
+    }
+    canvas {
+      width: 100% !important;
+      max-width: 900px;
+      height: auto !important;
+    }
+    button {
+      margin: 40px auto 0;
+      display: block;
+      background: #8B0000;
+      color: #fff;
+      border: none;
+      padding: 12px 25px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #a50000;
+    }
+    @media (max-width: 600px) {
+      .filtros {
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        margin: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Painel de Estatísticas</h1>
+
+    <div class="filtros">
+      <label>
+        Início:
+        <input type="date" id="dataInicio" />
+      </label>
+      <label>
+        Fim:
+        <input type="date" id="dataFim" />
+      </label>
+      <label>
+        Turma:
+        <select id="filtroTurma">
+          <option value="">Todas</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grafico-container">
+      <h3>Alunos por Turma</h3>
+      <canvas id="graficoTurmas"></canvas>
+    </div>
+
+    <div class="grafico-container">
+      <h3>Notificações por Tipo</h3>
+      <canvas id="graficoTipos"></canvas>
+    </div>
+
+    <div class="grafico-container">
+      <h3>Comportamento Médio por Turma</h3>
+      <canvas id="graficoComportamento"></canvas>
+    </div>
+
+    <div class="grafico-container">
+      <h3>Distribuição por Tipo de Medida</h3>
+      <canvas id="graficoTiposMedida"></canvas>
+    </div>
+
+    <button onclick="gerarPDF()">📄 Exportar PDF dos Gráficos</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    let charts = [];
+
+    async function carregarDados() {
+      try {
+        const inicio = document.getElementById('dataInicio').value;
+        const fim = document.getElementById('dataFim').value;
+        const turma = document.getElementById('filtroTurma').value;
+
+        const params = new URLSearchParams();
+        if (inicio) params.append('inicio', inicio);
+        if (fim) params.append('fim', fim);
+        if (turma) params.append('turma', turma);
+
+        const resposta = await fetch('/api/estatisticas?' + params.toString(), { credentials: 'include' });
+        const dados = await resposta.json();
+
+        charts.forEach(c => c.chart?.destroy());
+        charts = [];
+
+        const turmas = Object.keys(dados.alunosPorTurma || {});
+        const quantidades = Object.values(dados.alunosPorTurma || {});
+
+        charts.push({
+          id: 'graficoTurmas',
+          titulo: 'Alunos por Turma',
+          chart: new Chart(document.getElementById('graficoTurmas'), {
+            type: 'bar',
+            data: { labels: turmas, datasets: [{ label: 'Quantidade de Alunos', data: quantidades }] }
+          })
+        });
+
+        const tipos = Object.keys(dados.tiposNotificacao || {});
+        const qtdeTipos = Object.values(dados.tiposNotificacao || {});
+
+        charts.push({
+          id: 'graficoTipos',
+          titulo: 'Notificações por Tipo',
+          chart: new Chart(document.getElementById('graficoTipos'), {
+            type: 'pie',
+            data: { labels: tipos, datasets: [{ data: qtdeTipos }] }
+          })
+        });
+
+        const turmas2 = Object.keys(dados.comportamentoMedioPorTurma || {});
+        const notas = Object.values(dados.comportamentoMedioPorTurma || {});
+
+        charts.push({
+          id: 'graficoComportamento',
+          titulo: 'Comportamento Médio por Turma',
+          chart: new Chart(document.getElementById('graficoComportamento'), {
+            type: 'bar',
+            data: { labels: turmas2, datasets: [{ label: 'Nota Média', data: notas }] }
+          })
+        });
+
+        const medidas = Object.keys(dados.tiposMedida || {});
+        const qtdeMedidas = Object.values(dados.tiposMedida || {});
+
+        charts.push({
+          id: 'graficoTiposMedida',
+          titulo: 'Distribuição por Tipo de Medida',
+          chart: new Chart(document.getElementById('graficoTiposMedida'), {
+            type: 'bar',
+            data: { labels: medidas, datasets: [{ data: qtdeMedidas }] }
+          })
+        });
+
+      } catch (err) {
+        alert('Erro ao carregar dados: ' + err.message);
+      }
+    }
+
+    async function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      for (let i = 0; i < charts.length; i++) {
+        const chartCanvas = document.getElementById(charts[i].id);
+        const imagem = chartCanvas.toDataURL('image/png', 1.0);
+        if (i > 0) doc.addPage();
+        doc.setFontSize(16);
+        doc.text(charts[i].titulo, 10, 20);
+        doc.addImage(imagem, 'PNG', 10, 30, 180, 100);
+      }
+
+      doc.save('estatisticas.pdf');
+    }
+
+    async function carregarTurmas() {
+      const resposta = await fetch('/api/alunos/turmas', { credentials: 'include' });
+      const lista = await resposta.json();
+      const filtroTurma = document.getElementById('filtroTurma');
+      lista.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t;
+        option.textContent = t;
+        filtroTurma.appendChild(option);
+      });
+    }
+
+    document.getElementById('dataInicio').addEventListener('change', carregarDados);
+    document.getElementById('dataFim').addEventListener('change', carregarDados);
+    document.getElementById('filtroTurma').addEventListener('change', carregarDados);
+
+    carregarTurmas();
+    carregarDados();
+  </script>
+</body>
+</html>

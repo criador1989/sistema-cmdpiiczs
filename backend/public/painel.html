@@ -160,6 +160,8 @@
       <a id="btnNovoUsuario" href="cadastro-usuario.html" style="display: none;">👤 Novo Usuário</a>
       <a id="btnGerenciarUsuarios" href="usuarios.html" style="display: none;">⚙️ Gerenciar Usuários</a>
       <a id="btnVerLogs" href="logs.html" style="display: none;">📜 Ver Logs</a>
+      <a id="btnRelatorioGeral" style="display: none;">📄 Relatório Geral</a>
+      <a id="btnEstatisticas" href="estatisticas.html" style="display: none;">📊 Painel de Estatísticas</a> <!-- ✅ NOVO -->
     </div>
 
     <button class="logout-btn" onclick="logout()">🚪 Sair</button>
@@ -188,10 +190,7 @@
 
     async function verificarAdmin() {
       try {
-        const resposta = await fetch('/api/usuario-logado', {
-          credentials: 'include'
-        });
-
+        const resposta = await fetch('/api/usuario-logado', { credentials: 'include' });
         if (!resposta.ok) return;
 
         const usuario = await resposta.json();
@@ -199,6 +198,8 @@
           document.getElementById('btnNovoUsuario').style.display = 'flex';
           document.getElementById('btnGerenciarUsuarios').style.display = 'flex';
           document.getElementById('btnVerLogs').style.display = 'flex';
+          document.getElementById('btnRelatorioGeral').style.display = 'flex';
+          document.getElementById('btnEstatisticas').style.display = 'flex'; // ✅ NOVO
         }
       } catch (erro) {
         console.error('Erro ao verificar tipo de usuário:', erro);
@@ -209,6 +210,22 @@
       await fetch('/auth/logout', { method: 'POST' });
       window.location.href = '/login.html';
     }
+
+    document.getElementById('btnRelatorioGeral').addEventListener('click', () => {
+      fetch('/api/relatorio-notificacoes', {
+        method: 'GET',
+        credentials: 'include'
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Erro ao gerar relatório.');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      })
+      .catch(err => alert('Erro: ' + err.message));
+    });
 
     verificarUsuario();
     verificarAdmin();

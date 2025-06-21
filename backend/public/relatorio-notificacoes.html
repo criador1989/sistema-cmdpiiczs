@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Relatório de Notificações</title>
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #8B0000;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    select, input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #8B0000;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #a21b1b;
+    }
+
+    .voltar {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .voltar a {
+      text-decoration: none;
+      color: #8B0000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Gerar Relatório de Notificações</h2>
+    <form id="formRelatorio">
+      <label for="turma">Selecione a turma:</label>
+      <select id="turma" required>
+        <option value="">Carregando turmas...</option>
+      </select>
+
+      <label for="dataInicio">Data inicial:</label>
+      <input type="date" id="dataInicio" required>
+
+      <label for="dataFim">Data final:</label>
+      <input type="date" id="dataFim" required>
+
+      <button type="submit">📄 Gerar Relatório PDF</button>
+    </form>
+
+    <div class="voltar">
+      <a href="painel.html">← Voltar ao Painel</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const resposta = await fetch('/api/alunos', { credentials: 'include' });
+        const alunos = await resposta.json();
+
+        const turmas = [...new Set(alunos.map(a => a.turma))].sort();
+        const turmaSelect = document.getElementById('turma');
+        turmaSelect.innerHTML = '<option value="">Selecione</option>';
+        turmas.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          turmaSelect.appendChild(opt);
+        });
+      } catch (err) {
+        alert('Erro ao carregar turmas.');
+      }
+    });
+
+    document.getElementById('formRelatorio').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const turma = document.getElementById('turma').value;
+      const dataInicio = document.getElementById('dataInicio').value;
+      const dataFim = document.getElementById('dataFim').value;
+
+      if (!turma || !dataInicio || !dataFim) {
+        alert('Preencha todos os campos.');
+        return;
+      }
+
+      const url = `/api/relatorio-notificacoes?turma=${encodeURIComponent(turma)}&dataInicio=${dataInicio}&dataFim=${dataFim}`;
+      window.open(url, '_blank');
+    });
+  </script>
+</body>
+</html>

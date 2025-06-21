@@ -26,7 +26,9 @@ const fichaAlunoRoutes = require('./routes/views/fichaAluno');
 const motivosRoutes = require('./routes/api/motivos');
 const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
 const usuariosRoutes = require('./routes/api/usuarios');
-const logsRoutes = require('./routes/api/logs'); // ✅ nova rota de logs
+const logsRoutes = require('./routes/api/logs');
+const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
+const estatisticasRoutes = require('./routes/api/estatisticas'); // ✅ NOVO
 
 dotenv.config();
 
@@ -46,7 +48,6 @@ app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// Middleware de autenticação
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
@@ -95,7 +96,7 @@ app.post('/auth/logout', (req, res) => {
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
-// Cadastro protegido (somente admin)
+// Cadastro de novo usuário
 app.post('/auth/cadastrar', autenticar, async (req, res) => {
   if (req.usuario.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
@@ -121,12 +122,12 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
   }
 });
 
-// Rota para verificar usuário logado
+// Ver usuário logado
 app.get('/api/usuario-logado', autenticar, (req, res) => {
   res.json(req.usuario);
 });
 
-// Rota para obter dados do usuário completo
+// Obter dados completos do usuário
 app.get('/api/usuario', autenticar, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.usuario.id).select('nome tipo instituicao');
@@ -134,66 +135,6 @@ app.get('/api/usuario', autenticar, async (req, res) => {
     res.json(usuario);
   } catch (err) {
     res.status(500).json({ mensagem: 'Erro ao buscar usuário' });
-  }
-});
-
-// PDF via Python
-app.get('/api/pdf/:id', autenticar, async (req, res) => {
-  try {
-    const notificacao = await Notificacao.findById(req.params.id).populate('aluno');
-    if (!notificacao) return res.status(404).send('Notificação não encontrada');
-
-    const aluno = notificacao.aluno;
-    const notaAnterior = notificacao.notaAnterior || 8.00;
-    const notaAtual = notificacao.notaAtual || 7.70;
-
-    const dados = {
-      numero: notificacao._id.toString().slice(-6).toUpperCase(),
-      aluno: aluno.nome || '',
-      turma: aluno.turma || '',
-      artigo: notificacao.artigo || 'Art. 54',
-      paragrafo: notificacao.paragrafo || '',
-      inciso: notificacao.inciso || '',
-      classificacaoRegulamento: notificacao.classificacaoRegulamento || '',
-      tipoMedida: notificacao.tipoMedida || '',
-      observacao: notificacao.observacao || '',
-      Valor: notificacao.valorNumerico?.toFixed(2) || '',
-      comportamento: getClassificacao(notaAtual),
-      notaAnterior: notaAnterior.toFixed(2),
-      notaAtual: notaAtual.toFixed(2),
-      dataHora: new Date().toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      })
-    };
-
-    console.log("🔍 Dados enviados ao Python:", dados);
-
-    const scriptPath = path.join(__dirname, 'pdf', 'generate_notification_docx.py');
-    const python = spawn('python', [scriptPath], { shell: true });
-
-    let pdfPath = '';
-
-    python.stdout.on('data', (data) => {
-      pdfPath = data.toString().trim();
-    });
-
-    python.stderr.on('data', (data) => {
-      console.error(`Erro Python: ${data}`);
-    });
-
-    python.on('close', (code) => {
-      if (code !== 0 || !fs.existsSync(pdfPath)) {
-        return res.status(500).send('Erro ao gerar PDF');
-      }
-      res.download(pdfPath, 'notificacao.docx');
-    });
-
-    python.stdin.write(JSON.stringify(dados));
-    python.stdin.end();
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Erro ao gerar PDF');
   }
 });
 
@@ -223,7 +164,9 @@ app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', autenticar, cartoesRoutes);
 app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes);
 app.use('/api/usuarios', autenticar, usuariosRoutes);
-app.use('/api/logs', autenticar, logsRoutes); // ✅ nova rota de logs
+app.use('/api/logs', autenticar, logsRoutes);
+app.use('/api', autenticar, relatorioNotificacoesRoute);
+app.use('/api/estatisticas', autenticar, estatisticasRoutes); // ✅ rota adicionada
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
