@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar Usuário - Sistema Escolar</title>
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #8B0000, #B22222);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      width: 360px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #B22222;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #8B0000;
+    }
+
+    .voltar {
+      margin-top: 10px;
+      display: inline-block;
+      color: #B22222;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .voltar:hover {
+      text-decoration: underline;
+    }
+
+    .menu-extra {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .menu-extra a {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #f2f2f2;
+      color: #B22222;
+      border: 2px solid #B22222;
+      border-radius: 8px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .menu-extra a:hover {
+      background-color: #B22222;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Editar Usuário</h2>
+    <form id="form-editar">
+      <input type="text" id="nome" placeholder="Nome completo" required />
+      <input type="email" id="email" placeholder="E-mail" required disabled />
+      <select id="tipo">
+        <option value="professor">Professor</option>
+        <option value="coordenador">Coordenador</option>
+        <option value="admin">Administrador</option>
+      </select>
+      <input type="text" id="instituicao" placeholder="Instituição" required />
+      <input type="password" id="novaSenha" placeholder="Nova senha (opcional)" />
+      <button type="submit">Salvar alterações</button>
+    </form>
+
+    <a class="voltar" href="usuarios.html">← Voltar para lista de usuários</a>
+
+    <div class="menu-extra">
+      <a href="usuarios.html">👥 Gerenciar Usuários</a>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+
+    async function carregarDados() {
+      try {
+        const res = await fetch(`/api/usuarios/${id}`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Erro ao carregar dados');
+        const usuario = await res.json();
+        document.getElementById('nome').value = usuario.nome;
+        document.getElementById('email').value = usuario.email;
+        document.getElementById('tipo').value = usuario.tipo;
+        document.getElementById('instituicao').value = usuario.instituicao;
+      } catch (error) {
+        alert('Erro ao carregar dados do usuário.');
+        console.error(error);
+      }
+    }
+
+    document.getElementById('form-editar').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const dados = {
+        nome: document.getElementById('nome').value.trim(),
+        tipo: document.getElementById('tipo').value,
+        instituicao: document.getElementById('instituicao').value.trim()
+      };
+
+      const novaSenha = document.getElementById('novaSenha').value.trim();
+      if (novaSenha) dados.senha = novaSenha;
+
+      try {
+        const resposta = await fetch(`/api/usuarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(dados)
+        });
+
+        const resultado = await resposta.json();
+        if (resposta.ok) {
+          alert('Usuário atualizado com sucesso!');
+          window.location.href = 'usuarios.html';
+        } else {
+          alert(resultado.mensagem || 'Erro ao atualizar usuário.');
+        }
+      } catch (error) {
+        alert('Erro ao enviar os dados.');
+        console.error(error);
+      }
+    });
+
+    carregarDados();
+  </script>
+</body>
+</html>

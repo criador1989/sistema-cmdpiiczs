@@ -8,6 +8,34 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+
+  <script>
+    // Proteção: só admin pode acessar esta página
+    async function verificarPermissao() {
+      try {
+        const resposta = await fetch('/api/usuario-logado', {
+          credentials: 'include'
+        });
+
+        if (!resposta.ok) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const usuario = await resposta.json();
+        if (usuario.tipo !== 'admin') {
+          alert('Apenas administradores podem acessar esta página.');
+          window.location.href = '/painel.html';
+        }
+      } catch (erro) {
+        console.error('Erro ao verificar login:', erro);
+        window.location.href = '/login.html';
+      }
+    }
+
+    verificarPermissao();
+  </script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;

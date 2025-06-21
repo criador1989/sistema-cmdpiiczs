@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciar Usuários - Colégio Militar Dom Pedro II</title>
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #8B0000, #B22222);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 100px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      text-align: center;
+      color: #8B0000;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+    }
+
+    th {
+      background-color: #8B0000;
+      color: white;
+    }
+
+    .acoes button {
+      margin-right: 5px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .editar {
+      background-color: #4682B4;
+      color: white;
+    }
+
+    .excluir {
+      background-color: #B22222;
+      color: white;
+    }
+
+    .voltar {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #8B0000;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+
+    .voltar:hover {
+      background-color: #5a0000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Gerenciar Usuários</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Tipo</th>
+          <th>Instituição</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaUsuarios">
+        <!-- Linhas inseridas dinamicamente -->
+      </tbody>
+    </table>
+    <a class="voltar" href="painel.html">⬅ Voltar ao Painel</a>
+  </div>
+
+  <script>
+    async function verificarPermissao() {
+      const res = await fetch('/api/usuario-logado', { credentials: 'include' });
+      if (!res.ok) return window.location.href = '/login.html';
+      const usuario = await res.json();
+      if (usuario.tipo !== 'admin') {
+        alert('Acesso restrito a administradores.');
+        window.location.href = '/painel.html';
+      }
+    }
+
+    async function carregarUsuarios() {
+      try {
+        const resposta = await fetch('/api/usuarios', { credentials: 'include' });
+        const usuarios = await resposta.json();
+        const tabela = document.getElementById('tabelaUsuarios');
+        tabela.innerHTML = '';
+
+        usuarios.forEach(usuario => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${usuario.nome}</td>
+            <td>${usuario.email}</td>
+            <td>${usuario.tipo}</td>
+            <td>${usuario.instituicao}</td>
+            <td class="acoes">
+              <button class="editar" onclick="editarUsuario('${usuario._id}')">Editar</button>
+              <button class="excluir" onclick="excluirUsuario('${usuario._id}')">Excluir</button>
+            </td>
+          `;
+          tabela.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar usuários:', err);
+      }
+    }
+
+    function editarUsuario(id) {
+      window.location.href = `/editar-usuario.html?id=${id}`;
+    }
+
+    async function excluirUsuario(id) {
+      const confirmacao = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
+
+      if (confirmacao === "CONFIRMAR") {
+        try {
+          const res = await fetch(`/api/usuarios/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+
+          if (res.ok) {
+            alert('✅ Usuário excluído com sucesso!');
+            carregarUsuarios();
+          } else {
+            alert('❌ Erro ao excluir usuário.');
+          }
+        } catch (erro) {
+          console.error('Erro ao excluir:', erro);
+          alert('Erro de conexão com o servidor.');
+        }
+      } else {
+        alert("🔒 Exclusão cancelada.");
+      }
+    }
+
+    verificarPermissao();
+    carregarUsuarios();
+  </script>
+</body>
+</html>

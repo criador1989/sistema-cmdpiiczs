@@ -7,7 +7,6 @@ const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 
-// Modelos
 const Aluno = require('./models/Aluno');
 const Notificacao = require('./models/Notificacao');
 const Usuario = require('./models/Usuario');
@@ -24,7 +23,8 @@ const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaAlunoRoutes = require('./routes/views/fichaAluno');
 const motivosRoutes = require('./routes/api/motivos');
-const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes'); // ✅ nova rota
+const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
+const usuariosRoutes = require('./routes/api/usuarios'); // ✅ nova rota de usuários
 
 dotenv.config();
 
@@ -44,26 +44,7 @@ app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// ROTA DE CADASTRO DE USUÁRIO
-app.post('/auth/cadastrar', async (req, res) => {
-  const { nome, email, senha, instituicao } = req.body;
-  if (!nome || !email || !senha || !instituicao) {
-    return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
-  }
-  try {
-    const usuarioExistente = await Usuario.findOne({ email });
-    if (usuarioExistente) {
-      return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
-    }
-    const novoUsuario = new Usuario({ nome, email, senha, instituicao });
-    await novoUsuario.save();
-    res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
-  } catch (erro) {
-    console.error('Erro no cadastro:', erro);
-    res.status(500).json({ mensagem: 'Erro no servidor ao cadastrar usuário.' });
-  }
-});
-
+// Middleware de autenticação
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
@@ -76,6 +57,7 @@ function autenticar(req, res, next) {
   }
 }
 
+// Login
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -83,6 +65,7 @@ app.post('/auth/login', async (req, res) => {
     if (!usuario || !(await usuario.compararSenha(senha))) {
       return res.status(401).json({ mensagem: 'E-mail ou senha inválidos.' });
     }
+
     const token = jwt.sign({
       id: usuario._id,
       nome: usuario.nome,
@@ -104,11 +87,44 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+// Logout
 app.post('/auth/logout', (req, res) => {
   res.clearCookie('token');
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
+// Cadastro protegido (somente admin)
+app.post('/auth/cadastrar', autenticar, async (req, res) => {
+  if (req.usuario.tipo !== 'admin') {
+    return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
+  }
+
+  const { nome, email, senha, instituicao } = req.body;
+  if (!nome || !email || !senha || !instituicao) {
+    return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
+  }
+
+  try {
+    const usuarioExistente = await Usuario.findOne({ email });
+    if (usuarioExistente) {
+      return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
+    }
+
+    const novoUsuario = new Usuario({ nome, email, senha, instituicao });
+    await novoUsuario.save();
+    res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
+  } catch (erro) {
+    console.error('Erro no cadastro:', erro);
+    res.status(500).json({ mensagem: 'Erro no servidor ao cadastrar usuário.' });
+  }
+});
+
+// Rota para verificar usuário logado
+app.get('/api/usuario-logado', autenticar, (req, res) => {
+  res.json(req.usuario);
+});
+
+// Rota para obter dados do usuário completo
 app.get('/api/usuario', autenticar, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.usuario.id).select('nome tipo instituicao');
@@ -119,6 +135,7 @@ app.get('/api/usuario', autenticar, async (req, res) => {
   }
 });
 
+// PDF via Python
 app.get('/api/pdf/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findById(req.params.id).populate('aluno');
@@ -202,7 +219,8 @@ app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', autenticar, responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', autenticar, cartoesRoutes);
-app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes); // ✅ nova rota incluída
+app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes);
+app.use('/api/usuarios', autenticar, usuariosRoutes); // ✅ nova rota protegida
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
