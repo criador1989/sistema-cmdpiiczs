@@ -1,4 +1,3 @@
-
 import sys
 import io
 import json
@@ -11,6 +10,7 @@ from reportlab.lib.pagesizes import A6
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 
+# Funções auxiliares
 def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
 
@@ -19,13 +19,15 @@ def nome_para_arquivo(texto):
     texto = re.sub(r'[^a-zA-Z0-9_-]', '_', texto)
     return texto.strip('_') or "aluno"
 
-LOGO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "logo_cmdp.jpg"))
-SAIDA_DIR = "/tmp/cartoes_temp"
+# Caminhos permitidos no Render
+BASE_DIR = "/tmp/cartoes"
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "logo_cmdp.jpg")
+
+os.makedirs(BASE_DIR, exist_ok=True)
 
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 dados = json.load(sys.stdin)
 
-os.makedirs(SAIDA_DIR, exist_ok=True)
 pdfs = []
 
 for aluno in dados:
@@ -34,11 +36,12 @@ for aluno in dados:
     codigo = aluno.get("codigoAcesso", "")
     url = f"https://sistema-cmdpiiczs.onrender.com/ficha-responsavel.html?codigo={codigo}"
 
-    qr_path = os.path.join(SAIDA_DIR, f"qr_{codigo}.png")
+    qr_path = os.path.join(BASE_DIR, f"qr_{codigo}.png")
     qrcode.make(url).save(qr_path)
 
     nome_arquivo = nome_para_arquivo(nome)
-    caminho_pdf = os.path.join(SAIDA_DIR, f"{nome_arquivo}.pdf")
+    nome_pdf = f"{nome_arquivo}.pdf"
+    caminho_pdf = os.path.join(BASE_DIR, nome_pdf)
     pdfs.append(caminho_pdf)
 
     c = canvas.Canvas(caminho_pdf, pagesize=A6)
@@ -64,6 +67,7 @@ for aluno in dados:
     c.showPage()
     c.save()
 
+# Compactar PDFs no /tmp
 saida_zip = "/tmp/cartoes_turma.zip"
 with zipfile.ZipFile(saida_zip, "w") as zipf:
     for pdf in pdfs:
