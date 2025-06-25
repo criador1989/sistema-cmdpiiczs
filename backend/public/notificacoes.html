@@ -163,6 +163,21 @@
         }
       }
 
+      async function gerarPDF(id) {
+        try {
+          const resposta = await fetch(`/api/pdf/${id}`, {
+            method: 'POST',
+            credentials: 'include'
+          });
+          if (!resposta.ok) throw new Error('Erro ao gerar PDF');
+          const blob = await resposta.blob();
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch (erro) {
+          alert('Erro ao gerar PDF.');
+        }
+      }
+
       async function reenviarNotificacao(id) {
         try {
           const resposta = await fetch(`/api/notificacoes/${id}/reenviar`, {
@@ -228,7 +243,7 @@
           }[n.status] || '—';
 
           const acoes = [
-            `<a class="pdf-btn" href="/api/pdf/${n._id}" target="_blank">PDF</a>`,
+            `<button class="pdf-btn" onclick="gerarPDF('${n._id}')">PDF</button>`,
             `<a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>`,
             `<button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>`
           ];
@@ -280,6 +295,7 @@
       };
 
       window.reenviarNotificacao = reenviarNotificacao;
+      window.gerarPDF = gerarPDF;
 
       carregarNotificacoes();
     });

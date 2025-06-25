@@ -1,72 +1,67 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ficha do Aluno</title>
-  <meta name="theme-color" content="#941a1d" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ficha do Aluno - Colégio Militar Dom Pedro II</title>
   <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#941a1d" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
   <style>
     body {
-      font-family: Arial; background: #f9f9f9; padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
     }
-    .form {
-      max-width: 600px;
+    .container {
+      max-width: 700px;
       margin: auto;
       background: white;
       padding: 20px;
-      border-radius: 8px;
+      border-radius: 10px;
     }
     h2 {
-      color: #d82327;
+      color: #941a1d;
+      margin-bottom: 10px;
     }
-    textarea, input[type=text] {
-      width: 100%;
+    .dados {
+      margin-bottom: 20px;
+      background: #fefefe;
       padding: 10px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      border-left: 5px solid #941a1d;
     }
-    button {
-      background: #d82327;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      margin-top: 10px;
-      cursor: pointer;
-      border-radius: 4px;
+    .notificacao {
+      border-bottom: 1px solid #ccc;
+      padding: 8px 0;
     }
-    button:hover {
-      background: #941a1d;
+    .notificacao strong {
+      color: #333;
     }
-    .links {
+    .voltar {
       margin-top: 20px;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-    }
-    .links a {
-      color: #d82327;
+      display: inline-block;
+      color: #941a1d;
       text-decoration: none;
       font-weight: bold;
     }
-    .links a:hover {
+    .voltar:hover {
       text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="form">
-    <h2>Nova Observação para o Aluno</h2>
-    <textarea id="texto" rows="5" placeholder="Digite a observação..."></textarea>
-    <input type="text" id="autor" placeholder="Nome do autor">
-    <button onclick="salvarObservacao()">Salvar Observação</button>
-
-    <div class="links">
-      <a href="/painel.html">🏠 Voltar ao Painel</a>
+  <div class="container">
+    <h2>Ficha do Aluno</h2>
+    <div class="dados" id="dadosAluno">
+      Carregando dados do aluno...
     </div>
+
+    <div id="notificacoes">
+      <p>Carregando notificações...</p>
+    </div>
+
+    <a href="/painel.html" class="voltar">🏠 Voltar ao Painel</a>
   </div>
 
   <script>
@@ -74,41 +69,52 @@
     const alunoId = params.get('id');
 
     if (!alunoId) {
-      alert('ID do aluno não encontrado na URL.');
+      alert('ID do aluno não foi fornecido.');
+    } else {
+      carregarFicha(alunoId);
     }
 
-    async function salvarObservacao() {
-      const texto = document.getElementById('texto').value.trim();
-      const autor = document.getElementById('autor').value.trim();
-
-      if (!texto) {
-        alert('Digite uma observação antes de salvar.');
-        return;
-      }
-
+    async function carregarFicha(id) {
       try {
-        const res = await fetch(`/ficha/salvar/${alunoId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto, autor })
-        });
-
+        const res = await fetch(`/api/ficha/id/${id}`);
         const data = await res.json();
 
-        if (res.ok) {
-          alert('✅ Observação salva com sucesso!');
-          document.getElementById('texto').value = '';
-        } else {
-          console.error(data);
-          alert(data.erro || 'Erro ao salvar observação.');
+        if (!res.ok) {
+          document.getElementById('dadosAluno').innerText = 'Erro ao carregar aluno.';
+          return;
         }
-      } catch (err) {
-        console.error(err);
-        alert('Erro de conexão com o servidor.');
+
+        const aluno = data.aluno;
+        const notificacoes = data.notificacoes;
+
+        document.getElementById('dadosAluno').innerHTML = `
+          <strong>Nome:</strong> ${aluno.nome}<br>
+          <strong>Turma:</strong> ${aluno.turma}<br>
+          <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}<br>
+          <strong>Nota de Comportamento:</strong> ${aluno.comportamento.toFixed(2)}
+        `;
+
+        if (notificacoes.length === 0) {
+          document.getElementById('notificacoes').innerHTML = '<p>Nenhuma notificação registrada.</p>';
+        } else {
+          document.getElementById('notificacoes').innerHTML = '<h3>Notificações:</h3>' + notificacoes.map(n => `
+            <div class="notificacao">
+              <strong>Motivo:</strong> ${n.motivo}<br>
+              <strong>Tipo:</strong> ${n.tipo}<br>
+              <strong>Medida:</strong> ${n.tipoMedida}<br>
+              <strong>Valor:</strong> ${n.valorNumerico}<br>
+              <strong>Data:</strong> ${new Date(n.createdAt).toLocaleDateString('pt-BR')}
+            </div>
+          `).join('');
+        }
+
+      } catch (erro) {
+        console.error('Erro ao buscar ficha:', erro);
+        document.getElementById('dadosAluno').innerText = 'Erro ao carregar dados.';
       }
     }
 
-    // Registro do Service Worker para PWA
+    // PWA: registrar service worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')

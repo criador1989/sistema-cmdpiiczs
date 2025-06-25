@@ -4,7 +4,7 @@ const notificacaoSchema = new mongoose.Schema({
   aluno: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Aluno',
-    required: true
+    required: false
   },
   tipo: {
     type: String,

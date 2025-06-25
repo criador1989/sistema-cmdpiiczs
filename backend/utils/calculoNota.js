@@ -1,35 +1,30 @@
-const { addDays, isBefore, parseISO, eachDayOfInterval } = require('date-fns');
+const { addDays, isAfter, parseISO, eachDayOfInterval, isBefore } = require('date-fns');
 
-/**
- * Calcula a nota atual do aluno com base em T.S.M.D. e valores numéricos.
- * @param {Date} dataEntrada - Data de ingresso no colégio
- * @param {Date} dataAtual - Data atual (normalmente = hoje)
- * @param {Array} notificacoes - Lista de notificações [{ data, valorNumerico }]
- * @returns {Number} notaFinal - Nota final de comportamento (máximo 10)
- */
 function calcularNotaTSMD(dataEntrada, dataAtual, notificacoes = []) {
   let nota = 8.0;
 
-  // Gerar todos os dias úteis no período
+  // Se a dataEntrada estiver no futuro em relação à data atual, retorna 8 sem cálculos
+  if (!dataEntrada || isAfter(dataEntrada, dataAtual)) {
+    return nota;
+  }
+
   const diasUteis = eachDayOfInterval({
     start: dataEntrada,
     end: dataAtual,
   }).filter(d => [1, 2, 3, 4, 5].includes(d.getDay()));
 
-  // Ordenar as notificações por data
   const notificacoesOrdenadas = notificacoes
     .map(n => ({
       data: typeof n.data === 'string' ? parseISO(n.data) : n.data,
       valor: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0
     }))
-    .filter(n => isBefore(n.data, dataAtual))
+    .filter(n => !isAfter(n.data, dataAtual)) // evita datas futuras
     .sort((a, b) => a.data - b.data);
 
   let inicioContagem = dataEntrada;
   let bonusDias = 0;
 
   for (const n of notificacoesOrdenadas) {
-    // Aplica o valor da notificação (positivo ou negativo)
     nota += n.valor;
 
     const trecho = diasUteis.filter(d => d >= inicioContagem && d < n.data);
@@ -37,10 +32,9 @@ function calcularNotaTSMD(dataEntrada, dataAtual, notificacoes = []) {
       bonusDias += trecho.length - 60;
     }
 
-    inicioContagem = addDays(n.data, 1); // reinicia contagem após infração
+    inicioContagem = addDays(n.data, 1);
   }
 
-  // Trecho final até a data atual
   const trechoFinal = diasUteis.filter(d => d >= inicioContagem && d <= dataAtual);
   if (trechoFinal.length > 60) {
     bonusDias += trechoFinal.length - 60;

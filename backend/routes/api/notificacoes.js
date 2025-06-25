@@ -1,3 +1,4 @@
+// backend/routes/api/notificacoes.js
 const express = require('express'); 
 const router = express.Router();
 
@@ -92,8 +93,7 @@ router.post('/', autenticar, async (req, res) => {
     let notaAnterior = 8.0;
 
     if (notificacoesAnteriores.length > 0) {
-      const ultimaNotificacao = notificacoesAnteriores[0];
-      notaAnterior = ultimaNotificacao.notaAtual;
+      notaAnterior = notificacoesAnteriores[0].notaAtual;
     } else {
       notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, new Date(data), []);
     }
@@ -104,17 +104,25 @@ router.post('/', autenticar, async (req, res) => {
     await alunoRelacionado.save();
 
     const dadosRegulamento = obterDadosDoRegulamento(motivo);
-
     const anoAtual = new Date(data).getFullYear();
-    const totalDoAno = await Notificacao.countDocuments({
+
+    // 🔒 Verificar último número sequencial salvo no ano
+    const ultima = await Notificacao.findOne({
       instituicao: req.usuario.instituicao,
       data: {
         $gte: new Date(`${anoAtual}-01-01T00:00:00.000Z`),
         $lte: new Date(`${anoAtual}-12-31T23:59:59.999Z`)
       }
-    });
+    }).sort({ numeroSequencial: -1 });
 
-    const numeroSequencial = `${String(totalDoAno + 1).padStart(2, '0')}/${anoAtual}`;
+    let numeroSequencial;
+    if (ultima) {
+      const partes = ultima.numeroSequencial.split('/');
+      const numero = parseInt(partes[0]) + 1;
+      numeroSequencial = `${String(numero).padStart(2, '0')}/${anoAtual}`;
+    } else {
+      numeroSequencial = `01/${anoAtual}`;
+    }
 
     const novaNotificacao = new Notificacao({
       aluno,
@@ -124,7 +132,7 @@ router.post('/', autenticar, async (req, res) => {
       valorNumerico: valor,
       quantidadeDias: dias,
       observacao,
-      data,
+      data: new Date(data),
       notaAnterior,
       notaAtual,
       artigo: dadosRegulamento.artigo,

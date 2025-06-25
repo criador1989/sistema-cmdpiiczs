@@ -8,7 +8,17 @@ const autenticar = require('../../middleware/autenticacao');
 
 const router = express.Router();
 
-// GERAÇÃO DE DOCX COM PYTHON
+// Função auxiliar
+function calcularComportamentoClassificacao(nota) {
+  if (nota >= 9.5) return 'Excepcional';
+  if (nota >= 8.5) return 'Ótimo';
+  if (nota >= 7.5) return 'Bom';
+  if (nota >= 6.0) return 'Regular';
+  if (nota >= 4.0) return 'Insuficiente';
+  return 'Incompatível';
+}
+
+// Rota POST para gerar o DOCX
 router.post('/pdf/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -20,7 +30,7 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Notificação ou aluno não encontrado' });
     }
 
-    // DADOS PARA O DOCUMENTO
+    // Dados para preencher no DOCX
     const dados = {
       numero: notificacao._id.toString().slice(-6).toUpperCase(),
       numeroSequencial: notificacao.numeroSequencial || 'TESTE-FORCADO',
@@ -41,9 +51,10 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       })
     };
 
-    console.log('🔍 Dados enviados ao Python:', dados);
+    console.log('📤 Dados enviados ao Python:', dados);
 
-    const python = spawn('python', ['pdf/generate_notification.py'], {
+    const scriptPath = path.join(__dirname, '../../pdf/generate_notification_docx.py');
+    const python = spawn('python', [scriptPath], {
       cwd: path.resolve(__dirname, '../../')
     });
 
@@ -56,18 +67,23 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     });
 
     python.stderr.on('data', (data) => {
-      console.error(`Erro Python: ${data}`);
+      console.error('❌ Erro Python:', data.toString());
     });
 
     python.on('close', (code) => {
       if (code !== 0) {
+        console.error(`❌ Python finalizou com código ${code}`);
         return res.status(500).send('Erro ao gerar PDF');
       }
 
       const docxPath = output.trim();
+      if (!fs.existsSync(docxPath)) {
+        return res.status(500).send('Arquivo gerado não encontrado');
+      }
+
       const filename = `notificacao_${notificacao.aluno.nome.replace(/\s+/g, '_')}.docx`;
       res.download(docxPath, filename, (err) => {
-        if (err) console.error('Erro ao enviar o arquivo:', err);
+        if (err) console.error('❌ Erro ao enviar o arquivo gerado:', err);
       });
     });
 
@@ -76,15 +92,5 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     res.status(500).json({ error: 'Erro ao gerar notificação' });
   }
 });
-
-// Função auxiliar
-function calcularComportamentoClassificacao(nota) {
-  if (nota >= 9.5) return 'Excepcional';
-  if (nota >= 8.5) return 'Ótimo';
-  if (nota >= 7.5) return 'Bom';
-  if (nota >= 6.0) return 'Regular';
-  if (nota >= 4.0) return 'Insuficiente';
-  return 'Incompatível';
-}
 
 module.exports = router;

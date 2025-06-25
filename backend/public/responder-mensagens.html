@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mensagens Internas - Sistema Escolar</title>
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #8B0000;
+    }
+    .mensagem {
+      border-bottom: 1px solid #ddd;
+      padding: 15px;
+    }
+    .mensagem p {
+      margin: 5px 0;
+    }
+    .mensagem small {
+      color: #777;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      margin-top: 10px;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #8B0000;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #a50000;
+    }
+    .btn-voltar {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #8B0000;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="btn-voltar" href="painel.html">← Voltar ao Painel</a>
+    <h1>📬 Mensagens Recebidas</h1>
+    <div id="listaMensagens"></div>
+  </div>
+
+  <script>
+    async function carregarMensagens() {
+      const resposta = await fetch('/api/mensagens', { credentials: 'include' });
+      const mensagens = await resposta.json();
+      const lista = document.getElementById('listaMensagens');
+      lista.innerHTML = '';
+
+      mensagens.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'mensagem';
+
+        div.innerHTML = `
+          <p><strong>De:</strong> ${m.remetente?.nome || 'Desconhecido'}</p>
+          <p><strong>Mensagem:</strong> ${m.conteudo}</p>
+          <small>${new Date(m.data).toLocaleString()}</small>
+
+          <textarea placeholder="Responder..." id="resposta-${m._id}"></textarea>
+          <button onclick="responderMensagem('${m._id}', '${m.remetente?._id || ''}')">Responder</button>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    async function responderMensagem(mensagemId, destinatarioId) {
+      const textarea = document.getElementById(`resposta-${mensagemId}`);
+      const conteudo = textarea.value.trim();
+      if (!conteudo || !destinatarioId) return alert('Digite a resposta ou verifique o destinatário.');
+
+      const resposta = await fetch('/api/mensagens', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destinatario: destinatarioId, conteudo })
+      });
+
+      if (resposta.ok) {
+        alert('Resposta enviada!');
+        textarea.value = '';
+      } else {
+        alert('Erro ao responder.');
+      }
+    }
+
+    carregarMensagens();
+  </script>
+</body>
+</html>

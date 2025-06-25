@@ -24,4 +24,5 @@ const observacaoSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Observacao', observacaoSchema);
+module.exports = mongoose.models.Observacao || mongoose.model('Observacao', observacaoSchema);
+

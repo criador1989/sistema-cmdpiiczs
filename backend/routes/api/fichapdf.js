@@ -1,4 +1,3 @@
-// routes/api/fichapdf.js
 const express = require('express');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
@@ -8,15 +7,34 @@ const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
 
-// Gera PDF completo da ficha do aluno
-router.get('/ficha/:id', async (req, res) => {
+// Gera PDF da ficha do aluno com base em ID ou código de acesso
+router.get('/ficha/:codigoOuId', async (req, res) => {
   try {
-    const aluno = await Aluno.findById(req.params.id);
-    if (!aluno) return res.status(404).send('Aluno não encontrado');
+    const valor = req.params.codigoOuId.trim().toUpperCase();
+    console.log("🔍 Valor recebido:", valor);
 
+    let aluno = null;
+
+    // Se o valor tem 24 caracteres e é um ObjectId válido, tenta buscar pelo _id
+    if (/^[0-9a-fA-F]{24}$/.test(valor)) {
+      aluno = await Aluno.findById(valor);
+    }
+
+    // Se não achou por ID, tenta pelo código de acesso
+    if (!aluno) {
+      aluno = await Aluno.findOne({ codigoAcesso: valor });
+    }
+
+    if (!aluno) {
+      console.warn("⚠️ Aluno não encontrado com valor:", valor);
+      return res.status(404).json({ erro: 'Código inválido ou aluno não encontrado.' });
+    }
+
+    // Busca notificações e observações
     const notificacoes = await Notificacao.find({ aluno: aluno._id }).sort({ data: -1 });
     const observacoes = await Observacao.find({ aluno: aluno._id }).sort({ criadoEm: -1 });
 
+    // Inicia o PDF
     const doc = new PDFDocument();
     const nomeArquivo = `ficha_aluno_${aluno._id}.pdf`;
     const caminho = path.join(__dirname, '../../public/uploads/', nomeArquivo);
@@ -30,9 +48,7 @@ router.get('/ficha/:id', async (req, res) => {
     }
 
     // Título
-    doc.moveDown().fontSize(20).fillColor('#d82327').text('Ficha Comportamental do Aluno', {
-      align: 'center'
-    });
+    doc.moveDown().fontSize(20).fillColor('#d82327').text('Ficha Comportamental do Aluno', { align: 'center' });
 
     // Dados do aluno
     doc.moveDown().fontSize(12).fillColor('black');
@@ -70,10 +86,12 @@ router.get('/ficha/:id', async (req, res) => {
     stream.on('finish', () => {
       res.download(caminho, nomeArquivo, err => {
         if (err) res.status(500).send('Erro ao enviar PDF');
-        fs.unlinkSync(caminho); // remove o arquivo após envio
+        fs.unlinkSync(caminho); // Remove o arquivo após envio
       });
     });
-  } catch (error) {
+
+  } catch (erro) {
+    console.error("Erro ao gerar ficha do aluno:", erro);
     res.status(500).send('Erro ao gerar ficha do aluno');
   }
 });
