@@ -1,127 +1,238 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ficha do Aluno - Colégio Militar Dom Pedro II</title>
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#941a1d" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <title>Ficha do Aluno</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
     }
-    .container {
-      max-width: 700px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-    }
-    h2 {
+
+    h1 {
+      text-align: center;
       color: #941a1d;
+      margin-top: 30px;
+    }
+
+    .card {
+      background-color: #fff;
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 700px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .info strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 1.1em;
+    }
+
+    .titulo {
+      text-align: center;
+      color: #941a1d;
+      margin-top: 40px;
       margin-bottom: 10px;
     }
-    .dados {
-      margin-bottom: 20px;
-      background: #fefefe;
+
+    textarea {
+      width: 100%;
       padding: 10px;
-      border-left: 5px solid #941a1d;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      font-size: 1em;
     }
-    .notificacao {
-      border-bottom: 1px solid #ccc;
-      padding: 8px 0;
+
+    button {
+      background-color: #941a1d;
+      color: white;
+      padding: 10px 20px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
     }
-    .notificacao strong {
-      color: #333;
+
+    button:hover {
+      background-color: #7c1618;
     }
-    .voltar {
-      margin-top: 20px;
-      display: inline-block;
-      color: #941a1d;
-      text-decoration: none;
-      font-weight: bold;
+
+    .observacao {
+      background-color: #fff;
+      margin: 10px auto;
+      max-width: 700px;
+      padding: 15px;
+      border-left: 6px solid #941a1d;
+      border-radius: 5px;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s;
     }
-    .voltar:hover {
-      text-decoration: underline;
+
+    .observacao:hover {
+      transform: scale(1.01);
+    }
+
+    .autor {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .acoes {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+
+    .acoes button {
+      background: none;
+      border: none;
+      font-size: 1em;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+
+    .data {
+      font-size: 0.8em;
+      color: #999;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Ficha do Aluno</h2>
-    <div class="dados" id="dadosAluno">
-      Carregando dados do aluno...
-    </div>
+  <h1>Ficha do Aluno</h1>
 
-    <div id="notificacoes">
-      <p>Carregando notificações...</p>
-    </div>
-
-    <a href="/painel.html" class="voltar">🏠 Voltar ao Painel</a>
+  <div class="card info">
+    <strong>Nome:</strong> <span id="nome"></span><br>
+    <strong>Turma:</strong> <span id="turma"></span><br>
+    <strong>Comportamento:</strong> <span id="comportamento"></span><br>
+    <strong>Código de Acesso:</strong> <span id="codigo"></span>
   </div>
+
+  <h2 class="titulo">Observações</h2>
+  <div id="observacoes"></div>
+
+  <div class="card">
+    <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
+    <button id="btnSalvar">Salvar Observação</button>
+  </div>
+
+  <h2 class="titulo">Notificações</h2>
+  <div id="notificacoes"></div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const alunoId = params.get('id');
+    const id = params.get('id');
 
-    if (!alunoId) {
-      alert('ID do aluno não foi fornecido.');
-    } else {
-      carregarFicha(alunoId);
-    }
-
-    async function carregarFicha(id) {
+    async function carregarFicha() {
       try {
-        const res = await fetch(`/api/ficha/id/${id}`);
-        const data = await res.json();
+        const resposta = await fetch(`/ficha/dados/${id}`, { credentials: 'include' });
+        const dados = await resposta.json();
+        const aluno = dados.aluno;
 
-        if (!res.ok) {
-          document.getElementById('dadosAluno').innerText = 'Erro ao carregar aluno.';
-          return;
-        }
+        document.getElementById('nome').textContent = aluno.nome;
+        document.getElementById('turma').textContent = aluno.turma;
+        document.getElementById('comportamento').textContent = aluno.comportamento?.toFixed(2) || 'N/A';
+        document.getElementById('codigo').textContent = aluno.codigoAcesso;
 
-        const aluno = data.aluno;
-        const notificacoes = data.notificacoes;
-
-        document.getElementById('dadosAluno').innerHTML = `
-          <strong>Nome:</strong> ${aluno.nome}<br>
-          <strong>Turma:</strong> ${aluno.turma}<br>
-          <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}<br>
-          <strong>Nota de Comportamento:</strong> ${aluno.comportamento.toFixed(2)}
-        `;
-
-        if (notificacoes.length === 0) {
-          document.getElementById('notificacoes').innerHTML = '<p>Nenhuma notificação registrada.</p>';
-        } else {
-          document.getElementById('notificacoes').innerHTML = '<h3>Notificações:</h3>' + notificacoes.map(n => `
-            <div class="notificacao">
-              <strong>Motivo:</strong> ${n.motivo}<br>
-              <strong>Tipo:</strong> ${n.tipo}<br>
-              <strong>Medida:</strong> ${n.tipoMedida}<br>
-              <strong>Valor:</strong> ${n.valorNumerico}<br>
-              <strong>Data:</strong> ${new Date(n.createdAt).toLocaleDateString('pt-BR')}
+        const obsContainer = document.getElementById('observacoes');
+        obsContainer.innerHTML = '';
+        dados.observacoes.forEach(obs => {
+          const div = document.createElement('div');
+          div.className = 'observacao';
+          div.innerHTML = `
+            <div class="texto">${obs.texto}</div>
+            <p class="autor">— ${obs.autor} <span class="data">(${new Date(obs.createdAt).toLocaleDateString()})</span></p>
+            <div class="acoes">
+              <button onclick="editarObs('${obs._id}', this)">✏️</button>
+              <button onclick="excluirObs('${obs._id}')">🗑️</button>
             </div>
-          `).join('');
-        }
+          `;
+          obsContainer.appendChild(div);
+        });
 
-      } catch (erro) {
-        console.error('Erro ao buscar ficha:', erro);
-        document.getElementById('dadosAluno').innerText = 'Erro ao carregar dados.';
+        const notifContainer = document.getElementById('notificacoes');
+        notifContainer.innerHTML = '';
+        dados.notificacoes.forEach(n => {
+          const div = document.createElement('div');
+          div.className = 'observacao';
+          div.innerHTML = `<p><strong>${n.tipo}</strong> - ${n.motivo}</p>`;
+          notifContainer.appendChild(div);
+        });
+      } catch (e) {
+        alert('Erro ao carregar ficha.');
       }
     }
 
-    // PWA: registrar service worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+    async function salvarObservacao() {
+      const texto = document.getElementById('textoObservacao').value.trim();
+      if (!texto) return alert('Digite algo.');
+
+      const res = await fetch(`/api/observacoes/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ texto })
       });
+
+      const out = await res.json();
+      if (res.ok) {
+        document.getElementById('textoObservacao').value = '';
+        carregarFicha();
+      } else {
+        alert(out.mensagem || 'Erro ao salvar.');
+      }
     }
+
+    async function excluirObs(obsId) {
+      if (!confirm('Deseja excluir esta observação?')) return;
+      const res = await fetch(`/api/observacoes/${obsId}`, {
+        method: 'DELETE', credentials: 'include'
+      });
+      if (res.ok) carregarFicha();
+      else alert('Erro ao excluir observação.');
+    }
+
+    function editarObs(obsId, btn) {
+      const card = btn.closest('.observacao');
+      const textoAtual = card.querySelector('.texto').textContent;
+      const textarea = document.createElement('textarea');
+      textarea.value = textoAtual;
+
+      const salvar = document.createElement('button');
+      salvar.textContent = '💾';
+      salvar.onclick = async () => {
+        const novoTexto = textarea.value.trim();
+        if (!novoTexto) return alert('Texto inválido.');
+        const res = await fetch(`/api/observacoes/${obsId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ texto: novoTexto })
+        });
+        if (res.ok) carregarFicha();
+        else alert('Erro ao atualizar.');
+      };
+
+      const cancelar = document.createElement('button');
+      cancelar.textContent = '❌';
+      cancelar.onclick = () => carregarFicha();
+
+      card.innerHTML = '';
+      card.appendChild(textarea);
+      card.appendChild(salvar);
+      card.appendChild(cancelar);
+    }
+
+    document.getElementById('btnSalvar').addEventListener('click', salvarObservacao);
+    carregarFicha();
   </script>
 </body>
 </html>

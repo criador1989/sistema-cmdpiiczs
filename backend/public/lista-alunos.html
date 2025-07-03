@@ -1,5 +1,3 @@
-<!-- Substitua todo o conteúdo anterior deste arquivo pelo conteúdo abaixo -->
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -33,15 +31,6 @@
       color: #941a1d;
     }
 
-    h4 {
-      margin-top: 20px;
-      color: #333;
-    }
-
-    .turno {
-      margin-top: 40px;
-    }
-
     .turma-btn {
       display: inline-block;
       margin: 5px;
@@ -61,51 +50,113 @@
       transform: scale(1.03);
     }
 
-    .turma-section {
-      display: none;
-      margin-top: 20px;
+    .aluno-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+      margin-top: 30px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
+    .aluno-card {
+      background-color: #f8f9fa;
+      border-radius: 10px;
       padding: 10px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #007BFF;
-      color: white;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-
-    .actions button,
-    .actions a {
-      margin-right: 5px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
+      text-align: center;
+      position: relative;
       cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 14px;
+      transition: transform 0.2s;
     }
 
-    .edit-btn { background-color: #ffc107; color: black; }
+    .aluno-card:hover {
+      transform: scale(1.03);
+    }
+
+    .aluno-card img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ccc;
+    }
+
+    .aluno-card .nome {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #333;
+      text-decoration: underline;
+    }
+
+    .alerta {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: red;
+      color: white;
+      border-radius: 50%;
+      padding: 3px 6px;
+      font-size: 12px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      border-radius: 12px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .modal-content img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+
+    .modal-content p {
+      margin: 5px 0;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .modal-content h3 {
+      color: #941a1d;
+      margin-bottom: 10px;
+    }
+
+    .modal-content button, .modal-content a {
+      margin: 6px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-block;
+      text-decoration: none;
+    }
+
     .ficha-btn { background-color: #17a2b8; color: white; }
     .obs-btn { background-color: #6f42c1; color: white; }
+    .edit-btn { background-color: #ffc107; color: black; }
     .link-btn { background-color: #28a745; color: white; }
     .delete-btn { background-color: #dc3545; color: white; }
+    .qr-btn { background-color: #0d6efd; color: white; margin-top: 10px; }
 
-    .voltar-btn, .voltar-turmas-btn {
+    .voltar-btn {
       margin-top: 25px;
       background-color: #6c757d;
       color: white;
@@ -114,146 +165,132 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 15px;
-      transition: background 0.2s;
-    }
-
-    .voltar-btn:hover,
-    .voltar-turmas-btn:hover {
-      background-color: #5a6268;
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Lista de Alunos</h2>
-
-    <div class="turno">
-      <h3>Turno da Manhã (Ensino Fundamental II)</h3>
-      <div id="botoesManha"></div>
-      <div id="turmasManha"></div>
-    </div>
-
-    <div class="turno">
-      <h3>Turno da Tarde (Ensino Médio)</h3>
-      <div id="botoesTarde"></div>
-      <div id="turmasTarde"></div>
-    </div>
-
+    <h3>Turno da Manhã</h3>
+    <div id="botoesManha"></div>
+    <h3>Turno da Tarde</h3>
+    <div id="botoesTarde"></div>
+    <div class="aluno-grid" id="listaAlunos"></div>
     <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+    <button class="qr-btn" onclick="gerarCartoes()">📲 Gerar Cartões QR Code da Turma</button>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <img id="modalFoto" src="" alt="Foto" />
+      <h3 id="modalNome"></h3>
+      <p id="modalTurma"></p>
+      <p id="modalNota"></p>
+      <a id="btnFicha" class="ficha-btn">Ver Ficha</a>
+      <a id="btnObs" class="obs-btn">Adicionar Observação</a>
+      <a id="btnEditar" class="edit-btn">Editar</a>
+      <a id="btnLink" class="link-btn" target="_blank">Link para os Pais</a>
+      <button id="btnExcluir" class="delete-btn">Excluir</button>
+      <br><br>
+      <button onclick="fecharModal()">Fechar</button>
+    </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
-      const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+    const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
+    const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+    let todosAlunos = [];
 
-      const resposta = await fetch('/api/alunos', { credentials: 'include' });
-      const alunos = await resposta.json();
+    async function carregarAlunos() {
+      const res = await fetch('/api/alunos', { credentials: 'include' });
+      todosAlunos = await res.json();
+      criarBotoes(turmasManha, 'botoesManha');
+      criarBotoes(turmasTarde, 'botoesTarde');
+    }
 
-      const grupos = {};
-      [...turmasManha, ...turmasTarde].forEach(t => grupos[t] = []);
-      alunos.forEach(aluno => {
-        if (grupos[aluno.turma]) grupos[aluno.turma].push(aluno);
-      });
-
-      function criarTabela(turma, alunos) {
-        const section = document.createElement('div');
-        section.classList.add('turma-section');
-        section.id = `turma-${turma}`;
-        section.innerHTML = `
-          <h4>Turma ${turma}</h4>
-          <button class="voltar-turmas-btn" style="margin-bottom: 15px" onclick="window.open('/api/cartoes/turma/${encodeURIComponent(turma)}')">📇 Gerar Cartões com QR Code</button>
-          <table>
-            <thead>
-              <tr>
-                <th>Foto</th>
-                <th>Nome</th>
-                <th>Turma</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${alunos.map(aluno => `
-                <tr>
-                  <td><img src="/uploads/${aluno.foto || 'sem-foto.png'}" alt="Foto" height="50" style="border-radius: 6px;"></td>
-                  <td>${aluno.nome}</td>
-                  <td>${aluno.turma}</td>
-                  <td class="actions">
-                    <a class="ficha-btn" href="ver-ficha.html?id=${aluno._id}">Ver Ficha</a>
-                    <a class="obs-btn" href="ficha-aluno.html?id=${aluno._id}">Adicionar Observação</a>
-                    <a class="edit-btn" href="editar-aluno.html?id=${aluno._id}">Editar</a>
-                    <a class="link-btn" href="ficha-responsavel.html?codigo=${aluno.codigoAcesso}" target="_blank">Gerar Link para os Pais</a>
-                    <button class="delete-btn" onclick="excluirAluno('${aluno._id}')">Excluir</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <button class="voltar-turmas-btn" onclick="voltarParaTurmas()">← Voltar para Turmas</button>
-        `;
-        return section;
-      }
-
-      function criarBotoes(turmas, containerId, destinoId) {
-        const container = document.getElementById(containerId);
-        const destino = document.getElementById(destinoId);
-
-        turmas.forEach(turma => {
-          const btn = document.createElement('button');
-          btn.textContent = turma;
-          btn.className = 'turma-btn';
-          btn.onclick = () => {
-            document.querySelectorAll('.turma-section').forEach(div => div.style.display = 'none');
-            document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
-            btn.classList.add('ativa');
-            const sec = document.getElementById(`turma-${turma}`);
-            if (sec) sec.style.display = 'block';
-          };
-          container.appendChild(btn);
-
-          if (grupos[turma].length > 0) {
-            const sec = criarTabela(turma, grupos[turma]);
-            destino.appendChild(sec);
-          }
-        });
-      }
-
-      window.voltarParaTurmas = () => {
-        document.querySelectorAll('.turma-section').forEach(div => div.style.display = 'none');
-        document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
-        document.querySelectorAll('.turno').forEach(turno => turno.style.display = 'block');
-      };
-
-      window.excluirAluno = async (id) => {
-        if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
-        try {
-          const resposta = await fetch(`/api/alunos/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-          });
-          if (resposta.ok) location.reload();
-          else alert('Erro ao excluir aluno.');
-        } catch {
-          alert('Erro ao excluir aluno.');
-        }
-      };
-
-      criarBotoes(turmasManha, 'botoesManha', 'turmasManha');
-      criarBotoes(turmasTarde, 'botoesTarde', 'turmasTarde');
-    });
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+    function criarBotoes(turmas, containerId) {
+      const container = document.getElementById(containerId);
+      turmas.forEach(turma => {
+        const btn = document.createElement('button');
+        btn.textContent = turma;
+        btn.className = 'turma-btn';
+        btn.onclick = () => renderizarTurma(turma);
+        container.appendChild(btn);
       });
     }
+
+    function renderizarTurma(turma) {
+      const grid = document.getElementById('listaAlunos');
+      grid.innerHTML = '';
+      const alunos = todosAlunos.filter(a => a.turma === turma);
+      alunos.forEach(aluno => {
+        const card = document.createElement('div');
+        card.className = 'aluno-card';
+        card.style.background = calcularCorNota(aluno.comportamento);
+        card.innerHTML = `
+          <img src="/uploads/${aluno.foto || 'sem-foto.png'}" alt="${aluno.nome}" />
+          <div class="nome" onclick='abrirModal(${JSON.stringify(aluno)})'>${aluno.nome}</div>
+          ${aluno.observacoesRecentes ? '<div class="alerta">!</div>' : ''}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function calcularCorNota(nota = 8) {
+      if (nota >= 9.5) return '#0f5132';
+      if (nota >= 8) return '#198754';
+      if (nota >= 7) return '#ffc107';
+      if (nota >= 6) return '#fd7e14';
+      if (nota >= 4) return '#dc3545';
+      return '#212529';
+    }
+
+    function abrirModal(aluno) {
+      document.getElementById('modalFoto').src = `/uploads/${aluno.foto || 'sem-foto.png'}`;
+      document.getElementById('modalNome').innerText = aluno.nome;
+      document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma || '-'}`;
+      document.getElementById('modalNota').innerText = `Nota de comportamento: ${aluno.comportamento?.toFixed(2) || '8.00'}`;
+      document.getElementById('btnFicha').href = `ver-ficha.html?id=${aluno._id}`;
+      document.getElementById('btnObs').href = `ficha-aluno.html?id=${aluno._id}`;
+      document.getElementById('btnEditar').href = `editar-aluno.html?id=${aluno._id}`;
+      document.getElementById('btnLink').href = `ficha-responsavel.html?codigo=${aluno.codigoAcesso}`;
+      document.getElementById('btnExcluir').onclick = () => excluirAluno(aluno._id);
+      document.getElementById('modal').style.display = 'block';
+    }
+
+    function fecharModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    async function excluirAluno(id) {
+      if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
+      const res = await fetch(`/api/alunos/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) location.reload();
+      else alert('Erro ao excluir aluno.');
+    }
+
+    async function gerarCartoes() {
+      const turma = prompt("Digite a turma (ex: 6ºA):");
+      if (!turma) return;
+      try {
+        const resposta = await fetch(`/api/cartoes/turma/${encodeURIComponent(turma)}`);
+        if (!resposta.ok) throw new Error('Erro ao gerar os cartões');
+        const blob = await resposta.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cartoes_${turma}.zip`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } catch (erro) {
+        alert("Erro ao gerar cartões: " + erro.message);
+      }
+    }
+
+    carregarAlunos();
   </script>
 </body>
 </html>

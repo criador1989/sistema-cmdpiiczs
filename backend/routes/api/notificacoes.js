@@ -1,5 +1,4 @@
-// backend/routes/api/notificacoes.js
-const express = require('express'); 
+const express = require('express');
 const router = express.Router();
 
 const Notificacao = require('../../models/Notificacao');
@@ -9,15 +8,18 @@ const enviarWhatsapp = require('../../utils/twilio');
 const autenticar = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 
-// GET /api/notificacoes?page=1&limit=10
+// GET fixo precisa vir antes do dinâmico
+router.get('/novas', autenticar, async (req, res) => {
+  res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
+});
+
+// GET paginado
 router.get('/', autenticar, async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-
     const filtro = { instituicao: req.usuario.instituicao };
 
     const total = await Notificacao.countDocuments(filtro);
-
     const notificacoes = await Notificacao.find(filtro)
       .sort({ data: -1 })
       .skip((page - 1) * limit)
@@ -40,20 +42,38 @@ router.get('/', autenticar, async (req, res) => {
   }
 });
 
+// GET /api/notificacoes/:id
+router.get('/:id', autenticar, async (req, res) => {
+  try {
+    const notificacao = await Notificacao.findOne({
+      _id: req.params.id,
+      instituicao: req.usuario.instituicao
+    }).populate('aluno');
+
+    if (!notificacao) {
+      return res.status(404).json({ message: 'Notificação não encontrada' });
+    }
+
+    res.json(notificacao);
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao carregar notificação.' });
+  }
+});
+
 // POST /api/notificacoes
 router.post('/', autenticar, async (req, res) => {
-  try {
-    const {
-      aluno,
-      motivo,
-      tipo,
-      tipoMedida,
-      observacao,
-      data,
-      quantidadeDias,
-      valorNumerico
-    } = req.body;
+  const {
+    aluno,
+    motivo,
+    tipo,
+    tipoMedida,
+    observacao,
+    data,
+    quantidadeDias,
+    valorNumerico
+  } = req.body;
 
+  try {
     const valores = {
       'Advertência Escrita': -0.30,
       'Repreensão': -0.50,
@@ -91,7 +111,6 @@ router.post('/', autenticar, async (req, res) => {
     }).sort({ data: -1 });
 
     let notaAnterior = 8.0;
-
     if (notificacoesAnteriores.length > 0) {
       notaAnterior = notificacoesAnteriores[0].notaAtual;
     } else {
@@ -99,55 +118,75 @@ router.post('/', autenticar, async (req, res) => {
     }
 
     const notaAtual = Math.max(0, Math.min(10, parseFloat((notaAnterior + valor).toFixed(2))));
-
     alunoRelacionado.comportamento = notaAtual;
     await alunoRelacionado.save();
 
     const dadosRegulamento = obterDadosDoRegulamento(motivo);
     const anoAtual = new Date(data).getFullYear();
 
-    // 🔒 Verificar último número sequencial salvo no ano
-    const ultima = await Notificacao.findOne({
-      instituicao: req.usuario.instituicao,
-      data: {
-        $gte: new Date(`${anoAtual}-01-01T00:00:00.000Z`),
-        $lte: new Date(`${anoAtual}-12-31T23:59:59.999Z`)
-      }
-    }).sort({ numeroSequencial: -1 });
-
+    let novaNotificacao;
+    let tentativa = 0;
     let numeroSequencial;
-    if (ultima) {
-      const partes = ultima.numeroSequencial.split('/');
-      const numero = parseInt(partes[0]) + 1;
-      numeroSequencial = `${String(numero).padStart(2, '0')}/${anoAtual}`;
-    } else {
-      numeroSequencial = `01/${anoAtual}`;
+
+    while (true) {
+      tentativa++;
+
+      const ultima = await Notificacao.findOne({
+        instituicao: req.usuario.instituicao,
+        data: {
+          $gte: new Date(`${anoAtual}-01-01T00:00:00.000Z`),
+          $lte: new Date(`${anoAtual}-12-31T23:59:59.999Z`)
+        }
+      }).sort({ numeroSequencial: -1 });
+
+      const proximoNumero = ultima
+        ? parseInt(ultima.numeroSequencial.split('/')[0]) + tentativa
+        : tentativa;
+
+      numeroSequencial = `${String(proximoNumero).padStart(2, '0')}/${anoAtual}`;
+
+      try {
+        novaNotificacao = new Notificacao({
+          aluno,
+          motivo,
+          tipo,
+          tipoMedida,
+          valorNumerico: valor,
+          quantidadeDias: dias,
+          observacao,
+          data: new Date(data),
+          notaAnterior,
+          notaAtual,
+          artigo: dadosRegulamento.artigo,
+          paragrafo: dadosRegulamento.paragrafo,
+          inciso: dadosRegulamento.inciso,
+          classificacaoRegulamento: dadosRegulamento.classificacao,
+          instituicao: req.usuario.instituicao,
+          numeroSequencial,
+          status: 'pendente'
+        });
+
+        await novaNotificacao.save();
+        break;
+      } catch (err) {
+        if (err.code === 11000 && tentativa < 10) {
+          continue;
+        } else {
+          console.error('Erro ao salvar notificação:', err);
+          return res.status(500).json({ error: 'Erro ao salvar notificação.' });
+        }
+      }
     }
 
-    const novaNotificacao = new Notificacao({
-      aluno,
-      motivo,
-      tipo,
-      tipoMedida,
-      valorNumerico: valor,
-      quantidadeDias: dias,
-      observacao,
-      data: new Date(data),
-      notaAnterior,
-      notaAtual,
-      artigo: dadosRegulamento.artigo,
-      paragrafo: dadosRegulamento.paragrafo,
-      inciso: dadosRegulamento.inciso,
-      classificacaoRegulamento: dadosRegulamento.classificacao,
-      instituicao: req.usuario.instituicao,
-      numeroSequencial,
-      status: 'pendente'
-    });
-
-    await novaNotificacao.save();
-
     if (alunoRelacionado.telefone) {
-      const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.\n\nFoi registrada uma notificação disciplinar:\n🔸 Motivo: ${motivo}\n🔸 Medida: ${tipoMedida}\n\nNota atual de comportamento: ${notaAtual.toFixed(2)}.`;
+      const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.
+      
+Foi registrada uma notificação disciplinar:
+🔸 Motivo: ${motivo}
+🔸 Medida: ${tipoMedida}
+
+Nota atual de comportamento: ${notaAtual.toFixed(2)}.`;
+
       await enviarWhatsapp(alunoRelacionado.telefone, mensagem);
     }
 
@@ -155,24 +194,6 @@ router.post('/', autenticar, async (req, res) => {
   } catch (err) {
     console.error('Erro ao criar notificação:', err);
     res.status(500).json({ error: 'Erro ao criar notificação: ' + err.message });
-  }
-});
-
-// GET /api/notificacoes/:id
-router.get('/:id', autenticar, async (req, res) => {
-  try {
-    const notificacao = await Notificacao.findOne({
-      _id: req.params.id,
-      instituicao: req.usuario.instituicao
-    }).populate('aluno');
-
-    if (!notificacao) {
-      return res.status(404).json({ message: 'Notificação não encontrada' });
-    }
-
-    res.json(notificacao);
-  } catch (err) {
-    res.status(500).json({ message: 'Erro ao carregar notificação.' });
   }
 });
 
@@ -242,7 +263,6 @@ router.delete('/:id', autenticar, async (req, res) => {
     }
 
     const alunoId = notificacao.aluno;
-
     await notificacao.deleteOne();
 
     const aluno = await Aluno.findOne({

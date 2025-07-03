@@ -9,8 +9,8 @@ import re
 from reportlab.lib.pagesizes import A6
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
+from datetime import datetime
 
-# Funções auxiliares
 def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
 
@@ -19,10 +19,9 @@ def nome_para_arquivo(texto):
     texto = re.sub(r'[^a-zA-Z0-9_-]', '_', texto)
     return texto.strip('_') or "aluno"
 
-# Caminhos permitidos no Render
+# Caminhos
 BASE_DIR = "/tmp/cartoes"
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "logo_cmdp.jpg")
-
 os.makedirs(BASE_DIR, exist_ok=True)
 
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
@@ -47,6 +46,7 @@ for aluno in dados:
     c = canvas.Canvas(caminho_pdf, pagesize=A6)
     w, h = A6
 
+    # Logo institucional
     if os.path.exists(LOGO_PATH):
         c.drawImage(LOGO_PATH, w/2 - 25, h - 50, width=50, preserveAspectRatio=True, mask='auto')
 
@@ -67,11 +67,12 @@ for aluno in dados:
     c.showPage()
     c.save()
 
-# Compactar PDFs no /tmp
-saida_zip = "/tmp/cartoes_turma.zip"
+# Compactar os PDFs
+saida_zip = os.path.join(BASE_DIR, f"cartoes_turma_{datetime.now().timestamp()}.zip")
 with zipfile.ZipFile(saida_zip, "w") as zipf:
     for pdf in pdfs:
         if os.path.exists(pdf):
             zipf.write(pdf, os.path.basename(pdf))
 
+# Imprime o caminho final corretamente (última instrução)
 print(saida_zip)

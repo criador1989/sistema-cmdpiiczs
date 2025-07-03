@@ -10,9 +10,8 @@ const fs = require('fs');
 const Aluno = require('./models/Aluno');
 const Notificacao = require('./models/Notificacao');
 const Usuario = require('./models/Usuario');
-const Log = require('./models/Log'); // ✅ modelo de logs
+const Log = require('./models/Log');
 
-// Rotas
 const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
@@ -22,13 +21,16 @@ const fichaTesteRoute = require('./routes/api/fichaTeste');
 const cartoesRoutes = require('./routes/api/cartoes');
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
-const fichaAlunoRoutes = require('./routes/views/fichaAluno');
+const fichaApiRoutes = require('./routes/api/ficha');
+const fichaViewRoutes = require('./routes/views/fichaView');
 const motivosRoutes = require('./routes/api/motivos');
 const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
 const usuariosRoutes = require('./routes/api/usuarios');
 const logsRoutes = require('./routes/api/logs');
 const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
-const estatisticasRoutes = require('./routes/api/estatisticas'); // ✅ NOVO
+const estatisticasRoutes = require('./routes/api/estatisticas');
+const mensagensRoutes = require('./routes/api/mensagens');
+const observacoesRoutes = require('./routes/api/observacoes');
 
 dotenv.config();
 
@@ -60,7 +62,6 @@ function autenticar(req, res, next) {
   }
 }
 
-// Login
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -90,13 +91,11 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
-// Logout
 app.post('/auth/logout', (req, res) => {
   res.clearCookie('token');
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
-// Cadastro de novo usuário
 app.post('/auth/cadastrar', autenticar, async (req, res) => {
   if (req.usuario.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
@@ -122,12 +121,10 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
   }
 });
 
-// Ver usuário logado
 app.get('/api/usuario-logado', autenticar, (req, res) => {
   res.json(req.usuario);
 });
 
-// Obter dados completos do usuário
 app.get('/api/usuario', autenticar, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.usuario.id).select('nome tipo instituicao');
@@ -138,27 +135,20 @@ app.get('/api/usuario', autenticar, async (req, res) => {
   }
 });
 
-function getClassificacao(nota) {
-  nota = parseFloat(nota);
-  if (nota >= 9.01) return 'Excepcional';
-  if (nota >= 8.01) return 'Ótimo';
-  if (nota >= 7.00) return 'Bom';
-  if (nota >= 5.00) return 'Regular';
-  if (nota >= 3.00) return 'Insuficiente';
-  return 'Incompatível';
-}
+// ✅ Servir HTML da ficha
+app.get('/ficha-aluno.html', autenticar, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ficha-aluno.html'));
+});
 
-// ROTAS PÚBLICAS
-app.use('/api/ficha', fichaResponsavelRoute);
+// ✅ Rotas
+app.use('/api/ficha', autenticar, fichaApiRoutes);
+app.use('/ficha', autenticar, fichaViewRoutes);
 app.use('/api', fichaTesteRoute);
-
-// ROTAS PROTEGIDAS
 app.use('/api/alunos', autenticar, alunoRoutes);
 app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
 app.use('/api', autenticar, pdfRoutes);
 app.use('/api', autenticar, fichaPdfRoutes);
 app.use('/notificacoes', autenticar, notificacoesViewRoutes);
-app.use('/ficha', autenticar, fichaAlunoRoutes);
 app.use('/api/responsavel', autenticar, responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', autenticar, cartoesRoutes);
@@ -166,9 +156,12 @@ app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes);
 app.use('/api/usuarios', autenticar, usuariosRoutes);
 app.use('/api/logs', autenticar, logsRoutes);
 app.use('/api', autenticar, relatorioNotificacoesRoute);
-app.use('/api/estatisticas', autenticar, estatisticasRoutes); // ✅ rota adicionada
+app.use('/api/estatisticas', autenticar, estatisticasRoutes);
+app.use('/api/mensagens', autenticar, mensagensRoutes);
+app.use('/api/observacoes', autenticar, observacoesRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
+  console.log('🧪 Rota de teste carregada');
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
