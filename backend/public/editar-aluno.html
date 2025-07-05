@@ -65,7 +65,7 @@
   </style>
 </head>
 <body>
-  <form id="formAluno" enctype="multipart/form-data">
+  <form id="formAluno">
     <h2>Editar Cadastro do Aluno</h2>
 
     <label for="nome">Nome Completo</label>
@@ -108,9 +108,9 @@
         const res = await fetch(`/api/alunos/${id}`, { credentials: 'include' });
         const aluno = await res.json();
 
-        document.getElementById('nome').value = aluno.nome;
-        document.getElementById('turma').value = aluno.turma;
-        document.getElementById('dataEntrada').value = aluno.dataEntrada?.split('T')[0];
+        document.getElementById('nome').value = aluno.nome || '';
+        document.getElementById('turma').value = aluno.turma || '';
+        document.getElementById('dataEntrada').value = aluno.dataEntrada?.split('T')[0] || '';
         document.getElementById('email').value = aluno.email || '';
         document.getElementById('nomePai').value = aluno.nomePai || '';
         document.getElementById('nomeMae').value = aluno.nomeMae || '';
@@ -123,24 +123,64 @@
 
     document.getElementById('formAluno').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const form = document.getElementById('formAluno');
-      const formData = new FormData(form);
 
-      try {
-        const res = await fetch(`/api/alunos/${id}`, {
-          method: 'PUT',
-          credentials: 'include',
-          body: formData
-        });
+      const nome = document.getElementById('nome').value;
+      const turma = document.getElementById('turma').value;
+      const dataEntrada = document.getElementById('dataEntrada').value;
+      const email = document.getElementById('email').value;
+      const nomePai = document.getElementById('nomePai').value;
+      const nomeMae = document.getElementById('nomeMae').value;
+      const telefone = document.getElementById('telefone').value;
+      const nascimento = document.getElementById('nascimento').value;
+      const fotoFile = document.getElementById('foto').files[0];
 
-        if (res.ok) {
-          document.getElementById('mensagem').textContent = '✅ Aluno atualizado com sucesso';
-          setTimeout(() => window.location.href = 'alunos.html', 1500);
-        } else {
-          document.getElementById('mensagem').textContent = 'Erro ao atualizar aluno';
+      let fotoBase64 = '';
+
+      if (fotoFile) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          fotoBase64 = reader.result;
+
+          await enviarAtualizacao();
+        };
+        reader.readAsDataURL(fotoFile);
+      } else {
+        await enviarAtualizacao(); // Sem imagem nova
+      }
+
+      async function enviarAtualizacao() {
+        const dadosAtualizados = {
+          nome,
+          turma,
+          dataEntrada,
+          email,
+          nomePai,
+          nomeMae,
+          telefone,
+          nascimento,
+        };
+
+        if (fotoBase64) dadosAtualizados.foto = fotoBase64;
+
+        try {
+          const res = await fetch(`/api/alunos/${id}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dadosAtualizados)
+          });
+
+          if (res.ok) {
+            document.getElementById('mensagem').textContent = '✅ Aluno atualizado com sucesso';
+            setTimeout(() => window.location.href = 'alunos.html', 1500);
+          } else {
+            document.getElementById('mensagem').textContent = 'Erro ao atualizar aluno';
+          }
+        } catch {
+          document.getElementById('mensagem').textContent = 'Erro ao enviar dados';
         }
-      } catch (err) {
-        document.getElementById('mensagem').textContent = 'Erro ao enviar dados';
       }
     });
 
