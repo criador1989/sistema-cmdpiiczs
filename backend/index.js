@@ -15,7 +15,7 @@ const Log = require('./models/Log');
 const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
-const responsavelRoutes = require('./routes/api/responsavel');
+const responsavelRoutes = require('./routes/api/responsavel'); // ✅ SEM AUTENTICAÇÃO
 const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
 const fichaTesteRoute = require('./routes/api/fichaTeste');
 const cartoesRoutes = require('./routes/api/cartoes');
@@ -39,8 +39,8 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('❌ Erro ao conectar ao MongoDB:', err));
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
@@ -149,7 +149,7 @@ app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
 app.use('/api', autenticar, pdfRoutes);
 app.use('/api', autenticar, fichaPdfRoutes);
 app.use('/notificacoes', autenticar, notificacoesViewRoutes);
-app.use('/api/responsavel', autenticar, responsavelRoutes);
+app.use('/api/responsavel', responsavelRoutes); // ✅ SEM AUTENTICAÇÃO
 app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', autenticar, cartoesRoutes);
 app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes);
