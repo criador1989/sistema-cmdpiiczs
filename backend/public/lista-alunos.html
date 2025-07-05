@@ -230,122 +230,125 @@
       <button onclick="fecharModal()">Fechar</button>
     </div>
   </div>
-<script>
-  const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
-  const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
-  let todosAlunos = [];
 
-  async function carregarAlunos() {
-    const res = await fetch('/api/alunos', { credentials: 'include' });
-    todosAlunos = await res.json();
-    criarBotoes(turmasManha, 'botoesManha', 'gruposManha');
-    criarBotoes(turmasTarde, 'botoesTarde', 'gruposTarde');
-  }
+  <script>
+    const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
+    const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+    let todosAlunos = [];
 
-  function criarBotoes(turmas, containerId, grupoId) {
-    const container = document.getElementById(containerId);
-    const grupoContainer = document.getElementById(grupoId);
-    turmas.forEach(turma => {
-      const btn = document.createElement('button');
-      btn.textContent = turma;
-      btn.className = 'turma-btn';
-      btn.onclick = () => {
-        const gridId = `grid-${turma}`;
-        const gridExistente = document.getElementById(gridId);
-        if (gridExistente) {
-          gridExistente.remove();
-          btn.classList.remove('ativa');
-          return;
-        }
-        document.querySelectorAll('.aluno-grid').forEach(g => g.remove());
-        document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
-        btn.classList.add('ativa');
-        const grid = document.createElement('div');
-        grid.className = 'aluno-grid visivel';
-        grid.id = gridId;
-        const alunos = todosAlunos.filter(a => a.turma === turma);
-        alunos.forEach(aluno => {
-          const card = document.createElement('div');
-          card.className = 'aluno-card';
-          card.style.background = calcularCorNota(aluno.comportamento);
-          card.innerHTML = `
-            <img src="/uploads/${aluno.foto || 'sem-foto.png'}" alt="${aluno.nome}" />
-            <div class="nome" onclick='abrirModal(${JSON.stringify(aluno)})'>${aluno.nome}</div>
-            ${aluno.observacoesRecentes ? '<div class="alerta">!</div>' : ''}
-          `;
-          grid.appendChild(card);
-        });
-        grupoContainer.appendChild(grid);
-      };
-      container.appendChild(btn);
-    });
-  }
+    async function carregarAlunos() {
+      const res = await fetch('/api/alunos', { credentials: 'include' });
+      todosAlunos = await res.json();
+      criarBotoes(turmasManha, 'botoesManha', 'gruposManha');
+      criarBotoes(turmasTarde, 'botoesTarde', 'gruposTarde');
+    }
 
-  function calcularCorNota(nota = 8) {
-    if (nota >= 9.01) return '#0f5132';     // Excepcional
-    if (nota >= 8.01) return '#198754';     // Ótimo
-    if (nota >= 7.00) return '#ffc107';     // Bom
-    if (nota >= 5.00) return '#fd7e14';     // Regular
-    if (nota >= 3.00) return '#dc3545';     // Insuficiente
-    return '#212529';                       // Incompatível
-  }
+    function criarBotoes(turmas, containerId, grupoId) {
+      const container = document.getElementById(containerId);
+      const grupoContainer = document.getElementById(grupoId);
+      turmas.forEach(turma => {
+        const btn = document.createElement('button');
+        btn.textContent = turma;
+        btn.className = 'turma-btn';
+        btn.onclick = () => {
+          const gridId = `grid-${turma}`;
+          const gridExistente = document.getElementById(gridId);
+          if (gridExistente) {
+            gridExistente.remove();
+            btn.classList.remove('ativa');
+            return;
+          }
+          document.querySelectorAll('.aluno-grid').forEach(g => g.remove());
+          document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
+          btn.classList.add('ativa');
+          const grid = document.createElement('div');
+          grid.className = 'aluno-grid visivel';
+          grid.id = gridId;
+          const alunos = todosAlunos.filter(a => a.turma === turma);
+          alunos.forEach(aluno => {
+            const card = document.createElement('div');
+            card.className = 'aluno-card';
+            card.style.background = calcularCorNota(aluno.comportamento);
+            card.innerHTML = `
+              <img src="${aluno.foto || 'img/sem-foto.png'}" alt="${aluno.nome}" />
+              <div class="nome" onclick='abrirModal(${JSON.stringify(aluno)})'>${aluno.nome}</div>
+              ${aluno.observacoesRecentes ? '<div class="alerta">!</div>' : ''}
+            `;
+            grid.appendChild(card);
+          });
+          grupoContainer.appendChild(grid);
+        };
+        container.appendChild(btn);
+      });
+    }
 
-  function abrirModal(aluno) {
-    document.getElementById('modalFoto').src = `/uploads/${aluno.foto || 'sem-foto.png'}`;
-    document.getElementById('modalNome').innerText = aluno.nome;
-    document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma || '-'}`;
-    document.getElementById('modalNota').innerText = `Nota de comportamento: ${aluno.comportamento?.toFixed(2) || '8.00'}`;
-    document.getElementById('btnFicha').href = `ver-ficha.html?id=${aluno._id}`;
-    document.getElementById('btnObs').href = `ficha-aluno.html?id=${aluno._id}`;
-    document.getElementById('btnEditar').href = `editar-aluno.html?id=${aluno._id}`;
-    document.getElementById('btnLink').href = `ficha-responsavel.html?codigo=${aluno.codigoAcesso}`;
-    document.getElementById('btnExcluir').onclick = () => excluirAluno(aluno._id);
-    document.getElementById('modal').style.display = 'block';
-  }
+    function calcularCorNota(nota = 8) {
+      if (nota >= 9.01) return '#0f5132';
+      if (nota >= 8.01) return '#198754';
+      if (nota >= 7.00) return '#ffc107';
+      if (nota >= 5.00) return '#fd7e14';
+      if (nota >= 3.00) return '#dc3545';
+      return '#212529';
+    }
 
-  function fecharModal() {
-    document.getElementById('modal').style.display = 'none';
-  }
+    function abrirModal(aluno) {
+      document.getElementById('modalFoto').src = aluno.foto || 'img/sem-foto.png';
+      document.getElementById('modalNome').innerText = aluno.nome;
+      document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma || '-'}`;
+      document.getElementById('modalNota').innerText = `Nota de comportamento: ${aluno.comportamento?.toFixed(2) || '8.00'}`;
+      document.getElementById('btnFicha').href = `ver-ficha.html?id=${aluno._id}`;
+      document.getElementById('btnObs').href = `ficha-aluno.html?id=${aluno._id}`;
+      document.getElementById('btnEditar').href = `editar-aluno.html?id=${aluno._id}`;
+      document.getElementById('btnLink').href = `ficha-responsavel.html?codigo=${aluno.codigoAcesso}`;
+      document.getElementById('btnExcluir').onclick = () => excluirAluno(aluno._id);
+      document.getElementById('modal').style.display = 'block';
+    }
 
-  async function excluirAluno(id) {
-    if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
-    const res = await fetch(`/api/alunos/${id}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-    if (res.ok) location.reload();
-    else alert('Erro ao excluir aluno.');
-  }
+    function fecharModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
 
-  async function gerarCartoes() {
-    const turma = prompt("Digite a turma (ex: 6ºA):");
-    if (!turma) return;
-    try {
-      const resposta = await fetch(`/api/cartoes/turma/${encodeURIComponent(turma)}`, {
-        method: 'GET',
+    async function excluirAluno(id) {
+      if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
+      const res = await fetch(`/api/alunos/${id}`, {
+        method: 'DELETE',
         credentials: 'include'
       });
-      if (!resposta.ok) throw new Error('Erro ao gerar os cartões');
-      const blob = await resposta.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cartoes_${turma}.zip`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (erro) {
-      alert("Erro ao gerar cartões: " + erro.message);
+      if (res.ok) location.reload();
+      else alert('Erro ao excluir aluno.');
     }
-  }
 
-  function filtrarNome() {
-    const termo = document.getElementById('filtroNome').value.toLowerCase();
-    const alunos = document.querySelectorAll('.aluno-card');
-    alunos.forEach(card => {
-      const nome = card.querySelector('.nome').innerText.toLowerCase();
-      card.style.display = nome.includes(termo) ? 'block' : 'none';
-    });
-  }
+    async function gerarCartoes() {
+      const turma = prompt("Digite a turma (ex: 6ºA):");
+      if (!turma) return;
+      try {
+        const resposta = await fetch(`/api/cartoes/turma/${encodeURIComponent(turma)}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (!resposta.ok) throw new Error('Erro ao gerar os cartões');
+        const blob = await resposta.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cartoes_${turma}.zip`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } catch (erro) {
+        alert("Erro ao gerar cartões: " + erro.message);
+      }
+    }
 
-  carregarAlunos();
-</script>
+    function filtrarNome() {
+      const termo = document.getElementById('filtroNome').value.toLowerCase();
+      const alunos = document.querySelectorAll('.aluno-card');
+      alunos.forEach(card => {
+        const nome = card.querySelector('.nome').innerText.toLowerCase();
+        card.style.display = nome.includes(termo) ? 'block' : 'none';
+      });
+    }
+
+    carregarAlunos();
+  </script>
+</body>
+</html>

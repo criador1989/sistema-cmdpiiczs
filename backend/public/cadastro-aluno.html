@@ -123,9 +123,9 @@
   <div class="container">
     <img src="img/logo.png" alt="Logo" class="logo" />
     <h2>Cadastrar Novo Aluno</h2>
-    <form id="form-aluno" enctype="multipart/form-data">
+    <form id="form-aluno">
       <input type="text" id="nome" name="nome" placeholder="Nome do aluno" required />
-      
+
       <label class="campo-label">Turma</label>
       <select id="turma" name="turma" required>
         <optgroup label="Fundamental II">
@@ -201,9 +201,15 @@
 
     document.getElementById('form-aluno').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const form = document.getElementById('form-aluno');
+
       const mensagem = document.getElementById('mensagem');
+      const nome = document.getElementById('nome').value;
+      const turma = document.getElementById('turma').value;
+      const dataEntrada = document.getElementById('dataEntrada').value;
+      const telefone = document.getElementById('telefone').value;
       const instituicao = document.getElementById('instituicao').value;
+      const fotoInput = document.getElementById('foto');
+      const fotoFile = fotoInput.files[0];
 
       if (!instituicao || instituicao === 'undefined') {
         mensagem.textContent = 'Erro: instituição não definida.';
@@ -211,33 +217,46 @@
         return;
       }
 
-      const formData = new FormData(form);
-      mensagem.textContent = '';
-      mensagem.style.color = '';
+      let fotoBase64 = '';
+      if (fotoFile) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          fotoBase64 = reader.result;
+          await enviarCadastro({ nome, turma, dataEntrada, telefone, foto: fotoBase64, instituicao });
+        };
+        reader.readAsDataURL(fotoFile);
+      } else {
+        await enviarCadastro({ nome, turma, dataEntrada, telefone, foto: '', instituicao });
+      }
 
-      try {
-        const resposta = await fetch('/api/alunos', {
-          method: 'POST',
-          credentials: 'include',
-          body: formData
-        });
+      async function enviarCadastro(dadosAluno) {
+        try {
+          const resposta = await fetch('/api/alunos', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dadosAluno)
+          });
 
-        if (resposta.ok) {
-          const aluno = await resposta.json();
-          mensagem.style.color = 'green';
-          mensagem.innerHTML = `
-            ✅ Aluno cadastrado com sucesso!<br>
-            <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}
-          `;
-          form.reset();
-        } else {
-          const erro = await resposta.json();
+          if (resposta.ok) {
+            const aluno = await resposta.json();
+            mensagem.style.color = 'green';
+            mensagem.innerHTML = `
+              ✅ Aluno cadastrado com sucesso!<br>
+              <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}
+            `;
+            document.getElementById('form-aluno').reset();
+          } else {
+            const erro = await resposta.json();
+            mensagem.style.color = 'red';
+            mensagem.textContent = erro.message || 'Erro ao criar aluno';
+          }
+        } catch (err) {
           mensagem.style.color = 'red';
-          mensagem.textContent = erro.message || 'Erro ao criar aluno';
+          mensagem.textContent = 'Erro de conexão com o servidor.';
         }
-      } catch (err) {
-        mensagem.style.color = 'red';
-        mensagem.textContent = 'Erro de conexão com o servidor.';
       }
     });
 

@@ -48,7 +48,7 @@ const alunoSchema = new mongoose.Schema({
     trim: true
   },
   foto: {
-    type: String,
+    type: String, // armazenará a imagem como base64
     default: null
   },
   instituicao: {
