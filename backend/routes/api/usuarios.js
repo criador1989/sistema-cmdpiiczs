@@ -19,7 +19,7 @@ function verificarAdmin(req, res, next) {
 // GET /api/usuarios - Lista todos os usuários
 router.get('/', autenticar, verificarAdmin, async (req, res) => {
   try {
-    const usuarios = await Usuario.find().select('-senha'); // Exclui a senha
+    const usuarios = await Usuario.find().select('-senha');
     res.json(usuarios);
   } catch (err) {
     console.error('Erro ao listar usuários:', err);
@@ -86,14 +86,13 @@ router.delete('/:id', autenticar, verificarAdmin, async (req, res) => {
   }
 });
 
-// GET /api/usuarios/acesso/:token - Acesso via QR Code para professores (sem login)
+// ✅ CORRIGIDO: GET /api/usuarios/acesso/:token - Acesso via QR Code para professores (sem login)
 router.get('/acesso/:token', async (req, res) => {
   try {
     const token = req.params.token.trim();
-    const dados = jwt.verify(token, SECRET);
 
-    const professor = await Usuario.findById(dados.id);
-    if (!professor || professor.tipo !== 'professor') {
+    const professor = await Usuario.findOne({ tokenAcesso: token, tipo: 'professor' });
+    if (!professor) {
       return res.status(404).json({ mensagem: 'Professor não encontrado ou token inválido.' });
     }
 
@@ -105,6 +104,7 @@ router.get('/acesso/:token', async (req, res) => {
       instituicao: professor.instituicao,
       alunos
     });
+
   } catch (err) {
     console.error('Erro ao acessar com token do professor:', err);
     res.status(500).json({ mensagem: 'Erro ao acessar com token.' });
