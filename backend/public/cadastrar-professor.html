@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cadastrar Professor</title>
+  <link rel="stylesheet" href="/estilos.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>📘 Cadastro de Professor</h2>
+    <form id="form-professor">
+      <input type="text" id="nome" placeholder="Nome completo" required />
+      <input type="email" id="email" placeholder="E-mail institucional" required />
+      <input type="password" id="senha" placeholder="Senha de acesso" required />
+      <button type="submit">Cadastrar Professor</button>
+      <p id="mensagem" style="margin-top: 10px;"></p>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('form-professor').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value;
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+
+      const res = await fetch('/api/usuarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, email, senha, tipo: 'professor' })
+      });
+
+      const msg = document.getElementById('mensagem');
+      if (res.ok) {
+        msg.textContent = '✅ Professor cadastrado com sucesso.';
+        msg.style.color = 'green';
+      } else {
+        const erro = await res.json();
+        msg.textContent = '❌ ' + erro.mensagem;
+        msg.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>

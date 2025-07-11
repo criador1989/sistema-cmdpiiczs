@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Log = require('../../models/Log');
 const Usuario = require('../../models/Usuario');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 
 // GET /api/logs - Lista todos os logs da mesma instituição (apenas para admin)
 router.get('/', autenticar, async (req, res) => {

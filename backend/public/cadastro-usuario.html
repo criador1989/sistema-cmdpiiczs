@@ -66,7 +66,7 @@
       color: #333;
     }
 
-    input {
+    input, select {
       width: 100%;
       padding: 12px;
       margin-bottom: 12px;
@@ -117,6 +117,12 @@
       <input type="email" id="email" placeholder="E-mail institucional" required />
       <input type="password" id="senha" placeholder="Senha" required />
       <input type="text" id="instituicao" placeholder="Instituição (ex: Colégio Militar D. Pedro II)" required />
+      <select id="tipo" required>
+        <option value="">Selecione o tipo de usuário</option>
+        <option value="admin">Administrador</option>
+        <option value="monitor">Monitor</option>
+        <option value="professor">Professor</option>
+      </select>
       <button type="submit">Cadastrar</button>
       <div class="mensagem" id="mensagem"></div>
     </form>
@@ -131,21 +137,27 @@
       const email = document.getElementById('email').value;
       const senha = document.getElementById('senha').value;
       const instituicao = document.getElementById('instituicao').value;
+      const tipo = document.getElementById('tipo').value;
       const mensagem = document.getElementById('mensagem');
 
       try {
         const resposta = await fetch('/auth/cadastrar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome, email, senha, instituicao })
+          body: JSON.stringify({ nome, email, senha, instituicao, tipo })
         });
 
         const resultado = await resposta.json();
 
         if (resposta.ok) {
           mensagem.style.color = 'green';
-          mensagem.textContent = 'Usuário cadastrado com sucesso! Vá para o login.';
+          mensagem.textContent = '✅ Usuário cadastrado com sucesso!';
           document.getElementById('formCadastro').reset();
+
+          // Mantém mensagem por 5 segundos
+          setTimeout(() => {
+            mensagem.textContent = '';
+          }, 5000);
         } else {
           mensagem.style.color = 'red';
           mensagem.textContent = resultado.mensagem || 'Erro ao cadastrar.';

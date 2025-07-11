@@ -15,10 +15,12 @@ const Log = require('./models/Log');
 const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
-const responsavelRoutes = require('./routes/api/responsavel'); // ✅ SEM AUTENTICAÇÃO
+const responsavelRoutes = require('./routes/api/responsavel');
 const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
 const fichaTesteRoute = require('./routes/api/fichaTeste');
 const cartoesRoutes = require('./routes/api/cartoes');
+const cartoesProfessoresRoute = require('./routes/api/cartoesProfessores');
+const professoresRoute = require('./routes/api/professores'); // ✅ NOVA ROTA
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
@@ -31,6 +33,8 @@ const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes')
 const estatisticasRoutes = require('./routes/api/estatisticas');
 const mensagensRoutes = require('./routes/api/mensagens');
 const observacoesRoutes = require('./routes/api/observacoes');
+
+const autenticarTokenProfessor = require('./middleware/tokenProfessor'); // ✅ Middleware para QR Code
 
 dotenv.config();
 
@@ -62,6 +66,7 @@ function autenticar(req, res, next) {
   }
 }
 
+// LOGIN
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -84,7 +89,8 @@ app.post('/auth/login', async (req, res) => {
       maxAge: 2 * 60 * 60 * 1000
     });
 
-    res.json({ mensagem: 'Login bem-sucedido', redirecionar: '/bemvindo.html' });
+    const redirecionar = usuario.tipo === 'professor' ? '/painel-professor.html' : '/bemvindo.html';
+    res.json({ mensagem: 'Login bem-sucedido', redirecionar });
   } catch (erro) {
     console.error('Erro no login:', erro);
     res.status(500).json({ mensagem: 'Erro no servidor ao fazer login.' });
@@ -135,30 +141,38 @@ app.get('/api/usuario', autenticar, async (req, res) => {
   }
 });
 
-// ✅ Servir HTML da ficha
+// HTMLs protegidos
 app.get('/ficha-aluno.html', autenticar, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ficha-aluno.html'));
 });
+app.get('/painel-professor.html', autenticar, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'painel-professor.html'));
+});
+app.get('/lista-alunos.html', autenticarTokenProfessor, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'lista-alunos.html'));
+});
 
-// ✅ Rotas
+// Rotas protegidas ou públicas
 app.use('/api/ficha', autenticar, fichaApiRoutes);
 app.use('/ficha', autenticar, fichaViewRoutes);
 app.use('/api', fichaTesteRoute);
-app.use('/api/alunos', autenticar, alunoRoutes);
-app.use('/api/notificacoes', autenticar, notificacoesApiRoutes);
-app.use('/api', autenticar, pdfRoutes);
-app.use('/api', autenticar, fichaPdfRoutes);
-app.use('/notificacoes', autenticar, notificacoesViewRoutes);
-app.use('/api/responsavel', responsavelRoutes); // ✅ SEM AUTENTICAÇÃO
+app.use('/api/alunos', alunoRoutes);
+app.use('/api/notificacoes', notificacoesApiRoutes);
+app.use('/api', pdfRoutes);
+app.use('/api', fichaPdfRoutes);
+app.use('/notificacoes', notificacoesViewRoutes);
+app.use('/api/responsavel', responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
-app.use('/api/cartoes', autenticar, cartoesRoutes);
-app.use('/api/controle-notificacoes', autenticar, controleNotificacoesRoutes);
-app.use('/api/usuarios', autenticar, usuariosRoutes);
-app.use('/api/logs', autenticar, logsRoutes);
-app.use('/api', autenticar, relatorioNotificacoesRoute);
-app.use('/api/estatisticas', autenticar, estatisticasRoutes);
-app.use('/api/mensagens', autenticar, mensagensRoutes);
-app.use('/api/observacoes', autenticar, observacoesRoutes);
+app.use('/api/cartoes', cartoesRoutes);
+app.use('/api/cartoes-professores', cartoesProfessoresRoute);
+app.use('/api/professores', professoresRoute); // ✅ Adicionada rota QR Code
+app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/logs', logsRoutes);
+app.use('/api', relatorioNotificacoesRoute);
+app.use('/api/estatisticas', estatisticasRoutes);
+app.use('/api/mensagens', mensagensRoutes);
+app.use('/api/observacoes', observacoesRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

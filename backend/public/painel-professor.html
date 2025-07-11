@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel do Professor - Lista de Alunos</title>
+  <link rel="stylesheet" href="estilo.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #941a1d;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 2rem;
+    }
+    .busca {
+      margin-bottom: 1rem;
+    }
+    .aluno-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .aluno-info {
+      flex: 1;
+    }
+    .aluno-nome {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .aluno-acao button {
+      padding: 6px 12px;
+      border: none;
+      background: #941a1d;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .aluno-acao button:hover {
+      background: #b91c1f;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Painel do Professor</h1>
+    <p id="nome-professor"></p>
+  </header>
+
+  <div class="container">
+    <div class="busca">
+      <input type="text" id="filtro" placeholder="Buscar aluno por nome..." />
+    </div>
+
+    <div id="lista-alunos"></div>
+  </div>
+
+  <script>
+    let alunos = [];
+
+    function obterTokenDaURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('token');
+    }
+
+    async function carregarAlunosComToken() {
+      const token = obterTokenDaURL();
+      if (!token) {
+        alert('Acesso inválido. Token ausente.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/usuarios/acesso/${token}`);
+        if (!res.ok) {
+          const erro = await res.json();
+          throw new Error(erro.mensagem || 'Erro ao acessar dados do professor.');
+        }
+
+        const dados = await res.json();
+        alunos = dados.alunos;
+
+        document.getElementById('nome-professor').textContent = `Professor: ${dados.professor} | Instituição: ${dados.instituicao}`;
+        exibirAlunos(alunos);
+      } catch (err) {
+        console.error(err);
+        alert(err.message || 'Erro ao carregar alunos.');
+      }
+    }
+
+    function exibirAlunos(lista) {
+      const container = document.getElementById('lista-alunos');
+      container.innerHTML = '';
+
+      lista.forEach(aluno => {
+        const card = document.createElement('div');
+        card.className = 'aluno-card';
+
+        const info = document.createElement('div');
+        info.className = 'aluno-info';
+        info.innerHTML = `
+          <div class="aluno-nome">${aluno.nome}</div>
+          <div>Turma: ${aluno.turma}</div>
+          <div>Comportamento: ${aluno.comportamento?.toFixed(2) ?? '8.00'}</div>
+        `;
+
+        const acoes = document.createElement('div');
+        acoes.className = 'aluno-acao';
+        const btnFicha = document.createElement('button');
+        btnFicha.innerText = 'Ver Ficha';
+        btnFicha.onclick = () => window.location.href = `/ficha-aluno.html?id=${aluno._id}`;
+        acoes.appendChild(btnFicha);
+
+        card.appendChild(info);
+        card.appendChild(acoes);
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('filtro').addEventListener('input', e => {
+      const termo = e.target.value.toLowerCase();
+      const filtrados = alunos.filter(aluno =>
+        aluno.nome.toLowerCase().includes(termo)
+      );
+      exibirAlunos(filtrados);
+    });
+
+    carregarAlunosComToken();
+  </script>
+</body>
+</html>

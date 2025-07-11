@@ -132,7 +132,7 @@
 
     async function carregarFicha() {
       try {
-        const resposta = await fetch(`/ficha/dados/${alunoId}`);
+        const resposta = await fetch(`/api/ficha/dados/${alunoId}`); // ✅ Corrigido
         if (!resposta.ok) throw new Error('Erro ao carregar ficha');
         const { aluno, observacoes, notificacoes } = await resposta.json();
 
@@ -170,7 +170,6 @@
 
         // PDF
         document.getElementById('btnPDF').href = `/api/ficha/${alunoId}`;
-
       } catch (e) {
         alert('Erro ao carregar os dados da ficha.');
         console.error(e);

@@ -190,9 +190,9 @@
 </head>
 <body>
   <div class="container">
-    <h2>Lista de Alunos</h2>
+    <h2 id="tituloLista">Lista de Alunos</h2>
     <input type="text" id="filtroNome" placeholder="Buscar por nome" oninput="filtrarNome()" />
-    
+
     <h3>Turno da Manhã</h3>
     <div id="botoesManha"></div>
     <div id="gruposManha"></div>
@@ -201,7 +201,7 @@
     <div id="botoesTarde"></div>
     <div id="gruposTarde"></div>
 
-    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+    <button id="voltarPainel" class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
     <button class="qr-btn" onclick="gerarCartoes()">📲 Gerar Cartões QR Code da Turma</button>
 
     <div class="legenda">
@@ -237,8 +237,18 @@
     let todosAlunos = [];
 
     async function carregarAlunos() {
-      const res = await fetch('/api/alunos', { credentials: 'include' });
-      todosAlunos = await res.json();
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
+      document.getElementById("voltarPainel").style.display = token ? "none" : "inline-block";
+      if (token) {
+        document.getElementById("tituloLista").innerText = "Lista de Alunos (Professor)";
+        const res = await fetch(`/api/usuarios/acesso/${token}`);
+        const data = await res.json();
+        todosAlunos = data.alunos || [];
+      } else {
+        const res = await fetch('/api/alunos', { credentials: 'include' });
+        todosAlunos = await res.json();
+      }
       criarBotoes(turmasManha, 'botoesManha', 'gruposManha');
       criarBotoes(turmasTarde, 'botoesTarde', 'gruposTarde');
     }

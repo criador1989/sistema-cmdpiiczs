@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 
 // GET /api/estatisticas
 router.get('/', autenticar, async (req, res) => {

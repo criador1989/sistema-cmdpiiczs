@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 
 const router = express.Router();
 

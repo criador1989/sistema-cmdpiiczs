@@ -16,4 +16,21 @@ function autenticar(req, res, next) {
   }
 }
 
-module.exports = autenticar; // ✅ Exportando diretamente a função
+// ✅ Apenas usuários com tipo "professor"
+function apenasProfessor(req, res, next) {
+  if (req.usuario?.tipo === 'professor') return next();
+  return res.status(403).json({ mensagem: 'Acesso permitido apenas a professores.' });
+}
+
+// ✅ Apenas "monitor" ou "admin"
+function apenasMonitorOuAdmin(req, res, next) {
+  const tipo = req.usuario?.tipo;
+  if (tipo === 'monitor' || tipo === 'admin') return next();
+  return res.status(403).json({ mensagem: 'Acesso permitido apenas a monitores ou administradores.' });
+}
+
+module.exports = {
+  autenticar,
+  apenasProfessor,
+  apenasMonitorOuAdmin
+};

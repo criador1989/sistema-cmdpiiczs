@@ -18,12 +18,17 @@ const usuarioSchema = new mongoose.Schema({
   },
   tipo: {
     type: String,
-    enum: ['admin', 'coordenador', 'professor'],
-    default: 'professor'
+    enum: ['admin', 'monitor', 'professor'], // ✅ Atualizado
+    default: 'monitor'
   },
   instituicao: {
     type: String,
     required: true
+  },
+  tokenAcessoProfessor: {
+    type: String,
+    unique: true,
+    sparse: true // Permite que alguns usuários não tenham esse token
   }
 });
 

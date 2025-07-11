@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Usuario = require('../../models/Usuario');
-const autenticar = require('../../middleware/autenticacao');
+const Aluno = require('../../models/Aluno');
+const { autenticar } = require('../../middleware/autenticacao');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const SECRET = process.env.JWT_SECRET || 'segredo_padrao';
 
 // Middleware interno para restringir acesso apenas a administradores
 function verificarAdmin(req, res, next) {
@@ -39,9 +43,9 @@ router.get('/:id', autenticar, verificarAdmin, async (req, res) => {
 
 // PUT /api/usuarios/:id - Atualiza os dados de um usuário
 router.put('/:id', autenticar, verificarAdmin, async (req, res) => {
-  const { nome, email, tipo, instituicao, senha } = req.body;
+  const { nome, tipo, instituicao, senha } = req.body;
 
-  if (!nome || !email || !tipo || !instituicao) {
+  if (!nome || !tipo || !instituicao) {
     return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
   }
 
@@ -52,7 +56,6 @@ router.put('/:id', autenticar, verificarAdmin, async (req, res) => {
     }
 
     usuario.nome = nome;
-    usuario.email = email;
     usuario.tipo = tipo;
     usuario.instituicao = instituicao;
 
@@ -80,6 +83,31 @@ router.delete('/:id', autenticar, verificarAdmin, async (req, res) => {
   } catch (err) {
     console.error('Erro ao excluir usuário:', err);
     res.status(500).json({ mensagem: 'Erro ao excluir usuário.' });
+  }
+});
+
+// GET /api/usuarios/acesso/:token - Acesso via QR Code para professores (sem login)
+router.get('/acesso/:token', async (req, res) => {
+  try {
+    const token = req.params.token.trim();
+    const dados = jwt.verify(token, SECRET);
+
+    const professor = await Usuario.findById(dados.id);
+    if (!professor || professor.tipo !== 'professor') {
+      return res.status(404).json({ mensagem: 'Professor não encontrado ou token inválido.' });
+    }
+
+    const alunos = await Aluno.find({ instituicao: professor.instituicao })
+      .select('nome turma comportamento foto');
+
+    res.json({
+      professor: professor.nome,
+      instituicao: professor.instituicao,
+      alunos
+    });
+  } catch (err) {
+    console.error('Erro ao acessar com token do professor:', err);
+    res.status(500).json({ mensagem: 'Erro ao acessar com token.' });
   }
 });
 

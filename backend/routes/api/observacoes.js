@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Observacao = require('../../models/Observacao');
 const Aluno = require('../../models/Aluno');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 
 // Criar nova observação
 router.post('/:alunoId', autenticar, async (req, res) => {

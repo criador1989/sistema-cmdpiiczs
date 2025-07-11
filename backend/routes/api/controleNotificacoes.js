@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Notificacao = require('../../models/Notificacao');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 
 // 🔹 GET - Listar notificações por data (ou todas pendentes)
 router.get('/', autenticar, async (req, res) => {

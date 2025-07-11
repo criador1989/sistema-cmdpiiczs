@@ -5,7 +5,7 @@ const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const enviarWhatsapp = require('../../utils/twilio');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 
 // GET fixo precisa vir antes do dinâmico
@@ -124,59 +124,44 @@ router.post('/', autenticar, async (req, res) => {
     const dadosRegulamento = obterDadosDoRegulamento(motivo);
     const anoAtual = new Date(data).getFullYear();
 
-    let novaNotificacao;
-    let tentativa = 0;
-    let numeroSequencial;
+    const notificacoesAno = await Notificacao.find({
+      numeroSequencial: { $regex: `/${anoAtual}$` },
+      instituicao: req.usuario.instituicao
+    });
 
-    while (true) {
-      tentativa++;
-
-      const ultima = await Notificacao.findOne({
-        instituicao: req.usuario.instituicao,
-        data: {
-          $gte: new Date(`${anoAtual}-01-01T00:00:00.000Z`),
-          $lte: new Date(`${anoAtual}-12-31T23:59:59.999Z`)
-        }
-      }).sort({ numeroSequencial: -1 });
-
-      const proximoNumero = ultima
-        ? parseInt(ultima.numeroSequencial.split('/')[0]) + tentativa
-        : tentativa;
-
-      numeroSequencial = `${String(proximoNumero).padStart(2, '0')}/${anoAtual}`;
-
-      try {
-        novaNotificacao = new Notificacao({
-          aluno,
-          motivo,
-          tipo,
-          tipoMedida,
-          valorNumerico: valor,
-          quantidadeDias: dias,
-          observacao,
-          data: new Date(data),
-          notaAnterior,
-          notaAtual,
-          artigo: dadosRegulamento.artigo,
-          paragrafo: dadosRegulamento.paragrafo,
-          inciso: dadosRegulamento.inciso,
-          classificacaoRegulamento: dadosRegulamento.classificacao,
-          instituicao: req.usuario.instituicao,
-          numeroSequencial,
-          status: 'pendente'
-        });
-
-        await novaNotificacao.save();
-        break;
-      } catch (err) {
-        if (err.code === 11000 && tentativa < 10) {
-          continue;
-        } else {
-          console.error('Erro ao salvar notificação:', err);
-          return res.status(500).json({ error: 'Erro ao salvar notificação.' });
-        }
+    let maiorNumero = 0;
+    notificacoesAno.forEach(n => {
+      const partes = n.numeroSequencial.split('/');
+      const num = parseInt(partes[0], 10);
+      if (!isNaN(num) && num > maiorNumero) {
+        maiorNumero = num;
       }
-    }
+    });
+
+    const proximoNumero = maiorNumero + 1;
+    const numeroSequencial = `${String(proximoNumero).padStart(2, '0')}/${anoAtual}`;
+
+    const novaNotificacao = new Notificacao({
+      aluno,
+      motivo,
+      tipo,
+      tipoMedida,
+      valorNumerico: valor,
+      quantidadeDias: dias,
+      observacao,
+      data: new Date(data),
+      notaAnterior,
+      notaAtual,
+      artigo: dadosRegulamento.artigo,
+      paragrafo: dadosRegulamento.paragrafo,
+      inciso: dadosRegulamento.inciso,
+      classificacaoRegulamento: dadosRegulamento.classificacao,
+      instituicao: req.usuario.instituicao,
+      numeroSequencial,
+      status: 'pendente'
+    });
+
+    await novaNotificacao.save();
 
     if (alunoRelacionado.telefone) {
       const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.

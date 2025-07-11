@@ -133,7 +133,7 @@
 
     async function carregarFicha() {
       try {
-        const resposta = await fetch(`/ficha/dados/${id}`, { credentials: 'include' });
+        const resposta = await fetch(`/api/ficha/dados/${id}`, { credentials: 'include' });
         const dados = await resposta.json();
         const aluno = dados.aluno;
 

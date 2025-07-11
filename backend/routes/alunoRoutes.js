@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Aluno = require('../models/Aluno');
 const upload = require('../middleware/upload');
-const autenticar = require('../middleware/autenticacao');
+const { autenticar } = require('../middleware/autenticacao');
 
 function gerarCodigoAcesso(tamanho = 8) {
   const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

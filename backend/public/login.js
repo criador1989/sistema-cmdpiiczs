@@ -16,8 +16,12 @@ document.getElementById('login-form').addEventListener('submit', async function 
     const dados = await res.json();
 
     if (res.ok) {
-      // Redirecionar para tela de boas-vindas
-      window.location.href = dados.redirecionar || '/painel.html';
+      // Redirecionamento com base no tipo de usuário
+      if (dados.tipo === 'professor') {
+        window.location.href = '/painel-professor.html';
+      } else {
+        window.location.href = '/painel.html';
+      }
     } else {
       erroDiv.textContent = dados.mensagem || 'Erro ao fazer login.';
     }

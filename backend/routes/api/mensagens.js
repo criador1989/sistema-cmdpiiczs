@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Mensagem = require('../../models/Mensagem');
 const Usuario = require('../../models/Usuario');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
 const mongoose = require('mongoose');
 
 // Enviar nova mensagem
