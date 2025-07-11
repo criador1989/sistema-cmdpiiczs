@@ -131,6 +131,20 @@
       margin-top: 15px;
     }
 
+    .print-btn {
+      margin-top: 10px;
+      background-color: #333;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .print-btn:hover {
+      background-color: #000;
+    }
+
     @keyframes fadeInUp {
       from {
         opacity: 0;
@@ -193,6 +207,7 @@
       <input type="text" id="campoIdentificacao" placeholder="Digite nome ou e-mail do professor" style="width:100%; padding:10px; margin-bottom:10px;">
       <button onclick="gerarQRCode()" style="padding:10px 20px; border:none; background:#B22222; color:white; border-radius:5px;">🎟️ Gerar QR Code</button>
       <div id="qrImagem"></div>
+      <button id="btnImprimirQR" class="print-btn" style="display:none;" onclick="imprimirQRCode()">🖨️ Imprimir QR Code</button>
     </div>
 
     <button class="logout-btn" onclick="logout()">🚪 Sair</button>
@@ -202,7 +217,9 @@
     async function gerarQRCode() {
       const campo = document.getElementById('campoIdentificacao');
       const destino = document.getElementById('qrImagem');
+      const btnImprimir = document.getElementById('btnImprimirQR');
       destino.innerHTML = '⏳ Gerando QR Code...';
+      btnImprimir.style.display = 'none';
       try {
         const res = await fetch('/api/professores/qrcode', {
           method: 'POST',
@@ -211,10 +228,19 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.mensagem || 'Erro desconhecido');
-        destino.innerHTML = `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p><img src="${data.qrCode}" width="200" />`;
+        destino.innerHTML = `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p><img id="imgQRCode" src="${data.qrCode}" width="200" />`;
+        btnImprimir.style.display = 'inline-block';
       } catch (err) {
         destino.innerHTML = `<span style="color:red;">❌ ${err.message}</span>`;
       }
+    }
+
+    function imprimirQRCode() {
+      const img = document.getElementById('imgQRCode');
+      const win = window.open('', '_blank');
+      win.document.write(`<html><head><title>QR Code</title></head><body style="text-align:center; padding:40px;"><h2>QR Code de Acesso</h2><img src="${img.src}" /><p>${document.querySelector('#qrImagem a').href}</p></body></html>`);
+      win.document.close();
+      win.print();
     }
   </script>
 
