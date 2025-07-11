@@ -90,87 +90,6 @@
       text-decoration: underline;
     }
 
-    .alerta {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background-color: red;
-      color: white;
-      border-radius: 50%;
-      padding: 3px 6px;
-      font-size: 12px;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.4);
-    }
-
-    .modal-content {
-      background-color: #fff;
-      margin: 5% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      border-radius: 12px;
-      max-width: 400px;
-      text-align: center;
-    }
-
-    .modal-content img {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 10px;
-    }
-
-    .modal-content p {
-      margin: 5px 0;
-      font-weight: bold;
-      color: #333;
-    }
-
-    .modal-content h3 {
-      color: #941a1d;
-      margin-bottom: 10px;
-    }
-
-    .modal-content button, .modal-content a {
-      margin: 6px;
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      display: inline-block;
-      text-decoration: none;
-    }
-
-    .ficha-btn { background-color: #17a2b8; color: white; }
-    .obs-btn { background-color: #6f42c1; color: white; }
-    .edit-btn { background-color: #ffc107; color: black; }
-    .link-btn { background-color: #28a745; color: white; }
-    .delete-btn { background-color: #dc3545; color: white; }
-    .qr-btn { background-color: #0d6efd; color: white; margin-top: 10px; }
-
-    .voltar-btn {
-      margin-top: 25px;
-      background-color: #6c757d;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-    }
-
     .legenda {
       margin-top: 40px;
       padding-top: 20px;
@@ -186,24 +105,106 @@
       margin: 4px 0;
       font-size: 14px;
     }
+
+    /* Modal do aluno */
+    #modalAluno {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      padding-top: 60px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.7);
+    }
+
+    #modalAluno .modal-conteudo {
+      background-color: #fff;
+      margin: auto;
+      padding: 20px 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 450px;
+      animation: fadeInUp 0.5s;
+      text-align: center;
+      position: relative;
+    }
+
+    #modalAluno img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #941a1d;
+    }
+
+    #modalAluno h3 {
+      margin-top: 10px;
+      color: #941a1d;
+    }
+
+    #modalAluno p {
+      margin: 4px 0;
+      font-size: 15px;
+    }
+
+    #modalAluno a {
+      display: inline-block;
+      margin: 8px 5px 0;
+      padding: 8px 14px;
+      background-color: #941a1d;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    #modalAluno a:hover {
+      background-color: #6e1315;
+    }
+
+    #fecharModal {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #941a1d;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2 id="tituloLista">Lista de Alunos</h2>
     <input type="text" id="filtroNome" placeholder="Buscar por nome" oninput="filtrarNome()" />
-
     <h3>Turno da Manhã</h3>
     <div id="botoesManha"></div>
     <div id="gruposManha"></div>
-
     <h3>Turno da Tarde</h3>
     <div id="botoesTarde"></div>
     <div id="gruposTarde"></div>
-
-    <button id="voltarPainel" class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
-    <button class="qr-btn" onclick="gerarCartoes()">📲 Gerar Cartões QR Code da Turma</button>
-
     <div class="legenda">
       <h4>Legenda de Cores:</h4>
       <p><span style="color:#0f5132; font-weight:bold;">■</span> Excepcional (9,01 a 10,00)</p>
@@ -215,19 +216,16 @@
     </div>
   </div>
 
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <img id="modalFoto" src="" alt="Foto" />
+  <!-- Modal -->
+  <div id="modalAluno">
+    <div class="modal-conteudo">
+      <span id="fecharModal">&times;</span>
+      <img id="modalFoto" src="" alt="Foto do Aluno">
       <h3 id="modalNome"></h3>
       <p id="modalTurma"></p>
       <p id="modalNota"></p>
-      <a id="btnFicha" class="ficha-btn">Ver Ficha</a>
-      <a id="btnObs" class="obs-btn">Adicionar Observação</a>
-      <a id="btnEditar" class="edit-btn">Editar</a>
-      <a id="btnLink" class="link-btn" target="_blank">Link para os Pais</a>
-      <button id="btnExcluir" class="delete-btn">Excluir</button>
-      <br><br>
-      <button onclick="fecharModal()">Fechar</button>
+      <a id="linkFicha" href="#" target="_blank">Ver Ficha Completa</a>
+      <a id="linkQRCode" href="#" target="_blank">Ver QR Code</a>
     </div>
   </div>
 
@@ -239,7 +237,6 @@
     async function carregarAlunos() {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
-      document.getElementById("voltarPainel").style.display = token ? "none" : "inline-block";
       if (token) {
         document.getElementById("tituloLista").innerText = "Lista de Alunos (Professor)";
         const res = await fetch(`/api/usuarios/acesso/${token}`);
@@ -281,9 +278,9 @@
             card.style.background = calcularCorNota(aluno.comportamento);
             card.innerHTML = `
               <img src="${aluno.foto || 'img/sem-foto.png'}" alt="${aluno.nome}" />
-              <div class="nome" onclick='abrirModal(${JSON.stringify(aluno)})'>${aluno.nome}</div>
-              ${aluno.observacoesRecentes ? '<div class="alerta">!</div>' : ''}
+              <div class="nome">${aluno.nome}</div>
             `;
+            card.onclick = () => abrirModal(aluno);
             grid.appendChild(card);
           });
           grupoContainer.appendChild(grid);
@@ -301,54 +298,6 @@
       return '#212529';
     }
 
-    function abrirModal(aluno) {
-      document.getElementById('modalFoto').src = aluno.foto || 'img/sem-foto.png';
-      document.getElementById('modalNome').innerText = aluno.nome;
-      document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma || '-'}`;
-      document.getElementById('modalNota').innerText = `Nota de comportamento: ${aluno.comportamento?.toFixed(2) || '8.00'}`;
-      document.getElementById('btnFicha').href = `ver-ficha.html?id=${aluno._id}`;
-      document.getElementById('btnObs').href = `ficha-aluno.html?id=${aluno._id}`;
-      document.getElementById('btnEditar').href = `editar-aluno.html?id=${aluno._id}`;
-      document.getElementById('btnLink').href = `ficha-responsavel.html?codigo=${aluno.codigoAcesso}`;
-      document.getElementById('btnExcluir').onclick = () => excluirAluno(aluno._id);
-      document.getElementById('modal').style.display = 'block';
-    }
-
-    function fecharModal() {
-      document.getElementById('modal').style.display = 'none';
-    }
-
-    async function excluirAluno(id) {
-      if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
-      const res = await fetch(`/api/alunos/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (res.ok) location.reload();
-      else alert('Erro ao excluir aluno.');
-    }
-
-    async function gerarCartoes() {
-      const turma = prompt("Digite a turma (ex: 6ºA):");
-      if (!turma) return;
-      try {
-        const resposta = await fetch(`/api/cartoes/turma/${encodeURIComponent(turma)}`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-        if (!resposta.ok) throw new Error('Erro ao gerar os cartões');
-        const blob = await resposta.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `cartoes_${turma}.zip`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } catch (erro) {
-        alert("Erro ao gerar cartões: " + erro.message);
-      }
-    }
-
     function filtrarNome() {
       const termo = document.getElementById('filtroNome').value.toLowerCase();
       const alunos = document.querySelectorAll('.aluno-card');
@@ -356,6 +305,26 @@
         const nome = card.querySelector('.nome').innerText.toLowerCase();
         card.style.display = nome.includes(termo) ? 'block' : 'none';
       });
+    }
+
+    function abrirModal(aluno) {
+      document.getElementById('modalFoto').src = aluno.foto || 'img/sem-foto.png';
+      document.getElementById('modalNome').innerText = aluno.nome;
+      document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma}`;
+      document.getElementById('modalNota').innerText = `Nota de comportamento: ${aluno.comportamento?.toFixed(2) || '8.00'}`;
+      document.getElementById('linkFicha').href = `/ficha-aluno.html?id=${aluno._id}`;
+      document.getElementById('linkQRCode').href = `/qrcode-aluno.html?id=${aluno._id}`;
+      document.getElementById('modalAluno').style.display = 'block';
+    }
+
+    document.getElementById('fecharModal').onclick = () => {
+      document.getElementById('modalAluno').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      if (event.target == document.getElementById('modalAluno')) {
+        document.getElementById('modalAluno').style.display = 'none';
+      }
     }
 
     carregarAlunos();
