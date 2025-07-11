@@ -96,8 +96,13 @@ router.get('/acesso/:token', async (req, res) => {
       return res.status(404).json({ mensagem: 'Professor não encontrado ou token inválido.' });
     }
 
-    const alunos = await Aluno.find({ instituicao: professor.instituicao })
-      .select('nome turma comportamento foto');
+    const instituicao = professor.instituicao?.trim().toUpperCase(); // normaliza
+
+    const alunos = await Aluno.find({
+      instituicao: { $regex: `^${instituicao}$`, $options: 'i' }
+    }).select('nome turma comportamento foto');
+
+    console.log(`🔎 ${alunos.length} aluno(s) encontrados para ${instituicao}`);
 
     res.json({
       professor: professor.nome,
