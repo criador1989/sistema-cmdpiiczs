@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ficha do Aluno - Professor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3f3f3;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #941a1d;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .conteudo {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease;
+    }
+
+    .foto {
+      width: 140px;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      border: 2px solid #941a1d;
+    }
+
+    .dados {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .dados span {
+      font-size: 1.1rem;
+      color: #333;
+    }
+
+    .comportamento {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      padding: 1rem;
+      background-color: #eee;
+      border-left: 5px solid #941a1d;
+    }
+
+    .observacoes, .notificacoes {
+      margin-top: 2rem;
+    }
+
+    .observacoes h3, .notificacoes h3 {
+      color: #941a1d;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 0.3rem;
+    }
+
+    .cartao {
+      background-color: #fafafa;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      box-shadow: 1px 1px 6px rgba(0,0,0,0.05);
+    }
+
+    .cartao small {
+      color: #666;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Ficha do Aluno</header>
+  <div class="conteudo">
+    <div class="dados" id="dadosAluno">
+      <!-- Preenchido via JS -->
+    </div>
+    <div class="comportamento" id="comportamento">
+      <!-- Comportamento -->
+    </div>
+
+    <div class="notificacoes">
+      <h3>Histórico de Notificações</h3>
+      <div id="listaNotificacoes"></div>
+    </div>
+
+    <div class="observacoes">
+      <h3>Observações Registradas</h3>
+      <div id="listaObservacoes"></div>
+    </div>
+  </div>
+
+  <script>
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("id");
+    const token = url.searchParams.get("token");
+
+    async function carregarFicha() {
+      try {
+        const resposta = await fetch(`/api/ficha/${id}?token=${token}`);
+        const dados = await resposta.json();
+
+        const aluno = dados.aluno;
+        const foto = aluno.foto || "/icons/icon-192x192.png";
+
+        document.getElementById("dadosAluno").innerHTML = `
+          <img src="${foto}" class="foto" alt="Foto do aluno" />
+          <span><strong>Nome:</strong> ${aluno.nome}</span>
+          <span><strong>Turma:</strong> ${aluno.turma}</span>
+          <span><strong>Código de Acesso:</strong> ${aluno.codigoAcesso}</span>
+        `;
+
+        document.getElementById("comportamento").innerHTML = `
+          <strong>Nota de Comportamento:</strong> ${aluno.comportamento?.toFixed(2) || "N/A"} - ${classificarNota(aluno.comportamento)}
+        `;
+
+        const listaN = document.getElementById("listaNotificacoes");
+        if (dados.notificacoes.length === 0) {
+          listaN.innerHTML = "<p>Nenhuma notificação encontrada.</p>";
+        } else {
+          dados.notificacoes.forEach(n => {
+            const div = document.createElement("div");
+            div.className = "cartao";
+            div.innerHTML = `
+              <strong>${n.tipo} (${n.tipoMedida})</strong><br />
+              Motivo: ${n.motivo} <br />
+              Valor: ${n.valorNumerico} <br />
+              <small>${new Date(n.createdAt).toLocaleDateString()}</small>
+            `;
+            listaN.appendChild(div);
+          });
+        }
+
+        const listaO = document.getElementById("listaObservacoes");
+        if (dados.observacoes.length === 0) {
+          listaO.innerHTML = "<p>Nenhuma observação registrada.</p>";
+        } else {
+          dados.observacoes.forEach(o => {
+            const div = document.createElement("div");
+            div.className = "cartao";
+            div.innerHTML = `
+              ${o.texto} <br />
+              <small>Por: ${o.autor} | ${new Date(o.data).toLocaleDateString()}</small>
+            `;
+            listaO.appendChild(div);
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        document.querySelector(".conteudo").innerHTML = "<p style='color:red;'>Erro ao carregar ficha do aluno.</p>";
+      }
+    }
+
+    function classificarNota(nota) {
+      if (nota >= 9.5) return "Excepcional";
+      if (nota >= 8.5) return "Ótimo";
+      if (nota >= 7.5) return "Bom";
+      if (nota >= 6.5) return "Regular";
+      if (nota >= 5) return "Insuficiente";
+      return "Incompatível";
+    }
+
+    carregarFicha();
+  </script>
+</body>
+</html>

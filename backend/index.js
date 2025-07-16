@@ -7,6 +7,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 
+dotenv.config();
+
 const Aluno = require('./models/Aluno');
 const Notificacao = require('./models/Notificacao');
 const Usuario = require('./models/Usuario');
@@ -20,7 +22,8 @@ const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
 const fichaTesteRoute = require('./routes/api/fichaTeste');
 const cartoesRoutes = require('./routes/api/cartoes');
 const cartoesProfessoresRoute = require('./routes/api/cartoesProfessores');
-const professoresRoute = require('./routes/api/professores'); // ✅ NOVA ROTA
+const professoresRoute = require('./routes/api/professores');
+const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores'); // ✅ Nova rota
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
@@ -34,9 +37,7 @@ const estatisticasRoutes = require('./routes/api/estatisticas');
 const mensagensRoutes = require('./routes/api/mensagens');
 const observacoesRoutes = require('./routes/api/observacoes');
 
-const autenticarTokenProfessor = require('./middleware/tokenProfessor'); // ✅ Middleware para QR Code
-
-dotenv.config();
+const autenticarTokenProfessor = require('./middleware/tokenProfessor');
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('🟢 Conectado ao MongoDB'))
@@ -165,7 +166,8 @@ app.use('/api/responsavel', responsavelRoutes);
 app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', cartoesRoutes);
 app.use('/api/cartoes-professores', cartoesProfessoresRoute);
-app.use('/api/professores', professoresRoute); // ✅ Adicionada rota QR Code
+app.use('/api/professores', professoresRoute);
+app.use('/api/qrcode-professor', qrcodeProfessoresRoute); // ✅ Nova rota adicionada
 app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/logs', logsRoutes);
