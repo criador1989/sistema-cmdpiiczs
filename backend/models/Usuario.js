@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto'); // usado para gerar o token
 
 const usuarioSchema = new mongoose.Schema({
   nome: {
@@ -18,25 +19,32 @@ const usuarioSchema = new mongoose.Schema({
   },
   tipo: {
     type: String,
-    enum: ['admin', 'monitor', 'professor'], // ✅ Atualizado
+    enum: ['admin', 'monitor', 'professor'],
     default: 'monitor'
   },
   instituicao: {
     type: String,
     required: true
   },
-  tokenAcessoProfessor: {
+  tokenAcesso: {
     type: String,
     unique: true,
-    sparse: true // Permite que alguns usuários não tenham esse token
+    sparse: true // só professores terão
   }
 });
 
 // Hash da senha antes de salvar
 usuarioSchema.pre('save', async function (next) {
-  if (!this.isModified('senha')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.senha = await bcrypt.hash(this.senha, salt);
+  if (this.isModified('senha')) {
+    const salt = await bcrypt.genSalt(10);
+    this.senha = await bcrypt.hash(this.senha, salt);
+  }
+
+  // Gera token de acesso se for professor e ainda não tiver
+  if (this.tipo === 'professor' && !this.tokenAcesso) {
+    this.tokenAcesso = crypto.randomBytes(16).toString('hex');
+  }
+
   next();
 });
 

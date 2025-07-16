@@ -34,7 +34,13 @@
       margin-bottom: 1rem;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 1rem;
+    }
+    .aluno-foto img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 50%;
     }
     .aluno-info {
       flex: 1;
@@ -117,6 +123,15 @@
         const card = document.createElement('div');
         card.className = 'aluno-card';
 
+        const fotoDiv = document.createElement('div');
+        fotoDiv.className = 'aluno-foto';
+
+        const foto = document.createElement('img');
+        foto.src = aluno.foto
+          ? `data:image/jpeg;base64,${aluno.foto}`
+          : '/img/avatar.png';
+        fotoDiv.appendChild(foto);
+
         const info = document.createElement('div');
         info.className = 'aluno-info';
         info.innerHTML = `
@@ -132,8 +147,10 @@
         btnFicha.onclick = () => window.location.href = `/ficha-aluno.html?id=${aluno._id}`;
         acoes.appendChild(btnFicha);
 
+        card.appendChild(fotoDiv);
         card.appendChild(info);
         card.appendChild(acoes);
+
         container.appendChild(card);
       });
     }
