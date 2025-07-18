@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Usuario = require('../../models/Usuario');
 const Aluno = require('../../models/Aluno');
-const calcularNotaComportamento = require('../../utils/calcularNota');
+const calcularNotaComportamento = require('../../utils/calculoNota');
 
 // GET /api/usuarios/acesso/:token - Acesso público via token do professor
 router.get('/acesso/:token', async (req, res) => {
