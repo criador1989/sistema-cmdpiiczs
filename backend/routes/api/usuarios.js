@@ -38,6 +38,12 @@ router.post('/', autenticar, verificarAdmin, async (req, res) => {
       instituicao
     });
 
+    // Gerar token de acesso automaticamente se for professor
+    if (tipo === 'professor') {
+      const tokenGerado = jwt.sign({ email, tipo, data: Date.now() }, SECRET);
+      novoUsuario.tokenAcesso = tokenGerado;
+    }
+
     await novoUsuario.save();
 
     res.status(201).json({
