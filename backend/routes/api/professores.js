@@ -4,10 +4,13 @@ const router = express.Router();
 const Usuario = require('../../models/Usuario');
 const { autenticar } = require('../../middleware/autenticacao');
 const qrcode = require('qrcode');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 
-// POST /api/professores/qrcode
+const SECRET = process.env.JWT_SECRET || 'segredo_padrao';
+const BASE_URL = process.env.BASE_URL || 'https://sistema-cmdpiiczs.onrender.com';
+
+// POST /api/professores/qrcode - Gera QR Code de acesso do professor
 router.post('/qrcode', autenticar, async (req, res) => {
   try {
     const { identificador } = req.body;
@@ -27,13 +30,17 @@ router.post('/qrcode', autenticar, async (req, res) => {
       return res.status(404).json({ mensagem: 'Professor não encontrado.' });
     }
 
-    // Se ainda não tiver tokenAcessoProfessor, gerar agora
-    if (!professor.tokenAcessoProfessor) {
-      professor.tokenAcessoProfessor = crypto.randomBytes(16).toString('hex');
+    // Usa tokenAcesso salvo no banco
+    let token = professor.tokenAcesso;
+
+    // Se não existir token, gera um novo token fixo e salva no banco
+    if (!token) {
+      token = require('crypto').randomBytes(16).toString('hex');
+      professor.tokenAcesso = token;
       await professor.save();
     }
 
-    const url = `${process.env.BASE_URL}/lista-alunos.html?token=${professor.tokenAcessoProfessor}`;
+    const url = `${BASE_URL}/lista-alunos.html?token=${token}`;
     const qrCodeDataUrl = await qrcode.toDataURL(url);
 
     res.json({ url, qrCode: qrCodeDataUrl });
@@ -58,18 +65,9 @@ router.post('/', autenticar, async (req, res) => {
     }
 
     const hashed = await bcrypt.hash(senha, 10);
+    const tokenAcesso = require('crypto').randomBytes(16).toString('hex');
 
-    const tokenAcessoProfessor = crypto.randomBytes(16).toString('hex');
-
-    const novo = new Usuario({
-      nome,
-      email,
-      senha: hashed,
-      instituicao,
-      tipo: 'professor',
-      tokenAcessoProfessor
-    });
-
+    const novo = new Usuario({ nome, email, senha: hashed, instituicao, tipo: 'professor', tokenAcesso });
     await novo.save();
 
     res.status(201).json({ mensagem: 'Professor cadastrado com sucesso.' });
