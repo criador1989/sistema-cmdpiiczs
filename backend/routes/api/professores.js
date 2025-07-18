@@ -4,8 +4,8 @@ const router = express.Router();
 const Usuario = require('../../models/Usuario');
 const { autenticar } = require('../../middleware/autenticacao');
 const qrcode = require('qrcode');
-const jwt = require('jsonwebtoken');
-const SECRET = process.env.JWT_SECRET || 'segredo_padrao';
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 // POST /api/professores/qrcode
 router.post('/qrcode', autenticar, async (req, res) => {
@@ -27,11 +27,13 @@ router.post('/qrcode', autenticar, async (req, res) => {
       return res.status(404).json({ mensagem: 'Professor não encontrado.' });
     }
 
-    const token = jwt.sign({ id: professor._id, tipo: 'professor' }, SECRET, {
-      expiresIn: '30d'
-    });
+    // Se ainda não tiver tokenAcessoProfessor, gerar agora
+    if (!professor.tokenAcessoProfessor) {
+      professor.tokenAcessoProfessor = crypto.randomBytes(16).toString('hex');
+      await professor.save();
+    }
 
-    const url = `${req.protocol}://${req.get('host')}/lista-alunos.html?token=${token}`;
+    const url = `${process.env.BASE_URL}/lista-alunos.html?token=${professor.tokenAcessoProfessor}`;
     const qrCodeDataUrl = await qrcode.toDataURL(url);
 
     res.json({ url, qrCode: qrCodeDataUrl });
@@ -55,8 +57,19 @@ router.post('/', autenticar, async (req, res) => {
       return res.status(400).json({ mensagem: 'Já existe um usuário com este e-mail.' });
     }
 
-    const hashed = await require('bcryptjs').hash(senha, 10);
-    const novo = new Usuario({ nome, email, senha: hashed, instituicao, tipo: 'professor' });
+    const hashed = await bcrypt.hash(senha, 10);
+
+    const tokenAcessoProfessor = crypto.randomBytes(16).toString('hex');
+
+    const novo = new Usuario({
+      nome,
+      email,
+      senha: hashed,
+      instituicao,
+      tipo: 'professor',
+      tokenAcessoProfessor
+    });
+
     await novo.save();
 
     res.status(201).json({ mensagem: 'Professor cadastrado com sucesso.' });
