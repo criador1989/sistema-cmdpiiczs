@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const crypto = require('crypto');
 
 dotenv.config();
 
@@ -23,7 +24,9 @@ const fichaTesteRoute = require('./routes/api/fichaTeste');
 const cartoesRoutes = require('./routes/api/cartoes');
 const cartoesProfessoresRoute = require('./routes/api/cartoesProfessores');
 const professoresRoute = require('./routes/api/professores');
-const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores'); // ✅ Nova rota
+const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores');
+const acessoProfessorRoute = require('./routes/api/acessoProfessor');
+
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
@@ -103,12 +106,13 @@ app.post('/auth/logout', (req, res) => {
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
+// CADASTRO
 app.post('/auth/cadastrar', autenticar, async (req, res) => {
   if (req.usuario.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
   }
 
-  const { nome, email, senha, instituicao } = req.body;
+  const { nome, email, senha, instituicao, tipo = 'professor' } = req.body;
   if (!nome || !email || !senha || !instituicao) {
     return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
   }
@@ -119,7 +123,15 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
       return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
     }
 
-    const novoUsuario = new Usuario({ nome, email, senha, instituicao });
+    const novoUsuario = new Usuario({
+      nome,
+      email,
+      senha,
+      instituicao,
+      tipo,
+      ...(tipo === 'professor' && { tokenAcessoProfessor: crypto.randomBytes(12).toString('hex') })
+    });
+
     await novoUsuario.save();
     res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
   } catch (erro) {
@@ -167,14 +179,15 @@ app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', cartoesRoutes);
 app.use('/api/cartoes-professores', cartoesProfessoresRoute);
 app.use('/api/professores', professoresRoute);
-app.use('/api/qrcode-professor', qrcodeProfessoresRoute); // ✅ Nova rota adicionada
-app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
+app.use('/api/qrcode-professor', qrcodeProfessoresRoute);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
 app.use('/api', relatorioNotificacoesRoute);
 app.use('/api/estatisticas', estatisticasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
+app.use('/api/usuarios', acessoProfessorRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

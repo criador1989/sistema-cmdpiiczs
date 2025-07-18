@@ -16,6 +16,26 @@
       padding: 30px 20px;
     }
 
+    #voltarPainel {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background-color: #6c757d;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+      z-index: 10000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: background 0.2s;
+      display: none;
+    }
+
+    #voltarPainel:hover {
+      background-color: #5a6268;
+    }
+
     .container {
       background: white;
       padding: 30px;
@@ -106,7 +126,6 @@
       font-size: 14px;
     }
 
-    /* Modal do aluno */
     #modalAluno {
       display: none;
       position: fixed;
@@ -196,6 +215,8 @@
   </style>
 </head>
 <body>
+  <a href="painel.html" id="voltarPainel">← Voltar ao Painel</a>
+
   <div class="container">
     <h2 id="tituloLista">Lista de Alunos</h2>
     <input type="text" id="filtroNome" placeholder="Buscar por nome" oninput="filtrarNome()" />
@@ -216,7 +237,6 @@
     </div>
   </div>
 
-  <!-- Modal -->
   <div id="modalAluno">
     <div class="modal-conteudo">
       <span id="fecharModal">&times;</span>
@@ -230,13 +250,18 @@
   </div>
 
   <script>
+    // Exibe o botão "Voltar ao Painel" apenas se NÃO houver token na URL
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (!token) {
+      document.getElementById("voltarPainel").style.display = "inline-block";
+    }
+
     const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
     const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
     let todosAlunos = [];
 
     async function carregarAlunos() {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get("token");
       if (token) {
         document.getElementById("tituloLista").innerText = "Lista de Alunos (Professor)";
         const res = await fetch(`/api/usuarios/acesso/${token}`);

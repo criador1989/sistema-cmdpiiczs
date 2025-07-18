@@ -3,10 +3,10 @@ const router = express.Router();
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
-const upload = require('../../middleware/upload');
-const autenticar = require('../../middleware/autenticacao');
+const { autenticar } = require('../../middleware/autenticacao');
+const autenticarTokenProfessor = require('../../middleware/tokenProfessor');
 const calcularNotaComportamento = require('../../utils/calcularNota');
-const Log = require('../../models/Log'); // ✅ Adicionado
+const Log = require('../../models/Log');
 
 // GET /api/alunos - Lista alunos da mesma instituição
 router.get('/', autenticar, async (req, res) => {
@@ -29,8 +29,29 @@ router.get('/', autenticar, async (req, res) => {
   }
 });
 
+// GET /api/alunos/professor - Lista alunos para professores via token
+router.get('/professor', autenticarTokenProfessor, async (req, res) => {
+  try {
+    const alunos = await Aluno.find({ instituicao: req.professor.instituicao });
+
+    const alunosComNotaAtualizada = await Promise.all(
+      alunos.map(async (aluno) => {
+        const notaAtualizada = await calcularNotaComportamento(aluno._id);
+        return {
+          ...aluno.toObject(),
+          comportamento: notaAtualizada
+        };
+      })
+    );
+
+    res.json(alunosComNotaAtualizada);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao buscar alunos', error });
+  }
+});
+
 // POST /api/alunos - Criar novo aluno com vínculo institucional
-router.post('/', autenticar, upload.single('foto'), async (req, res) => {
+router.post('/', autenticar, async (req, res) => {
   try {
     const {
       nome,
@@ -40,13 +61,14 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
       telefone,
       endereco,
       nomePai,
-      nomeMae
+      nomeMae,
+      foto
     } = req.body;
 
     const turmaNormalizada = turma
       .normalize("NFD")
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[º°]/g, "º")
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[ºº°]/g, "º")
       .replace(/[ª]/g, "ª")
       .trim();
 
@@ -59,13 +81,12 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
       endereco,
       nomePai,
       nomeMae,
-      instituicao: req.usuario.instituicao,
-      foto: req.file ? `uploads/${req.file.filename}` : null
+      foto: foto || null,
+      instituicao: req.usuario.instituicao
     });
 
     const alunoSalvo = await novoAluno.save();
 
-    // ✅ Log de criação
     await Log.create({
       usuario: req.usuario._id,
       acao: 'Cadastro de Aluno',
@@ -79,7 +100,7 @@ router.post('/', autenticar, upload.single('foto'), async (req, res) => {
   }
 });
 
-// ✅ PUT /api/alunos/transferir - Transfere vários alunos de turma
+// PUT /api/alunos/transferir - Transfere vários alunos de turma
 router.put('/transferir', autenticar, async (req, res) => {
   try {
     const { ids, novaTurma } = req.body;
@@ -90,8 +111,8 @@ router.put('/transferir', autenticar, async (req, res) => {
 
     const turmaNormalizada = novaTurma
       .normalize("NFD")
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[º°]/g, "º")
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[ºº°]/g, "º")
       .replace(/[ª]/g, "ª")
       .trim();
 
@@ -123,21 +144,17 @@ router.get('/:id', autenticar, async (req, res) => {
 });
 
 // PUT /api/alunos/:id - Atualizar aluno da mesma instituição
-router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
+router.put('/:id', autenticar, async (req, res) => {
   try {
     const dadosAtualizados = req.body;
 
     if (dadosAtualizados.turma) {
       dadosAtualizados.turma = dadosAtualizados.turma
         .normalize("NFD")
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[º°]/g, "º")
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[ºº°]/g, "º")
         .replace(/[ª]/g, "ª")
         .trim();
-    }
-
-    if (req.file) {
-      dadosAtualizados.foto = `uploads/${req.file.filename}`;
     }
 
     const alunoAtualizado = await Aluno.findOneAndUpdate(
@@ -148,7 +165,6 @@ router.put('/:id', autenticar, upload.single('foto'), async (req, res) => {
 
     if (!alunoAtualizado) return res.status(404).json({ message: 'Aluno não encontrado' });
 
-    // ✅ Log de edição
     await Log.create({
       usuario: req.usuario._id,
       acao: 'Edição de Aluno',
@@ -172,7 +188,6 @@ router.delete('/:id', autenticar, async (req, res) => {
 
     if (!alunoDeletado) return res.status(404).json({ message: 'Aluno não encontrado' });
 
-    // ✅ Log de exclusão
     await Log.create({
       usuario: req.usuario._id,
       acao: 'Exclusão de Aluno',
