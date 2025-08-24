@@ -49,16 +49,27 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// arquivos estáticos
+// ====== arquivos estáticos ======
+// /uploads separado
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
 
-// rota inicial
+// raiz estática: backend/public
+// adiciona no-store para .html para forçar pegar a versão nova no deploy
+const staticRoot = path.join(__dirname, 'public');
+app.use(express.static(staticRoot, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  }
+}));
+
+// ====== rota inicial ======
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// middleware de autenticação (igual ao seu)
+// ====== middleware de autenticação ======
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
@@ -71,7 +82,7 @@ function autenticar(req, res, next) {
   }
 }
 
-// LOGIN
+// ====== LOGIN / LOGOUT ======
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -89,12 +100,13 @@ app.post('/auth/login', async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
+      secure: false, // ajuste para true se for HTTPS obrigatório
       sameSite: 'Lax',
       maxAge: 2 * 60 * 60 * 1000
     });
 
-    const redirecionar = usuario.tipo === 'professor' ? '/painel-professor.html' : '/bemvindo.html';
+    // >>> direciona para o painel novo <<<
+    const redirecionar = usuario.tipo === 'professor' ? '/painel-professor.html' : '/painel.html';
     res.json({ mensagem: 'Login bem-sucedido', redirecionar });
   } catch (erro) {
     console.error('Erro no login:', erro);
@@ -107,7 +119,7 @@ app.post('/auth/logout', (req, res) => {
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
-// CADASTRO
+// ====== CADASTRO ======
 app.post('/auth/cadastrar', autenticar, async (req, res) => {
   if (req.usuario.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
@@ -155,18 +167,18 @@ app.get('/api/usuario', autenticar, async (req, res) => {
   }
 });
 
-// HTMLs protegidos
+// ====== HTMLs protegidos ======
 app.get('/ficha-aluno.html', autenticar, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'ficha-aluno.html'));
+  res.sendFile(path.join(staticRoot, 'ficha-aluno.html'));
 });
 app.get('/painel-professor.html', autenticar, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'painel-professor.html'));
+  res.sendFile(path.join(staticRoot, 'painel-professor.html'));
 });
 app.get('/lista-alunos.html', autenticarTokenProfessor, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'lista-alunos.html'));
+  res.sendFile(path.join(staticRoot, 'lista-alunos.html'));
 });
 
-// Rotas protegidas ou públicas
+// ====== Rotas protegidas ou públicas ======
 app.use('/api/ficha', autenticar, fichaApiRoutes);
 app.use('/ficha', autenticar, fichaViewRoutes);
 app.use('/api', fichaTesteRoute);
@@ -180,7 +192,12 @@ app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', cartoesRoutes);
 app.use('/api/cartoes-professores', cartoesProfessoresRoute);
 app.use('/api/professores', professoresRoute);
-app.use('/api/qrcode-professor', qrcodeProfessoresRoute);
+
+// QRCode — montar o mesmo router em múltiplos caminhos para compatibilidade com o front
+app.use('/api/qrcode-professor', qrcodeProfessoresRoute);   // caminho atual
+app.use('/api/qrcode-professores', qrcodeProfessoresRoute); // plural
+app.use('/api/professores/qrcode', qrcodeProfessoresRoute); // compat com fetch antigo
+
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
@@ -189,6 +206,14 @@ app.use('/api/estatisticas', estatisticasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
 app.use('/api/usuarios', acessoProfessorRoute);
+
+// ====== versão/saúde (opcional, útil para verificar commit em produção) ======
+app.get('/__version', (req, res) => {
+  res.json({
+    commit: process.env.RENDER_GIT_COMMIT || 'desconhecido',
+    builtAt: new Date().toISOString()
+  });
+});
 
 // =======================
 //  Conexão Mongo + Start
