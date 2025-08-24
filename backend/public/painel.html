@@ -5,334 +5,190 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel - Sistema Escolar</title>
   <meta name="theme-color" content="#8B0000" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
 
   <style>
     :root{
-      --cor1:#8B0000;
-      --cor2:#B22222;
+      --rubi-1:#8B0000;
+      --rubi-2:#B22222;
 
-      /* Rubi com gradiente sobre o glass */
-      --card-bg:rgba(178,34,34,0.20);
-      --card-tint-top: rgba(200,30,34,0.30);
-      --card-tint-bottom: rgba(148,26,29,0.18);
+      /* Vidro */
+      --glass-bg: rgba(255,255,255,.07);
+      --glass-border: rgba(255,255,255,.38);
+      --glass-inner: rgba(255,255,255,.40);
+      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
 
-      --card-bg-hover:rgba(178,34,34,0.26);
-      --card-tint-top-hover: rgba(200,30,34,0.36);
-      --card-tint-bottom-hover: rgba(148,26,29,0.26);
-
-      --glass-stroke:rgba(255,255,255,.62);
-      --glass-inner:rgba(255,255,255,.42);
-
-      --shadow-lg:0 24px 60px rgba(0,0,0,.30);
-      --shadow-md:0 14px 34px rgba(0,0,0,.22);
-      --radius:22px;
+      --radius: 22px;
+      --text: #f2f4f8;
+      --text-soft: #cfd6de;
     }
-    *{box-sizing:border-box}
+    *{ box-sizing:border-box }
 
+    /* ===== FUNDO “FIBRA DE CARBONO” RUBI ESCURO + SOMBRA NAS BORDAS ===== */
+    html,body{ height:100% }
     body{
       margin:0;
       font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
-      color:#1b1b1b;
-      min-height:100vh;
-      background:
-        radial-gradient(800px 400px at 20% 20%, rgba(0,0,0,.04) 0%, rgba(0,0,0,0) 60%),
-        radial-gradient(1000px 500px at 80% 0%, rgba(0,0,0,.03) 0%, rgba(0,0,0,0) 70%),
-        #ffffff;
+      color: var(--text);
+      background:#1e0506; /* base rubi bem escura */
       display:flex;
-      align-items:flex-start;
       justify-content:center;
-      position:relative;
-      overflow-x:hidden;
     }
-
-    /* ===== Fundo com FORMAS geométricas rubi ===== */
-    .bg-shapes{
-      position: fixed;
-      inset:-200px -120px -200px -120px;
-      z-index:0;
-      pointer-events:none;
+    /* padrão quadriculado diagonal com tons rubi */
+    body::before{
+      content:"";
+      position:fixed; inset:0; z-index:0;
+      background:
+        /* malha A (vermelho claro sutil) */
+        linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
+        /* malha B (sombra) */
+        linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
+        /* tonalidade rubi de fundo */
+        linear-gradient(0deg, #2a0607, #3c0a0d);
+      filter: saturate(125%);
     }
-    .bg-shapes .shape{
-      --w:300px; --h:180px; --r:0deg; --blur:0px; --o:.8;
-      position:absolute; width:var(--w); height:var(--h); opacity:var(--o);
-      filter: blur(var(--blur)); transform: rotate(var(--r));
-      background: linear-gradient(135deg, rgba(200,30,34,.35), rgba(148,26,29,.85));
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,.3),
-        0 40px 90px rgba(148,26,29,.25);
+    /* vinheta/ sombras nas bordas (topo, base e laterais) + brilho superior rubi */
+    body::after{
+      content:"";
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        /* brilho suave rubi no topo */
+        radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
+        /* sombra pesada na base */
+        radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
+        /* sombras laterais */
+        radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
+        radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%);
     }
-    /* tipos */
-    .shape.rect{ border-radius:20px; }
-    .shape.rhomboid{ border-radius:16px; transform: skewX(-12deg) rotate(var(--r)); }
-    .shape.tri{ clip-path: polygon(50% 0, 0 100%, 100% 100%); background: linear-gradient(160deg, rgba(255,160,160,.55), rgba(148,26,29,.9)); }
-    .shape.hex{
-      clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-      background: linear-gradient(160deg, rgba(200,30,34,.45), rgba(148,26,29,.9));
-    }
-
-    /* posições */
-    .bg-shapes .s1{ --w:520px; --h:240px; --r:-8deg; top:-80px; left:-60px; --blur:1px; --o:.85; }
-    .bg-shapes .s2{ --w:260px; --h:260px; --r:18deg; top:140px; right:-70px; --blur:1px; --o:.9; }
-    .bg-shapes .s3{ --w:180px; --h:180px; --r:-22deg; bottom:160px; left:12%; --blur:3px; --o:.65; }
-    .bg-shapes .s4{ --w:620px; --h:320px; --r:10deg; bottom:-220px; right:-140px; --blur:4px; --o:.55; }
-
-    @keyframes floatySoft{ 0%,100%{ transform:translateY(0)} 50%{ transform:translateY(-6px)} }
 
     .wrap{
+      position:relative; z-index:1;
       width:clamp(320px, 96vw, 1180px);
-      margin: 40px auto 80px;
-      position:relative;
-      z-index:1; /* acima do fundo */
+      margin: 38px auto 80px;
     }
 
-    /* topo centralizado */
-    .topo{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:14px;
-      text-align:center;
-      color:#222;
-      margin-top:10px;
-    }
-    .logos{
-      display:flex; gap:18px; flex-wrap:wrap; align-items:center; justify-content:center;
-    }
-    .logos img{ width:94px; height:auto; filter: none; } /* sem sombra */
+    /* ===== TOPO ===== */
+    .topo{ display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center }
+    .logos{ display:flex; gap:18px; align-items:center; justify-content:center; flex-wrap:wrap }
+    .logos img{ width:94px; height:auto; filter:none } /* sem sombra */
+    .titulo{ font-size: clamp(24px, 3vw, 38px); font-weight:800; letter-spacing:.2px }
+    .sub{ color: var(--text-soft); font-size: clamp(14px, 1.8vw, 18px) }
 
-    .titulo{
-      font-size: clamp(24px, 3vw, 38px);
-      font-weight:800;
-      letter-spacing:.2px;
-    }
-    .sub{
-      font-size: clamp(14px, 1.8vw, 18px);
-      opacity:.85;
-    }
-
-    /* painel container (leve glass) */
+    /* ===== PAINEL ===== */
     .painel{
-      margin-top:22px;
-      background: rgba(255,255,255,.55);
-      border:1px solid rgba(255,255,255,.60);
+      margin-top:20px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
       border-radius: 24px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.10);
-      padding: 28px 24px 30px;
-      position:relative;
-      overflow:visible;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 10px 28px rgba(0,0,0,.35);
+      padding: 26px 24px 30px;
     }
 
-    /* grade dos cards */
+    /* ===== GRADE ===== */
     .menu-windows{
-      margin-top:14px;
+      margin-top:10px;
       display:grid;
       grid-template-columns: repeat(12, 1fr);
       gap:22px;
     }
-    @media (max-width: 1200px){
-      .menu-windows{ grid-template-columns: repeat(8, 1fr); }
-    }
-    @media (max-width: 820px){
-      .menu-windows{ grid-template-columns: repeat(6, 1fr); }
-    }
-    @media (max-width: 560px){
-      .menu-windows{ grid-template-columns: repeat(4, 1fr); }
-    }
+    @media (max-width:1200px){ .menu-windows{ grid-template-columns: repeat(8,1fr) } }
+    @media (max-width:820px){  .menu-windows{ grid-template-columns: repeat(6,1fr) } }
+    @media (max-width:560px){  .menu-windows{ grid-template-columns: repeat(4,1fr) } }
 
-    /* ===== CARD: glass visível + formas internas ===== */
+    /* ===== CARD: GLASS com reflexos + tipografia do mock ===== */
     .window-card{
       grid-column: span 4;
-      height: 170px;
-      position: relative;
+      height:170px;
+      position:relative;
       border-radius: var(--radius);
-      /* camada rubi ao fundo */
-      background:
-        linear-gradient(180deg, var(--card-tint-top), var(--card-tint-bottom)),
-        var(--card-bg);
-      border:1px solid var(--glass-stroke);
+      background: var(--glass-bg);
+      border:1px solid var(--glass-border);
       overflow:hidden;
       cursor:pointer;
-      box-shadow: var(--shadow-md);
-      transition: transform .35s ease, box-shadow .35s ease, background .35s ease, filter .35s ease;
-      isolation: isolate;
+      box-shadow: var(--glass-shadow);
+      transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background .22s ease;
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      isolation:isolate;
     }
-    /* camada GLASS explícita */
+    /* brilho superior e diagonal */
     .window-card::before{
       content:"";
-      position:absolute; inset:0; border-radius:inherit;
-      backdrop-filter: blur(16px) saturate(120%);
-      -webkit-backdrop-filter: blur(16px) saturate(120%);
-      background: linear-gradient(135deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,.10) 42%, rgba(255,255,255,.06) 100%);
-      z-index:1; pointer-events:none;
+      position:absolute; inset:0; border-radius:inherit; z-index:1; pointer-events:none;
+      background:
+        linear-gradient(to bottom, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 9%, rgba(255,255,255,0) 28%),
+        linear-gradient(135deg, rgba(255,255,255,.15) 0%, rgba(255,255,255,.08) 40%, rgba(255,255,255,0) 70%);
     }
-    /* brilho de borda interna */
+    /* arco de sombra na base + linha especular */
     .window-card::after{
       content:"";
-      position:absolute; inset:0; border-radius:inherit;
-      box-shadow: inset 0 1px 0 var(--glass-inner), inset 0 0 40px rgba(0,0,0,.08);
-      z-index:2; pointer-events:none;
-    }
-
-    .window-card:hover{
-      transform: translateY(-4px); /* mais sutil */
-      box-shadow: var(--shadow-lg);
+      position:absolute; inset:0; border-radius:inherit; z-index:1; pointer-events:none;
       background:
-        linear-gradient(180deg, var(--card-tint-top-hover), var(--card-tint-bottom-hover)),
-        var(--card-bg-hover);
-      filter: saturate(1.03);
+        radial-gradient(130% 80% at 50% 120%, rgba(0,0,0,.40) 0%, rgba(0,0,0,0) 60%),
+        linear-gradient(to bottom, transparent 96%, rgba(255,255,255,.35) 100%);
+      box-shadow: inset 0 1px 0 var(--glass-inner);
     }
-
-    /* formas dentro do card */
-    .shapes-card{ position:absolute; inset:0; z-index:0; pointer-events:none; }
-    .shapes-card .piece{
-      --w:90px; --h:64px; --r:0deg; --blur:0px; --o:.85;
-      position:absolute; width:var(--w); height:var(--h); opacity:var(--o);
-      filter: blur(var(--blur)); transform: rotate(var(--r));
-      background: linear-gradient(135deg, rgba(255,170,170,.5), rgba(148,26,29,.92));
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,.35),
-        0 8px 22px rgba(148,26,29,.22);
-      animation: floatySoft var(--t,13s) ease-in-out infinite;
-      border-radius:12px;
+    .window-card:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 22px 50px rgba(0,0,0,.55);
+      filter: saturate(1.02);
     }
-    .shapes-card .tri{
-      clip-path: polygon(50% 0, 0 100%, 100% 100%);
-      border-radius:0;
-      background: linear-gradient(160deg, rgba(255,160,160,.55), rgba(148,26,29,.92));
-    }
-    .shapes-card .diamond{
-      transform: rotate(calc(var(--r) + 45deg));
-      border-radius:10px;
-    }
-    .shapes-card .hex{
-      clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-      border-radius:0;
-      background: linear-gradient(150deg, rgba(200,30,34,.5), rgba(148,26,29,.92));
-    }
+    .window-card:focus{ outline:3px solid rgba(255,255,255,.65); outline-offset:3px }
 
-    /* layouts por card: posição/tamanho diferentes (s1,s2,s3) */
-    .layout-1 .s1{ --w:120px; --h:80px; left:-12px; top:-18px; --r:-8deg }
-    .layout-1 .s2{ --w:72px;  --h:72px; right:16px; bottom:12px; --r:18deg; }
-    .layout-1 .s3{ --w:44px;  --h:44px; right:36%; top:16px; --blur:2px; --o:.7 }
-
-    .layout-2 .s1{ --w:100px; --h:64px; left:8px; top:-10px; --r:6deg }
-    .layout-2 .s2{ --w:56px;  --h:56px; right:24px; bottom:10px; --r:-10deg }
-    .layout-2 .s3{ --w:50px;  --h:50px; right:22%; top:20px; --blur:1px; --o:.8 }
-
-    .layout-3 .s1{ --w:130px; --h:86px; left:-20px; top:-24px; --r:12deg }
-    .layout-3 .s2{ --w:54px;  --h:54px; right:30%; bottom:16px; --r:-22deg }
-    .layout-3 .s3{ --w:48px;  --h:48px; right:12%; top:18px; --blur:2px }
-
-    .layout-4 .s1{ --w:110px; --h:70px; left:16px; top:-18px; --r:-14deg }
-    .layout-4 .s2{ --w:80px;  --h:70px; right:6px; bottom:-6px; --r:10deg }
-    .layout-4 .s3{ --w:40px;  --h:40px; right:40%; top:26px }
-
-    .layout-5 .s1{ --w:140px; --h:86px; left:-10px; top:-26px; --r:18deg }
-    .layout-5 .s2{ --w:68px;  --h:68px; right:18px; bottom:8px; }
-    .layout-5 .s3{ --w:36px;  --h:36px; right:22%; top:18px; --blur:2px }
-
-    .layout-6 .s1{ --w:96px;  --h:64px; left:-18px; top:-8px; --r:-10deg }
-    .layout-6 .s2{ --w:86px;  --h:60px; right:-8px; bottom:-6px; --r:14deg }
-    .layout-6 .s3{ --w:42px;  --h:42px; right:28%; top:24px }
-
-    .layout-7 .s1{ --w:110px; --h:72px; left:-6px; top:-10px; --r:-6deg }
-    .layout-7 .s2{ --w:70px;  --h:70px; right:12px; bottom:14px; --r:12deg }
-    .layout-7 .s3{ --w:50px;  --h:50px; right:12%; top:14px }
-
-    .layout-8 .s1{ --w:136px; --h:84px; left:0; top:-18px; --r:6deg }
-    .layout-8 .s2{ --w:58px;  --h:58px; right:30px; bottom:12px; --r:-16deg }
-    .layout-8 .s3{ --w:42px;  --h:42px; right:38%; top:22px }
-
-    .layout-9 .s1{ --w:118px; --h:76px; left:-18px; top:-12px; --r:-12deg }
-    .layout-9 .s2{ --w:76px;  --h:60px; right:16px; bottom:6px; --r:14deg }
-    .layout-9 .s3{ --w:36px;  --h:36px; right:28%; top:20px }
-
-    .layout-10 .s1{ --w:142px; --h:90px; left:-24px; top:-22px; --r:16deg }
-    .layout-10 .s2{ --w:62px;  --h:62px; right:22px; bottom:18px; --r:-18deg }
-    .layout-10 .s3{ --w:44px;  --h:44px; right:14%; top:24px }
-
-    .layout-11 .s1{ --w:110px; --h:64px; left:10px; top:-8px; --r:10deg }
-    .layout-11 .s2{ --w:80px;  --h:64px; right:0; bottom:-4px; --r:-8deg }
-    .layout-11 .s3{ --w:36px;  --h:36px; right:40%; top:18px }
-
-    .layout-12 .s1{ --w:124px; --h:82px; left:-10px; top:-12px; --r:-10deg }
-    .layout-12 .s2{ --w:70px;  --h:70px; right:28px; bottom:16px; --r:12deg }
-    .layout-12 .s3{ --w:48px;  --h:48px; right:24%; top:14px }
-
-    /* conteúdo central */
+    /* ===== Conteúdo no estilo do mock ===== */
     .window-content{
-      position:absolute; inset:0;
-      display:grid; place-items:center;
-      z-index:3; padding: 10px;
+      position:absolute; inset:0; z-index:2;
+      display:flex; align-items:flex-start; justify-content:flex-start;
+      padding:18px 18px 14px 18px;
     }
-    .window-title{
-      display:flex; flex-direction:column; align-items:center; gap:8px;
-      background: rgba(255,255,255,.92);
-      padding: 12px 16px;
-      border-radius: 16px;
-      border:1px solid rgba(0,0,0,.04);
-      box-shadow: 0 10px 22px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.8);
-      max-width: 86%;
+    .card-copy{ max-width:88% }
+    .kicker{
+      font-size:.72rem; letter-spacing:.28em; text-transform:uppercase;
+      color:rgba(255,255,255,.80);
     }
-    .window-title .emoji{ font-size:22px; line-height:1 }
-    .window-title h3{
-      margin:0; font-size: clamp(15px, 1.3vw, 18px); color: var(--cor1); letter-spacing:.2px;
+    .card-copy h3{
+      margin:6px 0 8px 0;
+      font-size: clamp(18px, 1.8vw, 24px);
+      line-height:1.1;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:#fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,.25);
     }
+    .ghost{ margin-top:6px; }
+    .ghost .gl{
+      display:block; height:6px; border-radius:4px;
+      background: rgba(255,255,255,.18);
+      margin-top:6px;
+    }
+    .ghost .l1{ width:72% } .ghost .l2{ width:56% } .ghost .l3{ width:40% }
 
-    /* badge (Mensagens) */
-    .badge{
-      position:absolute; top:10px; right:12px;
-      background:#e80000; color:#fff; border-radius:999px;
-      padding: 4px 9px; font-size:12px; display:none; z-index:4;
-      box-shadow: 0 10px 18px rgba(232,0,0,.35);
-    }
-
-    /* QR Code centralizado */
+    /* ===== QR Code ===== */
     .qrcode-box{
-      margin: 32px auto 0;
-      max-width: 560px;
-      padding:20px;
-      background:#f9f9f9;
-      border:1px solid #ddd;
-      border-radius:12px;
-      text-align:center;
+      margin: 28px auto 0; max-width:560px; text-align:center;
+      padding:20px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; backdrop-filter: blur(6px);
     }
     .qrcode-box input[type="text"]{
-      width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px;
+      width:100%; padding:10px; margin-bottom:10px; border:1px solid rgba(255,255,255,.25);
+      background: rgba(0,0,0,.25); color:#fff; border-radius:8px;
     }
     .print-btn{ margin-top:10px; background:#333; color:#fff; padding:10px 20px; border:none; border-radius:6px; cursor:pointer }
     .print-btn:hover{ background:#000 }
     .logout-btn{
-      display:block;
-      margin:18px auto 0;
-      background: var(--cor2); color:#fff; border:none; padding:12px 24px; border-radius:10px; cursor:pointer;
-      box-shadow: 0 10px 18px rgba(0,0,0,.18);
+      display:block; margin:18px auto 0;
+      background: var(--rubi-2); color:#fff; border:none; padding:12px 24px; border-radius:10px; cursor:pointer;
+      box-shadow: 0 10px 18px rgba(0,0,0,.45);
       transition: transform .2s ease, background .2s ease;
     }
-    .logout-btn:hover{ background: var(--cor1); transform: translateY(-2px) }
-
-    .window-card:focus{ outline:3px solid #fff; outline-offset:3px }
-
-    @media (prefers-reduced-motion:no-preference){
-      .logos img{ animation: brandFloat 4s ease-in-out infinite }
-    }
-    @keyframes brandFloat{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    .logout-btn:hover{ background: var(--rubi-1); transform: translateY(-2px) }
   </style>
 </head>
 <body>
-  <!-- FORMAS grandes no fundo -->
-  <div class="bg-shapes">
-    <span class="shape rect s1"></span>
-    <span class="shape tri  s2"></span>
-    <span class="shape rhomboid s3"></span>
-    <span class="shape hex s4"></span>
-  </div>
-
   <div class="wrap">
     <div class="topo">
       <div class="logos">
@@ -345,115 +201,127 @@
 
     <div class="painel">
       <div class="menu-windows">
-        <!-- Cada card agora usa layout diferente (1..12) e formas variadas -->
+        <!-- Cards com texto no estilo do mock -->
         <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <span class="badge" id="badgeDummy" aria-hidden="true"></span>
-          <div class="shapes-card layout-1">
-            <span class="piece diamond s1"></span>
-            <span class="piece tri     s2"></span>
-            <span class="piece hex     s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">MÓDULO</div>
+              <h3>Cadastrar Aluno</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📋</span><h3>Cadastrar Aluno</h3></div></div>
         </div>
 
-        <div class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-2">
-            <span class="piece rect   s1"></span>
-            <span class="piece tri    s2"></span>
-            <span class="piece diamond s3"></span>
+        <div class="window-card" role="link" tabindex="0" onclick="location.href='./notificacoes'" onkeyup="if(event.key==='Enter') this.click()">
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">PAINEL</div>
+              <h3>Ver Notificações</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📄</span><h3>Ver Notificações</h3></div></div>
         </div>
 
         <div class="window-card" role="link" tabindex="0" onclick="location.href='lista-alunos.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-3">
-            <span class="piece hex    s1"></span>
-            <span class="piece rect   s2"></span>
-            <span class="piece tri    s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">LISTA</div>
+              <h3>Visualizar Alunos</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">👥</span><h3>Visualizar Alunos</h3></div></div>
         </div>
 
         <div class="window-card" role="link" tabindex="0" onclick="location.href='alunos-insuficientes.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-4">
-            <span class="piece rect   s1"></span>
-            <span class="piece diamond s2"></span>
-            <span class="piece tri    s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">RELATÓRIO</div>
+              <h3>Alunos com Baixa Nota</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📉</span><h3>Alunos com Baixa Nota</h3></div></div>
         </div>
 
         <div class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-5">
-            <span class="piece diamond s1"></span>
-            <span class="piece rect    s2"></span>
-            <span class="piece hex     s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">AÇÃO</div>
+              <h3>Transferir Turma</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">🔁</span><h3>Transferir Turma</h3></div></div>
         </div>
 
         <div class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-6">
-            <span class="piece rect    s1"></span>
-            <span class="piece hex     s2"></span>
-            <span class="piece tri     s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">GESTÃO</div>
+              <h3>Controle de Notificações</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📋</span><h3>Controle de Notificações</h3></div></div>
         </div>
 
+        <!-- Admin -->
         <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='cadastro-usuario.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-7">
-            <span class="piece hex     s1"></span>
-            <span class="piece diamond s2"></span>
-            <span class="piece rect    s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">ADMIN</div>
+              <h3>Novo Usuário</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">👤</span><h3>Novo Usuário</h3></div></div>
         </div>
 
         <div id="cardGerenciarUsuarios" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='usuarios.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-8">
-            <span class="piece rect    s1"></span>
-            <span class="piece tri     s2"></span>
-            <span class="piece hex     s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">ADMIN</div>
+              <h3>Gerenciar Usuários</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">⚙️</span><h3>Gerenciar Usuários</h3></div></div>
         </div>
 
         <div id="cardVerLogs" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='logs.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-9">
-            <span class="piece diamond s1"></span>
-            <span class="piece rect    s2"></span>
-            <span class="piece tri     s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">AUDITORIA</div>
+              <h3>Ver Logs</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📜</span><h3>Ver Logs</h3></div></div>
         </div>
 
         <div id="cardRelatorioGeral" class="window-card" style="display:none" role="button" tabindex="0" onclick="gerarRelatorioGeral()" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-10">
-            <span class="piece rect    s1"></span>
-            <span class="piece hex     s2"></span>
-            <span class="piece diamond s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">RELATÓRIO</div>
+              <h3>Relatório Geral</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📄</span><h3>Relatório Geral</h3></div></div>
         </div>
 
         <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='estatisticas.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <div class="shapes-card layout-11">
-            <span class="piece hex     s1"></span>
-            <span class="piece tri     s2"></span>
-            <span class="piece rect    s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">DASHBOARD</div>
+              <h3>Painel de Estatísticas</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📊</span><h3>Painel de Estatísticas</h3></div></div>
         </div>
 
         <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'" onkeyup="if(event.key==='Enter') this.click()">
-          <span id="mensagensBadge" class="badge">0</span>
-          <div class="shapes-card layout-12">
-            <span class="piece rect    s1"></span>
-            <span class="piece diamond s2"></span>
-            <span class="piece hex     s3"></span>
+          <div class="window-content">
+            <div class="card-copy">
+              <div class="kicker">COMUNICAÇÃO</div>
+              <h3>Mensagens</h3>
+              <div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div>
+            </div>
           </div>
-          <div class="window-content"><div class="window-title"><span class="emoji">📬</span><h3>Mensagens</h3></div></div>
+          <span id="mensagensBadge" class="badge" style="display:none; position:absolute; top:10px; right:12px; background:#e80000; color:#fff; border-radius:999px; padding:4px 9px; font-size:12px; z-index:3;">0</span>
         </div>
       </div>
 
@@ -471,7 +339,6 @@
   </div>
 
   <script>
-    /* === funções originais mantidas === */
     async function gerarQRCode() {
       const campo = document.getElementById('campoIdentificacao');
       const destino = document.getElementById('qrImagem');
@@ -479,7 +346,7 @@
       destino.innerHTML = '⏳ Gerando QR Code...';
       btnImprimir.style.display = 'none';
       try {
-        const res = await fetch('/api/professores/qrcode', {
+        const res = await fetch('./api/professores/qrcode', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ identificador: campo.value })
@@ -489,7 +356,7 @@
         destino.innerHTML = `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p><img id="imgQRCode" src="${data.qrCode}" width="200" />`;
         btnImprimir.style.display = 'inline-block';
       } catch (err) {
-        destino.innerHTML = `<span style="color:red;">❌ ${err.message}</span>`;
+        destino.innerHTML = `<span style="color:#ff8a8a;">❌ ${err.message}</span>`;
       }
     }
 
@@ -497,24 +364,24 @@
       const img = document.getElementById('imgQRCode');
       const link = document.querySelector('#qrImagem a')?.href || '';
       const win = window.open('', '_blank');
-      win.document.write(`<html><head><title>QR Code</title></head><body style="text-align:center; padding:40px;"><h2>QR Code de Acesso</h2><img src="${img?.src || ''}" /><p>${link}</p></body></html>`);
+      win.document.write(`<html><head><title>QR Code</title></head><body style="text-align:center; padding:40px; background:#fff; color:#111;"><h2>QR Code de Acesso</h2><img src="${img?.src || ''}" /><p>${link}</p></body></html>`);
       win.document.close();
       win.print();
     }
 
     async function verificarUsuario() {
       try {
-        const resposta = await fetch('/api/usuario', { credentials: 'include' });
-        if (!resposta.ok) { window.location.href = '/login.html'; return; }
+        const resposta = await fetch('./api/usuario', { credentials: 'include' });
+        if (!resposta.ok) { window.location.href = './login.html'; return; }
         const dados = await resposta.json();
         const nome = dados.nome || 'Usuário';
         document.getElementById('nomeUsuario').textContent = nome;
-      } catch (err) { window.location.href = '/login.html'; }
+      } catch (err) { window.location.href = './login.html'; }
     }
 
     async function verificarAdmin() {
       try {
-        const resposta = await fetch('/api/usuario-logado', { credentials: 'include' });
+        const resposta = await fetch('./api/usuario-logado', { credentials: 'include' });
         if (!resposta.ok) return;
         const usuario = await resposta.json();
         if (usuario.tipo === 'admin') {
@@ -524,32 +391,29 @@
           document.getElementById('cardRelatorioGeral').style.display = '';
           document.getElementById('cardEstatisticas').style.display = '';
         }
-      } catch (erro) {
-        console.error('Erro ao verificar tipo de usuário:', erro);
-      }
+      } catch (erro) { console.error('Erro ao verificar tipo de usuário:', erro); }
     }
 
     async function verificarMensagensNovas() {
       try {
-        const resposta = await fetch('/api/mensagens/novas', { credentials: 'include' });
+        const resposta = await fetch('./api/mensagens/novas', { credentials: 'include' });
         if (!resposta.ok) return;
         const { total } = await resposta.json();
         const badge = document.getElementById('mensagensBadge');
-        if (!badge) return;
-        badge.style.display = total > 0 ? 'inline-block' : 'none';
-        if (total > 0) badge.textContent = total;
-      } catch (e) {
-        console.error('Erro ao verificar mensagens novas:', e);
-      }
+        if (badge) {
+          badge.style.display = total > 0 ? 'inline-block' : 'none';
+          if (total > 0) badge.textContent = total;
+        }
+      } catch (e) { console.error('Erro ao verificar mensagens novas:', e); }
     }
 
     async function logout() {
-      await fetch('/auth/logout', { method: 'POST' });
-      window.location.href = '/login.html';
+      await fetch('./auth/logout', { method: 'POST' });
+      window.location.href = './login.html';
     }
 
     function gerarRelatorioGeral(){
-      fetch('/api/relatorio-notificacoes', { method:'GET', credentials:'include' })
+      fetch('./api/relatorio-notificacoes', { method:'GET', credentials:'include' })
         .then(r => { if(!r.ok) throw new Error('Erro ao gerar relatório.'); return r.blob(); })
         .then(blob => { const url = URL.createObjectURL(blob); window.open(url, '_blank'); })
         .catch(err => alert('Erro: ' + err.message));
@@ -561,9 +425,9 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Falha ao registrar Service Worker:', err));
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('✅ SW registrado:', reg.scope))
+          .catch(err => console.error('❌ SW falhou:', err));
       });
     }
   </script>
