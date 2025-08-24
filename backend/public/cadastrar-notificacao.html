@@ -24,7 +24,6 @@
       margin: 0;
       padding: 40px 20px;
     }
-
     form {
       background: white;
       padding: 30px;
@@ -34,93 +33,33 @@
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
       animation: fadeInUp 0.9s ease-out;
     }
-
-    h2 {
-      margin-top: 0;
-      color: #941a1d;
-      text-align: center;
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-      color: #444;
-    }
-
+    h2 { margin-top: 0; color: #941a1d; text-align: center; }
+    label { display: block; margin-top: 15px; font-weight: bold; color: #444; }
     select, input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
+      width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px;
     }
-
     button {
-      margin-top: 20px;
-      padding: 12px 20px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
+      margin-top: 20px; padding: 12px 20px; background-color: #d82327; color: white; border: none;
+      border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.2s, transform 0.2s;
     }
-
-    button:hover {
-      background-color: #941a1d;
-      transform: scale(1.03);
-    }
-
-    .voltar-btn {
-      background-color: #6c757d;
-      margin-left: 10px;
-    }
-
-    .voltar-btn:hover {
-      background-color: #5a6268;
-    }
-
-    #valorNumerico {
-      font-weight: bold;
-      background-color: #eaeaea;
-    }
-
-    #valorNumerico.positivo {
-      background-color: #d4edda;
-    }
-
-    #valorNumerico.negativo {
-      background-color: #f8d7da;
-    }
-
-    #mensagem {
-      margin-top: 20px;
-      font-weight: bold;
-      text-align: center;
-      color: #222;
-    }
-
+    button:hover { background-color: #941a1d; transform: scale(1.03); }
+    .voltar-btn { background-color: #6c757d; margin-left: 10px; }
+    .voltar-btn:hover { background-color: #5a6268; }
+    #valorNumerico { font-weight: bold; background-color: #eaeaea; }
+    #valorNumerico.positivo { background-color: #d4edda; }
+    #valorNumerico.negativo { background-color: #f8d7da; }
+    #mensagem { margin-top: 20px; font-weight: bold; text-align: center; color: #222; }
     #detalhesMotivo {
-      margin-top: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      display: none;
-      background: #f9f9f9;
+      margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; display: none; background: #f9f9f9;
+    }
+    .hidden { display:none !important; }
+    .pill {
+      display:inline-block; padding:8px 12px; border-radius:999px; background:#f5f5f5; border:1px solid #ddd; margin-bottom:10px; font-weight:600;
     }
 
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -128,51 +67,72 @@
   <form id="formNotificacao">
     <h2>Cadastro de Notificação Disciplinar</h2>
 
+    <!-- NOVO: exibir o aluno pré-selecionado -->
+    <div id="alunoSelecionado" class="pill" style="display:none;"></div>
+
     <label for="pesquisaAluno">Pesquisar aluno</label>
     <input type="text" id="pesquisaAluno" placeholder="Digite o nome do aluno..." />
 
     <label for="aluno">Aluno</label>
     <select id="aluno" name="aluno" required></select>
 
-    <label for="tipo">Gravidade do Ato</label>
-    <select id="tipo" name="tipo" required>
-      <option value="">Selecione</option>
-      <option value="Leve">Leve</option>
-      <option value="Médio">Médio</option>
-      <option value="Grave">Grave</option>
-      <option value="Gravíssimo">Gravíssimo</option>
+    <!-- NOVO: Tipo de Registro -->
+    <label for="tipoRegistro">Tipo de Registro</label>
+    <select id="tipoRegistro" name="tipoRegistro" required>
+      <option value="indisciplina" selected>Indisciplina</option>
+      <option value="elogio">Elogio</option>
     </select>
 
-    <label for="motivo">Motivo (Ato de indisciplina)</label>
-    <select id="motivo" name="motivo" required>
-      <option value="">Selecione uma gravidade</option>
-    </select>
+    <!-- ====== Grupo INDISCIPLINA ====== -->
+    <div id="grupoIndisciplina">
+      <label for="tipo">Gravidade do Ato</label>
+      <select id="tipo" name="tipo">
+        <option value="">Selecione</option>
+        <option value="Leve">Leve</option>
+        <option value="Médio">Médio</option>
+        <option value="Grave">Grave</option>
+        <option value="Gravíssimo">Gravíssimo</option>
+      </select>
 
-    <div id="detalhesMotivo">
-      <p><strong>Artigo:</strong> <span id="artigoTexto"></span></p>
-      <p><strong>Inciso:</strong> <span id="incisoTexto"></span></p>
-      <p><strong>Classificação:</strong> <span id="classificacaoTexto"></span></p>
+      <label for="motivo">Motivo (Ato de indisciplina)</label>
+      <select id="motivo" name="motivo">
+        <option value="">Selecione uma gravidade</option>
+      </select>
+
+      <div id="detalhesMotivo">
+        <p><strong>Artigo:</strong> <span id="artigoTexto"></span></p>
+        <p><strong>Inciso:</strong> <span id="incisoTexto"></span></p>
+        <p><strong>Classificação:</strong> <span id="classificacaoTexto"></span></p>
+      </div>
+
+      <input type="hidden" name="artigo" id="artigo">
+      <input type="hidden" name="inciso" id="inciso">
+      <input type="hidden" name="classificacaoRegulamento" id="classificacaoRegulamento">
+
+      <label for="tipoMedida">Tipo de Medida</label>
+      <select id="tipoMedida" name="tipoMedida">
+        <option value="">Selecione</option>
+        <option value="Advertência Escrita">Advertência Escrita</option>
+        <option value="Repreensão">Repreensão</option>
+        <option value="A.E.C.D.E">A.E.C.D.E</option>
+        <option value="A.I.A">A.I.A</option>
+      </select>
+
+      <label for="quantidadeDias" id="lblDias" class="hidden">Quantidade de Dias (se aplicável)</label>
+      <input type="number" id="quantidadeDias" name="quantidadeDias" min="1" class="hidden" />
     </div>
 
-    <input type="hidden" name="artigo" id="artigo">
-    <input type="hidden" name="inciso" id="inciso">
-    <input type="hidden" name="classificacaoRegulamento" id="classificacaoRegulamento">
-
-    <label for="tipoMedida">Tipo de Medida</label>
-    <select id="tipoMedida" name="tipoMedida" required>
-      <option value="">Selecione</option>
-      <option value="Advertência Escrita">Advertência Escrita</option>
-      <option value="Repreensão">Repreensão</option>
-      <option value="A.E.C.D.E">A.E.C.D.E</option>
-      <option value="A.I.A">A.I.A</option>
-      <option value="Elogio Verbal">Elogio Verbal</option>
-      <option value="Elogio Individual">Elogio Individual</option>
-      <option value="Elogio Coletivo">Elogio Coletivo</option>
-      <option value="Média ≥ 8,5">Média ≥ 8,5</option>
-    </select>
-
-    <label for="quantidadeDias">Quantidade de Dias (se aplicável)</label>
-    <input type="number" id="quantidadeDias" name="quantidadeDias" min="1" />
+    <!-- ====== Grupo ELOGIO ====== -->
+    <div id="grupoElogio" class="hidden">
+      <label for="tipoElogio">Tipo de Elogio</label>
+      <select id="tipoElogio" name="tipoElogio">
+        <option value="">Selecione</option>
+        <option value="elogioVerbal">Elogio verbal (+0,15)</option>
+        <option value="boletimInternoIndividual">Boletim Interno Individual (+0,60)</option>
+        <option value="boletimInternoColetivo">Boletim Interno Coletivo (+0,20)</option>
+        <option value="mediaAlta">Média ≥ 8,5 (+0,40)</option>
+      </select>
+    </div>
 
     <label for="valorNumerico">Valor Numérico</label>
     <input type="text" step="0.01" id="valorNumerico" name="valorNumerico" readonly />
@@ -190,19 +150,29 @@
   </form>
 
   <script>
-    const medidas = {
+    // mapear medidas negativas (indisciplina)
+    const medidasNegativas = {
       'Advertência Escrita': -0.3,
       'Repreensão': -0.5,
       'A.E.C.D.E': -0.7,
-      'A.I.A': -1.2,
-      'Elogio Verbal': 0.15,
-      'Elogio Individual': 0.6,
-      'Elogio Coletivo': 0.2,
-      'Média ≥ 8,5': 0.4
+      'A.I.A': -1.2
+    };
+    // mapear elogios (positivos)
+    const elogiosMapa = {
+      elogioVerbal: 0.15,
+      boletimInternoIndividual: 0.60,
+      boletimInternoColetivo: 0.20,
+      mediaAlta: 0.40
     };
 
+    // estado de motivos
     let motivosPorTipo = {};
     let listaCompletaMotivos = [];
+
+    // NOVO: pegar aluno da URL
+    const qs = new URLSearchParams(location.search);
+    const alunoQS = qs.get('aluno');          // ID
+    const nomeQS  = qs.get('nome');           // nome (URI encoded)
 
     async function carregarMotivos() {
       try {
@@ -220,103 +190,67 @@
       }
     }
 
-    document.getElementById('tipo').addEventListener('change', function () {
-      const gravidade = this.value;
-      const motivoSelect = document.getElementById('motivo');
-      motivoSelect.innerHTML = '<option value="">Selecione</option>';
-      document.getElementById('detalhesMotivo').style.display = 'none';
-
-      if (motivosPorTipo[gravidade]) {
-        motivosPorTipo[gravidade].forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m;
-          opt.textContent = m;
-          motivoSelect.appendChild(opt);
-        });
-      }
-    });
-
-    document.getElementById('motivo').addEventListener('change', function () {
-      const motivoSelecionado = this.value;
-      const motivo = listaCompletaMotivos.find(m => m.motivo === motivoSelecionado);
-
-      if (motivo) {
-        document.getElementById('artigoTexto').textContent = motivo.artigo;
-        document.getElementById('incisoTexto').textContent = motivo.inciso;
-        document.getElementById('classificacaoTexto').textContent = motivo.classificacao;
-
-        document.getElementById('artigo').value = motivo.artigo;
-        document.getElementById('inciso').value = motivo.inciso;
-        document.getElementById('classificacaoRegulamento').value = motivo.classificacao;
-
-        document.getElementById('detalhesMotivo').style.display = 'block';
-      } else {
-        document.getElementById('detalhesMotivo').style.display = 'none';
-      }
-    });
-
-    document.getElementById('tipoMedida').addEventListener('change', () => {
-      const tipo = document.getElementById('tipoMedida').value;
-      const dias = parseInt(document.getElementById('quantidadeDias').value) || 1;
-      const base = medidas[tipo] || 0;
-      const valor = ['A.E.C.D.E', 'A.I.A'].includes(tipo) ? dias * base : base;
-      const campo = document.getElementById('valorNumerico');
-      campo.value = valor.toFixed(2);
-      campo.className = valor < 0 ? 'negativo' : valor > 0 ? 'positivo' : '';
-    });
-
-    document.getElementById('quantidadeDias').addEventListener('input', () => {
-      document.getElementById('tipoMedida').dispatchEvent(new Event('change'));
-    });
-
-    document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      const dados = Object.fromEntries(new FormData(this).entries());
-      dados.valorNumerico = dados.valorNumerico.replace(',', '.');
-
-      try {
-        const resposta = await fetch('/api/notificacoes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(dados)
-        });
-
-        const resultado = await resposta.json();
-
-        if (resposta.ok) {
-          document.getElementById('mensagem').textContent = '✅ Notificação cadastrada com sucesso!';
-          this.reset();
-          document.getElementById('detalhesMotivo').style.display = 'none';
-        } else {
-          document.getElementById('mensagem').textContent = resultado.mensagem || '❌ Erro ao cadastrar.';
-        }
-      } catch (err) {
-        document.getElementById('mensagem').textContent = '❌ Erro de conexão com o servidor.';
-      }
-    });
-
+    // aluno + pesquisa (com suporte a pré-seleção e bloqueio)
     async function carregarAlunos() {
+      const select   = document.getElementById('aluno');
+      const pesquisa = document.getElementById('pesquisaAluno');
+      const seloAluno = document.getElementById('alunoSelecionado');
+
+      // ✅ Se veio aluno pela URL, não baixa a lista inteira
+      if (alunoQS) {
+        const nomeDecod = nomeQS ? decodeURIComponent(nomeQS) : 'Carregando aluno...';
+        // coloca opção provisória com o nome da URL
+        select.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = alunoQS;
+        opt.textContent = nomeDecod;
+        select.appendChild(opt);
+        select.value = alunoQS;
+
+        // bloqueia seletor e pesquisa
+        select.disabled = true;
+        pesquisa.disabled = true;
+
+        // mostra selo
+        seloAluno.style.display = 'inline-block';
+        seloAluno.textContent = `Aluno selecionado: ${nomeDecod}`;
+
+        // confirma pelo backend (turma/validação)
+        try {
+          const r = await fetch(`/api/alunos/${alunoQS}`, { credentials: 'include' });
+          if (r.ok) {
+            const a = await r.json();
+            opt.textContent = `${a.nome} (${a.turma || ''})`;
+            seloAluno.textContent = `Aluno selecionado: ${a.nome} (${a.turma || 'turma não informada'})`;
+            // garante option presente mesmo se a lista não tinha
+            if (![...select.options].some(o => o.value === a._id)) {
+              const optNew = document.createElement('option');
+              optNew.value = a._id;
+              optNew.textContent = `${a.nome} (${a.turma || ''})`;
+              select.appendChild(optNew);
+              select.value = a._id;
+            }
+          }
+        } catch (_) {}
+        return; // não busca /api/alunos
+      }
+
+      // 🔁 Sem ?aluno=..., carrega lista completa (com pesquisa)
       try {
         const resposta = await fetch('/api/alunos', { credentials: 'include' });
         const alunos = await resposta.json();
-        const select = document.getElementById('aluno');
-        const pesquisa = document.getElementById('pesquisaAluno');
-
-        let todosAlunos = alunos;
 
         function atualizarOpcoes(filtro = '') {
           select.innerHTML = '';
-          todosAlunos
-            .filter(aluno => aluno.nome.toLowerCase().includes(filtro.toLowerCase()))
-            .forEach(aluno => {
+          alunos
+            .filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()))
+            .forEach(a => {
               const opt = document.createElement('option');
-              opt.value = aluno._id;
-              opt.textContent = `${aluno.nome} (${aluno.turma})`;
+              opt.value = a._id;
+              opt.textContent = `${a.nome} (${a.turma})`;
               select.appendChild(opt);
             });
         }
-
         pesquisa.addEventListener('input', () => atualizarOpcoes(pesquisa.value));
         atualizarOpcoes();
       } catch (err) {
@@ -326,20 +260,192 @@
 
     async function verificarAutenticado() {
       try {
-        const resposta = await fetch('/api/usuario', {
-          credentials: 'include'
-        });
-        if (!resposta.ok) {
-          window.location.href = '/login.html';
-        }
-      } catch {
-        window.location.href = '/login.html';
-      }
+        const resposta = await fetch('/api/usuario', { credentials: 'include' });
+        if (!resposta.ok) window.location.href = '/login.html';
+      } catch { window.location.href = '/login.html'; }
     }
 
-    verificarAutenticado();
-    carregarAlunos();
-    carregarMotivos();
+    // --- UI handlers ---
+    const tipoRegistro = document.getElementById('tipoRegistro');
+    const grupoIndisciplina = document.getElementById('grupoIndisciplina');
+    const grupoElogio = document.getElementById('grupoElogio');
+    const tipo = document.getElementById('tipo');
+    const motivo = document.getElementById('motivo');
+    const tipoMedida = document.getElementById('tipoMedida');
+    const tipoElogio = document.getElementById('tipoElogio');
+    const valorNumerico = document.getElementById('valorNumerico');
+    const qtdDias = document.getElementById('quantidadeDias');
+    const lblDias = document.getElementById('lblDias');
+
+    function toggleGrupos(){
+      if (tipoRegistro.value === 'elogio') {
+        grupoElogio.classList.remove('hidden');
+        grupoIndisciplina.classList.add('hidden');
+        // limpar campos de indisciplina
+        tipo.value = '';
+        motivo.value = '';
+        tipoMedida.value = '';
+        qtdDias.value = '';
+        document.getElementById('detalhesMotivo').style.display = 'none';
+        aplicarValorElogio();
+      } else {
+        grupoElogio.classList.add('hidden');
+        grupoIndisciplina.classList.remove('hidden');
+        aplicarValorIndisciplina();
+      }
+    }
+    tipoRegistro.addEventListener('change', toggleGrupos);
+
+    // gravidade -> carrega motivos
+    tipo.addEventListener('change', function () {
+      const gravidade = this.value;
+      motivo.innerHTML = '<option value="">Selecione</option>';
+      document.getElementById('detalhesMotivo').style.display = 'none';
+
+      if (motivosPorTipo[gravidade]) {
+        motivosPorTipo[gravidade].forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          motivo.appendChild(opt);
+        });
+      }
+      aplicarValorIndisciplina();
+    });
+
+    // motivo -> mostra detalhes
+    motivo.addEventListener('change', function () {
+      const motivoSelecionado = this.value;
+      const m = listaCompletaMotivos.find(x => x.motivo === motivoSelecionado);
+
+      if (m) {
+        document.getElementById('artigoTexto').textContent = m.artigo;
+        document.getElementById('incisoTexto').textContent = m.inciso;
+        document.getElementById('classificacaoTexto').textContent = m.classificacao;
+
+        document.getElementById('artigo').value = m.artigo;
+        document.getElementById('inciso').value = m.inciso;
+        document.getElementById('classificacaoRegulamento').value = m.classificacao;
+
+        document.getElementById('detalhesMotivo').style.display = 'block';
+      } else {
+        document.getElementById('detalhesMotivo').style.display = 'none';
+      }
+    });
+
+    // tipoMedida negativo -> calcula valor (com dias para AECDE e AIA)
+    function aplicarValorIndisciplina() {
+      if (tipoRegistro.value !== 'indisciplina') return;
+      const base = medidasNegativas[tipoMedida.value] || 0;
+      const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tipoMedida.value);
+      lblDias.classList.toggle('hidden', !precisaDias);
+      qtdDias.classList.toggle('hidden', !precisaDias);
+      const dias = precisaDias ? (parseInt(qtdDias.value) || 1) : 1;
+      const valor = base * dias;
+      valorNumerico.value = valor ? valor.toFixed(2) : '';
+      valorNumerico.className = valor < 0 ? 'negativo' : '';
+    }
+    tipoMedida.addEventListener('change', aplicarValorIndisciplina);
+    qtdDias.addEventListener('input', aplicarValorIndisciplina);
+
+    // tipoElogio -> valor positivo
+    function aplicarValorElogio() {
+      if (tipoRegistro.value !== 'elogio') return;
+      const v = elogiosMapa[tipoElogio.value];
+      valorNumerico.value = (typeof v === 'number') ? v.toFixed(2) : '';
+      valorNumerico.className = (typeof v === 'number') ? 'positivo' : '';
+    }
+    tipoElogio.addEventListener('change', aplicarValorElogio);
+
+    // --- envio do formulário ---
+    document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const dadosBasicos = {
+        aluno: document.getElementById('aluno').value,
+        observacao: document.getElementById('observacao').value || '', // << corrigido (singular)
+        data: document.getElementById('data').value, // yyyy-mm-dd
+      };
+
+      let body;
+
+      if (tipoRegistro.value === 'elogio') {
+        if (!tipoElogio.value) { alert('Selecione o tipo de elogio.'); return; }
+        const valor = elogiosMapa[tipoElogio.value] ?? 0;
+        body = {
+          ...dadosBasicos,
+          natureza: 'elogio',
+          tipo: 'Elogio',
+          tipoMedida: 'Elogio',
+          tipoElogio: tipoElogio.value,
+          motivo: {
+            elogioVerbal: 'Elogio verbal',
+            boletimInternoIndividual: 'Boletim Interno Individual',
+            boletimInternoColetivo: 'Boletim Interno Coletivo',
+            mediaAlta: 'Média ≥ 8,5',
+          }[tipoElogio.value] || 'Elogio',
+          valorNumerico: valor,
+          artigo: null, inciso: null, classificacaoRegulamento: null
+        };
+      } else {
+        // indisciplina
+        const valor = valorNumerico.value ? Number(String(valorNumerico.value).replace(',', '.')) : 0;
+        body = {
+          ...dadosBasicos,
+          natureza: 'indisciplina',
+          gravidade: tipo.value || null,
+          motivo: motivo.value || null,
+          tipoMedida: tipoMedida.value || null,
+          quantidadeDias: document.getElementById('quantidadeDias').value || null,
+          valorNumerico: valor,
+          artigo: document.getElementById('artigo').value || null,
+          inciso: document.getElementById('inciso').value || null,
+          classificacaoRegulamento: document.getElementById('classificacaoRegulamento').value || null
+        };
+      }
+
+      try {
+        const resposta = await fetch('/api/notificacoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+        const resultado = await resposta.json();
+        if (resposta.ok) {
+          document.getElementById('mensagem').textContent = '✅ Registro salvo com sucesso!';
+          this.reset();
+          document.getElementById('detalhesMotivo').style.display = 'none';
+          toggleGrupos();
+          valorNumerico.className = '';
+
+          // mantém bloqueio se veio por URL
+          if (alunoQS) {
+            const select = document.getElementById('aluno');
+            const pesquisa = document.getElementById('pesquisaAluno');
+            select.disabled = true;
+            pesquisa.disabled = true;
+            select.value = alunoQS;
+          }
+        } else {
+          document.getElementById('mensagem').textContent = resultado.mensagem || '❌ Erro ao cadastrar.';
+        }
+      } catch (err) {
+        document.getElementById('mensagem').textContent = '❌ Erro de conexão com o servidor.';
+      }
+    });
+
+    // boot
+    (function init(){
+      // data hoje por padrão
+      const hoje = new Date();
+      document.getElementById('data').value = hoje.toISOString().slice(0,10);
+
+      verificarAutenticado();
+      carregarAlunos();   // cuida da pré-seleção/lock se alunoQS existir
+      carregarMotivos();
+      toggleGrupos();
+    })();
   </script>
 </body>
 </html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alunos com Baixo Comportamento</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      background-color: #fdf7f7;
+      padding: 2rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    h2 {
+      color: #941a1d;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      margin-bottom: 1rem;
+    }
+
+    .insuficiente {
+      border-left: 5px solid orange;
+    }
+
+    .incompativel {
+      border-left: 5px solid red;
+    }
+
+    .btn-danger {
+      background-color: #941a1d;
+      border: none;
+    }
+
+    .btn-danger:hover {
+      background-color: #ba2a2d;
+    }
+
+    .voltar {
+      margin-bottom: 1rem;
+    }
+
+    .titulo-grupo {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <a href="painel.html" class="btn btn-danger voltar">← Voltar ao Painel</a>
+  <h2>Alunos com Baixo Comportamento</h2>
+
+  <div class="d-flex justify-content-center mb-3">
+    <select id="filtroTurma" class="form-select w-auto me-3">
+      <option value="">Todas as turmas</option>
+    </select>
+    <button id="gerarPdf" class="btn btn-danger">Gerar PDF com alunos listados</button>
+  </div>
+
+  <div id="conteudoPDF">
+    <h4 class="text-center text-warning titulo-grupo">Comportamento Insuficiente (3,00 a 4,99)</h4>
+    <div id="alunosInsuficientes"></div>
+
+    <h4 class="text-center text-danger titulo-grupo">Comportamento Incompatível (0,00 a 2,99)</h4>
+    <div id="alunosIncompativeis"></div>
+  </div>
+
+  <script>
+    async function carregarBaixoComportamento() {
+      try {
+        const resposta = await fetch('/api/alunos/insuficientes');
+        const alunos = await resposta.json();
+
+        if (!Array.isArray(alunos)) throw new Error('Resposta inválida da API');
+
+        const filtro = document.getElementById('filtroTurma').value;
+
+        const insuficientes = document.getElementById('alunosInsuficientes');
+        const incompativeis = document.getElementById('alunosIncompativeis');
+
+        insuficientes.innerHTML = '';
+        incompativeis.innerHTML = '';
+
+        const turmas = new Set();
+
+        alunos.forEach(aluno => {
+          turmas.add(aluno.turma);
+
+          if (filtro && aluno.turma !== filtro) return;
+
+          const div = document.createElement('div');
+          div.classList.add('card', 'p-2', 'mb-2');
+          div.classList.add(aluno.comportamento < 3.0 ? 'incompativel' : 'insuficiente');
+
+          div.innerHTML = `
+            <strong>${aluno.nome}</strong> - Turma ${aluno.turma}<br/>
+            Nota: <strong>${aluno.comportamento.toFixed(2)}</strong>
+          `;
+
+          if (aluno.comportamento < 3.0) {
+            incompativeis.appendChild(div);
+          } else {
+            insuficientes.appendChild(div);
+          }
+        });
+
+        preencherFiltroTurma(Array.from(turmas));
+      } catch (erro) {
+        console.error('Erro ao carregar alunos:', erro);
+        alert('Erro ao carregar alunos com baixo comportamento. Verifique a conexão ou backend.');
+      }
+    }
+
+    function preencherFiltroTurma(turmas) {
+      const select = document.getElementById('filtroTurma');
+      select.innerHTML = `<option value="">Todas as turmas</option>`;
+      turmas.sort().forEach(turma => {
+        const option = document.createElement('option');
+        option.value = turma;
+        option.textContent = turma;
+        select.appendChild(option);
+      });
+    }
+
+    document.getElementById('filtroTurma').addEventListener('change', carregarBaixoComportamento);
+
+    document.getElementById('gerarPdf').addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const elemento = document.getElementById('conteudoPDF');
+      await html2canvas(elemento, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        doc.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+        doc.save('alunos-baixo-comportamento.pdf');
+      });
+    });
+
+    carregarBaixoComportamento();
+  </script>
+</body>
+</html>

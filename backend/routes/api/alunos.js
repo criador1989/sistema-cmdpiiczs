@@ -3,9 +3,10 @@ const router = express.Router();
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
+const Observacao = require('../../models/Observacao'); // ✅ incluído para exclusão em cascata
 const { autenticar } = require('../../middleware/autenticacao');
 const autenticarTokenProfessor = require('../../middleware/tokenProfessor');
-const calcularNotaComportamento = require('../../utils/calcularNota');
+const calcularNotaComportamento = require('../../utils/calculoNota');
 const Log = require('../../models/Log');
 
 // GET /api/alunos - Lista alunos da mesma instituição
@@ -47,6 +48,59 @@ router.get('/professor', autenticarTokenProfessor, async (req, res) => {
     res.json(alunosComNotaAtualizada);
   } catch (error) {
     res.status(500).json({ message: 'Erro ao buscar alunos', error });
+  }
+});
+
+// ✅ NOVA ROTA ADICIONADA
+// GET /api/alunos/baixorendimento - Lista alunos com comportamento insuficiente ou incompatível
+router.get('/baixorendimento', autenticar, async (req, res) => {
+  try {
+    const alunos = await Aluno.find({
+      instituicao: req.usuario.instituicao
+    });
+
+    const alunosFiltrados = [];
+
+    for (const aluno of alunos) {
+      const nota = await calcularNotaComportamento(aluno._id);
+      if (nota < 5.0) {
+        alunosFiltrados.push({
+          ...aluno.toObject(),
+          comportamento: nota
+        });
+      }
+    }
+
+    res.json(alunosFiltrados);
+  } catch (error) {
+    console.error('Erro ao buscar alunos com comportamento insuficiente/incompatível:', error);
+    res.status(500).json({ message: 'Erro ao buscar alunos com baixo rendimento', error });
+  }
+});
+
+// GET /api/alunos/insuficientes - (antiga rota que ainda está disponível)
+router.get('/insuficientes', autenticar, async (req, res) => {
+  try {
+    const alunos = await Aluno.find({
+      instituicao: req.usuario.instituicao
+    });
+
+    const alunosFiltrados = [];
+
+    for (const aluno of alunos) {
+      const nota = await calcularNotaComportamento(aluno._id);
+      if (nota < 5.0) {
+        alunosFiltrados.push({
+          ...aluno.toObject(),
+          comportamento: nota
+        });
+      }
+    }
+
+    res.json(alunosFiltrados);
+  } catch (error) {
+    console.error('Erro ao buscar alunos com nota insuficiente:', error);
+    res.status(500).json({ message: 'Erro ao buscar alunos com comportamento insuficiente', error });
   }
 });
 
@@ -178,25 +232,33 @@ router.put('/:id', autenticar, async (req, res) => {
   }
 });
 
-// DELETE /api/alunos/:id - Deletar aluno da mesma instituição
+// DELETE /api/alunos/:id - Deletar aluno da mesma instituição (com cascata)
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    const alunoDeletado = await Aluno.findOneAndDelete({
+    const aluno = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
     });
 
-    if (!alunoDeletado) return res.status(404).json({ message: 'Aluno não encontrado' });
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    // Exclusão em cascata: Notificações e Observações vinculadas
+    await Promise.all([
+      Notificacao.deleteMany({ aluno: aluno._id }),
+      Observacao.deleteMany({ aluno: aluno._id }),
+      Aluno.deleteOne({ _id: aluno._id })
+    ]);
 
     await Log.create({
       usuario: req.usuario._id,
       acao: 'Exclusão de Aluno',
       entidade: 'Aluno',
-      entidadeId: alunoDeletado._id
+      entidadeId: aluno._id
     });
 
-    res.json({ message: 'Aluno deletado com sucesso' });
+    res.json({ message: 'Aluno e dados relacionados deletados com sucesso' });
   } catch (error) {
+    console.error('Erro ao deletar aluno:', error);
     res.status(500).json({ message: 'Erro ao deletar aluno', error });
   }
 });

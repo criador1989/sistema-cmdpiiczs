@@ -47,8 +47,10 @@ const alunoSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  // ✅ Pode guardar um caminho relativo (ex: "alunos/123.jpg"),
+  // uma URL completa (http/https) ou até um data URL (base64).
   foto: {
-    type: String, // armazenará a imagem como base64
+    type: String,
     default: null
   },
   instituicao: {

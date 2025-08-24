@@ -1,20 +1,22 @@
+// backend/index.js
+require('dotenv').config(); // garante que o .env seja lido antes de usar process.env
+
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const { spawn } = require('child_process');
-const fs = require('fs');
-const crypto = require('crypto');
+const { spawn } = require('child_process'); // mantido se você usa em outro lugar
+const fs = require('fs');                   // mantido
+const crypto = require('crypto');           // mantido
 
-dotenv.config();
-
+// Models
 const Aluno = require('./models/Aluno');
 const Notificacao = require('./models/Notificacao');
 const Usuario = require('./models/Usuario');
 const Log = require('./models/Log');
 
+// Rotas
 const alunoRoutes = require('./routes/alunoRoutes');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
@@ -42,22 +44,21 @@ const observacoesRoutes = require('./routes/api/observacoes');
 
 const autenticarTokenProfessor = require('./middleware/tokenProfessor');
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('🟢 Conectado ao MongoDB'))
-  .catch(err => console.error('❌ Erro ao conectar ao MongoDB:', err));
-
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// rota inicial
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
+// middleware de autenticação (igual ao seu)
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
@@ -189,8 +190,35 @@ app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
 app.use('/api/usuarios', acessoProfessorRoute);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log('🧪 Rota de teste carregada');
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+// =======================
+//  Conexão Mongo + Start
+// =======================
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || '';
+if (!/^mongodb(\+srv)?:\/\//i.test(MONGO_URI)) {
+  console.error('❌ MONGO_URI inválido ou ausente. Valor lido:', JSON.stringify(MONGO_URI));
+  console.error('   -> Ajuste o arquivo .env (remova duplicatas e mantenha só a URI válida).');
+  process.exit(1);
+}
+const masked = MONGO_URI.replace(/\/\/.*?@/, '//***@');
+console.log('🔎 MONGO_URI lido:', masked);
+
+mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
+  .then(() => {
+    console.log('🟢 Conectado ao MongoDB');
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log('🧪 Rota de teste carregada');
+      console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ Erro ao conectar ao MongoDB:', err);
+    process.exit(1);
+  });
+
+// Encerramento limpo
+process.on('SIGINT', async () => {
+  await mongoose.disconnect().catch(() => {});
+  console.log('\n👋 Encerrado com sucesso');
+  process.exit(0);
 });

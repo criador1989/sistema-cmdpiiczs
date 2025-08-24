@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notificação Disciplinar</title>
+  <meta name="theme-color" content="#d82327" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    :root{--p1:#941a1d;--p2:#d82327;--txt:#1b1b1b;--muted:#6f6f6f;--card:#fff;--line:#ebebeb;--radius:16px}
+    *{box-sizing:border-box} body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Arial;background:linear-gradient(120deg,var(--p1),var(--p2));color:var(--txt)}
+    .topbar{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,rgba(255,255,255,.94),rgba(255,255,255,.92));border-bottom:1px solid #e9e9e9}
+    .inner{max-width:960px;margin:0 auto;padding:12px 16px;display:flex;gap:10px;align-items:center}
+    .brand{font-weight:800} .spacer{flex:1}
+    .btn{appearance:none;border:none;border-radius:12px;background:linear-gradient(90deg,var(--p1),var(--p2));color:#fff;padding:10px 14px;cursor:pointer;font-weight:700;text-decoration:none;display:inline-flex;gap:8px;align-items:center}
+    .btn.ghost{background:#fff;color:var(--p1);border:1px solid #e0e0e0}
+    .page{max-width:960px;margin:22px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 12px 32px rgba(0,0,0,.12);padding:16px}
+    .title{margin:0 0 10px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .kv{background:#fcfcfc;border:1px solid var(--line);border-radius:10px;padding:10px}
+    .kv b{display:block;color:#777;font-size:.85rem}
+    .chip{display:inline-block;border:1px solid #e5e5e5;background:#f6f6f6;padding:3px 10px;border-radius:999px;font-size:.8rem}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .value-pos{color:#0a8a3a;font-weight:800}
+    .value-neg{color:#b31414;font-weight:800}
+
+    /* editor */
+    .edit{display:none;margin-top:12px;background:#fff;border:1px solid #e6e6e6;border-radius:14px;padding:14px}
+    .edit label{font-weight:600;font-size:.9rem}
+    .edit input,.edit select,.edit textarea{width:100%;padding:10px;border:1px solid #cfcfcf;border-radius:10px}
+    .edit .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .edit .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+
+    @media (max-width:820px){.grid{grid-template-columns:1fr}.edit .g2,.edit .g3{grid-template-columns:1fr}}
+    @media print{.topbar,.btn,.edit{display:none!important}.page{margin:0;padding:0 12mm}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">Notificação Disciplinar</div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="btnEditar">Editar</button>
+      <button class="btn" id="btnImprimir">Imprimir</button>
+      <a class="btn" id="btnPDF" href="#" target="_blank" rel="noopener">Exportar PDF</a>
+    </div>
+  </div>
+
+  <main class="page">
+    <div class="card" id="conteudo">
+      <h2 class="title" id="titulo">Carregando…</h2>
+
+      <div class="row" style="margin-bottom:10px">
+        <div id="chips"></div>
+        <div class="muted" id="dataInfo">—</div>
+      </div>
+
+      <div class="grid" style="margin-bottom:10px">
+        <div class="kv"><b>Aluno</b><div id="alunoNome">—</div></div>
+        <div class="kv"><b>Turma</b><div id="alunoTurma">—</div></div>
+        <div class="kv"><b>Nº Sequencial</b><div id="seq">—</div></div>
+        <div class="kv"><b>Status</b><div id="status">—</div></div>
+      </div>
+
+      <div class="kv" style="margin-bottom:10px">
+        <b>Motivo</b>
+        <div id="motivo">—</div>
+      </div>
+
+      <div class="grid" style="margin-bottom:10px">
+        <div class="kv"><b>Valor</b><div id="valor">—</div></div>
+        <div class="kv"><b>Classificação</b><div id="classificacao">—</div></div>
+        <div class="kv"><b>Artigo</b><div id="artigo">—</div></div>
+        <div class="kv"><b>Inciso</b><div id="inciso">—</div></div>
+      </div>
+
+      <div class="kv" id="obsBox" style="display:none">
+        <b>Observação</b>
+        <div id="observacao"></div>
+      </div>
+
+      <div style="margin-top:14px" class="actions">
+        <a class="btn ghost" id="linkFicha" href="#">← Voltar à Ficha do Aluno</a>
+      </div>
+
+      <!-- ============ EDITOR ============ -->
+      <div class="edit" id="editor">
+        <div class="g3">
+          <div>
+            <label>Natureza</label>
+            <select id="edNatureza">
+              <option value="indisciplina">Indisciplina</option>
+              <option value="elogio">Elogio</option>
+            </select>
+          </div>
+          <div>
+            <label>Status</label>
+            <select id="edStatus">
+              <option value="pendente">Pendente</option>
+              <option value="deferido">Deferido</option>
+              <option value="revisao_solicitada">Revisão solicitada</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+          </div>
+          <div>
+            <label>Data</label>
+            <input id="edData" type="date" />
+          </div>
+        </div>
+
+        <div class="g2" style="margin-top:10px">
+          <div>
+            <label>Tipo / Medida</label>
+            <input id="edTipo" type="text" placeholder="Ex.: Repreensão, A.E.C.D.E, Elogio" />
+          </div>
+          <div>
+            <label>Tipo de Elogio</label>
+            <select id="edTipoElogio">
+              <option value="">—</option>
+              <option value="elogioVerbal">Elogio Verbal</option>
+              <option value="boletimInternoIndividual">Boletim Interno Individual</option>
+              <option value="boletimInternoColetivo">Boletim Interno Coletivo</option>
+              <option value="mediaAlta">Média ≥ 8,5</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Motivo</label>
+          <textarea id="edMotivo" rows="3"></textarea>
+        </div>
+
+        <div class="g3" style="margin-top:10px">
+          <div>
+            <label>Valor Numérico</label>
+            <input id="edValor" type="number" step="0.01" />
+          </div>
+          <div>
+            <label>Dias (A.E.C.D.E / A.I.A)</label>
+            <input id="edDias" type="number" min="1" />
+          </div>
+          <div>
+            <label>Classificação</label>
+            <input id="edClassificacao" type="text" placeholder="Leve / Médio / Grave / Gravíssimo" />
+          </div>
+        </div>
+
+        <div class="g3" style="margin-top:10px">
+          <div><label>Artigo</label><input id="edArtigo" type="text" /></div>
+          <div><label>Parágrafo</label><input id="edParagrafo" type="text" /></div>
+          <div><label>Inciso</label><input id="edInciso" type="text" /></div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Observação</label>
+          <textarea id="edObs" rows="3"></textarea>
+        </div>
+
+        <div class="edit-actions">
+          <button class="btn ghost" id="btnCancelar">Cancelar</button>
+          <button class="btn" id="btnSalvar">Salvar alterações</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const qs = (s)=>document.querySelector(s);
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+
+    const fmtData = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+    const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
+    const toISO = (d)=>{ if(!d) return ''; const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const dd=String(x.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; };
+
+    let notif = null;
+
+    function fillView(n){
+      qs('#titulo').textContent = n.tipo || n.tipoMedida || 'Notificação';
+      qs('#dataInfo').textContent = fmtData(n.data || n.createdAt);
+
+      const chips = [];
+      if(n.tipo || n.tipoMedida) chips.push(`<span class="chip">${n.tipo || n.tipoMedida}</span>`);
+      if(n.classificacaoRegulamento) chips.push(`<span class="chip">${n.classificacaoRegulamento}</span>`);
+      if(n.natureza) chips.push(`<span class="chip">${n.natureza}</span>`);
+      qs('#chips').innerHTML = chips.join(' ');
+
+      const aluno = n.aluno || {};
+      qs('#alunoNome').textContent = aluno.nome || '—';
+      qs('#alunoTurma').textContent = aluno.turma || '—';
+      qs('#linkFicha').href = aluno._id ? `/ficha-aluno.html?id=${aluno._id}` : 'javascript:history.back()';
+
+      qs('#seq').textContent = n.numeroSequencial || '—';
+      qs('#status').textContent = n.status || '—';
+      qs('#motivo').textContent = n.motivo || '—';
+
+      const valor = Number(n.valorNumerico || 0);
+      qs('#valor').innerHTML = `<span class="${valor>=0?'value-pos':'value-neg'}">${fmtValor(valor)}</span>`;
+      qs('#classificacao').textContent = n.classificacaoRegulamento || '—';
+      qs('#artigo').textContent = n.artigo || '—';
+      qs('#inciso').textContent = n.inciso || '—';
+
+      if (n.observacao) {
+        qs('#obsBox').style.display = 'block';
+        qs('#observacao').textContent = n.observacao;
+      } else {
+        qs('#obsBox').style.display = 'none';
+      }
+
+      qs('#btnPDF').href = `/api/pdf/${n._id}`;
+    }
+
+    function fillEditor(n){
+      qs('#edNatureza').value = n.natureza || 'indisciplina';
+      qs('#edStatus').value = n.status || 'pendente';
+      qs('#edData').value = toISO(n.data || n.createdAt);
+      qs('#edTipo').value = n.tipoMedida || n.tipo || '';
+      qs('#edTipoElogio').value = n.tipoElogio || '';
+      qs('#edMotivo').value = n.motivo || '';
+      qs('#edValor').value = (typeof n.valorNumerico==='number') ? n.valorNumerico : '';
+      qs('#edDias').value = n.quantidadeDias || '';
+      qs('#edClassificacao').value = n.classificacaoRegulamento || '';
+      qs('#edArtigo').value = n.artigo || '';
+      qs('#edParagrafo').value = n.paragrafo || '';
+      qs('#edInciso').value = n.inciso || '';
+      qs('#edObs').value = n.observacao || '';
+
+      toggleNatureza(); // habilita/desabilita campos
+    }
+
+    function toggleNatureza(){
+      const nat = qs('#edNatureza').value;
+      const elogio = nat === 'elogio';
+      qs('#edTipoElogio').disabled = !elogio;
+      // Em elogio, tipo/medida vira "Elogio" por padrão
+      if(elogio && !qs('#edTipo').value) qs('#edTipo').value = 'Elogio';
+    }
+
+    async function carregar(){
+      if(!id){ qs('#conteudo').innerHTML='<p>Parâmetro "id" ausente.</p>'; return; }
+      const r = await fetch(`/api/notificacoes/${id}`, { credentials:'include' });
+      if(!r.ok){ qs('#conteudo').innerHTML = '<p>Não foi possível carregar a notificação.</p>'; return; }
+      notif = await r.json();
+      fillView(notif);
+    }
+
+    function abrirEditor(){
+      if(!notif) return;
+      fillEditor(notif);
+      qs('#editor').style.display = 'block';
+    }
+    function fecharEditor(){ qs('#editor').style.display = 'none'; }
+
+    async function salvar(){
+      const payload = {
+        natureza: qs('#edNatureza').value,
+        status: qs('#edStatus').value,
+        data: qs('#edData').value || null,
+        tipoMedida: qs('#edTipo').value.trim(),
+        tipo: qs('#edTipo').value.trim(),
+        tipoElogio: qs('#edTipoElogio').value || undefined,
+        motivo: qs('#edMotivo').value.trim(),
+        valorNumerico: qs('#edValor').value ? Number(qs('#edValor').value) : undefined,
+        quantidadeDias: qs('#edDias').value ? Number(qs('#edDias').value) : undefined,
+        classificacaoRegulamento: qs('#edClassificacao').value.trim() || undefined,
+        artigo: qs('#edArtigo').value.trim() || undefined,
+        paragrafo: qs('#edParagrafo').value.trim() || undefined,
+        inciso: qs('#edInciso').value.trim() || undefined,
+        observacao: qs('#edObs').value.trim() || ''
+      };
+
+      const r = await fetch(`/api/notificacoes/${notif._id}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      if(!r.ok){
+        const j = await r.json().catch(()=>({}));
+        alert(j.message || j.mensagem || 'Erro ao salvar alterações.');
+        return;
+      }
+      // recarrega a notificação atualizada
+      await carregar();
+      fecharEditor();
+    }
+
+    // eventos
+    qs('#btnImprimir').addEventListener('click', ()=>window.print());
+    qs('#btnEditar').addEventListener('click', abrirEditor);
+    qs('#btnCancelar').addEventListener('click', fecharEditor);
+    qs('#btnSalvar').addEventListener('click', salvar);
+    qs('#edNatureza').addEventListener('change', toggleNatureza);
+
+    carregar();
+  </script>
+</body>
+</html>

@@ -2,236 +2,449 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ficha do Aluno</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ficha do Aluno - CMDPII</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#d82327" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f2f2f2;
-      margin: 0;
-      padding: 0;
+    :root{
+      --p1:#941a1d; --p2:#d82327; --txt:#1b1b1b; --muted:#6f6f6f;
+      --card:#ffffff; --line:#ebebeb; --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--txt); font-family:'Segoe UI',system-ui,-apple-system,Arial;
+      background:linear-gradient(120deg,var(--p1),var(--p2));
     }
 
-    h1 {
-      text-align: center;
-      color: #941a1d;
-      margin-top: 30px;
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      width:100%; background:linear-gradient(90deg,rgba(255,255,255,.94),rgba(255,255,255,.92));
+      backdrop-filter:saturate(160%) blur(6px);
+      border-bottom:1px solid #e9e9e9;
     }
-
-    .card {
-      background-color: #fff;
-      margin: 20px auto;
-      padding: 20px;
-      max-width: 700px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    .topbar .inner{
+      max-width:1180px; margin:0 auto; padding:14px 18px;
+      display:flex; align-items:center; gap:10px;
     }
-
-    .info strong {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 1.1em;
+    .brand{font-weight:800; color:#222; letter-spacing:.4px}
+    .spacer{flex:1}
+    .btn{
+      appearance:none; border:none; cursor:pointer; font-weight:700;
+      padding:10px 14px; border-radius:12px; color:#fff;
+      background:linear-gradient(90deg,var(--p1),var(--p2));
+      box-shadow:0 8px 22px rgba(148,26,29,.28); transition:.2s transform,.2s filter;
+      text-decoration:none; display:inline-flex; align-items:center; gap:8px;
     }
+    .btn:hover{ transform:translateY(-1px); filter:saturate(1.05) }
+    .btn.ghost{ background:#fff; color:var(--p1); border:1px solid #e0e0e0; box-shadow:none }
 
-    .titulo {
-      text-align: center;
-      color: #941a1d;
-      margin-top: 40px;
-      margin-bottom: 10px;
+    .page{
+      max-width:1180px; margin:22px auto; padding:0 18px;
+      animation:fadeIn .35s ease-out both;
     }
+    @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 
-    textarea {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      resize: vertical;
-      font-size: 1em;
+    .hero{
+      background:linear-gradient(180deg,#fff,#f9f9f9);
+      border-radius:var(--radius); padding:18px; box-shadow:0 18px 50px rgba(0,0,0,.18);
+      border:1px solid #efefef;
     }
-
-    button {
-      background-color: #941a1d;
-      color: white;
-      padding: 10px 20px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
+    .head{
+      display:flex; gap:16px; align-items:center; padding-bottom:14px; border-bottom:1px dashed var(--line);
     }
-
-    button:hover {
-      background-color: #7c1618;
+    .avatar{
+      width:88px; height:88px; border-radius:14px; overflow:hidden; flex:0 0 88px;
+      background:#f3f3f3; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#9a9a9a; font-weight:800;
     }
+    .avatar img{width:100%; height:100%; object-fit:cover}
+    .badges{display:flex; gap:8px; flex-wrap:wrap}
+    .badge{ font-size:.78rem; color:#444; background:#f3f3f3; border:1px solid #ececec; padding:4px 10px; border-radius:999px }
 
-    .observacao {
-      background-color: #fff;
-      margin: 10px auto;
-      max-width: 700px;
-      padding: 15px;
-      border-left: 6px solid #941a1d;
-      border-radius: 5px;
-      position: relative;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s;
+    .kvs{
+      display:grid; gap:12px; margin-top:14px;
+      grid-template-columns:repeat(4,minmax(0,1fr));
     }
+    @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    .kv{background:#fcfcfc; border:1px solid var(--line); border-radius:10px; padding:10px}
+    .kv b{display:block; color:#777; font-size:.85rem}
+    .kv .big{font-weight:800; font-size:26px; color:var(--p1)}
 
-    .observacao:hover {
-      transform: scale(1.01);
+    .columns{
+      display:grid; gap:18px; margin-top:18px;
+      grid-template-columns: 1fr 1fr;
+      align-items:start;
     }
+    @media (max-width:900px){ .columns{grid-template-columns:1fr} }
 
-    .autor {
-      font-size: 0.85em;
-      color: #666;
-      margin-top: 5px;
+    .card{
+      background:var(--card); border-radius:14px; padding:16px;
+      border:1px solid var(--line); box-shadow:0 10px 28px rgba(0,0,0,.08);
     }
+    .title{margin:0 0 10px; color:#222; font-size:18px}
 
-    .acoes {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+    .list{
+      display:flex; flex-direction:column; gap:12px;
+      max-height:520px; overflow:auto; padding-right:4px;
+      scroll-behavior:smooth;
     }
+    .empty{border:1px dashed var(--line); border-radius:12px; padding:14px; background:#fafafa; color:#777; text-align:center}
+    .muted{color:var(--muted)}
 
-    .acoes button {
-      background: none;
-      border: none;
-      font-size: 1em;
-      margin-left: 5px;
-      cursor: pointer;
+    .obs,.notif{
+      border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px;
+      box-shadow:0 6px 16px rgba(0,0,0,.06); position:relative;
     }
+    .obs{border-left:6px solid var(--p1)}
+    .notif{border-left:6px solid #b71c1c}
+    .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .chip{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:#f4f4f4; font-size:.78rem}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .iconbtn{
+      appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px;
+      padding:8px 10px; cursor:pointer; font-weight:600; text-decoration:none; color:#333;
+    }
+    .iconbtn:hover{filter:brightness(.96)}
 
-    .data {
-      font-size: 0.8em;
-      color: #999;
+    .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
+    .editor textarea{flex:1; resize:vertical; min-height:86px; border:1px solid #d7d7d7; border-radius:10px; padding:10px}
+
+    /* ✅ editor do aluno (form embutido) */
+    .edit-card{
+      background:#fff;border:1px solid #e6e6e6;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.15);
+      padding:16px;margin-top:14px;display:none
+    }
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
+    .edit-card label{font-weight:600;font-size:.9rem}
+    .edit-card input,.edit-card textarea{
+      width:100%;padding:10px;border:1px solid #cfcfcf;border-radius:10px
+    }
+    .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+
+    @media print{
+      body{ background:#fff }
+      .topbar{ display:none !important }
+      .page{ width:100%; margin:0; padding:0 12mm }
+      .columns{ grid-template-columns:1fr 1fr; gap:12px }
+      .list{ max-height:none; overflow:visible }
+      .obs,.notif{ break-inside:avoid }
+      .hero,.card{ box-shadow:none; border:1px solid #ccc }
+      a.btn, button.btn, .iconbtn{ display:none !important }
     }
   </style>
 </head>
 <body>
-  <h1>Ficha do Aluno</h1>
-
-  <div class="card info">
-    <strong>Nome:</strong> <span id="nome"></span><br>
-    <strong>Turma:</strong> <span id="turma"></span><br>
-    <strong>Comportamento:</strong> <span id="comportamento"></span><br>
-    <strong>Código de Acesso:</strong> <span id="codigo"></span>
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">Ficha do Aluno</div>
+      <div class="spacer"></div>
+      <button class="btn ghost" onclick="location.href='painel.html'">← Voltar ao Painel</button>
+      <button class="btn" id="btnImprimir">Imprimir</button>
+      <a id="btnPDF" class="btn" href="#" target="_blank" rel="noopener">Exportar PDF</a>
+    </div>
   </div>
 
-  <h2 class="titulo">Observações</h2>
-  <div id="observacoes"></div>
+  <main class="page">
+    <section class="hero">
+      <div class="head">
+        <div class="avatar" id="fotoBox">Sem foto</div>
+        <div style="flex:1">
+          <h2 style="margin:0 0 4px" id="alunoNome">—</h2>
+          <div class="badges">
+            <span class="badge" id="badgeTurma">Turma —</span>
+            <span class="badge" id="badgeCodigo">Código —</span>
+            <span class="badge" id="badgeId">ID —</span>
+          </div>
+        </div>
+        <!-- ✅ Botão Editar -->
+        <button class="btn ghost" id="btnEditar">Editar</button>
+      </div>
 
-  <div class="card">
-    <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
-    <button id="btnSalvar">Salvar Observação</button>
-  </div>
+      <!-- ✅ Formulário de edição do aluno -->
+      <div class="edit-card" id="editorAluno">
+        <div class="grid-2">
+          <div>
+            <label>Nome</label>
+            <input id="edNome" type="text" />
+          </div>
+          <div>
+            <label>Turma</label>
+            <input id="edTurma" type="text" />
+          </div>
+          <div>
+            <label>Data de Entrada</label>
+            <input id="edEntrada" type="date" />
+          </div>
+          <div>
+            <label>Data de Nascimento</label>
+            <input id="edNasc" type="date" />
+          </div>
+          <div>
+            <label>Nome do Pai</label>
+            <input id="edPai" type="text" />
+          </div>
+          <div>
+            <label>Nome da Mãe</label>
+            <input id="edMae" type="text" />
+          </div>
+          <div>
+            <label>Telefone</label>
+            <input id="edTel" type="text" />
+          </div>
+          <div>
+            <label>Endereço</label>
+            <input id="edEnd" type="text" />
+          </div>
+          <div>
+            <label>Código de Acesso</label>
+            <input id="edCodigo" type="text" />
+          </div>
+          <div>
+            <label>Foto (URL, /uploads/..., ou base64)</label>
+            <input id="edFoto" type="text" placeholder="ex: alunos/123.jpg ou https://..." />
+          </div>
+        </div>
 
-  <h2 class="titulo">Notificações</h2>
-  <div id="notificacoes"></div>
+        <div class="edit-actions">
+          <button class="btn ghost" id="btnCancelarEd">Cancelar</button>
+          <button class="btn" id="btnSalvarEd">Salvar alterações</button>
+        </div>
+      </div>
+
+      <div class="kvs">
+        <div class="kv"><b>Turma</b><span id="kvTurma">—</span></div>
+        <div class="kv"><b>Data de Entrada</b><span id="kvEntrada">—</span></div>
+        <div class="kv"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
+        <div class="kv"><b>Nota de Comportamento</b><span class="big" id="kvNota">—</span></div>
+      </div>
+    </section>
+
+    <section class="columns">
+      <div class="card">
+        <h3 class="title">Observações</h3>
+        <div id="observacoes" class="list"></div>
+
+        <div class="editor">
+          <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
+          <button class="btn" id="btnSalvar">Salvar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="title">Notificações Disciplinares</h3>
+        <div id="notificacoes" class="list"></div>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
+    const qs = (s)=>document.querySelector(s);
+    const params = new URLSearchParams(location.search);
+    const alunoId = params.get('id');
 
-    async function carregarFicha() {
-      try {
-        const resposta = await fetch(`/api/ficha/dados/${id}`, { credentials: 'include' });
-        const dados = await resposta.json();
-        const aluno = dados.aluno;
+    const fmtData = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+    const fmtDataHora = d => d ? new Date(d).toLocaleString('pt-BR') : '—';
+    const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
-        document.getElementById('nome').textContent = aluno.nome;
-        document.getElementById('turma').textContent = aluno.turma;
-        document.getElementById('comportamento').textContent = aluno.comportamento?.toFixed(2) || 'N/A';
-        document.getElementById('codigo').textContent = aluno.codigoAcesso;
+    let alunoAtual = null; // ✅ mantém o aluno carregado
 
-        const obsContainer = document.getElementById('observacoes');
-        obsContainer.innerHTML = '';
-        dados.observacoes.forEach(obs => {
-          const div = document.createElement('div');
-          div.className = 'observacao';
-          div.innerHTML = `
-            <div class="texto">${obs.texto}</div>
-            <p class="autor">— ${obs.autor} <span class="data">(${new Date(obs.createdAt).toLocaleDateString()})</span></p>
-            <div class="acoes">
-              <button onclick="editarObs('${obs._id}', this)">✏️</button>
-              <button onclick="excluirObs('${obs._id}')">🗑️</button>
+    const toISO = (d)=>{
+      if(!d) return '';
+      const x = new Date(d);
+      const yyyy = x.getFullYear();
+      const mm = String(x.getMonth()+1).padStart(2,'0');
+      const dd = String(x.getDate()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    async function carregarFicha(){
+      if(!alunoId){ alert('ID do aluno não informado.'); return; }
+      const r = await fetch(`/api/ficha/dados/${alunoId}`, { credentials:'include' });
+      if(!r.ok){ alert('Falha ao carregar ficha.'); return; }
+      const { aluno, notificacoes=[], observacoes=[] } = await r.json();
+      alunoAtual = aluno; // ✅ guarda p/ editor
+
+      // Cabeçalho
+      qs('#alunoNome').textContent = aluno?.nome ?? '—';
+      qs('#badgeTurma').textContent = `Turma ${aluno?.turma ?? '—'}`;
+      qs('#badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
+      qs('#badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
+      qs('#btnPDF').href = `/api/ficha/${aluno?._id}`;
+
+      qs('#kvTurma').textContent = aluno?.turma ?? '—';
+      qs('#kvEntrada').textContent = aluno?.dataEntrada ? fmtData(aluno.dataEntrada) : '—';
+      qs('#kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
+      qs('#kvNota').textContent = (typeof aluno?.comportamento === 'number') ? aluno.comportamento.toFixed(2) : 'N/A';
+
+      // Foto (fallback para aluno.foto caso backend não envie fotoUrl)
+      const fotoBox = qs('#fotoBox');
+      let url = aluno?.fotoUrl || aluno?.foto || '';
+      if (url && !/^https?:\/\//.test(url) && !url.startsWith('data:') && !url.startsWith('/uploads/')) {
+        url = '/uploads/' + url;
+      }
+      fotoBox.innerHTML = url ? `<img src="${url}" alt="Foto do aluno">` : 'Sem foto';
+
+      // Observações
+      const obsEl = qs('#observacoes');
+      obsEl.innerHTML = '';
+      if(!observacoes.length){
+        obsEl.innerHTML = `<div class="empty">Nenhuma observação registrada.</div>`;
+      }else{
+        obsEl.innerHTML = observacoes.map(o=>`
+          <div class="obs">
+            <div class="row">
+              <div class="muted">${fmtDataHora(o.createdAt || o.criadoEm)} — ${o.autor || 'Autor não informado'}</div>
+              <div class="actions">
+                <button class="iconbtn" title="Editar" onclick="editarObs('${o._id}', this)">✏️</button>
+                <button class="iconbtn" title="Excluir" onclick="excluirObs('${o._id}')">🗑️</button>
+              </div>
+            </div>
+            <div style="margin-top:6px" class="texto">${(o.texto||'').replace(/\n/g,'<br>')}</div>
+          </div>
+        `).join('');
+      }
+
+      // Notificações
+      const notiEl = qs('#notificacoes');
+      notiEl.innerHTML = '';
+      if(!notificacoes.length){
+        notiEl.innerHTML = `<div class="empty">Nenhuma notificação encontrada.</div>`;
+      }else{
+        notiEl.innerHTML = notificacoes.map(n=>{
+          const tipo = n.tipo || n.tipoMedida || 'Medida';
+          const motivo = n.motivo || '—';
+          const artigo = n.artigo || '—';
+          const inciso = n.inciso || '—';
+          const classificacao = n.classificacaoRegulamento || '—';
+          const valor = fmtValor(n.valorNumerico);
+          const obsN = n.observacoes ? `<div class="muted" style="margin-top:8px">${n.observacoes}</div>` : '';
+          const idN = n._id || '';
+          return `
+            <div class="notif">
+              <div class="row">
+                <div><span class="chip">${tipo}</span></div>
+                <div class="muted">${fmtData(n.data || n.createdAt)}</div>
+              </div>
+              <div style="margin-top:6px"><b>Motivo:</b> ${motivo}</div>
+              <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">
+                <div><b>Valor</b>: ${valor}</div>
+                <div><b>Classificação</b>: ${classificacao}</div>
+                <div><b>Artigo</b>: ${artigo}</div>
+                <div><b>Inciso</b>: ${inciso}</div>
+              </div>
+              ${obsN}
+              <div class="actions" style="margin-top:10px">
+                <a class="iconbtn" href="/notificacao.html?id=${idN}" title="Abrir notificação">Abrir</a>
+                <a class="iconbtn" href="/api/pdf/${idN}" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>
+              </div>
             </div>
           `;
-          obsContainer.appendChild(div);
-        });
-
-        const notifContainer = document.getElementById('notificacoes');
-        notifContainer.innerHTML = '';
-        dados.notificacoes.forEach(n => {
-          const div = document.createElement('div');
-          div.className = 'observacao';
-          div.innerHTML = `<p><strong>${n.tipo}</strong> - ${n.motivo}</p>`;
-          notifContainer.appendChild(div);
-        });
-      } catch (e) {
-        alert('Erro ao carregar ficha.');
+        }).join('');
       }
     }
 
-    async function salvarObservacao() {
-      const texto = document.getElementById('textoObservacao').value.trim();
-      if (!texto) return alert('Digite algo.');
-
-      const res = await fetch(`/api/observacoes/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ texto })
+    // Observações: salvar/editar/excluir
+    async function salvarObservacao(){
+      const texto = qs('#textoObservacao').value.trim();
+      if(!texto) return alert('Digite algo.');
+      const r = await fetch(`/api/observacoes/${alunoId}`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({ texto })
       });
-
-      const out = await res.json();
-      if (res.ok) {
-        document.getElementById('textoObservacao').value = '';
-        carregarFicha();
-      } else {
-        alert(out.mensagem || 'Erro ao salvar.');
-      }
+      if(r.ok){ qs('#textoObservacao').value=''; carregarFicha(); }
+      else{ const j = await r.json().catch(()=>({})); alert(j.mensagem || 'Erro ao salvar.'); }
     }
 
-    async function excluirObs(obsId) {
-      if (!confirm('Deseja excluir esta observação?')) return;
-      const res = await fetch(`/api/observacoes/${obsId}`, {
-        method: 'DELETE', credentials: 'include'
-      });
-      if (res.ok) carregarFicha();
-      else alert('Erro ao excluir observação.');
+    async function excluirObs(obsId){
+      if(!confirm('Deseja excluir esta observação?')) return;
+      const r = await fetch(`/api/observacoes/${obsId}`,{ method:'DELETE', credentials:'include' });
+      if(r.ok) carregarFicha(); else alert('Erro ao excluir observação.');
     }
 
-    function editarObs(obsId, btn) {
-      const card = btn.closest('.observacao');
+    function editarObs(obsId, btn){
+      const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
-      const textarea = document.createElement('textarea');
-      textarea.value = textoAtual;
-
-      const salvar = document.createElement('button');
-      salvar.textContent = '💾';
-      salvar.onclick = async () => {
-        const novoTexto = textarea.value.trim();
-        if (!novoTexto) return alert('Texto inválido.');
-        const res = await fetch(`/api/observacoes/${obsId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ texto: novoTexto })
+      card.innerHTML = `
+        <div class="editor">
+          <textarea id="editArea">${textoAtual}</textarea>
+          <button class="btn" id="saveEd">Salvar</button>
+          <button class="btn ghost" id="cancelEd">Cancelar</button>
+        </div>
+      `;
+      card.querySelector('#saveEd').onclick = async ()=>{
+        const novoTexto = card.querySelector('#editArea').value.trim();
+        if(!novoTexto) return alert('Texto inválido.');
+        const r = await fetch(`/api/observacoes/${obsId}`,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body:JSON.stringify({ texto: novoTexto })
         });
-        if (res.ok) carregarFicha();
-        else alert('Erro ao atualizar.');
+        if(r.ok) carregarFicha(); else alert('Erro ao atualizar.');
+      };
+      card.querySelector('#cancelEd').onclick = ()=>carregarFicha();
+    }
+
+    // ====== Editor do Aluno ======
+    function abrirEditor(){
+      if(!alunoAtual) return;
+      qs('#editorAluno').style.display = 'block';
+      qs('#edNome').value   = alunoAtual.nome || '';
+      qs('#edTurma').value  = alunoAtual.turma || '';
+      qs('#edEntrada').value= toISO(alunoAtual.dataEntrada);
+      qs('#edNasc').value   = toISO(alunoAtual.nascimento);
+      qs('#edPai').value    = alunoAtual.nomePai || '';
+      qs('#edMae').value    = alunoAtual.nomeMae || '';
+      qs('#edTel').value    = alunoAtual.telefone || '';
+      qs('#edEnd').value    = alunoAtual.endereco || '';
+      qs('#edCodigo').value = alunoAtual.codigoAcesso || '';
+      qs('#edFoto').value   = alunoAtual.foto || '';
+    }
+    function fecharEditor(){
+      qs('#editorAluno').style.display = 'none';
+    }
+    async function salvarEdicao(){
+      if(!alunoAtual) return;
+      const payload = {
+        nome:         qs('#edNome').value.trim(),
+        turma:        qs('#edTurma').value.trim(),
+        dataEntrada:  qs('#edEntrada').value || null,
+        nascimento:   qs('#edNasc').value || null,
+        nomePai:      qs('#edPai').value.trim(),
+        nomeMae:      qs('#edMae').value.trim(),
+        telefone:     qs('#edTel').value.trim(),
+        endereco:     qs('#edEnd').value.trim(),
+        codigoAcesso: qs('#edCodigo').value.trim(),
+        foto:         qs('#edFoto').value.trim()
       };
 
-      const cancelar = document.createElement('button');
-      cancelar.textContent = '❌';
-      cancelar.onclick = () => carregarFicha();
-
-      card.innerHTML = '';
-      card.appendChild(textarea);
-      card.appendChild(salvar);
-      card.appendChild(cancelar);
+      const r = await fetch(`/api/alunos/${alunoAtual._id}`,{
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json' },
+        credentials:'include',
+        body: JSON.stringify(payload)
+      });
+      const j = await r.json().catch(()=>({}));
+      if(!r.ok){
+        alert(j.message || j.mensagem || 'Erro ao salvar alterações.');
+        return;
+      }
+      fecharEditor();
+      await carregarFicha(); // ✅ volta com a nota recalculada pelo backend
     }
 
-    document.getElementById('btnSalvar').addEventListener('click', salvarObservacao);
+    // Ações
+    qs('#btnSalvar').addEventListener('click', salvarObservacao);
+    qs('#btnImprimir').addEventListener('click', ()=>window.print());
+    document.getElementById('btnEditar').addEventListener('click', abrirEditor);
+    document.getElementById('btnCancelarEd').addEventListener('click', fecharEditor);
+    document.getElementById('btnSalvarEd').addEventListener('click', salvarEdicao);
+
     carregarFicha();
   </script>
 </body>

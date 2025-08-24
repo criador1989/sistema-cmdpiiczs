@@ -31,10 +31,7 @@
       transition: background 0.2s;
       display: none;
     }
-
-    #voltarPainel:hover {
-      background-color: #5a6268;
-    }
+    #voltarPainel:hover { background-color: #5a6268; }
 
     .container {
       background: white;
@@ -46,10 +43,7 @@
       animation: fadeInUp 0.9s ease-out;
     }
 
-    h2, h3 {
-      text-align: center;
-      color: #941a1d;
-    }
+    h2, h3 { text-align: center; color: #941a1d; }
 
     .turma-btn {
       display: inline-block;
@@ -63,12 +57,8 @@
       font-weight: bold;
       transition: background 0.2s, transform 0.2s;
     }
-
     .turma-btn:hover,
-    .turma-btn.ativa {
-      background-color: #0056b3;
-      transform: scale(1.03);
-    }
+    .turma-btn.ativa { background-color: #0056b3; transform: scale(1.03); }
 
     .aluno-grid {
       display: none;
@@ -76,24 +66,18 @@
       gap: 16px;
       margin-top: 20px;
     }
-
-    .aluno-grid.visivel {
-      display: grid;
-    }
+    .aluno-grid.visivel { display: grid; }
 
     .aluno-card {
       background-color: #f8f9fa;
       border-radius: 10px;
-      padding: 10px;
+      padding: 10px 10px 44px; /* espaço extra embaixo pro botão */
       text-align: center;
       position: relative;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, opacity .2s ease;
     }
-
-    .aluno-card:hover {
-      transform: scale(1.03);
-    }
+    .aluno-card:hover { transform: scale(1.03); }
 
     .aluno-card img {
       width: 100px;
@@ -110,35 +94,66 @@
       text-decoration: underline;
     }
 
+    /* ações no topo (excluir) */
+    .acoes-card {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      gap: 6px;
+    }
+    .excluir-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 6px 8px;
+      background: #d9534f;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    }
+    .excluir-btn:hover { filter: brightness(.92); }
+
+    /* NOVO: ações inferiores (botão Notificar) */
+    .acoes-inferiores {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    .btn-notificar {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #941a1d;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+      transition: transform .15s ease, filter .15s ease;
+    }
+    .btn-notificar:hover { transform: translateY(-1px); filter: brightness(.95); }
+
     .legenda {
       margin-top: 40px;
       padding-top: 20px;
       border-top: 2px solid #ccc;
     }
-
-    .legenda h4 {
-      color: #800000;
-      margin-bottom: 10px;
-    }
-
-    .legenda p {
-      margin: 4px 0;
-      font-size: 14px;
-    }
+    .legenda h4 { color: #800000; margin-bottom: 10px; }
+    .legenda p { margin: 4px 0; font-size: 14px; }
 
     #modalAluno {
       display: none;
       position: fixed;
       z-index: 9999;
       padding-top: 60px;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
+      left: 0; top: 0; width: 100%; height: 100%;
       overflow: auto;
       background-color: rgba(0,0,0,0.7);
     }
-
     #modalAluno .modal-conteudo {
       background-color: #fff;
       margin: auto;
@@ -150,24 +165,12 @@
       text-align: center;
       position: relative;
     }
-
     #modalAluno img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid #941a1d;
+      width: 120px; height: 120px; border-radius: 50%;
+      object-fit: cover; border: 3px solid #941a1d;
     }
-
-    #modalAluno h3 {
-      margin-top: 10px;
-      color: #941a1d;
-    }
-
-    #modalAluno p {
-      margin: 4px 0;
-      font-size: 15px;
-    }
+    #modalAluno h3 { margin-top: 10px; color: #941a1d; }
+    #modalAluno p { margin: 4px 0; font-size: 15px; }
 
     #modalAluno a {
       display: inline-block;
@@ -179,38 +182,22 @@
       text-decoration: none;
       transition: background 0.2s;
     }
-
-    #modalAluno a:hover {
-      background-color: #6e1315;
-    }
+    #modalAluno a:hover { background-color: #6e1315; }
 
     #fecharModal {
       position: absolute;
-      top: 8px;
-      right: 12px;
-      font-size: 22px;
-      font-weight: bold;
-      color: #941a1d;
-      cursor: pointer;
+      top: 8px; right: 12px;
+      font-size: 22px; font-weight: bold; color: #941a1d; cursor: pointer;
     }
 
     input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 20px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      width: 100%; padding: 12px; margin-bottom: 20px;
+      border-radius: 6px; border: 1px solid #ccc;
     }
 
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -293,21 +280,65 @@
           document.querySelectorAll('.aluno-grid').forEach(g => g.remove());
           document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
           btn.classList.add('ativa');
+
           const grid = document.createElement('div');
           grid.className = 'aluno-grid visivel';
           grid.id = gridId;
+
           const alunos = todosAlunos.filter(a => a.turma === turma);
+
           alunos.forEach(aluno => {
             const card = document.createElement('div');
             card.className = 'aluno-card';
+            card.dataset.id = aluno._id;
             card.style.background = calcularCorNota(aluno.comportamento);
+
+            const botaoExcluir = !token ? `
+              <div class="acoes-card">
+                <button class="excluir-btn" title="Excluir aluno">🗑️</button>
+              </div>
+            ` : '';
+
             card.innerHTML = `
+              ${botaoExcluir}
               <img src="${aluno.foto || 'img/sem-foto.png'}" alt="${aluno.nome}" />
               <div class="nome">${aluno.nome}</div>
+
+              <!-- NOVO: botão Notificar -->
+              <div class="acoes-inferiores">
+                <button class="btn-notificar"
+                        data-aluno-id="${aluno._id}"
+                        data-aluno-nome="${encodeURIComponent(aluno.nome)}"
+                        title="Gerar nova notificação para este aluno">
+                  Notificar
+                </button>
+              </div>
             `;
+
+            // clique no card -> abre modal
             card.onclick = () => abrirModal(aluno);
+
+            // clique no botão excluir -> não abrir modal
+            if (!token) {
+              const excluirBtn = card.querySelector('.excluir-btn');
+              excluirBtn?.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                excluirAluno(aluno._id, aluno.nome, card);
+              });
+            }
+
+            // clique no botão notificar -> redireciona com ID + nome
+            const btnNotificar = card.querySelector('.btn-notificar');
+            btnNotificar.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              const id = btnNotificar.dataset.alunoId;
+              const nome = btnNotificar.dataset.alunoNome || '';
+              window.location.href = `/cadastrar-notificacao.html?aluno=${id}&nome=${nome}`;
+            });
+
             grid.appendChild(card);
           });
+
           grupoContainer.appendChild(grid);
         };
         container.appendChild(btn);
@@ -345,10 +376,36 @@
     document.getElementById('fecharModal').onclick = () => {
       document.getElementById('modalAluno').style.display = 'none';
     }
-
     window.onclick = function(event) {
       if (event.target == document.getElementById('modalAluno')) {
         document.getElementById('modalAluno').style.display = 'none';
+      }
+    }
+
+    // excluir aluno
+    async function excluirAluno(id, nome, cardEl) {
+      const ok = confirm(`Tem certeza que deseja excluir o aluno "${nome}"?\nEsta ação é permanente e removerá também as notificações/observações vinculadas.`);
+      if (!ok) return;
+
+      try {
+        const resp = await fetch(`/api/alunos/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!resp.ok) {
+          const erro = await resp.json().catch(() => ({}));
+          throw new Error(erro?.message || `Falha ao excluir (HTTP ${resp.status})`);
+        }
+
+        if (cardEl) {
+          cardEl.style.opacity = '0';
+          setTimeout(() => cardEl.remove(), 200);
+        }
+        alert('Aluno excluído com sucesso.');
+      } catch (e) {
+        console.error(e);
+        alert('Não foi possível excluir o aluno: ' + e.message);
       }
     }
 
