@@ -85,7 +85,10 @@
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid #ccc;
+      filter: blur(8px);
+      transition: filter .25s ease;
     }
+    .aluno-card img[data-loaded="true"] { filter: blur(0); }
 
     .aluno-card .nome {
       margin-top: 10px;
@@ -94,7 +97,6 @@
       text-decoration: underline;
     }
 
-    /* ações no topo (excluir) */
     .acoes-card {
       position: absolute;
       top: 6px;
@@ -114,7 +116,6 @@
     }
     .excluir-btn:hover { filter: brightness(.92); }
 
-    /* NOVO: ações inferiores (botão Notificar) */
     .acoes-inferiores {
       position: absolute;
       left: 10px;
@@ -227,189 +228,212 @@
   <div id="modalAluno">
     <div class="modal-conteudo">
       <span id="fecharModal">&times;</span>
-      <img id="modalFoto" src="" alt="Foto do Aluno">
+      <img id="modalFoto" src="" alt="Foto do Aluno" loading="lazy" decoding="async">
       <h3 id="modalNome"></h3>
       <p id="modalTurma"></p>
       <p id="modalNota"></p>
-      <a id="linkFicha" href="#" target="_blank">Ver Ficha Completa</a>
-      <a id="linkQRCode" href="#" target="_blank">Ver QR Code</a>
+      <a id="linkFicha" href="#" target="_blank" rel="noopener">Ver Ficha Completa</a>
+      <a id="linkQRCode" href="#" target="_blank" rel="noopener">Ver QR Code</a>
     </div>
   </div>
 
   <script>
-    // Exibe o botão "Voltar ao Painel" apenas se NÃO houver token na URL
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    if (!token) {
-      document.getElementById("voltarPainel").style.display = "inline-block";
+  // ---- contexto: cookie vs token de professor ----
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  if (!token) {
+    document.getElementById("voltarPainel").style.display = "inline-block";
+  } else {
+    document.getElementById("tituloLista").innerText = "Lista de Alunos (Professor)";
+  }
+
+  const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
+  const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+
+  // cache por turma
+  const cacheTurma = new Map();
+
+  // blur-up: tira o blur ao carregar as imagens
+  document.addEventListener('load', (e) => {
+    if (e.target.tagName === 'IMG') e.target.setAttribute('data-loaded', 'true');
+  }, true);
+
+  function calcularCorNota(nota) {
+    if (typeof nota !== 'number') return null; // deixa card com cor padrão quando não há nota
+    if (nota >= 9.01) return '#0f5132';
+    if (nota >= 8.01) return '#198754';
+    if (nota >= 7.00) return '#ffc107';
+    if (nota >= 5.00) return '#fd7e14';
+    if (nota >= 3.00) return '#dc3545';
+    return '#212529';
+  }
+
+  function criarBotoes(turmas, containerId, grupoId) {
+    const container = document.getElementById(containerId);
+    const grupoContainer = document.getElementById(grupoId);
+
+    turmas.forEach(turma => {
+      const btn = document.createElement('button');
+      btn.textContent = turma;
+      btn.className = 'turma-btn';
+      btn.onclick = () => toggleTurma(turma, btn, grupoContainer);
+      container.appendChild(btn);
+    });
+  }
+
+  async function toggleTurma(turma, btn, grupoContainer) {
+    const gridId = `grid-${turma}`;
+    const existente = document.getElementById(gridId);
+    if (existente) {
+      existente.remove();
+      btn.classList.remove('ativa');
+      return;
+    }
+    document.querySelectorAll('.aluno-grid').forEach(g => g.remove());
+    document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
+    btn.classList.add('ativa');
+
+    let alunos = cacheTurma.get(turma);
+    if (!alunos) {
+      // Lista rápida: semNota=1 retorna só o essencial (nome, turma, foto, _id)
+      const url = token
+        ? `/api/alunos/professor?semNota=1&turma=${encodeURIComponent(turma)}&token=${encodeURIComponent(token)}`
+        : `/api/alunos?semNota=1&turma=${encodeURIComponent(turma)}`;
+      const res = await fetch(url, token ? {} : { credentials: 'include' });
+      alunos = await res.json();
+      cacheTurma.set(turma, alunos);
     }
 
-    const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
-    const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
-    let todosAlunos = [];
+    const grid = document.createElement('div');
+    grid.className = 'aluno-grid visivel';
+    grid.id = gridId;
 
-    async function carregarAlunos() {
-      if (token) {
-        document.getElementById("tituloLista").innerText = "Lista de Alunos (Professor)";
-        const res = await fetch(`/api/usuarios/acesso/${token}`);
-        const data = await res.json();
-        todosAlunos = data.alunos || [];
-      } else {
-        const res = await fetch('/api/alunos', { credentials: 'include' });
-        todosAlunos = await res.json();
+    alunos.forEach(aluno => {
+      const card = document.createElement('div');
+      card.className = 'aluno-card';
+      card.dataset.id = aluno._id;
+
+      const cor = calcularCorNota(aluno.comportamento);
+      if (cor) card.style.background = cor; // só pinta se houver nota
+
+      const botaoExcluir = !token ? `
+        <div class="acoes-card">
+          <button class="excluir-btn" title="Excluir aluno">🗑️</button>
+        </div>` : '';
+
+      card.innerHTML = `
+        ${botaoExcluir}
+        <img
+          src="${aluno.fotoThumbUrl || `/api/imagens/thumb/${aluno._id}`}"
+          alt="${aluno.nome}" loading="lazy" width="100" height="100"
+        />
+        <div class="nome">${aluno.nome}</div>
+        <div class="acoes-inferiores">
+          <button class="btn-notificar" data-aluno-id="${aluno._id}"
+                  data-aluno-nome="${encodeURIComponent(aluno.nome)}">
+            Notificar
+          </button>
+        </div>
+      `;
+
+      // abre modal
+      card.onclick = () => abrirModal(aluno);
+
+      // excluir (apenas quando autenticado por cookie)
+      if (!token) {
+        const excluirBtn = card.querySelector('.excluir-btn');
+        excluirBtn?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          excluirAluno(aluno._id, aluno.nome, card);
+        });
       }
-      criarBotoes(turmasManha, 'botoesManha', 'gruposManha');
-      criarBotoes(turmasTarde, 'botoesTarde', 'gruposTarde');
-    }
 
-    function criarBotoes(turmas, containerId, grupoId) {
-      const container = document.getElementById(containerId);
-      const grupoContainer = document.getElementById(grupoId);
-      turmas.forEach(turma => {
-        const btn = document.createElement('button');
-        btn.textContent = turma;
-        btn.className = 'turma-btn';
-        btn.onclick = () => {
-          const gridId = `grid-${turma}`;
-          const gridExistente = document.getElementById(gridId);
-          if (gridExistente) {
-            gridExistente.remove();
-            btn.classList.remove('ativa');
-            return;
-          }
-          document.querySelectorAll('.aluno-grid').forEach(g => g.remove());
-          document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
-          btn.classList.add('ativa');
-
-          const grid = document.createElement('div');
-          grid.className = 'aluno-grid visivel';
-          grid.id = gridId;
-
-          const alunos = todosAlunos.filter(a => a.turma === turma);
-
-          alunos.forEach(aluno => {
-            const card = document.createElement('div');
-            card.className = 'aluno-card';
-            card.dataset.id = aluno._id;
-            card.style.background = calcularCorNota(aluno.comportamento);
-
-            const botaoExcluir = !token ? `
-              <div class="acoes-card">
-                <button class="excluir-btn" title="Excluir aluno">🗑️</button>
-              </div>
-            ` : '';
-
-            card.innerHTML = `
-              ${botaoExcluir}
-              <img src="${aluno.foto || 'img/sem-foto.png'}" alt="${aluno.nome}" />
-              <div class="nome">${aluno.nome}</div>
-
-              <!-- NOVO: botão Notificar -->
-              <div class="acoes-inferiores">
-                <button class="btn-notificar"
-                        data-aluno-id="${aluno._id}"
-                        data-aluno-nome="${encodeURIComponent(aluno.nome)}"
-                        title="Gerar nova notificação para este aluno">
-                  Notificar
-                </button>
-              </div>
-            `;
-
-            // clique no card -> abre modal
-            card.onclick = () => abrirModal(aluno);
-
-            // clique no botão excluir -> não abrir modal
-            if (!token) {
-              const excluirBtn = card.querySelector('.excluir-btn');
-              excluirBtn?.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                excluirAluno(aluno._id, aluno.nome, card);
-              });
-            }
-
-            // clique no botão notificar -> redireciona com ID + nome
-            const btnNotificar = card.querySelector('.btn-notificar');
-            btnNotificar.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              const id = btnNotificar.dataset.alunoId;
-              const nome = btnNotificar.dataset.alunoNome || '';
-              window.location.href = `/cadastrar-notificacao.html?aluno=${id}&nome=${nome}`;
-            });
-
-            grid.appendChild(card);
-          });
-
-          grupoContainer.appendChild(grid);
-        };
-        container.appendChild(btn);
+      // notificar
+      const btnNotificar = card.querySelector('.btn-notificar');
+      btnNotificar.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const id = btnNotificar.dataset.alunoId;
+        const nome = btnNotificar.dataset.alunoNome || '';
+        window.location.href = `/cadastrar-notificacao.html?aluno=${id}&nome=${nome}`;
       });
-    }
 
-    function calcularCorNota(nota = 8) {
-      if (nota >= 9.01) return '#0f5132';
-      if (nota >= 8.01) return '#198754';
-      if (nota >= 7.00) return '#ffc107';
-      if (nota >= 5.00) return '#fd7e14';
-      if (nota >= 3.00) return '#dc3545';
-      return '#212529';
-    }
+      grid.appendChild(card);
+    });
 
-    function filtrarNome() {
-      const termo = document.getElementById('filtroNome').value.toLowerCase();
-      const alunos = document.querySelectorAll('.aluno-card');
-      alunos.forEach(card => {
-        const nome = card.querySelector('.nome').innerText.toLowerCase();
-        card.style.display = nome.includes(termo) ? 'block' : 'none';
-      });
-    }
+    grupoContainer.appendChild(grid);
+  }
 
-    function abrirModal(aluno) {
-      document.getElementById('modalFoto').src = aluno.foto || 'img/sem-foto.png';
-      document.getElementById('modalNome').innerText = aluno.nome;
-      document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma}`;
-      document.getElementById('modalNota').innerText = `Nota de comportamento: ${aluno.comportamento?.toFixed(2) || '8.00'}`;
-      document.getElementById('linkFicha').href = `/ficha-aluno.html?id=${aluno._id}`;
-      document.getElementById('linkQRCode').href = `/qrcode-aluno.html?id=${aluno._id}`;
-      document.getElementById('modalAluno').style.display = 'block';
-    }
+  function normalizarFoto(foto, id) {
+    if (!foto) return `/api/imagens/thumb/${id}`;
+    if (/^https?:\/\//i.test(foto) || /^data:image\//i.test(foto)) return foto;
+    if (foto.startsWith('/')) return foto;
+    return '/' + foto.replace(/^\/+/, '');
+  }
 
-    document.getElementById('fecharModal').onclick = () => {
+  async function abrirModal(aluno) {
+    const finalFoto = normalizarFoto(aluno.foto, aluno._id) || aluno.fotoThumbUrl || `/api/imagens/thumb/${aluno._id}`;
+    document.getElementById('modalFoto').src = finalFoto;
+    document.getElementById('modalNome').innerText = aluno.nome;
+    document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma}`;
+    document.getElementById('modalNota').innerText = `Nota de comportamento: calculando...`;
+    document.getElementById('linkFicha').href = `/ficha-aluno.html?id=${aluno._id}`;
+    document.getElementById('linkQRCode').href = `/qrcode-aluno.html?id=${aluno._id}`;
+    document.getElementById('modalAluno').style.display = 'block';
+
+    // busca nota sob demanda
+    try {
+      const urlNota = token
+        ? `/api/alunos/professor/${aluno._id}/nota?token=${encodeURIComponent(token)}`
+        : `/api/alunos/${aluno._id}/nota`;
+      const r = await fetch(urlNota, token ? {} : { credentials: 'include' });
+      if (r.ok) {
+        const j = await r.json();
+        const nota = typeof j.comportamento === 'number' ? j.comportamento.toFixed(2) : 'N/A';
+        document.getElementById('modalNota').innerText = `Nota de comportamento: ${nota}`;
+      } else {
+        document.getElementById('modalNota').innerText = `Nota de comportamento: N/A`;
+      }
+    } catch {
+      document.getElementById('modalNota').innerText = `Nota de comportamento: N/A`;
+    }
+  }
+
+  document.getElementById('fecharModal').onclick = () => {
+    document.getElementById('modalAluno').style.display = 'none';
+  };
+  window.onclick = function(event) {
+    if (event.target === document.getElementById('modalAluno')) {
       document.getElementById('modalAluno').style.display = 'none';
     }
-    window.onclick = function(event) {
-      if (event.target == document.getElementById('modalAluno')) {
-        document.getElementById('modalAluno').style.display = 'none';
+  };
+
+  async function excluirAluno(id, nome, cardEl) {
+    const ok = confirm(`Tem certeza que deseja excluir o aluno "${nome}"?\nEsta ação é permanente e removerá também as notificações/observações vinculadas.`);
+    if (!ok) return;
+    try {
+      const resp = await fetch(`/api/alunos/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!resp.ok) {
+        const erro = await resp.json().catch(() => ({}));
+        throw new Error(erro?.message || `Falha ao excluir (HTTP ${resp.status})`);
       }
-    }
-
-    // excluir aluno
-    async function excluirAluno(id, nome, cardEl) {
-      const ok = confirm(`Tem certeza que deseja excluir o aluno "${nome}"?\nEsta ação é permanente e removerá também as notificações/observações vinculadas.`);
-      if (!ok) return;
-
-      try {
-        const resp = await fetch(`/api/alunos/${id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (!resp.ok) {
-          const erro = await resp.json().catch(() => ({}));
-          throw new Error(erro?.message || `Falha ao excluir (HTTP ${resp.status})`);
-        }
-
-        if (cardEl) {
-          cardEl.style.opacity = '0';
-          setTimeout(() => cardEl.remove(), 200);
-        }
-        alert('Aluno excluído com sucesso.');
-      } catch (e) {
-        console.error(e);
-        alert('Não foi possível excluir o aluno: ' + e.message);
+      if (cardEl) {
+        cardEl.style.opacity = '0';
+        setTimeout(() => cardEl.remove(), 200);
       }
+      alert('Aluno excluído com sucesso.');
+    } catch (e) {
+      console.error(e);
+      alert('Não foi possível excluir o aluno: ' + e.message);
     }
+  }
 
-    carregarAlunos();
+  // cria os botões imediatamente
+  criarBotoes(turmasManha, 'botoesManha', 'gruposManha');
+  criarBotoes(turmasTarde, 'botoesTarde', 'gruposTarde');
   </script>
 </body>
 </html>

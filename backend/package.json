@@ -14,6 +14,7 @@
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
     "canvas": "^3.1.2",
+    "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
@@ -27,6 +28,7 @@
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.1",
     "qrcode": "^1.5.4",
+    "sharp": "^0.34.3",
     "twilio": "^5.7.0"
   }
 }

@@ -1,14 +1,15 @@
 // backend/index.js
-require('dotenv').config(); // garante que o .env seja lido antes de usar process.env
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const { spawn } = require('child_process'); // mantido se você usa em outro lugar
-const fs = require('fs');                   // mantido
-const crypto = require('crypto');           // mantido
+const { spawn } = require('child_process');
+const fs = require('fs');
+const crypto = require('crypto');
+const sharp = require('sharp'); // ✅ para gerar thumbs
 
 // Models
 const Aluno = require('./models/Aluno');
@@ -50,11 +51,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // ====== arquivos estáticos ======
-// /uploads separado
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
+  maxAge: '7d',
+  immutable: true,
+}));
 
-// raiz estática: backend/public
-// adiciona no-store para .html para forçar pegar a versão nova no deploy
 const staticRoot = path.join(__dirname, 'public');
 app.use(express.static(staticRoot, {
   setHeaders: (res, filePath) => {
@@ -64,7 +65,6 @@ app.use(express.static(staticRoot, {
   }
 }));
 
-// ====== rota inicial ======
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
@@ -82,7 +82,15 @@ function autenticar(req, res, next) {
   }
 }
 
-// ====== LOGIN / LOGOUT ======
+// middleware que aceita cookie OU ?token
+function liberaPorTokenOuCookie(req, res, next) {
+  if (req.query && typeof req.query.token === 'string' && req.query.token.trim()) {
+    return next();
+  }
+  return autenticar(req, res, next);
+}
+
+// ====== LOGIN / LOGOUT / CADASTRO ======
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -100,12 +108,11 @@ app.post('/auth/login', async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, // ajuste para true se for HTTPS obrigatório
+      secure: false,
       sameSite: 'Lax',
       maxAge: 2 * 60 * 60 * 1000
     });
 
-    // >>> direciona para o painel novo <<<
     const redirecionar = usuario.tipo === 'professor' ? '/painel-professor.html' : '/painel.html';
     res.json({ mensagem: 'Login bem-sucedido', redirecionar });
   } catch (erro) {
@@ -119,7 +126,6 @@ app.post('/auth/logout', (req, res) => {
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
-// ====== CADASTRO ======
 app.post('/auth/cadastrar', autenticar, async (req, res) => {
   if (req.usuario.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
@@ -137,11 +143,7 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
     }
 
     const novoUsuario = new Usuario({
-      nome,
-      email,
-      senha,
-      instituicao,
-      tipo,
+      nome, email, senha, instituicao, tipo,
       ...(tipo === 'professor' && { tokenAcessoProfessor: crypto.randomBytes(12).toString('hex') })
     });
 
@@ -153,29 +155,28 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
   }
 });
 
-app.get('/api/usuario-logado', autenticar, (req, res) => {
-  res.json(req.usuario);
-});
-
+app.get('/api/usuario-logado', autenticar, (req, res) => res.json(req.usuario));
 app.get('/api/usuario', autenticar, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.usuario.id).select('nome tipo instituicao');
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado' });
     res.json(usuario);
-  } catch (err) {
+  } catch {
     res.status(500).json({ mensagem: 'Erro ao buscar usuário' });
   }
 });
 
 // ====== HTMLs protegidos ======
-app.get('/ficha-aluno.html', autenticar, (req, res) => {
+app.get('/ficha-aluno.html', liberaPorTokenOuCookie, (req, res) => {
   res.sendFile(path.join(staticRoot, 'ficha-aluno.html'));
 });
+
+app.get('/lista-alunos.html', liberaPorTokenOuCookie, (req, res) => {
+  res.sendFile(path.join(staticRoot, 'lista-alunos.html'));
+});
+
 app.get('/painel-professor.html', autenticar, (req, res) => {
   res.sendFile(path.join(staticRoot, 'painel-professor.html'));
-});
-app.get('/lista-alunos.html', autenticarTokenProfessor, (req, res) => {
-  res.sendFile(path.join(staticRoot, 'lista-alunos.html'));
 });
 
 // ====== Rotas protegidas ou públicas ======
@@ -192,12 +193,9 @@ app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', cartoesRoutes);
 app.use('/api/cartoes-professores', cartoesProfessoresRoute);
 app.use('/api/professores', professoresRoute);
-
-// QRCode — montar o mesmo router em múltiplos caminhos para compatibilidade com o front
-app.use('/api/qrcode-professor', qrcodeProfessoresRoute);   // caminho atual
-app.use('/api/qrcode-professores', qrcodeProfessoresRoute); // plural
-app.use('/api/professores/qrcode', qrcodeProfessoresRoute); // compat com fetch antigo
-
+app.use('/api/qrcode-professor', qrcodeProfessoresRoute);
+app.use('/api/qrcode-professores', qrcodeProfessoresRoute);
+app.use('/api/professores/qrcode', qrcodeProfessoresRoute);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
@@ -207,12 +205,62 @@ app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
 app.use('/api/usuarios', acessoProfessorRoute);
 
-// ====== versão/saúde (opcional, útil para verificar commit em produção) ======
+// ====== versão/saúde ======
 app.get('/__version', (req, res) => {
   res.json({
     commit: process.env.RENDER_GIT_COMMIT || 'desconhecido',
     builtAt: new Date().toISOString()
   });
+});
+
+// ====== Miniaturas on-the-fly ======
+app.get('/api/imagens/thumb/:id', async (req, res) => {
+  try {
+    const aluno = await Aluno.findById(req.params.id).select('foto');
+    const placeholderAbs = path.join(staticRoot, 'img', 'sem-foto.png');
+
+    if (!aluno) return res.sendFile(placeholderAbs);
+
+    const foto = aluno.foto || '';
+    if (/^https?:\/\//i.test(foto) || /^data:image\//i.test(foto)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.redirect(foto);
+    }
+
+    const publicRoot = staticRoot;
+    let absOriginal = '';
+    if (foto.startsWith('/uploads/')) {
+      absOriginal = path.join(publicRoot, foto.replace(/^\//, ''));
+    } else {
+      absOriginal = path.join(publicRoot, foto);
+    }
+
+    if (!fs.existsSync(absOriginal)) {
+      return res.sendFile(placeholderAbs);
+    }
+
+    const thumbDir = path.join(publicRoot, 'uploads', 'alunos', String(aluno._id));
+    const thumbPath = path.join(thumbDir, 'foto_thumb.jpg');
+
+    if (fs.existsSync(thumbPath)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.sendFile(thumbPath);
+    }
+
+    fs.mkdirSync(thumbDir, { recursive: true });
+    await sharp(absOriginal)
+      .rotate()
+      .resize({ width: 200, height: 200, fit: 'cover' })
+      .jpeg({ quality: 72 })
+      .toFile(thumbPath);
+
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    return res.sendFile(thumbPath);
+  } catch (e) {
+    console.error('Erro ao servir thumb:', e);
+    const placeholderAbs = path.join(staticRoot, 'img', 'sem-foto.png');
+    return res.sendFile(placeholderAbs);
+  }
 });
 
 // =======================
@@ -221,7 +269,6 @@ app.get('/__version', (req, res) => {
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || '';
 if (!/^mongodb(\+srv)?:\/\//i.test(MONGO_URI)) {
   console.error('❌ MONGO_URI inválido ou ausente. Valor lido:', JSON.stringify(MONGO_URI));
-  console.error('   -> Ajuste o arquivo .env (remova duplicatas e mantenha só a URI válida).');
   process.exit(1);
 }
 const masked = MONGO_URI.replace(/\/\/.*?@/, '//***@');
@@ -241,7 +288,6 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
     process.exit(1);
   });
 
-// Encerramento limpo
 process.on('SIGINT', async () => {
   await mongoose.disconnect().catch(() => {});
   console.log('\n👋 Encerrado com sucesso');

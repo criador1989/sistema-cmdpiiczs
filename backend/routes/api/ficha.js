@@ -6,6 +6,15 @@ const Notificacao = require('../../models/Notificacao');
 let Observacao;
 try { Observacao = require('../../models/Observacao'); } catch { /* opcional */ }
 
+const calcularNotaTSMD = require('../../utils/calculoNota'); // ✅ importar função base
+
+// Wrapper para calcular nota de comportamento a partir do alunoId
+async function calcularNotaComportamento(alunoId) {
+  const aluno = await Aluno.findById(alunoId).select('dataEntrada');
+  const notificacoes = await Notificacao.find({ aluno: alunoId }).select('data valorNumerico createdAt');
+  return calcularNotaTSMD(aluno?.dataEntrada, new Date(), notificacoes);
+}
+
 // helper p/ montar URL da foto
 function montarFotoUrl(valor) {
   if (!valor) return null;
@@ -39,13 +48,21 @@ router.get('/dados/:id', async (req, res) => {
     // Observações (se o model existir)
     let observacoes = [];
     if (Observacao) {
-      // tenta createdAt; se seu model usa "criadoEm", a ordenação abaixo já considera os dois
       observacoes = await Observacao.find({ aluno: aluno._id })
         .sort({ createdAt: -1, criadoEm: -1 });
     }
 
+    // ✅ calcular nota de comportamento segura
+    let nota = 8.0;
+    try {
+      nota = await calcularNotaComportamento(aluno._id);
+    } catch (e) {
+      console.error(`Erro ao calcular nota para aluno ${aluno._id}:`, e.message);
+    }
+
     res.json({
       aluno: { ...raw, fotoUrl },
+      comportamento: nota,
       notificacoes,
       observacoes
     });

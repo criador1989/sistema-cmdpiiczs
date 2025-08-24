@@ -71,6 +71,10 @@
     .kv{background:#fcfcfc; border:1px solid var(--line); border-radius:10px; padding:10px}
     .kv b{display:block; color:#777; font-size:.85rem}
     .kv .big{font-weight:800; font-size:26px; color:var(--p1)}
+    .kv .pill{
+      display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;border:1px solid #e3e3e3;
+      font-weight:700;font-size:.78rem;background:#fff;color:#333
+    }
 
     .columns{
       display:grid; gap:18px; margin-top:18px;
@@ -111,7 +115,6 @@
     .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
     .editor textarea{flex:1; resize:vertical; min-height:86px; border:1px solid #d7d7d7; border-radius:10px; padding:10px}
 
-    /* ✅ editor do aluno (form embutido) */
     .edit-card{
       background:#fff;border:1px solid #e6e6e6;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.15);
       padding:16px;margin-top:14px;display:none
@@ -159,11 +162,9 @@
             <span class="badge" id="badgeId">ID —</span>
           </div>
         </div>
-        <!-- ✅ Botão Editar -->
         <button class="btn ghost" id="btnEditar">Editar</button>
       </div>
 
-      <!-- ✅ Formulário de edição do aluno -->
       <div class="edit-card" id="editorAluno">
         <div class="grid-2">
           <div>
@@ -218,7 +219,11 @@
         <div class="kv"><b>Turma</b><span id="kvTurma">—</span></div>
         <div class="kv"><b>Data de Entrada</b><span id="kvEntrada">—</span></div>
         <div class="kv"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
-        <div class="kv"><b>Nota de Comportamento</b><span class="big" id="kvNota">—</span></div>
+        <div class="kv">
+          <b>Nota de Comportamento</b>
+          <span class="big" id="kvNota">—</span>
+          <span class="pill" id="kvClassificacao" title="Classificação da nota">—</span>
+        </div>
       </div>
     </section>
 
@@ -249,7 +254,7 @@
     const fmtDataHora = d => d ? new Date(d).toLocaleString('pt-BR') : '—';
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
-    let alunoAtual = null; // ✅ mantém o aluno carregado
+    let alunoAtual = null;
 
     const toISO = (d)=>{
       if(!d) return '';
@@ -260,12 +265,37 @@
       return `${yyyy}-${mm}-${dd}`;
     };
 
+    function isExternalOrDataUrl(url='') {
+      return /^https?:\/\//i.test(url) || /^data:image\//i.test(url);
+    }
+
+    // Se for URL do Cloudinary, aplica transformação para 256x256, crop face, formatos/qualidade automáticos
+    function cloudinaryThumb(url, w=256, h=256){
+      try{
+        if(!url || !/res\.cloudinary\.com/i.test(url)) return url;
+        // insere após "image/upload/"
+        return url.replace(/\/image\/upload\/(v\d+\/)?/, (m)=> m + `q_auto,f_auto,c_fill,g_face,w_${w},h_${h}/`);
+      }catch{ return url; }
+    }
+
+    // Classificação textual da nota (mesmas faixas da legenda da lista)
+    function classificarNota(nota){
+      const n = Number(nota);
+      if (isNaN(n)) return {texto:'—', cor:'#999'};
+      if (n >= 9.01) return {texto:'Excepcional', cor:'#0f5132'};
+      if (n >= 8.01) return {texto:'Ótimo', cor:'#198754'};
+      if (n >= 7.00) return {texto:'Bom', cor:'#b08900'};       // próximo do #ffc107
+      if (n >= 5.00) return {texto:'Regular', cor:'#b95a0a'};   // próximo do #fd7e14
+      if (n >= 3.00) return {texto:'Insuficiente', cor:'#b02a37'}; // próximo do #dc3545
+      return {texto:'Incompatível', cor:'#212529'};
+    }
+
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
       const r = await fetch(`/api/ficha/dados/${alunoId}`, { credentials:'include' });
       if(!r.ok){ alert('Falha ao carregar ficha.'); return; }
       const { aluno, notificacoes=[], observacoes=[] } = await r.json();
-      alunoAtual = aluno; // ✅ guarda p/ editor
+      alunoAtual = aluno;
 
       // Cabeçalho
       qs('#alunoNome').textContent = aluno?.nome ?? '—';
@@ -277,15 +307,40 @@
       qs('#kvTurma').textContent = aluno?.turma ?? '—';
       qs('#kvEntrada').textContent = aluno?.dataEntrada ? fmtData(aluno.dataEntrada) : '—';
       qs('#kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
-      qs('#kvNota').textContent = (typeof aluno?.comportamento === 'number') ? aluno.comportamento.toFixed(2) : 'N/A';
 
-      // Foto (fallback para aluno.foto caso backend não envie fotoUrl)
+      const nota = (typeof aluno?.comportamento === 'number') ? aluno.comportamento : null;
+      qs('#kvNota').textContent = (nota !== null) ? nota.toFixed(2) : 'N/A';
+      const cls = classificarNota(nota ?? NaN);
+      const pill = qs('#kvClassificacao');
+      pill.textContent = cls.texto;
+      pill.style.color = cls.cor;
+      pill.style.borderColor = '#e3e3e3';
+      pill.style.background = '#fff';
+
+      // Foto — tenta original; se Cloudinary, usa transform; se não houver, usa a thumb on-the-fly
       const fotoBox = qs('#fotoBox');
-      let url = aluno?.fotoUrl || aluno?.foto || '';
-      if (url && !/^https?:\/\//.test(url) && !url.startsWith('data:') && !url.startsWith('/uploads/')) {
-        url = '/uploads/' + url;
+      let url = aluno?.foto || aluno?.fotoUrl || '';
+      let finalUrl = '';
+
+      if (url) {
+        if (isExternalOrDataUrl(url)) {
+          finalUrl = cloudinaryThumb(url, 256, 256);
+        } else {
+          // normaliza caminhos locais
+          if (!url.startsWith('/uploads/') && !url.startsWith('/')) {
+            finalUrl = '/' + url.replace(/^\/+/, '');
+          } else {
+            finalUrl = url;
+          }
+        }
+      } else {
+        // fallback para a miniatura gerada
+        finalUrl = `/api/imagens/thumb/${aluno?._id}`;
       }
-      fotoBox.innerHTML = url ? `<img src="${url}" alt="Foto do aluno">` : 'Sem foto';
+
+      fotoBox.innerHTML = finalUrl
+        ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="88" height="88">`
+        : 'Sem foto';
 
       // Observações
       const obsEl = qs('#observacoes');
@@ -390,7 +445,7 @@
       card.querySelector('#cancelEd').onclick = ()=>carregarFicha();
     }
 
-    // ====== Editor do Aluno ======
+    // Editor do Aluno
     function abrirEditor(){
       if(!alunoAtual) return;
       qs('#editorAluno').style.display = 'block';
@@ -435,7 +490,7 @@
         return;
       }
       fecharEditor();
-      await carregarFicha(); // ✅ volta com a nota recalculada pelo backend
+      await carregarFicha();
     }
 
     // Ações
