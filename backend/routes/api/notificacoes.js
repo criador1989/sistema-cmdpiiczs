@@ -160,43 +160,39 @@ router.post('/', autenticar, async (req, res) => {
     }
 
     // ===========================
-    //   CÁLCULO DA NOTA ATUAL
+    //   CÁLCULO DA NOTA (preciso)
     // ===========================
-    // Limites do dia (00:00:00 a <00:00:00 do dia seguinte>)
+    // Janelas do dia
     const dayStart = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0);
     const dayEnd   = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1, 0, 0, 0, 0);
 
-    // 1) Nota anterior = última notificação ANTES do início do dia
-    const ultimaAntes = await Notificacao.findOne({
+    // (A) Recalcular notaAnterior com TODO o histórico até o dia anterior
+    const endOntem = new Date(dayStart.getTime() - 1); // 23:59:59 do dia anterior
+    const notificacoesAntes = await Notificacao.find({
       aluno,
       instituicao: req.usuario.instituicao,
       data: { $lt: dayStart }
-    }).sort({ data: -1, createdAt: -1 });
+    }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
 
-    let notaAnterior = 8.0;
-    if (ultimaAntes) {
-      notaAnterior = ultimaAntes.notaAtual;
-    } else {
-      // Sem registros prévios: calcula TSMD até o início do dia (mantém sua regra)
-      notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, dayStart, []);
-    }
+    const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
 
-    // 2) Soma do que JÁ existe neste dia (antes de inserir a nova)
-    const somaDia = await Notificacao.aggregate([
-      {
-        $match: {
-          aluno: new mongoose.Types.ObjectId(aluno),
-          instituicao: req.usuario.instituicao,
-          data: { $gte: dayStart, $lt: dayEnd }
-        }
-      },
-      { $group: { _id: null, total: { $sum: '$valorNumerico' } } }
-    ]);
-    const somaDiaExistente = Number(somaDia[0]?.total || 0);
+    // (B) Recalcular notaAtual com histórico ATÉ o fim do dia atual + esta nova notificação
+    const endHoje = new Date(dayEnd.getTime() - 1); // 23:59:59 do próprio dia
+    const notificacoesAteHoje = await Notificacao.find({
+      aluno,
+      instituicao: req.usuario.instituicao,
+      data: { $lt: dayEnd }
+    }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
 
-    // 3) Nota atual = notaAnterior + (tudo que já tinha no dia) + (valor desta nova notificação)
-    let notaAtual = notaAnterior + somaDiaExistente + Number(valor || 0);
-    notaAtual = Math.max(0, Math.min(10, parseFloat(notaAtual.toFixed(2))));
+    // Monta array para cálculo incluindo a notificação nova (ainda não salva)
+    const paraCalculoDia = [
+      ...notificacoesAteHoje.map(n => ({
+        data: n.data, createdAt: n.createdAt, valorNumerico: n.valorNumerico
+      })),
+      { data: dt, createdAt: dt, valorNumerico: Number(valor || 0) }
+    ];
+
+    let notaAtual = calcularNotaTSMD(alunoRelacionado.dataEntrada, endHoje, paraCalculoDia);
 
     // Atualiza o aluno
     alunoRelacionado.comportamento = notaAtual;
@@ -269,7 +265,7 @@ router.put('/:id', autenticar, async (req, res) => {
       if (req.body[campo] !== undefined) notif[campo] = req.body[campo];
     }
 
-    // se a natureza/medida mudou e valor não foi enviado, recalcula
+    // ajustes quando mudar natureza/medida sem valor explícito
     if (req.body.natureza === 'elogio' && req.body.valorNumerico === undefined && req.body.tipoElogio) {
       notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
       notif.tipo = 'Elogio';

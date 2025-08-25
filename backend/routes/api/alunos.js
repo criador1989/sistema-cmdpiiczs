@@ -18,6 +18,14 @@ function anexarThumb(alunoDoc) {
   const obj = alunoDoc.toObject ? alunoDoc.toObject() : alunoDoc;
   return anexarThumbNaPlain(obj);
 }
+// Converte "DD/MM/AAAA" -> Date (meia-noite). Se já for Date/ISO, retorna como veio.
+function parsePtBrDateToDate(d) {
+  if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
+    const [dd, mm, yyyy] = d.trim().split('/');
+    return new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+  }
+  return d;
+}
 async function calcularNotaComportamento(alunoId) {
   const aluno = await Aluno.findById(alunoId).select('dataEntrada');
   const notificacoes = await Notificacao.find({ aluno: alunoId }).select('data valorNumerico createdAt');
@@ -26,7 +34,7 @@ async function calcularNotaComportamento(alunoId) {
 
 // ============= LISTAS =============
 
-// GET /api/alunos  -> agora aceita ?semNota=1 para lista rápida
+// GET /api/alunos  -> aceita ?semNota=1 para lista rápida
 router.get('/', autenticar, async (req, res) => {
   try {
     const semNota = String(req.query.semNota || '').toLowerCase() === '1' || String(req.query.semNota || '').toLowerCase() === 'true';
@@ -158,10 +166,13 @@ router.post('/', autenticar, async (req, res) => {
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
 
+    // ✅ Normaliza dataEntrada se vier como "DD/MM/AAAA"
+    const dataEntradaNormalizada = parsePtBrDateToDate(dataEntrada);
+
     const novoAluno = new Aluno({
       nome,
       turma: turmaNormalizada,
-      dataEntrada,
+      dataEntrada: dataEntradaNormalizada,
       nascimento,
       telefone,
       endereco,
@@ -225,23 +236,56 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-// PUT /api/alunos/:id
+// PUT /api/alunos/:id  (ajustado p/ normalizar dataEntrada e recalcular nota)
 router.put('/:id', autenticar, async (req, res) => {
   try {
-    const dadosAtualizados = req.body;
+    const dadosAtualizados = { ...req.body };
+
+    // Normaliza turma (como já fazia)
     if (dadosAtualizados.turma) {
       dadosAtualizados.turma = dadosAtualizados.turma
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
     }
 
+    // ✅ Normaliza dataEntrada quando vier como "DD/MM/AAAA"
+    if (dadosAtualizados.dataEntrada !== undefined) {
+      dadosAtualizados.dataEntrada = parsePtBrDateToDate(dadosAtualizados.dataEntrada);
+    }
+
+    const alunoAntes = await Aluno.findOne({
+      _id: req.params.id,
+      instituicao: req.usuario.instituicao
+    }).select('_id dataEntrada');
+
+    if (!alunoAntes) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    const mudouDataEntrada = dadosAtualizados.dataEntrada !== undefined &&
+      String(new Date(dadosAtualizados.dataEntrada).getTime()) !== String(new Date(alunoAntes.dataEntrada).getTime());
+
+    // Atualiza o aluno
     const alunoAtualizado = await Aluno.findOneAndUpdate(
       { _id: req.params.id, instituicao: req.usuario.instituicao },
       dadosAtualizados,
       { new: true }
     );
 
-    if (!alunoAtualizado) return res.status(404).json({ message: 'Aluno não encontrado' });
+    // Decide se recalcula: mudou dataEntrada OU query ?recalcular=1|true
+    const force = String(req.query.recalcular || '').toLowerCase();
+    const forcarRecalculo = force === '1' || force === 'true';
+
+    if (mudouDataEntrada || forcarRecalculo) {
+      // Busca todas as notificações do aluno
+      const notificacoes = await Notificacao.find({ aluno: alunoAtualizado._id })
+        .select('data valorNumerico createdAt')
+        .sort({ data: 1, createdAt: 1 });
+
+      // Recalcula a nota com TSMD por DIAS ÚTEIS a partir da nova data de entrada
+      const nota = calcularNotaTSMD(alunoAtualizado.dataEntrada, new Date(), notificacoes);
+
+      alunoAtualizado.comportamento = nota;
+      await alunoAtualizado.save();
+    }
 
     await Log.create({
       usuario: req.usuario._id,

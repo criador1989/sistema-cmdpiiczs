@@ -6,6 +6,7 @@ const path = require('path');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
+const calcularNotaTSMD = require('../../utils/calculoNota'); // ⬅️ novo
 
 // Gera PDF da ficha do aluno com base em ID ou código de acesso
 router.get('/ficha/:codigoOuId', async (req, res) => {
@@ -34,6 +35,9 @@ router.get('/ficha/:codigoOuId', async (req, res) => {
     const notificacoes = await Notificacao.find({ aluno: aluno._id }).sort({ data: -1 });
     const observacoes = await Observacao.find({ aluno: aluno._id }).sort({ criadoEm: -1 });
 
+    // ✅ Nota recalculada agora (inclui TSMD desde a data de entrada até hoje)
+    const notaAtual = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoes);
+
     // Inicia o PDF
     const doc = new PDFDocument();
     const nomeArquivo = `ficha_aluno_${aluno._id}.pdf`;
@@ -55,7 +59,7 @@ router.get('/ficha/:codigoOuId', async (req, res) => {
     doc.text(`Nome: ${aluno.nome}`);
     doc.text(`Turma: ${aluno.turma}`);
     doc.text(`Data de Entrada: ${aluno.dataEntrada?.toLocaleDateString('pt-BR') || '—'}`);
-    doc.text(`Comportamento Atual: ${aluno.comportamento?.toFixed(2) || '—'}`);
+    doc.text(`Comportamento Atual: ${notaAtual.toFixed(2)}`); // ⬅️ usando cálculo dinâmico
     doc.text(`Código de Acesso: ${aluno.codigoAcesso || '—'}`);
 
     // Observações

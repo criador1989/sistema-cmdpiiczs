@@ -1,6 +1,7 @@
 // backend/index.js
 require('dotenv').config();
 
+const metricsRoutes = require('./routes/api/metrics');
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
@@ -10,6 +11,8 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const crypto = require('crypto');
 const sharp = require('sharp'); // ✅ para gerar thumbs
+const compression = require('compression'); // ✅ NOVO: compressão HTTP
+const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 
 // Models
 const Aluno = require('./models/Aluno');
@@ -45,7 +48,14 @@ const observacoesRoutes = require('./routes/api/observacoes');
 
 const autenticarTokenProfessor = require('./middleware/tokenProfessor');
 
+// ✅ NOVO: rota rápida do painel (agregados com cache)
+const dashboardFastRoutes = require('./routes/api/dashboard-fast');
+
 const app = express();
+
+// ✅ compressão HTTP para respostas menores
+app.use(compression());
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -204,6 +214,11 @@ app.use('/api/estatisticas', estatisticasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
 app.use('/api/usuarios', acessoProfessorRoute);
+app.use('/api/diagnostico', diagnosticoNotaRoutes);
+
+// ✅ NOVO: endpoints rápidos do painel
+app.use('/api/dashboard-fast', autenticar, dashboardFastRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 // ====== versão/saúde ======
 app.get('/__version', (req, res) => {

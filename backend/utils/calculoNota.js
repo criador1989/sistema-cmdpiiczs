@@ -1,18 +1,14 @@
 // utils/calculoNota.js
-// Calcula a nota de comportamento com TSMD.
-// Regras:
-// - Nota inicial 8,00.
+// Cálculo da nota de comportamento com T.S.M.D. por DIAS ÚTEIS.
+// Atende às regras solicitadas:
+// - Nota inicial: 8,00.
 // - Eventos positivos (>0) somam; negativos (<0) subtraem.
-// - Soma TODOS os eventos do MESMO DIA.
-// - Se houver qualquer negativo no dia, o contador de TSMD é zerado.
-// - TSMD: após 60 DIAS ÚTEIS consecutivos sem negativo, +0,01 por dia útil (máx. 10).
-// - >>> POR PADRÃO, inicia no PRIMEIRO EVENTO do aluno (ignora dataEntrada se houver evento anterior).
-//
-// Assinatura (compatível com uso atual):
-// calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes, opts?)
-//
-// Se quiser forçar o início na data de entrada:
-// calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes, { useDataEntradaEstrita: true })
+// - Soma TODOS os eventos do MESMO DIA em um único valor.
+// - Se houver qualquer NEGATIVO no dia, a contagem do TSMD ZERA.
+// - TSMD (dias úteis): após 60 DIAS ÚTEIS consecutivos sem penalidade, +0,01 por dia útil excedente.
+// - A contagem de dias do TSMD começa ESTRITAMENTE na dataEntrada.
+// - Nota sempre limitada ao intervalo [0, 10].
+// - Ignora eventos anteriores à dataEntrada (modo estrito).
 
 const { eachDayOfInterval, parseISO, isAfter } = require('date-fns');
 
@@ -33,106 +29,89 @@ function keyYYYYMMDD(d) {
   return x.toISOString().slice(0, 10);
 }
 
-/** Retorna true se dia for útil (segunda..sexta) */
+/** Dia útil? (seg..sex) */
 function isBusinessDay(d) {
   const dow = d.getDay();
   return dow >= 1 && dow <= 5;
 }
 
-/**
- * Calcula nota com TSMD.
- * @param {Date|String} dataEntrada
- * @param {Date|String} dataReferencia - normalmente "agora"
- * @param {Array} notificacoes - [{ data?, createdAt?, valorNumerico }]
- * @param {Object} opts
- *   - useDataEntradaEstrita: se true, ignora eventos anteriores à dataEntrada
- */
-function calcularNotaTSMD(
-  dataEntrada,
-  dataReferencia,
-  notificacoes = [],
-  opts = {}
-) {
-  const { useDataEntradaEstrita = false } = opts;
+/** Limita a nota ao intervalo [0, 10] com 2 casas */
+function clampNota(n) {
+  if (n > 10) return 10;
+  if (n < 0) return 0;
+  return +Number(n).toFixed(2);
+}
 
+/**
+ * Calcula nota com TSMD por DIAS ÚTEIS, iniciando na dataEntrada.
+ * @param {Date|string} dataEntrada
+ * @param {Date|string} dataReferencia  - normalmente "agora"
+ * @param {Array<{data?: Date|string, createdAt?: Date|string, valorNumerico: number}>} notificacoes
+ * @returns {number} nota final em [0,10] com 2 casas
+ */
+function calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes = []) {
   let nota = 8.0;
 
   const end = toDateOnly(dataReferencia || new Date());
-  if (!end) return +nota.toFixed(2);
+  if (!end) return clampNota(nota);
 
-  // data base padrão = dataEntrada
+  // Início ESTRITO na data de entrada
   let start = toDateOnly(dataEntrada);
+  if (!start) start = end; // sem dataEntrada → intervalo vazio
 
-  // encontra o PRIMEIRO evento do aluno
-  let earliestEvent = null;
-  for (const n of notificacoes) {
-    const raw = n?.data ?? n?.createdAt;
-    const dt = toDateOnly(raw);
-    if (!dt) continue;
-    if (!earliestEvent || dt < earliestEvent) earliestEvent = dt;
-  }
+  // Se o start for depois do end, não há intervalo
+  if (isAfter(start, end)) return clampNota(nota);
 
-  // Por padrão (useDataEntradaEstrita = false), se existir evento anterior à dataEntrada,
-  // iniciamos no PRIMEIRO EVENTO para que nada seja "ignorado".
-  if (!useDataEntradaEstrita) {
-    if (earliestEvent && (!start || earliestEvent < start)) start = earliestEvent;
-  }
-
-  // fallback: se ainda não temos start, usa o próprio end (intervalo vazio → retorna 8.00)
-  if (!start) start = end;
-
-  // Se o start for depois do end, não há intervalo a percorrer
-  if (isAfter(start, end)) return +nota.toFixed(2);
-
-  // Agrupa eventos por dia (SOMANDO valores) e marca se o dia teve negativo
+  // Agrupa eventos por dia a partir da dataEntrada (somando valores) e marca se houve penalidade
   const byDay = new Map(); // key -> { sum, hasNeg }
   for (const n of notificacoes) {
     const raw = n?.data ?? n?.createdAt;
     const dt = toDateOnly(raw);
     if (!dt || isAfter(dt, end)) continue;
-    if (useDataEntradaEstrita && dt < start) continue; // corta eventos antes do start se estrito
+    if (dt < start) continue; // ignora eventos antes do início estrito
 
     const key = keyYYYYMMDD(dt);
     const prev = byDay.get(key) || { sum: 0, hasNeg: false };
     const v = Number(n?.valorNumerico || 0);
     prev.sum += v;
-    if (v < 0) prev.hasNeg = true;
+    if (v < 0) prev.hasNeg = true; // qualquer negativo no dia zera sequência de TSMD
     byDay.set(key, prev);
   }
 
-  // Percorre dias úteis no intervalo [start..end]
-  const dias = eachDayOfInterval({ start, end }).filter(isBusinessDay);
+  // Percorre APENAS DIAS ÚTEIS no intervalo [start..end]
+  const diasUteis = eachDayOfInterval({ start, end }).filter(isBusinessDay);
+
+  // dias úteis consecutivos sem penalidade desde o último negativo
   let diasSemNeg = 0;
 
-  for (const dia of dias) {
+  for (const dia of diasUteis) {
     const k = keyYYYYMMDD(dia);
     const e = byDay.get(k);
 
     if (e) {
-      // aplica os eventos do dia (soma total)
-      nota += e.sum;
-      if (nota > 10) nota = 10;
-      if (nota < 0) nota = 0;
+      // Aplica a soma (elogios somam, penalidades subtraem)
+      nota = clampNota(nota + e.sum);
 
-      // TSMD: reseta se houve negativo no dia
       if (e.hasNeg) {
+        // Penalidade no dia → zera a sequência
         diasSemNeg = 0;
       } else {
+        // Sem penalidade no dia → avança a sequência e aplica TSMD se > 60 dias úteis
         diasSemNeg++;
         if (diasSemNeg > 60 && nota < 10) {
-          nota = Math.min(10, +((nota + 0.01).toFixed(2)));
+          nota = clampNota(nota + 0.01);
         }
       }
     } else {
-      // dia útil sem evento
+      // Dia útil sem evento → só conta para TSMD
       diasSemNeg++;
       if (diasSemNeg > 60 && nota < 10) {
-        nota = Math.min(10, +((nota + 0.01).toFixed(2)));
+        nota = clampNota(nota + 0.01);
       }
     }
   }
 
-  return +nota.toFixed(2);
+  return clampNota(nota);
 }
 
 module.exports = calcularNotaTSMD;

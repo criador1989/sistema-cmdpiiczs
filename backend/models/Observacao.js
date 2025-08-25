@@ -23,6 +23,6 @@ const observacaoSchema = new mongoose.Schema({
     required: true
   }
 });
+observacaoSchema.index({ instituicao: 1, aluno: 1, createdAt: 1 });
 
 module.exports = mongoose.models.Observacao || mongoose.model('Observacao', observacaoSchema);
-
