@@ -1,209 +1,172 @@
-// backend/routes/api/controleNotificacoes.js
+// routes/api/controleNotificacoes.js
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-
 const Notificacao = require('../../models/Notificacao');
 const { autenticar } = require('../../middleware/autenticacao');
 
-// Escape seguro p/ regex a partir de texto livre
-function esc(s='') {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// util: monta filtro base por instituição (inclui sem instituicao p/ compat)
+function filtroInstituicaoDoUsuario(usuario) {
+  const inst = (usuario && usuario.instituicao) ? String(usuario.instituicao) : null;
+  if (!inst) return { $or: [{ instituicao: { $exists: false } }, { instituicao: { $eq: null } }] };
+  return { $or: [{ instituicao: inst }, { instituicao: { $exists: false } }, { instituicao: { $eq: null } }] };
 }
 
-/**
- * GET /api/controle-notificacoes
- * Query:
- *  - page (default 1)
- *  - limit (default 10, máx 50)
- *  - q (texto para busca em: aluno.nome, aluno.turma, motivo, tipo, tipoMedida, numeroSequencial)
- *  - data (YYYY-MM-DD; filtra pelo dia em createdAt)
- *  - status (default 'pendente'; pode receber 'deferido', 'revisao_solicitada', 'arquivado', etc.)
- *
- * Retorna: { data, total, totalPages, page }
- */
+// 🔹 GET - Listar notificações para controle (pendentes + revisões por padrão)
 router.get('/', autenticar, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
-    const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '10', 10)));
-    const status = (req.query.status || 'pendente').trim();
-    const q = (req.query.q || '').trim();
-    const data = (req.query.data || '').trim();
+    // paginação
+    const page  = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 50);
+    const skip  = (page - 1) * limit;
 
-    const baseMatch = { instituicao };
-    if (status) baseMatch.status = status;
+    // filtros
+    const { q, data } = req.query;
+    // status: pode vir "status=pendente" ou "status=pendente,revisao_solicitada"
+    const rawStatus = (req.query.status || '').trim();
+    const statuses = rawStatus
+      ? rawStatus.split(',').map(s => s.trim()).filter(Boolean)
+      : ['pendente', 'revisao_solicitada'];
 
+    const filtro = {
+      ...filtroInstituicaoDoUsuario(req.usuario),
+      status: { $in: statuses }
+    };
+
+    // data (opcional)
     if (data) {
-      const ini = new Date(data);
+      const inicio = new Date(data);
       const fim = new Date(data);
-      fim.setHours(23, 59, 59, 999);
-      baseMatch.createdAt = { $gte: ini, $lte: fim };
-    }
-
-    // pipeline com lookup (join) com 'alunos'
-    const pipeline = [
-      { $match: baseMatch },
-      { $sort: { createdAt: -1, _id: -1 } },
-      {
-        $lookup: {
-          from: 'alunos',
-          localField: 'aluno',
-          foreignField: '_id',
-          as: 'alunoDoc',
-          pipeline: [
-            { $project: { nome: 1, turma: 1, foto: 1 } }
-          ]
-        }
-      },
-      { $unwind: { path: '$alunoDoc', preserveNullAndEmptyArrays: true } }
-    ];
-
-    if (q) {
-      const rx = new RegExp(esc(q), 'i');
-      pipeline.push({
-        $match: {
-          $or: [
-            { motivo: rx },
-            { tipo: rx },
-            { tipoMedida: rx },
-            { numeroSequencial: rx },
-            { 'alunoDoc.nome': rx },
-            { 'alunoDoc.turma': rx }
-          ]
-        }
-      });
-    }
-
-    pipeline.push({
-      $facet: {
-        data: [
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-          // projeta somente o necessário para a lista
-          {
-            $project: {
-              _id: 1,
-              aluno: '$alunoDoc', // já com nome/turma/foto
-              motivo: 1,
-              tipo: 1,
-              tipoMedida: 1,
-              numeroSequencial: 1,
-              valorNumerico: 1,
-              status: 1,
-              observacao: 1,
-              artigo: 1,
-              paragrafo: 1,
-              inciso: 1,
-              classificacaoRegulamento: 1,
-              createdAt: 1
-            }
-          }
-        ],
-        meta: [
-          { $count: 'total' }
-        ]
+      if (!isNaN(inicio.getTime())) {
+        fim.setHours(23, 59, 59, 999);
+        filtro.createdAt = { $gte: inicio, $lte: fim };
       }
-    });
+    }
 
-    const agg = await Notificacao.aggregate(pipeline).allowDiskUse(true);
-    const meta = agg[0]?.meta?.[0] || { total: 0 };
-    const dataOut = agg[0]?.data || [];
-    const total = meta.total || 0;
+    // busca textual (q)
+    // pesquisamos em motivo/tipo/tipoMedida/numeroSequencial + campos do aluno (nome/turma)
+    const textRegex = q ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+
+    // Consulta principal
+    const baseQuery = Notificacao.find(filtro)
+      .populate('aluno', 'nome turma') // só o necessário
+      .sort({ createdAt: -1, _id: -1 });
+
+    // Executa count em paralelo
+    const countQuery = Notificacao.countDocuments(filtro);
+
+    // Se houver "q", vamos filtrar após o populate (campos do aluno)
+    let [total, docs] = await Promise.all([
+      countQuery,
+      baseQuery.skip(skip).limit(limit)
+    ]);
+
+    if (textRegex) {
+      // filtra os docs desta página; se a busca for muito seletiva, pode vir pouco dado
+      docs = docs.filter(n => {
+        const aluno = n.aluno || {};
+        return (
+          textRegex.test(n.motivo || '') ||
+          textRegex.test(n.tipo || '') ||
+          textRegex.test(n.tipoMedida || '') ||
+          textRegex.test(n.numeroSequencial || '') ||
+          textRegex.test(aluno.nome || '') ||
+          textRegex.test(aluno.turma || '')
+        );
+      });
+
+      // Para um count coerente com o filtro q, refazemos count simples (sem paginação).
+      // Se performance for um problema no futuro, dá para migrar para aggregate com $lookup + $match.
+      const todosParaCount = await Notificacao.find(filtro)
+        .populate('aluno', 'nome turma')
+        .select('motivo tipo tipoMedida numeroSequencial aluno');
+      total = todosParaCount.filter(n => {
+        const aluno = n.aluno || {};
+        return (
+          textRegex.test(n.motivo || '') ||
+          textRegex.test(n.tipo || '') ||
+          textRegex.test(n.tipoMedida || '') ||
+          textRegex.test(n.numeroSequencial || '') ||
+          textRegex.test(aluno.nome || '') ||
+          textRegex.test(aluno.turma || '')
+        );
+      }).length;
+    }
+
     const totalPages = Math.max(1, Math.ceil(total / limit));
-
-    return res.json({ data: dataOut, total, totalPages, page });
+    res.json({ data: docs, page, limit, total, totalPages });
   } catch (err) {
-    console.error('Erro ao buscar notificações (controle):', err);
-    return res.status(500).json({ erro: 'Erro interno do servidor' });
+    console.error('Erro ao buscar notificações para controle:', err);
+    res.status(500).json({ erro: 'Erro interno do servidor' });
   }
 });
 
-// PUT /api/controle-notificacoes/:id/deferir
+// 🔹 PUT - Deferir notificação
 router.put('/:id/deferir', autenticar, async (req, res) => {
   try {
-    const { instituicao, id: avaliador } = req.usuario;
-    const updated = await Notificacao.findOneAndUpdate(
-      { _id: req.params.id, instituicao },
-      { $set: { status: 'deferido', avaliador, comentarioMonitor: '' } },
-      { new: true, projection: { __v: 0 } }
-    ).lean();
-
-    if (!updated) return res.status(404).json({ erro: 'Notificação não encontrada.' });
-    return res.json(updated);
+    const notificacao = await Notificacao.findByIdAndUpdate(
+      req.params.id,
+      { status: 'deferido', avaliador: req.usuario._id, comentarioMonitor: '' },
+      { new: true }
+    );
+    res.json(notificacao);
   } catch (err) {
-    console.error('Erro ao deferir notificação:', err);
-    return res.status(500).json({ erro: 'Erro ao deferir notificação' });
+    res.status(500).json({ erro: 'Erro ao deferir notificação' });
   }
 });
 
-// PUT /api/controle-notificacoes/:id/revisar
+// 🔹 PUT - Solicitar revisão
 router.put('/:id/revisar', autenticar, async (req, res) => {
   try {
-    const { instituicao, id: avaliador } = req.usuario;
-    const { comentario = '' } = req.body;
-
-    const updated = await Notificacao.findOneAndUpdate(
-      { _id: req.params.id, instituicao },
-      { $set: { status: 'revisao_solicitada', avaliador, comentarioMonitor: comentario } },
-      { new: true, projection: { __v: 0 } }
-    ).lean();
-
-    if (!updated) return res.status(404).json({ erro: 'Notificação não encontrada.' });
-    return res.json(updated);
+    const { comentario } = req.body;
+    const notificacao = await Notificacao.findByIdAndUpdate(
+      req.params.id,
+      { status: 'revisao_solicitada', avaliador: req.usuario._id, comentarioMonitor: comentario || '' },
+      { new: true }
+    );
+    res.json(notificacao);
   } catch (err) {
-    console.error('Erro ao solicitar revisão:', err);
-    return res.status(500).json({ erro: 'Erro ao solicitar revisão' });
+    res.status(500).json({ erro: 'Erro ao solicitar revisão' });
   }
 });
 
-// PUT /api/controle-notificacoes/:id/arquivar
+// 🔹 PUT - Arquivar notificação
 router.put('/:id/arquivar', autenticar, async (req, res) => {
   try {
-    const { instituicao, id: avaliador } = req.usuario;
-
-    const updated = await Notificacao.findOneAndUpdate(
-      { _id: req.params.id, instituicao },
-      { $set: { status: 'arquivado', avaliador } },
-      { new: true, projection: { __v: 0 } }
-    ).lean();
-
-    if (!updated) return res.status(404).json({ erro: 'Notificação não encontrada.' });
-    return res.json(updated);
+    const notificacao = await Notificacao.findByIdAndUpdate(
+      req.params.id,
+      { status: 'arquivado', avaliador: req.usuario._id },
+      { new: true }
+    );
+    res.json(notificacao);
   } catch (err) {
-    console.error('Erro ao arquivar notificação:', err);
-    return res.status(500).json({ erro: 'Erro ao arquivar notificação' });
+    res.status(500).json({ erro: 'Erro ao arquivar notificação' });
   }
 });
 
-// PUT /api/controle-notificacoes/:id/reenviar (volta para pendente)
+// 🔹 PUT - Reenviar notificação (voltar ao status pendente)
 router.put('/:id/reenviar', autenticar, async (req, res) => {
   try {
-    const { instituicao } = req.usuario;
-    const updated = await Notificacao.findOneAndUpdate(
-      { _id: req.params.id, instituicao },
-      { $set: { status: 'pendente' } },
-      { new: true, projection: { __v: 0 } }
-    ).lean();
-
-    if (!updated) return res.status(404).json({ erro: 'Notificação não encontrada.' });
-    return res.json({ mensagem: 'Notificação reenviada com sucesso' });
+    const notificacao = await Notificacao.findOne({
+      _id: req.params.id,
+      ...filtroInstituicaoDoUsuario(req.usuario),
+    });
+    if (!notificacao) return res.status(404).json({ erro: 'Notificação não encontrada.' });
+    notificacao.status = 'pendente';
+    await notificacao.save();
+    res.json({ mensagem: 'Notificação reenviada com sucesso' });
   } catch (err) {
     console.error('Erro ao reenviar notificação:', err);
-    return res.status(500).json({ erro: 'Erro ao reenviar notificação' });
+    res.status(500).json({ erro: 'Erro ao reenviar notificação' });
   }
 });
 
-// DELETE /api/controle-notificacoes/:id
+// 🔹 DELETE - Excluir notificação
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    const { instituicao } = req.usuario;
-    const del = await Notificacao.findOneAndDelete({ _id: req.params.id, instituicao });
-    if (!del) return res.status(404).json({ erro: 'Notificação não encontrada.' });
-    return res.json({ mensagem: 'Notificação excluída com sucesso' });
+    await Notificacao.findByIdAndDelete(req.params.id);
+    res.json({ mensagem: 'Notificação excluída com sucesso' });
   } catch (err) {
-    console.error('Erro ao excluir notificação:', err);
-    return res.status(500).json({ erro: 'Erro ao excluir notificação' });
+    res.status(500).json({ erro: 'Erro ao excluir notificação' });
   }
 });
 
