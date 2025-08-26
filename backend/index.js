@@ -51,6 +51,9 @@ const autenticarTokenProfessor = require('./middleware/tokenProfessor');
 // endpoints rápidos do painel
 const dashboardFastRoutes = require('./routes/api/dashboard-fast');
 
+// 🔗 NOVO: rota “Comunicação aos Pais”
+const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
+
 const app = express();
 
 // ===== Helpers uploads/public =====
@@ -179,6 +182,10 @@ app.get('/lista-alunos.html', autenticar, (req, res) => {
 app.get('/painel-professor.html', autenticar, (req, res) => {
   res.sendFile(path.join(staticRoot, 'painel-professor.html'));
 });
+// 🔐 NOVO: página do formulário “Comunicação aos Pais”
+app.get('/comunicacao-pais.html', autenticar, (req, res) => {
+  res.sendFile(path.join(staticRoot, 'comunicacao-pais.html'));
+});
 
 // ===== Rotas =====
 app.use('/api/ficha', autenticar, fichaApiRoutes);
@@ -206,6 +213,9 @@ app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
 app.use('/api/usuarios', acessoProfessorRoute);
 app.use('/api/diagnostico', diagnosticoNotaRoutes);
+
+// 🔗 NOVO: ligar a API de Comunicação aos Pais
+app.use('/api/comunicacao', comunicacaoPaisRoutes);
 
 // endpoints rápidos do painel
 app.use('/api/dashboard-fast', autenticar, dashboardFastRoutes);

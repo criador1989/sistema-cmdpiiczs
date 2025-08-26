@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comunicação aos Pais</title>
+  <meta name="theme-color" content="#8B0000"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <link rel="icon" href="./icons/icon-192x192.png"/>
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png"/>
+  <style>
+    /* ======= ESTILO DO PAINEL (mesmo visual) ======= */
+    :root{
+      --rubi-1:#8B0000; --rubi-2:#B22222;
+      --glass-bg: rgba(255,255,255,.07);
+      --glass-border: rgba(255,255,255,.38);
+      --glass-inner: rgba(255,255,255,.40);
+      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
+      --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de;
+      --line: rgba(255,255,255,.18);
+    }
+    *{box-sizing:border-box} html,body{height:auto}
+    body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:#1e0506;display:block;min-height:100vh;overflow-y:auto}
+    body::before{content:"";position:fixed;inset:0;z-index:0;background:
+      linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
+      linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
+      linear-gradient(0deg, #2a0607, #3c0a0d);filter:saturate(125%)}
+    body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:
+      radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
+      radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
+      radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
+      radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%)}
+    .page{position:relative;z-index:1;width:100%;display:grid;grid-template-columns:280px 1fr;gap:20px;padding:24px;min-height:100vh}
+    @media (max-width:1024px){.page{grid-template-columns:1fr;padding:16px;gap:16px}}
+
+    .sidebar{display:flex;flex-direction:column;gap:10px;height:calc(100dvh - 48px);position:sticky;top:24px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(0,0,0,.35);animation:slideIn .6s ease both}
+    .sb-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid rgba(255,255,255,.12)}
+    .brand{width:36px;height:36px;border-radius:12px;background:var(--rubi-1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.22)}
+    .sb-title{font-weight:700;letter-spacing:.3px}
+    .nav{padding:10px;display:grid;gap:6px}
+    .nav a{text-decoration:none;color:var(--text);font-size:.95rem;padding:10px 12px;border-radius:12px;display:flex;align-items:center;gap:10px;border:1px solid transparent}
+    .nav a:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+    .nav a.active{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+    .sb-foot{margin-top:auto;padding:12px;border-top:1px solid rgba(255,255,255,.12)}
+    .sb-logout{width:100%;border:0;background:var(--rubi-2);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .sb-logout:hover{background:var(--rubi-1)}
+    @media (max-width:1024px){.sidebar{display:none}}
+
+    .content{width:100%}.wrap{width:min(1180px,100%);margin:0 auto 84px}
+    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:24px;backdrop-filter:blur(8px);box-shadow:0 10px 28px rgba(0,0,0,.35);padding:26px 24px 30px}
+
+    h2{margin:0 0 6px;text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.25)}
+    .subtitle{text-align:center;color:var(--text-soft);margin-bottom:18px}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+
+    label{font-weight:700;font-size:.92rem;color:var(--text-soft)}
+    input, textarea, select{width:100%;padding:11px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff}
+    textarea{min-height:120px;resize:vertical}
+
+    .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+    @media (max-width:900px){.row{grid-template-columns:1fr 1fr}}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
+    .btn{appearance:none;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;color:#fff}
+    .btn.primary{background:var(--rubi-2)}
+    .btn.primary:hover{background:var(--rubi-1)}
+    .btn.ghost{background:rgba(255,255,255,.14)}
+    .btn.pdf{background:#0ea5e9}
+
+    .print-area{background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.18);border-radius:16px;padding:16px;margin-top:18px}
+    .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:32px}
+    .sig{position:relative;height:68px}
+    .sig::before{content:"";position:absolute;left:0;right:0;bottom:18px;border-bottom:1px solid rgba(255,255,255,.6)}
+    .sig span{position:absolute;left:0;right:0;bottom:0;text-align:center;color:var(--text-soft);font-size:.9rem}
+
+    @media print{
+      .sidebar, .actions, .bottom-nav { display:none!important }
+      .page{display:block;padding:0}
+      body{background:#fff;color:#000}
+      .card{box-shadow:none;border:0;background:#fff}
+      input,textarea,select{background:#fff;color:#000;border-color:#888}
+    }
+
+    @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Navegação lateral">
+      <div class="sb-head">
+        <div class="brand"></div>
+        <div><div class="sb-title">CMDPII</div><div style="font-size:.8rem;color:var(--text-soft)">Sistema Escolar</div></div>
+      </div>
+      <nav class="nav">
+        <a href="painel.html">🏠 Painel</a>
+        <a href="lista-alunos.html">👥 Alunos</a>
+        <a class="active" href="/notificacoes">🔔 Notificações</a>
+        <a href="estatisticas.html">📉 Relatórios</a>
+        <a href="mensagens.html">✉️ Mensagens</a>
+        <a href="usuarios.html">⚙️ Administração</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+      <div class="sb-foot"><button class="sb-logout" onclick="logout()">🚪 Sair</button></div>
+    </aside>
+
+    <main class="content">
+      <div class="wrap">
+        <section class="card">
+          <h2>Comunicação aos Pais/Responsáveis</h2>
+          <div class="subtitle">Cumprimento de medida disciplinar em contraturno</div>
+
+          <!-- Dados básicos (somente leitura) -->
+          <div class="grid">
+            <div>
+              <label>Aluno</label>
+              <input type="text" id="nomeAluno" readonly>
+            </div>
+            <div>
+              <label>Turma</label>
+              <input type="text" id="turma" readonly>
+            </div>
+            <div>
+              <label>Instituição</label>
+              <input type="text" id="instituicao" readonly>
+            </div>
+            <div>
+              <label>Data da Notificação</label>
+              <input type="date" id="dataNotificacao" readonly>
+            </div>
+          </div>
+
+          <div class="grid" style="margin-top:12px">
+            <div>
+              <label>Medida Disciplinar</label>
+              <input type="text" id="tipoMedida" readonly>
+            </div>
+            <div>
+              <label>Nº da Notificação</label>
+              <input type="text" id="numeroSequencial" readonly>
+            </div>
+          </div>
+
+          <!-- Editáveis -->
+          <div class="row" style="margin-top:16px">
+            <div>
+              <label>Data de Início</label>
+              <input type="date" id="dataInicio">
+            </div>
+            <div>
+              <label>Data de Fim</label>
+              <input type="date" id="dataFim">
+            </div>
+            <div>
+              <label>Hora de Apresentação</label>
+              <input type="time" id="horaApresentacao" value="14:00">
+            </div>
+            <div>
+              <label>Hora de Saída</label>
+              <input type="time" id="horaSaida" value="18:00">
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Observações (opcional)</label>
+            <textarea id="observacao" placeholder="Escreva orientações para os responsáveis, atividades a cumprir, local de apresentação, etc."></textarea>
+          </div>
+
+          <div class="actions">
+            <button class="btn ghost" onclick="history.back()">← Voltar</button>
+            <button class="btn pdf" id="btnPdf" disabled>📄 Gerar PDF</button>
+            <button class="btn primary" id="btnSalvar">💾 Salvar</button>
+            <button class="btn ghost" onclick="window.print()">🖨️ Imprimir</button>
+          </div>
+
+          <!-- Área pensada para impressão -->
+          <div class="print-area" id="previewArea" style="display:none"></div>
+
+          <div class="sig-row">
+            <div class="sig"><span>Assinatura do Responsável</span></div>
+            <div class="sig"><span>Assinatura do Coordenador do Corpo de Alunos</span></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom nav (opcional para mobile) -->
+  <nav class="bottom-nav" aria-label="Navegação inferior" style="position:fixed;inset-inline:0;bottom:0;display:none;z-index:50;backdrop-filter:blur(10px);background:rgba(30,5,6,.6);border-top:1px solid rgba(255,255,255,.14)">
+    <div class="row" style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)">
+      <button onclick="location.href='painel.html'" style="appearance:none;background:transparent;color:#fff;border:0;padding:10px 6px;font-size:.8rem;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center">🏠<span>Painel</span></button>
+      <button onclick="location.href='lista-alunos.html'" style="appearance:none;background:transparent;color:#fff;border:0;padding:10px 6px;font-size:.8rem;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center">👥<span>Alunos</span></button>
+      <button class="active" onclick="location.href='/notificacoes'" style="appearance:none;background:transparent;color:#fff;border:0;padding:10px 6px;font-size:.8rem;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center">🔔<span>Notifs</span></button>
+      <button onclick="location.href='estatisticas.html'" style="appearance:none;background:transparent;color:#fff;border:0;padding:10px 6px;font-size:.8rem;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center">📊<span>Gráficos</span></button>
+      <button onclick="location.href='usuarios.html'" style="appearance:none;background:transparent;color:#fff;border:0;padding:10px 6px;font-size:.8rem;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center">⚙️<span>Perfil</span></button>
+    </div>
+  </nav>
+
+  <script>
+    // ===== Helpers =====
+    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+
+    function showError(msg){
+      let el = document.getElementById('errBanner');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'errBanner';
+        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
+        document.body.appendChild(el);
+      }
+      el.textContent = `Erro: ${msg}`;
+      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
+    }
+
+    function toISODate(d){
+      if(!d) return '';
+      const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const dd=String(x.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    }
+    function fromISODate(s){
+      if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y, (m-1), d);
+    }
+
+    async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    async function init(){
+      const params = new URLSearchParams(location.search);
+      const notifId = params.get('notificacao');            // <- usamos este sempre
+      const comunicIdParam = params.get('comunicacao');     // opcional
+
+      if(!notifId){
+        showError('Parâmetro ?notificacao= é obrigatório.');
+        return;
+      }
+
+      // 1) Garante que exista a comunicação (POST idempotente)
+      let comunic = null;
+      try{
+        // tenta GET (se já existir)
+        let r = await fetch(`/api/comunicacao/${notifId}`, { credentials:'include' });
+        if (r.status === 404) {
+          // cria
+          r = await fetch(`/api/comunicacao/${notifId}`, { method:'POST', credentials:'include' });
+        }
+        if(!r.ok) throw new Error('Não foi possível abrir/criar a comunicação.');
+        comunic = await r.json();
+      }catch(e){
+        showError(e.message||'Falha ao inicializar a comunicação.');
+        return;
+      }
+
+      // 2) Carrega dados da notificação (para exibir Nº sequencial e conferência)
+      let notif = null;
+      try{
+        const r = await fetch(`/api/notificacoes/${notifId}`, { credentials:'include' });
+        if (r.ok) notif = await r.json();
+      }catch{}
+
+      // 3) Preenche UI
+      preencherUI(comunic, notif);
+
+      // 4) Bind botões
+      document.getElementById('btnSalvar').onclick = () => salvar(comunic._id);
+      const btnPdf = document.getElementById('btnPdf');
+      btnPdf.disabled = false;
+      btnPdf.onclick = () => { window.open(`/api/comunicacao/${comunic._id}/pdf`, '_blank'); };
+    }
+
+    function preencherUI(c, n){
+      document.getElementById('nomeAluno').value = c.nomeAluno || (n?.aluno?.nome || '');
+      document.getElementById('turma').value     = c.turma || (n?.aluno?.turma || '');
+      document.getElementById('instituicao').value = c.instituicao || (n?.instituicao || '');
+      document.getElementById('dataNotificacao').value = toISODate(c.dataNotificacao || n?.data || Date.now());
+      document.getElementById('tipoMedida').value = c.tipoMedida || (n?.tipoMedida || n?.tipo || '');
+      document.getElementById('numeroSequencial').value = n?.numeroSequencial || '';
+
+      document.getElementById('observacao').value = c.observacao || '';
+      document.getElementById('dataInicio').value = toISODate(c.dataInicio || Date.now());
+      document.getElementById('dataFim').value    = toISODate(c.dataFim    || Date.now());
+      document.getElementById('horaApresentacao').value = c.horaApresentacao || '14:00';
+      document.getElementById('horaSaida').value        = c.horaSaida || '18:00';
+    }
+
+    async function salvar(id){
+      // validações simples
+      const di = fromISODate(document.getElementById('dataInicio').value);
+      const df = fromISODate(document.getElementById('dataFim').value);
+      if (!di || !df) return showError('Informe as datas de início e fim.');
+      if (df < di) return showError('Data de fim não pode ser anterior ao início.');
+
+      const payload = {
+        observacao: document.getElementById('observacao').value.trim(),
+        dataInicio: document.getElementById('dataInicio').value,
+        dataFim: document.getElementById('dataFim').value,
+        horaApresentacao: document.getElementById('horaApresentacao').value || '14:00',
+        horaSaida: document.getElementById('horaSaida').value || '18:00'
+      };
+
+      try{
+        const r = await fetch(`/api/comunicacao/${id}`, {
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body: JSON.stringify(payload)
+        });
+        if(!r.ok){
+          const j = await r.json().catch(()=> ({}));
+          throw new Error(j.mensagem || 'Erro ao salvar.');
+        }
+        // feedback rápido
+        const ok = document.createElement('div');
+        ok.textContent = 'Salvo com sucesso!';
+        ok.style.cssText = 'position:fixed;right:16px;bottom:16px;background:#0ea5e9;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 10px 20px rgba(0,0,0,.35);z-index:9999';
+        document.body.appendChild(ok);
+        setTimeout(()=>ok.remove(), 1800);
+      }catch(e){
+        showError(e.message);
+      }
+    }
+  </script>
+</body>
+</html>

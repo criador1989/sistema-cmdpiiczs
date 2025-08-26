@@ -1,3 +1,4 @@
+// backend/routes/api/notificacoes.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -9,7 +10,7 @@ const enviarWhatsapp = require('../../utils/twilio');
 const { autenticar } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 
-// mapas de valores
+// ------------------ Mapas de valores ------------------
 const MAPA_NEGATIVOS = {
   'Advertência Escrita': -0.30,
   'Repreensão': -0.50,
@@ -23,41 +24,77 @@ const MAPA_ELOGIOS = {
   mediaAlta: 0.40
 };
 
-// GET fixo precisa vir antes do dinâmico
+// ------------------------------------------------------
+// GET "/novas" (fixo / placeholder)
+// ------------------------------------------------------
 router.get('/novas', autenticar, async (req, res) => {
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
-// GET paginado
+// ------------------------------------------------------
+// GET "/"  (paginado + filtros leves: ?page=&limit=&q=&turma=)
+// - Retorna payload enxuto para listagem. Detalhes via GET /:id
+// ------------------------------------------------------
 router.get('/', autenticar, async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const filtro = { instituicao: req.usuario.instituicao };
+    // paginação
+    const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const limit = Math.max(parseInt(req.query.limit || '10', 10), 1);
 
-    const total = await Notificacao.countDocuments(filtro);
-    const notificacoes = await Notificacao.find(filtro)
-      .sort({ data: -1 })
+    // filtros
+    const instituicao = req.usuario.instituicao;
+    const q = (req.query.q || '').trim();
+    const turma = (req.query.turma || '').trim();
+
+    // filtro base
+    const filtroBase = { instituicao };
+
+    // se veio q/turma, procure alunos primeiro e restrinja por aluno
+    if (q || turma) {
+      const alunoFiltro = { instituicao };
+      if (q) {
+        alunoFiltro.nome = {
+          $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+          $options: 'i'
+        };
+      }
+      if (turma) alunoFiltro.turma = turma;
+
+      const alunos = await Aluno.find(alunoFiltro).select('_id').lean();
+      const ids = alunos.map(a => a._id);
+      if (ids.length === 0) {
+        return res.json({ total: 0, page, totalPages: 0, data: [] });
+      }
+      filtroBase.aluno = { $in: ids };
+    }
+
+    const total = await Notificacao.countDocuments(filtroBase);
+    const totalPages = Math.ceil(total / limit) || 0;
+
+    const notificacoes = await Notificacao.find(filtroBase)
+      .sort({ data: -1, createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .limit(limit)
+      // campos enxutos para a listagem (detalhes via GET /:id)
+      .select('aluno tipo tipoMedida data status valorNumerico notaAnterior notaAtual comentarioMonitor numeroSequencial')
       .populate({
         path: 'aluno',
-        match: { instituicao: req.usuario.instituicao }
-      });
+        select: 'nome turma',
+        match: { instituicao }
+      })
+      .lean();
 
-    const notificacoesComAluno = notificacoes.filter(n => n.aluno);
-
-    res.json({
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / limit),
-      data: notificacoesComAluno
-    });
+    const data = (notificacoes || []).filter(n => n.aluno);
+    res.json({ total, page, totalPages, data });
   } catch (err) {
+    console.error('Erro ao buscar notificações:', err);
     res.status(500).json({ error: 'Erro ao buscar notificações.' });
   }
 });
 
-// GET /api/notificacoes/:id
+// ------------------------------------------------------
+// GET "/:id"  (detalhes)
+// ------------------------------------------------------
 router.get('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -71,11 +108,14 @@ router.get('/:id', autenticar, async (req, res) => {
 
     res.json(notificacao);
   } catch (err) {
+    console.error('Erro ao carregar notificação:', err);
     res.status(500).json({ message: 'Erro ao carregar notificação.' });
   }
 });
 
-// POST /api/notificacoes
+// ------------------------------------------------------
+// POST "/"  (criar notificação)
+// ------------------------------------------------------
 router.post('/', autenticar, async (req, res) => {
   const {
     aluno,
@@ -96,6 +136,7 @@ router.post('/', autenticar, async (req, res) => {
       _id: aluno,
       instituicao: req.usuario.instituicao
     });
+
     if (!alunoRelacionado) {
       return res.status(404).json({ error: 'Aluno não encontrado ou pertence a outra instituição' });
     }
@@ -162,12 +203,11 @@ router.post('/', autenticar, async (req, res) => {
     // ===========================
     //   CÁLCULO DA NOTA (preciso)
     // ===========================
-    // Janelas do dia
     const dayStart = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0);
     const dayEnd   = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1, 0, 0, 0, 0);
 
-    // (A) Recalcular notaAnterior com TODO o histórico até o dia anterior
-    const endOntem = new Date(dayStart.getTime() - 1); // 23:59:59 do dia anterior
+    // (A) Nota até o dia anterior
+    const endOntem = new Date(dayStart.getTime() - 1);
     const notificacoesAntes = await Notificacao.find({
       aluno,
       instituicao: req.usuario.instituicao,
@@ -176,15 +216,14 @@ router.post('/', autenticar, async (req, res) => {
 
     const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
 
-    // (B) Recalcular notaAtual com histórico ATÉ o fim do dia atual + esta nova notificação
-    const endHoje = new Date(dayEnd.getTime() - 1); // 23:59:59 do próprio dia
+    // (B) Nota até o fim do dia atual + esta nova
+    const endHoje = new Date(dayEnd.getTime() - 1);
     const notificacoesAteHoje = await Notificacao.find({
       aluno,
       instituicao: req.usuario.instituicao,
       data: { $lt: dayEnd }
     }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
 
-    // Monta array para cálculo incluindo a notificação nova (ainda não salva)
     const paraCalculoDia = [
       ...notificacoesAteHoje.map(n => ({
         data: n.data, createdAt: n.createdAt, valorNumerico: n.valorNumerico
@@ -244,7 +283,9 @@ Nota atual de comportamento: ${notaAtual.toFixed(2)}.`;
   }
 });
 
-// PUT /api/notificacoes/:id
+// ------------------------------------------------------
+// PUT "/:id"  (atualizar notificação)
+// ------------------------------------------------------
 router.put('/:id', autenticar, async (req, res) => {
   try {
     const notif = await Notificacao.findOne({
@@ -287,7 +328,9 @@ router.put('/:id', autenticar, async (req, res) => {
   }
 });
 
-// PUT /api/notificacoes/:id/reenviar
+// ------------------------------------------------------
+// PUT "/:id/reenviar"  (voltar para pendente)
+// ------------------------------------------------------
 router.put('/:id/reenviar', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -307,7 +350,9 @@ router.put('/:id/reenviar', autenticar, async (req, res) => {
   }
 });
 
-// DELETE /api/notificacoes/:id
+// ------------------------------------------------------
+// DELETE "/:id"
+// ------------------------------------------------------
 router.delete('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({

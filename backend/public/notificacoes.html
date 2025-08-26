@@ -1,303 +1,384 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notificações Disciplinares</title>
-  <meta name="theme-color" content="#941a1d">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icons/icon-192x192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
+    /* ===== look&feel do painel ===== */
+    :root{
+      --rubi-1:#8B0000; --rubi-2:#B22222;
+      --glass-bg: rgba(255,255,255,.07);
+      --glass-border: rgba(255,255,255,.38);
+      --glass-inner: rgba(255,255,255,.40);
+      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
+      --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de;
+      --line: rgba(255,255,255,.18);
     }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:#1e0506;min-height:100vh}
+    body::before{content:"";position:fixed;inset:0;z-index:0;background:
+      linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
+      linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
+      linear-gradient(0deg, #2a0607, #3c0a0d);filter:saturate(125%)}
+    body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:
+      radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
+      radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
+      radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
+      radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%)}
+    .page{position:relative;z-index:1;display:grid;grid-template-columns:280px 1fr;gap:20px;padding:24px}
+    @media (max-width:1024px){.page{grid-template-columns:1fr;padding:16px;gap:16px}}
 
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 1200px;
-      margin: auto;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      animation: fadeInUp 0.8s ease;
-    }
+    .sidebar{display:flex;flex-direction:column;gap:10px;height:calc(100dvh - 48px);position:sticky;top:24px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(0,0,0,.35)}
+    .sb-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid rgba(255,255,255,.12)}
+    .brand{width:36px;height:36px;border-radius:12px;background:var(--rubi-1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.22)}
+    .sb-title{font-weight:700}
+    .nav{padding:10px;display:grid;gap:6px}
+    .nav a{text-decoration:none;color:var(--text);font-size:.95rem;padding:10px 12px;border-radius:12px;display:flex;gap:10px;border:1px solid transparent}
+    .nav a:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+    .nav a.active{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+    .sb-foot{margin-top:auto;padding:12px;border-top:1px solid rgba(255,255,255,.12)}
+    .sb-logout{width:100%;border:0;background:var(--rubi-2);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .sb-logout:hover{background:var(--rubi-1)}
 
-    h2, h3 {
-      text-align: center;
-      color: #941a1d;
-    }
+    .content .wrap{width:min(1180px,100%);margin:0 auto 84px}
+    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:24px;backdrop-filter:blur(8px);box-shadow:0 10px 28px rgba(0,0,0,.35);padding:26px 24px 30px}
+    h2{margin:0 0 16px;text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.25)}
 
-    label {
-      display: block;
-      margin: 20px 0 10px;
-      font-weight: bold;
-    }
+    .filters{display:grid;grid-template-columns:1fr 1fr 150px;gap:12px;margin:12px 0 8px}
+    .filters label{display:block;margin:0 0 6px;font-weight:700;color:var(--text-soft)}
+    .filters input,.filters select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff}
 
-    select, input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 20px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
+    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:8px 0 2px}
+    .counter{color:var(--text-soft);font-size:.9rem}
+    .pager{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .pager button{padding:6px 10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff;border-radius:10px;cursor:pointer}
+    .pager button[disabled]{opacity:.5;cursor:not-allowed}
+    .pager .current{background:var(--rubi-1);border-color:var(--rubi-1)}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
+    /* ====== cards ====== */
+    .list{display:grid;gap:10px;margin-top:8px}
+    .n-card{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);border-radius:16px;box-shadow:var(--glass-shadow);overflow:hidden}
+    .n-head{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 14px;cursor:pointer}
+    .n-title{font-weight:700}
+    .n-sub{color:var(--text-soft);font-size:.9rem}
+    .badge{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.2);font-size:.8rem}
+    .status-pendente{background:rgba(255,180,0,.18)}
+    .status-deferido{background:rgba(16,160,60,.28)}
+    .status-revisao_solicitada{background:rgba(255,210,0,.22)}
+    .status-arquivado{background:rgba(180,180,180,.18)}
+    .n-body{display:none;border-top:1px dashed rgba(255,255,255,.18);padding:12px 14px}
+    .n-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .n-kv{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px}
+    .n-kv b{display:block;color:var(--text-soft);font-size:.85rem;margin-bottom:2px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .actions button,.actions a{margin:0;padding:8px 12px;font-size:14px;border:none;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
+    .pdf-btn{background:#007bff;color:#fff}.edit-btn{background:#ffc107;color:#000}.delete-btn{background:#dc3545;color:#fff}.reenviar-btn{background:#28a745;color:#fff}.comunicacao-btn{background:#0ea5e9;color:#fff}
 
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: center;
-    }
-
-    th {
-      background: #d82327;
-      color: white;
-    }
-
-    .actions button,
-    .actions a {
-      margin: 2px;
-      padding: 6px 12px;
-      font-size: 14px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      text-decoration: none;
-    }
-
-    .delete-btn { background: #dc3545; color: white; }
-    .pdf-btn { background: #007bff; color: white; }
-    .edit-btn { background: #ffc107; color: black; }
-    .reenviar-btn { background: #28a745; color: white; }
-
-    .voltar-btn {
-      background-color: #6c757d;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      display: block;
-      margin: 30px auto 0;
-    }
-
-    .voltar-btn:hover {
-      background-color: #5a6268;
-    }
-
-    .destaque-revisao {
-      background-color: #fff3cd;
-    }
-
-    #paginacao {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    #paginacao button {
-      margin: 0 5px;
-      padding: 5px 12px;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    .skeleton{height:14px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16),rgba(255,255,255,.08));background-size:200% 100%;animation:sk 1.1s linear infinite;border-radius:8px}
+    @keyframes sk{to{background-position:-200% 0}}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Notificações Disciplinares</h2>
-    <label for="filtroTurma">Filtrar por turma:</label>
-    <select id="filtroTurma"><option value="">Todas</option></select>
+  <div class="page">
+    <aside class="sidebar" aria-label="Navegação lateral">
+      <div class="sb-head">
+        <div class="brand"></div>
+        <div><div class="sb-title">CMDPII</div><div style="font-size:.8rem;color:#cfd6de">Sistema Escolar</div></div>
+      </div>
+      <nav class="nav">
+        <a href="painel.html">🏠 Painel</a>
+        <a href="lista-alunos.html">👥 Alunos</a>
+        <a class="active" href="/notificacoes">🔔 Notificações</a>
+        <a href="estatisticas.html">📉 Relatórios</a>
+        <a href="mensagens.html">✉️ Mensagens</a>
+        <a href="usuarios.html">⚙️ Administração</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+      <div class="sb-foot"><button class="sb-logout" onclick="logout()">🚪 Sair</button></div>
+    </aside>
 
-    <label for="pesquisaNome">Pesquisar por nome:</label>
-    <input type="text" id="pesquisaNome" placeholder="Digite o nome do aluno..." />
+    <main class="content">
+      <div class="wrap">
+        <section class="card">
+          <h2>Notificações Disciplinares</h2>
 
-    <div id="tabelasNotificacoes"></div>
+          <div class="filters">
+            <div>
+              <label for="filtroTurma">Filtrar por turma</label>
+              <select id="filtroTurma"><option value="">Todas</option></select>
+            </div>
+            <div>
+              <label for="pesquisaNome">Pesquisar por nome</label>
+              <input type="text" id="pesquisaNome" placeholder="Digite o nome do aluno..." />
+            </div>
+            <div>
+              <label for="porPaginaSel">Itens por página</label>
+              <select id="porPaginaSel"><option selected>10</option><option>20</option><option>30</option></select>
+            </div>
+          </div>
 
-    <div id="paginacao"></div>
+          <div class="toolbar">
+            <div class="counter" id="resumoResultados">—</div>
+            <div id="paginacaoTop" class="pager"></div>
+          </div>
 
-    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+          <div id="lista" class="list">
+            <div class="skeleton" style="height:140px"></div>
+          </div>
+
+          <div id="paginacao" class="pager" style="margin-top:10px"></div>
+
+          <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+        </section>
+      </div>
+    </main>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
+    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+    async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
+
+    function showError(msg){
+      let el = document.getElementById('errBanner');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'errBanner';
+        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
+        document.body.appendChild(el);
+      }
+      el.textContent = `Erro: ${msg}`;
+      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
       const filtroTurma = document.getElementById('filtroTurma');
       const pesquisaNome = document.getElementById('pesquisaNome');
-      const tabelasNotificacoes = document.getElementById('tabelasNotificacoes');
-      const paginacao = document.getElementById('paginacao');
+      const lista = document.getElementById('lista');
+      const pagTop = document.getElementById('paginacaoTop');
+      const pagBottom = document.getElementById('paginacao');
+      const porPaginaSel = document.getElementById('porPaginaSel');
+      const resumo = document.getElementById('resumoResultados');
 
-      let lista = [];
-      let paginaAtual = 1;
-      const porPagina = 10;
+      let pagina = 1;
+      let porPagina = Number(porPaginaSel.value);
       let totalPaginas = 1;
+      let totalItens = 0;
 
-      async function carregarNotificacoes() {
+      // boot
+      carregar();
+
+      async function carregar() {
         try {
-          const resposta = await fetch(`/api/notificacoes?page=${paginaAtual}&limit=${porPagina}`, {
-            credentials: 'include'
+          const params = new URLSearchParams({
+            page: String(pagina),
+            limit: String(porPagina),
           });
-          if (!resposta.ok) throw new Error();
-          const resultado = await resposta.json();
-          lista = resultado.data;
-          totalPaginas = resultado.totalPages;
-          renderizar();
-          renderizarPaginacao();
-        } catch {
-          alert('Erro ao carregar notificações.');
+          if (filtroTurma.value) params.set('turma', filtroTurma.value);
+          if (pesquisaNome.value.trim()) params.set('q', pesquisaNome.value.trim());
+
+          lista.innerHTML = `<div class="skeleton" style="height:120px"></div>`;
+
+          const r = await fetch(`/api/notificacoes?${params.toString()}`, { credentials:'include', cache:'no-store' });
+          if (r.status === 401) { location.href='./login.html'; return; }
+          const j = await r.json();
+
+          // suporta {data,total,totalPages} ou array simples
+          const data = Array.isArray(j) ? j : (j.data || []);
+          totalPaginas = Number(j.totalPages ?? 1);
+          totalItens   = Number(j.total ?? data.length);
+
+          renderTurmasDoLote(data);
+          renderCards(data);
+          renderPaginacao();
+
+        } catch (e) {
+          console.error(e);
+          showError('Falha ao carregar notificações.');
+          lista.innerHTML = `<div style="opacity:.7;text-align:center;padding:24px">Erro ao carregar.</div>`;
         }
       }
 
-      async function gerarPDF(id) {
-        try {
-          const resposta = await fetch(`/api/pdf/${id}`, {
-            method: 'POST',
-            credentials: 'include'
-          });
-          if (!resposta.ok) throw new Error('Erro ao gerar PDF');
-          const blob = await resposta.blob();
-          const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-        } catch (erro) {
-          alert('Erro ao gerar PDF.');
-        }
-      }
-
-      async function reenviarNotificacao(id) {
-        try {
-          const resposta = await fetch(`/api/notificacoes/${id}/reenviar`, {
-            method: 'PUT',
-            credentials: 'include'
-          });
-          const json = await resposta.json();
-          if (resposta.ok) carregarNotificacoes();
-          else alert(json.message || 'Erro ao reenviar.');
-        } catch {
-          alert('Erro ao reenviar a notificação.');
-        }
-      }
-
-      function renderizarPaginacao() {
-        paginacao.innerHTML = '';
-        for (let i = 1; i <= totalPaginas; i++) {
-          const btn = document.createElement('button');
-          btn.textContent = i;
-          btn.disabled = i === paginaAtual;
-          btn.onclick = () => {
-            paginaAtual = i;
-            carregarNotificacoes();
-          };
-          paginacao.appendChild(btn);
-        }
-      }
-
-      function renderizar() {
-        const termo = pesquisaNome.value.toLowerCase();
-        const turmaSelecionada = filtroTurma.value;
-        const turmas = new Set();
-
-        tabelasNotificacoes.innerHTML = '';
-
-        lista.forEach(n => {
-          if (!n.aluno) return;
-
-          const turma = n.aluno.turma;
-          const nome = n.aluno.nome.toLowerCase();
-
-          if (!nome.includes(termo)) return;
-          if (turmaSelecionada && turmaSelecionada !== turma) return;
-
-          turmas.add(turma);
-
-          const divTurma = document.getElementById('turma-' + turma) || document.createElement('div');
-          if (!divTurma.id) {
-            divTurma.id = 'turma-' + turma;
-            divTurma.innerHTML = `<h3>${turma}</h3><table class="table"><thead><tr><th>Aluno</th><th>Motivo</th><th>Tipo</th><th>Medida</th><th>Valor</th><th>Nota</th><th>Data</th><th>Status</th><th>Comentário</th><th>Ações</th></tr></thead><tbody></tbody></table>`;
-            tabelasNotificacoes.appendChild(divTurma);
-          }
-
-          const tbody = divTurma.querySelector('tbody');
-          const tr = document.createElement('tr');
-          if (n.status === 'revisao_solicitada') tr.classList.add('destaque-revisao');
-
-          const statusLabel = {
-            'pendente': '⏳ Pendente',
-            'deferido': '✅ Deferido',
-            'revisao_solicitada': '🔁 Devolvida',
-            'arquivado': '📁 Arquivado'
-          }[n.status] || '—';
-
-          const acoes = [
-            `<button class="pdf-btn" onclick="gerarPDF('${n._id}')">PDF</button>`,
-            `<a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>`,
-            `<button class="delete-btn" onclick="excluirNotificacao('${n._id}')">Excluir</button>`
-          ];
-
-          if (n.status === 'revisao_solicitada') {
-            acoes.push(`<button class="reenviar-btn" onclick="reenviarNotificacao('${n._id}')">Reenviar</button>`);
-          }
-
-          tr.innerHTML = `
-            <td>${n.aluno.nome}</td>
-            <td>${n.motivo}</td>
-            <td>${n.tipo}</td>
-            <td>${n.tipoMedida}</td>
-            <td>${n.valorNumerico?.toFixed(2) || '—'}</td>
-            <td>${n.notaAnterior?.toFixed(2) || '—'} → ${n.notaAtual?.toFixed(2) || '—'}</td>
-            <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
-            <td>${statusLabel}</td>
-            <td>${n.comentarioMonitor || '—'}</td>
-            <td class="actions">${acoes.join(' ')}</td>
-          `;
-
-          tbody.appendChild(tr);
-        });
-
+      function renderTurmasDoLote(data){
+        const turmas = new Set((data||[]).map(n => n?.aluno?.turma).filter(Boolean));
+        // mantém opção selecionada
+        const cur = filtroTurma.value;
         filtroTurma.innerHTML = '<option value="">Todas</option>';
-        Array.from(turmas).sort().forEach(turma => {
+        Array.from(turmas).sort().forEach(t => {
           const opt = document.createElement('option');
-          opt.value = turma;
-          opt.textContent = turma;
+          opt.value = t; opt.textContent = t;
+          if (t === cur) opt.selected = true;
           filtroTurma.appendChild(opt);
         });
       }
 
-      filtroTurma.addEventListener('change', renderizar);
-      pesquisaNome.addEventListener('input', renderizar);
+      function statusPill(status){
+        const s = String(status||'').toLowerCase();
+        const map = { pendente:'⏳ Pendente', deferido:'✅ Deferido', revisao_solicitada:'🔁 Devolvida', arquivado:'📁 Arquivado' };
+        const cls = `badge status-${s}`;
+        return `<span class="${cls}">${map[s] || '—'}</span>`;
+      }
 
-      window.excluirNotificacao = async function (id) {
+      function headMarkup(n){
+        const nome = n.aluno?.nome || '—';
+        const turma = n.aluno?.turma || '—';
+        const medida = n.tipoMedida || n.tipo || '—';
+        const data   = n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—';
+        return `
+          <div>
+            <div class="n-title">${nome}</div>
+            <div class="n-sub">${turma} • ${medida} • ${data}</div>
+          </div>
+          <div>${statusPill(n.status)}</div>
+          <div class="badge">Nota: ${(n.notaAnterior?.toFixed?.(2) || '—')} → ${(n.notaAtual?.toFixed?.(2) || '—')}</div>
+        `;
+      }
+
+      function renderCards(data){
+        if (!data.length) {
+          lista.innerHTML = `<div style="opacity:.7;text-align:center;padding:24px">Nenhuma notificação encontrada.</div>`;
+          resumo.textContent = `0–0 de 0 resultado(s)`;
+          pagTop.innerHTML = pagBottom.innerHTML = '';
+          return;
+        }
+
+        const frag = document.createDocumentFragment();
+        data.forEach(n => {
+          const wrap = document.createElement('div');
+          wrap.className = 'n-card';
+
+          const head = document.createElement('div');
+          head.className = 'n-head';
+          head.innerHTML = headMarkup(n);
+
+          const body = document.createElement('div');
+          body.className = 'n-body';
+          body.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
+
+          // abrir/fechar + lazy load detalhes
+          let loaded = false;
+          head.addEventListener('click', async () => {
+            const isOpen = body.style.display === 'block';
+            if (isOpen) { body.style.display = 'none'; return; }
+
+            body.style.display = 'block';
+            if (loaded) return;
+
+            try{
+              const r = await fetch(`/api/notificacoes/${n._id}`, { credentials:'include', cache:'no-store' });
+              if (!r.ok) throw new Error('Falha ao carregar detalhes');
+              const det = await r.json();
+
+              const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g,'');
+              const deferida = det.deferido === true || String(det.status||'').toLowerCase()==='deferido' || String(det.status||'').toLowerCase()==='aprovada';
+              const showCom = deferida && (med==='AIA' || med==='AECDE');
+
+              body.innerHTML = `
+                <div class="n-row">
+                  <div class="n-kv"><b>Motivo</b>${det.motivo || '—'}</div>
+                  <div class="n-kv"><b>Observação</b>${det.observacao || '—'}</div>
+                  <div class="n-kv"><b>Valor</b>${typeof det.valorNumerico==='number' ? det.valorNumerico.toFixed(2) : '—'}</div>
+                  <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
+                  <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
+                  <div class="n-kv"><b>Inciso</b>${det.inciso || '—'}</div>
+                </div>
+                <div class="actions">
+                  <button class="pdf-btn" onclick="gerarPDF('${det._id}')">PDF</button>
+                  <a class="edit-btn" href="editar-notificacao.html?id=${det._id}">Editar</a>
+                  <button class="delete-btn" onclick="excluirNotificacao('${det._id}')">Excluir</button>
+                  ${det.status==='revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
+                  ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
+                </div>
+              `;
+              loaded = true;
+            }catch(e){
+              console.error(e);
+              body.innerHTML = `<div style="opacity:.8">Erro ao carregar detalhes.</div>`;
+            }
+          });
+
+          wrap.appendChild(head);
+          wrap.appendChild(body);
+          frag.appendChild(wrap);
+        });
+
+        lista.innerHTML = '';
+        lista.appendChild(frag);
+
+        const ini = (totalItens===0) ? 0 : ((pagina-1)*porPagina + 1);
+        const fim = Math.min(totalItens || (pagina*porPagina), ini + data.length - 1);
+        resumo.textContent = `${ini}–${fim} de ${totalItens || data.length} resultado(s)`;
+      }
+
+      function renderPaginacao(){
+        const make = (el) => {
+          el.innerHTML = '';
+          const add = (label, goTo, disabled=false, current=false) => {
+            const btn = document.createElement('button');
+            btn.textContent = label;
+            if (current) btn.classList.add('current');
+            btn.disabled = disabled;
+            btn.onclick = () => { pagina = goTo; carregar(); };
+            el.appendChild(btn);
+          };
+          add('« Primeiro', 1, pagina===1);
+          add('‹ Anterior', Math.max(1, pagina-1), pagina===1);
+          const start = Math.max(1, pagina-3);
+          const end = Math.min(totalPaginas, start+6);
+          for(let i=start;i<=end;i++) add(String(i), i, false, i===pagina);
+          add('Próximo ›', Math.min(totalPaginas, pagina+1), pagina===totalPaginas);
+          add('Último »', totalPaginas, pagina===totalPaginas);
+        };
+        make(pagTop);
+        make(pagBottom);
+      }
+
+      // Ações públicas (iguais às anteriores)
+      async function gerarPDF(id) {
+        try {
+          const r = await fetch(`/api/pdf/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
+          if (!r.ok) throw new Error('Erro ao gerar PDF');
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch { showError('Erro ao gerar PDF.'); }
+      }
+      async function reenviarNotificacao(id) {
+        try {
+          const r = await fetch(`/api/notificacoes/${id}/reenviar`, { method:'PUT', credentials:'include', cache:'no-store' });
+          const j = await r.json();
+          if (r.ok) carregar(); else showError(j.message || 'Erro ao reenviar.');
+        } catch { showError('Erro ao reenviar a notificação.'); }
+      }
+      async function excluirNotificacao(id) {
         if (!confirm('Deseja excluir esta notificação?')) return;
         try {
-          const res = await fetch(`/api/notificacoes/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-          });
-          if (res.ok) carregarNotificacoes();
-          else alert('Erro ao excluir a notificação.');
-        } catch {
-          alert('Erro ao conectar com o servidor.');
-        }
-      };
-
-      window.reenviarNotificacao = reenviarNotificacao;
+          const r = await fetch(`/api/notificacoes/${id}`, { method:'DELETE', credentials:'include', cache:'no-store' });
+          if (r.ok) carregar(); else showError('Erro ao excluir a notificação.');
+        } catch { showError('Erro ao conectar com o servidor.'); }
+      }
+      async function abrirComunicacao(id) {
+        try {
+          const resp = await fetch(`/api/comunicacao/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
+          if (!resp.ok) throw new Error('Falha ao iniciar comunicação');
+          const comunic = await resp.json();
+          window.location.href = `/comunicacao-pais.html?comunicacao=${comunic._id}&notificacao=${id}`;
+        } catch (e) { showError('Erro ao abrir comunicação.'); console.error(e); }
+      }
       window.gerarPDF = gerarPDF;
+      window.reenviarNotificacao = reenviarNotificacao;
+      window.excluirNotificacao = excluirNotificacao;
+      window.abrirComunicacao = abrirComunicacao;
 
-      carregarNotificacoes();
+      // eventos
+      const debounce = (fn,ms=250)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+      pesquisaNome.addEventListener('input', debounce(()=>{ pagina = 1; carregar(); }, 200));
+      filtroTurma.addEventListener('change', ()=>{ pagina = 1; carregar(); });
+      porPaginaSel.addEventListener('change', ()=>{ porPagina = Number(porPaginaSel.value); pagina = 1; carregar(); });
     });
   </script>
 </body>
