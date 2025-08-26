@@ -1,3 +1,4 @@
+// backend/models/Notificacao.js
 const mongoose = require('mongoose');
 
 const notificacaoSchema = new mongoose.Schema({
@@ -7,7 +8,7 @@ const notificacaoSchema = new mongoose.Schema({
     required: false
   },
 
-  // NOVO: natureza do registro (mantém compatibilidade: default indisciplina)
+  // natureza do registro
   natureza: {
     type: String,
     enum: ['indisciplina', 'elogio'],
@@ -16,16 +17,15 @@ const notificacaoSchema = new mongoose.Schema({
   },
 
   // rótulos exibidos
-  tipo: { type: String, required: true },       // ex.: 'Advertência Escrita' ou 'Elogio'
+  tipo: { type: String, required: true },       // ex.: 'Advertência Escrita' | 'Elogio'
   motivo: { type: String, required: true },     // ato de indisciplina OU descrição do elogio
-  tipoMedida: { type: String, required: true }, // ex.: 'A.I.A' ou 'Elogio'
+  tipoMedida: { type: String, required: true }, // ex.: 'A.I.A' | 'A.E.C.D.E' | 'Elogio'
 
   // valor usado no cálculo (negativo p/ medidas, positivo p/ elogios)
   valorNumerico: { type: Number, required: true },
 
   quantidadeDias: { type: Number, default: 1 },
 
-  // observação (mantive seu nome singular)
   observacao: { type: String },
 
   data: { type: Date, required: true },
@@ -38,11 +38,12 @@ const notificacaoSchema = new mongoose.Schema({
   inciso: { type: String },
   classificacaoRegulamento: { type: String },
 
-  numeroSequencial: { type: String, required: true, unique: true },
+  // ⚠️ agora exclusivo por instituicao + numeroSequencial (não global)
+  numeroSequencial: { type: String, required: true },
 
   instituicao: { type: String, required: true },
 
-  // 🔽 Fluxo de aprovação/monitor
+  // fluxo de aprovação
   status: {
     type: String,
     enum: ['pendente', 'deferido', 'revisao_solicitada', 'arquivado'],
@@ -53,7 +54,7 @@ const notificacaoSchema = new mongoose.Schema({
   comentarioRevisao: { type: String },
   devolvidoPeloAluno: { type: Boolean, default: false },
 
-  // NOVO: classificador para elogios (facilita relatórios)
+  // classificador para elogios
   tipoElogio: {
     type: String,
     enum: ['elogioVerbal', 'boletimInternoIndividual', 'boletimInternoColetivo', 'mediaAlta', null],
@@ -63,7 +64,22 @@ const notificacaoSchema = new mongoose.Schema({
   timestamps: true
 });
 
+/* ==================== ÍNDICES ==================== */
+
+// históricos por aluno/data
 notificacaoSchema.index({ aluno: 1, data: 1 });
 notificacaoSchema.index({ instituicao: 1, aluno: 1, natureza: 1 });
+notificacaoSchema.index({ instituicao: 1, aluno: 1, data: 1, createdAt: 1 });
+
+// listas/paginação no controle
+notificacaoSchema.index({ instituicao: 1, status: 1, createdAt: -1 });
+notificacaoSchema.index({ instituicao: 1, createdAt: -1 });
+
+// busca por número
+notificacaoSchema.index({ instituicao: 1, numeroSequencial: 1 }, { unique: true });
+
+// (opcional) busca textual no controle/lista
+// habilite se usar $text: { $search: q } nas consultas:
+// notificacaoSchema.index({ motivo: 'text', tipo: 'text', tipoMedida: 'text' });
 
 module.exports = mongoose.model('Notificacao', notificacaoSchema);
