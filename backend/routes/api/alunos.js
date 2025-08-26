@@ -1,16 +1,45 @@
 const express = require('express');
 const router = express.Router();
 
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
 const { autenticar } = require('../../middleware/autenticacao');
 const autenticarTokenProfessor = require('../../middleware/tokenProfessor');
-const calcularNotaTSMD = require('../../utils/calculoNota'); // cálculo oficial
+const calcularNotaTSMD = require('../../utils/calculoNota');
 const Log = require('../../models/Log');
+const sharp = require('sharp');
+
+// ---------- Upload de foto (multer) ----------
+const pastaAlunos = path.join(__dirname, '../../uploads/alunos');
+fs.mkdirSync(pastaAlunos, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, pastaAlunos),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '') || '.jpg';
+    cb(null, `${req.params.id || 'aluno'}-${Date.now()}${ext}`);
+  }
+});
+const fileFilter = (req, file, cb) => {
+  if (!file?.mimetype?.startsWith('image/')) {
+    return cb(new Error('Envie um arquivo de imagem.'), false);
+  }
+  cb(null, true);
+};
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 8 * 1024 * 1024 } // 8MB
+});
 
 // ---------- Helpers ----------
-const BASE_SELECT_LISTA = 'nome turma foto'; // mínimo necessário
+const BASE_SELECT_LISTA = 'nome turma foto';
+
 function anexarThumbNaPlain(a) {
   return { ...a, fotoThumbUrl: `/api/imagens/thumb/${a._id}` };
 }
@@ -18,7 +47,7 @@ function anexarThumb(alunoDoc) {
   const obj = alunoDoc.toObject ? alunoDoc.toObject() : alunoDoc;
   return anexarThumbNaPlain(obj);
 }
-// Converte "DD/MM/AAAA" -> Date (meia-noite). Se já for Date/ISO, retorna como veio.
+
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
     const [dd, mm, yyyy] = d.trim().split('/');
@@ -26,29 +55,159 @@ function parsePtBrDateToDate(d) {
   }
   return d;
 }
+
 async function calcularNotaComportamento(alunoId) {
   const aluno = await Aluno.findById(alunoId).select('dataEntrada');
   const notificacoes = await Notificacao.find({ aluno: alunoId }).select('data valorNumerico createdAt');
   return calcularNotaTSMD(aluno?.dataEntrada, new Date(), notificacoes);
 }
 
-// ============= LISTAS =============
+// ===================== NOVAS ROTAS RÁPIDAS (ADMIN) =====================
 
-// GET /api/alunos  -> aceita ?semNota=1 para lista rápida
+// GET /api/alunos/turmas
+router.get('/turmas', autenticar, async (req, res) => {
+  try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    const turmas = await Aluno.distinct('turma', { instituicao: req.usuario.instituicao });
+    turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    res.set('Cache-Control', 'private, max-age=120');
+    res.json({ turmas });
+  } catch (e) {
+    console.error('Erro GET /api/alunos/turmas:', e);
+    res.status(500).json({ message: 'Erro ao listar turmas' });
+  }
+});
+
+// GET /api/alunos/turma/:turma?pagina=1&q=
+router.get('/turma/:turma', autenticar, async (req, res) => {
+  try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const LIMITE = 48;
+    const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
+    const termo = (req.query.q || '').trim();
+    const turma = req.params.turma.trim();
+
+    const filtro = { instituicao: req.usuario.instituicao, turma };
+    if (termo) filtro.nome = { $regex: termo, $options: 'i' };
+
+    const [items, total] = await Promise.all([
+      Aluno.find(filtro).select('_id nome turma').sort({ nome: 1 })
+        .skip((pagina - 1) * LIMITE).limit(LIMITE).lean(),
+      Aluno.countDocuments(filtro)
+    ]);
+
+    res.set('Cache-Control', 'private, max-age=30');
+    res.json({ items, pagina, total, paginas: Math.ceil(total / LIMITE) });
+  } catch (error) {
+    console.error('Erro GET /api/alunos/turma:', error);
+    res.status(500).json({ message: 'Erro ao listar alunos', error });
+  }
+});
+
+// GET /api/alunos/:id/detalhes
+router.get('/:id/detalhes', autenticar, async (req, res) => {
+  try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const id = req.params.id;
+    const aluno = await Aluno.findOne({ _id: id, instituicao: req.usuario.instituicao })
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoCaminho instituicao')
+      .lean();
+
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    const notificacoes = await Notificacao.find({ aluno: id })
+      .select('data tipo valorNumerico')
+      .sort({ data: 1 })
+      .lean();
+
+    const notaAtual = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoes);
+
+    res.set('Cache-Control', 'private, max-age=15');
+    res.json({ aluno, notaAtual, notificacoes });
+  } catch (error) {
+    console.error('Erro GET /api/alunos/:id/detalhes:', error);
+    res.status(500).json({ message: 'Erro ao obter detalhes', error });
+  }
+});
+
+// ===================== ROTAS RÁPIDAS (PROFESSOR) =====================
+
+router.get('/professor/turmas', autenticarTokenProfessor, async (req, res) => {
+  try {
+    const turmas = await Aluno.distinct('turma', { instituicao: req.professor.instituicao });
+    turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    res.set('Cache-Control', 'private, max-age=120');
+    res.json({ turmas });
+  } catch (e) {
+    console.error('Erro GET /api/alunos/professor/turmas:', e);
+    res.status(500).json({ message: 'Erro ao listar turmas' });
+  }
+});
+
+router.get('/professor/turma/:turma', autenticarTokenProfessor, async (req, res) => {
+  try {
+    const LIMITE = 48;
+    const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
+    const termo = (req.query.q || '').trim();
+    const turma = req.params.turma.trim();
+
+    const filtro = { instituicao: req.professor.instituicao, turma };
+    if (termo) filtro.nome = { $regex: termo, $options: 'i' };
+
+    const [items, total] = await Promise.all([
+      Aluno.find(filtro).select('_id nome turma').sort({ nome: 1 })
+        .skip((pagina - 1) * LIMITE).limit(LIMITE).lean(),
+      Aluno.countDocuments(filtro)
+    ]);
+
+    res.set('Cache-Control', 'private, max-age=30');
+    res.json({ items, pagina, total, paginas: Math.ceil(total / LIMITE) });
+  } catch (error) {
+    console.error('Erro GET /api/alunos/professor/turma:', error);
+    res.status(500).json({ message: 'Erro ao listar alunos', error });
+  }
+});
+
+router.get('/professor/:id/detalhes', autenticarTokenProfessor, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const aluno = await Aluno.findOne({ _id: id, instituicao: req.professor.instituicao })
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoCaminho instituicao')
+      .lean();
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    const notificacoes = await Notificacao.find({ aluno: id })
+      .select('data tipo valorNumerico')
+      .sort({ data: 1 })
+      .lean();
+
+    const notaAtual = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoes);
+    res.set('Cache-Control', 'private, max-age=15');
+    res.json({ aluno, notaAtual, notificacoes });
+  } catch (error) {
+    console.error('Erro GET /api/alunos/professor/:id/detalhes:', error);
+    res.status(500).json({ message: 'Erro ao obter detalhes', error });
+  }
+});
+
+// ===================== ROTAS ORIGINAIS =====================
+
 router.get('/', autenticar, async (req, res) => {
   try {
-    const semNota = String(req.query.semNota || '').toLowerCase() === '1' || String(req.query.semNota || '').toLowerCase() === 'true';
+    const semNota = ['1','true'].includes(String(req.query.semNota || '').toLowerCase());
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const filtro = { instituicao: req.usuario.instituicao };
     const turma = req.query.turma;
     if (turma) filtro.turma = turma;
 
     if (semNota) {
-      // ✅ Lista super rápida: sem calcular notas, lean e payload mínimo
       const alunos = await Aluno.find(filtro).select(BASE_SELECT_LISTA).lean();
       return res.json(alunos.map(anexarThumbNaPlain));
     }
 
-    // (modo antigo) calcula nota de todos — pode ser pesado
     const alunos = await Aluno.find(filtro).select('nome turma foto instituicao');
     const alunosComNota = await Promise.all(
       alunos.map(async (aluno) => {
@@ -64,10 +223,9 @@ router.get('/', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/alunos/professor -> idem, aceita ?semNota=1 e ?turma=
 router.get('/professor', autenticarTokenProfessor, async (req, res) => {
   try {
-    const semNota = String(req.query.semNota || '').toLowerCase() === '1' || String(req.query.semNota || '').toLowerCase() === 'true';
+    const semNota = ['1','true'].includes(String(req.query.semNota || '').toLowerCase());
     const filtro = { instituicao: req.professor.instituicao };
     const turma = req.query.turma;
     if (turma) filtro.turma = turma;
@@ -92,9 +250,9 @@ router.get('/professor', autenticarTokenProfessor, async (req, res) => {
   }
 });
 
-// GET /api/alunos/:id/nota -> calcula só a nota deste aluno (usado no modal)
 router.get('/:id/nota', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
     const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.usuario.instituicao }).select('_id');
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
     const nota = await calcularNotaComportamento(aluno._id);
@@ -105,7 +263,6 @@ router.get('/:id/nota', autenticar, async (req, res) => {
   }
 });
 
-// (opcional) GET /api/alunos/professor/:id/nota -> se usar fluxo com token de professor
 router.get('/professor/:id/nota', autenticarTokenProfessor, async (req, res) => {
   try {
     const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.professor.instituicao }).select('_id');
@@ -118,11 +275,10 @@ router.get('/professor/:id/nota', autenticarTokenProfessor, async (req, res) => 
   }
 });
 
-// ===== ROTAS DE APOIO (mantidas) =====
-
-// GET /api/alunos/baixorendimento
+// apoio
 router.get('/baixorendimento', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
     const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao');
     const alunosFiltrados = [];
     for (const aluno of alunos) {
@@ -137,9 +293,9 @@ router.get('/baixorendimento', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/alunos/insuficientes
 router.get('/insuficientes', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
     const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao');
     const alunosFiltrados = [];
     for (const aluno of alunos) {
@@ -157,6 +313,8 @@ router.get('/insuficientes', autenticar, async (req, res) => {
 // POST /api/alunos
 router.post('/', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const {
       nome, turma, dataEntrada, nascimento, telefone, endereco,
       nomePai, nomeMae, foto
@@ -166,7 +324,6 @@ router.post('/', autenticar, async (req, res) => {
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
 
-    // ✅ Normaliza dataEntrada se vier como "DD/MM/AAAA"
     const dataEntradaNormalizada = parsePtBrDateToDate(dataEntrada);
 
     const novoAluno = new Aluno({
@@ -201,6 +358,7 @@ router.post('/', autenticar, async (req, res) => {
 // PUT /api/alunos/transferir
 router.put('/transferir', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ mensagem: 'Não autenticado.' });
     const { ids, novaTurma } = req.body;
     if (!Array.isArray(ids) || !novaTurma) {
       return res.status(400).json({ mensagem: 'IDs e nova turma são obrigatórios.' });
@@ -221,9 +379,68 @@ router.put('/transferir', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/alunos/:id
+// ===== Upload de foto do aluno (OTIMIZADO) =====
+router.put('/:id/foto', autenticar, upload.single('foto'), async (req, res) => {
+  try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    const { id } = req.params;
+
+    if (!req.file) return res.status(400).json({ message: 'Envie a imagem no campo "foto".' });
+
+    const aluno = await Aluno.findOne({ _id: id, instituicao: req.usuario.instituicao });
+    if (!aluno) {
+      try { if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch {}
+      return res.status(404).json({ message: 'Aluno não encontrado.' });
+    }
+
+    // apaga foto antiga
+    if (aluno.foto) {
+      const caminhoAntigo = path.join(__dirname, '../../', aluno.foto.replace(/^\//, ''));
+      try { if (fs.existsSync(caminhoAntigo)) fs.unlinkSync(caminhoAntigo); } catch {}
+    }
+
+    // otimiza imagem recebida
+    const origPath = req.file.path;
+    const outExt = '.jpg';
+    const outName = `${id}-${Date.now()}${outExt}`;
+    const outAbs = path.join(path.dirname(origPath), outName);
+
+    try {
+      await sharp(origPath)
+        .rotate()
+        .resize({ width: 1800, height: 1800, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 82 })
+        .toFile(outAbs);
+      try { fs.unlinkSync(origPath); } catch {}
+    } catch (err) {
+      console.warn('Falha ao otimizar imagem, usando original:', err?.message || err);
+      fs.renameSync(origPath, outAbs);
+    }
+
+    const publicPath = `/uploads/alunos/${path.basename(outAbs)}`;
+    aluno.foto = publicPath;
+    await aluno.save();
+
+    // invalida caches de thumb/preview
+    const cacheDir = path.join(__dirname, '../../public/uploads/alunos', String(aluno._id));
+    try {
+      if (fs.existsSync(cacheDir)) {
+        for (const f of fs.readdirSync(cacheDir)) {
+          try { fs.unlinkSync(path.join(cacheDir, f)); } catch {}
+        }
+      }
+    } catch {}
+
+    return res.json({ ok: true, message: 'Foto atualizada com sucesso.', foto: publicPath });
+  } catch (err) {
+    console.error('Erro ao atualizar foto:', err);
+    return res.status(500).json({ message: 'Erro ao atualizar a foto do aluno' });
+  }
+});
+
 router.get('/:id', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
     const aluno = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
@@ -236,19 +453,18 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-// PUT /api/alunos/:id  (ajustado p/ normalizar dataEntrada e recalcular nota)
 router.put('/:id', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const dadosAtualizados = { ...req.body };
 
-    // Normaliza turma (como já fazia)
     if (dadosAtualizados.turma) {
       dadosAtualizados.turma = dadosAtualizados.turma
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
     }
 
-    // ✅ Normaliza dataEntrada quando vier como "DD/MM/AAAA"
     if (dadosAtualizados.dataEntrada !== undefined) {
       dadosAtualizados.dataEntrada = parsePtBrDateToDate(dadosAtualizados.dataEntrada);
     }
@@ -263,26 +479,21 @@ router.put('/:id', autenticar, async (req, res) => {
     const mudouDataEntrada = dadosAtualizados.dataEntrada !== undefined &&
       String(new Date(dadosAtualizados.dataEntrada).getTime()) !== String(new Date(alunoAntes.dataEntrada).getTime());
 
-    // Atualiza o aluno
     const alunoAtualizado = await Aluno.findOneAndUpdate(
       { _id: req.params.id, instituicao: req.usuario.instituicao },
       dadosAtualizados,
       { new: true }
     );
 
-    // Decide se recalcula: mudou dataEntrada OU query ?recalcular=1|true
     const force = String(req.query.recalcular || '').toLowerCase();
     const forcarRecalculo = force === '1' || force === 'true';
 
     if (mudouDataEntrada || forcarRecalculo) {
-      // Busca todas as notificações do aluno
       const notificacoes = await Notificacao.find({ aluno: alunoAtualizado._id })
         .select('data valorNumerico createdAt')
         .sort({ data: 1, createdAt: 1 });
 
-      // Recalcula a nota com TSMD por DIAS ÚTEIS a partir da nova data de entrada
       const nota = calcularNotaTSMD(alunoAtualizado.dataEntrada, new Date(), notificacoes);
-
       alunoAtualizado.comportamento = nota;
       await alunoAtualizado.save();
     }
@@ -301,14 +512,20 @@ router.put('/:id', autenticar, async (req, res) => {
   }
 });
 
-// DELETE /api/alunos/:id
 router.delete('/:id', autenticar, async (req, res) => {
   try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const aluno = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
     });
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    if (aluno.foto) {
+      const caminho = path.join(__dirname, '../../', aluno.foto.replace(/^\//, ''));
+      try { if (fs.existsSync(caminho)) fs.unlinkSync(caminho); } catch {}
+    }
 
     await Promise.all([
       Notificacao.deleteMany({ aluno: aluno._id }),

@@ -99,7 +99,7 @@
 
     .obs,.notif{
       border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,.06); position:relative;
+      box-shadow:0 6px 16px rgba(0,0,0,.06); posição:relative;
     }
     .obs{border-left:6px solid var(--p1)}
     .notif{border-left:6px solid #b71c1c}
@@ -162,7 +162,9 @@
             <span class="badge" id="badgeId">ID —</span>
           </div>
         </div>
+        <button class="btn" id="btnTrocarFoto">Trocar foto</button>
         <button class="btn ghost" id="btnEditar">Editar</button>
+        <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
       </div>
 
       <div class="edit-card" id="editorAluno">
@@ -273,20 +275,32 @@
     function cloudinaryThumb(url, w=256, h=256){
       try{
         if(!url || !/res\.cloudinary\.com/i.test(url)) return url;
-        // insere após "image/upload/"
         return url.replace(/\/image\/upload\/(v\d+\/)?/, (m)=> m + `q_auto,f_auto,c_fill,g_face,w_${w},h_${h}/`);
       }catch{ return url; }
     }
 
-    // Classificação textual da nota (mesmas faixas da legenda da lista)
+    // Normaliza qualquer caminho local para /uploads/...
+    function toUploadsUrl(pathOrUrl, w=256, h=256){
+      if (!pathOrUrl) return '';
+      if (isExternalOrDataUrl(pathOrUrl)) {
+        return cloudinaryThumb(pathOrUrl, w, h);
+      }
+      let s = String(pathOrUrl).trim().replace(/^\/+/, '');
+      s = s.replace(/\\/g, '/');
+      const low = s.toLowerCase();
+      if (low.startsWith('uploads/')) return '/' + s;          // "uploads/alunos/.."
+      if (low.startsWith('alunos/'))   return '/uploads/' + s; // "alunos/.." -> "/uploads/alunos/.."
+      return '/uploads/' + s;                                   // outro relativo -> assume dentro de /uploads
+    }
+
     function classificarNota(nota){
       const n = Number(nota);
       if (isNaN(n)) return {texto:'—', cor:'#999'};
       if (n >= 9.01) return {texto:'Excepcional', cor:'#0f5132'};
       if (n >= 8.01) return {texto:'Ótimo', cor:'#198754'};
-      if (n >= 7.00) return {texto:'Bom', cor:'#b08900'};       // próximo do #ffc107
-      if (n >= 5.00) return {texto:'Regular', cor:'#b95a0a'};   // próximo do #fd7e14
-      if (n >= 3.00) return {texto:'Insuficiente', cor:'#b02a37'}; // próximo do #dc3545
+      if (n >= 7.00) return {texto:'Bom', cor:'#b08900'};
+      if (n >= 5.00) return {texto:'Regular', cor:'#b95a0a'};
+      if (n >= 3.00) return {texto:'Insuficiente', cor:'#b02a37'};
       return {texto:'Incompatível', cor:'#212529'};
     }
 
@@ -317,29 +331,13 @@
       pill.style.borderColor = '#e3e3e3';
       pill.style.background = '#fff';
 
-      // Foto — tenta original; se Cloudinary, usa transform; se não houver, usa a thumb on-the-fly
+      // Foto — usa fotoUrl se existir; senão, foto relativa; senão, thumb
       const fotoBox = qs('#fotoBox');
-      let url = aluno?.foto || aluno?.fotoUrl || '';
-      let finalUrl = '';
-
-      if (url) {
-        if (isExternalOrDataUrl(url)) {
-          finalUrl = cloudinaryThumb(url, 256, 256);
-        } else {
-          // normaliza caminhos locais
-          if (!url.startsWith('/uploads/') && !url.startsWith('/')) {
-            finalUrl = '/' + url.replace(/^\/+/, '');
-          } else {
-            finalUrl = url;
-          }
-        }
-      } else {
-        // fallback para a miniatura gerada
-        finalUrl = `/api/imagens/thumb/${aluno?._id}`;
-      }
+      const raw = aluno?.fotoUrl || aluno?.foto || '';
+      const finalUrl = raw ? toUploadsUrl(raw, 256, 256) : `/api/imagens/thumb/${aluno?._id}`;
 
       fotoBox.innerHTML = finalUrl
-        ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="88" height="88">`
+        ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="88" height="88" style="object-fit:cover">`
         : 'Sem foto';
 
       // Observações
@@ -492,6 +490,71 @@
       fecharEditor();
       await carregarFicha();
     }
+
+    // ===== Upload de foto na ficha =====
+    const btnTrocarFoto = document.getElementById('btnTrocarFoto');
+    const inputFoto = document.getElementById('inputFoto');
+
+    btnTrocarFoto.addEventListener('click', () => inputFoto.click());
+
+    inputFoto.addEventListener('change', async () => {
+      const file = inputFoto.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('Envie uma imagem válida.');
+        inputFoto.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Imagem muito grande. Máximo 5MB.');
+        inputFoto.value = '';
+        return;
+      }
+
+      // Preview local
+      const previewURL = URL.createObjectURL(file);
+      const fotoBox = qs('#fotoBox');
+      fotoBox.innerHTML = `<img src="${previewURL}" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">`;
+
+      try {
+        const fd = new FormData();
+        fd.append('foto', file);
+
+        const resp = await fetch(`/api/alunos/${alunoId}/foto`, {
+          method: 'PUT',
+          body: fd,
+          credentials: 'include'
+        });
+
+        if (!resp.ok) {
+          alert('Falha ao enviar a foto.');
+          URL.revokeObjectURL(previewURL);
+          return carregarFicha(); // volta para foto anterior
+        }
+
+        const data = await resp.json();
+        if (data?.foto) {
+          URL.revokeObjectURL(previewURL);
+          fotoBox.innerHTML = `<img src="${data.foto}" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">`;
+          // mantém o estado local coerente para quando voltar à página
+          if (alunoAtual) {
+            alunoAtual.fotoUrl = data.foto; // absoluta (/uploads/...)
+            alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, ''); // relativa (alunos/...)
+          }
+          alert('Foto atualizada com sucesso!');
+        } else {
+          throw new Error('Retorno sem URL da foto.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Erro ao atualizar a foto.');
+        URL.revokeObjectURL(previewURL);
+        carregarFicha();
+      } finally {
+        inputFoto.value = '';
+      }
+    });
 
     // Ações
     qs('#btnSalvar').addEventListener('click', salvarObservacao);

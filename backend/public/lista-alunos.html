@@ -2,438 +2,468 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lista de Alunos</title>
-  <meta name="theme-color" content="#941a1d" />
+
   <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#8B0000" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
-      margin: 0;
-      padding: 30px 20px;
+    :root{
+      --rubi-1:#8B0000; --rubi-2:#B22222;
+      --text:#f2f4f8; --muted:#cfd6de; --fine:#ffffff22; --fine2:#ffffff12;
+      --glass: rgba(255,255,255,.08); --glass-b: rgba(255,255,255,.16);
+      --edge: rgba(0,0,0,.45); --ok:#16a34a;
+      --card-shadow: 0 10px 28px rgba(0,0,0,.42);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;color:var(--text);
+      font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+      background:#1e0506;min-height:100vh;
+      /* força os controles nativos (select/input) a usarem paleta dark */
+      color-scheme: dark;
+    }
+    /* fibra de carbono rubi (igual ao painel) */
+    body::before{
+      content:"";position:fixed;inset:0;z-index:-2;background:
+        linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
+        linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
+        linear-gradient(0deg, #2a0607, #3c0a0d);
+      filter:saturate(125%);
+    }
+    body::after{
+      content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+        radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
+        radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
+        radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
+        radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%);
     }
 
-    #voltarPainel {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background-color: #6c757d;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 6px;
-      font-weight: bold;
-      text-decoration: none;
-      z-index: 10000;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      transition: background 0.2s;
-      display: none;
+    .topbar{
+      position:sticky; top:0; z-index:30; display:flex; gap:.75rem; align-items:center;
+      padding:12px 16px; backdrop-filter: blur(10px);
+      background: rgba(30,5,6,.6); border-bottom:1px solid var(--fine2);
     }
-    #voltarPainel:hover { background-color: #5a6268; }
-
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      max-width: 1080px;
-      margin: auto;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      animation: fadeInUp 0.9s ease-out;
+    .brand{font-weight:800; letter-spacing:.5px; margin-right:.5rem}
+    .spacer{flex:1}
+    .pill-btn{
+      border:1px solid var(--fine); color:#fff; text-decoration:none;
+      background:rgba(255,255,255,.06); padding:.55rem .8rem; border-radius:12px;
     }
 
-    h2, h3 { text-align: center; color: #941a1d; }
-
-    .turma-btn {
-      display: inline-block;
-      margin: 5px;
-      padding: 10px 16px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s, transform 0.2s;
+    /* Campo de busca */
+    .input{
+      display:flex; align-items:center; gap:.5rem;
+      padding:.65rem .8rem; border-radius:14px; min-width:220px;
+      background:rgba(255,255,255,.10); border:1px solid var(--fine); color:var(--text)
     }
-    .turma-btn:hover,
-    .turma-btn.ativa { background-color: #0056b3; transform: scale(1.03); }
+    .input input{all:unset; width:100%; color:inherit}
+    .input input::placeholder{color:var(--muted); opacity:.9}
 
-    .aluno-grid {
-      display: none;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .aluno-grid.visivel { display: grid; }
-
-    .aluno-card {
-      background-color: #f8f9fa;
-      border-radius: 10px;
-      padding: 10px 10px 44px; /* espaço extra embaixo pro botão */
-      text-align: center;
-      position: relative;
-      cursor: pointer;
-      transition: transform 0.2s, opacity .2s ease;
-    }
-    .aluno-card:hover { transform: scale(1.03); }
-
-    .aluno-card img {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #ccc;
-      filter: blur(8px);
-      transition: filter .25s ease;
-    }
-    .aluno-card img[data-loaded="true"] { filter: blur(0); }
-
-    .aluno-card .nome {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #333;
-      text-decoration: underline;
-    }
-
-    .acoes-card {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      display: flex;
-      gap: 6px;
-    }
-    .excluir-btn {
-      border: none;
-      border-radius: 6px;
-      padding: 6px 8px;
-      background: #d9534f;
+    /* Select turmas – forçando fundo escuro e texto claro (e seta) */
+    select{
+      appearance:none; -webkit-appearance:none; -moz-appearance:none;
+      background-color: rgba(255,255,255,.10);
       color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+      border:1px solid var(--fine);
+      padding:.65rem .9rem; border-radius:14px;
+      /* espaço p/ ícone de seta */
+      padding-right: 36px;
+      background-image:
+        url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%23cfd6de' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position: right 10px center;
+      background-size: 18px 18px;
     }
-    .excluir-btn:hover { filter: brightness(.92); }
-
-    .acoes-inferiores {
-      position: absolute;
-      left: 10px;
-      right: 10px;
-      bottom: 10px;
-      display: flex;
-      gap: 8px;
-      justify-content: center;
+    select:focus{
+      outline: none;
+      border-color: var(--glass-b);
+      box-shadow: 0 0 0 3px rgba(139,0,0,.35);
     }
-    .btn-notificar {
-      border: none;
-      border-radius: 8px;
-      padding: 8px 10px;
-      background: #941a1d;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,.15);
-      transition: transform .15s ease, filter .15s ease;
-    }
-    .btn-notificar:hover { transform: translateY(-1px); filter: brightness(.95); }
-
-    .legenda {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 2px solid #ccc;
-    }
-    .legenda h4 { color: #800000; margin-bottom: 10px; }
-    .legenda p { margin: 4px 0; font-size: 14px; }
-
-    #modalAluno {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      padding-top: 60px;
-      left: 0; top: 0; width: 100%; height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.7);
-    }
-    #modalAluno .modal-conteudo {
-      background-color: #fff;
-      margin: auto;
-      padding: 20px 30px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 450px;
-      animation: fadeInUp 0.5s;
-      text-align: center;
-      position: relative;
-    }
-    #modalAluno img {
-      width: 120px; height: 120px; border-radius: 50%;
-      object-fit: cover; border: 3px solid #941a1d;
-    }
-    #modalAluno h3 { margin-top: 10px; color: #941a1d; }
-    #modalAluno p { margin: 4px 0; font-size: 15px; }
-
-    #modalAluno a {
-      display: inline-block;
-      margin: 8px 5px 0;
-      padding: 8px 14px;
-      background-color: #941a1d;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    #modalAluno a:hover { background-color: #6e1315; }
-
-    #fecharModal {
-      position: absolute;
-      top: 8px; right: 12px;
-      font-size: 22px; font-weight: bold; color: #941a1d; cursor: pointer;
+    /* Em muitos navegadores o dropdown ignora estilos; mas isso cobre os que aceitam */
+    select option, select optgroup{
+      background-color:#1e0b0c; /* fundo do menu */
+      color:#fff;               /* texto legível */
     }
 
-    input[type="text"] {
-      width: 100%; padding: 12px; margin-bottom: 20px;
-      border-radius: 6px; border: 1px solid #ccc;
-    }
+    .wrap{padding:16px; max-width:1400px; margin:0 auto}
+    .helper{display:flex; gap:.5rem; align-items:center; color:#ffffffc0; font-size:.9rem}
+    .helper .dot{width:8px; height:8px; border-radius:50%; background:#16a34a}
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to   { opacity: 1; transform: translateY(0); }
+    #grade-alunos{display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(240px,1fr))}
+    .card{
+      position:relative; display:flex; gap:.9rem; align-items:center; padding:12px 14px; border-radius:18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border:1px solid var(--fine); box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255,255,255,.22);
+      transition: transform .15s, box-shadow .15s, border-color .15s, background .15s; cursor:pointer;
     }
+    .card:hover{ transform: translateY(-2px); border-color: var(--glass-b); box-shadow: 0 16px 40px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.28); }
+    .info{display:flex; flex-direction:column; gap:.25rem; min-width:0}
+    .nome{font-weight:800; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow: 0 2px 8px rgba(0,0,0,.35)}
+    .turma{font-size:.9rem; color:var(--muted)}
+    .skeleton{animation: pulse 1.2s infinite; background: linear-gradient(90deg, #ffffff10, #ffffff18, #ffffff10); background-size:200% 100%; border-radius:12px}
+    @keyframes pulse{0%{background-position:0 0}100%{background-position:200% 0}}
+
+    /* Avatar com iniciais + foto lazy */
+    .avatar-wrap{
+      position:relative; width:64px; height:64px; border-radius:50%; overflow:hidden;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.22), 0 10px 18px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .avatar-iniciais{
+      position:absolute; inset:0; display:grid; place-items:center; font-weight:900; font-size:1.02rem; letter-spacing:.3px; color:#fff;
+      background: linear-gradient(135deg, var(--rubi-2), var(--rubi-1));
+      text-shadow: 0 2px 6px rgba(0,0,0,.35);
+    }
+    .avatar-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .25s ease; }
+    .avatar-img.show{ opacity:1 }
+
+    /* lixeira */
+    .trash{
+      position:absolute; top:8px; right:8px; z-index:2;
+      background: rgba(0,0,0,.35); border:1px solid var(--fine); color:#fff; border-radius:10px; padding:6px; display:none;
+    }
+    .card:hover .trash{ display:block }
+    .trash svg{display:block}
+
+    /* Modal */
+    .modal-backdrop{position:fixed; inset:0; display:none; place-items:center; z-index:50; background:#00000080; backdrop-filter: blur(6px)}
+    .modal-backdrop.aberto{display:grid}
+    .modal{width:min(960px, 92vw); max-height:88vh; overflow:auto; background:linear-gradient(180deg,#101013ef,#0c0c10ef); border:1px solid #ffffff22; border-radius:20px; padding:18px; box-shadow: 0 20px 70px #000000aa, inset 0 1px 0 #ffffff15}
+    .modal-header{display:flex; align-items:center; gap:12px; border-bottom:1px dashed #ffffff22; padding-bottom:10px; margin-bottom:14px}
+    .badge{font-size:.8rem; border:1px solid #ffffff25; padding:.25rem .55rem; border-radius:999px; color:#ffffffcc}
+    .close{margin-left:auto; background:transparent; color:#fff; border:1px solid #ffffff30; border-radius:10px; padding:.45rem .7rem; cursor:pointer}
+    .ficha{display:grid; gap:14px; grid-template-columns: 220px 1fr}
+    .foto{width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:14px; border:1px solid #ffffff18; background:#0a0a0d}
+    .kv{display:grid; grid-template-columns: 160px 1fr; gap:8px 14px; align-items:center}
+    .kv label{color:var(--muted)}
+    .nota{font-size:1.6rem; font-weight:900; letter-spacing:.5px; padding:.4rem .8rem; border-radius:12px; width:max-content; background:#0b0b0e; border:1px solid #ffffff18}
+    .nota.ok{border-color:#16a34a80; box-shadow:0 0 0 1px #16a34a30 inset}
+    .actions{display:flex; gap:.5rem; margin-top:12px}
+    .btn{background: linear-gradient(180deg, #ffffff10, #ffffff08); border:1px solid #ffffff24; color:#fff; border-radius:12px; padding:.6rem .9rem; font-weight:700; cursor:pointer}
+    .btn:hover{border-color:#ffffff38}
+    .empty{opacity:.8; color:var(--muted); padding:14px}
   </style>
 </head>
 <body>
-  <a href="painel.html" id="voltarPainel">← Voltar ao Painel</a>
+  <div class="topbar">
+    <a class="pill-btn" href="/painel.html">← Voltar</a>
+    <div class="brand">CMDPII • Lista de Alunos</div>
+    <div class="spacer"></div>
 
-  <div class="container">
-    <h2 id="tituloLista">Lista de Alunos</h2>
-    <input type="text" id="filtroNome" placeholder="Buscar por nome" oninput="filtrarNome()" />
-    <h3>Turno da Manhã</h3>
-    <div id="botoesManha"></div>
-    <div id="gruposManha"></div>
-    <h3>Turno da Tarde</h3>
-    <div id="botoesTarde"></div>
-    <div id="gruposTarde"></div>
-    <div class="legenda">
-      <h4>Legenda de Cores:</h4>
-      <p><span style="color:#0f5132; font-weight:bold;">■</span> Excepcional (9,01 a 10,00)</p>
-      <p><span style="color:#198754; font-weight:bold;">■</span> Ótimo (8,01 a 9,00)</p>
-      <p><span style="color:#ffc107; font-weight:bold;">■</span> Bom (7,00 a 8,00)</p>
-      <p><span style="color:#fd7e14; font-weight:bold;">■</span> Regular (5,00 a 6,99)</p>
-      <p><span style="color:#dc3545; font-weight:bold;">■</span> Insuficiente (3,00 a 4,99)</p>
-      <p><span style="color:#212529; font-weight:bold;">■</span> Incompatível (0,00 a 2,99)</p>
+    <div class="input" title="Buscar por nome">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <input id="busca" placeholder="Buscar aluno..." />
     </div>
+
+    <select id="selTurma" aria-label="Selecionar turma">
+      <option value="">Selecionar turma…</option>
+    </select>
   </div>
 
-  <div id="modalAluno">
-    <div class="modal-conteudo">
-      <span id="fecharModal">&times;</span>
-      <img id="modalFoto" src="" alt="Foto do Aluno" loading="lazy" decoding="async">
-      <h3 id="modalNome"></h3>
-      <p id="modalTurma"></p>
-      <p id="modalNota"></p>
-      <a id="linkFicha" href="#" target="_blank" rel="noopener">Ver Ficha Completa</a>
-      <a id="linkQRCode" href="#" target="_blank" rel="noopener">Ver QR Code</a>
+  <div class="wrap">
+    <div class="helper" style="margin: 8px 2px 14px;">
+      <span class="dot"></span> Listagem otimizada: thumbs nos cards e preview 640px no modal
     </div>
+
+    <div id="grade-alunos"></div>
+    <div id="sentinel" style="height:1px"></div>
+
+    <div id="empty" class="empty" style="display:none">Escolha uma turma para começar.</div>
   </div>
 
-  <script>
-  // ---- contexto: cookie vs token de professor ----
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-  if (!token) {
-    document.getElementById("voltarPainel").style.display = "inline-block";
-  } else {
-    document.getElementById("tituloLista").innerText = "Lista de Alunos (Professor)";
-  }
+  <!-- Modal Ficha -->
+  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <div class="modal-header">
+        <span class="badge" id="badge-turma">—</span>
+        <strong id="modal-nome">Aluno</strong>
+        <button class="close" id="btn-fechar">Fechar ✕</button>
+      </div>
+      <div class="ficha">
+        <img id="modal-foto" class="foto" alt="Foto do aluno" />
+        <div>
+          <div class="kv">
+            <label>Nota atual</label>
+            <div class="nota" id="modal-nota">—</div>
 
-  const turmasManha = ["6ºA", "6ºB", "7ºA", "7ºB", "7ºC", "7ºD", "8ºA", "8ºB", "9ºA", "9ºB", "9ºC"];
-  const turmasTarde = ["1ºA", "1ºB", "1ºC", "1ºD", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC", "3ºD"];
+            <label>Nome</label>
+            <div id="kv-nome">—</div>
 
-  // cache por turma
-  const cacheTurma = new Map();
+            <label>Turma</label>
+            <div id="kv-turma">—</div>
 
-  // blur-up: tira o blur ao carregar as imagens
-  document.addEventListener('load', (e) => {
-    if (e.target.tagName === 'IMG') e.target.setAttribute('data-loaded', 'true');
-  }, true);
+            <label>Entrada</label>
+            <div id="kv-entrada">—</div>
 
-  function calcularCorNota(nota) {
-    if (typeof nota !== 'number') return null; // deixa card com cor padrão quando não há nota
-    if (nota >= 9.01) return '#0f5132';
-    if (nota >= 8.01) return '#198754';
-    if (nota >= 7.00) return '#ffc107';
-    if (nota >= 5.00) return '#fd7e14';
-    if (nota >= 3.00) return '#dc3545';
-    return '#212529';
-  }
+            <label>Pai / Mãe</label>
+            <div id="kv-resp">—</div>
 
-  function criarBotoes(turmas, containerId, grupoId) {
-    const container = document.getElementById(containerId);
-    const grupoContainer = document.getElementById(grupoId);
+            <label>Telefone</label>
+            <div id="kv-telefone">—</div>
 
-    turmas.forEach(turma => {
-      const btn = document.createElement('button');
-      btn.textContent = turma;
-      btn.className = 'turma-btn';
-      btn.onclick = () => toggleTurma(turma, btn, grupoContainer);
-      container.appendChild(btn);
-    });
-  }
+            <label>Endereço</label>
+            <div id="kv-endereco">—</div>
+          </div>
 
-  async function toggleTurma(turma, btn, grupoContainer) {
-    const gridId = `grid-${turma}`;
-    const existente = document.getElementById(gridId);
-    if (existente) {
-      existente.remove();
-      btn.classList.remove('ativa');
-      return;
-    }
-    document.querySelectorAll('.aluno-grid').forEach(g => g.remove());
-    document.querySelectorAll('.turma-btn').forEach(b => b.classList.remove('ativa'));
-    btn.classList.add('ativa');
-
-    let alunos = cacheTurma.get(turma);
-    if (!alunos) {
-      // Lista rápida: semNota=1 retorna só o essencial (nome, turma, foto, _id)
-      const url = token
-        ? `/api/alunos/professor?semNota=1&turma=${encodeURIComponent(turma)}&token=${encodeURIComponent(token)}`
-        : `/api/alunos?semNota=1&turma=${encodeURIComponent(turma)}`;
-      const res = await fetch(url, token ? {} : { credentials: 'include' });
-      alunos = await res.json();
-      cacheTurma.set(turma, alunos);
-    }
-
-    const grid = document.createElement('div');
-    grid.className = 'aluno-grid visivel';
-    grid.id = gridId;
-
-    alunos.forEach(aluno => {
-      const card = document.createElement('div');
-      card.className = 'aluno-card';
-      card.dataset.id = aluno._id;
-
-      const cor = calcularCorNota(aluno.comportamento);
-      if (cor) card.style.background = cor; // só pinta se houver nota
-
-      const botaoExcluir = !token ? `
-        <div class="acoes-card">
-          <button class="excluir-btn" title="Excluir aluno">🗑️</button>
-        </div>` : '';
-
-      card.innerHTML = `
-        ${botaoExcluir}
-        <img
-          src="${aluno.fotoThumbUrl || `/api/imagens/thumb/${aluno._id}`}"
-          alt="${aluno.nome}" loading="lazy" width="100" height="100"
-        />
-        <div class="nome">${aluno.nome}</div>
-        <div class="acoes-inferiores">
-          <button class="btn-notificar" data-aluno-id="${aluno._id}"
-                  data-aluno-nome="${encodeURIComponent(aluno.nome)}">
-            Notificar
-          </button>
+          <div class="actions">
+            <button class="btn" id="btn-ver-ficha">Ver ficha completa</button>
+            <button class="btn" id="btn-notificar">Notificar aluno</button>
+          </div>
         </div>
-      `;
+      </div>
+    </div>
+  </div>
 
-      // abre modal
-      card.onclick = () => abrirModal(aluno);
+<script>
+(() => {
+  const qs = (s, el=document) => el.querySelector(s);
 
-      // excluir (apenas quando autenticado por cookie)
-      if (!token) {
-        const excluirBtn = card.querySelector('.excluir-btn');
-        excluirBtn?.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          excluirAluno(aluno._id, aluno.nome, card);
-        });
+  // Estado/parametrização
+  const params = new URLSearchParams(location.search);
+  let turma = (params.get('turma') || '').trim();
+  let pagina = 1, paginas = 1, carregando = false, termo = '';
+
+  const selTurma = qs('#selTurma');
+  const grade = qs('#grade-alunos');
+  const empty = qs('#empty');
+
+  function buildURL(path, extraParams={}) {
+    const u = new URL(path, location.origin);
+    const p = new URLSearchParams(extraParams);
+    u.search = p.toString();
+    return u.toString();
+  }
+
+  // Carrega lista de turmas
+  async function carregarTurmas() {
+    const res = await fetch('/api/alunos/turmas', { credentials: 'include', cache:'no-store' });
+    if (!res.ok) throw new Error('Falha ao buscar turmas');
+    const data = await res.json();
+    const turmas = data.turmas || [];
+    selTurma.innerHTML = '<option value="">Selecionar turma…</option>';
+    for (const t of turmas) {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      if (t === turma) opt.selected = true;
+      selTurma.appendChild(opt);
+    }
+    empty.style.display = turma ? 'none' : 'block';
+  }
+
+  selTurma.addEventListener('change', () => {
+    turma = selTurma.value;
+    const u = new URL(location.href);
+    if (turma) u.searchParams.set('turma', turma); else u.searchParams.delete('turma');
+    window.history.replaceState({}, '', u.toString());
+
+    pagina = 1; paginas = 1; grade.innerHTML = '';
+    empty.style.display = turma ? 'none' : 'block';
+    if (turma) carregar();
+  });
+
+  function avatarComFoto(id, nome){
+    const wrap = document.createElement('div');
+    wrap.className = 'avatar-wrap';
+
+    const inic = document.createElement('div');
+    inic.className = 'avatar-iniciais';
+    const letras = (nome||'').split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('');
+    inic.textContent = letras || '?';
+
+    const img = document.createElement('img');
+    img.className = 'avatar-img';
+    img.alt = `Foto de ${nome || 'aluno'}`;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.referrerPolicy = 'no-referrer';
+    img.dataset.src = `/api/imagens/thumb/${id}`;
+    img.addEventListener('load', () => img.classList.add('show'));
+    img.addEventListener('error', () => { img.remove(); });
+
+    wrap.append(inic, img);
+    return wrap;
+  }
+
+  function trashButton(id){
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'trash'; b.title = 'Excluir aluno';
+    b.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>`;
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('Tem certeza que deseja excluir este aluno permanentemente?')) return;
+      try{
+        const r = await fetch(`/api/alunos/${id}`, { method:'DELETE', credentials:'include' });
+        if(!r.ok) throw new Error('Falha ao excluir');
+        const card = document.querySelector(`.card[data-id="${id}"]`);
+        if(card) card.remove();
+      }catch(err){
+        alert('Erro ao excluir aluno.');
       }
+    });
+    return b;
+  }
 
-      // notificar
-      const btnNotificar = card.querySelector('.btn-notificar');
-      btnNotificar.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const id = btnNotificar.dataset.alunoId;
-        const nome = btnNotificar.dataset.alunoNome || '';
-        window.location.href = `/cadastrar-notificacao.html?aluno=${id}&nome=${nome}`;
-      });
+  function infoBlock(a){
+    const info = document.createElement('div'); info.className = 'info';
+    const nome = document.createElement('div'); nome.className = 'nome'; nome.textContent = a.nome;
+    const trm  = document.createElement('div'); trm.className = 'turma'; trm.textContent = a.turma || '';
+    info.append(nome, trm);
+    return info;
+  }
 
-      grid.appendChild(card);
+  function cardAluno(a) {
+    const btn = document.createElement('button');
+    btn.className = 'card'; btn.type = 'button'; btn.dataset.id = a._id;
+
+    btn.append(trashButton(a._id), avatarComFoto(a._id, a.nome), infoBlock(a));
+    btn.addEventListener('click', () => abrirFicha(a));
+    // observar para lazy da imagem
+    ioImg.observe(btn);
+    return btn;
+  }
+
+  async function carregar() {
+    if (carregando || pagina > paginas || !turma) return;
+    carregando = true;
+
+    const placeholders = Array.from({length: 8}).map(() => {
+      const ph = document.createElement('div');
+      ph.className = 'card skeleton'; ph.style.height = '88px';
+      grade.appendChild(ph); return ph;
     });
 
-    grupoContainer.appendChild(grid);
-  }
-
-  function normalizarFoto(foto, id) {
-    if (!foto) return `/api/imagens/thumb/${id}`;
-    if (/^https?:\/\//i.test(foto) || /^data:image\//i.test(foto)) return foto;
-    if (foto.startsWith('/')) return foto;
-    return '/' + foto.replace(/^\/+/, '');
-  }
-
-  async function abrirModal(aluno) {
-    const finalFoto = normalizarFoto(aluno.foto, aluno._id) || aluno.fotoThumbUrl || `/api/imagens/thumb/${aluno._id}`;
-    document.getElementById('modalFoto').src = finalFoto;
-    document.getElementById('modalNome').innerText = aluno.nome;
-    document.getElementById('modalTurma').innerText = `Turma: ${aluno.turma}`;
-    document.getElementById('modalNota').innerText = `Nota de comportamento: calculando...`;
-    document.getElementById('linkFicha').href = `/ficha-aluno.html?id=${aluno._id}`;
-    document.getElementById('linkQRCode').href = `/qrcode-aluno.html?id=${aluno._id}`;
-    document.getElementById('modalAluno').style.display = 'block';
-
-    // busca nota sob demanda
     try {
-      const urlNota = token
-        ? `/api/alunos/professor/${aluno._id}/nota?token=${encodeURIComponent(token)}`
-        : `/api/alunos/${aluno._id}/nota`;
-      const r = await fetch(urlNota, token ? {} : { credentials: 'include' });
-      if (r.ok) {
-        const j = await r.json();
-        const nota = typeof j.comportamento === 'number' ? j.comportamento.toFixed(2) : 'N/A';
-        document.getElementById('modalNota').innerText = `Nota de comportamento: ${nota}`;
-      } else {
-        document.getElementById('modalNota').innerText = `Nota de comportamento: N/A`;
-      }
-    } catch {
-      document.getElementById('modalNota').innerText = `Nota de comportamento: N/A`;
-    }
-  }
+      const url = buildURL(`/api/alunos/turma/${encodeURIComponent(turma)}`, { pagina, q: termo });
+      const res = await fetch(url, { credentials: 'include', cache:'no-store' });
+      if (!res.ok) throw new Error('Falha ao listar');
+      const data = await res.json();
+      paginas = data.paginas || 1;
 
-  document.getElementById('fecharModal').onclick = () => {
-    document.getElementById('modalAluno').style.display = 'none';
-  };
-  window.onclick = function(event) {
-    if (event.target === document.getElementById('modalAluno')) {
-      document.getElementById('modalAluno').style.display = 'none';
-    }
-  };
-
-  async function excluirAluno(id, nome, cardEl) {
-    const ok = confirm(`Tem certeza que deseja excluir o aluno "${nome}"?\nEsta ação é permanente e removerá também as notificações/observações vinculadas.`);
-    if (!ok) return;
-    try {
-      const resp = await fetch(`/api/alunos/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!resp.ok) {
-        const erro = await resp.json().catch(() => ({}));
-        throw new Error(erro?.message || `Falha ao excluir (HTTP ${resp.status})`);
-      }
-      if (cardEl) {
-        cardEl.style.opacity = '0';
-        setTimeout(() => cardEl.remove(), 200);
-      }
-      alert('Aluno excluído com sucesso.');
+      placeholders.forEach(el => el.remove());
+      (data.items || []).forEach(a => grade.appendChild(cardAluno(a)));
+      pagina++;
     } catch (e) {
       console.error(e);
-      alert('Não foi possível excluir o aluno: ' + e.message);
+      placeholders.forEach(el => el.remove());
+      alert('Erro ao carregar alunos.');
+    } finally {
+      carregando = false;
     }
   }
 
-  // cria os botões imediatamente
-  criarBotoes(turmasManha, 'botoesManha', 'gruposManha');
-  criarBotoes(turmasTarde, 'botoesTarde', 'gruposTarde');
-  </script>
+  // Modal
+  const modal = qs('#modal-backdrop');
+  const btnFechar = qs('#btn-fechar');
+  function abrirModal(){ modal.classList.add('aberto'); }
+  function fecharModal(){ modal.classList.remove('aberto'); }
+  btnFechar.addEventListener('click', fecharModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) fecharModal(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharModal(); });
+
+  function fmtData(dStr){
+    if (!dStr) return '—';
+    const d = new Date(dStr);
+    return Number.isNaN(+d) ? '—' : d.toLocaleDateString('pt-BR');
+  }
+
+  async function abrirFicha(aCard) {
+    const id = aCard._id;
+    try {
+      // imagem: thumb instantâneo -> preview 640
+      const img = qs('#modal-foto');
+      img.src = `/api/imagens/thumb/${id}`;
+      const previewUrl = `/api/imagens/preview/${id}?w=640`;
+      const preload = new Image();
+      preload.onload = () => { img.src = previewUrl; };
+      preload.src = previewUrl;
+
+      const url = `/api/alunos/${id}/detalhes`;
+      const res = await fetch(url, { credentials: 'include', cache:'no-store' });
+      if (!res.ok) throw new Error('Falha ao buscar detalhes');
+      const data = await res.json();
+
+      const a = data.aluno || {};
+      qs('#badge-turma').textContent = a.turma || '—';
+      qs('#modal-nome').textContent = a.nome || 'Aluno';
+      qs('#kv-nome').textContent = a.nome || '—';
+      qs('#kv-turma').textContent = a.turma || '—';
+      qs('#kv-entrada').textContent = fmtData(a.dataEntrada);
+      qs('#kv-resp').textContent = [a.nomePai, a.nomeMae].filter(Boolean).join(' / ') || '—';
+      qs('#kv-telefone').textContent = a.telefone || '—';
+      qs('#kv-endereco').textContent = a.endereco || '—';
+
+      const notaEl = qs('#modal-nota');
+      if (typeof data.notaAtual === 'number') {
+        notaEl.textContent = data.notaAtual.toFixed(2).replace('.', ',');
+        notaEl.classList.toggle('ok', data.notaAtual >= 8.5);
+      } else {
+        notaEl.textContent = '—';
+        notaEl.classList.remove('ok');
+      }
+
+      qs('#btn-ver-ficha').onclick = () => {
+        const u = new URL('/ficha-aluno.html', location.origin);
+        u.searchParams.set('id', a._id);
+        location.href = u.toString();
+      };
+      qs('#btn-notificar').onclick = () => {
+        const u = new URL('/cadastrar-notificacao.html', location.origin);
+        u.searchParams.set('aluno', a._id);
+        location.href = u.toString();
+      };
+
+      abrirModal();
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao abrir a ficha do aluno.');
+    }
+  }
+
+  // Busca (debounce)
+  let t;
+  qs('#busca').addEventListener('input', (e) => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      termo = (e.target.value || '').trim();
+      pagina = 1; paginas = 1; grade.innerHTML = '';
+      if (turma) carregar();
+    }, 300);
+  });
+
+  // Infinite scroll
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) carregar();
+  });
+  io.observe(document.getElementById('sentinel'));
+
+  // Lazy para carregar o thumb do card quando ele entra na tela
+  const ioImg = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const card = entry.target;
+      const img = card.querySelector('.avatar-img');
+      if (img && !img.src) img.src = img.dataset.src;
+      ioImg.unobserve(card);
+    });
+  }, { root: null, rootMargin: '200px 0px', threshold: 0 });
+
+  // Start
+  carregarTurmas().then(() => {
+    if (turma) carregar();
+  }).catch(err => {
+    console.error(err);
+    alert('Erro ao carregar turmas.');
+  });
+})();
+</script>
 </body>
 </html>

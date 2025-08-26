@@ -3,15 +3,15 @@ require('dotenv').config();
 
 const metricsRoutes = require('./routes/api/metrics');
 const express = require('express');
+const path = require('path');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const crypto = require('crypto');
-const sharp = require('sharp'); // ✅ para gerar thumbs
-const compression = require('compression'); // ✅ NOVO: compressão HTTP
+const sharp = require('sharp');             // thumbs/previews
+const compression = require('compression'); // compressão HTTP
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 
 // Models
@@ -21,7 +21,7 @@ const Usuario = require('./models/Usuario');
 const Log = require('./models/Log');
 
 // Rotas
-const alunoRoutes = require('./routes/alunoRoutes');
+const alunoRoutes = require('./routes/api/alunos'); // ✅ router correto
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const responsavelRoutes = require('./routes/api/responsavel');
@@ -48,38 +48,42 @@ const observacoesRoutes = require('./routes/api/observacoes');
 
 const autenticarTokenProfessor = require('./middleware/tokenProfessor');
 
-// ✅ NOVO: rota rápida do painel (agregados com cache)
+// endpoints rápidos do painel
 const dashboardFastRoutes = require('./routes/api/dashboard-fast');
 
 const app = express();
 
-// ✅ compressão HTTP para respostas menores
+// ===== Helpers uploads/public =====
+const uploadRoot = path.join(__dirname, 'uploads');
+const publicRoot = path.join(__dirname, 'public');
+
+fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
+fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
+
+// compressão
 app.use(compression());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ====== arquivos estáticos ======
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
+// estáticos
+app.use('/uploads', express.static(uploadRoot));
+app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), {
   maxAge: '7d',
   immutable: true,
 }));
 
-const staticRoot = path.join(__dirname, 'public');
+const staticRoot = publicRoot;
 app.use(express.static(staticRoot, {
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-store');
-    }
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
   }
 }));
 
-app.get('/', (req, res) => {
-  res.redirect('/login.html');
-});
+app.get('/', (req, res) => res.redirect('/login.html'));
 
-// ====== middleware de autenticação ======
+// ===== autenticação cookie =====
 function autenticar(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
@@ -87,20 +91,12 @@ function autenticar(req, res, next) {
     const verificado = jwt.verify(token, process.env.JWT_SECRET);
     req.usuario = verificado;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ mensagem: 'Token inválido.' });
   }
 }
 
-// middleware que aceita cookie OU ?token
-function liberaPorTokenOuCookie(req, res, next) {
-  if (req.query && typeof req.query.token === 'string' && req.query.token.trim()) {
-    return next();
-  }
-  return autenticar(req, res, next);
-}
-
-// ====== LOGIN / LOGOUT / CADASTRO ======
+// ===== LOGIN / LOGOUT / CADASTRO =====
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
@@ -118,8 +114,9 @@ app.post('/auth/login', async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'Lax',
+      sameSite: 'lax',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 2 * 60 * 60 * 1000
     });
 
@@ -132,7 +129,7 @@ app.post('/auth/login', async (req, res) => {
 });
 
 app.post('/auth/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', { path: '/' });
   res.json({ mensagem: 'Logout realizado com sucesso' });
 });
 
@@ -140,17 +137,13 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
   if (req.usuario.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
   }
-
   const { nome, email, senha, instituicao, tipo = 'professor' } = req.body;
   if (!nome || !email || !senha || !instituicao) {
     return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
   }
-
   try {
     const usuarioExistente = await Usuario.findOne({ email });
-    if (usuarioExistente) {
-      return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
-    }
+    if (usuarioExistente) return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
 
     const novoUsuario = new Usuario({
       nome, email, senha, instituicao, tipo,
@@ -176,24 +169,22 @@ app.get('/api/usuario', autenticar, async (req, res) => {
   }
 });
 
-// ====== HTMLs protegidos ======
-app.get('/ficha-aluno.html', liberaPorTokenOuCookie, (req, res) => {
+// ===== HTMLs protegidos =====
+app.get('/ficha-aluno.html', autenticar, (req, res) => {
   res.sendFile(path.join(staticRoot, 'ficha-aluno.html'));
 });
-
-app.get('/lista-alunos.html', liberaPorTokenOuCookie, (req, res) => {
+app.get('/lista-alunos.html', autenticar, (req, res) => {
   res.sendFile(path.join(staticRoot, 'lista-alunos.html'));
 });
-
 app.get('/painel-professor.html', autenticar, (req, res) => {
   res.sendFile(path.join(staticRoot, 'painel-professor.html'));
 });
 
-// ====== Rotas protegidas ou públicas ======
+// ===== Rotas =====
 app.use('/api/ficha', autenticar, fichaApiRoutes);
 app.use('/ficha', autenticar, fichaViewRoutes);
 app.use('/api', fichaTesteRoute);
-app.use('/api/alunos', alunoRoutes);
+app.use('/api/alunos', alunoRoutes); // ✅
 app.use('/api/notificacoes', notificacoesApiRoutes);
 app.use('/api', pdfRoutes);
 app.use('/api', fichaPdfRoutes);
@@ -216,11 +207,11 @@ app.use('/api/observacoes', observacoesRoutes);
 app.use('/api/usuarios', acessoProfessorRoute);
 app.use('/api/diagnostico', diagnosticoNotaRoutes);
 
-// ✅ NOVO: endpoints rápidos do painel
+// endpoints rápidos do painel
 app.use('/api/dashboard-fast', autenticar, dashboardFastRoutes);
 app.use('/api/metrics', metricsRoutes);
 
-// ====== versão/saúde ======
+// ===== versão/saúde =====
 app.get('/__version', (req, res) => {
   res.json({
     commit: process.env.RENDER_GIT_COMMIT || 'desconhecido',
@@ -228,31 +219,53 @@ app.get('/__version', (req, res) => {
   });
 });
 
-// ====== Miniaturas on-the-fly ======
+// ===== extensões p/ thumbs =====
+const allowedThumbExt = new Set([
+  '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.tif', '.tiff'
+]);
+
+// ===== Miniaturas (thumb 200x200) cacheadas =====
 app.get('/api/imagens/thumb/:id', async (req, res) => {
   try {
     const aluno = await Aluno.findById(req.params.id).select('foto');
-    const placeholderAbs = path.join(staticRoot, 'img', 'sem-foto.png');
-
+    const placeholderAbs = path.join(publicRoot, 'img', 'sem-foto.png');
     if (!aluno) return res.sendFile(placeholderAbs);
 
-    const foto = aluno.foto || '';
+    const foto = (aluno.foto || '').trim();
+
     if (/^https?:\/\//i.test(foto) || /^data:image\//i.test(foto)) {
       res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
       return res.redirect(foto);
     }
 
-    const publicRoot = staticRoot;
-    let absOriginal = '';
-    if (foto.startsWith('/uploads/')) {
-      absOriginal = path.join(publicRoot, foto.replace(/^\//, ''));
-    } else {
-      absOriginal = path.join(publicRoot, foto);
+    function resolveOriginalPath(relOrAbs) {
+      const clean = String(relOrAbs).replace(/^\/+/, '');
+      const candidates = [];
+      if (/^uploads\//i.test(clean)) {
+        candidates.push(path.join(uploadRoot, clean.replace(/^uploads\//i, '')));
+        candidates.push(path.join(publicRoot, clean));
+      } else {
+        candidates.push(path.join(uploadRoot, clean));
+        candidates.push(path.join(publicRoot, clean));
+        if (/^alunos\//i.test(clean)) candidates.push(path.join(publicRoot, 'uploads', clean));
+      }
+      for (const p of candidates) {
+        const safe = path.normalize(p);
+        if ((safe.startsWith(uploadRoot) || safe.startsWith(publicRoot)) && fs.existsSync(safe)) return safe;
+      }
+      return null;
     }
 
-    if (!fs.existsSync(absOriginal)) {
-      return res.sendFile(placeholderAbs);
+    function sendOriginalOrPlaceholder() {
+      const rel = (aluno.foto || '').replace(/^\/+/, '');
+      if (!rel) return res.sendFile(placeholderAbs);
+      const url = '/' + (rel.toLowerCase().startsWith('uploads/') ? rel : 'uploads/' + rel);
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.redirect(url);
     }
+
+    const absOriginal = resolveOriginalPath(foto);
+    if (!absOriginal) return res.sendFile(placeholderAbs);
 
     const thumbDir = path.join(publicRoot, 'uploads', 'alunos', String(aluno._id));
     const thumbPath = path.join(thumbDir, 'foto_thumb.jpg');
@@ -262,25 +275,107 @@ app.get('/api/imagens/thumb/:id', async (req, res) => {
       return res.sendFile(thumbPath);
     }
 
-    fs.mkdirSync(thumbDir, { recursive: true });
-    await sharp(absOriginal)
-      .rotate()
-      .resize({ width: 200, height: 200, fit: 'cover' })
-      .jpeg({ quality: 72 })
-      .toFile(thumbPath);
+    const ext = path.extname(absOriginal).toLowerCase();
+    const isHeic = ['.heic', '.heif', '.heics', '.heifs'].includes(ext);
+    if (isHeic || !allowedThumbExt.has(ext)) return sendOriginalOrPlaceholder();
 
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-    return res.sendFile(thumbPath);
+    try {
+      fs.mkdirSync(thumbDir, { recursive: true });
+      await sharp(absOriginal)
+        .rotate()
+        .resize({ width: 200, height: 200, fit: 'cover' })
+        .jpeg({ quality: 72 })
+        .toFile(thumbPath);
+
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.sendFile(thumbPath);
+    } catch (e) {
+      console.warn('Thumb fallback:', e?.message || e);
+      return sendOriginalOrPlaceholder();
+    }
   } catch (e) {
     console.error('Erro ao servir thumb:', e);
-    const placeholderAbs = path.join(staticRoot, 'img', 'sem-foto.png');
+    const placeholderAbs = path.join(publicRoot, 'img', 'sem-foto.png');
     return res.sendFile(placeholderAbs);
   }
 });
 
-// =======================
-//  Conexão Mongo + Start
-// =======================
+// ===== Pré-visualização (preview) com width variável e cache =====
+// GET /api/imagens/preview/:id?w=640
+app.get('/api/imagens/preview/:id', async (req, res) => {
+  try {
+    const aluno = await Aluno.findById(req.params.id).select('foto');
+    const placeholderAbs = path.join(publicRoot, 'img', 'sem-foto.png');
+    const w = Math.max(160, Math.min(parseInt(req.query.w || '640', 10) || 640, 1400));
+
+    if (!aluno) return res.sendFile(placeholderAbs);
+    const foto = (aluno.foto || '').trim();
+
+    if (/^https?:\/\//i.test(foto) || /^data:image\//i.test(foto)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.redirect(foto);
+    }
+
+    function resolveOriginalPath(relOrAbs) {
+      const clean = String(relOrAbs).replace(/^\/+/, '');
+      const candidates = [];
+      if (/^uploads\//i.test(clean)) {
+        candidates.push(path.join(uploadRoot, clean.replace(/^uploads\//i, '')));
+        candidates.push(path.join(publicRoot, clean));
+      } else {
+        candidates.push(path.join(uploadRoot, clean));
+        candidates.push(path.join(publicRoot, clean));
+        if (/^alunos\//i.test(clean)) candidates.push(path.join(publicRoot, 'uploads', clean));
+      }
+      for (const p of candidates) {
+        const safe = path.normalize(p);
+        if ((safe.startsWith(uploadRoot) || safe.startsWith(publicRoot)) && fs.existsSync(safe)) return safe;
+      }
+      return null;
+    }
+
+    const absOriginal = resolveOriginalPath(foto);
+    if (!absOriginal) return res.sendFile(placeholderAbs);
+
+    const prevDir = path.join(publicRoot, 'uploads', 'alunos', String(aluno._id));
+    const prevPath = path.join(prevDir, `preview_w${w}.jpg`);
+
+    if (fs.existsSync(prevPath)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.sendFile(prevPath);
+    }
+
+    const ext = path.extname(absOriginal).toLowerCase();
+    const isHeic = ['.heic', '.heif', '.heics', '.heifs'].includes(ext);
+    if (isHeic || !allowedThumbExt.has(ext)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      const rel = (aluno.foto || '').replace(/^\/+/, '');
+      const url = '/' + (rel.toLowerCase().startsWith('uploads/') ? rel : 'uploads/' + rel);
+      return res.redirect(url);
+    }
+
+    try {
+      fs.mkdirSync(prevDir, { recursive: true });
+      await sharp(absOriginal)
+        .rotate()
+        .resize({ width: w, withoutEnlargement: true })
+        .jpeg({ quality: 82 })
+        .toFile(prevPath);
+
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.sendFile(prevPath);
+    } catch (e) {
+      console.warn('Preview fallback:', e?.message || e);
+      return res.sendFile(placeholderAbs);
+    }
+  } catch (e) {
+    console.error('Erro preview:', e);
+    const placeholderAbs = path.join(publicRoot, 'img', 'sem-foto.png');
+    return res.sendFile(placeholderAbs);
+  }
+});
+
+// ======================= Mongo + Start =======================
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || '';
 if (!/^mongodb(\+srv)?:\/\//i.test(MONGO_URI)) {
   console.error('❌ MONGO_URI inválido ou ausente. Valor lido:', JSON.stringify(MONGO_URI));
