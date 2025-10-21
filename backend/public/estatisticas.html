@@ -2,239 +2,391 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Estatísticas do Sistema Escolar</title>
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Relatórios • Sistema Escolar</title>
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="icon" href="./icons/icon-192x192.png" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      color: #333;
+    :root{
+      --rubi-1:#8B0000; --rubi-2:#B22222;
+      --glass-bg: rgba(255,255,255,.07);
+      --glass-border: rgba(255,255,255,.38);
+      --glass-inner: rgba(255,255,255,.40);
+      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
+      --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de;
     }
-    .voltar {
-      display: inline-block;
-      margin: 15px 30px;
-      color: #8B0000;
-      font-weight: bold;
-      font-size: 16px;
-      text-decoration: none;
+    *{box-sizing:border-box} html,body{height:auto}
+    body{
+      margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+      color:var(--text);background:#1e0506;display:block;min-height:100vh;overflow-y:auto
     }
-    .container {
-      max-width: 1000px;
-      margin: 10px auto 30px;
-      padding: 20px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    body::before{
+      content:"";position:fixed;inset:0;z-index:0;background:
+      linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
+      linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
+      linear-gradient(0deg, #2a0607, #3c0a0d);filter:saturate(125%)
     }
-    h1, h3 {
-      text-align: center;
-      color: #8B0000;
+    body::after{
+      content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:
+      radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
+      radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
+      radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
+      radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%)
     }
-    .filtros {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 30px;
+
+    /* layout base como no painel */
+    .page{position:relative;z-index:1;width:100%;display:grid;grid-template-columns:280px 1fr;gap:20px;padding:24px;min-height:100vh}
+    @media (max-width:1024px){.page{grid-template-columns:1fr;padding:16px;gap:16px}}
+
+    /* sidebar igual ao painel */
+    .sidebar{display:flex;flex-direction:column;gap:10px;height:calc(100dvh - 48px);position:sticky;top:24px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(0,0,0,.35);animation:slideIn .6s ease both}
+    .sb-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid rgba(255,255,255,.12)}
+    .brand{width:36px;height:36px;border-radius:12px;background:var(--rubi-1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.22)}
+    .sb-title{font-weight:700;letter-spacing:.3px}
+    .nav{padding:10px;display:grid;gap:6px}
+    .nav a{text-decoration:none;color:var(--text);font-size:.95rem;padding:10px 12px;border-radius:12px;display:flex;align-items:center;gap:10px;border:1px solid transparent}
+    .nav a:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+    .nav a.active{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+    .sb-foot{margin-top:auto;padding:12px;border-top:1px solid rgba(255,255,255,.12)}
+    .sb-logout{width:100%;border:0;background:var(--rubi-2);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .sb-logout:hover{background:var(--rubi-1)}
+    @media (max-width:1024px){.sidebar{display:none}}
+
+    .content{width:100%;overflow:visible}
+    .wrap{width:min(1180px,100%);margin:0 auto 84px}
+
+    .title-area{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px
     }
-    .filtros input, .filtros select {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
+    .title-area h1{margin:0;font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:.2px}
+    .title-area .sub{color:var(--text-soft)}
+
+    .card{
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+      border-radius:24px;backdrop-filter:blur(8px);box-shadow:0 10px 28px rgba(0,0,0,.35);
+      padding:22px 20px 26px
     }
-    .grafico-container {
-      margin-top: 40px;
+
+    /* filtros no estilo do painel */
+    .filters{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-bottom:16px}
+    .filters .field{
+      grid-column:span 12;background:var(--glass-bg);border:1px solid var(--glass-border);
+      border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px;box-shadow:var(--glass-shadow)
     }
-    canvas {
-      width: 100% !important;
-      max-width: 900px;
-      height: auto !important;
+    .filters label{font-weight:800;color:#fff}
+    .filters input[type="date"], .filters select{
+      appearance:none;border:1px solid rgba(255,255,255,.25);padding:8px 10px;border-radius:10px;width:100%;
+      font:inherit;color:#111;background:#fff;outline:none
     }
-    button {
-      margin: 40px auto 0;
-      display: block;
-      background: #8B0000;
-      color: #fff;
-      border: none;
-      padding: 12px 25px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
+    .filters .btn{
+      grid-column:span 12;background:var(--rubi-2);color:#fff;border:none;
+      padding:12px 16px;font-weight:800;letter-spacing:.2px;border-radius:12px;cursor:pointer;
+      box-shadow:var(--glass-shadow);transition:.18s ease
     }
-    button:hover {
-      background: #a50000;
+    .filters .btn:hover{background:var(--rubi-1);transform:translateY(-1px)}
+    @media (min-width:680px){
+      .filters .field.sm-4{grid-column:span 4}
+      .filters .btn{grid-column:span 12;max-width:220px;justify-self:end}
     }
-    @media (max-width: 600px) {
-      .filtros {
-        flex-direction: column;
-        align-items: center;
-      }
-      .container {
-        margin: 10px;
-      }
+
+    .grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:18px
     }
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+
+    .chart-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:14px;box-shadow:var(--glass-shadow)}
+    .chart-title{font-size:.95rem;color:var(--text-soft);margin:2px 4px 10px}
+
+    .chart-wrap{position:relative}
+    canvas{width:100%;height:300px;background:transparent;display:block;border-radius:14px}
+
+    .actions{display:flex;justify-content:flex-end;margin-top:18px}
+    .btn-secondary{
+      background:#fff;color:var(--rubi-1);border:1px solid var(--rubi-1);
+      padding:11px 16px;border-radius:12px;font-weight:800;cursor:pointer;
+      transition:.18s ease;box-shadow:0 8px 18px rgba(16,16,16,.05)
+    }
+    .btn-secondary:hover{background:#fff3f3}
+
+    @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
   </style>
 </head>
 <body>
+  <div class="page">
+    <!-- Sidebar igual ao painel, com “Relatórios” ativo -->
+    <aside class="sidebar" aria-label="Navegação lateral">
+      <div class="sb-head">
+        <div class="brand"></div>
+        <div>
+          <div class="sb-title">CMDPII</div>
+          <div style="font-size:.8rem;color:var(--text-soft)">Sistema Escolar</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="painel.html">🏠 Painel</a>
+        <a href="lista-alunos.html">👥 Alunos</a>
+        <a href="/notificacoes">🔔 Notificações</a>
+        <a class="active" href="estatisticas.html">📉 Relatórios</a>
+        <a href="mensagens.html">✉️ Mensagens</a>
+        <a href="usuarios.html">⚙️ Administração</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+      <div class="sb-foot">
+        <button class="sb-logout" onclick="logout()">🚪 Sair</button>
+      </div>
+    </aside>
 
-  <a href="painel.html" class="voltar">← Voltar ao Painel</a>
+    <main class="content">
+      <div class="wrap">
+        <div class="title-area">
+          <div>
+            <h1>Relatórios e Estatísticas</h1>
+            <div class="sub">Colégio Militar Dom Pedro II • Unidade Cruzeiro do Sul</div>
+          </div>
+          <a href="painel.html" class="btn-secondary">← Voltar</a>
+        </div>
 
-  <div class="container">
-    <h1>📊 Painel de Estatísticas</h1>
+        <section class="card">
+          <!-- Filtros -->
+          <div class="filters">
+            <div class="field sm-4">
+              <label for="dataInicio">Início</label>
+              <input type="date" id="dataInicio" />
+            </div>
+            <div class="field sm-4">
+              <label for="dataFim">Fim</label>
+              <input type="date" id="dataFim" />
+            </div>
+            <div class="field sm-4">
+              <label for="filtroTurma">Turma</label>
+              <select id="filtroTurma">
+                <option value="Todas">Todas</option>
+              </select>
+            </div>
+            <button id="btnFiltrar" class="btn">Aplicar filtros</button>
+          </div>
 
-    <div class="filtros">
-      <label>
-        Início:
-        <input type="date" id="dataInicio" />
-      </label>
-      <label>
-        Fim:
-        <input type="date" id="dataFim" />
-      </label>
-      <label>
-        Turma:
-        <select id="filtroTurma">
-          <option value="">Todas</option>
-        </select>
-      </label>
-    </div>
+          <!-- Gráficos -->
+          <div class="grid">
+            <div class="chart-card">
+              <div class="chart-title">Alunos por turma</div>
+              <div class="chart-wrap"><canvas id="chartAlunosTurma" width="640" height="300" aria-label="Gráfico de barras - Alunos por turma"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title">Comportamento médio por turma</div>
+              <div class="chart-wrap"><canvas id="chartComportamento" width="640" height="300" aria-label="Gráfico de barras - Comportamento por turma"></canvas></div>
+            </div>
+          </div>
 
-    <div class="grafico-container">
-      <h3>Alunos por Turma</h3>
-      <canvas id="graficoTurmas"></canvas>
-    </div>
+          <div class="grid" style="margin-top:18px">
+            <div class="chart-card" style="grid-column:span 2">
+              <div class="chart-title">Distribuição por faixa (comportamento)</div>
+              <div class="chart-wrap"><canvas id="chartDistribuicao" width="960" height="320" aria-label="Gráfico de rosca - Distribuição"></canvas></div>
+            </div>
+          </div>
 
-    <div class="grafico-container">
-      <h3>Notificações por Tipo</h3>
-      <canvas id="graficoTipos"></canvas>
-    </div>
-
-    <div class="grafico-container">
-      <h3>Comportamento Médio por Turma</h3>
-      <canvas id="graficoComportamento"></canvas>
-    </div>
-
-    <div class="grafico-container">
-      <h3>Distribuição por Tipo de Medida</h3>
-      <canvas id="graficoTiposMedida"></canvas>
-    </div>
-
-    <button onclick="gerarPDF()">📄 Exportar PDF dos Gráficos</button>
+          <div class="actions">
+            <button class="btn-secondary" onclick="exportarPDF()">📄 Exportar PDF</button>
+          </div>
+        </section>
+      </div>
+    </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    let charts = [];
+    // ===== Helpers e API =====
+    function isoToBR(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
 
-    async function carregarDados() {
-      try {
-        const inicio = document.getElementById('dataInicio').value;
-        const fim = document.getElementById('dataFim').value;
-        const turma = document.getElementById('filtroTurma').value;
-
-        const params = new URLSearchParams();
-        if (inicio) params.append('inicio', inicio);
-        if (fim) params.append('fim', fim);
-        if (turma) params.append('turma', turma);
-
-        const resposta = await fetch('/api/estatisticas?' + params.toString(), { credentials: 'include' });
-        const dados = await resposta.json();
-
-        charts.forEach(c => c.chart?.destroy());
-        charts = [];
-
-        const turmas = Object.keys(dados.alunosPorTurma || {});
-        const quantidades = Object.values(dados.alunosPorTurma || {});
-
-        charts.push({
-          id: 'graficoTurmas',
-          titulo: 'Alunos por Turma',
-          chart: new Chart(document.getElementById('graficoTurmas'), {
-            type: 'bar',
-            data: { labels: turmas, datasets: [{ label: 'Quantidade de Alunos', data: quantidades }] }
-          })
-        });
-
-        const tipos = Object.keys(dados.tiposNotificacao || {});
-        const qtdeTipos = Object.values(dados.tiposNotificacao || {});
-
-        charts.push({
-          id: 'graficoTipos',
-          titulo: 'Notificações por Tipo',
-          chart: new Chart(document.getElementById('graficoTipos'), {
-            type: 'pie',
-            data: { labels: tipos, datasets: [{ data: qtdeTipos }] }
-          })
-        });
-
-        const turmas2 = Object.keys(dados.comportamentoMedioPorTurma || {});
-        const notas = Object.values(dados.comportamentoMedioPorTurma || {});
-
-        charts.push({
-          id: 'graficoComportamento',
-          titulo: 'Comportamento Médio por Turma',
-          chart: new Chart(document.getElementById('graficoComportamento'), {
-            type: 'bar',
-            data: { labels: turmas2, datasets: [{ label: 'Nota Média', data: notas }] }
-          })
-        });
-
-        const medidas = Object.keys(dados.tiposMedida || {});
-        const qtdeMedidas = Object.values(dados.tiposMedida || {});
-
-        charts.push({
-          id: 'graficoTiposMedida',
-          titulo: 'Distribuição por Tipo de Medida',
-          chart: new Chart(document.getElementById('graficoTiposMedida'), {
-            type: 'bar',
-            data: { labels: medidas, datasets: [{ data: qtdeMedidas }] }
-          })
-        });
-
-      } catch (err) {
-        alert('Erro ao carregar dados: ' + err.message);
+    function showError(msg){
+      let el = document.getElementById('errBanner');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'errBanner';
+        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
+        document.body.appendChild(el);
       }
+      el.textContent = `Erro: ${msg}`;
+      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
     }
 
-    async function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      for (let i = 0; i < charts.length; i++) {
-        const chartCanvas = document.getElementById(charts[i].id);
-        const imagem = chartCanvas.toDataURL('image/png', 1.0);
-        if (i > 0) doc.addPage();
-        doc.setFontSize(16);
-        doc.text(charts[i].titulo, 10, 20);
-        doc.addImage(imagem, 'PNG', 10, 30, 180, 100);
-      }
-
-      doc.save('estatisticas.pdf');
+    async function fetchJsonSeguro(url, timeoutMs=10000){
+      const ctrl = new AbortController(); const to = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+      try{
+        const r = await fetch(url, { credentials:'include', headers:{Accept:'application/json'}, cache:'no-store', signal:ctrl.signal });
+        if(!r.ok){ const t = await r.text().catch(()=> ''); throw new Error(`HTTP ${r.status} em ${url} — ${t.slice(0,120)}`); }
+        const ct = r.headers.get('content-type')||''; if(!ct.includes('application/json')){ const t=await r.text().catch(()=> ''); throw new Error(`Resposta não-JSON em ${url}: ${t.slice(0,120)}`); }
+        return r.json();
+      } finally { clearTimeout(to); }
     }
 
-    async function carregarTurmas() {
-      const resposta = await fetch('/api/alunos/turmas', { credentials: 'include' });
-      const lista = await resposta.json();
-      const filtroTurma = document.getElementById('filtroTurma');
-      lista.forEach(t => {
-        const option = document.createElement('option');
-        option.value = t;
-        option.textContent = t;
-        filtroTurma.appendChild(option);
+    async function carregarTurmas(){
+      try{
+        const lista = await fetchJsonSeguro('/api/estatisticas/turmas');
+        const sel = document.getElementById('filtroTurma');
+        const atual = sel.value || 'Todas';
+        sel.innerHTML = '<option value="Todas">Todas</option>';
+        if(Array.isArray(lista)){
+          lista.forEach(t=>{
+            if(!t) return;
+            const opt = document.createElement('option'); opt.value=t; opt.textContent=t; sel.appendChild(opt);
+          });
+        }
+        sel.value = atual;
+      }catch(e){ console.warn(e); showError('Falha ao carregar turmas'); }
+    }
+
+    // ===== Desenho dos gráficos (canvas) no mesmo estilo do painel =====
+    function drawBars(canvasId, itens, labelKey, valueKey, maxY=10){
+      const c = document.getElementById(canvasId); if(!c) return;
+      const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+      ctx.clearRect(0,0,W,H);
+
+      if(!Array.isArray(itens) || itens.length===0){
+        ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='14px Segoe UI'; ctx.fillText('Sem dados', 18, 24);
+        return;
+      }
+
+      const padding=40, gw=W-padding*2, gh=H-padding*2;
+      ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padding,padding); ctx.lineTo(padding,H-padding); ctx.lineTo(W-padding,H-padding); ctx.stroke();
+
+      const vals = itens.map(x => Number(x[valueKey])||0);
+      const maxVal = Math.max(maxY, ...vals);
+      const barW = gw/(itens.length*1.6);
+
+      itens.forEach((d,i)=>{
+        const v = Number(d[valueKey])||0;
+        const h = (v/maxVal)*gh;
+        const x = padding + i*(barW*1.6) + barW*0.3;
+        const y = H - padding - h;
+
+        const grad = ctx.createLinearGradient(0,y,0,y+h);
+        grad.addColorStop(0,'#d64545'); grad.addColorStop(1,'#8B0000');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x,y,barW,h);
+
+        ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center';
+        ctx.font='12px Segoe UI';
+        ctx.fillText(String(d[labelKey]||''), x+barW/2, H-padding+16);
+        ctx.fillText((v % 1 === 0 ? v.toString() : v.toFixed(1)).replace('.',','), x+barW/2, y-6);
       });
     }
 
+    function drawDonut(canvasId, mapa){
+      const c = document.getElementById(canvasId); if(!c) return;
+      const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+      ctx.clearRect(0,0,W,H);
+
+      const items = [
+        {name:'Excepcional', value:mapa.excepcional||mapa.exc||0, color:'#22c55e'},
+        {name:'Ótimo',       value:mapa.otimo||mapa.oti||0,       color:'#3b82f6'},
+        {name:'Bom',         value:mapa.bom||0,                   color:'#f59e0b'},
+        {name:'Regular',     value:mapa.regular||mapa.reg||0,     color:'#ef4444'},
+        {name:'Insuficiente',value:mapa.insuficiente||mapa.ins||0,color:'#dc2626'},
+        {name:'Incompatível',value:mapa.incompativel||mapa.inc||0,color:'#7f1d1d'},
+      ].filter(i=>i.value>0);
+
+      if(items.length===0){
+        ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='14px Segoe UI'; ctx.fillText('Sem dados', 18, 24);
+        return;
+      }
+
+      const total = items.reduce((s,i)=>s+i.value,0) || 1;
+      const cx=W/2, cy=H/2, r=Math.min(W,H)/3, ir=r*0.6;
+      let start=-Math.PI/2;
+
+      items.forEach(d=>{
+        const ang=(d.value/total)*Math.PI*2; const end=start+ang;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath();
+        ctx.fillStyle=d.color; ctx.fill(); start=end;
+      });
+
+      ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.arc(cx,cy,ir,0,Math.PI*2); ctx.fill();
+      ctx.globalCompositeOperation='source-over';
+
+      ctx.font='12px Segoe UI'; ctx.fillStyle='rgba(255,255,255,.92)';
+      items.forEach((d,i)=>{ const y=20+i*18; ctx.fillStyle=d.color; ctx.fillRect(W-170,y-10,10,10); ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillText(`${d.name}: ${d.value}`, W-154, y); });
+    }
+
+    // ===== Lógica de página =====
+    async function carregarDados(){
+      try{
+        // filtros
+        const inicioISO = document.getElementById('dataInicio').value;
+        const fimISO    = document.getElementById('dataFim').value;
+        const turma     = document.getElementById('filtroTurma').value || 'Todas';
+
+        const p = new URLSearchParams();
+        if(inicioISO) p.set('inicio', isoToBR(inicioISO));
+        if(fimISO)    p.set('fim',    isoToBR(fimISO));
+        if(turma)     p.set('turma',  turma);
+
+        // 1) Alunos por turma (filtrável)
+        const alunosPorTurma = await fetchJsonSeguro('/api/estatisticas/alunos-por-turma?' + p.toString());
+        drawBars('chartAlunosTurma', alunosPorTurma || [], 'turma', 'total', Math.max(10, ...((alunosPorTurma||[]).map(x=>x.total||0))));
+
+        // 2) Comportamento por turma (média – não filtrado por data no backend atual)
+        const comp = await fetchJsonSeguro('/api/estatisticas/comportamento-por-turma');
+        drawBars('chartComportamento', comp || [], 'turma', 'media', 10);
+
+        // 3) Distribuição geral (donut)
+        const dist = await fetchJsonSeguro('/api/estatisticas/distribuicao');
+        drawDonut('chartDistribuicao', dist || {exc:0,oti:0,bom:0,reg:0,ins:0,inc:0});
+
+      }catch(e){
+        console.error(e); showError(e.message);
+      }
+    }
+
+    async function exportarPDF(){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const mapas = [
+        { id:'chartAlunosTurma',      titulo:'Alunos por turma' },
+        { id:'chartComportamento',    titulo:'Comportamento médio por turma' },
+        { id:'chartDistribuicao',     titulo:'Distribuição por faixa' },
+      ];
+
+      mapas.forEach((m,i)=>{
+        const cnv = document.getElementById(m.id);
+        const img = cnv.toDataURL('image/png', 1.0);
+        if(i>0) doc.addPage();
+        doc.setFontSize(16); doc.text(m.titulo, 10, 18);
+        doc.addImage(img, 'PNG', 10, 26, 180, 110);
+      });
+
+      doc.save('relatorios.pdf');
+    }
+
+    async function carregarTurmas(){
+      try{
+        const lista = await fetchJsonSeguro('/api/estatisticas/turmas');
+        const sel = document.getElementById('filtroTurma');
+        const atual = sel.value || 'Todas';
+        sel.innerHTML = '<option value="Todas">Todas</option>';
+        if(Array.isArray(lista)){
+          lista.forEach(t=>{ if(!t) return; const opt=document.createElement('option'); opt.value=t; opt.textContent=t; sel.appendChild(opt); });
+        }
+        sel.value = atual;
+      }catch(e){ console.warn(e); showError('Falha ao carregar turmas'); }
+    }
+
+    // sessão
+    async function logout(){
+      try{ await fetch('/auth/logout',{method:'POST',credentials:'include'}); }catch{}
+      location.href = './login.html';
+    }
+
+    // eventos
+    document.getElementById('btnFiltrar').addEventListener('click', carregarDados);
     document.getElementById('dataInicio').addEventListener('change', carregarDados);
     document.getElementById('dataFim').addEventListener('change', carregarDados);
     document.getElementById('filtroTurma').addEventListener('change', carregarDados);
 
-    carregarTurmas();
-    carregarDados();
+    // boot
+    (async()=>{ await carregarTurmas(); await carregarDados(); })();
   </script>
 </body>
 </html>
