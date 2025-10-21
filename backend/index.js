@@ -223,12 +223,11 @@ if (!/^mongodb(\+srv)?:\/\//i.test(MONGO_URI)) {
 }
 
 const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || 'localhost';
-const displayHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 Servidor ligado em: http://${displayHost}:${PORT}`);
-  if (HOST === '0.0.0.0') console.log(`🔗 Bind: 0.0.0.0 (acesse via http://localhost:${PORT})`);
+// 🔧 Importante para o Render: não fixar host em 'localhost'.
+// Deixe o Node/Express fazer o bind padrão (0.0.0.0 no Render).
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Servidor ligado em: http://0.0.0.0:${PORT}`);
   console.log('🧪 Health pronto: /__version e /healthz');
 });
 
