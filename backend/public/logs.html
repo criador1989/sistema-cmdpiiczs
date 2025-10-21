@@ -3,94 +3,171 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Logs de Auditoria do Sistema</title>
+  <title>🧾 Logs do Sistema - CMDPII</title>
   <meta name="theme-color" content="#8B0000" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <style>
-    :root {
+    :root{
       --rubi-1:#8B0000; --rubi-2:#B22222;
-      --bg:#f9f9f9; --white:#fff; --text:#222; --sub:#555;
+      --glass-bg: rgba(255,255,255,.07);
+      --glass-border: rgba(255,255,255,.25);
+      --text:#f2f4f8; --text-soft:#cfd6de;
+      --radius:20px;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 18px;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      background:#1e0506;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
     }
-    h1 { margin: 8px 0 18px; color: var(--rubi-1); text-align: center; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--white);
-      box-shadow: 0 6px 18px rgba(0,0,0,.08);
-      border-radius: 10px;
-      overflow: hidden;
+    body::before{
+      content:"";
+      position:fixed;inset:0;z-index:0;
+      background:
+        linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
+        linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
+        linear-gradient(0deg, #2a0607, #3c0a0d);
+      filter:saturate(125%);
     }
-    th, td {
-      padding: 12px 14px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-      font-size: 14px;
+    body::after{
+      content:"";
+      position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:
+        radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
+        radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%);
     }
-    th { background: var(--rubi-1); color: #fff; position: sticky; top: 0; }
-    tr:nth-child(even) { background: #fafafa; }
-    .muted { color: var(--sub); font-size: 12px; }
-    .pill {
-      display: inline-block; padding: 2px 8px;
-      border-radius: 999px; border: 1px solid #ddd;
-      background: #f3f3f3; font-size: 12px;
+    h1{
+      color:#fff;
+      font-size:clamp(24px,3vw,36px);
+      text-align:center;
+      font-weight:800;
+      margin:40px 0 16px;
+      text-shadow:0 4px 10px rgba(0,0,0,.4);
+      z-index:1;
     }
-    .wrap { max-width: 1200px; margin: 0 auto; }
-    .topbar {
-      display: flex; gap: 10px; align-items: center;
-      justify-content: space-between; margin: 12px 0;
+    .wrap{
+      position:relative;z-index:1;
+      width:min(1100px,90%);
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--radius);
+      backdrop-filter:blur(12px);
+      box-shadow:0 10px 28px rgba(0,0,0,.45);
+      padding:24px 28px 36px;
+      margin-bottom:60px;
     }
-    .btn {
-      border: 0; border-radius: 8px; background: var(--rubi-2);
-      color: #fff; padding: 10px 14px; cursor: pointer;
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+      gap:12px;
     }
-    .btn:hover { background: var(--rubi-1); }
-    .right { display: flex; gap: 8px; align-items: center; }
-    input[type="search"] {
-      padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px;
-      min-width: 220px;
+    .btn{
+      border:0;
+      border-radius:10px;
+      background:var(--rubi-2);
+      color:#fff;
+      padding:10px 18px;
+      font-size:.95rem;
+      cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+      transition:.2s;
     }
-    .empty { padding: 16px; text-align: center; color: #777; }
+    .btn:hover{background:var(--rubi-1);transform:translateY(-1px);}
+    input[type="search"]{
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.2);
+      background:rgba(255,255,255,.1);
+      color:#fff;
+      min-width:260px;
+    }
+    input::placeholder{color:rgba(255,255,255,.6)}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+    }
+    th,td{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.1);
+      font-size:.9rem;
+    }
+    th{
+      background:var(--rubi-1);
+      color:#fff;
+      text-align:left;
+      font-weight:600;
+    }
+    tr:nth-child(even){background:rgba(255,255,255,.04);}
+    .pill{
+      background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.25);
+      border-radius:999px;
+      padding:3px 10px;
+      font-size:.8rem;
+    }
+    .muted{color:var(--text-soft);font-size:.8rem;}
+    .empty{padding:16px;text-align:center;color:var(--text-soft);}
+    #erro{color:#ff8a8a;text-align:center;margin:8px 0;}
+    .paginacao{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-top:22px;
+    }
+    .paginacao button{
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.2);
+      border-radius:8px;
+      padding:6px 10px;
+      cursor:pointer;
+    }
+    .paginacao button:hover{background:rgba(255,255,255,.18);}
+    .ativo{background:var(--rubi-2)!important;}
   </style>
 </head>
 <body>
+  <h1>🧾 Logs de Auditoria do Sistema</h1>
   <div class="wrap">
-    <h1>📜 Logs de Auditoria do Sistema</h1>
-
     <div class="topbar">
-      <a class="btn" href="painel.html">⬅️ Voltar ao Painel</a>
+      <button class="btn" onclick="window.location.href='painel.html'">⬅️ Voltar ao Painel</button>
       <div class="right">
-        <input id="busca" type="search" placeholder="Filtrar por usuário, ação, aluno…" />
-        <button id="btnAtualizar" class="btn">Atualizar</button>
+        <input id="busca" type="search" placeholder="Filtrar por usuário, ação ou aluno…" />
+        <button id="btnAtualizar" class="btn">🔄 Atualizar</button>
       </div>
     </div>
-
+    <div id="erro"></div>
     <table>
       <thead>
         <tr>
-          <th>Usuário</th>
-          <th>Ação</th>
-          <th>Aluno / Entidade</th>
-          <th>ID da Entidade</th>
-          <th>Data e Hora</th>
+          <th style="width:22%">Usuário</th>
+          <th style="width:18%">Ação</th>
+          <th style="width:28%">Aluno / Entidade</th>
+          <th style="width:18%">ID da Entidade</th>
+          <th style="width:14%">Data e Hora</th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr><td colspan="5" class="empty">Carregando…</td></tr>
+        <tr><td class="empty" colspan="5">Carregando…</td></tr>
       </tbody>
     </table>
+    <div class="paginacao" id="paginacao"></div>
   </div>
 
   <script>
     const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+    let paginaAtual = 1, totalPaginas = 1;
 
     async function getJSON(url){
       const r = await fetch(API(url), { credentials:'include', cache:'no-store' });
@@ -98,62 +175,63 @@
       return r.json();
     }
 
-    const tbody = document.getElementById('tbody');
-    const busca = document.getElementById('busca');
+    const tbody=document.getElementById('tbody');
+    const erro=document.getElementById('erro');
+    const busca=document.getElementById('busca');
+    const paginacao=document.getElementById('paginacao');
 
-    function fmtDt(v){
-      try { return new Date(v).toLocaleString('pt-BR'); } catch { return '—'; }
-    }
-    function esc(s){ return (s??'').toString().replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+    function fmtDt(v){ try{const d=new Date(v);return d.toLocaleString('pt-BR');}catch{return '—';} }
+    function s(s){return (s??'').toString().replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
 
-    function renderRows(arr){
-      if(!arr?.length){
-        tbody.innerHTML = `<tr><td colspan="5" class="empty">Nenhum log registrado.</td></tr>`;
+    function renderRows(logs){
+      if(!Array.isArray(logs)||!logs.length){
+        tbody.innerHTML='<tr><td class="empty" colspan="5">Nenhum log encontrado.</td></tr>';
         return;
       }
+      const q=(busca.value||'').toLowerCase();
+      tbody.innerHTML=logs.filter(l=>{
+        const all=(l.usuarioNome+l.acao+l.alunoNome+l.entidade+l.entidadeId).toLowerCase();
+        return all.includes(q);
+      }).map(l=>`
+        <tr>
+          <td>${s(l.usuarioNome||'—')}<div class="muted">${s(l.usuarioTipo||'')}</div></td>
+          <td><span class="pill">${s(l.acao||'—')}</span></td>
+          <td>${s(l.alunoNome||l.entidadeNome||'—')}<div class="muted">${s(l.entidade||'')}</div></td>
+          <td class="muted">${s(l.entidadeId||'—')}</td>
+          <td>${fmtDt(l.data||l.createdAt)}</td>
+        </tr>`).join('');
+    }
 
-      const q = (busca.value||'').trim().toLowerCase();
-      const rows = arr
-        .filter(l=>{
-          if(!q) return true;
-          return [l.usuarioNome, l.usuarioTipo, l.acao, l.entidade, l.alunoNome, l.entidadeNome]
-            .filter(Boolean)
-            .some(f=>f.toLowerCase().includes(q));
-        })
-        .map(l=>{
-          const usuario = esc(l.usuarioNome || l.usuario || '—');
-          const tipo = esc(l.usuarioTipo || '');
-          const acao = esc(l.acao);
-          const alvo = esc(l.alunoNome || l.entidadeNome || l.entidade);
-          const id = esc(l.entidadeId);
-          const dt = fmtDt(l.createdAt);
-
-          return `<tr>
-            <td>${usuario}<div class="muted">${tipo}</div></td>
-            <td><span class="pill">${acao}</span></td>
-            <td>${alvo}</td>
-            <td class="muted">${id}</td>
-            <td>${dt}</td>
-          </tr>`;
-        }).join('');
-
-      tbody.innerHTML = rows;
+    function renderPagination(){
+      paginacao.innerHTML='';
+      if(totalPaginas<=1)return;
+      for(let i=1;i<=totalPaginas;i++){
+        const btn=document.createElement('button');
+        btn.textContent=i;
+        if(i===paginaAtual)btn.classList.add('ativo');
+        btn.onclick=()=>{paginaAtual=i;carregarLogs();};
+        paginacao.appendChild(btn);
+      }
     }
 
     async function carregarLogs(){
-      tbody.innerHTML = `<tr><td colspan="5" class="empty">Carregando…</td></tr>`;
-      try {
-        const data = await getJSON('/api/logs?limit=200');
-        const list = Array.isArray(data) ? data : data.data;
-        renderRows(list);
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty">Erro ao carregar logs.</td></tr>`;
-        console.error(e);
+      erro.textContent='';
+      tbody.innerHTML='<tr><td class="empty" colspan="5">Carregando…</td></tr>';
+      try{
+        const res=await getJSON(`/api/logs?page=${paginaAtual}&limit=20`);
+        const data=Array.isArray(res)?res:(res.data||[]);
+        totalPaginas=Math.ceil((res.total||data.length)/20)||1;
+        renderRows(data);
+        renderPagination();
+      }catch(e){
+        erro.textContent='⚠️ Sessão expirada ou erro ao carregar.';
+        tbody.innerHTML='<tr><td class="empty" colspan="5">Erro ao carregar logs.</td></tr>';
       }
     }
 
-    document.getElementById('btnAtualizar').addEventListener('click', carregarLogs);
-    busca.addEventListener('input', carregarLogs);
+    document.getElementById('btnAtualizar').onclick=carregarLogs;
+    busca.oninput=()=>carregarLogs();
+
     carregarLogs();
   </script>
 </body>
