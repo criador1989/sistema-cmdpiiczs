@@ -14,7 +14,8 @@ const alunoSchema = new mongoose.Schema({
   telefone:       { type: String, trim: true },
   endereco:       { type: String, trim: true },
 
-  codigoAcesso:   { type: String, required: true, unique: true, trim: true },
+  // ⚙️ não usamos unique aqui para evitar duplicidade de índice
+  codigoAcesso:   { type: String, required: true, trim: true },
 
   /**
    * FOTO
@@ -23,8 +24,8 @@ const alunoSchema = new mongoose.Schema({
    * - `fotoThumb`: legado/opcional (se quiser persistir uma thumb específica); não é necessário com Cloudinary.
    */
   foto:           { type: String, default: null },
-  fotoPublicId:   { type: String, default: null }, // ✅ novo p/ Cloudinary
-  fotoThumb:      { type: String, default: null }, // (opcional/legado)
+  fotoPublicId:   { type: String, default: null },
+  fotoThumb:      { type: String, default: null },
 
   instituicao:    { type: String, required: true }
 }, { timestamps: true });
@@ -37,8 +38,8 @@ alunoSchema.pre('validate', function (next) {
   next();
 });
 
-/** Indexes úteis p/ acelerar as consultas da lista (instituição/turma/nome) */
-alunoSchema.index({ instituicao: 1, turma: 1, nome: 1 });
-alunoSchema.index({ codigoAcesso: 1 }, { unique: true });
+/** 📈 Índices úteis e otimizados */
+alunoSchema.index({ instituicao: 1, codigoAcesso: 1 }, { unique: true, sparse: true }); // índice composto e único
+alunoSchema.index({ instituicao: 1, turma: 1, nome: 1 }); // acelera consultas de listagem
 
 module.exports = mongoose.model('Aluno', alunoSchema);
