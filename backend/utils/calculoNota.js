@@ -1,14 +1,20 @@
 // utils/calculoNota.js
 // Cálculo da nota de comportamento com T.S.M.D. por DIAS ÚTEIS.
-// Atende às regras solicitadas:
+//
+// Regras implementadas:
 // - Nota inicial: 8,00.
 // - Eventos positivos (>0) somam; negativos (<0) subtraem.
-// - Soma TODOS os eventos do MESMO DIA em um único valor.
+// - Soma TODOS os eventos do MESMO DIA em um único valor (agrupamento por data AAAA-MM-DD).
 // - Se houver qualquer NEGATIVO no dia, a contagem do TSMD ZERA.
 // - TSMD (dias úteis): após 60 DIAS ÚTEIS consecutivos sem penalidade, +0,01 por dia útil excedente.
-// - A contagem de dias do TSMD começa ESTRITAMENTE na dataEntrada.
-// - Nota sempre limitada ao intervalo [0, 10].
-// - Ignora eventos anteriores à dataEntrada (modo estrito).
+// - A contagem do TSMD começa ESTRITAMENTE na dataEntrada do aluno (não conta antes da matrícula).
+// - Nota sempre limitada ao intervalo [0, 10] (2 casas).
+// - Considera a data informada da ocorrência (campo `data` da notificação). Caso ausente, usa `createdAt`.
+// - Ignora eventos anteriores à dataEntrada (modo estrito) e ignora eventos FUTUROS (após dataReferencia).
+//
+// Observação importante para retroativos:
+// Se você cadastrar hoje uma notificação com "data de ontem", o desconto entra em "ontem" e
+// o TSMD é recalculado a partir dessa data, afetando corretamente os dias seguintes.
 
 const { eachDayOfInterval, parseISO, isAfter } = require('date-fns');
 
@@ -43,11 +49,13 @@ function clampNota(n) {
 }
 
 /**
- * Calcula nota com TSMD por DIAS ÚTEIS, iniciando na dataEntrada.
- * @param {Date|string} dataEntrada
- * @param {Date|string} dataReferencia  - normalmente "agora"
+ * Calcula a nota de comportamento com TSMD por DIAS ÚTEIS, considerando
+ * retroativos corretamente a partir da data de ocorrência (campo `data`).
+ *
+ * @param {Date|string|null} dataEntrada       - início estrito de contagem (matrícula)
+ * @param {Date|string|null} dataReferencia    - normalmente "agora" (limite superior de cálculo)
  * @param {Array<{data?: Date|string, createdAt?: Date|string, valorNumerico: number}>} notificacoes
- * @returns {number} nota final em [0,10] com 2 casas
+ * @returns {number} nota final (2 casas) em [0, 10]
  */
 function calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes = []) {
   let nota = 8.0;
@@ -55,20 +63,25 @@ function calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes = []) {
   const end = toDateOnly(dataReferencia || new Date());
   if (!end) return clampNota(nota);
 
-  // Início ESTRITO na data de entrada
+  // Início ESTRITO na data de entrada; se não houver, usa um fallback bem antigo
+  // para não perder retroativos (mas ainda vamos filtrar < dataEntrada).
   let start = toDateOnly(dataEntrada);
-  if (!start) start = end; // sem dataEntrada → intervalo vazio
+  if (!start) start = new Date(2000, 0, 1);
 
   // Se o start for depois do end, não há intervalo
   if (isAfter(start, end)) return clampNota(nota);
 
-  // Agrupa eventos por dia a partir da dataEntrada (somando valores) e marca se houve penalidade
+  // Agrupa eventos por dia (AAA-MM-DD) a partir da dataEntrada
+  // - Usa a data da ocorrência (`data`) e, se ausente, `createdAt`.
+  // - Ignora eventos antes da matrícula (dt < start).
+  // - Ignora eventos futuros (dt > end).
   const byDay = new Map(); // key -> { sum, hasNeg }
   for (const n of notificacoes) {
     const raw = n?.data ?? n?.createdAt;
     const dt = toDateOnly(raw);
-    if (!dt || isAfter(dt, end)) continue;
-    if (dt < start) continue; // ignora eventos antes do início estrito
+    if (!dt) continue;
+    if (dt < start) continue;          // não conta antes da matrícula
+    if (isAfter(dt, end)) continue;    // não estende além da data de referência
 
     const key = keyYYYYMMDD(dt);
     const prev = byDay.get(key) || { sum: 0, hasNeg: false };

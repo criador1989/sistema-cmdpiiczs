@@ -67,7 +67,7 @@
   <form id="formNotificacao">
     <h2>Cadastro de Notificação Disciplinar</h2>
 
-    <!-- NOVO: exibir o aluno pré-selecionado -->
+    <!-- aluno pré-selecionado via URL -->
     <div id="alunoSelecionado" class="pill" style="display:none;"></div>
 
     <label for="pesquisaAluno">Pesquisar aluno</label>
@@ -76,7 +76,7 @@
     <label for="aluno">Aluno</label>
     <select id="aluno" name="aluno" required></select>
 
-    <!-- NOVO: Tipo de Registro -->
+    <!-- Tipo de Registro -->
     <label for="tipoRegistro">Tipo de Registro</label>
     <select id="tipoRegistro" name="tipoRegistro" required>
       <option value="indisciplina" selected>Indisciplina</option>
@@ -150,12 +150,16 @@
   </form>
 
   <script>
+    // utilidades
+    function toNum(v, fallback = 0){ const n = Number((v+'').replace(',', '.')); return Number.isFinite(n) ? n : fallback; }
+    function round2(n){ return Number(toNum(n).toFixed(2)); }
+
     // mapear medidas negativas (indisciplina)
     const medidasNegativas = {
-      'Advertência Escrita': -0.3,
-      'Repreensão': -0.5,
-      'A.E.C.D.E': -0.7,
-      'A.I.A': -1.2
+      'Advertência Escrita': -0.30,
+      'Repreensão': -0.50,
+      'A.E.C.D.E': -0.70, // por dia
+      'A.I.A': -1.20      // por dia
     };
     // mapear elogios (positivos)
     const elogiosMapa = {
@@ -169,14 +173,15 @@
     let motivosPorTipo = {};
     let listaCompletaMotivos = [];
 
-    // NOVO: pegar aluno da URL
+    // aluno pela URL
     const qs = new URLSearchParams(location.search);
-    const alunoQS = qs.get('aluno');          // ID
-    const nomeQS  = qs.get('nome');           // nome (URI encoded)
+    const alunoQS = qs.get('aluno');
+    const nomeQS  = qs.get('nome');
 
     async function carregarMotivos() {
       try {
         const resposta = await fetch('/api/motivos', { credentials: 'include' });
+        if (!resposta.ok) throw new Error('Falha ao carregar motivos');
         const motivos = await resposta.json();
         listaCompletaMotivos = motivos;
 
@@ -190,16 +195,13 @@
       }
     }
 
-    // aluno + pesquisa (com suporte a pré-seleção e bloqueio)
     async function carregarAlunos() {
       const select   = document.getElementById('aluno');
       const pesquisa = document.getElementById('pesquisaAluno');
       const seloAluno = document.getElementById('alunoSelecionado');
 
-      // ✅ Se veio aluno pela URL, não baixa a lista inteira
       if (alunoQS) {
         const nomeDecod = nomeQS ? decodeURIComponent(nomeQS) : 'Carregando aluno...';
-        // coloca opção provisória com o nome da URL
         select.innerHTML = '';
         const opt = document.createElement('option');
         opt.value = alunoQS;
@@ -207,22 +209,18 @@
         select.appendChild(opt);
         select.value = alunoQS;
 
-        // bloqueia seletor e pesquisa
         select.disabled = true;
         pesquisa.disabled = true;
 
-        // mostra selo
         seloAluno.style.display = 'inline-block';
         seloAluno.textContent = `Aluno selecionado: ${nomeDecod}`;
 
-        // confirma pelo backend (turma/validação)
         try {
           const r = await fetch(`/api/alunos/${alunoQS}`, { credentials: 'include' });
           if (r.ok) {
             const a = await r.json();
             opt.textContent = `${a.nome} (${a.turma || ''})`;
             seloAluno.textContent = `Aluno selecionado: ${a.nome} (${a.turma || 'turma não informada'})`;
-            // garante option presente mesmo se a lista não tinha
             if (![...select.options].some(o => o.value === a._id)) {
               const optNew = document.createElement('option');
               optNew.value = a._id;
@@ -232,10 +230,9 @@
             }
           }
         } catch (_) {}
-        return; // não busca /api/alunos
+        return;
       }
 
-      // 🔁 Sem ?aluno=..., carrega lista completa (com pesquisa)
       try {
         const resposta = await fetch('/api/alunos', { credentials: 'include' });
         const alunos = await resposta.json();
@@ -265,7 +262,7 @@
       } catch { window.location.href = '/login.html'; }
     }
 
-    // --- UI handlers ---
+    // UI handlers
     const tipoRegistro = document.getElementById('tipoRegistro');
     const grupoIndisciplina = document.getElementById('grupoIndisciplina');
     const grupoElogio = document.getElementById('grupoElogio');
@@ -281,7 +278,6 @@
       if (tipoRegistro.value === 'elogio') {
         grupoElogio.classList.remove('hidden');
         grupoIndisciplina.classList.add('hidden');
-        // limpar campos de indisciplina
         tipo.value = '';
         motivo.value = '';
         tipoMedida.value = '';
@@ -296,7 +292,6 @@
     }
     tipoRegistro.addEventListener('change', toggleGrupos);
 
-    // gravidade -> carrega motivos
     tipo.addEventListener('change', function () {
       const gravidade = this.value;
       motivo.innerHTML = '<option value="">Selecione</option>';
@@ -313,7 +308,6 @@
       aplicarValorIndisciplina();
     });
 
-    // motivo -> mostra detalhes
     motivo.addEventListener('change', function () {
       const motivoSelecionado = this.value;
       const m = listaCompletaMotivos.find(x => x.motivo === motivoSelecionado);
@@ -333,38 +327,46 @@
       }
     });
 
-    // tipoMedida negativo -> calcula valor (com dias para AECDE e AIA)
     function aplicarValorIndisciplina() {
       if (tipoRegistro.value !== 'indisciplina') return;
       const base = medidasNegativas[tipoMedida.value] || 0;
       const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tipoMedida.value);
       lblDias.classList.toggle('hidden', !precisaDias);
       qtdDias.classList.toggle('hidden', !precisaDias);
-      const dias = precisaDias ? (parseInt(qtdDias.value) || 1) : 1;
-      const valor = base * dias;
+
+      let dias = 1;
+      if (precisaDias) {
+        dias = parseInt(qtdDias.value, 10);
+        if (!Number.isInteger(dias) || dias < 1) dias = 1;
+      }
+      const valor = round2(base * dias);
       valorNumerico.value = valor ? valor.toFixed(2) : '';
       valorNumerico.className = valor < 0 ? 'negativo' : '';
     }
     tipoMedida.addEventListener('change', aplicarValorIndisciplina);
     qtdDias.addEventListener('input', aplicarValorIndisciplina);
 
-    // tipoElogio -> valor positivo
     function aplicarValorElogio() {
       if (tipoRegistro.value !== 'elogio') return;
       const v = elogiosMapa[tipoElogio.value];
-      valorNumerico.value = (typeof v === 'number') ? v.toFixed(2) : '';
-      valorNumerico.className = (typeof v === 'number') ? 'positivo' : '';
+      if (typeof v === 'number') {
+        const r = round2(v);
+        valorNumerico.value = r.toFixed(2);
+        valorNumerico.className = 'positivo';
+      } else {
+        valorNumerico.value = '';
+        valorNumerico.className = '';
+      }
     }
     tipoElogio.addEventListener('change', aplicarValorElogio);
 
-    // --- envio do formulário ---
     document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
       e.preventDefault();
 
       const dadosBasicos = {
         aluno: document.getElementById('aluno').value,
-        observacao: document.getElementById('observacao').value || '', // << corrigido (singular)
-        data: document.getElementById('data').value, // yyyy-mm-dd
+        observacao: document.getElementById('observacao').value || '',
+        data: document.getElementById('data').value,
       };
 
       let body;
@@ -384,19 +386,24 @@
             boletimInternoColetivo: 'Boletim Interno Coletivo',
             mediaAlta: 'Média ≥ 8,5',
           }[tipoElogio.value] || 'Elogio',
-          valorNumerico: valor,
+          valorNumerico: round2(valor),
           artigo: null, inciso: null, classificacaoRegulamento: null
         };
       } else {
         // indisciplina
-        const valor = valorNumerico.value ? Number(String(valorNumerico.value).replace(',', '.')) : 0;
+        const base = medidasNegativas[tipoMedida.value] || 0;
+        const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tipoMedida.value);
+        let dias = precisaDias ? parseInt(document.getElementById('quantidadeDias').value, 10) : 1;
+        if (!Number.isInteger(dias) || dias < 1) dias = 1;
+
+        const valor = round2(base * dias);
         body = {
           ...dadosBasicos,
           natureza: 'indisciplina',
           gravidade: tipo.value || null,
           motivo: motivo.value || null,
           tipoMedida: tipoMedida.value || null,
-          quantidadeDias: document.getElementById('quantidadeDias').value || null,
+          quantidadeDias: dias,
           valorNumerico: valor,
           artigo: document.getElementById('artigo').value || null,
           inciso: document.getElementById('inciso').value || null,
@@ -411,7 +418,7 @@
           credentials: 'include',
           body: JSON.stringify(body)
         });
-        const resultado = await resposta.json();
+        const resultado = await resposta.json().catch(() => ({}));
         if (resposta.ok) {
           document.getElementById('mensagem').textContent = '✅ Registro salvo com sucesso!';
           this.reset();
@@ -419,7 +426,6 @@
           toggleGrupos();
           valorNumerico.className = '';
 
-          // mantém bloqueio se veio por URL
           if (alunoQS) {
             const select = document.getElementById('aluno');
             const pesquisa = document.getElementById('pesquisaAluno');
@@ -428,21 +434,23 @@
             select.value = alunoQS;
           }
         } else {
-          document.getElementById('mensagem').textContent = resultado.mensagem || '❌ Erro ao cadastrar.';
+          document.getElementById('mensagem').textContent = resultado?.mensagem || resultado?.error || '❌ Erro ao cadastrar.';
         }
       } catch (err) {
         document.getElementById('mensagem').textContent = '❌ Erro de conexão com o servidor.';
       }
     });
 
-    // boot
     (function init(){
-      // data hoje por padrão
-      const hoje = new Date();
-      document.getElementById('data').value = hoje.toISOString().slice(0,10);
+      // ⛔ antes usava toISOString().slice(0,10) — causava +1 dia em UTC
+      const hoje = new Date();                       // data local
+      const yyyy = hoje.getFullYear();
+      const mm   = String(hoje.getMonth()+1).padStart(2,'0');
+      const dd   = String(hoje.getDate()).padStart(2,'0');
+      document.getElementById('data').value = `${yyyy}-${mm}-${dd}`;
 
       verificarAutenticado();
-      carregarAlunos();   // cuida da pré-seleção/lock se alunoQS existir
+      carregarAlunos();
       carregarMotivos();
       toggleGrupos();
     })();

@@ -7,6 +7,19 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#d82327" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+
+  <!-- 🔒 Desativa SW e caches agressivos no localhost para evitar JS antigo -->
+  <script>
+    if (location.hostname === 'localhost') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
+    }
+  </script>
+
   <style>
     :root{
       --p1:#941a1d; --p2:#d82327; --txt:#1b1b1b; --muted:#6f6f6f;
@@ -41,10 +54,7 @@
     .btn:hover{ transform:translateY(-1px); filter:saturate(1.05) }
     .btn.ghost{ background:#fff; color:var(--p1); border:1px solid #e0e0e0; box-shadow:none }
 
-    .page{
-      max-width:1180px; margin:22px auto; padding:0 18px;
-      animation:fadeIn .35s ease-out both;
-    }
+    .page{ max-width:1180px; margin:22px auto; padding:0 18px; animation:fadeIn .35s ease-out both; }
     @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 
     .hero{
@@ -52,9 +62,7 @@
       border-radius:var(--radius); padding:18px; box-shadow:0 18px 50px rgba(0,0,0,.18);
       border:1px solid #efefef;
     }
-    .head{
-      display:flex; gap:16px; align-items:center; padding-bottom:14px; border-bottom:1px dashed var(--line);
-    }
+    .head{ display:flex; gap:16px; align-items:center; padding-bottom:14px; border-bottom:1px dashed var(--line); }
     .avatar{
       width:88px; height:88px; border-radius:14px; overflow:hidden; flex:0 0 88px;
       background:#f3f3f3; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#9a9a9a; font-weight:800;
@@ -63,10 +71,7 @@
     .badges{display:flex; gap:8px; flex-wrap:wrap}
     .badge{ font-size:.78rem; color:#444; background:#f3f3f3; border:1px solid #ececec; padding:4px 10px; border-radius:999px }
 
-    .kvs{
-      display:grid; gap:12px; margin-top:14px;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-    }
+    .kvs{ display:grid; gap:12px; margin-top:14px; grid-template-columns:repeat(4,minmax(0,1fr)); }
     @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
     .kv{background:#fcfcfc; border:1px solid var(--line); border-radius:10px; padding:10px}
     .kv b{display:block; color:#777; font-size:.85rem}
@@ -76,55 +81,33 @@
       font-weight:700;font-size:.78rem;background:#fff;color:#333
     }
 
-    .columns{
-      display:grid; gap:18px; margin-top:18px;
-      grid-template-columns: 1fr 1fr;
-      align-items:start;
-    }
+    .columns{ display:grid; gap:18px; margin-top:18px; grid-template-columns: 1fr 1fr; align-items:start; }
     @media (max-width:900px){ .columns{grid-template-columns:1fr} }
 
-    .card{
-      background:var(--card); border-radius:14px; padding:16px;
-      border:1px solid var(--line); box-shadow:0 10px 28px rgba(0,0,0,.08);
-    }
+    .card{ background:var(--card); border-radius:14px; padding:16px; border:1px solid var(--line); box-shadow:0 10px 28px rgba(0,0,0,.08); }
     .title{margin:0 0 10px; color:#222; font-size:18px}
 
-    .list{
-      display:flex; flex-direction:column; gap:12px;
-      max-height:520px; overflow:auto; padding-right:4px;
-      scroll-behavior:smooth;
-    }
+    .list{ display:flex; flex-direction:column; gap:12px; max-height:520px; overflow:auto; padding-right:4px; scroll-behavior:smooth; }
     .empty{border:1px dashed var(--line); border-radius:12px; padding:14px; background:#fafafa; color:#777; text-align:center}
     .muted{color:var(--muted)}
 
-    .obs,.notif{
-      border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,.06); posição:relative;
-    }
+    .obs,.notif{ border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px; box-shadow:0 6px 16px rgba(0,0,0,.06); position:relative; }
     .obs{border-left:6px solid var(--p1)}
     .notif{border-left:6px solid #b71c1c}
     .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
     .chip{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:#f4f4f4; font-size:.78rem}
     .actions{display:flex; gap:8px; flex-wrap:wrap}
-    .iconbtn{
-      appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px;
-      padding:8px 10px; cursor:pointer; font-weight:600; text-decoration:none; color:#333;
-    }
+    .iconbtn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer; font-weight:600; text-decoration:none; color:#333; }
     .iconbtn:hover{filter:brightness(.96)}
 
     .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
     .editor textarea{flex:1; resize:vertical; min-height:86px; border:1px solid #d7d7d7; border-radius:10px; padding:10px}
 
-    .edit-card{
-      background:#fff;border:1px solid #e6e6e6;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.15);
-      padding:16px;margin-top:14px;display:none
-    }
+    .edit-card{ background:#fff;border:1px solid #e6e6e6;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.15); padding:16px;margin-top:14px;display:none }
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
     .edit-card label{font-weight:600;font-size:.9rem}
-    .edit-card input,.edit-card textarea{
-      width:100%;padding:10px;border:1px solid #cfcfcf;border-radius:10px
-    }
+    .edit-card input,.edit-card textarea{ width:100%;padding:10px;border:1px solid #cfcfcf;border-radius:10px }
     .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
     @media print{
@@ -169,48 +152,17 @@
 
       <div class="edit-card" id="editorAluno">
         <div class="grid-2">
-          <div>
-            <label>Nome</label>
-            <input id="edNome" type="text" />
-          </div>
-          <div>
-            <label>Turma</label>
-            <input id="edTurma" type="text" />
-          </div>
-          <div>
-            <label>Data de Entrada</label>
-            <input id="edEntrada" type="date" />
-          </div>
-          <div>
-            <label>Data de Nascimento</label>
-            <input id="edNasc" type="date" />
-          </div>
-          <div>
-            <label>Nome do Pai</label>
-            <input id="edPai" type="text" />
-          </div>
-          <div>
-            <label>Nome da Mãe</label>
-            <input id="edMae" type="text" />
-          </div>
-          <div>
-            <label>Telefone</label>
-            <input id="edTel" type="text" />
-          </div>
-          <div>
-            <label>Endereço</label>
-            <input id="edEnd" type="text" />
-          </div>
-          <div>
-            <label>Código de Acesso</label>
-            <input id="edCodigo" type="text" />
-          </div>
-          <div>
-            <label>Foto (URL, /uploads/..., ou base64)</label>
-            <input id="edFoto" type="text" placeholder="ex: alunos/123.jpg ou https://..." />
-          </div>
+          <div><label>Nome</label><input id="edNome" type="text" /></div>
+          <div><label>Turma</label><input id="edTurma" type="text" /></div>
+          <div><label>Data de Entrada</label><input id="edEntrada" type="date" /></div>
+          <div><label>Data de Nascimento</label><input id="edNasc" type="date" /></div>
+          <div><label>Nome do Pai</label><input id="edPai" type="text" /></div>
+          <div><label>Nome da Mãe</label><input id="edMae" type="text" /></div>
+          <div><label>Telefone</label><input id="edTel" type="text" /></div>
+          <div><label>Endereço</label><input id="edEnd" type="text" /></div>
+          <div><label>Código de Acesso</label><input id="edCodigo" type="text" /></div>
+          <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: alunos/123.jpg ou https://..." /></div>
         </div>
-
         <div class="edit-actions">
           <button class="btn ghost" id="btnCancelarEd">Cancelar</button>
           <button class="btn" id="btnSalvarEd">Salvar alterações</button>
@@ -233,7 +185,6 @@
       <div class="card">
         <h3 class="title">Observações</h3>
         <div id="observacoes" class="list"></div>
-
         <div class="editor">
           <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
           <button class="btn" id="btnSalvar">Salvar</button>
@@ -248,6 +199,7 @@
   </main>
 
   <script>
+    // ===== utilidades simples =====
     const qs = (s)=>document.querySelector(s);
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
@@ -270,16 +222,12 @@
     function isExternalOrDataUrl(url='') {
       return /^https?:\/\//i.test(url) || /^data:image\//i.test(url);
     }
-
-    // Se for URL do Cloudinary, aplica transformação para 256x256, crop face, formatos/qualidade automáticos
     function cloudinaryThumb(url, w=256, h=256){
       try{
         if(!url || !/res\.cloudinary\.com/i.test(url)) return url;
         return url.replace(/\/image\/upload\/(v\d+\/)?/, (m)=> m + `q_auto,f_auto,c_fill,g_face,w_${w},h_${h}/`);
       }catch{ return url; }
     }
-
-    // Normaliza qualquer caminho local para /uploads/...
     function toUploadsUrl(pathOrUrl, w=256, h=256){
       if (!pathOrUrl) return '';
       if (isExternalOrDataUrl(pathOrUrl)) {
@@ -288,9 +236,9 @@
       let s = String(pathOrUrl).trim().replace(/^\/+/, '');
       s = s.replace(/\\/g, '/');
       const low = s.toLowerCase();
-      if (low.startsWith('uploads/')) return '/' + s;          // "uploads/alunos/.."
-      if (low.startsWith('alunos/'))   return '/uploads/' + s; // "alunos/.." -> "/uploads/alunos/.."
-      return '/uploads/' + s;                                   // outro relativo -> assume dentro de /uploads
+      if (low.startsWith('uploads/')) return '/' + s;
+      if (low.startsWith('alunos/'))   return '/uploads/' + s;
+      return '/uploads/' + s;
     }
 
     function classificarNota(nota){
@@ -304,10 +252,24 @@
       return {texto:'Incompatível', cor:'#212529'};
     }
 
+    // ===== carrega ficha (sempre do backend) =====
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
-      const r = await fetch(`/api/ficha/dados/${alunoId}`, { credentials:'include' });
-      if(!r.ok){ alert('Falha ao carregar ficha.'); return; }
+
+      // força a não usar cache no localhost
+      const url = `/api/ficha/dados/${alunoId}?t=${Date.now()}`;
+      const r = await fetch(url, {
+        credentials:'include',
+        cache: 'no-store' // reforço no fetch
+      });
+      if(!r.ok){
+        if (r.status === 401) {
+          alert('Sessão expirada. Faça login novamente.');
+          return (window.location.href = '/login.html');
+        }
+        alert('Falha ao carregar ficha.');
+        return;
+      }
       const { aluno, notificacoes=[], observacoes=[] } = await r.json();
       alunoAtual = aluno;
 
@@ -322,6 +284,7 @@
       qs('#kvEntrada').textContent = aluno?.dataEntrada ? fmtData(aluno.dataEntrada) : '—';
       qs('#kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
 
+      // ⚠️ usa SEMPRE o valor vindo do backend (já recalculado no POST /api/notificacoes)
       const nota = (typeof aluno?.comportamento === 'number') ? aluno.comportamento : null;
       qs('#kvNota').textContent = (nota !== null) ? nota.toFixed(2) : 'N/A';
       const cls = classificarNota(nota ?? NaN);
@@ -331,11 +294,10 @@
       pill.style.borderColor = '#e3e3e3';
       pill.style.background = '#fff';
 
-      // Foto — usa fotoUrl se existir; senão, foto relativa; senão, thumb
+      // Foto
       const fotoBox = qs('#fotoBox');
       const raw = aluno?.fotoUrl || aluno?.foto || '';
       const finalUrl = raw ? toUploadsUrl(raw, 256, 256) : `/api/imagens/thumb/${aluno?._id}`;
-
       fotoBox.innerHTML = finalUrl
         ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="88" height="88" style="object-fit:cover">`
         : 'Sem foto';
@@ -399,7 +361,7 @@
       }
     }
 
-    // Observações: salvar/editar/excluir
+    // ===== Observações: salvar/editar/excluir =====
     async function salvarObservacao(){
       const texto = qs('#textoObservacao').value.trim();
       if(!texto) return alert('Digite algo.');
@@ -412,13 +374,11 @@
       if(r.ok){ qs('#textoObservacao').value=''; carregarFicha(); }
       else{ const j = await r.json().catch(()=>({})); alert(j.mensagem || 'Erro ao salvar.'); }
     }
-
     async function excluirObs(obsId){
       if(!confirm('Deseja excluir esta observação?')) return;
       const r = await fetch(`/api/observacoes/${obsId}`,{ method:'DELETE', credentials:'include' });
       if(r.ok) carregarFicha(); else alert('Erro ao excluir observação.');
     }
-
     function editarObs(obsId, btn){
       const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
@@ -443,7 +403,7 @@
       card.querySelector('#cancelEd').onclick = ()=>carregarFicha();
     }
 
-    // Editor do Aluno
+    // ===== Editor do Aluno =====
     function abrirEditor(){
       if(!alunoAtual) return;
       qs('#editorAluno').style.display = 'block';
@@ -458,9 +418,7 @@
       qs('#edCodigo').value = alunoAtual.codigoAcesso || '';
       qs('#edFoto').value   = alunoAtual.foto || '';
     }
-    function fecharEditor(){
-      qs('#editorAluno').style.display = 'none';
-    }
+    function fecharEditor(){ qs('#editorAluno').style.display = 'none'; }
     async function salvarEdicao(){
       if(!alunoAtual) return;
       const payload = {
@@ -475,7 +433,6 @@
         codigoAcesso: qs('#edCodigo').value.trim(),
         foto:         qs('#edFoto').value.trim()
       };
-
       const r = await fetch(`/api/alunos/${alunoAtual._id}`,{
         method:'PUT',
         headers:{ 'Content-Type':'application/json' },
@@ -494,25 +451,13 @@
     // ===== Upload de foto na ficha =====
     const btnTrocarFoto = document.getElementById('btnTrocarFoto');
     const inputFoto = document.getElementById('inputFoto');
-
     btnTrocarFoto.addEventListener('click', () => inputFoto.click());
-
     inputFoto.addEventListener('change', async () => {
       const file = inputFoto.files?.[0];
       if (!file) return;
+      if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
+      if (file.size > 5 * 1024 * 1024)     { alert('Imagem muito grande. Máximo 5MB.'); inputFoto.value = ''; return; }
 
-      if (!file.type.startsWith('image/')) {
-        alert('Envie uma imagem válida.');
-        inputFoto.value = '';
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Imagem muito grande. Máximo 5MB.');
-        inputFoto.value = '';
-        return;
-      }
-
-      // Preview local
       const previewURL = URL.createObjectURL(file);
       const fotoBox = qs('#fotoBox');
       fotoBox.innerHTML = `<img src="${previewURL}" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">`;
@@ -520,49 +465,28 @@
       try {
         const fd = new FormData();
         fd.append('foto', file);
-
-        const resp = await fetch(`/api/alunos/${alunoId}/foto`, {
-          method: 'PUT',
-          body: fd,
-          credentials: 'include'
-        });
-
-        if (!resp.ok) {
-          alert('Falha ao enviar a foto.');
-          URL.revokeObjectURL(previewURL);
-          return carregarFicha(); // volta para foto anterior
-        }
-
+        const resp = await fetch(`/api/alunos/${alunoId}/foto`, { method: 'PUT', body: fd, credentials: 'include' });
+        if (!resp.ok) { alert('Falha ao enviar a foto.'); URL.revokeObjectURL(previewURL); return carregarFicha(); }
         const data = await resp.json();
         if (data?.foto) {
           URL.revokeObjectURL(previewURL);
           fotoBox.innerHTML = `<img src="${data.foto}" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">`;
-          // mantém o estado local coerente para quando voltar à página
-          if (alunoAtual) {
-            alunoAtual.fotoUrl = data.foto; // absoluta (/uploads/...)
-            alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, ''); // relativa (alunos/...)
-          }
+          if (alunoAtual) { alunoAtual.fotoUrl = data.foto; alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, ''); }
           alert('Foto atualizada com sucesso!');
-        } else {
-          throw new Error('Retorno sem URL da foto.');
-        }
+        } else { throw new Error('Retorno sem URL da foto.'); }
       } catch (e) {
-        console.error(e);
-        alert('Erro ao atualizar a foto.');
-        URL.revokeObjectURL(previewURL);
-        carregarFicha();
-      } finally {
-        inputFoto.value = '';
-      }
+        console.error(e); alert('Erro ao atualizar a foto.'); URL.revokeObjectURL(previewURL); carregarFicha();
+      } finally { inputFoto.value = ''; }
     });
 
-    // Ações
+    // ===== Ações =====
     qs('#btnSalvar').addEventListener('click', salvarObservacao);
     qs('#btnImprimir').addEventListener('click', ()=>window.print());
     document.getElementById('btnEditar').addEventListener('click', abrirEditor);
     document.getElementById('btnCancelarEd').addEventListener('click', fecharEditor);
     document.getElementById('btnSalvarEd').addEventListener('click', salvarEdicao);
 
+    // boot
     carregarFicha();
   </script>
 </body>

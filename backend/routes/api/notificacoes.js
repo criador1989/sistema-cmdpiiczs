@@ -10,12 +10,14 @@ const enviarWhatsapp = require('../../utils/twilio');
 const { autenticar } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 
-// ------------------ Mapas de valores ------------------
+/* ------------------------------------------------------------------ *
+ *  Maps de valores (negativos por dia quando aplicável / positivos)  *
+ * ------------------------------------------------------------------ */
 const MAPA_NEGATIVOS = {
   'Advertência Escrita': -0.30,
   'Repreensão': -0.50,
-  'A.E.C.D.E': -0.70,
-  'A.I.A': -1.20
+  'A.E.C.D.E': -0.70, // por dia
+  'A.I.A': -1.20      // por dia
 };
 const MAPA_ELOGIOS = {
   elogioVerbal: 0.15,
@@ -24,32 +26,42 @@ const MAPA_ELOGIOS = {
   mediaAlta: 0.40
 };
 
-// ------------------------------------------------------
-// GET "/novas" (fixo / placeholder)
-// ------------------------------------------------------
-router.get('/novas', autenticar, async (req, res) => {
+/* ------------------------------------------------------------- *
+ *  Util: parse de data LOCAL (corrige bug de +1 dia no UTC/ISO) *
+ * ------------------------------------------------------------- */
+function parseDateLocal(dateStrOrDate) {
+  if (!dateStrOrDate) {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  }
+  if (typeof dateStrOrDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStrOrDate)) {
+    const [y, m, d] = dateStrOrDate.split('-').map(Number);
+    return new Date(y, m - 1, d, 0, 0, 0, 0); // meia-noite local
+  }
+  return new Date(dateStrOrDate);
+}
+
+/* ----------------------------- *
+ *  GET "/novas" (placeholder)   *
+ * ----------------------------- */
+router.get('/novas', autenticar, async (_req, res) => {
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
-// ------------------------------------------------------
-// GET "/"  (paginado + filtros leves: ?page=&limit=&q=&turma=)
-// - Retorna payload enxuto para listagem. Detalhes via GET /:id
-// ------------------------------------------------------
+/* ---------------------------------------------------------------------- *
+ *  GET "/"  (paginado + filtros leves: ?page=&limit=&q=&turma=)          *
+ * ---------------------------------------------------------------------- */
 router.get('/', autenticar, async (req, res) => {
   try {
-    // paginação
-    const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const page  = Math.max(parseInt(req.query.page  || '1', 10), 1);
     const limit = Math.max(parseInt(req.query.limit || '10', 10), 1);
 
-    // filtros
     const instituicao = req.usuario.instituicao;
     const q = (req.query.q || '').trim();
     const turma = (req.query.turma || '').trim();
 
-    // filtro base
     const filtroBase = { instituicao };
 
-    // se veio q/turma, procure alunos primeiro e restrinja por aluno
     if (q || turma) {
       const alunoFiltro = { instituicao };
       if (q) {
@@ -75,7 +87,6 @@ router.get('/', autenticar, async (req, res) => {
       .sort({ data: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      // campos enxutos para a listagem (detalhes via GET /:id)
       .select('aluno tipo tipoMedida data status valorNumerico notaAnterior notaAtual comentarioMonitor numeroSequencial')
       .populate({
         path: 'aluno',
@@ -92,9 +103,9 @@ router.get('/', autenticar, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
-// GET "/:id"  (detalhes)
-// ------------------------------------------------------
+/* ------------------------- *
+ *  GET "/:id"  (detalhes)   *
+ * ------------------------- */
 router.get('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -113,9 +124,9 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
-// POST "/"  (criar notificação)
-// ------------------------------------------------------
+/* -------------------------------- *
+ *  POST "/"  (criar notificação)   *
+ * -------------------------------- */
 router.post('/', autenticar, async (req, res) => {
   const {
     aluno,
@@ -123,12 +134,11 @@ router.post('/', autenticar, async (req, res) => {
     tipo,              // compat: pode vir do front antigo
     tipoMedida,        // compat: p/ indisciplina
     observacao,
-    data,
+    data,              // "YYYY-MM-DD" (preferido) -> parse local
     quantidadeDias,
-    valorNumerico,     // compat: permite enviar explícito
-    // NOVOS:
+    valorNumerico,     // mantido p/ compat; no servidor recalculamos negativos
     natureza = 'indisciplina', // 'indisciplina' | 'elogio'
-    tipoElogio         // ex.: 'elogioVerbal'
+    tipoElogio
   } = req.body;
 
   try {
@@ -141,10 +151,10 @@ router.post('/', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Aluno não encontrado ou pertence a outra instituição' });
     }
 
-    // Data desta notificação
-    const dt = data ? new Date(data) : new Date();
+    // Data desta notificação (corrigindo timezone/UTC)
+    const dt = parseDateLocal(data);
 
-    // Valor numérico e rótulos conforme natureza
+    // Montagem do payload
     let valor = 0;
     let payload = {
       aluno,
@@ -180,10 +190,13 @@ router.post('/', autenticar, async (req, res) => {
     } else {
       // ----- INDISCIPLINA (negativo) -----
       const tituloMedida = tipoMedida || tipo || '';
-      const base = (typeof valorNumerico === 'number') ? valorNumerico : (MAPA_NEGATIVOS[tituloMedida] || 0);
+      const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
+
       const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tituloMedida);
       const dias = precisaDias ? Math.max(1, parseInt(quantidadeDias || 1, 10)) : 1;
-      valor = Number((base * dias).toFixed(2));
+
+      // cálculo canônico no servidor (evita divergência do front)
+      valor = Number(((precisaDias ? base * dias : base)).toFixed(2));
 
       const dadosRegulamento = obterDadosDoRegulamento(motivo || '');
       payload = {
@@ -200,14 +213,19 @@ router.post('/', autenticar, async (req, res) => {
       };
     }
 
-    // ===========================
-    //   CÁLCULO DA NOTA (preciso)
-    // ===========================
-    const dayStart = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0);
-    const dayEnd   = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1, 0, 0, 0, 0);
+    /* ===========================
+     *   CÁLCULO DA NOTA (preciso)
+     * =========================== */
 
-    // (A) Nota até o dia anterior
+    // Limites em torno da data da ocorrência (para notaAnterior)
+    const dayStart = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0);
     const endOntem = new Date(dayStart.getTime() - 1);
+
+    // Fim do dia de HOJE (para notaAtual no aluno)
+    const now = new Date();
+    const endHojeRef = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+
+    // (A) Nota até o dia ANTERIOR à ocorrência (preenche notaAnterior do registro)
     const notificacoesAntes = await Notificacao.find({
       aluno,
       instituicao: req.usuario.instituicao,
@@ -216,33 +234,31 @@ router.post('/', autenticar, async (req, res) => {
 
     const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
 
-    // (B) Nota até o fim do dia atual + esta nova
-    const endHoje = new Date(dayEnd.getTime() - 1);
-    const notificacoesAteHoje = await Notificacao.find({
+    // (B) Nota ATUAL do aluno: tudo até o fim de HOJE + ESTA NOVA (retroativa ou não)
+    const notificacoesAteAgora = await Notificacao.find({
       aluno,
       instituicao: req.usuario.instituicao,
-      data: { $lt: dayEnd }
+      data: { $lt: endHojeRef }
     }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
 
     const paraCalculoDia = [
-      ...notificacoesAteHoje.map(n => ({
+      ...notificacoesAteAgora.map(n => ({
         data: n.data, createdAt: n.createdAt, valorNumerico: n.valorNumerico
       })),
+      // injeta a nova antes de salvar
       { data: dt, createdAt: dt, valorNumerico: Number(valor || 0) }
     ];
 
-    let notaAtual = calcularNotaTSMD(alunoRelacionado.dataEntrada, endHoje, paraCalculoDia);
+    const notaAtual = calcularNotaTSMD(alunoRelacionado.dataEntrada, endHojeRef, paraCalculoDia);
 
-    // Atualiza o aluno
-    alunoRelacionado.comportamento = notaAtual;
-    await alunoRelacionado.save();
-
-    // numeração sequencial por ano
+    /* ------------------------------- *
+     *  Numeração sequencial por ano   *
+     * ------------------------------- */
     const anoAtual = dt.getFullYear();
     const notificacoesAno = await Notificacao.find({
-      numeroSequencial: { $regex: `/${anoAtual}$` },
+      numeroSequencial: { $regex: new RegExp(`${anoAtual}$`) },
       instituicao: req.usuario.instituicao
-    });
+    }).select('numeroSequencial');
 
     let maiorNumero = 0;
     notificacoesAno.forEach(n => {
@@ -254,17 +270,24 @@ router.post('/', autenticar, async (req, res) => {
     const proximoNumero = maiorNumero + 1;
     const numeroSequencial = `${String(proximoNumero).padStart(2, '0')}/${anoAtual}`;
 
+    /* ------------------------------------------- *
+     *  Cria notificação + atualiza nota do aluno  *
+     * ------------------------------------------- */
     const novaNotificacao = new Notificacao({
       ...payload,
-      notaAnterior,
-      notaAtual,
+      notaAnterior: Number(notaAnterior.toFixed(2)),
+      notaAtual: Number(notaAtual.toFixed(2)),
       numeroSequencial,
       status: 'pendente'
     });
 
     await novaNotificacao.save();
 
-    // WhatsApp (mantido)
+    // Atualiza o aluno com a nota ATUAL (considerando retroativo até hoje)
+    alunoRelacionado.comportamento = Number(notaAtual.toFixed(2));
+    await alunoRelacionado.save();
+
+    // WhatsApp (opcional)
     if (alunoRelacionado.telefone) {
       const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.
       
@@ -272,8 +295,8 @@ Foi registrada uma ${payload.natureza === 'elogio' ? 'menção de elogio' : 'not
 🔸 Motivo: ${payload.motivo}
 🔸 Medida: ${payload.tipoMedida}
 
-Nota atual de comportamento: ${notaAtual.toFixed(2)}.`;
-      await enviarWhatsapp(alunoRelacionado.telefone, mensagem);
+Nota atual de comportamento: ${alunoRelacionado.comportamento.toFixed(2)}.`;
+      try { await enviarWhatsapp(alunoRelacionado.telefone, mensagem); } catch {}
     }
 
     res.status(201).json(novaNotificacao);
@@ -283,9 +306,9 @@ Nota atual de comportamento: ${notaAtual.toFixed(2)}.`;
   }
 });
 
-// ------------------------------------------------------
-// PUT "/:id"  (atualizar notificação)
-// ------------------------------------------------------
+/* -------------------------------- *
+ *  PUT "/:id"  (atualizar registro) *
+ * -------------------------------- */
 router.put('/:id', autenticar, async (req, res) => {
   try {
     const notif = await Notificacao.findOne({
@@ -303,24 +326,53 @@ router.put('/:id', autenticar, async (req, res) => {
     ];
 
     for (const campo of camposEditaveis) {
-      if (req.body[campo] !== undefined) notif[campo] = req.body[campo];
+      if (req.body[campo] !== undefined) {
+        if (campo === 'data') {
+          notif[campo] = parseDateLocal(req.body[campo]); // garante data local
+        } else {
+          notif[campo] = req.body[campo];
+        }
+      }
     }
 
-    // ajustes quando mudar natureza/medida sem valor explícito
-    if (req.body.natureza === 'elogio' && req.body.valorNumerico === undefined && req.body.tipoElogio) {
-      notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
-      notif.tipo = 'Elogio';
-      notif.tipoMedida = 'Elogio';
-      notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
-    }
-    if (req.body.natureza === 'indisciplina' && req.body.valorNumerico === undefined && req.body.tipoMedida) {
-      const base = MAPA_NEGATIVOS[req.body.tipoMedida] ?? 0;
-      const dias = ['A.E.C.D.E','A.I.A'].includes(req.body.tipoMedida) ? Math.max(1, parseInt(req.body.quantidadeDias || 1, 10)) : 1;
-      notif.valorNumerico = base * dias;
-      notif.tipo = req.body.tipoMedida;
+    // Ajustes coerentes após edição
+    if (notif.natureza === 'elogio') {
+      if (req.body.valorNumerico === undefined && req.body.tipoElogio) {
+        notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
+        notif.tipo = 'Elogio';
+        notif.tipoMedida = 'Elogio';
+        notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
+        notif.quantidadeDias = null;
+      }
+    } else {
+      const tituloMedida = req.body.tipoMedida || notif.tipoMedida || notif.tipo || '';
+      const baseMap = MAPA_NEGATIVOS[tituloMedida] ?? 0;
+      const precisaDias = ['A.E.C.D.E','A.I.A'].includes(tituloMedida);
+      const dias = precisaDias ? Math.max(1, parseInt(req.body.quantidadeDias ?? notif.quantidadeDias ?? 1, 10)) : 1;
+
+      notif.tipo = tituloMedida || 'Medida';
+      notif.valorNumerico = Number(((precisaDias ? baseMap * dias : baseMap)).toFixed(2));
+      notif.quantidadeDias = precisaDias ? dias : 1;
     }
 
     await notif.save();
+
+    // Recalcula a nota do aluno até HOJE (fim do dia)
+    const alunoId = notif.aluno;
+    const alunoRelacionado = await Aluno.findOne({ _id: alunoId, instituicao: req.usuario.instituicao });
+    if (alunoRelacionado) {
+      const now = new Date();
+      const endHojeRef = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+      const notifs = await Notificacao.find({
+        aluno: alunoId,
+        instituicao: req.usuario.instituicao,
+        data: { $lt: endHojeRef }
+      }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
+      const novaNota = calcularNotaTSMD(alunoRelacionado.dataEntrada, endHojeRef, notifs);
+      alunoRelacionado.comportamento = Number(novaNota.toFixed(2));
+      await alunoRelacionado.save();
+    }
+
     res.json({ message: 'Notificação atualizada com sucesso.' });
   } catch (err) {
     console.error('Erro ao atualizar notificação:', err);
@@ -328,9 +380,9 @@ router.put('/:id', autenticar, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
-// PUT "/:id/reenviar"  (voltar para pendente)
-// ------------------------------------------------------
+/* ----------------------------------------- *
+ *  PUT "/:id/reenviar"  (voltar a pendente) *
+ * ----------------------------------------- */
 router.put('/:id/reenviar', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -350,9 +402,9 @@ router.put('/:id/reenviar', autenticar, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
-// DELETE "/:id"
-// ------------------------------------------------------
+/* --------------- *
+ *  DELETE "/:id"  *
+ * --------------- */
 router.delete('/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -368,13 +420,16 @@ router.delete('/:id', autenticar, async (req, res) => {
 
     const aluno = await Aluno.findOne({ _id: alunoId, instituicao: req.usuario.instituicao });
 
+    const now = new Date();
+    const endHojeRef = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
     const notificacoesRestantes = await Notificacao.find({
       aluno: alunoId,
-      instituicao: req.usuario.instituicao
+      instituicao: req.usuario.instituicao,
+      data: { $lt: endHojeRef }
     }).sort({ data: 1 });
 
-    const notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoesRestantes);
-    aluno.comportamento = parseFloat(notaFinal.toFixed(2));
+    const notaFinal = calcularNotaTSMD(aluno.dataEntrada, endHojeRef, notificacoesRestantes);
+    aluno.comportamento = Number(notaFinal.toFixed(2));
     await aluno.save();
 
     res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
