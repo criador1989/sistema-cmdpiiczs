@@ -18,6 +18,7 @@
       --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
       --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de;
       --line: rgba(255,255,255,.18);
+      --ok:#10a03c; --warn:#ffb000; --info:#0ea5e9;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:#1e0506;min-height:100vh}
@@ -78,7 +79,11 @@
     .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .actions button,.actions a{margin:0;padding:8px 12px;font-size:14px;border:none;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
     .pdf-btn{background:#007bff;color:#fff}.edit-btn{background:#ffc107;color:#000}.delete-btn{background:#dc3545;color:#fff}.reenviar-btn{background:#28a745;color:#fff}.comunicacao-btn{background:#0ea5e9;color:#fff}
-
+    .entregue-wrap{display:inline-flex;gap:6px;align-items:center;margin-left:8px}
+    .entregue-wrap input{accent-color:var(--ok);width:18px;height:18px;cursor:pointer}
+    .prazo-chip{margin-left:8px;font-size:.8rem;border-radius:999px;padding:4px 8px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25)}
+    .prazo-chip.atraso{border-color:rgba(255,120,120,.45);background:rgba(255,0,0,.18)}
+    .hint{color:var(--text-soft);font-size:.85rem;margin-top:6px}
     .skeleton{height:14px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16),rgba(255,255,255,.08));background-size:200% 100%;animation:sk 1.1s linear infinite;border-radius:8px}
     @keyframes sk{to{background-position:-200% 0}}
   </style>
@@ -154,6 +159,17 @@
       el.textContent = `Erro: ${msg}`;
       clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
     }
+    function showToast(msg){
+      let el = document.getElementById('okBanner');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'okBanner';
+        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#0f5132;color:#d1e7dd;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
+        document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 4000);
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const filtroTurma = document.getElementById('filtroTurma');
@@ -187,7 +203,6 @@
           if (r.status === 401) { location.href='./login.html'; return; }
           const j = await r.json();
 
-          // suporta {data,total,totalPages} ou array simples
           const data = Array.isArray(j) ? j : (j.data || []);
           totalPaginas = Number(j.totalPages ?? 1);
           totalItens   = Number(j.total ?? data.length);
@@ -205,7 +220,6 @@
 
       function renderTurmasDoLote(data){
         const turmas = new Set((data||[]).map(n => n?.aluno?.turma).filter(Boolean));
-        // mantém opção selecionada
         const cur = filtroTurma.value;
         filtroTurma.innerHTML = '<option value="">Todas</option>';
         Array.from(turmas).sort().forEach(t => {
@@ -228,13 +242,42 @@
         const turma = n.aluno?.turma || '—';
         const medida = n.tipoMedida || n.tipo || '—';
         const data   = n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—';
+
+        // caixinha Entregue + prazo (só quando status é deferido)
+        let entregueBox = '';
+        if (String(n.status||'').toLowerCase() === 'deferido') {
+          const checked = n.entregue ? 'checked' : '';
+          const disabled = n.entregue ? 'disabled' : '';
+          const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
+          const atrasado = prazo && Date.now() > prazo.getTime() && !n.devolvidoPeloAluno;
+          const prazoTxt = prazo ? prazo.toLocaleString('pt-BR') : '';
+          entregueBox = `
+            <label class="entregue-wrap" onclick="event.stopPropagation()">
+              <input type="checkbox" ${checked} ${disabled} data-id="${n._id}" class="chk-entregue" />
+              <span>Entregue</span>
+            </label>
+            ${n.entregue ? `<span class="prazo-chip ${atrasado?'atraso':''}" title="${atrasado?'Prazo vencido':''}">
+              Prazo: ${prazoTxt}
+            </span>` : ''}
+          `;
+        }
+
+        // indicador de devolução
+        const devolv = n.devolvidoPeloAluno
+          ? `<span class="badge" title="Assinada e devolvida">📥 Devolvida</span>`
+          : '';
+
         return `
           <div>
             <div class="n-title">${nome}</div>
             <div class="n-sub">${turma} • ${medida} • ${data}</div>
           </div>
           <div>${statusPill(n.status)}</div>
-          <div class="badge">Nota: ${(n.notaAnterior?.toFixed?.(2) || '—')} → ${(n.notaAtual?.toFixed?.(2) || '—')}</div>
+          <div>
+            <span class="badge">Nota: ${(n.notaAnterior?.toFixed?.(2) || '—')} → ${(n.notaAtual?.toFixed?.(2) || '—')}</span>
+            ${devolv}
+            ${entregueBox}
+          </div>
         `;
       }
 
@@ -274,8 +317,27 @@
               const det = await r.json();
 
               const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g,'');
-              const deferida = det.deferido === true || String(det.status||'').toLowerCase()==='deferido' || String(det.status||'').toLowerCase()==='aprovada';
+              const deferida = String(det.status||'').toLowerCase()==='deferido';
               const showCom = deferida && (med==='AIA' || med==='AECDE');
+
+              // bloco Entregue/Devolvida no detalhe também
+              const prazoTxt = det.prazoDevolucao ? new Date(det.prazoDevolucao).toLocaleString('pt-BR') : '—';
+              const entregueDetalhe = deferida ? `
+                <div class="n-kv">
+                  <b>Entrega ao aluno</b>
+                  <div class="hint">
+                    ${det.entregue ? `✔️ Entregue em ${new Date(det.entregueEm).toLocaleString('pt-BR')}` : 'Ainda não entregue'}
+                  </div>
+                  ${det.entregue ? `<div class="hint">Prazo para devolução: ${prazoTxt}</div>` : ''}
+                </div>
+              ` : '';
+
+              const devolucaoActions = deferida ? `
+                <div class="actions">
+                  ${!det.entregue ? `<button class="comunicacao-btn" onclick="marcarEntregue('${det._id}', this)">Marcar ENTREGUE</button>` : ''}
+                  ${det.entregue && !det.devolvidoPeloAluno ? `<button class="reenviar-btn" onclick="marcarDevolvida('${det._id}', this)">Marcar DEVOLVIDA</button>` : ''}
+                </div>
+              ` : '';
 
               body.innerHTML = `
                 <div class="n-row">
@@ -285,6 +347,7 @@
                   <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
                   <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
                   <div class="n-kv"><b>Inciso</b>${det.inciso || '—'}</div>
+                  ${entregueDetalhe}
                 </div>
                 <div class="actions">
                   <button class="pdf-btn" onclick="gerarPDF('${det._id}')">PDF</button>
@@ -293,6 +356,7 @@
                   ${det.status==='revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
                   ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
                 </div>
+                ${devolucaoActions}
               `;
               loaded = true;
             }catch(e){
@@ -308,6 +372,31 @@
 
         lista.innerHTML = '';
         lista.appendChild(frag);
+
+        // bind da caixinha "Entregue" (no cabeçalho de cada card)
+        document.querySelectorAll('.chk-entregue').forEach(chk => {
+          chk.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            const id = chk.dataset.id;
+            if (!id) return;
+            const prev = chk.checked;
+            try{
+              const r = await fetch(`/api/notificacoes/${id}/entregar`, { method:'POST', credentials:'include', cache:'no-store' });
+              const j = await r.json();
+              if (!r.ok) {
+                chk.checked = !prev;
+                showError(j.error || 'Falha ao marcar ENTREGUE');
+                return;
+              }
+              showToast('Notificação marcada como ENTREGUE.');
+              // recarrega para atualizar chips/prazo
+              carregar();
+            }catch(e){
+              chk.checked = !prev;
+              showError('Erro de rede ao marcar ENTREGUE.');
+            }
+          });
+        });
 
         const ini = (totalItens===0) ? 0 : ((pagina-1)*porPagina + 1);
         const fim = Math.min(totalItens || (pagina*porPagina), ini + data.length - 1);
@@ -337,7 +426,7 @@
         make(pagBottom);
       }
 
-      // Ações públicas (iguais às anteriores)
+      // Ações públicas e novas integrações
       async function gerarPDF(id) {
         try {
           const r = await fetch(`/api/pdf/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
@@ -369,10 +458,34 @@
           window.location.href = `/comunicacao-pais.html?comunicacao=${comunic._id}&notificacao=${id}`;
         } catch (e) { showError('Erro ao abrir comunicação.'); console.error(e); }
       }
+      async function marcarEntregue(id, btn){
+        try{
+          btn && (btn.disabled = true);
+          const r = await fetch(`/api/notificacoes/${id}/entregar`, { method:'POST', credentials:'include', cache:'no-store' });
+          const j = await r.json();
+          if (!r.ok) { showError(j.error || 'Falha ao marcar ENTREGUE'); btn && (btn.disabled=false); return; }
+          showToast('Notificação marcada como ENTREGUE.');
+          carregar();
+        }catch(e){ showError('Erro de rede ao marcar ENTREGUE.'); btn && (btn.disabled=false); }
+      }
+      async function marcarDevolvida(id, btn){
+        try{
+          btn && (btn.disabled = true);
+          const r = await fetch(`/api/notificacoes/${id}/devolver`, { method:'POST', credentials:'include', cache:'no-store' });
+          const j = await r.json();
+          if (!r.ok) { showError(j.error || 'Falha ao marcar DEVOLVIDA'); btn && (btn.disabled=false); return; }
+          showToast('Notificação marcada como DEVOLVIDA.');
+          carregar();
+        }catch(e){ showError('Erro de rede ao marcar DEVOLVIDA.'); btn && (btn.disabled=false); }
+      }
+
+      // export
       window.gerarPDF = gerarPDF;
       window.reenviarNotificacao = reenviarNotificacao;
       window.excluirNotificacao = excluirNotificacao;
       window.abrirComunicacao = abrirComunicacao;
+      window.marcarEntregue = marcarEntregue;
+      window.marcarDevolvida = marcarDevolvida;
 
       // eventos
       const debounce = (fn,ms=250)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
@@ -381,5 +494,7 @@
       porPaginaSel.addEventListener('change', ()=>{ porPagina = Number(porPaginaSel.value); pagina = 1; carregar(); });
     });
   </script>
+  <script src="notify.js"></script>
+
 </body>
 </html>

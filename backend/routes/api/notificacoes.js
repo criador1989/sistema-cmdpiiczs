@@ -10,6 +10,7 @@ const calcularNotaTSMD = require('../../utils/calculoNota');
 const enviarWhatsapp = require('../../utils/twilio');
 const { autenticar } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
+const { addBusinessDays } = require('../../utils/businessDays'); // ⬅️ NOVO
 
 // 🔎 auditoria centralizada
 const { logAction, attachActor } = require('../../utils/audit');
@@ -62,7 +63,62 @@ router.get('/novas', autenticar, attachActor, async (_req, res) => {
 });
 
 // ------------------------------------------------------
-// GET "/" (lista paginada)
+// GET "/pendencias/devolucao/contador"  ✅ NOVO
+//   → total de devoluções em atraso (prazo < agora, ainda não devolvidas)
+// ------------------------------------------------------
+router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req, res) => {
+  try {
+    const instituicao = req.usuario.instituicao;
+    const agora = new Date();
+    const total = await Notificacao.countDocuments({
+      instituicao,
+      status: 'deferido',
+      entregue: true,
+      devolvidoPeloAluno: { $ne: true },
+      prazoDevolucao: { $ne: null, $lt: agora }
+    });
+    res.json({ total });
+  } catch (err) {
+    console.error('Erro contador pendências:', err);
+    res.status(500).json({ error: 'Erro ao calcular contador de pendências.' });
+  }
+});
+
+// ------------------------------------------------------
+// GET "/pendencias/devolucao"  ✅ NOVO
+//   → lista dos itens com prazo já vencido (ordenados por prazo)
+//   Aceita ?limit= (padrão 50)
+// ------------------------------------------------------
+router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) => {
+  try {
+    const instituicao = req.usuario.instituicao;
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '50', 10), 1), 200);
+    const agora = new Date();
+
+    const itens = await Notificacao.find({
+      instituicao,
+      status: 'deferido',
+      entregue: true,
+      devolvidoPeloAluno: { $ne: true },
+      prazoDevolucao: { $ne: null, $lt: agora }
+    })
+      .sort({ prazoDevolucao: 1 })
+      .limit(limit)
+      .select('aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data')
+      .populate({ path: 'aluno', select: 'nome turma', match: { instituicao } })
+      .lean();
+
+    const filtrados = (itens || []).filter(i => i.aluno); // safety
+    res.json({ total: filtrados.length, itens: filtrados });
+  } catch (err) {
+    console.error('Erro pendências:', err);
+    res.status(500).json({ error: 'Erro ao buscar pendências de devolução.' });
+  }
+});
+
+// ------------------------------------------------------
+// GET "/" (lista paginada)  🔄 ATUALIZADO
+//   → inclui campos de devolução para a UI (entregue, prazoDevolucao, devolvidoPeloAluno)
 // ------------------------------------------------------
 router.get('/', autenticar, attachActor, async (req, res) => {
   try {
@@ -100,7 +156,7 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       .sort({ data: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('aluno tipo tipoMedida data status valorNumerico notaAnterior notaAtual comentarioMonitor numeroSequencial')
+      .select('aluno tipo tipoMedida data status valorNumerico notaAnterior notaAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm')
       .populate({
         path: 'aluno',
         select: 'nome turma',
@@ -418,6 +474,90 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   } catch (err) {
     console.error('Erro ao reenviar notificação:', err);
     res.status(500).json({ message: 'Erro ao reenviar notificação.' });
+  }
+});
+
+// ------------------------------------------------------
+// POST "/:id/entregar"  ✅ NOVO
+//   → marca ENTREGUE, define entregueEm e prazoDevolucao (+2 dias úteis)
+// ------------------------------------------------------
+router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
+  try {
+    const instituicao = req.usuario.instituicao;
+    const notif = await Notificacao.findOne({ _id: req.params.id, instituicao });
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
+
+    if (notif.status !== 'deferido') {
+      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
+    }
+    if (notif.entregue === true) {
+      return res.status(200).json({ message: 'Já estava marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
+    }
+
+    const agora = new Date();
+    const prazo = addBusinessDays(agora, 2, { tz: 'America/Rio_Branco' });
+
+    notif.entregue = true;
+    notif.entregueEm = agora;
+    notif.prazoDevolucao = prazo;
+    notif.alertaAtivo = false; // só ativa quando passar do prazo sem devolução
+    await notif.save();
+
+    // log
+    await logAction({
+      req,
+      acao: 'NOTIFICACAO_ENTREGUE',
+      entidade: 'Notificacao',
+      entidadeId: notif._id,
+      extra: { entregueEm: agora, prazoDevolucao: prazo }
+    });
+
+    res.json({ message: 'Marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
+  } catch (err) {
+    console.error('Erro ao marcar ENTREGUE:', err);
+    res.status(500).json({ error: 'Erro ao marcar ENTREGUE.' });
+  }
+});
+
+// ------------------------------------------------------
+// POST "/:id/devolver"  ✅ NOVO
+//   → marca DEVOLVIDA (assinada e devolvida pelo aluno)
+// ------------------------------------------------------
+router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
+  try {
+    const instituicao = req.usuario.instituicao;
+    const notif = await Notificacao.findOne({ _id: req.params.id, instituicao });
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
+
+    if (notif.status !== 'deferido') {
+      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
+    }
+    if (!notif.entregue) {
+      return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
+    }
+    if (notif.devolvidoPeloAluno === true) {
+      return res.status(200).json({ message: 'Já estava marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
+    }
+
+    const agora = new Date();
+    notif.devolvidoPeloAluno = true;
+    notif.devolvidaEm = agora;
+    notif.alertaAtivo = false;
+    await notif.save();
+
+    // log
+    await logAction({
+      req,
+      acao: 'NOTIFICACAO_DEVOLVIDA',
+      entidade: 'Notificacao',
+      entidadeId: notif._id,
+      extra: { devolvidaEm: agora }
+    });
+
+    res.json({ message: 'Marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
+  } catch (err) {
+    console.error('Erro ao marcar DEVOLVIDA:', err);
+    res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
   }
 });
 

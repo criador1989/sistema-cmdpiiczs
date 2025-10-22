@@ -52,7 +52,14 @@ const notificacaoSchema = new mongoose.Schema({
   avaliador: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
   comentarioMonitor: { type: String },
   comentarioRevisao: { type: String },
+
+  // DEVOLUÇÃO (fluxo físico)
+  entregue: { type: Boolean, default: false },
+  entregueEm: { type: Date, default: null },
+  prazoDevolucao: { type: Date, default: null },
   devolvidoPeloAluno: { type: Boolean, default: false },
+  devolvidaEm: { type: Date, default: null },
+  alertaAtivo: { type: Boolean, default: false },
 
   // classificador para elogios
   tipoElogio: {
@@ -77,6 +84,9 @@ notificacaoSchema.index({ instituicao: 1, createdAt: -1 });
 
 // busca por número
 notificacaoSchema.index({ instituicao: 1, numeroSequencial: 1 }, { unique: true });
+
+// filtros de pendência de devolução (usados no painel)
+notificacaoSchema.index({ instituicao: 1, status: 1, entregue: 1, devolvidoPeloAluno: 1, prazoDevolucao: 1 });
 
 // (opcional) busca textual no controle/lista
 // habilite se usar $text: { $search: q } nas consultas:
