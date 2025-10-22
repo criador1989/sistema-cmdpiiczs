@@ -8,18 +8,21 @@ const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET || 'segredo_padrao';
 
-// Middleware interno para restringir acesso apenas a administradores
+/** Somente ADMIN */
 function verificarAdmin(req, res, next) {
-  if (req.usuario.tipo !== 'admin') {
+  if (req.usuario?.tipo !== 'admin') {
     return res.status(403).json({ mensagem: 'Apenas administradores podem acessar esta funcionalidade.' });
   }
   next();
 }
 
-// POST /api/usuarios - Cria um novo usuário (restrito a admins)
+/* =========================================
+ *  ADMIN: CRUD de usuários
+ * =======================================*/
+
+// POST /api/usuarios
 router.post('/', autenticar, verificarAdmin, async (req, res) => {
   const { nome, email, senha, tipo, instituicao } = req.body;
-
   if (!nome || !email || !senha || !tipo || !instituicao) {
     return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
   }
@@ -30,15 +33,9 @@ router.post('/', autenticar, verificarAdmin, async (req, res) => {
       return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
     }
 
-    const novoUsuario = new Usuario({
-      nome,
-      email,
-      senha,
-      tipo,
-      instituicao
-    });
+    const novoUsuario = new Usuario({ nome, email, senha, tipo, instituicao });
 
-    // Gerar token de acesso automaticamente se for professor
+    // Gera token de acesso automático se for professor
     if (tipo === 'professor') {
       const tokenGerado = jwt.sign({ email, tipo, data: Date.now() }, SECRET);
       novoUsuario.tokenAcesso = tokenGerado;
@@ -49,6 +46,7 @@ router.post('/', autenticar, verificarAdmin, async (req, res) => {
     res.status(201).json({
       mensagem: 'Usuário criado com sucesso.',
       usuario: {
+        _id: novoUsuario._id,
         nome: novoUsuario.nome,
         email: novoUsuario.email,
         tipo: novoUsuario.tipo,
@@ -62,8 +60,8 @@ router.post('/', autenticar, verificarAdmin, async (req, res) => {
   }
 });
 
-// GET /api/usuarios - Lista todos os usuários
-router.get('/', autenticar, verificarAdmin, async (req, res) => {
+// GET /api/usuarios
+router.get('/', autenticar, verificarAdmin, async (_req, res) => {
   try {
     const usuarios = await Usuario.find().select('-senha');
     res.json(usuarios);
@@ -73,13 +71,11 @@ router.get('/', autenticar, verificarAdmin, async (req, res) => {
   }
 });
 
-// GET /api/usuarios/:id - Retorna um usuário específico
+// GET /api/usuarios/:id
 router.get('/:id', autenticar, verificarAdmin, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id).select('-senha');
-    if (!usuario) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
+    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
     res.json(usuario);
   } catch (err) {
     console.error('Erro ao buscar usuário:', err);
@@ -87,19 +83,16 @@ router.get('/:id', autenticar, verificarAdmin, async (req, res) => {
   }
 });
 
-// PUT /api/usuarios/:id - Atualiza os dados de um usuário
+// PUT /api/usuarios/:id
 router.put('/:id', autenticar, verificarAdmin, async (req, res) => {
   const { nome, tipo, instituicao, senha } = req.body;
-
   if (!nome || !tipo || !instituicao) {
     return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
   }
 
   try {
     const usuario = await Usuario.findById(req.params.id);
-    if (!usuario) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
+    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
 
     usuario.nome = nome;
     usuario.tipo = tipo;
@@ -118,13 +111,11 @@ router.put('/:id', autenticar, verificarAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/usuarios/:id - Exclui um usuário pelo ID
+// DELETE /api/usuarios/:id
 router.delete('/:id', autenticar, verificarAdmin, async (req, res) => {
   try {
     const usuario = await Usuario.findByIdAndDelete(req.params.id);
-    if (!usuario) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
+    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
     res.json({ mensagem: 'Usuário excluído com sucesso.' });
   } catch (err) {
     console.error('Erro ao excluir usuário:', err);
@@ -132,21 +123,55 @@ router.delete('/:id', autenticar, verificarAdmin, async (req, res) => {
   }
 });
 
-// GET /api/usuarios/acesso/:token - Acesso via QR Code para professores (sem login)
+/* =========================================
+ *  CONTATOS PARA MENSAGENS (não-admin)
+ *  Lista da MESMA instituição, exclui a si mesmo.
+ *  Suporta ?q=busca e ?tipo=professor|admin|...
+ *  GET /api/usuarios/contatos
+ * =======================================*/
+router.get('/contatos', autenticar, async (req, res) => {
+  try {
+    const { q, tipo } = req.query;
+    const where = {
+      instituicao: req.usuario.instituicao,
+      _id: { $ne: req.usuario.id }
+    };
+
+    if (tipo) where.tipo = tipo;
+
+    if (q && String(q).trim()) {
+      const rx = new RegExp(String(q).trim(), 'i');
+      // busca por nome OU email
+      where.$or = [{ nome: rx }, { email: rx }];
+    }
+
+    const contatos = await Usuario.find(where)
+      .select('_id nome tipo email')
+      .sort({ nome: 1 });
+
+    res.json(contatos);
+  } catch (err) {
+    console.error('Erro ao listar contatos:', err);
+    res.status(500).json({ mensagem: 'Erro ao listar contatos.' });
+  }
+});
+
+/* =========================================
+ *  ACESSO VIA TOKEN (QR Code do professor)
+ *  Obs: mantenha apenas UM endpoint /acesso/:token
+ *       no projeto (aqui OU no acessoProfessorRoute).
+ * =======================================*/
 router.get('/acesso/:token', async (req, res) => {
   try {
     const token = req.params.token.trim();
-
     const professor = await Usuario.findOne({ tokenAcesso: token, tipo: 'professor' });
     if (!professor) {
       return res.status(404).json({ mensagem: 'Professor não encontrado ou token inválido.' });
     }
 
-    const instituicao = professor.instituicao?.trim().toUpperCase();
-
-    const alunos = await Aluno.find({
-      instituicao: { $regex: `^${instituicao}$`, $options: 'i' }
-    }).select('nome turma comportamento foto');
+    const instituicao = professor.instituicao?.trim();
+    const alunos = await Aluno.find({ instituicao })
+      .select('nome turma comportamento foto');
 
     console.log(`🔎 ${alunos.length} aluno(s) encontrados para ${instituicao}`);
 
@@ -155,7 +180,6 @@ router.get('/acesso/:token', async (req, res) => {
       instituicao: professor.instituicao,
       alunos
     });
-
   } catch (err) {
     console.error('Erro ao acessar com token do professor:', err);
     res.status(500).json({ mensagem: 'Erro ao acessar com token.' });
