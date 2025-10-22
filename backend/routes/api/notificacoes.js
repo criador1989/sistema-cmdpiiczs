@@ -55,6 +55,13 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   return aluno;
 }
 
+/** Busca nome/turma para logs */
+async function getAlunoInfo(alunoId, instituicao) {
+  if (!alunoId) return { alunoNome: '—', alunoTurma: '—' };
+  const a = await Aluno.findOne({ _id: alunoId, instituicao }).select('nome turma').lean();
+  return { alunoNome: a?.nome || '—', alunoTurma: a?.turma || '—' };
+}
+
 // ------------------------------------------------------
 // GET "/novas" (placeholder)
 // ------------------------------------------------------
@@ -63,8 +70,7 @@ router.get('/novas', autenticar, attachActor, async (_req, res) => {
 });
 
 // ------------------------------------------------------
-// GET "/pendencias/devolucao/contador"  ✅ NOVO
-//   → total de devoluções em atraso (prazo < agora, ainda não devolvidas)
+// GET "/pendencias/devolucao/contador"
 // ------------------------------------------------------
 router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req, res) => {
   try {
@@ -85,9 +91,7 @@ router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req
 });
 
 // ------------------------------------------------------
-// GET "/pendencias/devolucao"  ✅ NOVO
-//   → lista dos itens com prazo já vencido (ordenados por prazo)
-//   Aceita ?limit= (padrão 50)
+// GET "/pendencias/devolucao"
 // ------------------------------------------------------
 router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) => {
   try {
@@ -117,8 +121,7 @@ router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) =>
 });
 
 // ------------------------------------------------------
-// GET "/" (lista paginada)  🔄 ATUALIZADO
-//   → inclui campos de devolução para a UI (entregue, prazoDevolucao, devolvidoPeloAluno)
+// GET "/" (lista paginada)
 // ------------------------------------------------------
 router.get('/', autenticar, attachActor, async (req, res) => {
   try {
@@ -314,7 +317,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 
     await novaNotificacao.save();
 
-    // 🔎 LOG (aguardado, com ator anexo)
+    // 🔎 LOG (aguardado, com ator anexo) — inclui alunoNome e turma
     await logAction({
       req,
       acao: 'NOTIFICACAO_CRIADA',
@@ -323,9 +326,11 @@ router.post('/', autenticar, attachActor, async (req, res) => {
       entidadeNome: alunoRelacionado?.nome,
       extra: {
         alunoId: String(alunoRelacionado?._id || aluno),
-        alunoNome: alunoRelacionado?.nome,
-        tipo: payload.tipo,
-        tipoMedida: payload.tipoMedida,
+        alunoNome: alunoRelacionado?.nome || '—',
+        alunoTurma: alunoRelacionado?.turma || '—',
+        tipo: novaNotificacao.tipo,
+        tipoMedida: novaNotificacao.tipoMedida,
+        numeroSequencial: novaNotificacao.numeroSequencial,
         natureza: payload.natureza,
         motivo: payload.motivo,
         valorNumerico: payload.valorNumerico,
@@ -361,9 +366,10 @@ Nota atual de comportamento: ${(alunoAtualizado?.comportamento ?? notaNoDia).toF
 // ------------------------------------------------------
 router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
+    const instituicao = req.usuario.instituicao;
     const notif = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao: req.usuario.instituicao
+      instituicao
     });
     if (!notif) return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
 
@@ -383,7 +389,8 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       valorNumerico: notif.valorNumerico,
       quantidadeDias: notif.quantidadeDias,
       data: notif.data,
-      status: notif.status
+      status: notif.status,
+      numeroSequencial: notif.numeroSequencial
     };
 
     // atualizar campos
@@ -413,6 +420,8 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
 
     await notif.save();
 
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, instituicao);
+
     // 🔎 LOG
     await logAction({
       req,
@@ -420,6 +429,11 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       entidade: 'Notificacao',
       entidadeId: notif._id,
       extra: {
+        alunoId: String(notif.aluno),
+        alunoNome, alunoTurma,
+        tipo: notif.tipo,
+        tipoMedida: notif.tipoMedida,
+        numeroSequencial: notif.numeroSequencial,
         antes,
         depois: {
           aluno: notif.aluno,
@@ -430,13 +444,14 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
           valorNumerico: notif.valorNumerico,
           quantidadeDias: notif.quantidadeDias,
           data: notif.data,
-          status: notif.status
+          status: notif.status,
+          numeroSequencial: notif.numeroSequencial
         }
       }
     });
 
     // Recalcular nota atual
-    await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
+    await recomputarNotaAlunoAteAgora(notif.aluno, instituicao);
 
     res.json({ message: 'Notificação atualizada com sucesso.' });
   } catch (err) {
@@ -450,9 +465,10 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   try {
+    const instituicao = req.usuario.instituicao;
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao: req.usuario.instituicao
+      instituicao
     });
 
     if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada.' });
@@ -460,15 +476,24 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
     notificacao.status = 'pendente';
     await notificacao.save();
 
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, instituicao);
+
     await logAction({
       req,
       acao: 'NOTIFICACAO_REENVIADA',
       entidade: 'Notificacao',
       entidadeId: notificacao._id,
-      extra: { status: 'pendente' }
+      extra: {
+        alunoId: String(notificacao.aluno),
+        alunoNome, alunoTurma,
+        tipo: notificacao.tipo,
+        tipoMedida: notificacao.tipoMedida,
+        numeroSequencial: notificacao.numeroSequencial,
+        status: 'pendente'
+      }
     });
 
-    await recomputarNotaAlunoAteAgora(notificacao.aluno, req.usuario.instituicao);
+    await recomputarNotaAlunoAteAgora(notificacao.aluno, instituicao);
 
     res.json({ message: 'Notificação reenviada com sucesso.' });
   } catch (err) {
@@ -478,8 +503,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
 });
 
 // ------------------------------------------------------
-// POST "/:id/entregar"  ✅ NOVO
-//   → marca ENTREGUE, define entregueEm e prazoDevolucao (+2 dias úteis)
+// POST "/:id/entregar"
 // ------------------------------------------------------
 router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   try {
@@ -503,13 +527,23 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false; // só ativa quando passar do prazo sem devolução
     await notif.save();
 
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, instituicao);
+
     // log
     await logAction({
       req,
       acao: 'NOTIFICACAO_ENTREGUE',
       entidade: 'Notificacao',
       entidadeId: notif._id,
-      extra: { entregueEm: agora, prazoDevolucao: prazo }
+      extra: {
+        alunoId: String(notif.aluno),
+        alunoNome, alunoTurma,
+        tipo: notif.tipo,
+        tipoMedida: notif.tipoMedida,
+        numeroSequencial: notif.numeroSequencial,
+        entregueEm: agora,
+        prazoDevolucao: prazo
+      }
     });
 
     res.json({ message: 'Marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
@@ -520,8 +554,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
 });
 
 // ------------------------------------------------------
-// POST "/:id/devolver"  ✅ NOVO
-//   → marca DEVOLVIDA (assinada e devolvida pelo aluno)
+// POST "/:id/devolver"
 // ------------------------------------------------------
 router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   try {
@@ -545,13 +578,22 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false;
     await notif.save();
 
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, instituicao);
+
     // log
     await logAction({
       req,
       acao: 'NOTIFICACAO_DEVOLVIDA',
       entidade: 'Notificacao',
       entidadeId: notif._id,
-      extra: { devolvidaEm: agora }
+      extra: {
+        alunoId: String(notif.aluno),
+        alunoNome, alunoTurma,
+        tipo: notif.tipo,
+        tipoMedida: notif.tipoMedida,
+        numeroSequencial: notif.numeroSequencial,
+        devolvidaEm: agora
+      }
     });
 
     res.json({ message: 'Marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
@@ -566,13 +608,16 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
+    const instituicao = req.usuario.instituicao;
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao: req.usuario.instituicao
+      instituicao
     });
     if (!notificacao) {
       return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
     }
+
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, instituicao);
 
     await logAction({
       req,
@@ -581,8 +626,10 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
       entidadeId: notificacao._id,
       extra: {
         alunoId: String(notificacao.aluno),
+        alunoNome, alunoTurma,
         tipo: notificacao.tipo,
         tipoMedida: notificacao.tipoMedida,
+        numeroSequencial: notificacao.numeroSequencial,
         natureza: notificacao.natureza,
         motivo: notificacao.motivo,
         valorNumerico: notificacao.valorNumerico,
@@ -594,7 +641,7 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     const alunoId = notificacao.aluno;
     await notificacao.deleteOne();
 
-    await recomputarNotaAlunoAteAgora(alunoId, req.usuario.instituicao);
+    await recomputarNotaAlunoAteAgora(alunoId, instituicao);
 
     res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
   } catch (err) {
