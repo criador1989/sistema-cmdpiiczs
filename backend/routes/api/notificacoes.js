@@ -27,6 +27,7 @@ const MAPA_ELOGIOS = {
   boletimInternoColetivo: 0.20,
   mediaAlta: 0.40
 };
+const PRECISA_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
 
 // ------------------ Helpers ------------------
 /** Match amplo para campo instituicao (aceita ObjectId, string, ausente e null) */
@@ -67,7 +68,7 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   if (!aluno) return null;
 
   const historico = await Notificacao.find({ aluno: alunoId, ...instMatch })
-    .select('data valorNumerico createdAt')
+    .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
     .sort({ data: 1, createdAt: 1 });
 
   const notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), historico);
@@ -134,7 +135,7 @@ router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) =>
       .populate({ path: 'aluno', select: 'nome turma instituicao', match: alunoMatch })
       .lean();
 
-    const filtrados = (itens || []).filter(i => i.aluno); // safety
+    const filtrados = (itens || []).filter(i => i.aluno);
     res.json({ total: filtrados.length, itens: filtrados });
   } catch (err) {
     console.error('Erro pendências:', err);
@@ -183,7 +184,7 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       .sort({ data: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('aluno tipo tipoMedida data status valorNumerico notaAnterior notaAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm')
+      .select('aluno tipo tipoMedida data status valorNumerico quantidadeDias notaAnterior notaAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm natureza')
       .populate({
         path: 'aluno',
         select: 'nome turma instituicao',
@@ -191,7 +192,17 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       })
       .lean();
 
-    const data = (notificacoes || []).filter(n => n.aluno);
+    const dataRaw = (notificacoes || []).filter(n => n.aluno);
+
+    // Deriva campos para exibição (evita a UI multiplicar novamente pelos dias)
+    const data = dataRaw.map(n => {
+      const precisaDias = PRECISA_DIAS.has(n.tipoMedida);
+      const dias = precisaDias ? Math.max(1, parseInt(n.quantidadeDias || 1, 10)) : 1;
+      const valorTotal = Number(n.valorNumerico || 0);
+      const valorUnitario = precisaDias ? Number((valorTotal / dias).toFixed(2)) : valorTotal;
+      return { ...n, valorTotal, valorUnitario };
+    });
+
     res.json({ total, page, totalPages, data });
   } catch (err) {
     console.error('Erro ao buscar notificações:', err);
@@ -211,7 +222,17 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
     }).populate({ path: 'aluno', select: 'nome turma instituicao' });
 
     if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada' });
-    res.json(notificacao);
+
+    const precisaDias = PRECISA_DIAS.has(notificacao.tipoMedida);
+    const dias = precisaDias ? Math.max(1, parseInt(notificacao.quantidadeDias || 1, 10)) : 1;
+    const valorTotal = Number(notificacao.valorNumerico || 0);
+    const valorUnitario = precisaDias ? Number((valorTotal / dias).toFixed(2)) : valorTotal;
+
+    res.json({
+      ...notificacao.toObject(),
+      valorTotal,
+      valorUnitario
+    });
   } catch (err) {
     console.error('Erro ao carregar notificação:', err);
     res.status(500).json({ message: 'Erro ao carregar notificação.' });
@@ -274,11 +295,18 @@ router.post('/', autenticar, attachActor, async (req, res) => {
         quantidadeDias: null
       };
     } else {
-      const tituloMedida = tipoMedida || tipo || '';
-      const base = (typeof valorNumerico === 'number') ? valorNumerico : (MAPA_NEGATIVOS[tituloMedida] || 0);
-      const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tituloMedida);
+      // ===== INDISCIPLINA =====
+      const tituloMedida = (tipoMedida || tipo || '').trim();
+      const precisaDias = PRECISA_DIAS.has(tituloMedida);
       const dias = precisaDias ? Math.max(1, parseInt(quantidadeDias || 1, 10)) : 1;
-      valor = Number((base * dias).toFixed(2));
+
+      // 🔧 REGRA: se vier valorNumerico do frontend, ele JÁ É o TOTAL (não multiplicar de novo).
+      if (typeof valorNumerico === 'number') {
+        valor = Number(valorNumerico);
+      } else {
+        const base = (MAPA_NEGATIVOS[tituloMedida] || 0);
+        valor = Number((base * dias).toFixed(2)); // calcula total quando não veio valorNumerico
+      }
 
       const dadosRegulamento = obterDadosDoRegulamento(motivo || '');
       payload = {
@@ -286,7 +314,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
         tipo: tituloMedida || 'Medida',
         tipoMedida: tituloMedida || 'Medida',
         motivo,
-        valorNumerico: valor,
+        valorNumerico: valor,                 // ← grava sempre o TOTAL
         quantidadeDias: precisaDias ? dias : 1,
         artigo: dadosRegulamento.artigo,
         paragrafo: dadosRegulamento.paragrafo,
@@ -295,7 +323,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
       };
     }
 
-    // ===== cálculo preciso
+    // ===== cálculo preciso (notaAnterior / notaNoDia) =====
     const dayStart = toDayStart(dt);
     const dayEnd   = toDayEnd(dt);
 
@@ -305,18 +333,32 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 
     const notificacoesAntes = await Notificacao.find({
       aluno, ...instMatch, data: { $lt: dayStart }
-    }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
+    }).select('data valorNumerico createdAt quantidadeDias tipoMedida natureza').sort({ data: 1, createdAt: 1 });
 
     const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
 
     // (B) nota até o fim do dia do evento + esta ocorrência
     const notificacoesAteDia = await Notificacao.find({
       aluno, ...instMatch, data: { $lt: dayEnd }
-    }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
+    }).select('data valorNumerico createdAt quantidadeDias tipoMedida natureza').sort({ data: 1, createdAt: 1 });
 
     const paraCalculoDia = [
-      ...notificacoesAteDia.map(n => ({ data: n.data, createdAt: n.createdAt, valorNumerico: n.valorNumerico })),
-      { data: dt, createdAt: dt, valorNumerico: Number(valor || 0) }
+      ...notificacoesAteDia.map(n => ({
+        data: n.data,
+        createdAt: n.createdAt,
+        valorNumerico: n.valorNumerico,
+        quantidadeDias: n.quantidadeDias,
+        tipoMedida: n.tipoMedida,
+        natureza: n.natureza
+      })),
+      {
+        data: dt,
+        createdAt: dt,
+        valorNumerico: Number(payload.valorNumerico || 0),
+        quantidadeDias: payload.quantidadeDias ?? 1,
+        tipoMedida: payload.tipoMedida,
+        natureza: payload.natureza
+      }
     ];
     const notaNoDia = calcularNotaTSMD(alunoRelacionado.dataEntrada, dayEnd, paraCalculoDia);
 
@@ -433,18 +475,39 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     }
 
-    // ajustes automáticos
-    if (req.body.natureza === 'elogio' && req.body.valorNumerico === undefined && req.body.tipoElogio) {
-      notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
-      notif.tipo = 'Elogio';
-      notif.tipoMedida = 'Elogio';
-      notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
-    }
-    if (req.body.natureza === 'indisciplina' && req.body.valorNumerico === undefined && req.body.tipoMedida) {
-      const base = MAPA_NEGATIVOS[req.body.tipoMedida] ?? 0;
-      const dias = ['A.E.C.D.E','A.I.A'].includes(req.body.tipoMedida) ? Math.max(1, parseInt(req.body.quantidadeDias || 1, 10)) : 1;
-      notif.valorNumerico = Number((base * dias).toFixed(2));
-      notif.tipo = req.body.tipoMedida;
+    // ===== AJUSTES AUTOMÁTICOS / REGRAS DE CÁLCULO =====
+    if (notif.natureza === 'elogio') {
+      if (req.body.valorNumerico === undefined && req.body.tipoElogio) {
+        notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
+        notif.tipo = 'Elogio';
+        notif.tipoMedida = 'Elogio';
+        notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
+      }
+    } else {
+      // INDISCIPLINA: recalcular quando (tipo OU quantidadeDias) mudarem e valorNumerico NÃO vier
+      const tipoMudou = typeof req.body.tipoMedida !== 'undefined' || typeof req.body.tipo !== 'undefined';
+      const diasMudou = typeof req.body.quantidadeDias !== 'undefined';
+
+      if (req.body.valorNumerico === undefined && (tipoMudou || diasMudou)) {
+        const tituloMedida = ((req.body.tipoMedida ?? notif.tipoMedida ?? req.body.tipo ?? notif.tipo) || '').trim();
+        const precisaDias = PRECISA_DIAS.has(tituloMedida);
+        const diasBrutos = (req.body.quantidadeDias ?? notif.quantidadeDias ?? 1);
+        const dias = precisaDias ? Math.max(1, parseInt(diasBrutos, 10) || 1) : 1;
+
+        const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
+        notif.valorNumerico = Number((base * dias).toFixed(2));
+        notif.tipo = tituloMedida || notif.tipo;
+        notif.tipoMedida = tituloMedida || notif.tipoMedida;
+        notif.quantidadeDias = precisaDias ? dias : 1;
+
+        if (!notif.artigo && !notif.classificacaoRegulamento && (req.body.motivo || notif.motivo)) {
+          const dadosReg = obterDadosDoRegulamento(req.body.motivo || notif.motivo || '');
+          notif.artigo = dadosReg.artigo ?? notif.artigo;
+          notif.paragrafo = dadosReg.paragrafo ?? notif.paragrafo;
+          notif.inciso = dadosReg.inciso ?? notif.inciso;
+          notif.classificacaoRegulamento = dadosReg.classificacao ?? notif.classificacaoRegulamento;
+        }
+      }
     }
 
     await notif.save();
@@ -553,7 +616,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
     notif.entregue = true;
     notif.entregueEm = agora;
     notif.prazoDevolucao = prazo;
-    notif.alertaAtivo = false; // só ativa quando passar do prazo sem devolução
+    notif.alertaAtivo = false;
     await notif.save();
 
     const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);

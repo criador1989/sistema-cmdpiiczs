@@ -163,6 +163,43 @@
     let cacheLocal = [];
     let loading = false;
 
+    // === NOVO: cálculo de valor exibido, blindando contra dupla multiplicação no backend dessa rota
+    const BASES = {
+      'Advertência Escrita': -0.30,
+      'Repreensão': -0.50,
+      'A.E.C.D.E': -0.70,
+      'A.I.A': -1.20
+    };
+    const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+
+    function calcValorExibicao(n) {
+      // 1) Se o backend já mandar valorTotal, usa ele
+      if (typeof n.valorTotal === 'number') return Number(n.valorTotal);
+
+      // 2) Elogio ou medidas que não dependem de dias → usa o que veio
+      const titulo = String(n.tipoMedida || n.tipo || '').trim();
+      const precisaDias = REQUER_DIAS.has(titulo);
+
+      if (!precisaDias) {
+        return Number(n.valorNumerico ?? 0);
+      }
+
+      // 3) Para A.E.C.D.E / A.I.A: recomputa como base × dias
+      const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
+      const base = BASES[titulo];
+      if (typeof base === 'number') {
+        return Number((base * dias).toFixed(2));
+      }
+
+      // fallback
+      return Number(n.valorNumerico ?? 0);
+    }
+
+    function fmtValor(n) {
+      const v = calcValorExibicao(n);
+      return (isFinite(v) ? v.toFixed(2) : '—');
+    }
+
     function setBusy(state){
       grid.setAttribute('aria-busy', state ? 'true' : 'false');
     }
@@ -224,7 +261,7 @@
         </div>
         <div class="details">
           <div class="kv">
-            <div class="box"><b>Valor</b><div>${typeof notif.valorNumerico==='number' ? notif.valorNumerico.toFixed(2) : '—'}</div></div>
+            <div class="box"><b>Valor</b><div>${fmtValor(notif)}</div></div>
             <div class="box"><b>Status</b><div>${safe(notif.status) || 'pendente'}</div></div>
             <div class="box"><b>Nº Sequencial</b><div>${safe(notif.numeroSequencial) || '—'}</div></div>
             <div class="box"><b>Observação</b><div>${safe(notif.observacao) || '—'}</div></div>
@@ -349,7 +386,7 @@
         <p><strong>Tipo:</strong> ${n.tipo || '—'}</p>
         <p><strong>Motivo:</strong> ${n.motivo || '—'}</p>
         <p><strong>Tipo de Medida:</strong> ${n.tipoMedida || '—'}</p>
-        <p><strong>Valor:</strong> ${typeof n.valorNumerico==='number' ? n.valorNumerico.toFixed(2) : '—'}</p>
+        <p><strong>Valor:</strong> ${fmtValor(n)}</p>
         <p><strong>Data de Emissão:</strong> ${fmtData(n.createdAt)}</p>
         <p><strong>Artigo:</strong> ${n.artigo || '-'}</p>
         <p><strong>Parágrafo:</strong> ${n.paragrafo || '-'}</p>
@@ -386,5 +423,6 @@
       fetchPage(1);
     })();
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

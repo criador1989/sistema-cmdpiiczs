@@ -19,9 +19,9 @@ const notificacaoSchema = new mongoose.Schema({
   },
 
   // rótulos exibidos
-  tipo: { type: String, required: true },       // ex.: 'Advertência Escrita' | 'Elogio'
-  motivo: { type: String, required: true },     // ato de indisciplina OU descrição do elogio
-  tipoMedida: { type: String, required: true }, // ex.: 'A.I.A' | 'A.E.C.D.E' | 'Elogio'
+  tipo:        { type: String, required: true },       // ex.: 'Advertência Escrita' | 'Elogio'
+  motivo:      { type: String, required: true },       // ato de indisciplina OU descrição do elogio
+  tipoMedida:  { type: String, required: true },       // ex.: 'A.I.A' | 'A.E.C.D.E' | 'Elogio'
 
   // valor usado no cálculo (negativo p/ medidas, positivo p/ elogios)
   valorNumerico: { type: Number, required: true },
@@ -33,7 +33,7 @@ const notificacaoSchema = new mongoose.Schema({
   data: { type: Date, required: true, index: true },
 
   notaAnterior: { type: Number },
-  notaAtual: { type: Number },
+  notaAtual:    { type: Number },
 
   artigo: { type: String },
   paragrafo: { type: String },
@@ -73,9 +73,9 @@ const notificacaoSchema = new mongoose.Schema({
   },
 
   // ✅ Campos usados pelos filtros do painel
-  lida: { type: Boolean, default: false, index: true },
+  lida:      { type: Boolean, default: false, index: true },
   arquivada: { type: Boolean, default: false, index: true }, // ↔ não confundir com status:'arquivado'
-  ativo: { type: Boolean, default: true, index: true },
+  ativo:     { type: Boolean, default: true, index: true },
 
 }, {
   timestamps: true,
@@ -98,5 +98,108 @@ notificacaoSchema.index({ instituicao: 1, numeroSequencial: 1 }, { unique: true 
 
 // filtros de pendência de devolução (usados no painel)
 notificacaoSchema.index({ instituicao: 1, status: 1, entregue: 1, devolvidoPeloAluno: 1, prazoDevolucao: 1 });
+
+// ==================== REGRAS (anti dupla multiplicação) ====================
+
+// mapas de valores base
+const MAPA_NEGATIVOS = {
+  'Advertência Escrita': -0.30,
+  'Repreensão':          -0.50,
+  'A.E.C.D.E':           -0.70,
+  'A.I.A':               -1.20,
+};
+const MAPA_ELOGIOS = {
+  elogioVerbal:            0.15,
+  boletimInternoIndividual: 0.60,
+  boletimInternoColetivo:   0.20,
+  mediaAlta:                0.40,
+};
+const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+
+// Helper: fixa casas e número
+function fix2(n) {
+  if (typeof n !== 'number' || !isFinite(n)) return n;
+  return Number(n.toFixed(2));
+}
+
+notificacaoSchema.pre('validate', function () {
+  // normaliza rótulos
+  if (!this.tipo && this.tipoMedida) this.tipo = this.tipoMedida;
+
+  // ----- ELOGIO -----
+  if (this.natureza === 'elogio') {
+    // elogio não tem quantidadeDias
+    this.quantidadeDias = null;
+
+    // se valor não veio, derive do tipoElogio
+    if (this.valorNumerico === undefined || this.valorNumerico === null || isNaN(this.valorNumerico)) {
+      const v = MAPA_ELOGIOS[this.tipoElogio || ''] ?? 0;
+      this.valorNumerico = fix2(v);
+    } else {
+      this.valorNumerico = fix2(Number(this.valorNumerico));
+    }
+
+    // garante rótulos coerentes
+    this.tipo = this.tipo || 'Elogio';
+    this.tipoMedida = 'Elogio';
+    return; // nada mais a fazer
+  }
+
+  // ----- INDISCIPLINA -----
+  // quantidadeDias apenas para medidas que requerem dias
+  const titulo = (this.tipoMedida || this.tipo || '').trim();
+  const precisaDias = REQUER_DIAS.has(titulo);
+
+  if (precisaDias) {
+    const dias = Math.max(1, parseInt(this.quantidadeDias || 1, 10) || 1);
+    this.quantidadeDias = dias;
+  } else {
+    this.quantidadeDias = 1;
+  }
+
+  // Se o valor já foi definido (pela rota), NÃO recalcular aqui
+  const valorFoiFornecido = (this.valorNumerico !== undefined && this.valorNumerico !== null && !isNaN(this.valorNumerico));
+
+  if (!valorFoiFornecido) {
+    // calcular apenas quando não foi informado
+    const base = MAPA_NEGATIVOS[titulo] ?? 0;
+    const mult = precisaDias ? this.quantidadeDias : 1;
+    this.valorNumerico = fix2(base * mult);
+  } else {
+    // apenas normaliza casas
+    this.valorNumerico = fix2(Number(this.valorNumerico));
+  }
+});
+
+// Em updates: se tipoMedida/quantidadeDias mudarem mas o código **passou** valorNumerico, respeitamos.
+// Se NÃO passou valorNumerico, recalculamos.
+notificacaoSchema.pre('save', function () {
+  if (this.natureza === 'elogio') {
+    // já tratado no pre('validate')
+    return;
+  }
+
+  const titulo = (this.tipoMedida || this.tipo || '').trim();
+  const precisaDias = REQUER_DIAS.has(titulo);
+
+  if (precisaDias) {
+    const dias = Math.max(1, parseInt(this.quantidadeDias || 1, 10) || 1);
+    this.quantidadeDias = dias;
+  } else {
+    this.quantidadeDias = 1;
+  }
+
+  // só recalcula se NÃO veio valor
+  const valorFoiFornecido = (this.valorNumerico !== undefined && this.valorNumerico !== null && !isNaN(this.valorNumerico));
+  const camposDiasMudaram = this.isModified('tipoMedida') || this.isModified('quantidadeDias');
+
+  if (!valorFoiFornecido && camposDiasMudaram) {
+    const base = MAPA_NEGATIVOS[titulo] ?? 0;
+    const mult = precisaDias ? this.quantidadeDias : 1;
+    this.valorNumerico = fix2(base * mult);
+  } else if (valorFoiFornecido) {
+    this.valorNumerico = fix2(Number(this.valorNumerico));
+  }
+});
 
 module.exports = mongoose.model('Notificacao', notificacaoSchema);

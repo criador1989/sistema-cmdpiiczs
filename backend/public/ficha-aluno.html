@@ -238,6 +238,36 @@
     const fmtDataHora = d => d ? new Date(d).toLocaleString('pt-BR') : '—';
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
+    // 💡 Bases oficiais + regra de dias (para exibir valor corrigido)
+    const BASES = {
+      'Advertência Escrita': -0.30,
+      'Repreensão': -0.50,
+      'A.E.C.D.E': -0.70,
+      'A.I.A': -1.20
+    };
+    const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
+
+    function calcValorExibicao(n) {
+      // Se backend já trouxer valorTotal, usa-o
+      if (typeof n.valorTotal === 'number') return Number(n.valorTotal);
+
+      const titulo = String(n.tipoMedida || n.tipo || '').trim();
+      const precisaDias = REQUER_DIAS.has(titulo);
+      const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
+
+      // Para elogios ou medidas sem dias, usa o que vier
+      if (!precisaDias) {
+        return Number(n.valorNumerico ?? 0);
+      }
+
+      // Para A.E.C.D.E/A.I.A: base × dias (corrige legados duplicados)
+      const base = BASES[titulo];
+      if (typeof base === 'number') {
+        return Number((base * dias).toFixed(2));
+      }
+      return Number(n.valorNumerico ?? 0);
+    }
+
     let alunoAtual = null;
 
     const toISO = (d)=>{
@@ -363,7 +393,7 @@
         `).join('');
       }
 
-      // Notificações
+      // Notificações (✅ valor exibido corrigido: base × dias para A.E.C.D.E/A.I.A)
       const notiEl = qs('#notificacoes');
       notiEl.innerHTML = '';
       if(!notificacoes.length){
@@ -375,7 +405,8 @@
           const artigo = n.artigo || '—';
           const inciso = n.inciso || '—';
           const classificacao = n.classificacaoRegulamento || '—';
-          const valor = fmtValor(n.valorNumerico);
+          const valorCorrigido = calcValorExibicao(n);
+          const valor = fmtValor(valorCorrigido);
           const obsN = n.observacoes ? `<div class="muted" style="margin-top:8px">${n.observacoes}</div>` : '';
           const idN = n._id || '';
           return `
@@ -529,7 +560,7 @@
         qs('#qrStatus').textContent = 'Gerando link...';
         const r = await api(`/alunos/${alunoId}/public/enable`, {
           method:'POST',
-          body: JSON.stringify({ expiresDays: 0 }) // 0 = sem expiração; ajuste se quiser
+          body: JSON.stringify({ expiresDays: 0 })
         });
         preencherQR(r);
         qs('#qrStatus').textContent = 'Link habilitado.';
@@ -545,7 +576,6 @@
         preencherQR(r);
         if(!silent) qs('#qrStatus').textContent = 'QR atualizado.';
       }catch(e){
-        // se não estiver habilitado, apenas esconda o preview
         qs('#qrPreview').style.display = 'none';
         if(!silent) alert(e.message);
       }
