@@ -1,18 +1,20 @@
+// routes/api/alunos.js
 const express = require('express');
 const router = express.Router();
 
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const sharp = require('sharp');
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
+const Log = require('../../models/Log');
+
 const { autenticar } = require('../../middleware/autenticacao');
 const autenticarTokenProfessor = require('../../middleware/tokenProfessor');
 const calcularNotaTSMD = require('../../utils/calculoNota');
-const Log = require('../../models/Log');
-const sharp = require('sharp');
 
 // ---------- Upload de foto (multer) ----------
 const pastaAlunos = path.join(__dirname, '../../uploads/alunos');
@@ -44,22 +46,42 @@ function anexarThumbNaPlain(a) {
   return { ...a, fotoThumbUrl: `/api/imagens/thumb/${a._id}` };
 }
 function anexarThumb(alunoDoc) {
-  const obj = alunoDoc.toObject ? alunoDoc.toObject() : alunoDoc;
+  const obj = alunoDoc?.toObject ? alunoDoc.toObject() : alunoDoc;
   return anexarThumbNaPlain(obj);
 }
 
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
     const [dd, mm, yyyy] = d.trim().split('/');
-    return new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+    const dt = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+    if (!isNaN(dt.getTime())) return dt;
   }
   return d;
 }
 
 async function calcularNotaComportamento(alunoId) {
-  const aluno = await Aluno.findById(alunoId).select('dataEntrada');
-  const notificacoes = await Notificacao.find({ aluno: alunoId }).select('data valorNumerico createdAt');
+  const aluno = await Aluno.findById(alunoId).select('dataEntrada').lean();
+  const notificacoes = await Notificacao.find({ aluno: alunoId }).select('data valorNumerico createdAt').lean();
   return calcularNotaTSMD(aluno?.dataEntrada, new Date(), notificacoes);
+}
+
+function normalizaTurma(t) {
+  return String(t || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[ºº°]/g, 'º')
+    .replace(/[ª]/g, 'ª')
+    .trim();
+}
+
+function sanitizeUpdate(payload = {}) {
+  const dados = { ...payload };
+  // Nunca permitir alteração de identificadores/tenant pelo payload
+  delete dados._id;
+  delete dados.id;
+  delete dados.instituicao;
+  delete dados.createdAt;
+  delete dados.updatedAt;
+  return dados;
 }
 
 // ===================== NOVAS ROTAS RÁPIDAS (ADMIN) =====================
@@ -86,7 +108,7 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
     const LIMITE = 48;
     const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
     const termo = (req.query.q || '').trim();
-    const turma = req.params.turma.trim();
+    const turma = normalizaTurma(req.params.turma);
 
     const filtro = { instituicao: req.usuario.instituicao, turma };
     if (termo) filtro.nome = { $regex: termo, $options: 'i' };
@@ -136,6 +158,7 @@ router.get('/:id/detalhes', autenticar, async (req, res) => {
 
 router.get('/professor/turmas', autenticarTokenProfessor, async (req, res) => {
   try {
+    if (!req.professor?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
     const turmas = await Aluno.distinct('turma', { instituicao: req.professor.instituicao });
     turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
     res.set('Cache-Control', 'private, max-age=120');
@@ -148,10 +171,12 @@ router.get('/professor/turmas', autenticarTokenProfessor, async (req, res) => {
 
 router.get('/professor/turma/:turma', autenticarTokenProfessor, async (req, res) => {
   try {
+    if (!req.professor?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const LIMITE = 48;
     const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
     const termo = (req.query.q || '').trim();
-    const turma = req.params.turma.trim();
+    const turma = normalizaTurma(req.params.turma);
 
     const filtro = { instituicao: req.professor.instituicao, turma };
     if (termo) filtro.nome = { $regex: termo, $options: 'i' };
@@ -172,6 +197,8 @@ router.get('/professor/turma/:turma', autenticarTokenProfessor, async (req, res)
 
 router.get('/professor/:id/detalhes', autenticarTokenProfessor, async (req, res) => {
   try {
+    if (!req.professor?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const id = req.params.id;
     const aluno = await Aluno.findOne({ _id: id, instituicao: req.professor.instituicao })
       .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoCaminho instituicao')
@@ -201,14 +228,14 @@ router.get('/', autenticar, async (req, res) => {
 
     const filtro = { instituicao: req.usuario.instituicao };
     const turma = req.query.turma;
-    if (turma) filtro.turma = turma;
+    if (turma) filtro.turma = normalizaTurma(turma);
 
     if (semNota) {
       const alunos = await Aluno.find(filtro).select(BASE_SELECT_LISTA).lean();
       return res.json(alunos.map(anexarThumbNaPlain));
     }
 
-    const alunos = await Aluno.find(filtro).select('nome turma foto instituicao');
+    const alunos = await Aluno.find(filtro).select('nome turma foto instituicao').lean();
     const alunosComNota = await Promise.all(
       alunos.map(async (aluno) => {
         let nota = 8.0;
@@ -226,16 +253,18 @@ router.get('/', autenticar, async (req, res) => {
 router.get('/professor', autenticarTokenProfessor, async (req, res) => {
   try {
     const semNota = ['1','true'].includes(String(req.query.semNota || '').toLowerCase());
+    if (!req.professor?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const filtro = { instituicao: req.professor.instituicao };
     const turma = req.query.turma;
-    if (turma) filtro.turma = turma;
+    if (turma) filtro.turma = normalizaTurma(turma);
 
     if (semNota) {
       const alunos = await Aluno.find(filtro).select(BASE_SELECT_LISTA).lean();
       return res.json(alunos.map(anexarThumbNaPlain));
     }
 
-    const alunos = await Aluno.find(filtro).select('nome turma foto instituicao');
+    const alunos = await Aluno.find(filtro).select('nome turma foto instituicao').lean();
     const alunosComNota = await Promise.all(
       alunos.map(async (aluno) => {
         let nota = 8.0;
@@ -253,7 +282,7 @@ router.get('/professor', autenticarTokenProfessor, async (req, res) => {
 router.get('/:id/nota', autenticar, async (req, res) => {
   try {
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.usuario.instituicao }).select('_id');
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.usuario.instituicao }).select('_id').lean();
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
     const nota = await calcularNotaComportamento(aluno._id);
     res.json({ comportamento: nota });
@@ -265,7 +294,8 @@ router.get('/:id/nota', autenticar, async (req, res) => {
 
 router.get('/professor/:id/nota', autenticarTokenProfessor, async (req, res) => {
   try {
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.professor.instituicao }).select('_id');
+    if (!req.professor?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.professor.instituicao }).select('_id').lean();
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
     const nota = await calcularNotaComportamento(aluno._id);
     res.json({ comportamento: nota });
@@ -279,7 +309,7 @@ router.get('/professor/:id/nota', autenticarTokenProfessor, async (req, res) => 
 router.get('/baixorendimento', autenticar, async (req, res) => {
   try {
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-    const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao');
+    const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao').lean();
     const alunosFiltrados = [];
     for (const aluno of alunos) {
       let nota = 8.0;
@@ -296,7 +326,7 @@ router.get('/baixorendimento', autenticar, async (req, res) => {
 router.get('/insuficientes', autenticar, async (req, res) => {
   try {
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-    const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao');
+    const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao').lean();
     const alunosFiltrados = [];
     for (const aluno of alunos) {
       let nota = 8.0;
@@ -320,17 +350,18 @@ router.post('/', autenticar, async (req, res) => {
       nomePai, nomeMae, foto
     } = req.body;
 
-    const turmaNormalizada = turma
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
+    if (!nome || !turma || !dataEntrada) {
+      return res.status(400).json({ message: 'Campos obrigatórios: nome, turma e dataEntrada.' });
+    }
 
+    const turmaNormalizada = normalizaTurma(turma);
     const dataEntradaNormalizada = parsePtBrDateToDate(dataEntrada);
 
     const novoAluno = new Aluno({
       nome,
       turma: turmaNormalizada,
       dataEntrada: dataEntradaNormalizada,
-      nascimento,
+      nascimento: parsePtBrDateToDate(nascimento),
       telefone,
       endereco,
       nomePai,
@@ -342,7 +373,8 @@ router.post('/', autenticar, async (req, res) => {
     const alunoSalvo = await novoAluno.save();
 
     await Log.create({
-      usuario: req.usuario._id,
+      usuario: req.usuario.id,
+      instituicao: req.usuario.instituicao,
       acao: 'Cadastro de Aluno',
       entidade: 'Aluno',
       entidadeId: alunoSalvo._id
@@ -351,6 +383,9 @@ router.post('/', autenticar, async (req, res) => {
     res.status(201).json(anexarThumb(alunoSalvo));
   } catch (error) {
     console.error('Erro POST /api/alunos:', error);
+    if (error?.code === 11000) {
+      return res.status(409).json({ message: 'Conflito: código de acesso já existente para esta instituição.' });
+    }
     res.status(400).json({ message: 'Erro ao criar aluno', error });
   }
 });
@@ -363,9 +398,7 @@ router.put('/transferir', autenticar, async (req, res) => {
     if (!Array.isArray(ids) || !novaTurma) {
       return res.status(400).json({ mensagem: 'IDs e nova turma são obrigatórios.' });
     }
-    const turmaNormalizada = novaTurma
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
+    const turmaNormalizada = normalizaTurma(novaTurma);
 
     const resultado = await Aluno.updateMany(
       { _id: { $in: ids }, instituicao: req.usuario.instituicao },
@@ -457,22 +490,23 @@ router.put('/:id', autenticar, async (req, res) => {
   try {
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
 
-    const dadosAtualizados = { ...req.body };
+    const dadosAtualizados = sanitizeUpdate(req.body);
 
     if (dadosAtualizados.turma) {
-      dadosAtualizados.turma = dadosAtualizados.turma
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
+      dadosAtualizados.turma = normalizaTurma(dadosAtualizados.turma);
     }
 
     if (dadosAtualizados.dataEntrada !== undefined) {
       dadosAtualizados.dataEntrada = parsePtBrDateToDate(dadosAtualizados.dataEntrada);
     }
+    if (dadosAtualizados.nascimento !== undefined) {
+      dadosAtualizados.nascimento = parsePtBrDateToDate(dadosAtualizados.nascimento);
+    }
 
     const alunoAntes = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
-    }).select('_id dataEntrada');
+    }).select('_id dataEntrada').lean();
 
     if (!alunoAntes) return res.status(404).json({ message: 'Aluno não encontrado' });
 
@@ -491,7 +525,8 @@ router.put('/:id', autenticar, async (req, res) => {
     if (mudouDataEntrada || forcarRecalculo) {
       const notificacoes = await Notificacao.find({ aluno: alunoAtualizado._id })
         .select('data valorNumerico createdAt')
-        .sort({ data: 1, createdAt: 1 });
+        .sort({ data: 1, createdAt: 1 })
+        .lean();
 
       const nota = calcularNotaTSMD(alunoAtualizado.dataEntrada, new Date(), notificacoes);
       alunoAtualizado.comportamento = nota;
@@ -499,7 +534,8 @@ router.put('/:id', autenticar, async (req, res) => {
     }
 
     await Log.create({
-      usuario: req.usuario._id,
+      usuario: req.usuario.id,
+      instituicao: req.usuario.instituicao,
       acao: 'Edição de Aluno',
       entidade: 'Aluno',
       entidadeId: alunoAtualizado._id
@@ -534,7 +570,8 @@ router.delete('/:id', autenticar, async (req, res) => {
     ]);
 
     await Log.create({
-      usuario: req.usuario._id,
+      usuario: req.usuario.id,
+      instituicao: req.usuario.instituicao,
       acao: 'Exclusão de Aluno',
       entidade: 'Aluno',
       entidadeId: aluno._id

@@ -3,49 +3,72 @@ const jwt = require('jsonwebtoken');
 const Log = require('../models/Log');
 const Usuario = require('../models/Usuario');
 
-/**
- * Tenta montar um "ator" (usuário logado) a partir de:
- *  - req.usuario (setado pelo middleware autenticar)
- *  - cookie token (JWT)
- *  - opcional: header x-actor-id (fallback para testes)
- */
+/** ==== util: token extraction ==== */
+function extrairToken(req) {
+  const cookieToken =
+    req?.cookies?.tokenProfessor ||
+    req?.cookies?.token ||
+    null;
+
+  const auth = req?.headers?.authorization || '';
+  const bearerToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+
+  const headerToken = req?.headers?.['x-access-token'] || null;
+  const queryToken = req?.query?.token || null;
+
+  return cookieToken || bearerToken || headerToken || queryToken || null;
+}
+
+/** ==== resolve o "ator" (usuário logado) ==== */
 async function resolveActor(req) {
-  // 1) Já veio do middleware autenticar?
-  if (req && req.usuario && req.usuario.id) {
+  // 1) Prioriza middlewares oficiais
+  if (req?.usuario?.id || req?.usuario?._id) {
     return {
-      id: String(req.usuario.id),
+      id: String(req.usuario.id || req.usuario._id),
       nome: req.usuario.nome || null,
       tipo: req.usuario.tipo || null,
       instituicao: req.usuario.instituicao || null,
-      source: 'req.usuario'
+      source: 'req.usuario',
     };
   }
 
-  // 2) Já existe req.actor de algum lugar anterior?
-  if (req && req.actor && req.actor.id) {
-    return { ...req.actor, source: 'req.actor' };
+  // 2) Rotas com autenticação de professor
+  if (req?.professor?.id || req?.professor?._id) {
+    return {
+      id: String(req.professor.id || req.professor._id),
+      nome: req.professor.nome || null,
+      tipo: req.professor.tipo || 'professor',
+      instituicao: req.professor.instituicao || null,
+      source: 'req.professor',
+    };
   }
 
-  // 3) Tenta decodificar o JWT do cookie (se houver)
+  // 3) Já veio de algum middleware anterior?
+  if (req?.actor?.id) {
+    return { ...req.actor, source: req.actor.source || 'req.actor' };
+  }
+
+  // 4) JWT presente? (cookie/header/query)
   try {
-    const token = req?.cookies?.token;
+    const token = extrairToken(req);
     if (token && process.env.JWT_SECRET) {
       const payload = jwt.verify(token, process.env.JWT_SECRET);
-      if (payload?.id) {
+      const id = payload?.id || payload?._id || payload?.sub || payload?.userId;
+      if (id) {
         return {
-          id: String(payload.id),
-          nome: payload.nome || null,
-          tipo: payload.tipo || null,
-          instituicao: payload.instituicao || null,
-          source: 'cookie.jwt'
+          id: String(id),
+          nome: payload?.nome || null,
+          tipo: payload?.tipo || null,
+          instituicao: payload?.instituicao || null,
+          source: 'jwt',
         };
       }
     }
-  } catch (e) {
-    // silencioso; seguimos para o próximo fallback
+  } catch {
+    // silencioso: seguimos para fallback
   }
 
-  // 4) Fallback opcional: header x-actor-id (útil em testes)
+  // 5) Fallback de teste: header x-actor-id
   try {
     const actorId = req?.headers?.['x-actor-id'];
     if (actorId) {
@@ -56,77 +79,88 @@ async function resolveActor(req) {
           nome: u.nome || null,
           tipo: u.tipo || null,
           instituicao: u.instituicao || null,
-          source: 'header.x-actor-id'
+          source: 'header.x-actor-id',
         };
       }
     }
-  } catch {}
+  } catch {
+    // silencioso
+  }
 
   return null;
 }
 
-/**
- * Middleware leve: anexa `req.actor` quando possível.
- * NÃO dá erro se não encontrar — apenas deixa req.actor nulo.
- * Use SEMPRE depois do `autenticar` nas rotas que logam.
- */
+/** ==== middleware: anexa req.actor quando disponível ==== */
 async function attachActor(req, _res, next) {
   try {
     const actor = await resolveActor(req);
     if (actor) req.actor = actor;
-  } catch {}
+  } catch {
+    // não bloqueia a requisição
+  }
   next();
+}
+
+/** rate limit simples para avisos repetidos */
+let _lastWarn = 0;
+function warnOncePerInterval(msg, intervalMs = 15000) {
+  const now = Date.now();
+  if (now - _lastWarn > intervalMs) {
+    _lastWarn = now;
+    console.warn(msg);
+  }
 }
 
 /**
  * Grava um log de auditoria.
- * Campos:
- *  - req: request atual
- *  - acao: string (ex.: 'NOTIFICACAO_CRIADA')
- *  - entidade: 'Notificacao' | 'Aluno' | ...
- *  - entidadeId: id da entidade
- *  - entidadeNome: rótulo amigável (ex.: nome do aluno)
- *  - extra: objeto livre
+ * @param {Object} params
+ * @param {import('express').Request} params.req - request atual
+ * @param {string} params.acao - ex.: 'Cadastro de Aluno'
+ * @param {string} params.entidade - ex.: 'Aluno'
+ * @param {string|number} params.entidadeId - id da entidade
+ * @param {string|null} [params.entidadeNome] - rótulo amigável
+ * @param {Object} [params.extra] - payload adicional
  */
 async function logAction({ req, acao, entidade, entidadeId, entidadeNome = null, extra = {} }) {
-  // resolve ator de maneira robusta
-  const actor = req?.actor || await resolveActor(req);
+  // resolve ator (robusto)
+  const actor = req?.actor || (await resolveActor(req));
 
   const instituicao = actor?.instituicao;
   const usuarioId   = actor?.id;
-  const usuarioNome = actor?.nome || req?.usuario?.nome || null;
-  const usuarioTipo = actor?.tipo || req?.usuario?.tipo || null;
+  const usuarioNome = actor?.nome || req?.usuario?.nome || req?.professor?.nome || null;
+  const usuarioTipo = actor?.tipo || req?.usuario?.tipo || req?.professor?.tipo || null;
 
   if (!instituicao || !usuarioId) {
-    console.warn('[audit] ignorado: sessão sem instituicao/usuario');
+    warnOncePerInterval('[audit] ignorado: sessão sem instituicao/usuario');
     return;
   }
 
   try {
     const doc = await Log.create({
       instituicao,
-      usuario: usuarioId,
-      usuarioNome,
-      usuarioTipo,
+      usuario: String(usuarioId),
+      usuarioNome: usuarioNome || null,
+      usuarioTipo: usuarioTipo || null,
       acao,
       entidade,
       entidadeId: String(entidadeId || ''),
       entidadeNome: entidadeNome || null,
-      detalhes: extra || {}
+      detalhes: extra || {},
     });
 
-    // Log de depuração útil para você
+    // Log de depuração resumido
+    // (comente se quiser menos verbosidade)
     console.log('[audit] gravado:', {
-      _id: doc._id.toString(),
+      _id: String(doc._id),
       acao,
       entidade,
       entidadeId: String(entidadeId || ''),
       usuario: `${usuarioNome || usuarioId} (${usuarioTipo || '—'})`,
-      instituicao
+      instituicao: String(instituicao),
     });
   } catch (err) {
     console.error('[audit] erro ao gravar log:', err?.message || err);
   }
 }
 
-module.exports = { logAction, attachActor };
+module.exports = { logAction, attachActor, resolveActor };

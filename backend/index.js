@@ -1,5 +1,5 @@
 // backend/index.js
-require('dotenv').config({ path: __dirname + '/.env' }); // carrega /backend/.env
+require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
 const path = require('path');
@@ -15,6 +15,8 @@ const Aluno = require('./models/Aluno');
 const Notificacao = require('./models/Notificacao');
 const Usuario = require('./models/Usuario');
 const Log = require('./models/Log');
+// (opcional, mas útil para garantir o registro do model)
+try { require('./models/Instituicao'); } catch {}
 
 // Rotas
 const alunoRoutes = require('./routes/api/alunos');
@@ -44,7 +46,13 @@ const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
 const dashboardFastRoutes = require('./routes/api/dashboard-fast');
 const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
+const publicAlunoRoutes = require('./routes/api/publicAluno');
 
+// ✅ nova rota de instituições
+const instituicoesRoutes = require('./routes/api/instituicoes');
+
+// Middlewares
+const { autenticar } = require('./middleware/autenticacao'); // usa o middleware revisado
 const autenticarTokenProfessor = require('./middleware/tokenProfessor');
 
 const app = express();
@@ -72,34 +80,38 @@ app.use(express.static(publicRoot, {
 
 app.get('/', (req, res) => res.redirect('/login.html'));
 
-// ====== AUTENTICAÇÃO COM COOKIE ======
-function autenticar(req, res, next) {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
-  try {
-    const verificado = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = verificado;
-    next();
-  } catch {
-    return res.status(401).json({ mensagem: 'Token inválido.' });
-  }
-}
-
 // ====== LOGIN / LOGOUT / CADASTRO ======
+// (mantemos aqui para compatibilidade; agora o middleware autenticar é importado)
+
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body;
   try {
-    const usuario = await Usuario.findOne({ email }).select('+senha');
-    if (!usuario || !(await usuario.compararSenha(senha))) {
-      return res.status(401).json({ mensagem: 'E-mail ou senha inválidos.' });
+    const emailNorm = String(email || '').trim().toLowerCase();
+
+    // 🔧 AJUSTE: tolera usuários legados sem campo "ativo"
+    const usuario = await Usuario.findOne({
+      email: emailNorm,
+      $or: [{ ativo: true }, { ativo: { $exists: false } }],
+    }).select('+senha');
+
+    if (!usuario) {
+      return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
     }
 
-    const token = jwt.sign({
-      id: usuario._id,
+    const senhaOk = await usuario.compararSenha(senha);
+    if (!senhaOk) {
+      return res.status(401).json({ mensagem: 'Senha incorreta.' });
+    }
+
+    // ✅ mantém instituicao como ObjectId (NÃO converter para string)
+    const payload = {
+      id: String(usuario._id),
       nome: usuario.nome,
       tipo: usuario.tipo,
-      instituicao: usuario.instituicao
-    }, process.env.JWT_SECRET, { expiresIn: '2h' });
+      instituicao: usuario.instituicao, // <= ajuste importante
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '2h' });
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -110,7 +122,7 @@ app.post('/auth/login', async (req, res) => {
     });
 
     const redirecionar = usuario.tipo === 'professor' ? '/painel-professor.html' : '/painel.html';
-    res.json({ mensagem: 'Login bem-sucedido', redirecionar });
+    res.json({ mensagem: 'Login bem-sucedido', redirecionar, token, usuario: payload });
   } catch (erro) {
     console.error('Erro no login:', erro);
     res.status(500).json({ mensagem: 'Erro no servidor ao fazer login.' });
@@ -131,12 +143,18 @@ app.post('/auth/cadastrar', autenticar, async (req, res) => {
     return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
   }
   try {
-    const usuarioExistente = await Usuario.findOne({ email });
-    if (usuarioExistente) return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
+    const emailNorm = String(email).trim().toLowerCase();
+    const existente = await Usuario.findOne({ email: emailNorm, instituicao });
+    if (existente) return res.status(409).json({ mensagem: 'E-mail já cadastrado nesta instituição.' });
 
+    // O model já aplica hash no pre('save')
     const novoUsuario = new Usuario({
-      nome, email, senha, instituicao, tipo,
-      ...(tipo === 'professor' && { tokenAcessoProfessor: crypto.randomBytes(12).toString('hex') })
+      nome,
+      email: emailNorm,
+      senha,
+      tipo,
+      instituicao,
+      // NÃO crie "tokenAcessoProfessor" aqui; o model usa "tokenAcesso" e gera sozinho se tipo === 'professor'
     });
 
     await novoUsuario.save();
@@ -172,10 +190,14 @@ app.get('/painel-professor.html', autenticar, (req, res) => {
 app.get('/comunicacao-pais.html', autenticar, (req, res) => {
   res.sendFile(path.join(publicRoot, 'comunicacao-pais.html'));
 });
-// ✅ rota protegida para logs.html
 app.get('/logs.html', autenticar, (req, res) => {
   res.sendFile(path.join(publicRoot, 'logs.html'));
 });
+// ====== HTMLs PROTEGIDOS ======
+app.get('/estatisticas.html', autenticar, (req, res) => {
+  res.sendFile(path.join(publicRoot, 'estatisticas.html'));
+});
+
 
 // ====== ROTAS API ======
 app.use('/api/ficha', autenticar, fichaApiRoutes);
@@ -201,11 +223,19 @@ app.use('/api', relatorioNotificacoesRoute);
 app.use('/api/estatisticas', estatisticasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
+// ⚠️ Cuidado: você já usa '/api/usuarios' acima; este "acessoProfessorRoute" aponta ao mesmo prefixo.
+// Se for intencional, beleza; se não, considere mudar para '/api/acesso-professor'.
 app.use('/api/usuarios', acessoProfessorRoute);
 app.use('/api/diagnostico', diagnosticoNotaRoutes);
 app.use('/api/comunicacao', comunicacaoPaisRoutes);
 app.use('/api/dashboard-fast', autenticar, dashboardFastRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/notificacoes', require('./routes/api/notificacoes.metrics'));
+// ✅ nova rota pública para QR Code dos pais
+app.use('/api', publicAlunoRoutes);
+
+// ✅ nova rota de instituições (admin)
+app.use('/api/instituicoes', instituicoesRoutes);
 
 // ====== STATUS E SAÚDE ======
 app.get('/__version', (req, res) => {
@@ -223,11 +253,8 @@ if (!/^mongodb(\+srv)?:\/\//i.test(MONGO_URI)) {
 }
 
 const PORT = process.env.PORT || 5000;
-
-// 🔧 Importante para o Render: não fixar host em 'localhost'.
-// Deixe o Node/Express fazer o bind padrão (0.0.0.0 no Render).
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Servidor ligado em: http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
   console.log('🧪 Health pronto: /__version e /healthz');
 });
 

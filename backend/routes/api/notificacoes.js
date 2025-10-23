@@ -10,9 +10,8 @@ const calcularNotaTSMD = require('../../utils/calculoNota');
 const enviarWhatsapp = require('../../utils/twilio');
 const { autenticar } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
-const { addBusinessDays } = require('../../utils/businessDays'); // ⬅️ NOVO
+const { addBusinessDays } = require('../../utils/businessDays');
 
-// 🔎 auditoria centralizada
 const { logAction, attachActor } = require('../../utils/audit');
 
 // ------------------ Mapas de valores ------------------
@@ -30,22 +29,44 @@ const MAPA_ELOGIOS = {
 };
 
 // ------------------ Helpers ------------------
+/** Match amplo para campo instituicao (aceita ObjectId, string, ausente e null) */
+function buildInstMatch(inst) {
+  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
+  if (!inst) return { $or: ors };
+  const asStr = String(inst);
+  ors.push({ instituicao: asStr });
+  if (mongoose.isValidObjectId(inst)) {
+    ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+  }
+  return { $or: ors };
+}
+
+/** Match para Aluno por instituicao (string OU ObjectId) */
+function buildAlunoMatch(inst) {
+  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
+  if (inst) {
+    ors.push({ instituicao: String(inst) });
+    if (mongoose.isValidObjectId(inst)) ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+  }
+  return { $or: ors };
+}
+
 /** Data-only local (evita parse UTC “+1 dia”) */
 function parseDateOnlyLocal(yyyy_mm_dd) {
   if (!yyyy_mm_dd) return new Date();
   const [y, m, d] = String(yyyy_mm_dd).split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0); // local midnight
+  return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
 }
-
 function toDayStart(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function toDayEnd(d)   { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 
 /** Recalcula e persiste a nota ATUAL do aluno até “agora” */
 async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
-  const aluno = await Aluno.findOne({ _id: alunoId, instituicao });
+  const instMatch = buildInstMatch(instituicao);
+  const aluno = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) });
   if (!aluno) return null;
 
-  const historico = await Notificacao.find({ aluno: alunoId, instituicao })
+  const historico = await Notificacao.find({ aluno: alunoId, ...instMatch })
     .select('data valorNumerico createdAt')
     .sort({ data: 1, createdAt: 1 });
 
@@ -58,7 +79,7 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
 /** Busca nome/turma para logs */
 async function getAlunoInfo(alunoId, instituicao) {
   if (!alunoId) return { alunoNome: '—', alunoTurma: '—' };
-  const a = await Aluno.findOne({ _id: alunoId, instituicao }).select('nome turma').lean();
+  const a = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) }).select('nome turma').lean();
   return { alunoNome: a?.nome || '—', alunoTurma: a?.turma || '—' };
 }
 
@@ -74,10 +95,10 @@ router.get('/novas', autenticar, attachActor, async (_req, res) => {
 // ------------------------------------------------------
 router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
+    const instMatch = buildInstMatch(req.usuario.instituicao);
     const agora = new Date();
     const total = await Notificacao.countDocuments({
-      instituicao,
+      ...instMatch,
       status: 'deferido',
       entregue: true,
       devolvidoPeloAluno: { $ne: true },
@@ -95,12 +116,13 @@ router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req
 // ------------------------------------------------------
 router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '50', 10), 1), 200);
     const agora = new Date();
 
     const itens = await Notificacao.find({
-      instituicao,
+      ...instMatch,
       status: 'deferido',
       entregue: true,
       devolvidoPeloAluno: { $ne: true },
@@ -109,7 +131,7 @@ router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) =>
       .sort({ prazoDevolucao: 1 })
       .limit(limit)
       .select('aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data')
-      .populate({ path: 'aluno', select: 'nome turma', match: { instituicao } })
+      .populate({ path: 'aluno', select: 'nome turma instituicao', match: alunoMatch })
       .lean();
 
     const filtrados = (itens || []).filter(i => i.aluno); // safety
@@ -128,14 +150,16 @@ router.get('/', autenticar, attachActor, async (req, res) => {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.max(parseInt(req.query.limit || '10', 10), 1);
 
-    const instituicao = req.usuario.instituicao;
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
+
     const q = (req.query.q || '').trim();
     const turma = (req.query.turma || '').trim();
 
-    const filtroBase = { instituicao };
+    const filtroBase = { ...instMatch };
 
     if (q || turma) {
-      const alunoFiltro = { instituicao };
+      const alunoFiltro = buildAlunoMatch(req.usuario.instituicao);
       if (q) {
         alunoFiltro.nome = {
           $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
@@ -162,8 +186,8 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       .select('aluno tipo tipoMedida data status valorNumerico notaAnterior notaAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm')
       .populate({
         path: 'aluno',
-        select: 'nome turma',
-        match: { instituicao }
+        select: 'nome turma instituicao',
+        match: alunoMatch
       })
       .lean();
 
@@ -180,10 +204,11 @@ router.get('/', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.get('/:id', autenticar, attachActor, async (req, res) => {
   try {
+    const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao: req.usuario.instituicao
-    }).populate('aluno');
+      ...instMatch
+    }).populate({ path: 'aluno', select: 'nome turma instituicao' });
 
     if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada' });
     res.json(notificacao);
@@ -207,7 +232,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
   try {
     const alunoRelacionado = await Aluno.findOne({
       _id: aluno,
-      instituicao: req.usuario.instituicao
+      ...buildAlunoMatch(req.usuario.instituicao)
     });
 
     if (!alunoRelacionado) {
@@ -220,7 +245,9 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     let valor = 0;
     let payload = {
       aluno,
-      instituicao: req.usuario.instituicao,
+      instituicao: mongoose.isValidObjectId(req.usuario.instituicao)
+        ? new mongoose.Types.ObjectId(req.usuario.instituicao)
+        : String(req.usuario.instituicao),
       observacao: observacao || null,
       data: dt,
       natureza
@@ -274,15 +301,17 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 
     // (A) nota até ontem
     const endOntem = new Date(dayStart.getTime() - 1);
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+
     const notificacoesAntes = await Notificacao.find({
-      aluno, instituicao: req.usuario.instituicao, data: { $lt: dayStart }
+      aluno, ...instMatch, data: { $lt: dayStart }
     }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
 
     const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
 
     // (B) nota até o fim do dia do evento + esta ocorrência
     const notificacoesAteDia = await Notificacao.find({
-      aluno, instituicao: req.usuario.instituicao, data: { $lt: dayEnd }
+      aluno, ...instMatch, data: { $lt: dayEnd }
     }).select('data valorNumerico createdAt').sort({ data: 1, createdAt: 1 });
 
     const paraCalculoDia = [
@@ -295,7 +324,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     const anoAtual = dt.getFullYear();
     const notificacoesAno = await Notificacao.find({
       numeroSequencial: { $regex: new RegExp(`\\/${anoAtual}$`) },
-      instituicao: req.usuario.instituicao
+      ...instMatch
     }).select('numeroSequencial');
 
     let maiorNumero = 0;
@@ -317,7 +346,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 
     await novaNotificacao.save();
 
-    // 🔎 LOG (aguardado, com ator anexo) — inclui alunoNome e turma
+    // 🔎 LOG
     await logAction({
       req,
       acao: 'NOTIFICACAO_CRIADA',
@@ -366,10 +395,10 @@ Nota atual de comportamento: ${(alunoAtualizado?.comportamento ?? notaNoDia).toF
 // ------------------------------------------------------
 router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
+    const instMatch = buildInstMatch(req.usuario.instituicao);
     const notif = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao
+      ...instMatch
     });
     if (!notif) return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
 
@@ -420,7 +449,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
 
     await notif.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, instituicao);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
     // 🔎 LOG
     await logAction({
@@ -451,7 +480,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
     });
 
     // Recalcular nota atual
-    await recomputarNotaAlunoAteAgora(notif.aluno, instituicao);
+    await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
 
     res.json({ message: 'Notificação atualizada com sucesso.' });
   } catch (err) {
@@ -465,10 +494,10 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
+    const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao
+      ...instMatch
     });
 
     if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada.' });
@@ -476,7 +505,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
     notificacao.status = 'pendente';
     await notificacao.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, instituicao);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, req.usuario.instituicao);
 
     await logAction({
       req,
@@ -493,7 +522,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    await recomputarNotaAlunoAteAgora(notificacao.aluno, instituicao);
+    await recomputarNotaAlunoAteAgora(notificacao.aluno, req.usuario.instituicao);
 
     res.json({ message: 'Notificação reenviada com sucesso.' });
   } catch (err) {
@@ -507,8 +536,8 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
-    const notif = await Notificacao.findOne({ _id: req.params.id, instituicao });
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch });
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -527,9 +556,8 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false; // só ativa quando passar do prazo sem devolução
     await notif.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, instituicao);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
-    // log
     await logAction({
       req,
       acao: 'NOTIFICACAO_ENTREGUE',
@@ -558,8 +586,8 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
-    const notif = await Notificacao.findOne({ _id: req.params.id, instituicao });
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch });
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -578,9 +606,8 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false;
     await notif.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, instituicao);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
-    // log
     await logAction({
       req,
       acao: 'NOTIFICACAO_DEVOLVIDA',
@@ -608,16 +635,16 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
 // ------------------------------------------------------
 router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
+    const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
-      instituicao
+      ...instMatch
     });
     if (!notificacao) {
       return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
     }
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, instituicao);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, req.usuario.instituicao);
 
     await logAction({
       req,
@@ -641,7 +668,7 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     const alunoId = notificacao.aluno;
     await notificacao.deleteOne();
 
-    await recomputarNotaAlunoAteAgora(alunoId, instituicao);
+    await recomputarNotaAlunoAteAgora(alunoId, req.usuario.instituicao);
 
     res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
   } catch (err) {

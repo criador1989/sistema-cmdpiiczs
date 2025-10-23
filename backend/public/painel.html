@@ -87,7 +87,6 @@
     .menu-windows .window-card:nth-child(3){animation-delay:.15s}.menu-windows .window-card:nth-child(4){animation-delay:.20s}
     .menu-windows .window-card:nth-child(5){animation-delay:.25s}.menu-windows .window-card:nth-child(6){animation-delay:.30s}
     .menu-windows .window-card:nth-child(7){animation-delay:.35s}.menu-windows .window-card:nth-child(8){animation-delay:.40s}
-    /* Estilos extras para o card de pendências */
     .pend-card{margin-top:22px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:16px;box-shadow:var(--glass-shadow)}
     .pend-card header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
     .pend-table{width:100%;border-collapse:collapse}
@@ -132,14 +131,11 @@
             <div class="metric"><div class="k">Notificações pendentes</div><div class="v" id="mNotif">—</div></div>
             <div class="metric"><div class="k">Comportamento médio</div><div class="v" id="mMedia">—</div></div>
             <div class="metric"><div class="k">Mensagens não lidas</div><div class="v" id="mMsgs">—</div></div>
-            <!-- Nova métrica -->
             <div class="metric"><div class="k">Devoluções em atraso</div><div class="v" id="mPendDevol">—</div></div>
           </div>
 
           <div class="menu-windows">
-            <div class="window-card" data-transferir role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-            </div>
+            <!-- Mantidos na mesma ordem, exceto Transferir Turma que foi movido para o FINAL -->
             <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'" onkeyup="if(event.key==='Enter') this.click()">
               <div class="window-content"><div class="card-copy"><div class="kicker">MÓDULO</div><h3>Cadastrar Aluno</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
             </div>
@@ -159,9 +155,13 @@
               <div class="window-content"><div class="card-copy"><div class="kicker">COMUNICAÇÃO</div><h3>Mensagens</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
               <span id="mensagensBadge" class="badge" style="display:none;">0</span>
             </div>
+
+            <!-- Transferir Turma: agora o ÚLTIMO card -->
+            <div class="window-card" data-transferir role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
+              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            </div>
           </div>
 
-          <!-- NOVO CARD: Pendências de devolução -->
           <section class="pend-card" id="pendDevolucaoSection" aria-live="polite">
             <header>
               <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
@@ -225,7 +225,6 @@
   </nav>
 
   <script>
-  // =================== Helpers com timeout ===================
   const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
 
   async function getJSON(url, { timeoutMs=8000 } = {}) {
@@ -253,7 +252,6 @@
     clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
   }
 
-  // =================== Métricas rápidas ===================
   async function carregarMetricas(){
     try{
       const { alunosCount=0, notifPend=0, msgs=0 } = await getJSON('/api/metrics/overview', { timeoutMs: 8000 });
@@ -264,7 +262,6 @@
       console.warn('overview falhou:', e.message);
     }
 
-    // média geral e gráfico de barras
     try{
       const porTurma = await getJSON('/api/estatisticas/comportamento-por-turma', { timeoutMs: 9000 });
       drawBarChart(Array.isArray(porTurma) ? porTurma : []);
@@ -277,7 +274,6 @@
       drawBarChart([]);
     }
 
-    // distribuição
     try{
       const dist = await getJSON('/api/estatisticas/distribuicao', { timeoutMs: 9000 });
       drawDonutChart({
@@ -289,7 +285,6 @@
       drawDonutChart({exc:0,oti:0,bom:0,reg:0,ins:0,inc:0});
     }
 
-    // NOVO: contador de devoluções em atraso
     try{
       const k = await getJSON('/api/notificacoes/pendencias/devolucao/contador', { timeoutMs: 7000 });
       const total = Number(k?.total || 0);
@@ -300,7 +295,6 @@
     }
   }
 
-  // ============ Pendências de devolução (lista) ============
   async function carregarPendenciasDevolucao(){
     const resumo = document.getElementById('pendResumo');
     const tbody  = document.getElementById('pendTableBody');
@@ -316,7 +310,6 @@
         return;
       }
 
-      // ordena por prazo (mais urgente primeiro)
       arr.sort((a,b)=> new Date(a.prazoDevolucao) - new Date(b.prazoDevolucao));
 
       const rows = arr.slice(0, 12).map(n => {
@@ -351,7 +344,6 @@
     }
   }
 
-  // ============ Atenção especial (≤ 4,99) sob demanda ============
   async function carregarAtencao(){
     const status = document.getElementById('attentionStatus');
     const list   = document.getElementById('attentionList');
@@ -360,11 +352,9 @@
     list.innerHTML = '';
 
     try{
-      // 1) ROTA RÁPIDA
       let arr = await getJSON('/api/metrics/atencao?limite=500', { timeoutMs: 10000 });
       if (!Array.isArray(arr)) arr = [];
 
-      // 2) Fallback pesado (só se necessário)
       if (arr.length === 0) {
         try {
           let alunos = await getJSON('/api/alunos/insuficientes', { timeoutMs: 20000 });
@@ -407,7 +397,6 @@
     }
   }
 
-  // ==================== Gráficos (canvas) ====================
   function drawBarChart(data){
     const c = document.getElementById('barChart'); if(!c) return;
     const ctx = c.getContext('2d'); const W=c.width, H=c.height; ctx.clearRect(0,0,W,H);
@@ -447,7 +436,6 @@
     items.forEach((d,i)=>{ const y=20+i*18; ctx.fillStyle=d.color; ctx.fillRect(W-170,y-10,10,10); ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillText(`${d.name}: ${d.value}`, W-154, y); });
   }
 
-  // ==================== Sessão & ações ====================
   async function verificarUsuario(){
     try{ const j = await getJSON('/api/usuario', { timeoutMs: 7000 }); document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário'; }
     catch{ location.href = './login.html'; }
@@ -473,7 +461,6 @@
   }
   async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
 
-  // ======================== Boot ========================
   async function boot(){
     await verificarUsuario();
     await verificarAdmin();
@@ -488,6 +475,7 @@
   }
 </script>
  <script src="notify.js"></script>
+<script src="/painel.js"></script>
 
 </body>
 </html>

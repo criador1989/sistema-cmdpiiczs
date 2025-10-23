@@ -8,35 +8,79 @@ const Aluno = require('../../models/Aluno');
 /** ===========================
  *  Helpers
  *  =========================== */
-function parseDiaInicio(brDateStr) {
-  if (!brDateStr) return null;
-  const [d, m, y] = brDateStr.split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d, 0, 0, 0, 0);
+
+// aceita "dd/mm/aaaa" ou "aaaa-mm-dd"
+function parseQualquerDataInicio(s) {
+  if (!s) return null;
+  if (s.includes('/')) {
+    const [d, m, y] = s.split('/').map(Number);
+    if (!d || !m || !y) return null;
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+  }
+  if (s.includes('-')) {
+    const [y, m, d] = s.split('-').map(Number);
+    if (!d || !m || !y) return null;
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+  }
+  return null;
 }
-function parseDiaFim(brDateStr) {
-  if (!brDateStr) return null;
-  const [d, m, y] = brDateStr.split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d, 23, 59, 59, 999);
+function parseQualquerDataFim(s) {
+  if (!s) return null;
+  if (s.includes('/')) {
+    const [d, m, y] = s.split('/').map(Number);
+    if (!d || !m || !y) return null;
+    return new Date(y, m - 1, d, 23, 59, 59, 999);
+  }
+  if (s.includes('-')) {
+    const [y, m, d] = s.split('-').map(Number);
+    if (!d || !m || !y) return null;
+    return new Date(y, m - 1, d, 23, 59, 59, 999);
+  }
+  return null;
 }
 
-// Ajuste estes nomes conforme seu schema:
-const CAMPO_TURMA = 'turma';       // ex.: 'turma' ou 'turma.nome'
-const CAMPO_DATA  = 'createdAt';   // ex.: 'createdAt' ou 'dataMatricula'
+// Aceita instituicao como ObjectId ou string (base mista)
+function buildInstMatch(inst) {
+  if (!inst) return {};
+  if (mongoose.isValidObjectId(inst)) {
+    const oid = new mongoose.Types.ObjectId(inst);
+    return { $or: [{ instituicao: oid }, { instituicao: String(inst) }] };
+  }
+  return { instituicao: String(inst) };
+}
+
+// Ajuste conforme seu schema:
+const CAMPO_TURMA = 'turma';     // ex.: 'turma' ou 'turma.nome'
+const CAMPO_DATA  = 'createdAt'; // ex.: 'createdAt' ou 'dataMatricula'
+
+// projeção para pegar nota de comportamento com fallback
+const PROJ_NOTA = {
+  nota: {
+    $cond: [
+      { $and: [{ $ne: ['$comportamento', null] }, { $eq: [{ $type: '$comportamento' }, 'double'] }] },
+      '$comportamento',
+      {
+        $cond: [
+          { $and: [{ $ne: ['$notaComportamento', null] }, { $eq: [{ $type: '$notaComportamento' }, 'double'] }] },
+          '$notaComportamento',
+          null
+        ]
+      }
+    ]
+  }
+};
 
 /** ===========================
- *  Endpoints utilitários
+ *  Utilitários e raiz
  *  =========================== */
 router.get('/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// Evita 404 na raiz e dá um guia rápido
 router.get('/', (req, res) => {
   res.json({
     ok: true,
     endpoints: [
       'GET /api/estatisticas/turmas',
-      'GET /api/estatisticas/alunos-por-turma?inicio=dd/mm/aaaa&fim=dd/mm/aaaa&turma=Todas',
+      'GET /api/estatisticas/alunos-por-turma?inicio=dd/mm/aaaa|aaaa-mm-dd&fim=dd/mm/aaaa|aaaa-mm-dd&turma=Todas',
       'GET /api/estatisticas/comportamento-por-turma',
       'GET /api/estatisticas/distribuicao',
       'GET /api/estatisticas/ping',
@@ -45,16 +89,25 @@ router.get('/', (req, res) => {
 });
 
 /** ===========================
- *  Novos endpoints do painel
+ *  Endpoints
  *  =========================== */
 
-// Lista de turmas (distintas), filtradas pela instituição do usuário
+// Distinct de turmas por instituição, com limpeza e ordenação
 router.get('/turmas', autenticar, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
-    const filtro = { instituicao: inst, [CAMPO_TURMA]: { $ne: null } };
-    const turmas = await Aluno.distinct(CAMPO_TURMA, filtro);
-    turmas.sort((a, b) => String(a).localeCompare(String(b)));
+    const filtro = { ...buildInstMatch(inst), [CAMPO_TURMA]: { $ne: null } };
+    let turmas = await Aluno.distinct(CAMPO_TURMA, filtro);
+
+    // normaliza/limpa
+    turmas = Array.from(
+      new Set(
+        (turmas || [])
+          .filter(Boolean)
+          .map(t => String(t).trim())
+      )
+    ).sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+
     res.json(turmas);
   } catch (e) {
     console.error('estatisticas/turmas:', e);
@@ -62,57 +115,56 @@ router.get('/turmas', autenticar, async (req, res) => {
   }
 });
 
-// Alunos por turma com filtros de data e turma
+// Alunos por turma (opcionalmente filtrando por intervalo de datas e turma)
 router.get('/alunos-por-turma', autenticar, async (req, res) => {
   try {
-    const inst   = req.usuario.instituicao;
+    const inst = req.usuario.instituicao;
     const { inicio, fim, turma } = req.query;
 
-    const filtro = { instituicao: inst };
+    const filtro = { ...buildInstMatch(inst) };
 
-    // Filtro de datas
-    const di = parseDiaInicio(inicio);
-    const df = parseDiaFim(fim);
+    // datas opcionais
+    const di = parseQualquerDataInicio(inicio);
+    const df = parseQualquerDataFim(fim);
     if (di || df) {
       filtro[CAMPO_DATA] = {};
       if (di) filtro[CAMPO_DATA].$gte = di;
       if (df) filtro[CAMPO_DATA].$lte = df;
     }
 
-    // Filtro por turma (se for informada e diferente de 'Todas')
+    // turma opcional (exceto "Todas")
     if (turma && turma !== 'Todas') {
-      filtro[CAMPO_TURMA] = turma;
+      filtro[CAMPO_TURMA] = String(turma).trim();
     }
 
-    const pipeline = [
+    const rows = await Aluno.aggregate([
       { $match: filtro },
-      { $group: { _id: `$${CAMPO_TURMA}`, total: { $sum: 1 } } },
-      { $sort: { _id: 1 } },
-    ];
+      { $group: { _id: { $ifNull: [`$${CAMPO_TURMA}`, 'Sem turma'] }, total: { $sum: 1 } } },
+      { $project: { _id: 0, turma: '$_id', total: 1 } },
+      { $sort: { turma: 1 } },
+    ]);
 
-    const rows = await Aluno.aggregate(pipeline);
-    const saida = rows.map(r => ({ turma: r._id || 'Sem turma', total: r.total }));
-    res.json(saida);
+    res.json(rows);
   } catch (e) {
     console.error('estatisticas/alunos-por-turma:', e);
     res.status(500).json([]);
   }
 });
 
-/** ===========================
- *  Seus endpoints existentes
- *  =========================== */
-
-// Média simples usando Aluno.comportamento
+// Média de comportamento por turma (usa comportamento OU notaComportamento)
 router.get('/comportamento-por-turma', autenticar, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
+
     const data = await Aluno.aggregate([
-      { $match: { instituicao: inst, comportamento: { $type: 'number' } } },
-      { $group: { _id: `$${CAMPO_TURMA}`, media: { $avg: '$comportamento' } } },
-      { $project: { _id: 0, turma: '$_id', media: { $round: ['$media', 2] } } },
+      { $match: buildInstMatch(inst) },
+      { $project: { [CAMPO_TURMA]: 1, ...PROJ_NOTA } },
+      { $match: { nota: { $ne: null } } },
+      { $group: { _id: `$${CAMPO_TURMA}`, media: { $avg: '$nota' }, n: { $sum: 1 } } },
+      { $project: { _id: 0, turma: { $ifNull: ['$_id', 'Sem turma'] }, media: { $round: ['$media', 2] }, n: 1 } },
       { $sort: { turma: 1 } },
     ]);
+
     res.json(data);
   } catch (e) {
     console.error('comportamento-por-turma:', e);
@@ -120,24 +172,25 @@ router.get('/comportamento-por-turma', autenticar, async (req, res) => {
   }
 });
 
-// Distribuição por faixas do campo comportamento
+// Distribuição por faixas (excepcional/ótimo/bom/regular/insuficiente/incompatível)
 router.get('/distribuicao', autenticar, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
-    const TH = { exc: 9.6, oti: 8.6, bom: 7.6, reg: 6.1, ins: 5.1 };
 
     const rows = await Aluno.aggregate([
-      { $match: { instituicao: inst, comportamento: { $type: 'number' } } },
+      { $match: buildInstMatch(inst) },
+      { $project: PROJ_NOTA },
+      { $match: { nota: { $ne: null } } },
       {
         $project: {
           cat: {
             $switch: {
               branches: [
-                { case: { $gte: ['$comportamento', TH.exc] }, then: 'excepcional' },
-                { case: { $gte: ['$comportamento', TH.oti] }, then: 'otimo' },
-                { case: { $gte: ['$comportamento', TH.bom] }, then: 'bom' },
-                { case: { $gte: ['$comportamento', TH.reg] }, then: 'regular' },
-                { case: { $gte: ['$comportamento', TH.ins] }, then: 'insuficiente' },
+                { case: { $gte: ['$nota', 9.0] }, then: 'excepcional' },
+                { case: { $gte: ['$nota', 8.0] }, then: 'otimo' },
+                { case: { $gte: ['$nota', 7.0] }, then: 'bom' },
+                { case: { $gte: ['$nota', 6.0] }, then: 'regular' },
+                { case: { $and: [{ $gte: ['$nota', 0] }, { $lt: ['$nota', 6.0] }] }, then: 'insuficiente' },
               ],
               default: 'incompativel',
             },
@@ -150,11 +203,11 @@ router.get('/distribuicao', autenticar, async (req, res) => {
     const m = Object.fromEntries(rows.map(r => [r._id, r.total]));
     res.json({
       excepcional: m.excepcional || 0,
-      otimo: m.otimo || 0,
-      bom: m.bom || 0,
-      regular: m.regular || 0,
-      insuficiente: m.insuficiente || 0,
-      incompativel: m.incompativel || 0,
+      otimo:       m.otimo || 0,
+      bom:         m.bom || 0,
+      regular:     m.regular || 0,
+      insuficiente:m.insuficiente || 0,
+      incompativel:m.incompativel || 0,
     });
   } catch (e) {
     console.error('distribuicao:', e);

@@ -71,6 +71,15 @@
     .badges{display:flex; gap:8px; flex-wrap:wrap}
     .badge{ font-size:.78rem; color:#444; background:#f3f3f3; border:1px solid #ececec; padding:4px 10px; border-radius:999px }
 
+    /* === Bloco QR === */
+    .qr-wrap{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    .qr-preview{
+      display:none; width:100%; border:1px dashed #e3e3e3; background:#fff; border-radius:12px;
+      padding:12px; margin-top:8px;
+    }
+    .qr-row{display:flex; gap:16px; align-items:center; flex-wrap:wrap}
+    .qr-row img{border:1px solid #eee; border-radius:10px}
+
     .kvs{ display:grid; gap:12px; margin-top:14px; grid-template-columns:repeat(4,minmax(0,1fr)); }
     @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
     .kv{background:#fcfcfc; border:1px solid var(--line); border-radius:10px; padding:10px}
@@ -119,6 +128,7 @@
       .obs,.notif{ break-inside:avoid }
       .hero,.card{ box-shadow:none; border:1px solid #ccc }
       a.btn, button.btn, .iconbtn{ display:none !important }
+      .qr-preview{ display:block !important }
     }
   </style>
 </head>
@@ -144,6 +154,26 @@
             <span class="badge" id="badgeCodigo">Código —</span>
             <span class="badge" id="badgeId">ID —</span>
           </div>
+
+          <!-- ✅ Bloco de QR Code público para responsáveis -->
+          <div class="qr-wrap" id="qrWrap">
+            <button class="btn" onclick="habilitarLinkPublico()">🔗 Habilitar link público</button>
+            <button class="btn ghost" onclick="mostrarQRCode()">🧾 Ver/Atualizar QR</button>
+            <button class="btn ghost" onclick="desabilitarLinkPublico()">🚫 Desabilitar</button>
+            <span id="qrStatus" class="muted"></span>
+
+            <div class="qr-preview" id="qrPreview">
+              <div class="qr-row">
+                <img id="qrImg" alt="QR Code" width="140" height="140"/>
+                <div style="min-width:260px">
+                  <div style="word-break:break-all"><b>Link:</b> <a id="qrLink" href="#" target="_blank" rel="noopener">—</a></div>
+                  <div id="qrExpira" class="muted">—</div>
+                  <button class="iconbtn" onclick="window.print()">🖨️ Imprimir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /QR -->
         </div>
         <button class="btn" id="btnTrocarFoto">Trocar foto</button>
         <button class="btn ghost" id="btnEditar">Editar</button>
@@ -252,16 +282,28 @@
       return {texto:'Incompatível', cor:'#212529'};
     }
 
+    // ===== mini helper para endpoints /api (com JSON e erros) =====
+    async function api(path, opts={}){
+      const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
+        credentials:'include',
+        headers:{ 'Content-Type':'application/json', ...(opts.headers||{}) },
+        ...opts
+      });
+      const ct = r.headers.get('content-type')||'';
+      const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+      if(!r.ok){
+        const msg = data.error || data.mensagem || data.message || `Erro ${r.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
     // ===== carrega ficha (sempre do backend) =====
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
 
-      // força a não usar cache no localhost
       const url = `/api/ficha/dados/${alunoId}?t=${Date.now()}`;
-      const r = await fetch(url, {
-        credentials:'include',
-        cache: 'no-store' // reforço no fetch
-      });
+      const r = await fetch(url, { credentials:'include', cache:'no-store' });
       if(!r.ok){
         if (r.status === 401) {
           alert('Sessão expirada. Faça login novamente.');
@@ -284,7 +326,6 @@
       qs('#kvEntrada').textContent = aluno?.dataEntrada ? fmtData(aluno.dataEntrada) : '—';
       qs('#kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
 
-      // ⚠️ usa SEMPRE o valor vindo do backend (já recalculado no POST /api/notificacoes)
       const nota = (typeof aluno?.comportamento === 'number') ? aluno.comportamento : null;
       qs('#kvNota').textContent = (nota !== null) ? nota.toFixed(2) : 'N/A';
       const cls = classificarNota(nota ?? NaN);
@@ -359,6 +400,9 @@
           `;
         }).join('');
       }
+
+      // tenta auto-exibir QR (se já estiver habilitado)
+      try { await mostrarQRCode(true); } catch {}
     }
 
     // ===== Observações: salvar/editar/excluir =====
@@ -479,6 +523,54 @@
       } finally { inputFoto.value = ''; }
     });
 
+    // ===== QR Code público (pais/responsáveis) =====
+    async function habilitarLinkPublico(){
+      try{
+        qs('#qrStatus').textContent = 'Gerando link...';
+        const r = await api(`/alunos/${alunoId}/public/enable`, {
+          method:'POST',
+          body: JSON.stringify({ expiresDays: 0 }) // 0 = sem expiração; ajuste se quiser
+        });
+        preencherQR(r);
+        qs('#qrStatus').textContent = 'Link habilitado.';
+      }catch(e){
+        qs('#qrStatus').textContent = '';
+        alert(e.message);
+      }
+    }
+
+    async function mostrarQRCode(silent=false){
+      try{
+        const r = await api(`/alunos/${alunoId}/public/qrcode`, { method:'GET' });
+        preencherQR(r);
+        if(!silent) qs('#qrStatus').textContent = 'QR atualizado.';
+      }catch(e){
+        // se não estiver habilitado, apenas esconda o preview
+        qs('#qrPreview').style.display = 'none';
+        if(!silent) alert(e.message);
+      }
+    }
+
+    async function desabilitarLinkPublico(){
+      if(!confirm('Deseja desabilitar o link público deste aluno?')) return;
+      try{
+        await api(`/alunos/${alunoId}/public/disable`, { method:'POST' });
+        qs('#qrPreview').style.display = 'none';
+        qs('#qrStatus').textContent = 'Link desabilitado.';
+      }catch(e){
+        alert(e.message);
+      }
+    }
+
+    function preencherQR(r){
+      const prev = qs('#qrPreview');
+      qs('#qrImg').src = r.qrCode;
+      qs('#qrLink').href = r.url;
+      qs('#qrLink').textContent = r.url;
+      qs('#qrExpira').textContent = r.expiresAt ? ('Expira em: ' + new Date(r.expiresAt).toLocaleDateString('pt-BR')) : 'Sem expiração';
+      prev.style.display = 'block';
+    }
+
     // ===== Ações =====
     qs('#btnSalvar').addEventListener('click', salvarObservacao);
     qs('#btnImprimir').addEventListener('click', ()=>window.print());
@@ -489,5 +581,7 @@
     // boot
     carregarFicha();
   </script>
+  <script src="notify.js"></script>
+  
 </body>
 </html>
