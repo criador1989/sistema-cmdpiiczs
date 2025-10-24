@@ -150,6 +150,30 @@
   </form>
 
   <script>
+    // ===== DEV: limpar SW/caches para não travar cookies em localhost =====
+    if (['localhost','127.0.0.1'].includes(location.hostname)) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
+      }
+      if (window.caches) { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); }
+    }
+
+    // ===== Base da API (Vite em 5173; API em 5000) =====
+    const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
+    const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
+
+    async function getJSON(url, { method='GET', body=null, headers={}, timeoutMs=12000 } = {}) {
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+      try {
+        const r = await fetch(url, { method, body, headers, credentials:'include', cache:'no-store', signal: ctrl.signal });
+        const ct = r.headers.get('content-type') || '';
+        const data = ct.includes('application/json') ? await r.json() : {};
+        return { ok: r.ok, status: r.status, data };
+      } finally { clearTimeout(t); }
+    }
+
     // utilidades
     function toNum(v, fallback = 0){ const n = Number((v+'').replace(',', '.')); return Number.isFinite(n) ? n : fallback; }
     function round2(n){ return Number(toNum(n).toFixed(2)); }
@@ -178,11 +202,25 @@
     const alunoQS = qs.get('aluno');
     const nomeQS  = qs.get('nome');
 
+    // ===== Guard de sessão (mesmo padrão das demais páginas) =====
+    async function verificarAutenticado() {
+      try {
+        let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) throw 0;
+        // const usuario = await r.json(); // se quiser usar dados do usuário aqui
+      } catch {
+        window.location.href = '/login.html';
+      }
+    }
+
     async function carregarMotivos() {
       try {
-        const resposta = await fetch('/api/motivos', { credentials: 'include' });
-        if (!resposta.ok) throw new Error('Falha ao carregar motivos');
-        const motivos = await resposta.json();
+        const { ok, status, data } = await getJSON(API('/motivos'));
+        if (status === 401) { window.location.href = '/login.html'; return; }
+        if (!ok) throw 0;
+
+        const motivos = Array.isArray(data) ? data : [];
         listaCompletaMotivos = motivos;
 
         motivosPorTipo = motivos.reduce((acc, item) => {
@@ -196,9 +234,9 @@
     }
 
     async function carregarAlunos() {
-      const select   = document.getElementById('aluno');
-      const pesquisa = document.getElementById('pesquisaAluno');
-      const seloAluno = document.getElementById('alunoSelecionado');
+      const select     = document.getElementById('aluno');
+      const pesquisa   = document.getElementById('pesquisaAluno');
+      const seloAluno  = document.getElementById('alunoSelecionado');
 
       if (alunoQS) {
         const nomeDecod = nomeQS ? decodeURIComponent(nomeQS) : 'Carregando aluno...';
@@ -216,17 +254,17 @@
         seloAluno.textContent = `Aluno selecionado: ${nomeDecod}`;
 
         try {
-          const r = await fetch(`/api/alunos/${alunoQS}`, { credentials: 'include' });
-          if (r.ok) {
-            const a = await r.json();
-            opt.textContent = `${a.nome} (${a.turma || ''})`;
-            seloAluno.textContent = `Aluno selecionado: ${a.nome} (${a.turma || 'turma não informada'})`;
-            if (![...select.options].some(o => o.value === a._id)) {
+          const { ok, status, data } = await getJSON(API(`/alunos/${alunoQS}`));
+          if (status === 401) { window.location.href = '/login.html'; return; }
+          if (ok && data && data._id) {
+            opt.textContent = `${data.nome} (${data.turma || ''})`;
+            seloAluno.textContent = `Aluno selecionado: ${data.nome} (${data.turma || 'turma não informada'})`;
+            if (![...select.options].some(o => o.value === data._id)) {
               const optNew = document.createElement('option');
-              optNew.value = a._id;
-              optNew.textContent = `${a.nome} (${a.turma || ''})`;
+              optNew.value = data._id;
+              optNew.textContent = `${data.nome} (${data.turma || ''})`;
               select.appendChild(optNew);
-              select.value = a._id;
+              select.value = data._id;
             }
           }
         } catch (_) {}
@@ -234,13 +272,15 @@
       }
 
       try {
-        const resposta = await fetch('/api/alunos', { credentials: 'include' });
-        const alunos = await resposta.json();
+        const { ok, status, data } = await getJSON(API('/alunos'));
+        if (status === 401) { window.location.href = '/login.html'; return; }
+        if (!ok) throw 0;
 
+        const alunos = Array.isArray(data) ? data : [];
         function atualizarOpcoes(filtro = '') {
           select.innerHTML = '';
           alunos
-            .filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()))
+            .filter(a => (a.nome || '').toLowerCase().includes(filtro.toLowerCase()))
             .forEach(a => {
               const opt = document.createElement('option');
               opt.value = a._id;
@@ -253,13 +293,6 @@
       } catch (err) {
         console.error('Erro ao carregar alunos');
       }
-    }
-
-    async function verificarAutenticado() {
-      try {
-        const resposta = await fetch('/api/usuario', { credentials: 'include' });
-        if (!resposta.ok) window.location.href = '/login.html';
-      } catch { window.location.href = '/login.html'; }
     }
 
     // UI handlers
@@ -412,14 +445,17 @@
       }
 
       try {
-        const resposta = await fetch('/api/notificacoes', {
+        const r = await fetch(API('/notificacoes'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(body)
         });
-        const resultado = await resposta.json().catch(() => ({}));
-        if (resposta.ok) {
+        const resultado = await r.json().catch(() => ({}));
+
+        if (r.status === 401) { window.location.href = '/login.html'; return; }
+
+        if (r.ok) {
           document.getElementById('mensagem').textContent = '✅ Registro salvo com sucesso!';
           this.reset();
           document.getElementById('detalhesMotivo').style.display = 'none';
@@ -442,8 +478,8 @@
     });
 
     (function init(){
-      // ⛔ antes usava toISOString().slice(0,10) — causava +1 dia em UTC
-      const hoje = new Date();                       // data local
+      // data local (evita efeito UTC)
+      const hoje = new Date();
       const yyyy = hoje.getFullYear();
       const mm   = String(hoje.getMonth()+1).padStart(2,'0');
       const dd   = String(hoje.getDate()).padStart(2,'0');
@@ -455,5 +491,6 @@
       toggleGrupos();
     })();
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>
