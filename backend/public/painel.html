@@ -69,12 +69,6 @@
     .chart-title{font-size:.9rem;color:var(--text-soft);margin-bottom:8px}
     canvas{width:100%;height:280px;display:block}
     @media (max-width:900px){.charts{grid-template-columns:1fr}}
-    .attention{margin-top:22px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:16px;box-shadow:var(--glass-shadow)}
-    .attention h3{margin:0 0 8px 0;font-size:1rem}.attention small{color:var(--text-soft)}
-    .attention header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-    .attention ul{list-style:none;padding:0;margin:8px 0 0 0;max-height:420px;overflow:auto}
-    .attention li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 8px;border-top:1px dashed rgba(255,255,255,.16)}
-    .pill{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.2)}
     .qrcode-box{max-width:560px;margin:26px auto 0;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:16px}
     .bottom-nav{position:fixed;inset-inline:0;bottom:0;display:none;z-index:50;backdrop-filter:blur(10px);background:rgba(30,5,6,.6);border-top:1px solid rgba(255,255,255,.14)}
     .bottom-nav .row{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
@@ -93,6 +87,42 @@
     .pend-table th,.pend-table td{padding:8px;border-top:1px dashed rgba(255,255,255,.16);text-align:left}
     .pend-chip{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.2)}
     .pend-atraso{background:rgba(255,0,0,.18);border-color:rgba(255,120,120,.45)}
+
+    /* ===== Alertas de Comportamento (NP / Responsáveis) ===== */
+    .alertas-comportamento{
+      margin-top:22px;background:var(--glass-bg);border:1px solid var(--glass-border);
+      border-radius:16px;padding:16px;box-shadow:var(--glass-shadow)
+    }
+    .alertas-comportamento .ac-head{
+      display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:8px
+    }
+    .alertas-comportamento .ac-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .ac-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.22)}
+    .ac-pill .n{font-weight:700;color:#fff}
+    .ac-pill.reg .n{color:#ffcccc}
+    .ac-pill.ins .n{color:#ffd0d0}
+    .tabs{display:flex;gap:8px;margin:10px 0}
+    .tab-btn{
+      padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.22);
+      background:rgba(0,0,0,.25);cursor:pointer;color:#fff
+    }
+    .tab-btn.active{background:var(--rubi-1);border-color:var(--rubi-1)}
+    .tab-panel .muted{color:var(--text-soft);margin:6px 0 12px}
+    .table-wrap{overflow:auto}
+    .tabela{width:100%;border-collapse:collapse}
+    .tabela th,.tabela td{border-top:1px dashed rgba(255,255,255,.16);padding:10px 8px;text-align:left}
+    .acoes{display:flex;gap:8px}
+    .btn{padding:6px 10px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:rgba(0,0,0,.2);cursor:pointer;color:#fff}
+    .btn:hover{filter:brightness(.98)}
+    .btn-primary{background:var(--rubi-1);border-color:var(--rubi-1)}
+    .btn-ghost{background:transparent}
+    .ac-foot{margin-top:8px;display:flex;justify-content:flex-end}
+
+    /* paginação */
+    .pager{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
+    .pager .info{opacity:.8}
+    .pager input[type="number"]{width:72px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.2);color:#fff}
+    .pager .btn[disabled]{opacity:.5;cursor:not-allowed}
   </style>
 </head>
 <body>
@@ -159,10 +189,11 @@
             </div>
           </div>
 
+          <!-- ===== SEÇÃO RESTAURADA: Pendências de devolução ===== -->
           <section class="pend-card" id="pendDevolucaoSection" aria-live="polite">
             <header>
               <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
-              <span id="pendResumo" class="pill">Carregando…</span>
+              <span id="pendResumo" class="pend-chip">Carregando…</span>
               <button onclick="location.href='/notificacoes'" style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">Ir para Notificações</button>
             </header>
             <div style="overflow:auto">
@@ -176,15 +207,63 @@
               </table>
             </div>
           </section>
+          <!-- ===== FIM SEÇÃO RESTAURADA ===== -->
 
-          <div class="attention" id="attentionSection">
-            <header>
-              <h3 style="margin-right:auto">⚠️ Atenção especial: ≤ 4,99 <small>(<span id="attentionCount">0</span> alunos)</small></h3>
-              <button id="btnLoadAttention" style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">Carregar atenção (sob demanda)</button>
-              <span id="attentionStatus" style="color:var(--text-soft)"></span>
+          <!-- ===== NOVO BLOCO: Ações obrigatórias por comportamento ===== -->
+          <section class="alertas-comportamento" id="acSection">
+            <header class="ac-head">
+              <h3 style="margin:0">✅ Comportamento — Ações Obrigatórias</h3>
+              <div class="ac-controls">
+                <span class="ac-pill reg">NP: <span class="n" id="cnt-regular">0</span></span>
+                <span class="ac-pill ins">Pais: <span class="n" id="cnt-insuficiente">0</span></span>
+                <button id="btn-recarregar-alertas" class="btn btn-ghost" type="button">Recarregar</button>
+              </div>
             </header>
-            <ul id="attentionList"></ul>
-          </div>
+
+            <nav class="tabs" role="tablist" aria-label="Ações por comportamento">
+              <button class="tab-btn active" data-tab="tab-regular" role="tab" aria-selected="true">Encaminhar ao NP (5,00–6,99)</button>
+              <button class="tab-btn" data-tab="tab-insuficiente" role="tab" aria-selected="false">Informar responsáveis (3,00–4,99)</button>
+            </nav>
+
+            <div id="tab-regular" class="tab-panel" aria-hidden="false">
+              <p class="muted"><strong>Art. 51</strong> — Encaminhar ao Núcleo Psicossocial (NP) e registrar no histórico. O NP deve informar os responsáveis.</p>
+              <div class="table-wrap">
+                <table class="tabela">
+                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:180px">Ações</th></tr></thead>
+                  <tbody id="tbody-regular"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="pager">
+                <button class="btn" id="reg-prev">◀</button>
+                <span class="info">Página <span id="reg-page">1</span> de <span id="reg-pages">1</span></span>
+                <button class="btn" id="reg-next">▶</button>
+                <span class="info">por página</span>
+                <input type="number" id="reg-size" min="5" max="100" step="5" value="15" />
+              </div>
+            </div>
+
+            <div id="tab-insuficiente" class="tab-panel" aria-hidden="true" style="display:none">
+              <p class="muted"><strong>Art. 52</strong> — Coordenador informa responsáveis sobre a situação e a possível não renovação se evoluir para incompatível.</p>
+              <div class="table-wrap">
+                <table class="tabela">
+                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:180px">Ações</th></tr></thead>
+                  <tbody id="tbody-insuficiente"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="pager">
+                <button class="btn" id="ins-prev">◀</button>
+                <span class="info">Página <span id="ins-page">1</span> de <span id="ins-pages">1</span></span>
+                <button class="btn" id="ins-next">▶</button>
+                <span class="info">por página</span>
+                <input type="number" id="ins-size" min="5" max="100" step="5" value="15" />
+              </div>
+            </div>
+
+            <footer class="ac-foot">
+              <small class="muted">Atualiza automaticamente a cada 60s • <span id="ac-last-update">—</span></small>
+            </footer>
+          </section>
+          <!-- ===== FIM DO BLOCO NOVO ===== -->
 
           <div class="charts">
             <div class="chart-card">
@@ -302,7 +381,7 @@
     }
   }
 
-  // ===== Pendências de devolução =====
+  // ===== SEÇÃO RESTAURADA: Pendências de devolução =====
   async function carregarPendenciasDevolucao(){
     const resumo = document.getElementById('pendResumo');
     const tbody  = document.getElementById('pendTableBody');
@@ -352,59 +431,144 @@
     }
   }
 
-  // ===== Atenção especial (≤ 4,99) =====
-  async function carregarAtencao(){
-    const status = document.getElementById('attentionStatus');
-    const list   = document.getElementById('attentionList');
-    const count  = document.getElementById('attentionCount');
-    status.textContent = 'Carregando...';
-    list.innerHTML = '';
+  // ===== NOVO: Alertas de Comportamento (NP/Responsáveis) =====
+  (function(){
+    const $ = (sel, ctx=document)=>ctx.querySelector(sel);
+    const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
 
-    try{
-      let arr = await getJSON(API('/metrics/atencao?limite=500'), { timeoutMs: 10000 });
-      if (!Array.isArray(arr)) arr = [];
+    const tbodyReg = $('#tbody-regular');
+    const tbodyIns = $('#tbody-insuficiente');
+    const cntReg   = $('#cnt-regular');
+    const cntIns   = $('#cnt-insuficiente');
+    const lastUp   = $('#ac-last-update');
+    const btnReload= $('#btn-recarregar-alertas');
 
-      if (arr.length === 0) {
-        try {
-          let alunos = await getJSON(API('/alunos/insuficientes'), { timeoutMs: 20000 });
-          alunos = Array.isArray(alunos) ? alunos : (alunos?.data || alunos?.alunos || []);
-          arr = alunos.map(a => ({
-            id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(),
-            nota: Number(a.comportamento ?? a.notaComportamento ?? 0),
-          })).filter(a => Number.isFinite(a.nota) && a.nota <= 4.99);
-        } catch {
-          let alunos = await getJSON(API('/alunos/baixorendimento'), { timeoutMs: 20000 });
-          alunos = Array.isArray(alunos) ? alunos : (alunos?.data || alunos?.alunos || []);
-          arr = alunos.map(a => ({
-            id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(),
-            nota: Number(a.comportamento ?? a.notaComportamento ?? 0),
-          })).filter(a => Number.isFinite(a.nota) && a.nota <= 4.99);
-        }
-      } else {
-        arr = arr.map(a => ({
-          id: a._id || a.id,
-          nome: a.nome,
-          turma: (a.turma||'—').trim(),
-          nota: Number(a.comportamento ?? 0)
-        }));
-      }
+    // paginação (estado)
+    let REG_DATA = [], INS_DATA = [];
+    const state = {
+      reg: { page: 1, size: 15 },
+      ins: { page: 1, size: 15 },
+    };
 
-      arr.sort((x,y)=>x.nota - y.nota);
+    // elementos de paginação
+    const el = {
+      regPrev: $('#reg-prev'), regNext: $('#reg-next'),
+      regPage: $('#reg-page'), regPages: $('#reg-pages'), regSize: $('#reg-size'),
+      insPrev: $('#ins-prev'), insNext: $('#ins-next'),
+      insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
+    };
 
-      count.textContent = arr.length;
-      list.innerHTML = arr.map(a => `
-        <li>
-          <strong>${a.nome}</strong>
-          <span class="pill">${a.turma}</span>
-          <span class="pill">${a.nota.toFixed(2).replace('.', ',')}</span>
-        </li>`).join('') || '<li style="opacity:.7">Nenhum aluno ≤ 4,99</li>';
-    }catch(e){
-      showError('Falha ao carregar atenção especial');
-      list.innerHTML = '<li style="opacity:.7">Erro ao carregar</li>';
-    }finally{
-      status.textContent = '';
+    function row(a){
+      return `
+        <tr>
+          <td>${a.nome}</td>
+          <td>${a.turma || '-'}</td>
+          <td><strong>${Number(a.nota ?? a.comportamento ?? a.n).toFixed(2)}</strong></td>
+          <td class="acoes">
+            <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+          </td>
+        </tr>`;
     }
-  }
+
+    function renderPaged(tbody, arr, st, pageEl, pagesEl){
+      const total = arr.length;
+      const pages = Math.max(1, Math.ceil(total / st.size));
+      st.page = Math.min(Math.max(1, st.page), pages);
+
+      // atualizar UI paginação
+      pageEl.textContent  = String(st.page);
+      pagesEl.textContent = String(pages);
+
+      const start = (st.page - 1) * st.size;
+      const slice = arr.slice(start, start + st.size);
+
+      tbody.innerHTML = slice.length
+        ? slice.map(row).join('')
+        : `<tr><td colspan="4" style="opacity:.7">Sem itens.</td></tr>`;
+
+      return { pages };
+    }
+
+    function renderAll(){
+      const r = renderPaged(tbodyReg, REG_DATA, state.reg, el.regPage, el.regPages);
+      const i = renderPaged(tbodyIns, INS_DATA, state.ins, el.insPage, el.insPages);
+
+      // habilitar/desabilitar botões
+      el.regPrev.disabled = state.reg.page <= 1;
+      el.regNext.disabled = state.reg.page >= r.pages;
+      el.insPrev.disabled = state.ins.page <= 1;
+      el.insNext.disabled = state.ins.page >= i.pages;
+    }
+
+    async function carregarAlertasComportamento(){
+      try{
+        const { regular=[], insuficiente=[] } = await getJSON(API('/alertas/comportamento'), { timeoutMs: 12000 });
+
+        // normaliza nota
+        REG_DATA = regular.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+                          .sort((x,y)=> x.n - y.n);
+        INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+                               .sort((x,y)=> x.n - y.n);
+
+        cntReg.textContent = REG_DATA.length;
+        cntIns.textContent = INS_DATA.length;
+
+        // reset de páginas ao recarregar
+        state.reg.page = 1;
+        state.ins.page = 1;
+
+        renderAll();
+
+        const dt = new Date();
+        lastUp.textContent = dt.toLocaleString('pt-BR');
+      }catch(e){
+        console.error(e);
+        tbodyReg.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+        tbodyIns.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+      }
+    }
+
+    // Abas
+    document.addEventListener('click', (ev)=>{
+      const tabBtn = ev.target.closest('.tab-btn'); if(!tabBtn) return;
+      $$('.tab-btn').forEach(b=>b.classList.remove('active')); tabBtn.classList.add('active');
+      $$('.tab-panel').forEach(p=>{
+        const target = tabBtn.dataset.tab;
+        const show = p.id === target;
+        p.style.display = show ? '' : 'none';
+        p.setAttribute('aria-hidden', show ? 'false' : 'true');
+      });
+    });
+
+    // Ações (apenas "Registrar" → ficha na aba Observações)
+    document.addEventListener('click', (ev)=>{
+      const btn = ev.target.closest('button[data-acao]'); if(!btn) return;
+      const id = btn.dataset.id; const acao = btn.dataset.acao;
+      if (acao === 'registrar') {
+        location.href = `./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`;
+      }
+    });
+
+    // Paginação - eventos
+    el.regPrev.addEventListener('click', ()=>{ state.reg.page--; renderAll(); });
+    el.regNext.addEventListener('click', ()=>{ state.reg.page++; renderAll(); });
+    el.insPrev.addEventListener('click', ()=>{ state.ins.page--; renderAll(); });
+    el.insNext.addEventListener('click', ()=>{ state.ins.page++; renderAll(); });
+
+    el.regSize.addEventListener('change', ()=>{
+      const v = Math.min(Math.max(parseInt(el.regSize.value||'15',10),5),100);
+      state.reg.size = v; state.reg.page = 1; renderAll();
+    });
+    el.insSize.addEventListener('change', ()=>{
+      const v = Math.min(Math.max(parseInt(el.insSize.value||'15',10),5),100);
+      state.ins.size = v; state.ins.page = 1; renderAll();
+    });
+
+    btnReload?.addEventListener('click', carregarAlertasComportamento);
+
+    // Expor no escopo global para chamar no boot
+    window._carregarAlertasComportamento = carregarAlertasComportamento;
+  })();
 
   // ===== Gráficos =====
   function drawBarChart(data){
@@ -449,7 +613,6 @@
   // ===== Sessão & ações =====
   async function verificarUsuario(){
     try{
-      // tenta /auth/usuario-logado e cai para /auth/me
       let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
       if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
       if (!r.ok) throw 0;
@@ -498,8 +661,15 @@
     await verificarUsuario();
     await verificarAdmin();
     await carregarMetricas();
+
+    // RESTAURADO: carregar pendências de devolução
     await carregarPendenciasDevolucao();
-    document.getElementById('btnLoadAttention').addEventListener('click', carregarAtencao, { once:true });
+
+    // NOVO: carregar alertas de comportamento + auto refresh
+    if (window._carregarAlertasComportamento) {
+      await window._carregarAlertasComportamento();
+      setInterval(window._carregarAlertasComportamento, 60000);
+    }
   }
   boot();
 

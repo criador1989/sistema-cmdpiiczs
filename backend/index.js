@@ -73,6 +73,7 @@ const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
 const instituicoesRoutes = require('./routes/api/instituicoes');
 const authRoutes = require('./routes/authRoutes');
+const alertasRoutes = require('./routes/api/alunos-alertas');
 
 // ====== CONFIG SERVIDOR ======
 const uploadRoot = path.join(__dirname, 'uploads');
@@ -134,6 +135,7 @@ app.use('/api/metrics', metricsRoutes);
 app.use('/api/notificacoes', require('./routes/api/notificacoes.metrics'));
 app.use('/api', publicAlunoRoutes);
 app.use('/api/instituicoes', instituicoesRoutes);
+app.use('/api/alertas', alertasRoutes);
 
 // ====== STATUS ======
 app.get('/__version', (req, res) => {

@@ -305,41 +305,6 @@ router.get('/professor/:id/nota', autenticarTokenProfessor, async (req, res) => 
   }
 });
 
-// apoio
-router.get('/baixorendimento', autenticar, async (req, res) => {
-  try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-    const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao').lean();
-    const alunosFiltrados = [];
-    for (const aluno of alunos) {
-      let nota = 8.0;
-      try { nota = await calcularNotaComportamento(aluno._id); } catch (e) {}
-      if (nota < 5.0) alunosFiltrados.push({ ...anexarThumb(aluno), comportamento: nota });
-    }
-    res.json(alunosFiltrados);
-  } catch (error) {
-    console.error('Erro ao buscar alunos com baixo rendimento:', error);
-    res.status(500).json({ message: 'Erro ao buscar alunos com baixo rendimento', error });
-  }
-});
-
-router.get('/insuficientes', autenticar, async (req, res) => {
-  try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-    const alunos = await Aluno.find({ instituicao: req.usuario.instituicao }).select('nome turma foto instituicao').lean();
-    const alunosFiltrados = [];
-    for (const aluno of alunos) {
-      let nota = 8.0;
-      try { nota = await calcularNotaComportamento(aluno._id); } catch (e) {}
-      if (nota < 5.0) alunosFiltrados.push({ ...anexarThumb(aluno), comportamento: nota });
-    }
-    res.json(alunosFiltrados);
-  } catch (error) {
-    console.error('Erro ao buscar alunos insuficientes:', error);
-    res.status(500).json({ message: 'Erro ao buscar alunos insuficientes', error });
-  }
-});
-
 // POST /api/alunos
 router.post('/', autenticar, async (req, res) => {
   try {
