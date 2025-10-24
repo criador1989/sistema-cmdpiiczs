@@ -41,7 +41,7 @@
   </div>
 
   <script>
-    // desativa SW/caches em localhost
+    // 🔧 Em dev local, limpe SW/caches (para não travar cookie HttpOnly)
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
@@ -52,8 +52,11 @@
       console.log('[DEV] SW e caches limpos para localhost');
     }
 
-    const here = location.origin;
-    const API_BASE = (here.includes('localhost:5000') || here.includes('127.0.0.1:5000')) ? '' : 'http://localhost:5000';
+    // ✅ API_BASE:
+    // - Se estiver usando Vite no :5173, chame o backend no :5000.
+    // - Em qualquer outro caso (Render/produção ou servidor express servindo o próprio HTML),
+    //   use mesma origem (string vazia) para evitar mixed content/bloqueios.
+    const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
 
     document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
@@ -67,18 +70,23 @@
         const resposta = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          credentials: 'include', // precisa para gravar cookie HttpOnly
           body: JSON.stringify({ email, senha })
         });
-        const data = await resposta.json();
+
+        let data = {};
+        try { data = await resposta.json(); } catch {}
 
         if (!resposta.ok) {
           erroDiv.textContent = data?.mensagem || 'Erro ao fazer login.';
           return;
         }
 
-        // valida cookie/ sessão pelo token (sem consultar banco)
-        const ping = await fetch(`${API_BASE}/auth/me`, { credentials: 'include', cache: 'no-store' });
+        // 🔐 valida sessão rapidamente
+        const ping = await fetch(`${API_BASE}/auth/usuario-logado`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
         if (!ping.ok) {
           erroDiv.textContent = 'Falha ao validar sessão após login.';
           return;
@@ -88,6 +96,8 @@
         window.location.href = destino;
       } catch (err) {
         console.error(err);
+        // Alguns navegadores (ex. Brave) bloqueiam requisições cross-origin inseguras;
+        // com API_BASE = '' isso não deve acontecer.
         erroDiv.textContent = 'Erro de conexão com o servidor.';
       }
     });

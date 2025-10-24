@@ -78,8 +78,8 @@
   </div>
 
   <script>
-    // Em dev, limpe SW/caches para não bloquear cookies HttpOnly
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    // DEV: limpar SW/caches para não travar cookies em localhost
+    if (['localhost','127.0.0.1'].includes(location.hostname)) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
       }
@@ -88,13 +88,19 @@
       }
     }
 
+    // Base (Vite 5173 -> API 5000; produção mesma origem)
+    const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
+    const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
+
     const $ = (id) => document.getElementById(id);
     let pagina = 1, paginas = 1, limite = 20, termo = '', tipo = '';
 
     async function garantirAdmin(){
       try{
-        // ✅ rota correta
-        const r = await fetch('/auth/usuario-logado', { credentials:'include', cache:'no-store' });
+        // tenta /auth/usuario-logado e cai para /auth/me
+        let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
         if(!r.ok) throw 0;
         const u = await r.json();
         if (u?.tipo !== 'admin') {
@@ -102,7 +108,6 @@
           location.href = '/painel.html';
         }
       }catch{
-        // só redireciona se de fato não está autenticado
         location.href = '/login.html';
       }
     }
@@ -141,9 +146,10 @@
         if (termo) qs.set('q', termo);
         if (tipo) qs.set('tipo', tipo);
 
-        const r = await fetch(`/api/usuarios?${qs.toString()}`, { credentials:'include', cache:'no-store' });
+        const r = await fetch(API(`/usuarios?${qs.toString()}`), { credentials:'include', cache:'no-store' });
         if(!r.ok){
-          setStatus('Erro ao buscar usuários.'); 
+          const j = await r.json().catch(()=>({}));
+          setStatus(j?.mensagem || 'Erro ao buscar usuários.');
           tbody.innerHTML = `<tr><td class="empty" colspan="5">Falha ao carregar.</td></tr>`;
           return;
         }
@@ -178,7 +184,7 @@
       const conf = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
       if (conf !== 'CONFIRMAR') return alert('Exclusão cancelada.');
       try{
-        const r = await fetch(`/api/usuarios/${id}`, { method:'DELETE', credentials:'include' });
+        const r = await fetch(API(`/usuarios/${id}`), { method:'DELETE', credentials:'include' });
         if(r.ok){
           setStatus('Usuário excluído com sucesso.', true);
           carregarUsuarios();

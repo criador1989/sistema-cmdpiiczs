@@ -222,28 +222,29 @@
   </nav>
 
   <script>
-  // ===== Helpers de URL =====
-  const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
-  const AUTH = (p)=> p.startsWith('http') ? p : (p.startsWith('/auth') ? p : `/auth${p.startsWith('/')?p:'/'+p}`);
+  // ===== DEV: limpar SW/caches para não travar cookies em localhost =====
+  if (['localhost','127.0.0.1'].includes(location.hostname)) {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
+    }
+    if (window.caches) { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); }
+  }
+
+  // ===== Base da API (Vite usa porta 5173, api em 5000) =====
+  const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+
+  // Helpers de URL com BASE + prefixo garantido
+  const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
+  const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
   async function getJSON(url, { timeoutMs=8000 } = {}) {
     const ctrl = new AbortController();
     const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
     try {
-      const r = await fetch(API(url), { credentials:'include', cache:'no-store', signal: ctrl.signal });
+      const r = await fetch(url, { credentials:'include', cache:'no-store', signal: ctrl.signal });
       if (!r.ok) throw new Error(`${url} -> ${r.status}`);
       const ct = r.headers.get('content-type')||'';
       return ct.includes('application/json') ? r.json() : {};
-    } finally { clearTimeout(id); }
-  }
-
-  async function getAuthJSON(url, { timeoutMs=8000 } = {}) {
-    const ctrl = new AbortController();
-    const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
-    try {
-      const r = await fetch(AUTH(url), { credentials:'include', cache:'no-store', signal: ctrl.signal });
-      if (!r.ok) throw new Error(`${url} -> ${r.status}`);
-      return r.json();
     } finally { clearTimeout(id); }
   }
 
@@ -262,14 +263,14 @@
   // ===== Métricas =====
   async function carregarMetricas(){
     try{
-      const { alunosCount=0, notifPend=0, msgs=0 } = await getJSON('/metrics/overview', { timeoutMs: 8000 });
+      const { alunosCount=0, notifPend=0, msgs=0 } = await getJSON(API('/metrics/overview'), { timeoutMs: 8000 });
       document.getElementById('mAlunos').textContent = alunosCount.toLocaleString('pt-BR');
       document.getElementById('mNotif').textContent  = notifPend.toLocaleString('pt-BR');
       document.getElementById('mMsgs').textContent   = msgs.toLocaleString('pt-BR');
     }catch(e){ console.warn('overview falhou:', e.message); }
 
     try{
-      const porTurma = await getJSON('/estatisticas/comportamento-por-turma', { timeoutMs: 9000 });
+      const porTurma = await getJSON(API('/estatisticas/comportamento-por-turma'), { timeoutMs: 9000 });
       drawBarChart(Array.isArray(porTurma) ? porTurma : []);
       const medias = (porTurma||[]).map(t=>Number(t.media)).filter(n=>Number.isFinite(n)&&n>0);
       const mediaGeral = medias.length ? (medias.reduce((s,n)=>s+n,0)/medias.length) : 0;
@@ -281,7 +282,7 @@
     }
 
     try{
-      const dist = await getJSON('/estatisticas/distribuicao', { timeoutMs: 9000 });
+      const dist = await getJSON(API('/estatisticas/distribuicao'), { timeoutMs: 9000 });
       drawDonutChart({
         exc: dist?.excepcional||0, oti: dist?.otimo||0, bom: dist?.bom||0,
         reg: dist?.regular||0,     ins: dist?.insuficiente||0, inc: dist?.incompativel||0
@@ -292,7 +293,7 @@
     }
 
     try{
-      const k = await getJSON('/notificacoes/pendencias/devolucao/contador', { timeoutMs: 7000 });
+      const k = await getJSON(API('/notificacoes/pendencias/devolucao/contador'), { timeoutMs: 7000 });
       const total = Number(k?.total || 0);
       document.getElementById('mPendDevol').textContent = total.toLocaleString('pt-BR');
     }catch(e){
@@ -308,7 +309,7 @@
     resumo.textContent = 'Carregando…';
     tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>`;
     try{
-      const j = await getJSON('/notificacoes/pendencias/devolucao', { timeoutMs: 12000 });
+      const j = await getJSON(API('/notificacoes/pendencias/devolucao'), { timeoutMs: 12000 });
       const arr = Array.isArray(j?.itens) ? j.itens : [];
       resumo.textContent = `Total pendente: ${j?.total ?? arr.length}`;
 
@@ -360,19 +361,19 @@
     list.innerHTML = '';
 
     try{
-      let arr = await getJSON('/metrics/atencao?limite=500', { timeoutMs: 10000 });
+      let arr = await getJSON(API('/metrics/atencao?limite=500'), { timeoutMs: 10000 });
       if (!Array.isArray(arr)) arr = [];
 
       if (arr.length === 0) {
         try {
-          let alunos = await getJSON('/alunos/insuficientes', { timeoutMs: 20000 });
+          let alunos = await getJSON(API('/alunos/insuficientes'), { timeoutMs: 20000 });
           alunos = Array.isArray(alunos) ? alunos : (alunos?.data || alunos?.alunos || []);
           arr = alunos.map(a => ({
             id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(),
             nota: Number(a.comportamento ?? a.notaComportamento ?? 0),
           })).filter(a => Number.isFinite(a.nota) && a.nota <= 4.99);
         } catch {
-          let alunos = await getJSON('/alunos/baixorendimento', { timeoutMs: 20000 });
+          let alunos = await getJSON(API('/alunos/baixorendimento'), { timeoutMs: 20000 });
           alunos = Array.isArray(alunos) ? alunos : (alunos?.data || alunos?.alunos || []);
           arr = alunos.map(a => ({
             id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(),
@@ -448,7 +449,11 @@
   // ===== Sessão & ações =====
   async function verificarUsuario(){
     try{
-      const j = await getAuthJSON('/me', { timeoutMs: 7000 });
+      // tenta /auth/usuario-logado e cai para /auth/me
+      let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) throw 0;
+      const j = await r.json();
       document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário';
     }catch{
       location.href = './login.html';
@@ -457,7 +462,10 @@
 
   async function verificarAdmin(){
     try{
-      const j = await getAuthJSON('/me', { timeoutMs: 7000 });
+      let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) return;
+      const j = await r.json();
       if(j.tipo==='admin'){
         ['cardNovoUsuario','cardEstatisticas'].forEach(id=>{
           const el=document.getElementById(id); if(el) el.style.display='';

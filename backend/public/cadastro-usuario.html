@@ -61,7 +61,7 @@
     <form id="formCadastro">
       <input type="text" id="nome" placeholder="Nome completo" required />
       <input type="email" id="email" placeholder="E-mail institucional" required />
-      <input type="password" id="senha" placeholder="Senha" required />
+      <input type="password" id="senha" placeholder="Senha (mín. 6 caracteres)" required />
       <input type="text" id="instituicao" placeholder="Instituição (ex: Colégio Militar D. Pedro II)" required />
       <select id="tipo" required>
         <option value="">Selecione o tipo de usuário</option>
@@ -76,20 +76,27 @@
   </div>
 
   <script>
-    // 🔧 limpeza em dev
+    // 🔧 limpeza em dev local
     if (['localhost', '127.0.0.1'].includes(location.hostname)) {
-      if ('serviceWorker' in navigator)
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
-      if (window.caches)
+      }
+      if (window.caches) {
         caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
       console.log('[DEV] caches limpos');
     }
 
-    // 🔒 só admin
+    // ✅ API_BASE:
+    // - Se estiver no Vite (:5173), a API está no :5000
+    // - Caso contrário (Render/produção ou Express servindo HTML), mesma origem
+    const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+
+    // 🔒 restrito a admin
     async function verificarPermissao() {
       try {
-        const resp = await fetch('/auth/me', { credentials: 'include' });
-        if (!resp.ok) return (location.href = '/login.html');
+        const resp = await fetch(`${API_BASE}/auth/usuario-logado`, { credentials: 'include', cache: 'no-store' });
+        if (!resp.ok) { location.href = '/login.html'; return; }
         const user = await resp.json();
         if (user.tipo !== 'admin') {
           alert('Apenas administradores podem acessar esta página.');
@@ -103,7 +110,7 @@
 
     document.getElementById('formCadastro').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const nome = nome.value.trim();
+      const nomeVal = document.getElementById('nome').value.trim();
       const email = document.getElementById('email').value.trim();
       const senha = document.getElementById('senha').value.trim();
       const instituicao = document.getElementById('instituicao').value.trim();
@@ -111,19 +118,25 @@
       const msg = document.getElementById('mensagem');
       msg.textContent = '';
 
+      if (senha.length < 6) {
+        msg.style.color = 'red';
+        msg.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+        return;
+      }
+
       try {
-        const r = await fetch('/auth/cadastrar', {
+        const r = await fetch(`${API_BASE}/auth/cadastrar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ nome, email, senha, instituicao, tipo })
+          body: JSON.stringify({ nome: nomeVal, email, senha, instituicao, tipo })
         });
-        const data = await r.json();
+        const data = await r.json().catch(() => ({}));
         if (r.ok) {
           msg.style.color = 'green';
           msg.textContent = '✅ Usuário cadastrado com sucesso!';
           e.target.reset();
-          setTimeout(() => msg.textContent = '', 5000);
+          setTimeout(() => (msg.textContent = ''), 5000);
         } else {
           msg.style.color = 'red';
           msg.textContent = data.mensagem || 'Erro ao cadastrar.';
