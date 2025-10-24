@@ -99,23 +99,13 @@
     }
 
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes flutuar {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-6px);
-      }
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
     }
   </style>
 </head>
@@ -171,6 +161,7 @@
       <label class="campo-label">Foto do aluno (opcional)</label>
       <input type="file" id="foto" name="foto" accept="image/*" capture="environment" />
 
+      <!-- Mantido, mas o backend usa a instituição da sessão; se vier vazio, não atrapalha -->
       <input type="hidden" id="instituicao" name="instituicao" />
 
       <button type="submit">Cadastrar</button>
@@ -180,17 +171,48 @@
   </div>
 
   <script>
+    // ===== DEV: limpar SW/caches para não travar cookies em localhost =====
+    if (['localhost','127.0.0.1'].includes(location.hostname)) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
+      }
+      if (window.caches) { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); }
+    }
+
+    // ===== Base e helpers (mesmo padrão do painel) =====
+    const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
+    const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
+
+    async function getJSON(url, { method='GET', body=null, timeoutMs=12000, headers={} } = {}) {
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+      try {
+        const r = await fetch(url, {
+          method, body,
+          headers,
+          credentials:'include',
+          cache:'no-store',
+          signal: ctrl.signal
+        });
+        const ct = r.headers.get('content-type')||'';
+        const data = ct.includes('application/json') ? await r.json() : {};
+        return { ok: r.ok, status: r.status, data };
+      } finally { clearTimeout(t); }
+    }
+
+    // ===== Guard de sessão (igual outras páginas) =====
     async function verificarAutenticacao() {
       try {
-        const res = await fetch('/api/usuario', { credentials: 'include' });
-        if (!res.ok) return window.location.href = '/login.html';
-        const usuario = await res.json();
-
+        let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) throw 0;
+        const usuario = await r.json();
+        // Preenche hidden se quiser manter compat
         const campoInstituicao = document.getElementById('instituicao');
-        if (usuario.instituicao && campoInstituicao) {
-          campoInstituicao.value = usuario.instituicao;
-        }
+        if (usuario?.instituicao && campoInstituicao) campoInstituicao.value = usuario.instituicao;
       } catch {
+        // só redireciona se de fato não estiver autenticado
         window.location.href = '/login.html';
       }
     }
@@ -199,73 +221,89 @@
       await verificarAutenticacao();
     });
 
+    // ===== Util: ler arquivo como Base64 (promessa) =====
+    function readAsDataURL(file){
+      return new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Falha ao ler arquivo.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ===== Submit do cadastro =====
     document.getElementById('form-aluno').addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const mensagem = document.getElementById('mensagem');
-      const nome = document.getElementById('nome').value;
-      const turma = document.getElementById('turma').value;
-      const dataEntrada = document.getElementById('dataEntrada').value;
-      const telefone = document.getElementById('telefone').value;
-      const instituicao = document.getElementById('instituicao').value;
-      const fotoInput = document.getElementById('foto');
-      const fotoFile = fotoInput.files[0];
+      const mensagem     = document.getElementById('mensagem');
+      const nome         = document.getElementById('nome').value.trim();
+      const turma        = document.getElementById('turma').value.trim();
+      const dataEntrada  = document.getElementById('dataEntrada').value;
+      const telefone     = document.getElementById('telefone').value.trim();
+      const instituicao  = document.getElementById('instituicao').value;
+      const fotoInput    = document.getElementById('foto');
+      const fotoFile     = fotoInput.files[0];
 
-      if (!instituicao || instituicao === 'undefined') {
-        mensagem.textContent = 'Erro: instituição não definida.';
-        mensagem.style.color = 'red';
-        return;
-      }
+      // (Opcional) validação mínima de telefone:
+      // if (!/^\d{11,}$/.test(telefone)) { ... }
 
       let fotoBase64 = '';
       if (fotoFile) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          fotoBase64 = reader.result;
-          await enviarCadastro({ nome, turma, dataEntrada, telefone, foto: fotoBase64, instituicao });
-        };
-        reader.readAsDataURL(fotoFile);
-      } else {
-        await enviarCadastro({ nome, turma, dataEntrada, telefone, foto: '', instituicao });
+        try { fotoBase64 = await readAsDataURL(fotoFile); }
+        catch { /* mantém vazio se falhar */ }
       }
 
-      async function enviarCadastro(dadosAluno) {
-        try {
-          const resposta = await fetch('/api/alunos', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dadosAluno)
-          });
+      const payload = { nome, turma, dataEntrada, telefone, foto: fotoBase64, instituicao };
 
-          if (resposta.ok) {
-            const aluno = await resposta.json();
-            mensagem.style.color = 'green';
-            mensagem.innerHTML = `
-              ✅ Aluno cadastrado com sucesso!<br>
-              <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}
-            `;
-            document.getElementById('form-aluno').reset();
-          } else {
-            const erro = await resposta.json();
-            mensagem.style.color = 'red';
-            mensagem.textContent = erro.message || 'Erro ao criar aluno';
-          }
-        } catch (err) {
-          mensagem.style.color = 'red';
-          mensagem.textContent = 'Erro de conexão com o servidor.';
-        }
+      const { ok, status, data } = await getJSON(API('/alunos'), {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload),
+        timeoutMs: 15000
+      });
+
+      if (status === 401) {
+        // sessão expirou: volta para login
+        window.location.href = '/login.html';
+        return;
+      }
+
+      if (!ok) {
+        mensagem.style.color = 'red';
+        mensagem.textContent = data?.message || 'Erro ao criar aluno';
+        return;
+      }
+
+      // Sucesso: redireciona para a ficha (aba observações)
+      const aluno = data || {};
+      const id    = aluno._id || aluno.id;
+      mensagem.style.color = 'green';
+      mensagem.innerHTML = `✅ Aluno cadastrado com sucesso!<br><strong>Código de Acesso:</strong> ${aluno.codigoAcesso || '—'}`;
+
+      if (id) {
+        // pequeno atraso apenas para o usuário ver o feedback
+        setTimeout(()=> {
+          window.location.href = `./ficha-aluno.html?id=${encodeURIComponent(id)}#observacoes`;
+        }, 400);
+      } else {
+        // fallback: limpa o form e permanece
+        document.getElementById('form-aluno').reset();
       }
     });
 
-    // Service Worker para PWA
+    // ===== Service Worker para PWA =====
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js')
         .then(() => console.log('✅ Service Worker registrado'))
         .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
     }
+
+    // ===== Logout padrão (se usar em header compartilhado) =====
+    async function logout(){
+      try{ await fetch(AUTH('/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{}
+      location.href='./login.html';
+    }
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>
