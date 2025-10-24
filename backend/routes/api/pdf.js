@@ -3,12 +3,11 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const Notificacao = require('../../models/Notificacao');
-const Aluno = require('../../models/Aluno');
 const { autenticar } = require('../../middleware/autenticacao');
 
 const router = express.Router();
 
-// Função auxiliar
+// ------------------ Funções auxiliares ------------------
 function calcularComportamentoClassificacao(nota) {
   if (nota >= 9.5) return 'Excepcional';
   if (nota >= 8.5) return 'Ótimo';
@@ -18,7 +17,16 @@ function calcularComportamentoClassificacao(nota) {
   return 'Incompatível';
 }
 
-// Rota POST para gerar o DOCX
+function montarDescricaoInfracao({ artigo, inciso, motivo }) {
+  const partes = [];
+  if (artigo) partes.push(`Art. ${artigo}`);
+  if (inciso) partes.push(inciso); // já costuma vir com “Inciso … – texto …”
+  if (motivo) partes.push(`Motivo: ${motivo}`);
+  return partes.join(' | ');
+}
+
+// ------------------ Rota principal ------------------
+// POST /api/pdf/:id  → gera DOCX da notificação
 router.post('/pdf/:id', autenticar, async (req, res) => {
   try {
     const notificacao = await Notificacao.findOne({
@@ -30,24 +38,40 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Notificação ou aluno não encontrado' });
     }
 
-    // Dados para preencher no DOCX
+    // monta descrição textual completa da infração
+    const descricaoInfracao = montarDescricaoInfracao({
+      artigo: notificacao.artigo || '',
+      inciso: notificacao.inciso || '',
+      motivo: notificacao.motivo || ''
+    });
+
+    // dados enviados ao Python
     const dados = {
-      numero: notificacao._id.toString().slice(-6).toUpperCase(),
-      numeroSequencial: notificacao.numeroSequencial || 'TESTE-FORCADO',
+      numero: (notificacao._id || '').toString().slice(-6).toUpperCase(),
+      numeroSequencial: notificacao.numeroSequencial || '',
       aluno: notificacao.aluno.nome,
       turma: notificacao.aluno.turma,
       artigo: notificacao.artigo || '',
-      paragrafo: notificacao.inciso?.split('–')[0]?.trim() || '§ 3º',
+      paragrafo: notificacao.paragrafo || (notificacao.inciso?.split('–')[0]?.trim() || ''),
       descricaoInciso: notificacao.inciso || '',
+      descricaoInfracao, // << texto completo (artigo + inciso + motivo)
       classificacaoRegulamento: notificacao.classificacaoRegulamento || '',
       tipoMedida: notificacao.tipoMedida,
       observacao: notificacao.observacao || '-',
-      Valor: notificacao.valorNumerico.toFixed(2),
-      comportamento: calcularComportamentoClassificacao(notificacao.notaAtual),
-      notaAnterior: notificacao.notaAnterior.toFixed(2),
-      notaAtual: notificacao.notaAtual.toFixed(2),
+      Valor: Number(notificacao.valorNumerico || 0).toFixed(2),
+      valorNumerico: Number(notificacao.valorNumerico || 0).toFixed(2),
+      comportamento: calcularComportamentoClassificacao(Number(notificacao.notaAtual || 0)),
+      notaAnterior: Number(notificacao.notaAnterior || 0).toFixed(2),
+      notaAtual: Number(notificacao.notaAtual || 0).toFixed(2),
+      dataPorExtenso: new Date(notificacao.data).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      }),
       dataHora: new Date(notificacao.data).toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'long', year: 'numeric'
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
       })
     };
 
@@ -73,7 +97,7 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     python.on('close', (code) => {
       if (code !== 0) {
         console.error(`❌ Python finalizou com código ${code}`);
-        return res.status(500).send('Erro ao gerar PDF');
+        return res.status(500).send('Erro ao gerar DOCX');
       }
 
       const docxPath = output.trim();
@@ -86,7 +110,6 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
         if (err) console.error('❌ Erro ao enviar o arquivo gerado:', err);
       });
     });
-
   } catch (err) {
     console.error('❌ Erro ao gerar notificação:', err);
     res.status(500).json({ error: 'Erro ao gerar notificação' });
