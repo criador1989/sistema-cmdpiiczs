@@ -9,87 +9,20 @@
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background: white;
-      padding: 40px 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      width: 320px;
-      max-width: 90vw;
-      text-align: center;
-      animation: fadeIn 0.6s ease-in-out;
-    }
-
-    .logo {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #941a1d;
-    }
-
-    .erro {
-      color: red;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-
-    .link-cadastro {
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    .link-cadastro a {
-      color: #d82327;
-      text-decoration: none;
-    }
-
-    .link-cadastro a:hover {
-      text-decoration: underline;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to right, #941a1d, #d82327);
+      display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    .container { background:white; padding:40px 30px; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.2);
+      width:320px; max-width:90vw; text-align:center; animation:fadeIn .6s ease-in-out; }
+    .logo { width:100px; height:100px; object-fit:contain; margin-bottom:10px; }
+    h2 { margin-bottom:20px; color:#333; }
+    input { width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; font-size:15px; }
+    button { width:100%; padding:12px; background-color:#d82327; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
+    button:hover { background-color:#941a1d; }
+    .erro { color:red; font-size:14px; margin-bottom:10px; min-height:18px; }
+    .link-cadastro { margin-top:15px; font-size:14px; }
+    .link-cadastro a { color:#d82327; text-decoration:none; }
+    .link-cadastro a:hover { text-decoration:underline; }
+    @keyframes fadeIn { from{ opacity:0; transform:translateY(20px);} to{ opacity:1; transform:translateY(0);} }
   </style>
 </head>
 <body>
@@ -102,13 +35,26 @@
       <input type="password" id="senha" placeholder="Senha" required />
       <button type="submit">Entrar</button>
     </form>
-
     <div class="link-cadastro">
       Ainda não tem conta? <a href="/cadastro-usuario.html">Cadastre-se</a>
     </div>
   </div>
 
   <script>
+    // desativa SW/caches em localhost
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
+      console.log('[DEV] SW e caches limpos para localhost');
+    }
+
+    const here = location.origin;
+    const API_BASE = (here.includes('localhost:5000') || here.includes('127.0.0.1:5000')) ? '' : 'http://localhost:5000';
+
     document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
 
@@ -118,35 +64,33 @@
       erroDiv.textContent = '';
 
       try {
-        const resposta = await fetch('/auth/login', {
+        const resposta = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, senha })
         });
-
         const data = await resposta.json();
 
-        if (resposta.ok) {
-          if (data.nome) {
-            localStorage.setItem('nome', data.nome);
-          }
-          window.location.href = '/painel.html';
-        } else {
-          erroDiv.textContent = data.mensagem || 'Erro ao fazer login.';
+        if (!resposta.ok) {
+          erroDiv.textContent = data?.mensagem || 'Erro ao fazer login.';
+          return;
         }
+
+        // valida cookie/ sessão pelo token (sem consultar banco)
+        const ping = await fetch(`${API_BASE}/auth/me`, { credentials: 'include', cache: 'no-store' });
+        if (!ping.ok) {
+          erroDiv.textContent = 'Falha ao validar sessão após login.';
+          return;
+        }
+
+        const destino = data.redirecionar || '/painel.html';
+        window.location.href = destino;
       } catch (err) {
+        console.error(err);
         erroDiv.textContent = 'Erro de conexão com o servidor.';
       }
     });
-
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
-      });
-    }
   </script>
 </body>
 </html>

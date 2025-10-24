@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "dependencies": {
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
@@ -24,6 +24,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.7.2",
+    "mongodb": "^6.20.0",
     "mongoose": "^8.18.0",
     "multer": "^2.0.0",
     "nodemailer": "^7.0.3",

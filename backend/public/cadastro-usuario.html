@@ -8,34 +8,6 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <link rel="icon" href="/icons/icon-192x192.png" />
-
-  <script>
-    // Proteção: só admin pode acessar esta página
-    async function verificarPermissao() {
-      try {
-        const resposta = await fetch('/api/usuario-logado', {
-          credentials: 'include'
-        });
-
-        if (!resposta.ok) {
-          window.location.href = '/login.html';
-          return;
-        }
-
-        const usuario = await resposta.json();
-        if (usuario.tipo !== 'admin') {
-          alert('Apenas administradores podem acessar esta página.');
-          window.location.href = '/painel.html';
-        }
-      } catch (erro) {
-        console.error('Erro ao verificar login:', erro);
-        window.location.href = '/login.html';
-      }
-    }
-
-    verificarPermissao();
-  </script>
-
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -46,7 +18,6 @@
       height: 100vh;
       margin: 0;
     }
-
     .container {
       background: white;
       padding: 40px 30px;
@@ -54,18 +25,10 @@
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
       width: 340px;
       text-align: center;
+      animation: fadeIn .6s ease-in-out;
     }
-
-    .logo {
-      width: 100px;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
-
+    .logo { width: 100px; margin-bottom: 10px; }
+    h2 { margin-bottom: 20px; color: #333; }
     input, select {
       width: 100%;
       padding: 12px;
@@ -74,7 +37,6 @@
       border-radius: 6px;
       font-size: 15px;
     }
-
     button {
       width: 100%;
       padding: 12px;
@@ -85,27 +47,11 @@
       font-size: 16px;
       cursor: pointer;
     }
-
-    button:hover {
-      background-color: #941a1d;
-    }
-
-    .mensagem {
-      font-size: 14px;
-      margin-top: 10px;
-    }
-
-    .voltar {
-      margin-top: 15px;
-      display: block;
-      font-size: 14px;
-      color: #d82327;
-      text-decoration: none;
-    }
-
-    .voltar:hover {
-      text-decoration: underline;
-    }
+    button:hover { background-color: #941a1d; }
+    .mensagem { font-size: 14px; margin-top: 10px; min-height: 18px; }
+    .voltar { margin-top: 15px; display: block; font-size: 14px; color: #d82327; text-decoration: none; }
+    .voltar:hover { text-decoration: underline; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
   </style>
 </head>
 <body>
@@ -130,51 +76,63 @@
   </div>
 
   <script>
-    document.getElementById('formCadastro').addEventListener('submit', async function (e) {
-      e.preventDefault();
+    // 🔧 limpeza em dev
+    if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+      if ('serviceWorker' in navigator)
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      if (window.caches)
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      console.log('[DEV] caches limpos');
+    }
 
-      const nome = document.getElementById('nome').value;
-      const email = document.getElementById('email').value;
-      const senha = document.getElementById('senha').value;
-      const instituicao = document.getElementById('instituicao').value;
+    // 🔒 só admin
+    async function verificarPermissao() {
+      try {
+        const resp = await fetch('/auth/me', { credentials: 'include' });
+        if (!resp.ok) return (location.href = '/login.html');
+        const user = await resp.json();
+        if (user.tipo !== 'admin') {
+          alert('Apenas administradores podem acessar esta página.');
+          location.href = '/painel.html';
+        }
+      } catch {
+        location.href = '/login.html';
+      }
+    }
+    verificarPermissao();
+
+    document.getElementById('formCadastro').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = nome.value.trim();
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+      const instituicao = document.getElementById('instituicao').value.trim();
       const tipo = document.getElementById('tipo').value;
-      const mensagem = document.getElementById('mensagem');
+      const msg = document.getElementById('mensagem');
+      msg.textContent = '';
 
       try {
-        const resposta = await fetch('/auth/cadastrar', {
+        const r = await fetch('/auth/cadastrar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ nome, email, senha, instituicao, tipo })
         });
-
-        const resultado = await resposta.json();
-
-        if (resposta.ok) {
-          mensagem.style.color = 'green';
-          mensagem.textContent = '✅ Usuário cadastrado com sucesso!';
-          document.getElementById('formCadastro').reset();
-
-          // Mantém mensagem por 5 segundos
-          setTimeout(() => {
-            mensagem.textContent = '';
-          }, 5000);
+        const data = await r.json();
+        if (r.ok) {
+          msg.style.color = 'green';
+          msg.textContent = '✅ Usuário cadastrado com sucesso!';
+          e.target.reset();
+          setTimeout(() => msg.textContent = '', 5000);
         } else {
-          mensagem.style.color = 'red';
-          mensagem.textContent = resultado.mensagem || 'Erro ao cadastrar.';
+          msg.style.color = 'red';
+          msg.textContent = data.mensagem || 'Erro ao cadastrar.';
         }
-      } catch (erro) {
-        mensagem.style.color = 'red';
-        mensagem.textContent = 'Erro de conexão com o servidor.';
+      } catch {
+        msg.style.color = 'red';
+        msg.textContent = 'Erro de conexão com o servidor.';
       }
     });
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar o Service Worker:', err));
-      });
-    }
   </script>
 </body>
 </html>

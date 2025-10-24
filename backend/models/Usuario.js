@@ -18,10 +18,8 @@ const usuarioSchema = new Schema(
       required: [true, 'E-mail é obrigatório.'],
       trim: true,
       lowercase: true,
-      // Unicidade aplicada via índice composto (instituicao + email)
       validate: {
-        validator: (v) =>
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '')),
+        validator: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '')),
         message: 'E-mail inválido.',
       },
     },
@@ -29,7 +27,7 @@ const usuarioSchema = new Schema(
     senha: {
       type: String,
       required: [true, 'Senha é obrigatória.'],
-      select: false, // nunca retorna por padrão
+      select: false,
       minlength: [6, 'Senha deve ter ao menos 6 caracteres.'],
     },
 
@@ -40,7 +38,7 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
-    // 🔐 Multi-tenant
+    // 🔗 Referência para a instituição
     instituicao: {
       type: Schema.Types.ObjectId,
       ref: 'Instituicao',
@@ -48,15 +46,14 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
-    // Token de acesso “rápido” (ex.: para rotas de professor)
+    // Token de acesso rápido (ex.: professores via QR Code)
     tokenAcesso: {
       type: String,
       unique: true,
-      sparse: true, // só professores terão
+      sparse: true,
       index: true,
     },
 
-    // (Opcional) flag de status
     ativo: {
       type: Boolean,
       default: true,
@@ -66,47 +63,35 @@ const usuarioSchema = new Schema(
   { timestamps: true }
 );
 
-/** ===================== Índices ===================== */
-/**
- * Unicidade por instituição + e-mail
- * (substitui unique:true global – mais flexível em multi-tenant)
+/* ===========================================================
+ *  ÍNDICES E VALIDAÇÕES
+ * ===========================================================
  */
+
+// Garantir e-mail único dentro da mesma instituição
 usuarioSchema.index({ instituicao: 1, email: 1 }, { unique: true });
 
-/** ===================== Helpers internos ===================== */
-function precisaHashDaSenha(docOuUpdate) {
-  // Quando vem via save: doc.isModified('senha') cobre.
-  // Quando vem via findOneAndUpdate: checamos update.$set?.senha | update.senha
-  if (!docOuUpdate) return false;
-  if (typeof docOuUpdate.isModified === 'function') {
-    return docOuUpdate.isModified('senha');
-  }
-  const u = docOuUpdate.$set || docOuUpdate;
-  return typeof u?.senha === 'string' && u.senha.length >= 1;
-}
-
-async function gerarHash(plain) {
+/* ===========================================================
+ *  FUNÇÕES AUXILIARES
+ * ===========================================================
+ */
+async function gerarHash(senha) {
   const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(plain, salt);
-}
-
-function precisaTokenProfessor(docOuUpdate) {
-  const u = docOuUpdate.$set || docOuUpdate;
-  const tipoAlvo = u?.tipo;
-  const virandoProfessor = tipoAlvo === 'professor';
-  const jaTemToken = !!(u?.tokenAcesso);
-  return virandoProfessor && !jaTemToken;
+  return bcrypt.hash(senha, salt);
 }
 
 function gerarTokenProfessor() {
-  // 16 bytes -> 32 hex (curto, suficiente e único por índice)
+  // 16 bytes -> 32 caracteres hexadecimais únicos
   return crypto.randomBytes(16).toString('hex');
 }
 
-/** ===================== Hooks: CREATE/UPDATE ===================== */
+/* ===========================================================
+ *  HOOKS MONGOOSE
+ * ===========================================================
+ */
 
-// Hash da senha + token professor em CREATE
-usuarioSchema.pre('save', async function preSave(next) {
+// Antes de salvar
+usuarioSchema.pre('save', async function (next) {
   try {
     if (this.isModified('senha')) {
       this.senha = await gerarHash(this.senha);
@@ -122,29 +107,32 @@ usuarioSchema.pre('save', async function preSave(next) {
   }
 });
 
-// Hash da senha + token professor em UPDATE (findOneAndUpdate)
-usuarioSchema.pre('findOneAndUpdate', async function preF1U(next) {
+// Antes de atualizar (findOneAndUpdate)
+usuarioSchema.pre('findOneAndUpdate', async function (next) {
   try {
     const update = this.getUpdate() || {};
 
-    // garantir normalização de e-mail se vindo no update
-    if (update.$set?.email || update.email) {
+    // normaliza email
+    if (update.email || update.$set?.email) {
       const u = update.$set || update;
-      if (typeof u.email === 'string') {
-        u.email = u.email.trim().toLowerCase();
-      }
+      u.email = String(u.email || '').trim().toLowerCase();
     }
 
-    // Hash da senha se enviada no update
-    if (precisaHashDaSenha(update)) {
-      const u = update.$set || update;
-      u.senha = await gerarHash(u.senha);
+    // hash de senha se necessário
+    const novaSenha = update.senha || update.$set?.senha;
+    if (typeof novaSenha === 'string' && novaSenha.length > 0) {
+      const hashed = await gerarHash(novaSenha);
+      if (update.$set) update.$set.senha = hashed;
+      else update.senha = hashed;
     }
 
-    // Geração de tokenAcesso se tipo virar professor e ainda não houver token
-    if (precisaTokenProfessor(update)) {
-      const u = update.$set || update;
-      u.tokenAcesso = gerarTokenProfessor();
+    // gera token se tipo virou professor
+    const novoTipo = update.tipo || update.$set?.tipo;
+    const jaTemToken = update.tokenAcesso || update.$set?.tokenAcesso;
+    if (novoTipo === 'professor' && !jaTemToken) {
+      const novoToken = gerarTokenProfessor();
+      if (update.$set) update.$set.tokenAcesso = novoToken;
+      else update.tokenAcesso = novoToken;
     }
 
     next();
@@ -153,12 +141,15 @@ usuarioSchema.pre('findOneAndUpdate', async function preF1U(next) {
   }
 });
 
-/** ===================== Métodos de instância ===================== */
-usuarioSchema.methods.compararSenha = function compararSenha(senhaDigitada) {
+/* ===========================================================
+ *  MÉTODOS DE INSTÂNCIA
+ * ===========================================================
+ */
+usuarioSchema.methods.compararSenha = function (senhaDigitada) {
   return bcrypt.compare(String(senhaDigitada || ''), this.senha);
 };
 
-usuarioSchema.methods.regenerarTokenProfessor = function regenerarTokenProfessor() {
+usuarioSchema.methods.regenerarTokenProfessor = function () {
   if (this.tipo !== 'professor') {
     throw new Error('Apenas usuários do tipo professor podem ter tokenAcesso.');
   }
@@ -166,7 +157,10 @@ usuarioSchema.methods.regenerarTokenProfessor = function regenerarTokenProfessor
   return this.tokenAcesso;
 };
 
-/** ===================== toJSON/toObject (higienização) ===================== */
+/* ===========================================================
+ *  FORMATADORES (toJSON / toObject)
+ * ===========================================================
+ */
 function ocultarCampos(doc, ret) {
   delete ret.senha;
   delete ret.__v;
@@ -176,4 +170,8 @@ function ocultarCampos(doc, ret) {
 usuarioSchema.set('toJSON', { virtuals: true, transform: ocultarCampos });
 usuarioSchema.set('toObject', { virtuals: true, transform: ocultarCampos });
 
+/* ===========================================================
+ *  EXPORT
+ * ===========================================================
+ */
 module.exports = mongoose.model('Usuario', usuarioSchema);

@@ -1,0 +1,12 @@
+{
+  "base": 10,
+  "deducoes": [
+    { "match": { "tipo": "repreensão" },          "pontos": -0.5 },
+    { "match": { "tipo": "advertência escrita" }, "pontos": -1.0 },
+    { "match": { "tipo": "a.e.c.d.e" },           "pontos": -1.5 },
+    { "match": { "tipo": "suspensão" },           "pontos": -2.5 }
+  ],
+  "bonus": [
+    { "match": { "tipo": "elogio" },              "pontos":  0.5 }
+  ]
+}

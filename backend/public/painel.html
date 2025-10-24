@@ -135,7 +135,9 @@
           </div>
 
           <div class="menu-windows">
-            <!-- Mantidos na mesma ordem, exceto Transferir Turma que foi movido para o FINAL -->
+            <div class="window-card" data-transferir role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
+              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            </div>
             <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'" onkeyup="if(event.key==='Enter') this.click()">
               <div class="window-content"><div class="card-copy"><div class="kicker">MÓDULO</div><h3>Cadastrar Aluno</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
             </div>
@@ -154,11 +156,6 @@
             <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'" onkeyup="if(event.key==='Enter') this.click()">
               <div class="window-content"><div class="card-copy"><div class="kicker">COMUNICAÇÃO</div><h3>Mensagens</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
               <span id="mensagensBadge" class="badge" style="display:none;">0</span>
-            </div>
-
-            <!-- Transferir Turma: agora o ÚLTIMO card -->
-            <div class="window-card" data-transferir role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
             </div>
           </div>
 
@@ -225,7 +222,9 @@
   </nav>
 
   <script>
+  // ===== Helpers de URL =====
   const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+  const AUTH = (p)=> p.startsWith('http') ? p : (p.startsWith('/auth') ? p : `/auth${p.startsWith('/')?p:'/'+p}`);
 
   async function getJSON(url, { timeoutMs=8000 } = {}) {
     const ctrl = new AbortController();
@@ -235,9 +234,17 @@
       if (!r.ok) throw new Error(`${url} -> ${r.status}`);
       const ct = r.headers.get('content-type')||'';
       return ct.includes('application/json') ? r.json() : {};
-    } finally {
-      clearTimeout(id);
-    }
+    } finally { clearTimeout(id); }
+  }
+
+  async function getAuthJSON(url, { timeoutMs=8000 } = {}) {
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+    try {
+      const r = await fetch(AUTH(url), { credentials:'include', cache:'no-store', signal: ctrl.signal });
+      if (!r.ok) throw new Error(`${url} -> ${r.status}`);
+      return r.json();
+    } finally { clearTimeout(id); }
   }
 
   function showError(msg){
@@ -252,18 +259,17 @@
     clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
   }
 
+  // ===== Métricas =====
   async function carregarMetricas(){
     try{
-      const { alunosCount=0, notifPend=0, msgs=0 } = await getJSON('/api/metrics/overview', { timeoutMs: 8000 });
+      const { alunosCount=0, notifPend=0, msgs=0 } = await getJSON('/metrics/overview', { timeoutMs: 8000 });
       document.getElementById('mAlunos').textContent = alunosCount.toLocaleString('pt-BR');
       document.getElementById('mNotif').textContent  = notifPend.toLocaleString('pt-BR');
       document.getElementById('mMsgs').textContent   = msgs.toLocaleString('pt-BR');
-    }catch(e){
-      console.warn('overview falhou:', e.message);
-    }
+    }catch(e){ console.warn('overview falhou:', e.message); }
 
     try{
-      const porTurma = await getJSON('/api/estatisticas/comportamento-por-turma', { timeoutMs: 9000 });
+      const porTurma = await getJSON('/estatisticas/comportamento-por-turma', { timeoutMs: 9000 });
       drawBarChart(Array.isArray(porTurma) ? porTurma : []);
       const medias = (porTurma||[]).map(t=>Number(t.media)).filter(n=>Number.isFinite(n)&&n>0);
       const mediaGeral = medias.length ? (medias.reduce((s,n)=>s+n,0)/medias.length) : 0;
@@ -275,7 +281,7 @@
     }
 
     try{
-      const dist = await getJSON('/api/estatisticas/distribuicao', { timeoutMs: 9000 });
+      const dist = await getJSON('/estatisticas/distribuicao', { timeoutMs: 9000 });
       drawDonutChart({
         exc: dist?.excepcional||0, oti: dist?.otimo||0, bom: dist?.bom||0,
         reg: dist?.regular||0,     ins: dist?.insuficiente||0, inc: dist?.incompativel||0
@@ -286,7 +292,7 @@
     }
 
     try{
-      const k = await getJSON('/api/notificacoes/pendencias/devolucao/contador', { timeoutMs: 7000 });
+      const k = await getJSON('/notificacoes/pendencias/devolucao/contador', { timeoutMs: 7000 });
       const total = Number(k?.total || 0);
       document.getElementById('mPendDevol').textContent = total.toLocaleString('pt-BR');
     }catch(e){
@@ -295,13 +301,14 @@
     }
   }
 
+  // ===== Pendências de devolução =====
   async function carregarPendenciasDevolucao(){
     const resumo = document.getElementById('pendResumo');
     const tbody  = document.getElementById('pendTableBody');
     resumo.textContent = 'Carregando…';
     tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>`;
     try{
-      const j = await getJSON('/api/notificacoes/pendencias/devolucao', { timeoutMs: 12000 });
+      const j = await getJSON('/notificacoes/pendencias/devolucao', { timeoutMs: 12000 });
       const arr = Array.isArray(j?.itens) ? j.itens : [];
       resumo.textContent = `Total pendente: ${j?.total ?? arr.length}`;
 
@@ -344,6 +351,7 @@
     }
   }
 
+  // ===== Atenção especial (≤ 4,99) =====
   async function carregarAtencao(){
     const status = document.getElementById('attentionStatus');
     const list   = document.getElementById('attentionList');
@@ -352,19 +360,19 @@
     list.innerHTML = '';
 
     try{
-      let arr = await getJSON('/api/metrics/atencao?limite=500', { timeoutMs: 10000 });
+      let arr = await getJSON('/metrics/atencao?limite=500', { timeoutMs: 10000 });
       if (!Array.isArray(arr)) arr = [];
 
       if (arr.length === 0) {
         try {
-          let alunos = await getJSON('/api/alunos/insuficientes', { timeoutMs: 20000 });
+          let alunos = await getJSON('/alunos/insuficientes', { timeoutMs: 20000 });
           alunos = Array.isArray(alunos) ? alunos : (alunos?.data || alunos?.alunos || []);
           arr = alunos.map(a => ({
             id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(),
             nota: Number(a.comportamento ?? a.notaComportamento ?? 0),
           })).filter(a => Number.isFinite(a.nota) && a.nota <= 4.99);
         } catch {
-          let alunos = await getJSON('/api/alunos/baixorendimento', { timeoutMs: 20000 });
+          let alunos = await getJSON('/alunos/baixorendimento', { timeoutMs: 20000 });
           alunos = Array.isArray(alunos) ? alunos : (alunos?.data || alunos?.alunos || []);
           arr = alunos.map(a => ({
             id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(),
@@ -397,6 +405,7 @@
     }
   }
 
+  // ===== Gráficos =====
   function drawBarChart(data){
     const c = document.getElementById('barChart'); if(!c) return;
     const ctx = c.getContext('2d'); const W=c.width, H=c.height; ctx.clearRect(0,0,W,H);
@@ -436,30 +445,46 @@
     items.forEach((d,i)=>{ const y=20+i*18; ctx.fillStyle=d.color; ctx.fillRect(W-170,y-10,10,10); ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillText(`${d.name}: ${d.value}`, W-154, y); });
   }
 
+  // ===== Sessão & ações =====
   async function verificarUsuario(){
-    try{ const j = await getJSON('/api/usuario', { timeoutMs: 7000 }); document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário'; }
-    catch{ location.href = './login.html'; }
+    try{
+      const j = await getAuthJSON('/me', { timeoutMs: 7000 });
+      document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário';
+    }catch{
+      location.href = './login.html';
+    }
   }
+
   async function verificarAdmin(){
     try{
-      const j = await getJSON('/api/usuario-logado', { timeoutMs: 7000 });
-      if(j.tipo==='admin'){ ['cardNovoUsuario','cardEstatisticas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=''; }); }
+      const j = await getAuthJSON('/me', { timeoutMs: 7000 });
+      if(j.tipo==='admin'){
+        ['cardNovoUsuario','cardEstatisticas'].forEach(id=>{
+          const el=document.getElementById(id); if(el) el.style.display='';
+        });
+      }
     }catch{}
   }
+
   async function gerarQRCode(){
     const campo=document.getElementById('campoIdentificacao'); const destino=document.getElementById('qrImagem'); const btn=document.getElementById('btnImprimirQR');
     destino.innerHTML='⏳ Gerando QR Code...'; btn.style.display='none';
     try{
-      const r = await fetch(API('/api/professores/qrcode'), { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', cache:'no-store', body:JSON.stringify({ identificador: campo.value }) });
+      const r = await fetch(API('/professores/qrcode'), { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', cache:'no-store', body:JSON.stringify({ identificador: campo.value }) });
       const data = await r.json(); if(!r.ok) throw new Error(data.mensagem||'Erro desconhecido');
       destino.innerHTML = `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p><img id="imgQRCode" src="${data.qrCode}" width="200" />`; btn.style.display='inline-block';
     }catch(err){ showError(err.message); destino.innerHTML = `<span style="color:#ff8a8a;">❌ ${err.message}</span>`; }
   }
+
   function imprimirQRCode(){
     const img=document.getElementById('imgQRCode'); const link=document.querySelector('#qrImagem a')?.href||''; const win=window.open('','_blank');
     win.document.write(`<html><head><title>QR Code</title></head><body style="text-align:center;padding:40px;background:#fff;color:#111;"><h2>QR Code de Acesso</h2><img src="${img?.src||''}" /><p>${link}</p></body></html>`); win.document.close(); win.print();
   }
-  async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
+
+  async function logout(){
+    try{ await fetch(AUTH('/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{}
+    location.href='./login.html';
+  }
 
   async function boot(){
     await verificarUsuario();

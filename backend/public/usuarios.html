@@ -9,166 +9,205 @@
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #8B0000, #B22222);
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-
-    .container {
-      max-width: 800px;
-      margin: 100px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.2);
-    }
-
-    h2 {
-      text-align: center;
-      color: #8B0000;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ccc;
-    }
-
-    th {
-      background-color: #8B0000;
-      color: white;
-    }
-
-    .acoes button {
-      margin-right: 5px;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .editar {
-      background-color: #4682B4;
-      color: white;
-    }
-
-    .excluir {
-      background-color: #B22222;
-      color: white;
-    }
-
-    .voltar {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 20px;
-      background-color: #8B0000;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
-    }
-
-    .voltar:hover {
-      background-color: #5a0000;
-    }
+    :root{ --rubi-1:#8B0000; --rubi-2:#B22222; }
+    body{ font-family: Arial, sans-serif; background: linear-gradient(135deg, var(--rubi-1), var(--rubi-2)); margin:0; padding:24px; color:#222; }
+    .container{ max-width: 1100px; margin: 80px auto; background:#fff; padding:28px; border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.25); }
+    h2{ text-align:center; color:var(--rubi-1); margin:0 0 12px; }
+    .toolbar{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin:10px 0 14px; }
+    .search{ display:flex; gap:8px; align-items:center; }
+    .search input, .search select{ padding:10px 12px; border:1px solid #ccc; border-radius:8px; font-size:14px; }
+    table{ width:100%; border-collapse:collapse; margin-top:8px; }
+    th, td{ padding:10px; text-align:left; border-bottom:1px solid #eee; }
+    th{ background:#7f0f0f; color:#fff; position:sticky; top:0; z-index:1; }
+    .acoes{ white-space:nowrap; }
+    .btn{ padding:8px 12px; border:0; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn-prim{ background:#1f6feb; color:#fff; }
+    .btn-warn{ background:#b32d2d; color:#fff; }
+    .btn-ghost{ background:#f4f4f4; color:#b32d2d; border:2px solid #b32d2d; text-decoration:none; border-radius:8px; padding:10px 14px; display:inline-block; }
+    .btn-ghost:hover{ background:#b32d2d; color:#fff; }
+    .status{ min-height:18px; font-size:14px; margin-top:6px; }
+    .ok{ color:#0a8f3c; } .err{ color:#b00020; }
+    .empty{ opacity:.7; padding:16px 0; }
+    .pager{ display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:10px; }
+    .pager button{ padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#fafafa; cursor:pointer; }
+    .pill{ padding:4px 8px; border-radius:999px; border:1px solid #ddd; background:#f7f7f7; font-size:.85rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Gerenciar Usuários</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>Tipo</th>
-          <th>Instituição</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaUsuarios">
-        <!-- Linhas inseridas dinamicamente -->
-      </tbody>
-    </table>
-    <a class="voltar" href="painel.html">⬅ Voltar ao Painel</a>
+
+    <div class="toolbar">
+      <div class="search">
+        <input id="q" type="search" placeholder="Buscar por nome ou e-mail" />
+        <select id="filtroTipo">
+          <option value="">Todos os tipos</option>
+          <option value="admin">Administrador</option>
+          <option value="monitor">Monitor</option>
+          <option value="professor">Professor</option>
+        </select>
+        <button class="btn btn-prim" id="btnBuscar">Buscar</button>
+      </div>
+      <a class="btn-ghost" href="painel.html">⬅ Voltar ao Painel</a>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div style="overflow:auto; max-height: 60vh;">
+      <table aria-label="Tabela de usuários">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Tipo</th>
+            <th>Instituição</th>
+            <th style="width:180px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaUsuarios">
+          <tr><td class="empty" colspan="5">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager" id="pager" hidden>
+      <button id="prev">&lt; Anterior</button>
+      <span id="pageInfo" class="pill">Página 1/1</span>
+      <button id="next">Próxima &gt;</button>
+    </div>
   </div>
 
   <script>
-    async function verificarPermissao() {
-      const res = await fetch('/api/usuario-logado', { credentials: 'include' });
-      if (!res.ok) return window.location.href = '/login.html';
-      const usuario = await res.json();
-      if (usuario.tipo !== 'admin') {
-        alert('Acesso restrito a administradores.');
-        window.location.href = '/painel.html';
+    // Em dev, limpe SW/caches para não bloquear cookies HttpOnly
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
     }
 
-    async function carregarUsuarios() {
-      try {
-        const resposta = await fetch('/api/usuarios', { credentials: 'include' });
-        const usuarios = await resposta.json();
-        const tabela = document.getElementById('tabelaUsuarios');
-        tabela.innerHTML = '';
+    const $ = (id) => document.getElementById(id);
+    let pagina = 1, paginas = 1, limite = 20, termo = '', tipo = '';
 
-        usuarios.forEach(usuario => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${usuario.nome}</td>
-            <td>${usuario.email}</td>
-            <td>${usuario.tipo}</td>
-            <td>${usuario.instituicao}</td>
-            <td class="acoes">
-              <button class="editar" onclick="editarUsuario('${usuario._id}')">Editar</button>
-              <button class="excluir" onclick="excluirUsuario('${usuario._id}')">Excluir</button>
-            </td>
-          `;
-          tabela.appendChild(tr);
-        });
-      } catch (err) {
-        console.error('Erro ao carregar usuários:', err);
-      }
-    }
-
-    function editarUsuario(id) {
-      window.location.href = `/editar-usuario.html?id=${id}`;
-    }
-
-    async function excluirUsuario(id) {
-      const confirmacao = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
-
-      if (confirmacao === "CONFIRMAR") {
-        try {
-          const res = await fetch(`/api/usuarios/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-          });
-
-          if (res.ok) {
-            alert('✅ Usuário excluído com sucesso!');
-            carregarUsuarios();
-          } else {
-            alert('❌ Erro ao excluir usuário.');
-          }
-        } catch (erro) {
-          console.error('Erro ao excluir:', erro);
-          alert('Erro de conexão com o servidor.');
+    async function garantirAdmin(){
+      try{
+        // ✅ rota correta
+        const r = await fetch('/auth/usuario-logado', { credentials:'include', cache:'no-store' });
+        if(!r.ok) throw 0;
+        const u = await r.json();
+        if (u?.tipo !== 'admin') {
+          alert('Acesso restrito a administradores.');
+          location.href = '/painel.html';
         }
-      } else {
-        alert("🔒 Exclusão cancelada.");
+      }catch{
+        // só redireciona se de fato não está autenticado
+        location.href = '/login.html';
       }
     }
 
-    verificarPermissao();
-    carregarUsuarios();
+    function setStatus(msg, ok=false){
+      const el = $('status');
+      el.className = 'status ' + (ok ? 'ok' : (msg ? 'err' : ''));
+      el.textContent = msg || '';
+    }
+
+    function linhaUsuario(u){
+      const inst = typeof u.instituicao === 'object'
+        ? (u.instituicao?.nome || u.instituicao?._id || '—')
+        : (u.instituicao || '—');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u.nome || '—'}</td>
+        <td>${u.email || '—'}</td>
+        <td><span class="pill">${u.tipo || '—'}</span></td>
+        <td>${inst}</td>
+        <td class="acoes">
+          <button class="btn btn-prim" onclick="editarUsuario('${u._id}')">Editar</button>
+          <button class="btn btn-warn" onclick="excluirUsuario('${u._id}')">Excluir</button>
+        </td>
+      `;
+      return tr;
+    }
+
+    async function carregarUsuarios(){
+      const tbody = $('tabelaUsuarios');
+      tbody.innerHTML = `<tr><td class="empty" colspan="5">Carregando…</td></tr>`;
+      try{
+        const qs = new URLSearchParams();
+        qs.set('pagina', String(pagina));
+        qs.set('limite', String(limite));
+        if (termo) qs.set('q', termo);
+        if (tipo) qs.set('tipo', tipo);
+
+        const r = await fetch(`/api/usuarios?${qs.toString()}`, { credentials:'include', cache:'no-store' });
+        if(!r.ok){
+          setStatus('Erro ao buscar usuários.'); 
+          tbody.innerHTML = `<tr><td class="empty" colspan="5">Falha ao carregar.</td></tr>`;
+          return;
+        }
+        const data = await r.json();
+        const itens = Array.isArray(data?.items) ? data.items : [];
+        paginas = Number(data?.paginas || 1);
+        pagina  = Math.min(Math.max(1, Number(data?.pagina || 1)), paginas);
+
+        if (itens.length === 0){
+          tbody.innerHTML = `<tr><td class="empty" colspan="5">Nenhum usuário encontrado.</td></tr>`;
+        } else {
+          tbody.innerHTML = '';
+          itens.forEach(u => tbody.appendChild(linhaUsuario(u)));
+        }
+
+        // pager
+        $('pager').hidden = paginas <= 1;
+        $('pageInfo').textContent = `Página ${pagina}/${paginas}`;
+      }catch(e){
+        console.error(e);
+        setStatus('Erro de conexão com o servidor.');
+        tbody.innerHTML = `<tr><td class="empty" colspan="5">Erro de conexão.</td></tr>`;
+      }
+    }
+
+    // Ações
+    function editarUsuario(id){
+      location.href = `editar-usuario.html?id=${id}`;
+    }
+
+    async function excluirUsuario(id){
+      const conf = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
+      if (conf !== 'CONFIRMAR') return alert('Exclusão cancelada.');
+      try{
+        const r = await fetch(`/api/usuarios/${id}`, { method:'DELETE', credentials:'include' });
+        if(r.ok){
+          setStatus('Usuário excluído com sucesso.', true);
+          carregarUsuarios();
+        }else{
+          const j = await r.json().catch(()=>({}));
+          setStatus(j?.mensagem || 'Erro ao excluir usuário.');
+        }
+      }catch(e){
+        console.error(e);
+        setStatus('Erro de conexão ao excluir usuário.');
+      }
+    }
+
+    // Filtros e paginação
+    $('btnBuscar').addEventListener('click', () => {
+      termo = $('q').value.trim();
+      tipo  = $('filtroTipo').value;
+      pagina = 1;
+      carregarUsuarios();
+    });
+    $('prev').addEventListener('click', () => { if(pagina>1){ pagina--; carregarUsuarios(); } });
+    $('next').addEventListener('click', () => { if(pagina<paginas){ pagina++; carregarUsuarios(); } });
+
+    // Boot
+    (async function(){
+      await garantirAdmin();
+      await carregarUsuarios();
+    })();
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

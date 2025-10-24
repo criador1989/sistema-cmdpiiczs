@@ -9,164 +9,244 @@
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <style>
+    :root{
+      --rubi-1:#8B0000; --rubi-2:#B22222;
+    }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #8B0000, #B22222);
+      font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--rubi-1), var(--rubi-2));
       margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      color: #222;
     }
-
     .container {
+      width: min(420px, 92vw);
       background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-      width: 360px;
-      text-align: center;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      padding: 28px 24px;
+      animation: fade .35s ease-out both;
     }
-
-    h2 {
-      margin-bottom: 20px;
-    }
-
-    input, select {
+    h2 { margin: 0 0 16px 0; text-align: center; color: var(--rubi-1); }
+    label { display:block; font-size: .9rem; margin: 10px 0 6px; color:#444; }
+    input, select, datalist {
       width: 100%;
       padding: 12px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      border-radius: 8px;
+      border: 1px solid #cfcfcf;
       font-size: 15px;
+      outline: none;
     }
-
+    input:focus, select:focus { border-color: var(--rubi-2); box-shadow: 0 0 0 3px rgba(178,34,34,.12); }
+    .muted { font-size: 12px; color:#777; margin-top: 4px; }
     button {
       width: 100%;
       padding: 12px;
-      background-color: #B22222;
-      color: white;
+      margin-top: 14px;
       border: none;
-      border-radius: 6px;
-      font-size: 16px;
+      border-radius: 10px;
+      background: var(--rubi-2);
+      color: #fff;
+      font-weight: 700;
       cursor: pointer;
     }
-
-    button:hover {
-      background-color: #8B0000;
+    button:hover { background: var(--rubi-1); }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
-
-    .voltar {
+    .links {
       margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .links a {
       display: inline-block;
-      color: #B22222;
-      font-weight: bold;
+      padding: 10px 12px;
+      border-radius: 10px;
       text-decoration: none;
+      background:#f4f4f4;
+      color: var(--rubi-2);
+      border: 2px solid var(--rubi-2);
+      font-weight: 700;
     }
-
-    .voltar:hover {
-      text-decoration: underline;
-    }
-
-    .menu-extra {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .menu-extra a {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background-color: #f2f2f2;
-      color: #B22222;
-      border: 2px solid #B22222;
-      border-radius: 8px;
-      font-weight: bold;
-      text-decoration: none;
-      transition: background 0.3s, color 0.3s;
-    }
-
-    .menu-extra a:hover {
-      background-color: #B22222;
-      color: white;
-    }
+    .links a:hover { background: var(--rubi-2); color:#fff; }
+    .msg { min-height: 18px; margin-top: 8px; font-size: 14px; }
+    .ok { color: #0a8f3c; }
+    .err { color: #b00020; }
+    @keyframes fade { from{opacity:0; transform: translateY(8px)} to{opacity:1; transform:none} }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Editar Usuário</h2>
-    <form id="form-editar">
+
+    <form id="form-editar" autocomplete="off">
+      <label for="nome">Nome completo</label>
       <input type="text" id="nome" placeholder="Nome completo" required />
+
+      <label for="email">E-mail (não editável)</label>
       <input type="email" id="email" placeholder="E-mail" required disabled />
-      <select id="tipo">
-        <option value="professor">Professor</option>
-        <option value="coordenador">Coordenador</option>
-        <option value="admin">Administrador</option>
-      </select>
-      <input type="text" id="instituicao" placeholder="Instituição" required />
-      <input type="password" id="novaSenha" placeholder="Nova senha (opcional)" />
+      <div class="muted">O e-mail é único por instituição e não pode ser alterado aqui.</div>
+
+      <div class="row">
+        <div>
+          <label for="tipo">Tipo</label>
+          <select id="tipo" required>
+            <option value="professor">Professor</option>
+            <option value="monitor">Monitor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div>
+          <label for="novaSenha">Nova senha (opcional)</label>
+          <input type="password" id="novaSenha" placeholder="Deixe em branco para manter" />
+        </div>
+      </div>
+
+      <label for="instituicao">Instituição</label>
+      <input list="lista-instituicoes" id="instituicao" placeholder="Nome da instituição ou ObjectId" required />
+      <datalist id="lista-instituicoes"></datalist>
+      <div class="muted">Pode digitar o <b>nome</b> (sugerido) ou colar o <b>ObjectId</b>. O servidor resolve automaticamente.</div>
+
       <button type="submit">Salvar alterações</button>
+      <div class="msg" id="msg"></div>
     </form>
 
-    <a class="voltar" href="usuarios.html">← Voltar para lista de usuários</a>
-
-    <div class="menu-extra">
+    <div class="links">
       <a href="usuarios.html">👥 Gerenciar Usuários</a>
+      <a href="painel.html">⬅ Voltar ao Painel</a>
     </div>
   </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
-
-    async function carregarDados() {
-      try {
-        const res = await fetch(`/api/usuarios/${id}`, { credentials: 'include' });
-        if (!res.ok) throw new Error('Erro ao carregar dados');
-        const usuario = await res.json();
-        document.getElementById('nome').value = usuario.nome;
-        document.getElementById('email').value = usuario.email;
-        document.getElementById('tipo').value = usuario.tipo;
-        document.getElementById('instituicao').value = usuario.instituicao;
-      } catch (error) {
-        alert('Erro ao carregar dados do usuário.');
-        console.error(error);
+    // Em dev: evitar SW/caches segurando o cookie HttpOnly
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
     }
 
-    document.getElementById('form-editar').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const dados = {
-        nome: document.getElementById('nome').value.trim(),
-        tipo: document.getElementById('tipo').value,
-        instituicao: document.getElementById('instituicao').value.trim()
-      };
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('id');
 
-      const novaSenha = document.getElementById('novaSenha').value.trim();
-      if (novaSenha) dados.senha = novaSenha;
+    // 🔐 Garantir que é admin
+    async function garantirAdmin() {
+      try {
+        // usa a rota correta do backend
+        const r = await fetch('/auth/usuario-logado', { credentials:'include', cache:'no-store' });
+        if (!r.ok) throw 0;
+        const u = await r.json();
+        if (u?.tipo !== 'admin') {
+          alert('Acesso restrito a administradores.');
+          location.href = '/painel.html';
+        }
+      } catch {
+        location.href = '/login.html';
+      }
+    }
+
+    // 📚 Preenche o datalist de instituições
+    async function carregarInstituicoes() {
+      try {
+        const r = await fetch('/api/instituicoes?limite=500', { credentials:'include', cache:'no-store' });
+        const data = await r.json();
+        const itens = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        const dl = $('lista-instituicoes');
+        dl.innerHTML = '';
+        itens.forEach(inst => {
+          const opt = document.createElement('option');
+          opt.value = inst.nome || inst._id || '';
+          if (inst._id) opt.label = inst._id;
+          dl.appendChild(opt);
+        });
+      } catch (e) {
+        // silencioso
+        console.warn('Falha ao carregar instituições:', e.message);
+      }
+    }
+
+    // 🔄 Carrega dados do usuário
+    async function carregarUsuario() {
+      try {
+        const r = await fetch(`/api/usuarios/${userId}`, { credentials:'include', cache:'no-store' });
+        if (!r.ok) throw new Error('Erro ao buscar usuário');
+        const u = await r.json();
+        $('nome').value = u.nome || '';
+        $('email').value = u.email || '';
+        $('tipo').value = u.tipo || 'monitor';
+        // se vier populado, mostra o nome; senão, o id
+        const instValue = typeof u.instituicao === 'object'
+          ? (u.instituicao?.nome || u.instituicao?._id || '')
+          : (u.instituicao || '');
+        $('instituicao').value = instValue;
+      } catch (e) {
+        alert('Erro ao carregar dados do usuário.');
+        console.error(e);
+      }
+    }
+
+    // 💾 Submit
+    $('form-editar').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const msg = $('msg');
+      msg.className = 'msg'; msg.textContent = '';
+
+      const payload = {
+        nome: $('nome').value.trim(),
+        tipo: $('tipo').value,
+        instituicao: $('instituicao').value.trim()
+      };
+      const novaSenha = $('novaSenha').value.trim();
+      if (novaSenha) payload.senha = novaSenha;
+
+      if (!['admin','monitor','professor'].includes(payload.tipo)) {
+        msg.classList.add('err'); msg.textContent = 'Tipo inválido.';
+        return;
+      }
+      if (!payload.nome || !payload.instituicao) {
+        msg.classList.add('err'); msg.textContent = 'Preencha todos os campos obrigatórios.';
+        return;
+      }
 
       try {
-        const resposta = await fetch(`/api/usuarios/${id}`, {
+        const r = await fetch(`/api/usuarios/${userId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(dados)
+          cache: 'no-store',
+          body: JSON.stringify(payload)
         });
+        const data = await r.json().catch(() => ({}));
 
-        const resultado = await resposta.json();
-        if (resposta.ok) {
-          alert('Usuário atualizado com sucesso!');
-          window.location.href = 'usuarios.html';
+        if (r.ok) {
+          msg.classList.add('ok'); msg.textContent = '✅ Usuário atualizado com sucesso.';
+          setTimeout(() => location.href = 'usuarios.html', 700);
         } else {
-          alert(resultado.mensagem || 'Erro ao atualizar usuário.');
+          msg.classList.add('err'); msg.textContent = data?.mensagem || 'Erro ao atualizar usuário.';
         }
-      } catch (error) {
-        alert('Erro ao enviar os dados.');
-        console.error(error);
+      } catch (e) {
+        msg.classList.add('err'); msg.textContent = 'Erro de conexão com o servidor.';
+        console.error(e);
       }
     });
 
-    carregarDados();
+    (async function boot(){
+      if (!userId) { alert('ID do usuário não informado.'); location.href='usuarios.html'; return; }
+      await garantirAdmin();
+      await carregarInstituicoes();
+      await carregarUsuario();
+    })();
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>
