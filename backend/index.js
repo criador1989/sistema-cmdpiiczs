@@ -96,12 +96,32 @@ app.use('/auth', authRoutes);
 
 // ====== HTMLs protegidos ======
 const { autenticar } = require('./middleware/autenticacao');
-app.get('/ficha-aluno.html', autenticar, (req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
-app.get('/lista-alunos.html', autenticar, (req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
-app.get('/painel-professor.html', autenticar, (req, res) => res.sendFile(path.join(publicRoot, 'painel-professor.html')));
-app.get('/comunicacao-pais.html', autenticar, (req, res) => res.sendFile(path.join(publicRoot, 'comunicacao-pais.html')));
-app.get('/logs.html', autenticar, (req, res) => res.sendFile(path.join(publicRoot, 'logs.html')));
-app.get('/estatisticas.html', autenticar, (req, res) => res.sendFile(path.join(publicRoot, 'estatisticas.html')));
+app.get('/ficha-aluno.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'ficha-aluno.html'))
+);
+app.get('/lista-alunos.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'lista-alunos.html'))
+);
+app.get('/painel-professor.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'painel-professor.html'))
+);
+app.get('/comunicacao-pais.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'comunicacao-pais.html'))
+);
+app.get('/logs.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'logs.html'))
+);
+app.get('/estatisticas.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'estatisticas.html'))
+);
+
+// ✅ APH: páginas HTML protegidas
+app.get('/aph-atendimentos.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'aph-atendimentos.html'))
+);
+app.get('/aph-atendimento.html', autenticar, (req, res) =>
+  res.sendFile(path.join(publicRoot, 'aph-atendimento.html'))
+);
 
 // ====== APIs ======
 app.use('/api/ficha', autenticar, fichaApiRoutes);
@@ -137,6 +157,15 @@ app.use('/api', publicAlunoRoutes);
 app.use('/api/instituicoes', instituicoesRoutes);
 app.use('/api/alertas', alertasRoutes);
 
+// ✅ APH: API opcional (não quebra caso o arquivo não exista)
+try {
+  const aphRoutes = require('./routes/api/aph'); // crie em routes/api/aph.js se ainda não tiver
+  app.use('/api/aph', autenticar, aphRoutes);
+  console.log('API APH ligada em /api/aph');
+} catch (e) {
+  console.warn('API APH não encontrada (routes/api/aph.js). Prosseguindo sem ela.');
+}
+
 // ====== STATUS ======
 app.get('/__version', (req, res) => {
   res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', builtAt: new Date().toISOString() });
@@ -159,7 +188,10 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 (async () => {
   try {
     if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
-      console.error('❌ URI do Mongo inválida/ausente.', { MONGODB_URI: process.env.MONGODB_URI, MONGO_URI: process.env.MONGO_URI });
+      console.error('❌ URI do Mongo inválida/ausente.', {
+        MONGODB_URI: process.env.MONGODB_URI,
+        MONGO_URI: process.env.MONGO_URI
+      });
       process.exit(1);
     }
     const masked = URI.replace(/\/\/.*?@/, '//***@');

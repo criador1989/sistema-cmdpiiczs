@@ -196,30 +196,23 @@
 
       function clampNota(n){ if(n>10) return 10; if(n<0) return 0; return Number((+n).toFixed(2)); }
 
-      // Deriva o valor total correto que deve impactar a nota (não multiplica duas vezes!)
+      // Deriva o valor total correto
       function derivarValorTotal(n){
-        // preferir campo do backend, quando disponível
         if (typeof n.valorTotal === 'number') return n.valorTotal;
-
         const titulo = String(n.tipoMedida || n.tipo || '').trim();
         const precisaDias = REQUER_DIAS.has(titulo);
         if (!precisaDias) return Number(n.valorNumerico ?? 0);
-
         const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
         const base = BASES[titulo];
         if (typeof base === 'number') return Number((base * dias).toFixed(2));
-
         return Number(n.valorNumerico ?? 0);
       }
 
-      // Nota "prevista no dia" calculada no cliente (quando os campos notaAnterior/notaAtual do doc estiverem errados)
       function faixaNotaPrevista(n){
         const total = derivarValorTotal(n);
-        // tenta usar o par vindo do servidor se fizer sentido; senão, aplica correção
         const temPar = (typeof n.notaAnterior === 'number') && (typeof n.notaAtual === 'number');
         if (temPar) {
           const diffSrv = Number((n.notaAtual - n.notaAnterior).toFixed(2));
-          // se o diff que veio do servidor divergir do total derivado, preferimos o cálculo local
           if (diffSrv.toFixed(2) !== total.toFixed(2)) {
             const prevAntes = n.notaAnterior;
             const prevDepois = clampNota(prevAntes + total);
@@ -227,7 +220,6 @@
           }
           return { antes: n.notaAnterior, depois: n.notaAtual, corrigido: false };
         }
-        // não tem par → usa 8.00 como fallback de base (ou 0)
         const antes = 8.00;
         const depois = clampNota(antes + total);
         return { antes, depois, corrigido: true };
@@ -235,7 +227,6 @@
 
       function fmtValor(n){ return (isFinite(n) ? n.toFixed(2) : '—'); }
 
-      // boot
       carregar();
 
       async function carregar() {
@@ -293,11 +284,9 @@
         const medida = n.tipoMedida || n.tipo || '—';
         const data   = n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—';
 
-        // valor/nota exibidos de forma confiável
         const vTotal = derivarValorTotal(n);
         const faixa = faixaNotaPrevista(n);
 
-        // caixinha Entregue + prazo (só quando status é deferido)
         let entregueBox = '';
         if (String(n.status||'').toLowerCase() === 'deferido') {
           const checked = n.entregue ? 'checked' : '';
@@ -357,7 +346,6 @@
           body.className = 'n-body';
           body.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
 
-          // abrir/fechar + lazy load detalhes
           let loaded = false;
           head.addEventListener('click', async () => {
             const isOpen = body.style.display === 'block';
@@ -371,7 +359,6 @@
               if (!r.ok) throw new Error('Falha ao carregar detalhes');
               const det = await r.json();
 
-              // dados exibição confiável
               const vTotal = (typeof det.valorTotal === 'number') ? det.valorTotal : derivarValorTotal(det);
               const faixa = faixaNotaPrevista(det);
 
@@ -429,7 +416,6 @@
           lista.appendChild(wrap);
         });
 
-        // bind da caixinha "Entregue" (no cabeçalho de cada card)
         document.querySelectorAll('.chk-entregue').forEach(chk => {
           chk.addEventListener('click', async (ev) => {
             ev.stopPropagation();
@@ -481,20 +467,32 @@
         make(pagBottom);
       }
 
-      // Ações públicas
+      // ====== ALTERADO: agora baixa DOCX (não abre nova aba)
       async function gerarPDF(id) {
         try {
           const r = await fetch(`/api/pdf/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
-          if (!r.ok) throw new Error('Erro ao gerar PDF');
+          if (!r.ok) throw new Error('Erro ao gerar documento');
           const blob = await r.blob();
           const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-        } catch { showError('Erro ao gerar PDF.'); }
+          const a = document.createElement('a');
+          a.href = url;
+          const disp = r.headers.get('content-disposition') || '';
+          const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disp);
+          const nome = m ? m[1].replace(/['"]/g, '') : `notificacao_${Date.now()}.docx`;
+          a.download = nome.endsWith('.docx') ? nome : (nome + '.docx');
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch {
+          showError('Erro ao gerar documento.');
+        }
       }
+
       async function reenviarNotificacao(id) {
         try {
           const r = await fetch(`/api/notificacoes/${id}/reenviar`, { method:'PUT', credentials:'include', cache:'no-store' });
-          const j = await r.json();
+        const j = await r.json();
           if (r.ok) carregar(); else showError(j.message || 'Erro ao reenviar.');
         } catch { showError('Erro ao reenviar a notificação.'); }
       }

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>APH · Atendimento (Criar/Visualizar)</title>
+  <style>
+    :root{
+      --rubi-1:#8B0000; --rubi-2:#B22222; --rubi-3:#d82327;
+      --gold:#E7C873; --bg:#0f0f12; --card:#14161a; --muted:#a3a7ad; --text:#e7e9ee;
+      --line:#2a2f37; --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:radial-gradient(900px 400px at 0% -10%,rgba(216,35,39,.2),transparent),
+                 linear-gradient(180deg,#0b0c10,#0a0b0f);
+      color:var(--text);
+    }
+
+    /* topbar fixa */
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      background:rgba(139,0,0,.9); backdrop-filter:blur(8px) saturate(140%);
+      border-bottom:1px solid rgba(231,200,115,.35);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 16px;
+    }
+    .topbar .btn{
+      border:1px solid rgba(231,200,115,.4);
+      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
+      color:#fff; border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer;
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .topbar .btn.ghost{background:transparent}
+    .topbar h1{margin:0; font-size:18px}
+
+    .wrap{max-width:1150px; margin:20px auto; padding:0 16px}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow); margin-bottom:16px}
+    .card h2{margin:0 0 10px; font-size:18px; color:var(--gold)}
+    .row{display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-bottom:10px}
+    .col-3{grid-column:span 3} .col-4{grid-column:span 4} .col-6{grid-column:span 6} .col-8{grid-column:span 8} .col-12{grid-column:span 12}
+    @media (max-width: 900px){ .col-3,.col-4,.col-6,.col-8{grid-column:span 12} }
+
+    label.lab{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type="text"], input[type="date"], select, textarea{
+      width:100%; background:#0f1116; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+      outline:none; transition: .2s border-color, .2s box-shadow;
+    }
+    textarea{min-height:110px; resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(231,200,115,.15)}
+
+    .check-grid{display:grid; grid-template-columns:repeat(3,minmax(220px,1fr)); gap:10px}
+    @media (max-width:920px){ .check-grid{grid-template-columns:repeat(2,minmax(220px,1fr))} }
+    @media (max-width:620px){ .check-grid{grid-template-columns:1fr} }
+
+    .check{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg,#14171d,#101319)}
+    .check input{transform:translateY(2px)}
+    .check .t{font-size:14px;font-weight:700}
+    .check small{color:var(--muted); display:block; margin-top:3px}
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:#1d2026;border:1px solid #2a2f37;padding:6px 10px;border-radius:999px;font-size:12px}
+
+    .footerbar{position:sticky; bottom:8px; z-index:5}
+    .footerbar .actions{display:flex;gap:10px;justify-content:flex-end}
+    .btn{
+      border:1px solid var(--line); background:linear-gradient(180deg,#151820,#0f1218); color:#fff;
+      padding:10px 16px; border-radius:12px; font-weight:800; cursor:pointer;
+    }
+    .btn.primary{background:linear-gradient(135deg,var(--rubi-1),var(--rubi-3)); border-color:rgba(231,200,115,.45)}
+    .btn.ghost{background:transparent}
+    .btn.warn{background:linear-gradient(135deg,#7a6b11,#e7c873); color:#1b1b1b}
+
+    .notice{font-size:13px;color:#cbd1db}
+    .ro input,.ro select,.ro textarea{background:#0e1014; color:#c8ccd5; border-color:#262a31}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn ghost" id="btnVoltarFicha">← Ficha do Aluno</button>
+      <button class="btn" id="btnPainel">🏠 Painel</button>
+    </div>
+    <h1 id="titulo">APH · Novo Atendimento</h1>
+    <div style="display:flex;gap:8px">
+      <button class="btn ghost" id="btnVerLista">📄 Ver atendimentos</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="card">
+      <h2>Identificação & Contexto</h2>
+      <div class="row">
+        <div class="col-6">
+          <label class="lab">Responsável pelo registro</label>
+          <input id="f-resp" type="text" placeholder="Nome do monitor/professor/bombeiro" />
+        </div>
+        <div class="col-3">
+          <label class="lab">Local do ocorrido</label>
+          <select id="f-local">
+            <option value="">Selecione...</option>
+            <option>Sala de aula</option>
+            <option>Pátio</option>
+            <option>Refeitório</option>
+            <option>Quadra</option>
+            <option>Corredor</option>
+            <option>Outro local</option>
+          </select>
+        </div>
+        <div class="col-3">
+          <label class="lab">Horário aproximado</label>
+          <input id="f-hora" type="text" placeholder="14:35" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-6"><span class="chip" id="chip-aluno">Aluno: —</span></div>
+        <div class="col-6" style="text-align:right"><span class="chip" id="chip-data"></span></div>
+      </div>
+
+      <h2 style="margin-top:10px">Tipo de Ocorrência</h2>
+      <div class="check-grid" id="tipos">
+        <label class="check"><input type="checkbox" data-chip="Arranhão / escoriação"><div><div class="t">🩹 Arranhão / escoriação</div><small>Limpou-se a área e fez curativo simples.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Corte leve"><div><div class="t">✂️ Corte leve</div><small>Antisséptico + gaze/atadura.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Queimadura"><div><div class="t">🔥 Queimadura</div><small>Resfriamento local.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Torção"><div><div class="t">🦶 Torção</div><small>Gelo + repouso.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Luxação"><div><div class="t">🦴 Luxação</div><small>Imobilização provisória.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Fratura suspeita"><div><div class="t">🩼 Fratura suspeita</div><small>Imobilizar e encaminhar.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Sangramento nasal"><div><div class="t">🩸 Sangramento nasal</div><small>Compressão suave.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Queda"><div><div class="t">🧒 Queda</div><small>Inspeção; gelo se preciso.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Convulsão / crise epiléptica"><div><div class="t">⚡ Convulsão / crise epiléptica</div><small>Proteger cabeça; lateralizar.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Ansiedade / pânico"><div><div class="t">🧠 Ansiedade / pânico</div><small>Ambiente calmo; respiração guiada.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Gripe/febre/tosse (máscara)"><div><div class="t">😷 Gripe/febre/tosse (máscara)</div><small>Máscara oferecida.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Outro"><div><div class="t">📝 Outro</div><small>Especificar nas observações.</small></div></label>
+      </div>
+
+      <h2 style="margin-top:10px">Materiais & Procedimentos</h2>
+      <div class="check-grid" id="materiais">
+        <label class="check"><input type="checkbox" data-chip="Curativo simples"><div><div class="t">🩹 Curativo simples</div><small>Bandagem, micropore, etc.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Gaze / Atadura"><div><div class="t">🧻 Gaze / Atadura</div><small>Compressão / fixação.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Antisséptico"><div><div class="t">🧴 Antisséptico</div><small>Clorexidina / iodo.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Bolsa de gelo"><div><div class="t">🧊 Bolsa de gelo</div><small>Com proteção têxtil.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Imobilização provisória"><div><div class="t">🩼 Imobilização provisória</div><small>Até avaliação.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Compressa morna/fria"><div><div class="t">🧯 Compressa morna/fria</div><small>Conforme orientação.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Higienização"><div><div class="t">🫧 Higienização</div><small>Limpeza inicial.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Hidratação"><div><div class="t">💧 Hidratação</div><small>Água oferecida.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Máscara fornecida"><div><div class="t">😷 Máscara fornecida</div><small>Sintomas respiratórios.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Apoio emocional"><div><div class="t">🤝 Apoio emocional</div><small>Acolhimento.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Encaminhado ao hospital"><div><div class="t">🏥 Encaminhado ao hospital/posto</div><small>Registrado abaixo.</small></div></label>
+        <label class="check"><input type="checkbox" data-chip="Contato responsável"><div><div class="t">📞 Contato responsável</div><small>Ver comunicação.</small></div></label>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="col-12">
+          <label class="lab">Observações</label>
+          <textarea id="f-obs" placeholder="Breve descrição e evolução imediata..."></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Comunicação</h2>
+      <div class="row">
+        <div class="col-4">
+          <label class="lab">Responsáveis informados?</label>
+          <select id="f-inf"><option>Não</option><option>Sim</option></select>
+        </div>
+        <div class="col-4">
+          <label class="lab">Meio</label>
+          <select id="f-meio"><option></option><option>Telefone</option><option>WhatsApp</option><option>Pessoalmente</option></select>
+        </div>
+        <div class="col-12">
+          <label class="lab">Encaminhamento</label>
+          <input id="f-enc" type="text" placeholder="Hospital/UBS (se houver) · Acompanhado por (nome)" />
+        </div>
+      </div>
+      <div class="notice">Ao salvar, o registro fica disponível na lista e pode ser impresso.</div>
+    </section>
+
+    <div class="footerbar">
+      <div class="actions">
+        <button class="btn ghost" id="btnLimpar">Limpar</button>
+        <button class="btn warn" id="btnEditar" style="display:none">Editar</button>
+        <button class="btn primary" id="btnSalvar">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // util
+    const qs=function(s){return document.querySelector(s);};
+    const qsa=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+    const params=new URLSearchParams(location.search);
+    const alunoId=params.get('id')||'';
+    const viewId=params.get('view')||'';
+
+    // navegação
+    qs('#btnVoltarFicha').onclick=function(){ location.href='/ficha-aluno.html?id='+encodeURIComponent(alunoId); };
+    qs('#btnPainel').onclick=function(){ location.href='/painel.html'; };
+    qs('#btnVerLista').onclick=function(){ location.href='/aph-atendimentos.html?id='+encodeURIComponent(alunoId); };
+
+    // data chip
+    qs('#chip-data').textContent = new Date().toLocaleDateString('pt-BR');
+
+    // Helpers
+    function getTipos(){ return qsa('#tipos input:checked').map(function(i){return i.getAttribute('data-chip');}); }
+    function getMateriais(){ return qsa('#materiais input:checked').map(function(i){return i.getAttribute('data-chip');}); }
+    function setChecks(containerSel, arr){
+      var set = new Set(arr || []);
+      qsa(containerSel + ' input[type="checkbox"]').forEach(function(i){ i.checked = set.has(i.getAttribute('data-chip')); });
+    }
+    function enableReadOnly(ro){
+      var root=document.body;
+      if(ro){ root.classList.add('ro'); } else { root.classList.remove('ro'); }
+      qsa('input,textarea,select').forEach(function(el){
+        if(el.id==='btnSalvar'||el.id==='btnLimpar') return;
+        el.disabled = !!ro;
+        if(el.tagName==='TEXTAREA'){ el.readOnly = !!ro; }
+      });
+      qs('#btnSalvar').style.display = ro ? 'none' : '';
+      qs('#btnLimpar').style.display = ro ? 'none' : '';
+      qs('#btnEditar').style.display = ro ? '' : 'none';
+    }
+
+    // Carrega nome do aluno para o chip
+    (function carregaAluno(){
+      if(!alunoId) return;
+      fetch('/api/ficha/dados/'+alunoId,{credentials:'include'})
+        .then(function(r){return r.ok?r.json():null;})
+        .then(function(j){
+          if(j && j.aluno && j.aluno.nome){ qs('#chip-aluno').textContent = 'Aluno: ' + j.aluno.nome; }
+        })
+        .catch(function(){});
+    })();
+
+    // Se for visualização, carrega o atendimento e preenche
+    (function carregarSeView(){
+      if(!viewId) return;
+      qs('#titulo').textContent = 'APH · Visualização do Atendimento';
+
+      function preencher(atd){
+        if(!atd) return;
+        qs('#f-resp').value = atd.responsavel || '';
+        qs('#f-local').value = atd.local || '';
+        qs('#f-hora').value = atd.hora || '';
+        qs('#f-obs').value  = atd.observacoes || '';
+        qs('#f-inf').value  = (atd.informados || (atd.comunicacao && atd.comunicacao.informados)) ? 'Sim':'Não';
+        qs('#f-meio').value = atd.meio || (atd.comunicacao && atd.comunicacao.meio) || '';
+        qs('#f-enc').value  = atd.encaminhamento || (atd.comunicacao && atd.comunicacao.encaminhamento) || '';
+        setChecks('#tipos', atd.tipos);
+        setChecks('#materiais', atd.materiais);
+        enableReadOnly(true);
+
+        qs('#btnEditar').onclick = function(){
+          enableReadOnly(false);
+          qs('#titulo').textContent = 'APH · Editar Atendimento';
+          qs('#btnSalvar').onclick = function(){ salvar(true, atd._id); };
+        };
+        qs('#btnSalvar').onclick = function(){ salvar(true, atd._id); };
+      }
+
+      // tenta endpoint direto por id
+      fetch('/api/aph/atendimento/'+viewId,{credentials:'include'})
+        .then(function(r){ if(r.ok) return r.json(); throw new Error('fallback'); })
+        .then(preencher)
+        .catch(function(){
+          // fallback: busca na lista do aluno
+          fetch('/api/aph/atendimentos/'+alunoId,{credentials:'include'})
+            .then(function(r){return r.ok?r.json():[];})
+            .then(function(arr){
+              var atd = (arr||[]).find(function(x){return String(x._id)===String(viewId);});
+              if(!atd){ alert('Registro não encontrado.'); return; }
+              preencher(atd);
+            })
+            .catch(function(){ alert('Falha ao carregar o atendimento.'); });
+        });
+    })();
+
+    // Limpar (só em modo novo)
+    qs('#btnLimpar').onclick = function(){
+      qsa('input[type="text"]').forEach(function(i){ i.value=''; });
+      qsa('textarea').forEach(function(i){ i.value=''; });
+      qsa('select').forEach(function(s){ s.value=''; });
+      qsa('input[type="checkbox"]').forEach(function(i){ i.checked=false; });
+    };
+
+    // Salvar (POST novo por padrão)
+    qs('#btnSalvar').onclick = function(){ salvar(false); };
+
+    function montarPayload(){
+      return {
+        alunoId: alunoId,
+        responsavel: (qs('#f-resp').value||'').trim(),
+        local: (qs('#f-local').value||'').trim(),
+        hora: (qs('#f-hora').value||'').trim(),
+        tipos: getTipos(),
+        materiais: getMateriais(),
+        observacoes: (qs('#f-obs').value||'').trim(),
+        informados: qs('#f-inf').value === 'Sim',
+        meio: (qs('#f-meio').value||'').trim(),
+        encaminhamento: (qs('#f-enc').value||'').trim()
+      };
+    }
+
+    async function salvar(editar,id){
+      if(!alunoId){ alert('Aluno não informado.'); return; }
+      var payload = montarPayload();
+      try{
+        var r;
+        if(editar && id){
+          r = await fetch('/api/aph/atendimentos/'+id, {
+            method:'PUT', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+          });
+        }else{
+          r = await fetch('/api/aph/atendimentos', {
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+          });
+        }
+        if(!r.ok){
+          var j = await r.json().catch(function(){return {};});
+          throw new Error(j.message || j.mensagem || 'Erro ao salvar.');
+        }
+        alert('Atendimento salvo com sucesso!');
+        location.href = '/aph-atendimentos.html?id='+encodeURIComponent(alunoId);
+      }catch(e){
+        alert(e && e.message ? e.message : 'Falha ao salvar.');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -8,11 +8,11 @@
   <meta name="theme-color" content="#d82327" />
   <link rel="icon" href="/icons/icon-192x192.png" />
 
-  <!-- 🔒 Desativa SW e caches agressivos no localhost para evitar JS antigo -->
   <script>
+    // Em dev, evita SW/cache antigo atrapalhando JS novo
     if (location.hostname === 'localhost') {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+        navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
       }
       if (window.caches) {
         caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
@@ -71,7 +71,7 @@
     .badges{display:flex; gap:8px; flex-wrap:wrap}
     .badge{ font-size:.78rem; color:#444; background:#f3f3f3; border:1px solid #ececec; padding:4px 10px; border-radius:999px }
 
-    /* === Bloco QR === */
+    /* Bloco QR */
     .qr-wrap{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
     .qr-preview{
       display:none; width:100%; border:1px dashed #e3e3e3; background:#fff; border-radius:12px;
@@ -99,12 +99,12 @@
     .list{ display:flex; flex-direction:column; gap:12px; max-height:520px; overflow:auto; padding-right:4px; scroll-behavior:smooth; }
     .empty{border:1px dashed var(--line); border-radius:12px; padding:14px; background:#fafafa; color:#777; text-align:center}
     .muted{color:var(--muted)}
+    .chip{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:#f4f4f4; font-size:.78rem}
 
     .obs,.notif{ border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px; box-shadow:0 6px 16px rgba(0,0,0,.06); position:relative; }
     .obs{border-left:6px solid var(--p1)}
     .notif{border-left:6px solid #b71c1c}
     .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
-    .chip{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:#f4f4f4; font-size:.78rem}
     .actions{display:flex; gap:8px; flex-wrap:wrap}
     .iconbtn{ appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer; font-weight:600; text-decoration:none; color:#333; }
     .iconbtn:hover{filter:brightness(.96)}
@@ -118,6 +118,30 @@
     .edit-card label{font-weight:600;font-size:.9rem}
     .edit-card input,.edit-card textarea{ width:100%;padding:10px;border:1px solid #cfcfcf;border-radius:10px }
     .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+
+    /* === APH (tema rubi/dourado) === */
+    .aph-card{
+      background:linear-gradient(135deg, var(--p1), var(--p2));
+      border:1px solid rgba(231,200,115,.45);
+      border-radius:14px; padding:16px; color:#fff;
+      box-shadow:0 14px 40px rgba(148,26,29,.25);
+    }
+    .aph-card h3{margin:0;color:#fff}
+    .aph-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .aph-pill{
+      background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.28);
+      color:#fff; border-radius:999px; padding:6px 10px; font-size:.85rem; font-weight:700
+    }
+    .aph-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn-ghost-light{
+      background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6);
+      box-shadow:none;
+    }
+    .btn-ghost-light:hover{filter:brightness(1.1)}
+    .btn-primary-rubi{
+      background:linear-gradient(135deg, #8B0000, #d82327);
+      color:#fff; border:1px solid rgba(231,200,115,.45);
+    }
 
     @media print{
       body{ background:#fff }
@@ -155,11 +179,11 @@
             <span class="badge" id="badgeId">ID —</span>
           </div>
 
-          <!-- ✅ Bloco de QR Code público para responsáveis -->
+          <!-- QR público para responsáveis -->
           <div class="qr-wrap" id="qrWrap">
             <button class="btn" onclick="habilitarLinkPublico()">🔗 Habilitar link público</button>
             <button class="btn ghost" onclick="mostrarQRCode()">🧾 Ver/Atualizar QR</button>
-            <button class="btn ghost" onclick="desabilitarLinkPublico()">🚫 Desabilitar</button>
+            <button class="btn ghost" onclick="desabilitarLinkPublico()">Desabilitar</button>
             <span id="qrStatus" class="muted"></span>
 
             <div class="qr-preview" id="qrPreview">
@@ -168,7 +192,7 @@
                 <div style="min-width:260px">
                   <div style="word-break:break-all"><b>Link:</b> <a id="qrLink" href="#" target="_blank" rel="noopener">—</a></div>
                   <div id="qrExpira" class="muted">—</div>
-                  <button class="iconbtn" onclick="window.print()">🖨️ Imprimir</button>
+                  <button class="iconbtn" onclick="window.print()">Imprimir</button>
                 </div>
               </div>
             </div>
@@ -209,6 +233,25 @@
           <span class="pill" id="kvClassificacao" title="Classificação da nota">—</span>
         </div>
       </div>
+
+      <!-- APH · Primeiros Socorros (card resumo - tema rubi) -->
+      <div class="aph-card" id="aphCard" style="margin-top:14px">
+        <div class="row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <h3>Atendimentos APH</h3>
+            <div class="aph-meta">
+              <span class="aph-pill">Total deste aluno: <strong id="aphCount" style="margin-left:6px">0</strong></span>
+              <span class="aph-pill" style="font-weight:600;opacity:.9">Registros de ocorrências e primeiros socorros.</span>
+            </div>
+          </div>
+          <div class="aph-actions">
+            <a class="btn btn-ghost-light" id="btnVerAtendimentos">Ver atendimentos salvos</a>
+            <a class="btn btn-primary-rubi" id="btnNovoAtendimento">Gerar novo atendimento</a>
+          </div>
+        </div>
+      </div>
+      <!-- /APH -->
+
     </section>
 
     <section class="columns">
@@ -229,7 +272,7 @@
   </main>
 
   <script>
-    // ===== utilidades simples =====
+    // Helpers
     const qs = (s)=>document.querySelector(s);
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
@@ -238,7 +281,6 @@
     const fmtDataHora = d => d ? new Date(d).toLocaleString('pt-BR') : '—';
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
-    // 💡 Bases oficiais + regra de dias (para exibir valor corrigido)
     const BASES = {
       'Advertência Escrita': -0.30,
       'Repreensão': -0.50,
@@ -248,23 +290,13 @@
     const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
 
     function calcValorExibicao(n) {
-      // Se backend já trouxer valorTotal, usa-o
       if (typeof n.valorTotal === 'number') return Number(n.valorTotal);
-
       const titulo = String(n.tipoMedida || n.tipo || '').trim();
       const precisaDias = REQUER_DIAS.has(titulo);
       const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
-
-      // Para elogios ou medidas sem dias, usa o que vier
-      if (!precisaDias) {
-        return Number(n.valorNumerico ?? 0);
-      }
-
-      // Para A.E.C.D.E/A.I.A: base × dias (corrige legados duplicados)
+      if (!precisaDias) return Number(n.valorNumerico ?? 0);
       const base = BASES[titulo];
-      if (typeof base === 'number') {
-        return Number((base * dias).toFixed(2));
-      }
+      if (typeof base === 'number') return Number((base * dias).toFixed(2));
       return Number(n.valorNumerico ?? 0);
     }
 
@@ -285,7 +317,7 @@
     function cloudinaryThumb(url, w=256, h=256){
       try{
         if(!url || !/res\.cloudinary\.com/i.test(url)) return url;
-        return url.replace(/\/image\/upload\/(v\d+\/)?/, (m)=> m + `q_auto,f_auto,c_fill,g_face,w_${w},h_${h}/`);
+        return url.replace(/\/image\/upload\/(v\\d+\/)?/, (m)=> m + `q_auto,f_auto,c_fill,g_face,w_${w},h_${h}/`);
       }catch{ return url; }
     }
     function toUploadsUrl(pathOrUrl, w=256, h=256){
@@ -312,7 +344,6 @@
       return {texto:'Incompatível', cor:'#212529'};
     }
 
-    // ===== mini helper para endpoints /api (com JSON e erros) =====
     async function api(path, opts={}){
       const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
         credentials:'include',
@@ -328,7 +359,32 @@
       return data;
     }
 
-    // ===== carrega ficha (sempre do backend) =====
+    // APH: contador + navegação
+    async function fetchAphCount(){
+      if(!alunoId) return;
+      try{
+        const r = await fetch(`/api/aph/atendimentos/count/${alunoId}`, { credentials:'include' });
+        const j = r.ok ? await r.json() : {};
+        const n = Number(j.count || j.total || j.qtd || 0);
+        qs('#aphCount').textContent = isNaN(n) ? '0' : String(n);
+      }catch{
+        qs('#aphCount').textContent = '0';
+      }
+    }
+    (function bindAphButtons(){
+      const ver = document.getElementById('btnVerAtendimentos');
+      const novo = document.getElementById('btnNovoAtendimento');
+      if (ver)  ver.addEventListener('click', ()=> {
+        if (alunoId) location.href = `/aph-atendimentos.html?id=${encodeURIComponent(alunoId)}`;
+        else alert('ID do aluno não informado.');
+      });
+      if (novo) novo.addEventListener('click', ()=> {
+        if (alunoId) location.href = `/aph-atendimento.html?id=${encodeURIComponent(alunoId)}`;
+        else alert('ID do aluno não informado.');
+      });
+    })();
+
+    // Carregar ficha
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
 
@@ -377,27 +433,27 @@
       const obsEl = qs('#observacoes');
       obsEl.innerHTML = '';
       if(!observacoes.length){
-        obsEl.innerHTML = `<div class="empty">Nenhuma observação registrada.</div>`;
+        obsEl.innerHTML = '<div class="empty">Nenhuma observação registrada.</div>';
       }else{
-        obsEl.innerHTML = observacoes.map(o=>`
-          <div class="obs">
-            <div class="row">
-              <div class="muted">${fmtDataHora(o.createdAt || o.criadoEm)} — ${o.autor || 'Autor não informado'}</div>
-              <div class="actions">
-                <button class="iconbtn" title="Editar" onclick="editarObs('${o._id}', this)">✏️</button>
-                <button class="iconbtn" title="Excluir" onclick="excluirObs('${o._id}')">🗑️</button>
-              </div>
-            </div>
-            <div style="margin-top:6px" class="texto">${(o.texto||'').replace(/\n/g,'<br>')}</div>
-          </div>
-        `).join('');
+        obsEl.innerHTML = observacoes.map(o=>(
+          '<div class="obs">' +
+            '<div class="row">' +
+              '<div class="muted">' + fmtDataHora(o.createdAt || o.criadoEm) + ' — ' + (o.autor || 'Autor não informado') + '</div>' +
+              '<div class="actions">' +
+                '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
+                '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
+              '</div>' +
+            '</div>' +
+            '<div style="margin-top:6px" class="texto">' + (String(o.texto||'').replace(/\n/g,'<br>')) + '</div>' +
+          '</div>'
+        )).join('');
       }
 
-      // Notificações (✅ valor exibido corrigido: base × dias para A.E.C.D.E/A.I.A)
+      // Notificações
       const notiEl = qs('#notificacoes');
       notiEl.innerHTML = '';
       if(!notificacoes.length){
-        notiEl.innerHTML = `<div class="empty">Nenhuma notificação encontrada.</div>`;
+        notiEl.innerHTML = '<div class="empty">Nenhuma notificação encontrada.</div>';
       }else{
         notiEl.innerHTML = notificacoes.map(n=>{
           const tipo = n.tipo || n.tipoMedida || 'Medida';
@@ -407,40 +463,42 @@
           const classificacao = n.classificacaoRegulamento || '—';
           const valorCorrigido = calcValorExibicao(n);
           const valor = fmtValor(valorCorrigido);
-          const obsN = n.observacoes ? `<div class="muted" style="margin-top:8px">${n.observacoes}</div>` : '';
+          const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + n.observacoes + '</div>' : '';
           const idN = n._id || '';
-          return `
-            <div class="notif">
-              <div class="row">
-                <div><span class="chip">${tipo}</span></div>
-                <div class="muted">${fmtData(n.data || n.createdAt)}</div>
-              </div>
-              <div style="margin-top:6px"><b>Motivo:</b> ${motivo}</div>
-              <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">
-                <div><b>Valor</b>: ${valor}</div>
-                <div><b>Classificação</b>: ${classificacao}</div>
-                <div><b>Artigo</b>: ${artigo}</div>
-                <div><b>Inciso</b>: ${inciso}</div>
-              </div>
-              ${obsN}
-              <div class="actions" style="margin-top:10px">
-                <a class="iconbtn" href="/notificacao.html?id=${idN}" title="Abrir notificação">Abrir</a>
-                <a class="iconbtn" href="/api/pdf/${idN}" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>
-              </div>
-            </div>
-          `;
+          return (
+            '<div class="notif">' +
+              '<div class="row">' +
+                '<div><span class="chip">' + tipo + '</span></div>' +
+                '<div class="muted">' + fmtData(n.data || n.createdAt) + '</div>' +
+              '</div>' +
+              '<div style="margin-top:6px"><b>Motivo:</b> ' + motivo + '</div>' +
+              '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">' +
+                '<div><b>Valor</b>: ' + valor + '</div>' +
+                '<div><b>Classificação</b>: ' + classificacao + '</div>' +
+                '<div><b>Artigo</b>: ' + artigo + '</div>' +
+                '<div><b>Inciso</b>: ' + inciso + '</div>' +
+              '</div>' +
+              obsN +
+              '<div class="actions" style="margin-top:10px">' +
+                '<a class="iconbtn" href="/notificacao.html?id=' + idN + '" title="Abrir notificação">Abrir</a>' +
+                '<a class="iconbtn" href="/api/pdf/' + idN + '" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>' +
+              '</div>' +
+            '</div>'
+          );
         }).join('');
       }
 
-      // tenta auto-exibir QR (se já estiver habilitado)
+      // QR
       try { await mostrarQRCode(true); } catch {}
+      // APH contador
+      try { await fetchAphCount(); } catch {}
     }
 
-    // ===== Observações: salvar/editar/excluir =====
+    // Observações
     async function salvarObservacao(){
       const texto = qs('#textoObservacao').value.trim();
       if(!texto) return alert('Digite algo.');
-      const r = await fetch(`/api/observacoes/${alunoId}`,{
+      const r = await fetch('/api/observacoes/' + alunoId,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         credentials:'include',
@@ -451,23 +509,22 @@
     }
     async function excluirObs(obsId){
       if(!confirm('Deseja excluir esta observação?')) return;
-      const r = await fetch(`/api/observacoes/${obsId}`,{ method:'DELETE', credentials:'include' });
+      const r = await fetch('/api/observacoes/' + obsId,{ method:'DELETE', credentials:'include' });
       if(r.ok) carregarFicha(); else alert('Erro ao excluir observação.');
     }
     function editarObs(obsId, btn){
       const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
-      card.innerHTML = `
-        <div class="editor">
-          <textarea id="editArea">${textoAtual}</textarea>
-          <button class="btn" id="saveEd">Salvar</button>
-          <button class="btn ghost" id="cancelEd">Cancelar</button>
-        </div>
-      `;
-      card.querySelector('#saveEd').onclick = async ()=>{
+      card.innerHTML =
+        '<div class="editor">' +
+          '<textarea id="editArea">' + textoAtual + '</textarea>' +
+          '<button class="btn" id="saveEd">Salvar</button>' +
+          '<button class="btn ghost" id="cancelEd">Cancelar</button>' +
+        '</div>';
+      card.querySelector('#saveEd').onclick = async function(){
         const novoTexto = card.querySelector('#editArea').value.trim();
         if(!novoTexto) return alert('Texto inválido.');
-        const r = await fetch(`/api/observacoes/${obsId}`,{
+        const r = await fetch('/api/observacoes/' + obsId,{
           method:'PUT',
           headers:{'Content-Type':'application/json'},
           credentials:'include',
@@ -475,10 +532,10 @@
         });
         if(r.ok) carregarFicha(); else alert('Erro ao atualizar.');
       };
-      card.querySelector('#cancelEd').onclick = ()=>carregarFicha();
+      card.querySelector('#cancelEd').onclick = function(){ carregarFicha(); };
     }
 
-    // ===== Editor do Aluno =====
+    // Editor do aluno
     function abrirEditor(){
       if(!alunoAtual) return;
       qs('#editorAluno').style.display = 'block';
@@ -508,7 +565,7 @@
         codigoAcesso: qs('#edCodigo').value.trim(),
         foto:         qs('#edFoto').value.trim()
       };
-      const r = await fetch(`/api/alunos/${alunoAtual._id}`,{
+      const r = await fetch('/api/alunos/' + alunoAtual._id,{
         method:'PUT',
         headers:{ 'Content-Type':'application/json' },
         credentials:'include',
@@ -523,42 +580,52 @@
       await carregarFicha();
     }
 
-    // ===== Upload de foto na ficha =====
+    // Upload foto
     const btnTrocarFoto = document.getElementById('btnTrocarFoto');
     const inputFoto = document.getElementById('inputFoto');
-    btnTrocarFoto.addEventListener('click', () => inputFoto.click());
-    inputFoto.addEventListener('change', async () => {
-      const file = inputFoto.files?.[0];
+    btnTrocarFoto.addEventListener('click', function(){ inputFoto.click(); });
+    inputFoto.addEventListener('change', async function(){
+      const file = inputFoto.files && inputFoto.files[0];
       if (!file) return;
       if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
       if (file.size > 5 * 1024 * 1024)     { alert('Imagem muito grande. Máximo 5MB.'); inputFoto.value = ''; return; }
 
       const previewURL = URL.createObjectURL(file);
       const fotoBox = qs('#fotoBox');
-      fotoBox.innerHTML = `<img src="${previewURL}" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">`;
+      fotoBox.innerHTML = '<img src="' + previewURL + '" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">';
 
       try {
         const fd = new FormData();
         fd.append('foto', file);
-        const resp = await fetch(`/api/alunos/${alunoId}/foto`, { method: 'PUT', body: fd, credentials: 'include' });
+        const resp = await fetch('/api/alunos/' + alunoId + '/foto', { method: 'PUT', body: fd, credentials: 'include' });
         if (!resp.ok) { alert('Falha ao enviar a foto.'); URL.revokeObjectURL(previewURL); return carregarFicha(); }
         const data = await resp.json();
-        if (data?.foto) {
+        if (data && data.foto) {
           URL.revokeObjectURL(previewURL);
-          fotoBox.innerHTML = `<img src="${data.foto}" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">`;
-          if (alunoAtual) { alunoAtual.fotoUrl = data.foto; alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, ''); }
+          fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">';
+          if (alunoAtual) {
+            alunoAtual.fotoUrl = data.foto;
+            alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
+          }
           alert('Foto atualizada com sucesso!');
-        } else { throw new Error('Retorno sem URL da foto.'); }
+        } else {
+          throw new Error('Retorno sem URL da foto.');
+        }
       } catch (e) {
-        console.error(e); alert('Erro ao atualizar a foto.'); URL.revokeObjectURL(previewURL); carregarFicha();
-      } finally { inputFoto.value = ''; }
+        console.error(e);
+        alert('Erro ao atualizar a foto.');
+        URL.revokeObjectURL(previewURL);
+        carregarFicha();
+      } finally {
+        inputFoto.value = '';
+      }
     });
 
-    // ===== QR Code público (pais/responsáveis) =====
+    // QR público
     async function habilitarLinkPublico(){
       try{
         qs('#qrStatus').textContent = 'Gerando link...';
-        const r = await api(`/alunos/${alunoId}/public/enable`, {
+        const r = await api('/alunos/' + alunoId + '/public/enable', {
           method:'POST',
           body: JSON.stringify({ expiresDays: 0 })
         });
@@ -569,10 +636,9 @@
         alert(e.message);
       }
     }
-
-    async function mostrarQRCode(silent=false){
+    async function mostrarQRCode(silent){
       try{
-        const r = await api(`/alunos/${alunoId}/public/qrcode`, { method:'GET' });
+        const r = await api('/alunos/' + alunoId + '/public/qrcode', { method:'GET' });
         preencherQR(r);
         if(!silent) qs('#qrStatus').textContent = 'QR atualizado.';
       }catch(e){
@@ -580,18 +646,16 @@
         if(!silent) alert(e.message);
       }
     }
-
     async function desabilitarLinkPublico(){
       if(!confirm('Deseja desabilitar o link público deste aluno?')) return;
       try{
-        await api(`/alunos/${alunoId}/public/disable`, { method:'POST' });
+        await api('/alunos/' + alunoId + '/public/disable', { method:'POST' });
         qs('#qrPreview').style.display = 'none';
         qs('#qrStatus').textContent = 'Link desabilitado.';
       }catch(e){
         alert(e.message);
       }
     }
-
     function preencherQR(r){
       const prev = qs('#qrPreview');
       qs('#qrImg').src = r.qrCode;
@@ -601,17 +665,18 @@
       prev.style.display = 'block';
     }
 
-    // ===== Ações =====
+    // Binds gerais
     qs('#btnSalvar').addEventListener('click', salvarObservacao);
-    qs('#btnImprimir').addEventListener('click', ()=>window.print());
+    qs('#btnImprimir').addEventListener('click', function(){ window.print(); });
     document.getElementById('btnEditar').addEventListener('click', abrirEditor);
     document.getElementById('btnCancelarEd').addEventListener('click', fecharEditor);
     document.getElementById('btnSalvarEd').addEventListener('click', salvarEdicao);
 
-    // boot
+    // Boot
     carregarFicha();
+    document.addEventListener('DOMContentLoaded', function(){ if (alunoId) fetchAphCount(); });
   </script>
+
   <script src="notify.js"></script>
-  
 </body>
 </html>
