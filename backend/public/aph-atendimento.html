@@ -189,31 +189,31 @@
 
   <script>
     // util
-    const qs=function(s){return document.querySelector(s);};
-    const qsa=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+    const qs=(s)=>document.querySelector(s);
+    const qsa=(s)=>Array.from(document.querySelectorAll(s));
     const params=new URLSearchParams(location.search);
     const alunoId=params.get('id')||'';
     const viewId=params.get('view')||'';
 
     // navegação
-    qs('#btnVoltarFicha').onclick=function(){ location.href='/ficha-aluno.html?id='+encodeURIComponent(alunoId); };
-    qs('#btnPainel').onclick=function(){ location.href='/painel.html'; };
-    qs('#btnVerLista').onclick=function(){ location.href='/aph-atendimentos.html?id='+encodeURIComponent(alunoId); };
+    qs('#btnVoltarFicha').onclick=()=>{ location.href='/ficha-aluno.html?id='+encodeURIComponent(alunoId); };
+    qs('#btnPainel').onclick=()=>{ location.href='/painel.html'; };
+    qs('#btnVerLista').onclick=()=>{ location.href='/aph-atendimentos.html?id='+encodeURIComponent(alunoId); };
 
     // data chip
     qs('#chip-data').textContent = new Date().toLocaleDateString('pt-BR');
 
     // Helpers
-    function getTipos(){ return qsa('#tipos input:checked').map(function(i){return i.getAttribute('data-chip');}); }
-    function getMateriais(){ return qsa('#materiais input:checked').map(function(i){return i.getAttribute('data-chip');}); }
+    function getTipos(){ return qsa('#tipos input:checked').map(i=>i.getAttribute('data-chip')); }
+    function getMateriais(){ return qsa('#materiais input:checked').map(i=>i.getAttribute('data-chip')); }
     function setChecks(containerSel, arr){
-      var set = new Set(arr || []);
-      qsa(containerSel + ' input[type="checkbox"]').forEach(function(i){ i.checked = set.has(i.getAttribute('data-chip')); });
+      const set = new Set(arr || []);
+      qsa(containerSel + ' input[type="checkbox"]').forEach(i => { i.checked = set.has(i.getAttribute('data-chip')); });
     }
     function enableReadOnly(ro){
-      var root=document.body;
-      if(ro){ root.classList.add('ro'); } else { root.classList.remove('ro'); }
-      qsa('input,textarea,select').forEach(function(el){
+      const root=document.body;
+      root.classList.toggle('ro', !!ro);
+      qsa('input,textarea,select').forEach(el=>{
         if(el.id==='btnSalvar'||el.id==='btnLimpar') return;
         el.disabled = !!ro;
         if(el.tagName==='TEXTAREA'){ el.readOnly = !!ro; }
@@ -227,11 +227,11 @@
     (function carregaAluno(){
       if(!alunoId) return;
       fetch('/api/ficha/dados/'+alunoId,{credentials:'include'})
-        .then(function(r){return r.ok?r.json():null;})
-        .then(function(j){
+        .then(r=>r.ok?r.json():null)
+        .then(j=>{
           if(j && j.aluno && j.aluno.nome){ qs('#chip-aluno').textContent = 'Aluno: ' + j.aluno.nome; }
         })
-        .catch(function(){});
+        .catch(()=>{});
     })();
 
     // Se for visualização, carrega o atendimento e preenche
@@ -245,9 +245,25 @@
         qs('#f-local').value = atd.local || '';
         qs('#f-hora').value = atd.hora || '';
         qs('#f-obs').value  = atd.observacoes || '';
-        qs('#f-inf').value  = (atd.informados || (atd.comunicacao && atd.comunicacao.informados)) ? 'Sim':'Não';
-        qs('#f-meio').value = atd.meio || (atd.comunicacao && atd.comunicacao.meio) || '';
+
+        // ==== FIX: usa os nomes do model (string "Sim"/"Não") ====
+        // tenta campo do schema; se não houver, tenta boolean legado "informados"
+        let infStr = 'Não';
+        if (typeof atd.responsaveisInformados === 'string') {
+          infStr = (atd.responsaveisInformados === 'Sim') ? 'Sim' : 'Não';
+        } else if (typeof atd.informados === 'boolean') {
+          infStr = atd.informados ? 'Sim' : 'Não';
+        } else if (atd.comunicacao && typeof atd.comunicacao.informados === 'boolean') {
+          infStr = atd.comunicacao.informados ? 'Sim' : 'Não';
+        }
+        qs('#f-inf').value = infStr;
+
+        // meio de comunicação (schema: meioComunicacao)
+        qs('#f-meio').value = atd.meioComunicacao || atd.meio || (atd.comunicacao && atd.comunicacao.meio) || '';
+
+        // encaminhamento
         qs('#f-enc').value  = atd.encaminhamento || (atd.comunicacao && atd.comunicacao.encaminhamento) || '';
+
         setChecks('#tipos', atd.tipos);
         setChecks('#materiais', atd.materiais);
         enableReadOnly(true);
@@ -262,27 +278,27 @@
 
       // tenta endpoint direto por id
       fetch('/api/aph/atendimento/'+viewId,{credentials:'include'})
-        .then(function(r){ if(r.ok) return r.json(); throw new Error('fallback'); })
+        .then(r=>{ if(r.ok) return r.json(); throw new Error('fallback'); })
         .then(preencher)
         .catch(function(){
           // fallback: busca na lista do aluno
           fetch('/api/aph/atendimentos/'+alunoId,{credentials:'include'})
-            .then(function(r){return r.ok?r.json():[];})
-            .then(function(arr){
-              var atd = (arr||[]).find(function(x){return String(x._id)===String(viewId);});
+            .then(r=>r.ok?r.json():[])
+            .then(arr=>{
+              const atd = (arr||[]).find(x=>String(x._id)===String(viewId));
               if(!atd){ alert('Registro não encontrado.'); return; }
               preencher(atd);
             })
-            .catch(function(){ alert('Falha ao carregar o atendimento.'); });
+            .catch(()=>{ alert('Falha ao carregar o atendimento.'); });
         });
     })();
 
     // Limpar (só em modo novo)
     qs('#btnLimpar').onclick = function(){
-      qsa('input[type="text"]').forEach(function(i){ i.value=''; });
-      qsa('textarea').forEach(function(i){ i.value=''; });
-      qsa('select').forEach(function(s){ s.value=''; });
-      qsa('input[type="checkbox"]').forEach(function(i){ i.checked=false; });
+      qsa('input[type="text"]').forEach(i=>{ i.value=''; });
+      qsa('textarea').forEach(i=>{ i.value=''; });
+      qsa('select').forEach(s=>{ s.value=''; });
+      qsa('input[type="checkbox"]').forEach(i=>{ i.checked=false; });
     };
 
     // Salvar (POST novo por padrão)
@@ -297,17 +313,19 @@
         tipos: getTipos(),
         materiais: getMateriais(),
         observacoes: (qs('#f-obs').value||'').trim(),
-        informados: qs('#f-inf').value === 'Sim',
-        meio: (qs('#f-meio').value||'').trim(),
-        encaminhamento: (qs('#f-enc').value||'').trim()
+
+        // ==== FIX: usar campos do schema ====
+        responsaveisInformados: qs('#f-inf').value === 'Sim' ? 'Sim' : 'Não',
+        meioComunicacao: (qs('#f-meio').value||'').trim(),
+        encaminhamento: (qs('#f-enc').value||'').trim(),
       };
     }
 
     async function salvar(editar,id){
       if(!alunoId){ alert('Aluno não informado.'); return; }
-      var payload = montarPayload();
+      const payload = montarPayload();
       try{
-        var r;
+        let r;
         if(editar && id){
           r = await fetch('/api/aph/atendimentos/'+id, {
             method:'PUT', credentials:'include',
@@ -322,7 +340,7 @@
           });
         }
         if(!r.ok){
-          var j = await r.json().catch(function(){return {};});
+          const j = await r.json().catch(()=> ({}));
           throw new Error(j.message || j.mensagem || 'Erro ao salvar.');
         }
         alert('Atendimento salvo com sucesso!');
