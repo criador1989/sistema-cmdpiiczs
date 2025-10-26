@@ -89,6 +89,18 @@
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
+    .section-title{
+      margin:18px 6px 8px;
+      font-weight:800; letter-spacing:.2px; color:#fff;
+      display:flex; align-items:center; gap:10px;
+    }
+    .section-title .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 10px; border-radius:999px;
+      background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.22);
+      color:#fff; font-size:.85rem;
+    }
+
     .chart-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:14px;box-shadow:var(--glass-shadow)}
     .chart-title{font-size:.95rem;color:var(--text-soft);margin:2px 4px 10px}
 
@@ -140,7 +152,8 @@
           <a href="painel.html" class="btn-secondary">← Voltar</a>
         </div>
 
-        <section class="card">
+        <!-- ================= SEÇÃO NOTIFICAÇÕES (existente) ================= -->
+        <section class="card" aria-label="Relatórios de Notificações">
           <div class="filters">
             <div class="field sm-4">
               <label for="dataInicio">Início</label>
@@ -159,6 +172,7 @@
             <button id="btnFiltrar" class="btn">Aplicar filtros</button>
           </div>
 
+          <h2 class="section-title">🔔 Notificações <span class="chip">módulo existente</span></h2>
           <div class="grid">
             <div class="chart-card">
               <div class="chart-title">Alunos por turma</div>
@@ -181,6 +195,65 @@
             <button class="btn-secondary" onclick="exportarPDF()">📄 Exportar PDF</button>
           </div>
         </section>
+
+        <!-- ================= NOVA SEÇÃO: APH ================= -->
+<section class="card" aria-label="Relatórios de APH" style="margin-top:18px">
+  <h2 class="section-title">🩺 APH — Atendimentos Pré-Hospitalares <span class="chip">novo</span></h2>
+
+  <div class="grid">
+    <div class="chart-card">
+      <div class="chart-title">Ocorrências por tipo</div>
+      <div class="chart-wrap"><canvas id="aphTipo" width="640" height="300" aria-label="Gráfico APH por tipo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Materiais utilizados</div>
+      <div class="chart-wrap"><canvas id="aphMateriais" width="640" height="300" aria-label="Gráfico APH por materiais"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:18px">
+    <div class="chart-card">
+      <div class="chart-title">Encaminhamentos</div>
+      <div class="chart-wrap"><canvas id="aphEnc" width="640" height="300" aria-label="Gráfico APH por encaminhamento"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Locais</div>
+      <div class="chart-wrap"><canvas id="aphLocal" width="640" height="300" aria-label="Gráfico APH por local"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:18px">
+    <div class="chart-card" style="grid-column:span 2">
+      <div class="chart-title">Evolução mensal</div>
+      <div class="chart-wrap"><canvas id="aphMes" width="960" height="320" aria-label="Gráfico APH por mês"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:18px">
+    <div class="chart-card">
+      <div class="chart-title">Por turma</div>
+      <div class="chart-wrap"><canvas id="aphTurma" width="640" height="300" aria-label="Gráfico APH por turma"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Por turno</div>
+      <div class="chart-wrap"><canvas id="aphTurno" width="640" height="300" aria-label="Gráfico APH por turno"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:18px">
+    <div class="chart-card" style="grid-column:span 2">
+      <div class="chart-title">Quem atendeu (somente quem registrou atendimentos)</div>
+      <div class="chart-wrap"><canvas id="aphResp" width="960" height="320" aria-label="Gráfico APH por responsável"></canvas></div>
+    </div>
+  </div>
+
+  <!-- NOVO: ação para gerar PDF consolidado do APH -->
+  <div class="actions">
+    <button class="btn-secondary" onclick="gerarPdfConsolidadoAPH()">📄 PDF Consolidado (APH)</button>
+  </div>
+</section>
+        <!-- =============== FIM APH =============== -->
+
       </div>
     </main>
   </div>
@@ -189,6 +262,12 @@
   <script>
     // ===== Helpers e API =====
     function isoToBR(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+    function brToISO(br){ // dd/mm/aaaa -> yyyy-mm-dd
+      if(!br) return '';
+      const [d,m,y]=br.split('/').map(Number);
+      if(!d||!m||!y) return '';
+      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
 
     function showError(msg){
       let el = document.getElementById('errBanner');
@@ -228,7 +307,7 @@
       }catch(e){ console.warn(e); showError('Falha ao carregar turmas'); }
     }
 
-    // ===== Desenho dos gráficos (canvas) no mesmo estilo do painel =====
+    // ===== Desenho genérico (canvas) =====
     function drawBars(canvasId, itens, labelKey, valueKey, maxY=10){
       const c = document.getElementById(canvasId); if(!c) return;
       const ctx = c.getContext('2d'); const W=c.width, H=c.height;
@@ -262,6 +341,56 @@
         ctx.font='12px Segoe UI';
         ctx.fillText(String(d[labelKey]||''), x+barW/2, H-padding+16);
         ctx.fillText((v % 1 === 0 ? v.toString() : v.toFixed(1)).replace('.',','), x+barW/2, y-6);
+      });
+    }
+
+    function drawLine(canvasId, itens, labelKey, valueKey){
+      const c = document.getElementById(canvasId); if(!c) return;
+      const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+      ctx.clearRect(0,0,W,H);
+
+      if(!Array.isArray(itens) || itens.length===0){
+        ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='14px Segoe UI'; ctx.fillText('Sem dados', 18, 24);
+        return;
+      }
+
+      const padding=40, gw=W-padding*2, gh=H-padding*2;
+      ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padding,padding); ctx.lineTo(padding,H-padding); ctx.lineTo(W-padding,H-padding); ctx.stroke();
+
+      const vals = itens.map(x => Number(x[valueKey])||0);
+      const maxVal = Math.max(1, ...vals);
+      const stepX = gw/(Math.max(1,itens.length-1));
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#B22222';
+      ctx.beginPath();
+
+      itens.forEach((d,i)=>{
+        const v = Number(d[valueKey])||0;
+        const x = padding + i*stepX;
+        const y = H - ( (v/maxVal)*gh ) - padding;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+
+        // label X
+        ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center';
+        ctx.font='12px Segoe UI';
+        ctx.fillText(String(d[labelKey]||''), x, H-padding+16);
+      });
+
+      ctx.stroke();
+
+      // pontos
+      itens.forEach((d,i)=>{
+        const v = Number(d[valueKey])||0;
+        const x = padding + i*stepX;
+        const y = H - ( (v/maxVal)*gh ) - padding;
+        ctx.fillStyle='#8B0000';
+        ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+
+        ctx.fillStyle='rgba(255,255,255,.9)';
+        ctx.font='12px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(String(v), x, y-8);
       });
     }
 
@@ -302,15 +431,15 @@
       items.forEach((d,i)=>{ const y=20+i*18; ctx.fillStyle=d.color; ctx.fillRect(W-170,y-10,10,10); ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillText(`${d.name}: ${d.value}`, W-154, y); });
     }
 
-    // ===== Lógica de página =====
-    async function carregarDados(){
+    // ===== NOTIFICAÇÕES — existentes =====
+    async function carregarDadosNotificacoes(){
       try{
         const inicioISO = document.getElementById('dataInicio').value;
         const fimISO    = document.getElementById('dataFim').value;
         const turma     = document.getElementById('filtroTurma').value || 'Todas';
 
         const p = new URLSearchParams();
-        if(inicioISO) p.set('inicio', isoToBR(inicioISO));
+        if(inicioISO) p.set('inicio', isoToBR(inicioISO)); // dd/mm/aaaa (API antiga)
         if(fimISO)    p.set('fim',    isoToBR(fimISO));
         if(turma)     p.set('turma',  turma);
 
@@ -327,6 +456,48 @@
       }
     }
 
+    // ===== NOVO: APH =====
+    function ordPorMesAsc(arr){
+      // arr: [{_id:'YYYY-MM', total: n}, ...] -> ordena por string (formato fixo)
+      return [...(arr||[])].sort((a,b)=> (a._id||'').localeCompare(b._id||''));
+    }
+
+    async function carregarDadosAPH(){
+      try{
+        // Para /api/aph/estatisticas usamos from/to em ISO (yyyy-mm-dd)
+        const fromISO = document.getElementById('dataInicio').value || '';
+        const toISO   = document.getElementById('dataFim').value   || '';
+        const turma   = document.getElementById('filtroTurma').value;
+        const p = new URLSearchParams();
+        if(fromISO) p.set('from', fromISO);
+        if(toISO)   p.set('to',   toISO);
+        if(turma && turma !== 'Todas') p.set('turma', turma);
+
+        const j = await fetchJsonSeguro('/api/aph/estatisticas' + (p.toString() ? `?${p.toString()}` : ''));
+
+        // Barras simples
+        drawBars('aphTipo',      j.porTipo || [],        '_id', 'total', Math.max(5, ...((j.porTipo||[]).map(x=>x.total||0))));
+        drawBars('aphMateriais', j.porMaterial || [],    '_id', 'total', Math.max(5, ...((j.porMaterial||[]).map(x=>x.total||0))));
+        drawBars('aphEnc',       j.porEncaminhamento||[],'_id', 'total', Math.max(5, ...((j.porEncaminhamento||[]).map(x=>x.total||0))));
+        drawBars('aphLocal',     j.porLocal || [],       '_id', 'total', Math.max(5, ...((j.porLocal||[]).map(x=>x.total||0))));
+        drawBars('aphTurma',     j.porTurma || [],       '_id', 'total', Math.max(5, ...((j.porTurma||[]).map(x=>x.total||0))));
+        drawBars('aphTurno',     j.porTurno || [],       '_id', 'total', Math.max(5, ...((j.porTurno||[]).map(x=>x.total||0))));
+        drawBars('aphResp',      j.porResponsavel || [], '_id', 'total', Math.max(5, ...((j.porResponsavel||[]).map(x=>x.total||0))));
+
+        // Linha — evolução mensal (ordenada por _id YYYY-MM)
+        const mesOrd = ordPorMesAsc(j.porMes || []);
+        drawLine('aphMes', mesOrd, '_id', 'total');
+
+      }catch(e){
+        console.error(e); showError(e.message || 'Falha ao carregar estatísticas de APH');
+        // zera os canvases se der erro
+        ['aphTipo','aphMateriais','aphEnc','aphLocal','aphMes','aphTurma','aphTurno','aphResp'].forEach(id=>{
+          const c=document.getElementById(id); if(c){ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }
+        });
+      }
+    }
+
+    // ===== Exportar PDF (somente bloco de Notificações por enquanto) =====
     function exportarPDF(){
       const { jsPDF } = window.jspdf || {};
       if(!jsPDF){ showError('Biblioteca jsPDF não encontrada.'); return; }
@@ -376,20 +547,34 @@
       return true;
     }
 
-    // eventos
-    document.getElementById('btnFiltrar').addEventListener('click', carregarDados);
-    document.getElementById('dataInicio').addEventListener('change', carregarDados);
-    document.getElementById('dataFim').addEventListener('change', carregarDados);
-    document.getElementById('filtroTurma').addEventListener('change', carregarDados);
+    // eventos filtros: aplicam para ambos módulos
+    document.getElementById('btnFiltrar').addEventListener('click', async ()=>{
+      await carregarDadosNotificacoes();
+      await carregarDadosAPH();
+    });
+    document.getElementById('dataInicio').addEventListener('change', async ()=>{
+      await carregarDadosNotificacoes();
+      await carregarDadosAPH();
+    });
+    document.getElementById('dataFim').addEventListener('change', async ()=>{
+      await carregarDadosNotificacoes();
+      await carregarDadosAPH();
+    });
+    document.getElementById('filtroTurma').addEventListener('change', async ()=>{
+      await carregarDadosNotificacoes();
+      await carregarDadosAPH();
+    });
 
     // boot
     (async()=>{
       const ok = await checarSessaoEPing();
       if (!ok) return;
       await carregarTurmas();
-      await carregarDados();
+      await carregarDadosNotificacoes();
+      await carregarDadosAPH();
     })();
   </script>
+  <script src="relatorios.js"></script>
   <script src="notify.js"></script>
 </body>
 </html>

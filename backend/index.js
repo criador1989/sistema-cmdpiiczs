@@ -74,6 +74,8 @@ const publicAlunoRoutes = require('./routes/api/publicAluno');
 const instituicoesRoutes = require('./routes/api/instituicoes');
 const authRoutes = require('./routes/authRoutes');
 const alertasRoutes = require('./routes/api/alunos-alertas');
+const aphEstatisticasRoutes = require('./routes/api/aph-estatisticas');
+const aphPdfRoutes = require('./routes/api/aph-pdf');
 
 // ====== CONFIG SERVIDOR ======
 const uploadRoot = path.join(__dirname, 'uploads');
@@ -156,6 +158,8 @@ app.use('/api/notificacoes', require('./routes/api/notificacoes.metrics'));
 app.use('/api', publicAlunoRoutes);
 app.use('/api/instituicoes', instituicoesRoutes);
 app.use('/api/alertas', alertasRoutes);
+app.use('/api/aph', aphEstatisticasRoutes);
+app.use('/api/aph', aphPdfRoutes);
 
 // ✅ APH: API opcional (não quebra caso o arquivo não exista)
 try {

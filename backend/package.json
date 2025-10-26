@@ -29,7 +29,7 @@
     "multer": "^2.0.0",
     "nodemailer": "^7.0.3",
     "pdf-lib": "^1.17.1",
-    "pdfkit": "^0.17.1",
+    "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.3",
     "twilio": "^5.7.0"
