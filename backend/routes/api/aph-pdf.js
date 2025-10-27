@@ -29,6 +29,7 @@ function canPopulateAluno(){
   try{ return mongoose.modelNames().includes('Aluno'); } catch { return false; }
 }
 
+/* ---------- Cabeçalho / Rodapé / Página ---------- */
 function headerTema(doc, titulo, subtitulo){
   const W = doc.page.width;
   doc.save().rect(0, 0, W, 70).fill(RUBI).restore();
@@ -43,7 +44,7 @@ function headerTema(doc, titulo, subtitulo){
     doc.font('Helvetica').fontSize(11)
        .text(subtitulo, m, 58, { width: W - m*2, align: 'left', lineBreak: false });
   }
-  doc.y = 82;
+  doc.y = 86; // um respiro extra
 }
 function footerTema(doc){
   const W = doc.page.width;
@@ -61,7 +62,78 @@ function safeAddPage(doc, titulo, subtitulo){
   headerTema(doc, titulo, subtitulo);
 }
 
-/* ===== PDF INDIVIDUAL ===== */
+/* ---------- Helpers de layout (duas colunas e blocos) ---------- */
+function writePairs(doc, pairs, opts = {}){
+  const mL = doc.page.margins.left;
+  const mR = doc.page.margins.right;
+  const usableW = doc.page.width - (mL + mR);
+
+  const labelW = opts.labelW ?? 140; // largura fixa do rótulo
+  const gap = opts.gap ?? 10;        // espaço entre rótulo e valor
+  const valW = usableW - labelW - gap;
+  const linePadY = opts.linePadY ?? 4;
+  const title = opts.title;
+
+  if (title) {
+    if (doc.y > doc.page.height - 80) safeAddPage(doc, title, opts.subtitle);
+    doc.moveDown(0.4);
+    doc.fillColor(PRETO).font('Helvetica-Bold').fontSize(13).text(title, mL, doc.y, {
+      width: usableW, align: 'left'
+    });
+    doc.moveDown(0.2);
+  }
+
+  pairs.forEach(({k, v})=>{
+    const label = String(k ?? '');
+    const val = texto(v);
+    const hLabel = 12; // rótulo é sempre uma linha
+
+    // Altura estimada do valor
+    const hVal = Math.max(
+      12,
+      doc.heightOfString(val, { width: valW, align: 'left' })
+    );
+    const rowH = Math.max(hLabel, hVal) + linePadY*2;
+
+    // quebra de página
+    if (doc.y + rowH > doc.page.height - 50) safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+
+    const baseY = doc.y;
+    // rótulo
+    doc.fillColor(PRETO).font('Helvetica-Bold').fontSize(11)
+       .text(label + ':', mL, baseY + linePadY, { width: labelW, align: 'left', lineBreak: false });
+
+    // valor (coluna fixa)
+    doc.fillColor(CINZA_TEXTO).font('Helvetica').fontSize(11)
+       .text(val, mL + labelW + gap, baseY + linePadY, { width: valW, align: 'left' });
+
+    doc.y = baseY + rowH;
+  });
+}
+
+function writeBlock(doc, title, value, opts = {}){
+  const mL = doc.page.margins.left;
+  const mR = doc.page.margins.right;
+  const usableW = doc.page.width - (mL + mR);
+  const padY = opts.padY ?? 6;
+
+  const val = texto(value);
+
+  // espaço para título + algumas linhas
+  if (doc.y > doc.page.height - 100) safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+
+  doc.moveDown(0.5);
+  doc.fillColor(PRETO).font('Helvetica-Bold').fontSize(12)
+     .text(title + ':', mL, doc.y, { width: usableW, align: 'left' });
+
+  doc.fillColor(CINZA_TEXTO).font('Helvetica').fontSize(11)
+     .text(val, mL, doc.y + 2, { width: usableW, align: 'justify' });
+
+  doc.moveDown(0.4);
+  doc.y += padY;
+}
+
+/* ======================= PDF INDIVIDUAL ======================= */
 router.get('/pdf/:id', async (req, res) => {
   try{
     const doPopulate = canPopulateAluno();
@@ -81,38 +153,27 @@ router.get('/pdf/:id', async (req, res) => {
 
     const alunoNome = texto(item?.alunoId?.nome || item?.alunoNome || item?.aluno || item?.alunoId);
 
-    const linhas = [
-      { k:'Data', v: dtBR(item.createdAt) },
-      { k:'Aluno', v: alunoNome },
-      { k:'Responsável', v: texto(item.responsavel || item.criadoPor) },
-      { k:'Local', v: texto(item.local) },
-      { k:'Hora', v: texto(item.hora) },
-      { k:'Criado por', v: texto(item.criadoPor) },
-    ];
-
-    doc.font('Helvetica').fontSize(11).fillColor(CINZA_TEXTO);
-    linhas.forEach(({k,v})=>{
-      if (doc.y > doc.page.height - 90) safeAddPage(doc, titulo, subtitulo);
-      doc.font('Helvetica-Bold').fillColor(PRETO).text(`${k}: `, { continued:true, lineBreak:false });
-      doc.font('Helvetica').fillColor(CINZA_TEXTO).text(v, { width: doc.page.width - 64 });
+    // Bloco "Dados do Atendimento" em DUAS COLUNAS
+    writePairs(doc, [
+      { k:'Data',         v: dtBR(item.createdAt) },
+      { k:'Aluno',        v: alunoNome },
+      { k:'Responsável',  v: item.responsavel || item.criadoPor },
+      { k:'Local',        v: item.local },
+      { k:'Hora',         v: item.hora },
+      { k:'Criado por',   v: item.criadoPor },
+    ], {
+      headerTitle: titulo, headerSubtitle: subtitulo,
+      title: 'Dados do atendimento',
+      labelW: 150, gap: 12, linePadY: 4
     });
 
-    const secoes = [
-      { title: 'Tipos', value: joinArr(item.tipos) },
-      { title: 'Materiais', value: joinArr(item.materiais) },
-      { title: 'Encaminhamento', value: texto(item.encaminhamento) },
-      { title: 'Responsáveis informados', value: texto(item.responsaveisInformados) },
-      { title: 'Meio de comunicação', value: texto(item.meioComunicacao) },
-      { title: 'Observações', value: texto(item.observacoes) },
-    ];
-
-    secoes.forEach(sec=>{
-      if (doc.y > doc.page.height - 120) safeAddPage(doc, titulo, subtitulo);
-      doc.moveDown(0.6);
-      doc.font('Helvetica-Bold').fontSize(12).fillColor(PRETO).text(sec.title+':', { lineBreak:false });
-      doc.font('Helvetica').fontSize(11).fillColor(CINZA_TEXTO)
-         .text(sec.value, { width: doc.page.width - 64 });
-    });
+    // Blocos de texto corrido (justificado)
+    writeBlock(doc, 'Tipos', joinArr(item.tipos), { headerTitle: titulo, headerSubtitle: subtitulo });
+    writeBlock(doc, 'Materiais', joinArr(item.materiais), { headerTitle: titulo, headerSubtitle: subtitulo });
+    writeBlock(doc, 'Encaminhamento', item.encaminhamento, { headerTitle: titulo, headerSubtitle: subtitulo });
+    writeBlock(doc, 'Responsáveis informados', item.responsaveisInformados, { headerTitle: titulo, headerSubtitle: subtitulo });
+    writeBlock(doc, 'Meio de comunicação', item.meioComunicacao, { headerTitle: titulo, headerSubtitle: subtitulo });
+    writeBlock(doc, 'Observações', item.observacoes, { headerTitle: titulo, headerSubtitle: subtitulo });
 
     footerTema(doc);
     doc.end();
@@ -122,7 +183,7 @@ router.get('/pdf/:id', async (req, res) => {
   }
 });
 
-/* ===== PDF CONSOLIDADO ===== */
+/* ======================= PDF CONSOLIDADO ======================= */
 router.get('/pdf-consolidado', async (req, res) => {
   try{
     const { from, to } = req.query;
@@ -166,7 +227,7 @@ router.get('/pdf-consolidado', async (req, res) => {
       { key:'local',  title:'Local',          w: 55 },
       { key:'tipos',  title:'Tipos',          w: 80 },
       { key:'mats',   title:'Materiais',      w: 80 },
-      { key:'enc',    title:'Encaminhamento', w: 81 }, // ampliada para caber texto completo
+      { key:'enc',    title:'Encaminhamento', w: 81 },
     ]; // soma ≈ 531
 
     const startX = doc.page.margins.left;
@@ -240,7 +301,7 @@ router.get('/pdf-consolidado', async (req, res) => {
       y = doc.y;
     }
     doc.font('Helvetica').fontSize(9).fillColor(CINZA_TEXTO)
-       .text('Observação: textos longos são automaticamente quebrados em múltiplas linhas para caber na página.', startX, y, { width: usableW });
+       .text('Observação: textos longos são automaticamente quebrados e justificados para caber na página.', startX, y, { width: usableW });
 
     footerTema(doc);
     doc.end();
