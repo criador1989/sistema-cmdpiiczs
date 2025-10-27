@@ -168,7 +168,12 @@
         </div>
         <div class="col-4">
           <label class="lab">Meio</label>
-          <select id="f-meio"><option></option><option>Telefone</option><option>WhatsApp</option><option>Pessoalmente</option></select>
+          <select id="f-meio">
+            <option></option>
+            <option>Telefone</option>
+            <option>WhatsApp</option>
+            <option>Pessoalmente</option>
+          </select>
         </div>
         <div class="col-12">
           <label class="lab">Encaminhamento</label>
@@ -234,6 +239,17 @@
         .catch(()=>{});
     })();
 
+    // Normalização para leitura
+    function normSN(v){
+      if (typeof v === 'string') return v === 'Sim' ? 'Sim' : 'Não';
+      if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
+      return 'Não';
+    }
+    function firstNonEmpty(...vals){
+      for (const v of vals){ if (v != null && String(v).trim() !== '') return String(v).trim(); }
+      return '';
+    }
+
     // Se for visualização, carrega o atendimento e preenche
     (function carregarSeView(){
       if(!viewId) return;
@@ -246,23 +262,29 @@
         qs('#f-hora').value = atd.hora || '';
         qs('#f-obs').value  = atd.observacoes || '';
 
-        // ==== FIX: usa os nomes do model (string "Sim"/"Não") ====
-        // tenta campo do schema; se não houver, tenta boolean legado "informados"
-        let infStr = 'Não';
-        if (typeof atd.responsaveisInformados === 'string') {
-          infStr = (atd.responsaveisInformados === 'Sim') ? 'Sim' : 'Não';
-        } else if (typeof atd.informados === 'boolean') {
-          infStr = atd.informados ? 'Sim' : 'Não';
-        } else if (atd.comunicacao && typeof atd.comunicacao.informados === 'boolean') {
-          infStr = atd.comunicacao.informados ? 'Sim' : 'Não';
-        }
+        // responsaveisInformados: string "Sim"/"Não" (schema) | legado boolean
+        const infStr = normSN(
+          atd.responsaveisInformados != null ? atd.responsaveisInformados :
+          (typeof atd.informados === 'boolean' ? atd.informados :
+           (atd.comunicacao && atd.comunicacao.informados))
+        );
         qs('#f-inf').value = infStr;
 
-        // meio de comunicação (schema: meioComunicacao)
-        qs('#f-meio').value = atd.meioComunicacao || atd.meio || (atd.comunicacao && atd.comunicacao.meio) || '';
+        // meio (schema: meioComunicacao) com fallback
+        const meio = firstNonEmpty(atd.meioComunicacao, atd.meio, atd.comunicacao && atd.comunicacao.meio);
+        // caso algum valor antigo venha com caixa diferente, alinhar ao option
+        const normalizaMeio = (m)=>{
+          if(!m) return '';
+          const m2 = m.toLowerCase();
+          if (m2.startsWith('tel')) return 'Telefone';
+          if (m2.startsWith('what')) return 'WhatsApp';
+          if (m2.startsWith('pess') || m2.startsWith('pres')) return 'Pessoalmente';
+          return m; // valor livre cai no option vazio (não quebra)
+        };
+        qs('#f-meio').value = normalizaMeio(meio);
 
         // encaminhamento
-        qs('#f-enc').value  = atd.encaminhamento || (atd.comunicacao && atd.comunicacao.encaminhamento) || '';
+        qs('#f-enc').value  = firstNonEmpty(atd.encaminhamento, atd.comunicacao && atd.comunicacao.encaminhamento);
 
         setChecks('#tipos', atd.tipos);
         setChecks('#materiais', atd.materiais);
@@ -314,7 +336,7 @@
         materiais: getMateriais(),
         observacoes: (qs('#f-obs').value||'').trim(),
 
-        // ==== FIX: usar campos do schema ====
+        // campos do schema ATUAL
         responsaveisInformados: qs('#f-inf').value === 'Sim' ? 'Sim' : 'Não',
         meioComunicacao: (qs('#f-meio').value||'').trim(),
         encaminhamento: (qs('#f-enc').value||'').trim(),
