@@ -117,6 +117,16 @@
     .btn-primary{background:var(--rubi-1);border-color:var(--rubi-1)}
     .btn-ghost{background:transparent}
     .ac-foot{margin-top:8px;display:flex;justify-content:flex-end}
+    /* Toasts com fade+movimento */
+    .toast{
+      position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+      opacity:0;transition:all .6s ease;z-index:9999;
+      padding:12px 18px;border-radius:10px;font:14px/1.3 system-ui;color:#fff;
+      box-shadow:0 8px 22px rgba(0,0,0,.4);min-width:240px;text-align:center;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.ok{background:#14532d;border:1px solid rgba(255,255,255,.25)}
+    .toast.err{background:#5f1212;border:1px solid rgba(255,255,255,.25)}
 
     /* paginação */
     .pager{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
@@ -163,33 +173,31 @@
             <div class="metric"><div class="k">Mensagens não lidas</div><div class="v" id="mMsgs">—</div></div>
             <div class="metric"><div class="k">Devoluções em atraso</div><div class="v" id="mPendDevol">—</div></div>
           </div>
-
           <div class="menu-windows">
-            <div class="window-card" data-transferir role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3></div></div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">MÓDULO</div><h3>Cadastrar Aluno</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">MÓDULO</div><h3>Cadastrar Aluno</h3></div></div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">PAINEL</div><h3>Ver Notificações</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">PAINEL</div><h3>Ver Notificações</h3></div></div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">GESTÃO</div><h3>Controle de Notificações</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">GESTÃO</div><h3>Controle de Notificações</h3></div></div>
             </div>
-            <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='cadastro-usuario.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">ADMIN</div><h3>Novo Usuário</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='cadastro-usuario.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">ADMIN</div><h3>Novo Usuário</h3></div></div>
             </div>
-            <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='estatisticas.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">DASHBOARD</div><h3>Painel de Estatísticas</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='estatisticas.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">DASHBOARD</div><h3>Painel de Estatísticas</h3></div></div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">COMUNICAÇÃO</div><h3>Mensagens</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-              <span id="mensagensBadge" class="badge" style="display:none;">0</span>
+            <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">COMUNICAÇÃO</div><h3>Mensagens</h3></div></div>
             </div>
           </div>
 
-          <!-- ===== SEÇÃO RESTAURADA: Pendências de devolução ===== -->
+          <!-- Pendências -->
           <section class="pend-card" id="pendDevolucaoSection" aria-live="polite">
             <header>
               <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
@@ -198,17 +206,11 @@
             </header>
             <div style="overflow:auto">
               <table class="pend-table" aria-describedby="pendResumo">
-                <thead>
-                  <tr><th>Aluno</th><th>Turma</th><th>Entregue em</th><th>Prazo</th><th>Atraso</th></tr>
-                </thead>
-                <tbody id="pendTableBody">
-                  <tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>
-                </tbody>
+                <thead><tr><th>Aluno</th><th>Turma</th><th>Entregue em</th><th>Prazo</th><th>Atraso</th></tr></thead>
+                <tbody id="pendTableBody"><tr><td colspan="5" style="opacity:.7">Carregando…</td></tr></tbody>
               </table>
             </div>
           </section>
-          <!-- ===== FIM SEÇÃO RESTAURADA ===== -->
-
           <!-- ===== BLOCO: Ações obrigatórias por comportamento ===== -->
           <section class="alertas-comportamento" id="acSection">
             <header class="ac-head">
@@ -303,6 +305,22 @@
   </nav>
 
   <script>
+  /* ===== TOASTS (fade + movimento, centro inferior) ===== */
+  function createToastEl(type, msg){
+    const d = document.createElement('div');
+    d.className = 'toast ' + (type === 'ok' ? 'ok' : 'err');
+    d.textContent = msg;
+    document.body.appendChild(d);
+    // força reflow para transição
+    requestAnimationFrame(()=> d.classList.add('show'));
+    // remove após 4.5s (ok) / 8s (erro)
+    const ttl = (type === 'ok') ? 4500 : 8000;
+    d._t = setTimeout(()=> { d.classList.remove('show'); setTimeout(()=>d.remove(), 600); }, ttl);
+    return d;
+  }
+  function showOK(msg){ createToastEl('ok', msg || 'Feito.'); }
+  function showError(msg){ createToastEl('err', msg || 'Ocorreu um erro.'); }
+
   // ===== DEV: limpar SW/caches em localhost =====
   if (['localhost','127.0.0.1'].includes(location.hostname)) {
     if ('serviceWorker' in navigator) {
@@ -315,38 +333,30 @@
   const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
+  // ===== Fetch JSON com tratamento de falha lógica (ok:false) =====
   async function getJSON(url, { timeoutMs=8000 } = {}) {
     const ctrl = new AbortController();
     const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
     try {
       const r = await fetch(url, { credentials:'include', cache:'no-store', signal: ctrl.signal });
-      if (!r.ok) throw new Error(`${url} -> ${r.status}`);
       const ct = r.headers.get('content-type')||'';
-      return ct.includes('application/json') ? r.json() : {};
-    } finally { clearTimeout(id); }
-  }
-
-  function showError(msg){
-    let el = document.getElementById('errBanner');
-    if(!el){
-      el = document.createElement('div');
-      el.id = 'errBanner';
-      el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
-      document.body.appendChild(el);
+      const data = ct.includes('application/json') ? await r.json() : {};
+      if (!r.ok || data.ok === false) {
+        const faixa = data?.faixa ? ` • faixa: ${data.faixa}` : '';
+        const nota  = (typeof data?.nota === 'number') ? ` • nota: ${data.nota.toFixed(2)}` : '';
+        const msg = data?.mensagem || data?.message || `Falha de aplicação (${r.status})${faixa}${nota}`;
+        showError(msg);
+        console.warn('Resposta lógica:', data);
+        return {};
+      }
+      return data;
+    } catch (e) {
+      showError('Falha ao comunicar com o servidor.');
+      console.error('Erro getJSON:', e);
+      return {};
+    } finally {
+      clearTimeout(id);
     }
-    el.textContent = `Erro: ${msg}`;
-    clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
-  }
-  function showOK(msg){
-    let el = document.getElementById('okBanner');
-    if(!el){
-      el = document.createElement('div');
-      el.id = 'okBanner';
-      el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#14532d;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
-      document.body.appendChild(el);
-    }
-    el.textContent = msg;
-    clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 4500);
   }
 
   // ===== Métricas =====
@@ -356,7 +366,7 @@
       document.getElementById('mAlunos').textContent = alunosCount.toLocaleString('pt-BR');
       document.getElementById('mNotif').textContent  = notifPend.toLocaleString('pt-BR');
       document.getElementById('mMsgs').textContent   = msgs.toLocaleString('pt-BR');
-    }catch(e){ console.warn('overview falhou:', e.message); }
+    }catch(e){ console.warn('overview falhou:', e?.message); }
 
     try{
       const porTurma = await getJSON(API('/estatisticas/comportamento-por-turma'), { timeoutMs: 9000 });
@@ -365,7 +375,7 @@
       const mediaGeral = medias.length ? (medias.reduce((s,n)=>s+n,0)/medias.length) : 0;
       document.getElementById('mMedia').textContent = mediaGeral ? mediaGeral.toFixed(1).replace('.',',') : '—';
     }catch(e){
-      console.warn('por turma falhou:', e.message);
+      console.warn('por turma falhou:', e?.message);
       document.getElementById('mMedia').textContent = '—';
       drawBarChart([]);
     }
@@ -377,7 +387,7 @@
         reg: dist?.regular||0,     ins: dist?.insuficiente||0, inc: dist?.incompativel||0
       });
     }catch(e){
-      console.warn('distribuicao falhou:', e.message);
+      console.warn('distribuicao falhou:', e?.message);
       drawDonutChart({exc:0,oti:0,bom:0,reg:0,ins:0,inc:0});
     }
 
@@ -386,7 +396,7 @@
       const total = Number(k?.total || 0);
       document.getElementById('mPendDevol').textContent = total.toLocaleString('pt-BR');
     }catch(e){
-      console.warn('contador pendencias falhou:', e.message);
+      console.warn('contador pendencias falhou:', e?.message);
       document.getElementById('mPendDevol').textContent = '—';
     }
   }
@@ -468,7 +478,6 @@
       insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
     };
 
-    // === linhas: agora NP também tem "Comunicar Pais"
     function rowReg(a){
       return `
         <tr>
@@ -526,7 +535,6 @@
       try{
         const { regular=[], insuficiente=[] } = await getJSON(API('/alertas/comportamento'), { timeoutMs: 12000 });
 
-        // normaliza nota
         REG_DATA = regular.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
                           .sort((x,y)=> x.n - y.n);
         INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
@@ -616,7 +624,7 @@
     window._carregarAlertasComportamento = carregarAlertasComportamento;
   })();
 
-  // ===== Gráficos =====
+  // ===== Gráficos (canvas puro, sem libs) =====
   function drawBarChart(data){
     const c = document.getElementById('barChart'); if(!c) return;
     const ctx = c.getContext('2d'); const W=c.width, H=c.height; ctx.clearRect(0,0,W,H);
@@ -690,6 +698,7 @@
       const r = await fetch(API('/professores/qrcode'), { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', cache:'no-store', body:JSON.stringify({ identificador: campo.value }) });
       const data = await r.json(); if(!r.ok) throw new Error(data.mensagem||'Erro desconhecido');
       destino.innerHTML = `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p><img id="imgQRCode" src="${data.qrCode}" width="200" />`; btn.style.display='inline-block';
+      showOK('QR Code gerado com sucesso.');
     }catch(err){ showError(err.message); destino.innerHTML = `<span style="color:#ff8a8a;">❌ ${err.message}</span>`; }
   }
 
@@ -717,11 +726,17 @@
   }
   boot();
 
+  // ===== Registro seguro do SW (caminho absoluto) =====
   if('serviceWorker' in navigator){
-    window.addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
+    window.addEventListener('load', ()=>{
+      const swUrl = `${location.origin}/service-worker.js`;
+      navigator.serviceWorker.register(swUrl)
+        .then(reg => console.log('SW registrado:', reg.scope))
+        .catch(err => console.warn('Falha ao registrar SW:', err));
+    });
   }
 </script>
- <script src="notify.js"></script>
+<script src="notify.js"></script>
 <script src="/painel.js"></script>
 
 </body>
