@@ -62,7 +62,7 @@ textarea{resize:vertical; min-height:90px}
   background:#0f1216; border:1px solid #2a2f39; border-radius:14px; padding:12px;
   display:flex; gap:12px; align-items:flex-start; transition:.15s filter, .15s border-color, .15s background;
 }
-.cardChoice:hover{filter:brightness(1.06)}
+.cardChoice:hover{filter:brightness(1.06))}
 .cardChoice.active{border-color:#4b5668; background:#11161d}
 .icon{
   width:26px; height:26px; display:grid; place-items:center; border-radius:8px;
@@ -82,11 +82,18 @@ textarea{resize:vertical; min-height:90px}
 }
 
 /* Encaminhamento */
-.switch{
-  display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer;
-}
+.switch{ display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer; }
 .switch input{width:18px; height:18px; accent-color:#d82327}
 .muted{color:var(--muted)}
+
+/* Toast */
+.toast{
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: #151a22; border:1px solid #2a303a; color:#e9ecf1; padding:10px 14px;
+  border-radius:12px; box-shadow:0 12px 35px rgba(0,0,0,.35); z-index:9999; display:none;
+}
+.toast.ok{border-color:#1f6e52}
+.toast.err{border-color:#6e1f1f}
 </style>
 </head>
 <body>
@@ -193,6 +200,8 @@ textarea{resize:vertical; min-height:90px}
     </section>
   </main>
 
+  <div id="toast" class="toast"></div>
+
 <script>
 // ===== util / dados =====
 const $ = (s)=>document.querySelector(s);
@@ -203,7 +212,7 @@ const TIPOS = [
   { t:'Arranhão / escoriação', i:'🩹', d:'Limpeza e curativo simples.' },
   { t:'Corte leve',            i:'✂️', d:'Antisséptico + gaze/atadura.' },
   { t:'Queimadura',            i:'🔥', d:'Resfriamento local.' },
-  { t:'Torc̣ão',               i:'🧊', d:'Gelo + repouso.' },
+  { t:'Torção',                i:'🧊', d:'Gelo + repouso.' },
   { t:'Luxação',               i:'🦴', d:'Imobilização provisória.' },
   { t:'Fratura suspeita',      i:'🩻', d:'Imobilizar e encaminhar.' },
   { t:'Sangramento nasal',     i:'🩸', d:'Compressão suave.' },
@@ -229,6 +238,15 @@ const MATERIAIS = [
   { t:'Contato responsável', i:'📞', d:'Ver comunicação.' }
 ];
 
+function toast(msg, type='ok'){
+  const el = $('#toast');
+  el.className = `toast ${type==='error'?'err':'ok'}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.style.display='none'; }, 2800);
+}
+
 function cardList(container, items){
   container.innerHTML = items.map((o,idx)=>`
     <label class="cardChoice" data-idx="${idx}">
@@ -241,7 +259,7 @@ function cardList(container, items){
     </label>
   `).join('');
   container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-    cb.addEventListener('change', e=>{
+    cb.addEventListener('change', ()=> {
       cb.closest('.cardChoice')?.classList.toggle('active', cb.checked);
     });
   });
@@ -252,7 +270,7 @@ async function api(path, opts={}){
   const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
     credentials:'include',
     method: opts.method || 'GET',
-    headers: opts.headers || { 'Content-Type':'application/json' },
+    headers: { 'Content-Type':'application/json' },
     body: opts.body
   });
   const ct = r.headers.get('content-type')||'';
@@ -293,27 +311,32 @@ function toggleEncaminhamento(){
 }
 
 async function salvar(){
-  if(!alunoId) return alert('ID do aluno ausente.');
-  const payload = {
-    alunoId,
-    data: $('#inpData').value || new Date().toISOString().slice(0,10),
-    hora: $('#inpHora').value || '',
-    local: $('#inpLocal').value.trim() || '—',
-    responsavel: $('#inpResp').value.trim(),
-    tipos: selected($('#tiposBox')),
-    materiais: selected($('#materiaisBox')),
-    sinaisESintomas: '',                 // layout concentra em Observações
-    procedimentos: '',                   // compatibilidade
-    observacoes: $('#inpObs').value.trim(),
-    responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
-    meioComunicacao: $('#selMeio').value || '',
-    // NOVO: Encaminhamento
-    houveEncaminhamento: $('#chkEncaminhamento').checked,
-    encaminhamento: $('#txtEncaminhamento').value.trim()
-  };
-  const r = await api('/aph/atendimentos', { method:'POST', body: JSON.stringify(payload) });
-  alert('Atendimento salvo com sucesso!');
-  location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
+  try{
+    if(!alunoId) return toast('ID do aluno ausente.', 'error');
+    const payload = {
+      alunoId,
+      data: $('#inpData').value || new Date().toISOString().slice(0,10),
+      hora: $('#inpHora').value || '',
+      local: $('#inpLocal').value.trim() || '—',
+      responsavel: $('#inpResp').value.trim(),
+      tipos: selected($('#tiposBox')),
+      materiais: selected($('#materiaisBox')),
+      sinaisESintomas: '',                 // layout concentra em Observações
+      procedimentos: '',                   // compatibilidade
+      observacoes: $('#inpObs').value.trim(),
+      responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
+      meioComunicacao: $('#selMeio').value || '',
+      houveEncaminhamento: $('#chkEncaminhamento').checked,
+      encaminhamento: $('#txtEncaminhamento').value.trim()
+    };
+    const r = await api('/aph/atendimentos', { method:'POST', body: JSON.stringify(payload) });
+    toast('Atendimento salvo com sucesso!', 'ok');
+    // opcional: pode inspecionar r.comunicacao aqui se quiser mostrar detalhes
+    setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 650);
+  } catch(e){
+    console.error(e);
+    toast(`Erro ao salvar: ${e.message}`, 'error');
+  }
 }
 
 function voltar(){
@@ -322,7 +345,7 @@ function voltar(){
 }
 
 function init(){
-  if(!alunoId) alert('Atenção: alunoId não informado na URL.');
+  if(!alunoId) toast('Atenção: alunoId não informado na URL.', 'error');
   cardList($('#tiposBox'), TIPOS);
   cardList($('#materiaisBox'), MATERIAIS);
 

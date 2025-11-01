@@ -1,3 +1,4 @@
+// backend/routes/api/aph.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -66,17 +67,21 @@ router.get('/atendimentos', autenticar, async (req, res) => {
 
     const filtro = { instituicao: inst };
 
+    // filtro por aluno
     if (req.query.alunoId && mongoose.isValidObjectId(req.query.alunoId)) {
       filtro.alunoId = new mongoose.Types.ObjectId(req.query.alunoId);
     }
 
+    // filtro por data (tolerante)
     const { dtIni, dtFim } = req.query;
     if (dtIni || dtFim) {
       filtro.data = {};
-      if (dtIni) filtro.data.$gte = new Date(dtIni);
-      if (dtFim) filtro.data.$lte = new Date(dtFim);
+      if (dtIni && !Number.isNaN(Date.parse(dtIni))) filtro.data.$gte = new Date(dtIni);
+      if (dtFim && !Number.isNaN(Date.parse(dtFim))) filtro.data.$lte = new Date(dtFim);
+      if (!Object.keys(filtro.data).length) delete filtro.data;
     }
 
+    // busca textual
     const q = (req.query.q || '').trim();
     if (q) {
       const regex = new RegExp(q, 'i');
@@ -225,8 +230,10 @@ router.post('/atendimentos', autenticar, async (req, res) => {
         comunicacao = await mensageria.enfileirarParaResponsaveis({
           alunoId: String(aluno._id),
           instituicao: String(inst),
+          // prioriza email, depois telegram; gera link de WhatsApp
           preferenciaCanais: ['email', 'telegram', 'whatsapp'],
-          titulo, texto,
+          titulo,
+          texto,
           html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
           meta: { tipo: 'aph_atendimento', atendimentoId: String(novo._id) }
         });
@@ -327,7 +334,8 @@ router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req
       alunoId: String(aluno._id),
       instituicao: String(inst),
       preferenciaCanais: ['email', 'telegram', 'whatsapp'],
-      titulo, texto,
+      titulo,
+      texto,
       html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
       meta: { tipo: 'aph_atendimento_reenvio', atendimentoId: String(at._id) }
     });

@@ -1,76 +1,77 @@
-// Serviço de mensageria unificado: e-mail (SMTP/Gmail), Telegram e links de WhatsApp.
-// Compatível com rotas /api/comunicacao e módulos legados do projeto.
+// services/mensageria.js
+// Mensageria unificada: Email (SMTP/Gmail), Telegram e link de WhatsApp.
+// Tolerante a ambiente: envia quando houver credencial; em dev sem credencial, simula envio (ok:true).
 
 const nodemailer = require('nodemailer');
 const TelegramBot = require('node-telegram-bot-api');
-const Aluno = require('../models/Aluno'); // necessário para enfileirarParaResponsaveis
-const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento'); // <<< NOVO
+const Aluno = require('../models/Aluno');
+const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento'); // (se não existir, mantenha)
 
 /* =========================
-   Leitura de variáveis .env
+   Variáveis de ambiente
    ========================= */
-const MAIL_ENABLED = String(process.env.MAIL_ENABLED || 'false').toLowerCase() === 'true';
-const TG_ENABLED   = String(process.env.TG_ENABLED   || 'false').toLowerCase() === 'true';
+const MAIL_ENABLED = String(process.env.MAIL_ENABLED || '').toLowerCase() === 'true';
+const TG_ENABLED   = String(process.env.TG_ENABLED   || '').toLowerCase() === 'true';
 
-// Gmail (modo simples) OU SMTP custom (host/port)
-const MAIL_USER = process.env.MAIL_USER || '';     // ex: seuemail@gmail.com
-const MAIL_PASS = process.env.MAIL_PASS || '';     // App Password do Gmail
+const MAIL_USER = process.env.MAIL_USER || ''; // ex: gmail
+const MAIL_PASS = process.env.MAIL_PASS || '';
 const MAIL_FROM = process.env.MAIL_FROM || (MAIL_USER ? `"CMDPII/CZS" <${MAIL_USER}>` : 'CMDPII/CZS <no-reply@localhost>');
 
 const SMTP_HOST = process.env.SMTP_HOST || '';
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_PORT = Number(process.env.SMTP_PORT || (SMTP_HOST ? 587 : 0));
 const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true';
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 
-// Aceita TG_BOT_TOKEN OU TELEGRAM_BOT_TOKEN
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
 
+const IS_PROD = process.env.NODE_ENV === 'production';
+
 /* =========================
-   SMTP (pool)
+   Email transport (pool)
    ========================= */
 let transporter = null;
-
-if (MAIL_ENABLED) {
-  try {
-    if (SMTP_HOST) {
-      // SMTP custom
-      transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        secure: SMTP_SECURE || SMTP_PORT === 465,
-        auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-        pool: true,
-        maxConnections: 4,
-        maxMessages: 80,
-      });
-    } else if (MAIL_USER && MAIL_PASS) {
-      // Gmail via "service" (App Password)
-      transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: MAIL_USER, pass: MAIL_PASS },
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 50,
-      });
-    } else {
-      console.warn('[mensageria] MAIL_ENABLED=true, mas sem SMTP_HOST nem MAIL_USER/MAIL_PASS.');
-    }
-  } catch (e) {
-    console.warn('[mensageria] Falha ao criar transporter SMTP:', e.message);
+try {
+  if (SMTP_HOST) {
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT || 587,
+      secure: SMTP_SECURE || Number(SMTP_PORT) === 465,
+      auth: (SMTP_USER && SMTP_PASS) ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      pool: true, maxConnections: 4, maxMessages: 100,
+    });
+  } else if (MAIL_USER && MAIL_PASS) {
+    // Gmail com App Password
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: MAIL_USER, pass: MAIL_PASS },
+      pool: true, maxConnections: 3, maxMessages: 60,
+    });
+  } else if (!IS_PROD) {
+    // Dev sem credencial → simula
+    console.warn('[mensageria] Sem SMTP configurado. Em dev, enviaremos em modo LOG.');
+  } else if (MAIL_ENABLED) {
+    console.warn('[mensageria] MAIL_ENABLED=true, mas sem SMTP_HOST nem MAIL_USER/MAIL_PASS.');
   }
+} catch (e) {
+  console.warn('[mensageria] Falha ao criar transporter SMTP:', e?.message || e);
 }
 
 /* =========================
-   Telegram Bot (envio unidirecional)
+   Telegram (envio unidirecional)
    ========================= */
 let tgBot = null;
-if (TG_ENABLED && TG_BOT_TOKEN) {
-  try {
+try {
+  if (TG_BOT_TOKEN) {
+    // polling:false → só envio
     tgBot = new TelegramBot(TG_BOT_TOKEN, { polling: false });
-  } catch (e) {
-    console.warn('[mensageria] Falha ao iniciar TelegramBot:', e.message);
+  } else if (!IS_PROD) {
+    console.warn('[mensageria] Sem TG_BOT_TOKEN. Em dev, enviaremos Telegram em modo LOG.');
+  } else if (TG_ENABLED) {
+    console.warn('[mensageria] TG_ENABLED=true, mas sem TG_BOT_TOKEN.');
   }
+} catch (e) {
+  console.warn('[mensageria] Falha ao iniciar TelegramBot:', e?.message || e);
 }
 
 /* =========================
@@ -92,7 +93,6 @@ function fallbackTexto(aluno, categoria) {
   ].join('\n');
 }
 
-// Normaliza e extrai contatos a partir do documento do aluno
 function extractContatosAluno(alunoDoc) {
   const emails = new Set();
   const whatsapps = new Set();
@@ -104,7 +104,6 @@ function extractContatosAluno(alunoDoc) {
   if (c.whatsapp) whatsapps.add(String(c.whatsapp).replace(/\D/g, ''));
   if (c.telegramChatId) telegramIds.add(String(c.telegramChatId));
 
-  // Legado do aluno
   if (alunoDoc?.telefone) {
     const tel = String(alunoDoc.telefone).replace(/\D/g, '');
     if (tel) whatsapps.add(tel);
@@ -126,54 +125,84 @@ function extractContatosAluno(alunoDoc) {
 }
 
 /* =========================
-   Envio direto (baixo nível)
+   Envios de baixo nível
    ========================= */
+function canSendEmail() {
+  // envia se houver transporter, mesmo que MAIL_ENABLED esteja ausente
+  return Boolean(transporter);
+}
+function canSendTelegram() {
+  return Boolean(tgBot);
+}
+
 async function enviarEmailDireto({ to, subject, text, html }) {
-  if (!MAIL_ENABLED)                return { ok: false, erro: 'MAIL_ENABLED=false' };
-  if (!transporter)                 return { ok: false, erro: 'transporter indisponível' };
   const destinatarios = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
   if (destinatarios.length === 0)   return { ok: false, erro: 'destinatário(s) ausente(s)' };
+
+  const subj = subject || 'Comunicado — CMDPII/CZS';
+  const bodyText = text && String(text).trim() ? String(text) : (html ? '' : ' ');
+  const bodyHtml = html && String(html).trim()
+    ? html
+    : (text ? `<pre style="white-space:pre-wrap">${String(text).replace(/</g,'&lt;')}</pre>` : '<p></p>');
+
+  if (!canSendEmail()) {
+    // Em dev sem SMTP → simula
+    if (!IS_PROD) {
+      console.log('📧 [LOG] (simulado) Envio de email:', { to: destinatarios, subject: subj });
+      return { ok: true, simulated: true, to: destinatarios };
+    }
+    return { ok: false, erro: 'SMTP indisponível' };
+  }
 
   try {
     const info = await transporter.sendMail({
       from: MAIL_FROM,
       to: destinatarios.join(','),
-      subject: subject || 'Comunicado — CMDPII/CZS',
-      text: text || '',
-      html: html || (text ? `<p>${String(text).replace(/\n/g,'<br/>')}</p>` : '<p></p>')
+      subject: subj,
+      text: bodyText,
+      html: bodyHtml,
     });
     return { ok: true, id: info.messageId, to: destinatarios };
   } catch (e) {
-    return { ok: false, erro: e.message, to: destinatarios };
+    return { ok: false, erro: e?.message || String(e), to: destinatarios };
   }
 }
 
 async function enviarTelegramDireto({ chatIds = [], text }) {
-  if (!TG_ENABLED)     return { ok: false, erro: 'TG_ENABLED=false' };
-  if (!tgBot)          return { ok: false, erro: 'tgBot indisponível' };
   const ids = Array.isArray(chatIds) ? chatIds.filter(Boolean) : [chatIds].filter(Boolean);
   if (ids.length === 0) return { ok: false, erro: 'chatId ausente' };
+
+  const bodyText = text && String(text).trim() ? String(text) : ' ';
+  if (!canSendTelegram()) {
+    if (!IS_PROD) {
+      console.log('📨 [LOG] (simulado) Envio Telegram:', { chatIds: ids, text: bodyText.slice(0, 100) + '...' });
+      return { ok: true, simulated: true, to: ids };
+    }
+    return { ok: false, erro: 'Telegram indisponível' };
+  }
 
   const results = [];
   for (const chatId of ids) {
     try {
-      const res = await tgBot.sendMessage(chatId, text || '', { disable_web_page_preview: true });
+      const res = await tgBot.sendMessage(chatId, bodyText, { disable_web_page_preview: true, parse_mode: 'HTML' });
       results.push({ ok: true, id: res.message_id, to: String(chatId) });
     } catch (e) {
-      results.push({ ok: false, erro: e.message, to: String(chatId) });
+      results.push({ ok: false, erro: e?.message || String(e), to: String(chatId) });
     }
   }
   return { ok: results.some(r => r.ok), results };
 }
 
 /* =========================
-   API legada
+   API legada (mantida)
    ========================= */
 async function enviarEmail(aluno, categoria, html, destinoEmail, assunto) {
+  const textoFallback = fallbackTexto(aluno, categoria);
   return enviarEmailDireto({
     to: destinoEmail,
     subject: assunto || `Comunicado — ${categoria || 'Informação'}`,
-    html: html || `<p>${fallbackTexto(aluno, categoria)}</p>`
+    text: textoFallback,
+    html: html || `<pre style="white-space:pre-wrap">${textoFallback}</pre>`
   });
 }
 
@@ -190,13 +219,13 @@ function linkWhatsApp(aluno, categoria, telefoneE164, texto) {
 }
 
 /* =========================
-   Fila simples + envio unificado
+   Envio unificado (preferências)
    ========================= */
 async function enfileirarParaResponsaveis(opts = {}) {
   const {
     alunoId,
     instituicao,
-    preferenciaCanais = ['telegram', 'email'],
+    preferenciaCanais = ['email', 'telegram'], // prioriza email
     titulo = 'Comunicado — CMDPII/CZS',
     texto = '',
     html  = '',
@@ -215,86 +244,71 @@ async function enfileirarParaResponsaveis(opts = {}) {
   if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
 
   const contatos = extractContatosAluno(aluno);
+  const textoFinal = String(texto || '').trim() || fallbackTexto(aluno, 'Informação');
+  const htmlFinal = String(html || '').trim() || `<pre style="white-space:pre-wrap">${textoFinal}</pre>`;
 
-  const resultados = {
-    tried: [],
-    telegram: null,
-    email: null,
-    whatsapp: null,
-    meta,
-  };
+  const resultados = { tried: [], telegram: null, email: null, whatsapp: null, meta };
 
   for (const canal of preferenciaCanais) {
-    if (canal === 'telegram') {
-      resultados.tried.push('telegram');
-      if (contatos.telegramIds.length) {
-        resultados.telegram = await enviarTelegramDireto({
-          chatIds: contatos.telegramIds,
-          text: texto
-        });
-      } else {
-        resultados.telegram = { ok: false, erro: 'Sem telegramChatId' };
-      }
-    }
-
     if (canal === 'email') {
       resultados.tried.push('email');
       if (contatos.emails.length) {
-        resultados.email = await enviarEmailDireto({
-          to: contatos.emails,
-          subject: titulo,
-          text: texto,
-          html
-        });
+        resultados.email = await enviarEmailDireto({ to: contatos.emails, subject: titulo, text: textoFinal, html: htmlFinal });
       } else {
         resultados.email = { ok: false, erro: 'Sem e-mails' };
       }
     }
-
+    if (canal === 'telegram') {
+      resultados.tried.push('telegram');
+      if (contatos.telegramIds.length) {
+        resultados.telegram = await enviarTelegramDireto({ chatIds: contatos.telegramIds, text: textoFinal });
+      } else {
+        resultados.telegram = { ok: false, erro: 'Sem telegramChatId' };
+      }
+    }
     if (canal === 'whatsapp') {
       resultados.tried.push('whatsapp');
-      const primeiroNumero = contatos.whatsapps[0] || '';
+      const n = contatos.whatsapps[0] || '';
       resultados.whatsapp = {
-        ok: Boolean(primeiroNumero),
-        numero: primeiroNumero || null,
-        link: primeiroNumero ? waLink(primeiroNumero, texto) : `https://wa.me/?text=${encodeURIComponent(texto||'')}`
+        ok: Boolean(n),
+        numero: n || null,
+        link: n ? waLink(n, textoFinal) : `https://wa.me/?text=${encodeURIComponent(textoFinal)}`
       };
     }
   }
 
   const ok =
-    (resultados.telegram && resultados.telegram.ok) ||
     (resultados.email && resultados.email.ok) ||
+    (resultados.telegram && resultados.telegram.ok) ||
     (resultados.whatsapp && resultados.whatsapp.ok);
 
-  return { ok: Boolean(ok), aluno: { _id: alunoId, nome: aluno.nome, turma: aluno.turma }, contatos, resultados };
+  return {
+    ok: Boolean(ok),
+    aluno: { _id: alunoId, nome: aluno.nome, turma: aluno.turma },
+    contatos,
+    resultados
+  };
 }
 
 /* =========================
-   Encaminhamento ao NP (nota 5,00–6,99)
+   Encaminhamento NP (template)
    ========================= */
-// Gera e envia a mensagem já personalizada para os responsáveis.
 async function enviarNPEncaminhamento({
   alunoId,
   notaAtual,
   linkAgendamento,
   contatoEscola,
   instituicao,
-  preferenciaCanais = ['email', 'telegram'] // prioriza e-mail
+  preferenciaCanais = ['email', 'telegram']
 }) {
   if (!alunoId) return { ok: false, erro: 'alunoId ausente' };
 
-  // Busca aluno para montar o template
   const match = { _id: alunoId };
   if (instituicao) match.instituicao = instituicao;
 
-  const aluno = await Aluno.findOne(match)
-    .select('nome turma instituicao')
-    .lean();
-
+  const aluno = await Aluno.findOne(match).select('nome turma instituicao').lean();
   if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
 
-  // Monta mensagem
   const { subject, text, html } = montarEmailNP({
     aluno: aluno.nome,
     turma: aluno.turma,
@@ -303,7 +317,6 @@ async function enviarNPEncaminhamento({
     contatoEscola: contatoEscola || ''
   });
 
-  // Dispara nos canais preferidos usando a fila unificada
   const envio = await enfileirarParaResponsaveis({
     alunoId,
     instituicao,
@@ -311,10 +324,7 @@ async function enviarNPEncaminhamento({
     titulo: subject,
     texto: text,
     html,
-    meta: {
-      tipo: 'NP_ENCAMINHAMENTO',
-      notaAtual: Number(notaAtual)
-    }
+    meta: { tipo: 'NP_ENCAMINHAMENTO', notaAtual: Number(notaAtual) }
   });
 
   return envio;
@@ -325,6 +335,7 @@ async function enviarNPEncaminhamento({
    ========================= */
 function getStatus() {
   return {
+    nodeEnv: process.env.NODE_ENV || '(unset)',
     MAIL_ENABLED,
     TG_ENABLED,
     MAIL_FROM,
@@ -335,13 +346,10 @@ function getStatus() {
 }
 
 module.exports = {
-  // legado
-  enviarEmail,
-  enviarTelegram,
-  linkWhatsApp,
-  // unificado
+  enviarEmail,           // legado
+  enviarTelegram,        // legado
+  linkWhatsApp,          // legado
   enfileirarParaResponsaveis,
-  enviarNPEncaminhamento, // <<< NOVO
-  // diagnóstico
+  enviarNPEncaminhamento,
   getStatus
 };

@@ -1,337 +1,341 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Atendimentos APH — Lista | CMDPII</title>
-  <meta name="theme-color" content="#0B0C10" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <style>
-    :root{
-      --bg-0:#0b0c10; --bg-1:#101217; --bg-2:#131722; --ink:#e7e9ee; --muted:#9aa3b2;
-      --line:#202534; --radius:14px; --shadow:0 20px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
-      --rubi:#d82327; --rubi-2:#8B0000; --gold:#e7c873;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--ink);
-      background:
-        radial-gradient(1200px 600px at 10% -10%, #2b0b0b40, transparent 60%),
-        radial-gradient(900px 500px at 110% 0%, #24120040, transparent 60%),
-        linear-gradient(180deg, var(--bg-0), var(--bg-1));
-    }
-    .topbar{
-      position:sticky; top:0; z-index:10; background:linear-gradient(180deg,#0d111bcc,#0d111bb0);
-      border-bottom:1px solid var(--line); backdrop-filter: blur(10px) saturate(140%);
-    }
-    .topbar .inner{max-width:1200px; margin:0 auto; padding:12px 16px; display:flex; gap:10px; align-items:center}
-    .brand{font-weight:800; display:flex; align-items:center; gap:10px}
-    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--rubi),var(--gold));box-shadow:0 0 12px #d82327aa}
-    .spacer{flex:1}
-    .btn{
-      appearance:none; border:1px solid #ffffff12; background:linear-gradient(135deg,#1a1f2b,#151a26); color:#fff;
-      border-radius:12px; padding:9px 12px; cursor:pointer; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
-      box-shadow: var(--shadow); transition:.2s transform,.2s filter,.2s border-color;
-    }
-    .btn:hover{ transform:translateY(-1px); filter:saturate(1.05); border-color:#ffffff24 }
-    .btn.primary{ background:linear-gradient(135deg, #8B0000, #d82327); border-color:#ffffff22; box-shadow:0 12px 28px rgba(216,35,39,.35)}
-    .btn.ghost{ background:linear-gradient(135deg,#0f1420,#0c111a); color:#c9d1e1 }
-    .btn:disabled{opacity:.6; cursor:not-allowed}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APH — Atendimentos</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192x192.png">
+<meta name="theme-color" content="#8B0000">
+<style>
+:root{
+  --rubi1:#8B0000; --rubi2:#d82327; --gold:#e7c873;
+  --bg:#0b0b0b; --panel:#121417; --card:#171a1e; --line:#262a31; --txt:#eaecef; --muted:#9aa3ad;
+  --good:#21a67a; --warn:#e2b93b; --bad:#e55353;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--txt); font-family:'Segoe UI',system-ui,-apple-system,Arial;
+  background:
+    radial-gradient(1200px 500px at -20% -20%, rgba(216,35,39,.18), transparent 60%),
+    radial-gradient(1200px 500px at 110% -10%, rgba(139,0,0,.25), transparent 60%),
+    linear-gradient(180deg,#121212,#0e0f11);
+}
 
-    main{max-width:1200px; margin:18px auto 40px; padding:0 16px}
-    .card{ background:#0b1019; border:1px solid #ffffff12; border-radius:var(--radius); box-shadow: var(--shadow); padding:14px; }
-    .row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+/* Top bar */
+.top{
+  position:sticky; top:0; z-index:10;
+  background:linear-gradient(90deg,#1a1e24,#1a1e2495);
+  border-bottom:1px solid #2a2f36;
+  backdrop-filter:saturate(140%) blur(6px);
+}
+.top .in{
+  max-width:1100px; margin:0 auto; padding:12px 16px;
+  display:flex; gap:8px; align-items:center
+}
+.brand{font-weight:800}
+.sp{flex:1}
+.btn{
+  appearance:none; border:1px solid #353b45; background:#1e232a; color:#fff;
+  padding:8px 12px; border-radius:12px;
+  cursor:pointer; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn.rubi{
+  background:linear-gradient(90deg,var(--rubi1),var(--rubi2));
+  border-color:#5e0a0a; box-shadow:0 12px 30px rgba(139,0,0,.28)
+}
+.btn.danger{background:#301417; border-color:#602429}
+.btn.danger:hover{filter:brightness(1.08)}
+.input, select{
+  background:#0f1216; color:#e8eaee; border:1px solid #2b313b; border-radius:10px; padding:8px 10px;
+}
 
-    .filters{display:grid; grid-template-columns:1fr repeat(2,170px) 140px 120px; gap:10px}
-    @media (max-width:900px){ .filters{grid-template-columns:1fr 1fr} }
-    input[type="text"], input[type="date"], select{
-      width:100%; padding:10px 12px; border-radius:12px; border:1px solid #ffffff22; background:#0f1420; color:#e7e9ee;
-      box-shadow: var(--shadow);
-    }
-    table{width:100%; border-collapse:separate; border-spacing:0; color:#e7e9ee }
-    th, td{ padding:10px 12px; border-bottom:1px solid #202534; text-align:left; vertical-align:top; }
-    thead th{ position:sticky; top:0; background:#0d111b; z-index:1; }
-    tbody tr:hover{ background:#0f1420 }
-    .muted{color:var(--muted)}
-    .chip{display:inline-block; padding:2px 8px; border:1px solid #ffffff18; border-radius:999px; background:#0e1420; font-size:.78rem; margin:2px 4px 2px 0}
-    .actions{display:flex; gap:6px; flex-wrap:wrap}
-    .badge{display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #ffffff22; background:#0f1420; font-size:.78rem; color:#cfd7e6}
-    .hint{font-size:.85rem; color:var(--muted)}
-    .pager{display:flex; align-items:center; gap:8px}
-    .toast{
-      position:fixed; right:16px; bottom:16px; background:#0d111b; color:#fff; padding:12px 14px; border-radius:12px;
-      border:1px solid #ffffff1a; box-shadow: var(--shadow); opacity:0; transform:translateY(8px); transition:.2s; z-index:1000;
-    }
-    .toast.show{opacity:1; transform:translateY(0)}
-  </style>
+/* Page/panel */
+.page{max-width:1100px; margin:18px auto; padding:0 16px}
+.panel{
+  background:linear-gradient(135deg,#15191e 0%, #14171b 60%, #13161a 100%);
+  border:1px solid #262a31; border-radius:var(--radius); padding:16px;
+  box-shadow:0 18px 50px rgba(0,0,0,.35);
+}
+.h1{margin:0 0 8px; font-size:22px}
+.kv{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+.kpill{
+  display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+  border:1px solid #313743; background:#1a1f26; font-weight:800
+}
+.knum{font-size:18px; font-weight:900; color:#f3f5f7}
+.filters{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px}
 
-  <script>
-    if (location.hostname === 'localhost') {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
-      }
-      if (window.caches) {
-        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      }
-    }
-  </script>
+/* Cards/resumos */
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:900px){ .grid2{grid-template-columns:1fr} }
+.card{background:#0f1216; border:1px solid #272c35; border-radius:12px; padding:12px}
+.card h3{margin:0 0 8px; font-size:16px; color:#f1f3f5}
+.badges{display:flex; flex-wrap:wrap; gap:8px}
+.badge{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+  border:1px solid #303642; border-radius:999px; background:#141820; font-weight:700
+}
+.muted{color:var(--muted)}
+
+/* Tabela */
+.table{width:100%; border-collapse:collapse; margin-top:12px}
+.table th, .table td{border-top:1px solid #262a31; padding:10px; text-align:left; vertical-align:top}
+.table th{color:#c9d1d9; font-size:.92rem}
+.table tr:hover{background:#0d1116}
+.tag{
+  display:inline-block; padding:4px 8px; border:1px solid #2b313b; border-radius:999px;
+  margin:2px; background:#181c22; font-size:.86rem
+}
+.actions{display:flex; gap:6px; flex-wrap:wrap}
+.empty{
+  border:1px dashed #2b313b; border-radius:10px; padding:12px;
+  color:#9aa3ad; text-align:center; background:#0f1216
+}
+
+/* Loader */
+.loader{
+  display:none; align-items:center; gap:8px; color:#c9d1d9; font-weight:700;
+}
+.loader.show{display:inline-flex}
+.spin{
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid #2b313b; border-top-color:#d82327; animation:spin .9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Print */
+@media print{
+  .top, .filters, .actions .btn, .btn { display:none !important }
+  body{ background:#fff; color:#000 }
+  .panel, .card, .table th, .table td{ border-color:#999 !important }
+}
+</style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="inner">
-      <div class="brand"><span class="dot"></span> Atendimentos APH</div>
-      <span id="contextAluno" class="hint"></span>
-      <div class="spacer"></div>
-      <button class="btn ghost" id="btnVoltar">← Voltar</button>
-      <a class="btn ghost" href="painel.html">Painel</a>
-      <button class="btn primary" id="btnNovoAtendimento">+ Novo atendimento</button>
+  <div class="top">
+    <div class="in">
+      <button class="btn" id="btnVoltarFicha">← Ficha do Aluno</button>
+      <a class="btn" href="/painel.html">🏠 Painel</a>
+      <div class="sp"></div>
+      <input id="busca" class="input" placeholder="Buscar por tipo, material, observação" aria-label="Buscar">
+      <button class="btn" id="btnBuscar">Buscar</button>
+      <button class="btn rubi" id="btnNovo">+ Novo atendimento</button>
     </div>
   </div>
 
-  <main>
-    <div class="card">
-      <div class="row" style="width:100%">
-        <div class="filters" style="flex:1">
-          <input type="text" id="q" placeholder="Pesquisar (aluno, responsável, local, tipos...)" />
-          <input type="date" id="dtIni" />
-          <input type="date" id="dtFim" />
-          <select id="limit">
-            <option value="10">10 / pág</option>
-            <option value="20" selected>20 / pág</option>
-            <option value="50">50 / pág</option>
-            <option value="100">100 / pág</option>
-          </select>
-          <button id="btnFiltrar" class="btn primary">Aplicar</button>
-        </div>
-        <div class="row" style="justify-content:space-between; width:100%; margin-top:10px">
-          <div class="hint">Exibindo <span id="range">0–0</span> de <b id="total">0</b> registros.</div>
-          <div class="pager">
-            <button class="btn" id="first">« Primeiro</button>
-            <button class="btn" id="prev">‹ Anterior</button>
-            <span class="badge">Pág. <span id="page">1</span></span>
-            <button class="btn" id="next">Próximo ›</button>
-            <button class="btn" id="last">Último »</button>
-          </div>
+  <main class="page">
+    <section class="panel">
+      <div class="kv">
+        <div class="kpill">Total deste aluno: <span class="knum" id="total">0</span></div>
+        <div class="kpill">Aluno: <b id="alunoNome" style="margin-left:6px">—</b></div>
+        <div class="sp"></div>
+        <div class="filters">
+          <span class="loader" id="loader"><span class="spin"></span>Carregando…</span>
+          <button class="btn" id="btnMesPrev" title="Mês anterior">←</button>
+          <select id="selMes" class="input" aria-label="Mês de referência"></select>
+          <button class="btn" id="btnMesNext" title="Mês seguinte">→</button>
         </div>
       </div>
-    </div>
 
-    <div class="card" style="margin-top:12px; overflow:auto">
-      <table>
+      <div class="grid2" style="margin-top:12px">
+        <div class="card">
+          <h3>Tipos mais frequentes</h3>
+          <div id="topTipos" class="badges"></div>
+        </div>
+        <div class="card">
+          <h3>Materiais mais usados</h3>
+          <div id="topMateriais" class="badges"></div>
+        </div>
+      </div>
+
+      <table class="table" id="tabela" aria-describedby="alunoNome">
         <thead>
           <tr>
-            <th style="min-width:110px">Data</th>
-            <th style="min-width:64px">Hora</th>
-            <th style="min-width:220px">Aluno</th>
-            <th style="min-width:90px">Turma</th>
-            <th style="min-width:180px">Responsável</th>
-            <th style="min-width:220px">Tipos</th>
-            <th style="min-width:180px">Local</th>
-            <th style="min-width:220px">Ações</th>
+            <th style="width:120px">Data</th>
+            <th>Responsável</th>
+            <th>Local</th>
+            <th>Tipos</th>
+            <th>Materiais</th>
+            <th style="width:220px">Ações</th>
           </tr>
         </thead>
-        <tbody id="tbody">
-          <tr><td colspan="8" class="muted">Carregando...</td></tr>
-        </tbody>
+        <tbody id="tbody"></tbody>
       </table>
-    </div>
 
-    <div class="toast" id="toast"></div>
+      <div id="vazio" class="empty" style="display:none">Nenhum atendimento neste período.</div>
+    </section>
   </main>
 
-  <script>
-    const $ = (s)=>document.querySelector(s);
-    const byId = (id)=>document.getElementById(id);
-    function bind(idOrSel, ev, fn){
-      const el = idOrSel.startsWith('#')||idOrSel.startsWith('.') ? $(idOrSel) : byId(idOrSel);
-      if(el) el.addEventListener(ev, fn);
-    }
-    const params = new URLSearchParams(location.search);
-    const alunoId = params.get('alunoId') || '';
+<script>
+/* ===== helpers ===== */
+const $ = (s)=>document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const alunoId = params.get('alunoId') || params.get('id') || '';
 
-    function toast(msg, kind='default'){
-      const t = byId('toast'); if(!t) return;
-      t.textContent = msg;
-      t.style.borderColor = '#ffffff18';
-      t.style.background = kind==='ok' ? '#0c1a12' : kind==='warn' ? '#1f1a0c' : kind==='err' ? '#1f0c0c' : '#0d111b';
-      t.classList.add('show'); clearTimeout(toast._h); toast._h=setTimeout(()=>t.classList.remove('show'), 2200);
-    }
-    const fmtData = (d)=> d ? new Date(d).toLocaleDateString('pt-BR') : '—';
-    const escapeHtml = (s)=> String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function fmtData(d){
+  try{ return new Date(d).toLocaleDateString('pt-BR'); }catch{ return '—'; }
+}
+function joinTags(arr){ return (arr||[]).map(t=>`<span class="tag">${t}</span>`).join(''); }
+function showLoader(on){ $('#loader')?.classList.toggle('show', !!on); }
 
-    function tiposPreview(arr){
-      if (!Array.isArray(arr) || !arr.length) return '<span class="muted">—</span>';
-      const max = 3;
-      const shown = arr.slice(0, max).map(t=>`<span class="chip">${escapeHtml(String(t))}</span>`).join('');
-      const extra = arr.length > max ? `<span class="chip">+${arr.length - max}</span>` : '';
-      return shown + extra;
-    }
-    function alunoCol(doc){
-      const nome = doc.alunoNome || doc.aluno?.nome || '—';
-      const id = doc.alunoId || doc.aluno?._id || '';
-      if (!id) return escapeHtml(nome);
-      return `<a href="/ficha-aluno.html?id=${encodeURIComponent(id)}" class="badge" title="Abrir ficha">${escapeHtml(nome)}</a>`;
-    }
-    function turmaCol(doc){
-      const t = doc.alunoTurma || doc.aluno?.turma || '—';
-      if (t==='—') return t;
-      return `<a class="badge" href="/turma.html?turma=${encodeURIComponent(t)}" title="Abrir turma">${escapeHtml(t)}</a>`;
-    }
+async function api(path){
+  const res = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, { credentials:'include' });
+  const ct = res.headers.get('content-type')||'';
+  const json = ct.includes('application/json') ? await res.json().catch(()=> ({})) : {};
+  if (res.status === 401){
+    alert('Sessão expirada. Faça login novamente.');
+    location.href = '/login.html'; return Promise.reject(new Error('401'));
+  }
+  if (!res.ok) throw new Error(json.message || 'Erro');
+  return json;
+}
 
-    const API = {
-      async getAluno(id){
-        const r = await fetch(`/api/alunos/${id}`, { credentials:'include' });
-        if(!r.ok) return null; return r.json();
-      },
-      // GET /api/aph/atendimentos?alunoId&dtIni&dtFim&q&page&limit
-      async list({ alunoId, dtIni, dtFim, q, page, limit }){
-        const usp = new URLSearchParams();
-        if (alunoId) usp.set('alunoId', alunoId);
-        if (dtIni) usp.set('dtIni', dtIni);
-        if (dtFim) usp.set('dtFim', dtFim);
-        if (q) usp.set('q', q);
-        usp.set('page', String(page||1));
-        usp.set('limit', String(limit||20));
-        const r = await fetch(`/api/aph/atendimentos?${usp.toString()}`, { credentials:'include', cache:'no-store' });
-        if(!r.ok) throw new Error('Falha ao listar');
-        return r.json(); // { total, page, limit, items }
-      },
-      async remove(id){
-        const r = await fetch(`/api/aph/atendimentos/${id}`, { method:'DELETE', credentials:'include' });
-        if(!r.ok) throw new Error('Falha ao excluir'); return r.json();
+/* ===== aluno ===== */
+async function carregarAluno(){
+  if(!alunoId) return;
+  const j = await api(`/ficha/dados/${alunoId}`);
+  $('#alunoNome').textContent = j.aluno?.nome || '—';
+}
+
+/* ===== mês/ref ===== */
+function montarMesesSelect(sel, base=new Date()){
+  sel.innerHTML = '';
+  // Mostra 12 meses: atual e 11 anteriores
+  for(let i=0;i<12;i++){
+    const dt = new Date(base.getFullYear(), base.getMonth()-i, 1);
+    const label = dt.toLocaleDateString('pt-BR',{ month:'long', year:'numeric' });
+    const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+    const opt = document.createElement('option');
+    opt.value = val;
+    // capitaliza 1ª letra
+    opt.textContent = label.charAt(0).toUpperCase()+label.slice(1);
+    if(i===0) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+function periodoSelecionado(){
+  const v = $('#selMes').value;
+  const [y,m] = v.split('-').map(Number);
+  const ini = new Date(y, m-1, 1);
+  const fim = new Date(y, m, 0); // último dia do mês
+  const iso = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { dtIni: iso(ini), dtFim: iso(fim) };
+}
+
+/* ===== load/list ===== */
+async function carregarLista(){
+  if(!alunoId){ alert('Atenção: alunoId não informado na URL.'); return; }
+  showLoader(true);
+  try{
+    const q = ($('#busca').value || '').trim();
+    const { dtIni, dtFim } = periodoSelecionado();
+    const qp = new URLSearchParams({ alunoId, dtIni, dtFim, limit: '200' });
+    if(q) qp.set('q', q);
+
+    const data = await api(`/aph/atendimentos?${qp.toString()}`);
+    const items = data.items || data.itens || [];
+    $('#total').textContent = String(data.total ?? items.length ?? 0);
+
+    // tabela
+    const tb = $('#tbody'); tb.innerHTML = '';
+    if(!items.length){
+      $('#vazio').style.display='block';
+    } else {
+      $('#vazio').style.display='none';
+      const tipoCount = new Map(); const matCount = new Map();
+
+      for(const it of items){
+        (it.tipos||[]).forEach(t=> tipoCount.set(t, (tipoCount.get(t)||0)+1 ));
+        (it.materiais||[]).forEach(t=> matCount.set(t, (matCount.get(t)||0)+1 ));
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${fmtData(it.data || it.createdAt)}</td>
+          <td>${it.responsavel || '—'}</td>
+          <td>${it.local || '—'}</td>
+          <td>${joinTags(it.tipos)}</td>
+          <td>${joinTags(it.materiais)}</td>
+          <td class="actions">
+            <a class="btn" href="/aph-atendimento.html?alunoId=${encodeURIComponent(alunoId)}&edit=${it._id}">👁️ Ver</a>
+            <a class="btn" target="_blank" rel="noopener" href="/api/aph/pdf/${it._id}">🧾 PDF</a>
+            <button class="btn danger" data-del="${it._id}">⛔ Excluir</button>
+          </td>
+        `;
+        tb.appendChild(tr);
       }
-    };
 
-    const state = { page:1, limit:20, total:0, dtIni:'', dtFim:'', q:'', items:[] };
-
-    function getFiltersFromUI(){
-      return {
-        q: byId('q')?.value.trim() || '',
-        dtIni: byId('dtIni')?.value || '',
-        dtFim: byId('dtFim')?.value || '',
-        limit: Number(byId('limit')?.value || 20)
-      };
-    }
-
-    function renderTable(items){
-      const tbody = byId('tbody'); if(!tbody) return;
-      if(!items.length){
-        tbody.innerHTML = `<tr><td colspan="8" class="muted">Nenhum atendimento encontrado.</td></tr>`;
-        return;
+      // top chips
+      function renderTop(map, elSel){
+        const el = document.querySelector(elSel);
+        const arr = Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,6);
+        el.innerHTML = arr.length
+          ? arr.map(([k,v])=>`<span class="badge">${k} <b>${v}</b></span>`).join('')
+          : '<span class="muted">—</span>';
       }
-      tbody.innerHTML = items.map(it=>{
-        const id = it._id || '';
-        const pdfUrl = `/api/aph/atendimentos/${id}/pdf`; // ajuste se for outra rota
-        return `
-          <tr>
-            <td>${fmtData(it.data)}</td>
-            <td>${escapeHtml(it.hora || '')}</td>
-            <td>${alunoCol(it)}</td>
-            <td>${turmaCol(it)}</td>
-            <td>${escapeHtml(it.responsavel || '—')}</td>
-            <td>${tiposPreview(it.tipos || [])}</td>
-            <td>${escapeHtml(it.local || '—')}</td>
-            <td>
-              <div class="actions">
-                <a class="btn ghost" href="/aph-atendimento.html?atendimentoId=${encodeURIComponent(id)}${alunoId ? `&alunoId=${encodeURIComponent(alunoId)}`:''}" title="Editar/Ver">Editar</a>
-                <a class="btn" href="${pdfUrl}" target="_blank" rel="noopener" title="PDF">PDF</a>
-                <button class="btn" data-del="${id}" title="Excluir">Excluir</button>
-              </div>
-            </td>
-          </tr>`;
-      }).join('');
+      renderTop(tipoCount, '#topTipos');
+      renderTop(matCount, '#topMateriais');
 
-      tbody.querySelectorAll('button[data-del]').forEach(btn=>{
-        btn.addEventListener('click', async (e)=>{
-          const id = e.currentTarget.getAttribute('data-del');
-          if(!id) return;
-          if(!confirm('Confirma excluir este atendimento? Esta ação não pode ser desfeita.')) return;
-          try{ await API.remove(id); toast('Atendimento excluído.','ok'); await loadPage(state.page); }
-          catch(err){ console.error(err); toast(err.message || 'Erro ao excluir.','err'); }
+      // excluir
+      tb.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-del');
+          if(!confirm('Excluir este atendimento?')) return;
+          const r = await fetch(`/api/aph/atendimentos/${id}`, { method:'DELETE', credentials:'include' });
+          if(!r.ok){ alert('Falha ao excluir.'); return; }
+          carregarLista();
         });
       });
     }
+  } catch(e){
+    console.error(e);
+    alert(e.message || 'Falha ao carregar lista.');
+  } finally {
+    showLoader(false);
+  }
+}
 
-    function updatePager(){
-      byId('page').textContent = String(state.page);
-      byId('total').textContent = String(state.total);
-      const start = state.total ? ((state.page-1)*state.limit)+1 : 0;
-      const end = Math.min(state.page*state.limit, state.total);
-      byId('range').textContent = `${start}–${end}`;
-      const lastPage = Math.max(1, Math.ceil(state.total / state.limit));
-      byId('first').disabled = state.page <= 1;
-      byId('prev').disabled  = state.page <= 1;
-      byId('next').disabled  = state.page >= lastPage;
-      byId('last').disabled  = state.page >= lastPage;
-    }
+/* ===== nav ===== */
+function novo(){
+  const base = '/aph-atendimento.html';
+  location.href = alunoId ? `${base}?alunoId=${encodeURIComponent(alunoId)}` : base;
+}
+function voltarFicha(){
+  if(alunoId) location.href = `/ficha-aluno.html?id=${encodeURIComponent(alunoId)}`;
+  else history.back();
+}
 
-    async function loadPage(page=1){
-      const f = getFiltersFromUI();
-      state.q=f.q; state.dtIni=f.dtIni; state.dtFim=f.dtFim; state.limit=Number(f.limit||20); state.page=Number(page)||1;
-      try{
-        const { total=0, items=[], page:pg=state.page, limit=state.limit } = await API.list({
-          alunoId, q: state.q, dtIni: state.dtIni, dtFim: state.dtFim, page: state.page, limit: state.limit
-        });
-        state.total = Number(total)||0;
-        state.items = Array.isArray(items) ? items : [];
-        state.page = Number(pg)||state.page;
-        state.limit = Number(limit)||state.limit;
-        renderTable(state.items);
-        updatePager();
-      }catch(err){
-        console.error(err); toast(err.message || 'Falha ao carregar lista.','err');
-        renderTable([]); state.total=0; updatePager();
-      }
-    }
+/* ===== boot ===== */
+function init(){
+  if(!alunoId) alert('Atenção: alunoId não informado na URL.');
+  montarMesesSelect($('#selMes'), new Date());
+  carregarAluno().catch(console.error);
+  carregarLista().catch(console.error);
 
-    async function showAlunoContextIfAny(){
-      if(!alunoId) return;
-      const span = byId('contextAluno'); span.textContent = 'carregando aluno...';
-      try{
-        const aluno = await API.getAluno(alunoId);
-        if(!aluno){ span.textContent = ''; return; }
-        const nome = aluno.nome || 'Aluno';
-        const turma = aluno.turma ? ` • Turma ${aluno.turma}` : '';
-        span.innerHTML = `| <b>${nome}</b>${turma}`;
-      }catch{ span.textContent = ''; }
-    }
+  // binds
+  $('#btnNovo').addEventListener('click', novo);
+  $('#btnVoltarFicha').addEventListener('click', voltarFicha);
+  $('#btnBuscar').addEventListener('click', carregarLista);
+  $('#busca').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ carregarLista(); } });
+  $('#selMes').addEventListener('change', carregarLista);
+  $('#btnMesPrev').addEventListener('click', ()=>{
+    const [y,m]=$('#selMes').value.split('-').map(Number);
+    const d=new Date(y,m-2,1);
+    $('#selMes').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    carregarLista();
+  });
+  $('#btnMesNext').addEventListener('click', ()=>{
+    const [y,m]=$('#selMes').value.split('-').map(Number);
+    const d=new Date(y,m,1);
+    $('#selMes').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    carregarLista();
+  });
+}
 
-    function voltarSmart(){
-      try{
-        const ref = document.referrer || '';
-        if (ref && new URL(ref, location.href).origin === location.origin) { history.back(); return; }
-      }catch(_){}
-      if (alunoId) { location.href = `/ficha-aluno.html?id=${encodeURIComponent(alunoId)}`; return; }
-      location.href = '/painel.html';
-    }
-    function novoAtendimento(){
-      if (alunoId) location.href = `/aph-atendimento.html?alunoId=${encodeURIComponent(alunoId)}`;
-      else location.href = `/aph-atendimento.html`;
-    }
-
-    function init(){
-      const q = params.get('q'); const di = params.get('dtIni'); const df = params.get('dtFim'); const lim = params.get('limit');
-      if (q) byId('q').value = q;
-      if (di) byId('dtIni').value = di;
-      if (df) byId('dtFim').value = df;
-      if (lim) byId('limit').value = lim;
-
-      bind('btnFiltrar','click', ()=> loadPage(1));
-      bind('limit','change', ()=> loadPage(1));
-
-      bind('first','click', ()=> loadPage(1));
-      bind('prev','click', ()=> loadPage(Math.max(1, state.page-1)));
-      bind('next','click', ()=> loadPage(state.page+1));
-      bind('last','click', ()=> { const last = Math.max(1, Math.ceil(state.total / state.limit)); loadPage(last); });
-
-      bind('btnVoltar','click', voltarSmart);
-      bind('btnNovoAtendimento','click', novoAtendimento);
-
-      showAlunoContextIfAny();
-      loadPage(1);
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true }); else init();
-  </script>
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
 </body>
 </html>
