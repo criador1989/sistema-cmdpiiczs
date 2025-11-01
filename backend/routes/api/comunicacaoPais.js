@@ -14,10 +14,10 @@ function getMensageria(req) {
   return req.app?.locals?.mensageria || global.mensageria || null;
 }
 
-// Remove prefixos como "nota_" e valida ObjectId
+// Remove prefixos como "nota_" ou "nota-" e valida ObjectId
 function normalizeId(raw) {
   if (!raw) return null;
-  const s = String(raw).trim().replace(/^nota[_\-]/i, '');
+  const s = String(raw).trim().replace(/^nota[_-]/i, '');
   return mongoose.isValidObjectId(s) ? s : null;
 }
 
@@ -37,10 +37,10 @@ router.get('/status', autenticar, (req, res) => {
           hasTelegramBot: false,
           transportMode: 'NONE',
         };
-    res.json({ ok: true, mensageria: st });
+    return res.json({ ok: true, mensageria: st });
   } catch (e) {
     console.error('❌ GET /api/comunicacao/status:', e);
-    res.status(500).json({ ok: false, mensagem: 'Erro ao buscar status.' });
+    return res.status(500).json({ ok: false, mensagem: 'Erro ao buscar status.' });
   }
 });
 
@@ -57,21 +57,22 @@ router.get('/status-public', (req, res) => {
           hasTelegramBot: false,
           transportMode: 'NONE',
         };
-    res.json({ ok: true, mensageria: st });
+    return res.json({ ok: true, mensageria: st });
   } catch (e) {
     console.error('❌ GET /api/comunicacao/status-public:', e);
-    res.status(500).json({ ok: false, mensagem: 'Erro ao buscar status público.' });
+    return res.status(500).json({ ok: false, mensagem: 'Erro ao buscar status público.' });
   }
 });
 
 /* ======================================================
    LER por NOTIFICAÇÃO (GET /:notificacao)
    - compatível com IDs tipo "nota_5f..." vindos do front
+   - observa /:id/pdf: se terminar com "pdf" delega ao next()
    ====================================================== */
 router.get('/:notificacao', autenticar, async (req, res, next) => {
   try {
     // Se a rota for /:id/pdf, deixe seguir
-    if (req.params.notificacao && /pdf$/i.test(req.url)) return next();
+    if (req.params.notificacao && /\/pdf$/i.test(req.url)) return next();
 
     const notifId = normalizeId(req.params.notificacao);
     if (!notifId) {
@@ -81,10 +82,10 @@ router.get('/:notificacao', autenticar, async (req, res, next) => {
     const doc = await ComunicacaoPais.findOne({ notificacao: notifId }).lean();
     if (!doc) return res.status(404).json({ ok: false, mensagem: 'Comunicação não encontrada.' });
 
-    return res.json(doc); // formato cru para compatibilidade com seu front atual
+    return res.json({ ok: true, data: doc });
   } catch (e) {
     console.error('❌ GET /api/comunicacao/:notificacao', e);
-    res.status(500).json({ ok: false, mensagem: 'Falha ao buscar comunicação.' });
+    return res.status(500).json({ ok: false, mensagem: 'Falha ao buscar comunicação.' });
   }
 });
 
@@ -99,7 +100,7 @@ router.post('/:notificacao', autenticar, async (req, res) => {
     }
 
     let doc = await ComunicacaoPais.findOne({ notificacao: notifId });
-    if (doc) return res.json(doc);
+    if (doc) return res.json({ ok: true, data: doc });
 
     doc = await ComunicacaoPais.create({
       notificacao: notifId,
@@ -109,10 +110,10 @@ router.post('/:notificacao', autenticar, async (req, res) => {
       observacao: '',
     });
 
-    return res.json(doc);
+    return res.json({ ok: true, data: doc });
   } catch (e) {
     console.error('💥 POST /api/comunicacao/:notificacao', e);
-    res.status(500).json({ ok: false, mensagem: 'Falha ao criar comunicação.' });
+    return res.status(500).json({ ok: false, mensagem: 'Falha ao criar comunicação.' });
   }
 });
 
@@ -137,10 +138,10 @@ router.put('/:id', autenticar, async (req, res) => {
     const doc = await ComunicacaoPais.findByIdAndUpdate(id, update, { new: true });
     if (!doc) return res.status(404).json({ ok: false, mensagem: 'Registro não encontrado.' });
 
-    res.json({ ok: true, data: doc });
+    return res.json({ ok: true, data: doc });
   } catch (e) {
     console.error('❌ PUT /api/comunicacao/:id', e);
-    res.status(500).json({ ok: false, mensagem: 'Erro ao atualizar.' });
+    return res.status(500).json({ ok: false, mensagem: 'Erro ao atualizar.' });
   }
 });
 
@@ -151,19 +152,19 @@ router.get('/:id/pdf', autenticar, async (req, res) => {
   try {
     const id = normalizeId(req.params.id) || req.params.id;
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ mensagem: 'ID inválido.' });
+      return res.status(400).json({ ok: false, mensagem: 'ID inválido.' });
     }
 
     const doc = await ComunicacaoPais.findById(id).lean();
-    if (!doc) return res.status(404).json({ mensagem: 'Comunicação não encontrada.' });
+    if (!doc) return res.status(404).json({ ok: false, mensagem: 'Comunicação não encontrada.' });
 
     const pdfBuffer = await gerarPdfComunicacao(doc); // implemente se faltar
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=comunicacao-${id}.pdf`);
-    res.send(pdfBuffer);
+    return res.send(pdfBuffer);
   } catch (e) {
     console.error('💥 GET /api/comunicacao/:id/pdf', e);
-    res.status(500).json({ mensagem: 'Erro ao gerar PDF.' });
+    return res.status(500).json({ ok: false, mensagem: 'Erro ao gerar PDF.' });
   }
 });
 

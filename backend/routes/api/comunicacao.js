@@ -1,11 +1,13 @@
 // backend/routes/api/comunicacao.js
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 
 const { autenticar } = require('../../middleware/autenticacao');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
+
+// >>> usa o util robusto com fallback 465→587
+const mailer = require('../../utils/mailer');
 
 /* ---------------------------------------------
    Util – pegar mensageria (não quebra se faltar)
@@ -38,28 +40,6 @@ function extractContatos(aluno) {
   }
 
   return { emails: [...emails].filter(Boolean) };
-}
-
-/* ---------------------------------------------
-   Nodemailer – cria transporter a partir das ENVs
----------------------------------------------- */
-function buildTransporterFromEnv() {
-  if (process.env.EMAIL_ENABLED !== 'true') return null;
-  const {
-    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE = 'false',
-  } = process.env;
-
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-    console.warn('[EMAIL] Variáveis SMTP ausentes; desabilitando envio direto.');
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: String(SMTP_SECURE) === 'true',
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
 }
 
 /* ---------------------------------------------
@@ -126,17 +106,19 @@ Coordenação CMDPII/CZS`;
 }
 
 /* ---------------------------------------------
-   GET /api/comunicacao/status  (diagnóstico rápido)
+   GET /api/comunicacao/status  (diagnóstico)
 ---------------------------------------------- */
 router.get('/status', autenticar, (req, res) => {
   const m = getMensageria(req);
-  const st = m?.getStatus ? m.getStatus() : {
-    MAIL_ENABLED: process.env.EMAIL_ENABLED === 'true',
-    TG_ENABLED: false,
-    hasTransporter: Boolean(buildTransporterFromEnv()),
-    hasTelegramBot: false
+  const st = m?.getStatus ? m.getStatus() : null;
+  // status básico do mailer util
+  const mailStatus = {
+    MAIL_ENABLED: !!mailer?.MAIL_ENABLED,
+    SMTP_HOST: mailer?.SMTP_HOST,
+    SMTP_PORT: mailer?.SMTP_PORT,
+    MAIL_USER: mailer?.MAIL_USER ? '(definido)' : '(vazio)'
   };
-  res.json({ ok: true, mensageria: st });
+  res.json({ ok: true, mensageria: st, mailer: mailStatus });
 });
 
 /* ---------------------------------------------
@@ -173,37 +155,36 @@ router.post('/nota-comportamental/:alunoId', autenticar, async (req, res) => {
         resultados = await mensageria.enfileirarParaResponsaveis({
           alunoId,
           instituicao: String(aluno.instituicao || req.usuario?.instituicao || ''),
-          preferenciaCanais: ['email'], // <<<<<< FORÇANDO E-MAIL
+          preferenciaCanais: ['email'], // força e-mail
           titulo,
           texto,
           html,
           meta: { tipo: 'nota_comportamental', faixa, nota }
         });
-        // heurística: várias implementações retornam algo como { ok:true, email:{ok:true} }
         emailEnviado = Boolean(resultados?.ok || resultados?.email?.ok);
       } catch (e) {
         console.warn('[COMUNICACAO] mensageria falhou, tentando SMTP direto:', e?.message || e);
       }
     }
 
-    // 2) fallback: SMTP direto via ENVs
+    // 2) fallback: SMTP direto via util mailer
     if (!emailEnviado) {
-      const transporter = buildTransporterFromEnv();
-      if (!transporter) {
-        return res.status(500).json({
+      try {
+        await mailer.sendMail({
+          to: emails.join(','),
+          subject: titulo,
+          html,
+          text: texto
+        });
+        emailEnviado = true;
+      } catch (e) {
+        const detalhe = e?.message || 'SMTP indisponível';
+        return res.status(502).json({
           ok: false,
-          erro: 'Envio por e-mail indisponível (mensageria e SMTP falharam).'
+          erro: 'Envio por e-mail indisponível (mensageria e SMTP falharam).',
+          detalhe
         });
       }
-      const from = process.env.MAIL_FROM || 'CMDPII <no-reply@cmdpii.local>';
-      await transporter.sendMail({
-        from,
-        to: emails.join(','),
-        subject: titulo,
-        text: texto,
-        html
-      });
-      emailEnviado = true;
     }
 
     return res.json({
@@ -254,7 +235,7 @@ router.post('/notificacao/:notifId', autenticar, async (req, res) => {
         resultados = await mensageria.enfileirarParaResponsaveis({
           alunoId: String(aluno._id || ''),
           instituicao: String(aluno.instituicao || req.usuario?.instituicao || ''),
-          preferenciaCanais: ['email'], // <<<<<< FORÇANDO E-MAIL
+          preferenciaCanais: ['email'], // força e-mail
           titulo,
           texto,
           html,
@@ -266,24 +247,24 @@ router.post('/notificacao/:notifId', autenticar, async (req, res) => {
       }
     }
 
-    // 2) fallback SMTP
+    // 2) fallback SMTP via util mailer
     if (!emailEnviado) {
-      const transporter = buildTransporterFromEnv();
-      if (!transporter) {
-        return res.status(500).json({
+      try {
+        await mailer.sendMail({
+          to: emails.join(','),
+          subject: titulo,
+          html,
+          text: texto
+        });
+        emailEnviado = true;
+      } catch (e) {
+        const detalhe = e?.message || 'SMTP indisponível';
+        return res.status(502).json({
           ok: false,
-          erro: 'Envio por e-mail indisponível (mensageria e SMTP falharam).'
+          erro: 'Envio por e-mail indisponível (mensageria e SMTP falharam).',
+          detalhe
         });
       }
-      const from = process.env.MAIL_FROM || 'CMDPII <no-reply@cmdpii.local>';
-      await transporter.sendMail({
-        from,
-        to: emails.join(','),
-        subject: titulo,
-        text: texto,
-        html
-      });
-      emailEnviado = true;
     }
 
     return res.json({
@@ -301,5 +282,5 @@ router.post('/notificacao/:notifId', autenticar, async (req, res) => {
 });
 
 /* --------------------------------------------- */
-router.get('/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
+router.get('/ping', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 module.exports = router;
