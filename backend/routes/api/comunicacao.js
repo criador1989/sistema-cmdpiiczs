@@ -1,14 +1,11 @@
 // backend/routes/api/comunicacao.js
 const express = require('express');
 const router = express.Router();
+const nodemailer = require('nodemailer');
 
 const { autenticar } = require('../../middleware/autenticacao');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
-
-// Nodemailer (fallback SMTP)
-let nodemailer = null;
-try { nodemailer = require('nodemailer'); } catch { /* opcional */ }
 
 /* ---------------------------------------------
    Util – pegar mensageria (não quebra se faltar)
@@ -18,74 +15,76 @@ function getMensageria(req) {
 }
 
 /* ---------------------------------------------
-   Util – extrair contatos (email/whatsapp/telegram)
+   Util – extrair contatos (email)
+   (removido WhatsApp/Telegram para evitar fallback)
 ---------------------------------------------- */
 function extractContatos(aluno) {
-  const contatos = aluno?.contatos || {};
-  const responsaveis = Array.isArray(aluno?.responsaveis) ? aluno.responsaveis : [];
+  const c = aluno?.contatos || {};
+  const rs = Array.isArray(aluno?.responsaveis) ? aluno.responsaveis : [];
 
   const emails = new Set();
-  const whatsapps = new Set();
-  const telegramIds = new Set();
 
-  // contatos diretos do aluno
-  if (contatos.email) emails.add(String(contatos.email).trim());
-  if (contatos.whatsapp) whatsapps.add(String(contatos.whatsapp).replace(/\D/g, ''));
+  // contatos do aluno
+  if (c.email) emails.add(String(c.email).trim());
+  if (c.emailResponsavel) emails.add(String(c.emailResponsavel).trim());
 
-  // contatos dos responsáveis
-  for (const r of responsaveis) {
+  // legado direto no aluno
+  if (aluno?.email) emails.add(String(aluno.email).trim());
+
+  // responsáveis
+  for (const r of rs) {
     if (r?.email) emails.add(String(r.email).trim());
-    if (r?.whatsapp) whatsapps.add(String(r.whatsapp).replace(/\D/g, ''));
-    if (r?.telegramChatId) telegramIds.add(String(r.telegramChatId));
+    if (r?.emailResponsavel) emails.add(String(r.emailResponsavel).trim());
   }
 
-  return {
-    emails: [...emails].filter(Boolean),
-    whatsapps: [...whatsapps].filter(Boolean),
-    telegramIds: [...telegramIds].filter(Boolean),
-  };
+  return { emails: [...emails].filter(Boolean) };
 }
 
 /* ---------------------------------------------
-   Util – montar link de WhatsApp
+   Nodemailer – cria transporter a partir das ENVs
 ---------------------------------------------- */
-function buildWhatsappLink({ numeros = [], texto }) {
-  const enc = encodeURIComponent(texto || '');
-  const numero = (numeros[0] || '').replace(/\D/g, '');
-  return numero ? `https://wa.me/${numero}?text=${enc}` : `https://wa.me/?text=${enc}`;
+function buildTransporterFromEnv() {
+  if (process.env.EMAIL_ENABLED !== 'true') return null;
+  const {
+    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE = 'false',
+  } = process.env;
+
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+    console.warn('[EMAIL] Variáveis SMTP ausentes; desabilitando envio direto.');
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: String(SMTP_SECURE) === 'true',
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
 }
 
 /* ---------------------------------------------
-   Classificação da nota (faixa)
-   (usa os mesmos intervalos do painel: 3–4,99 = insuficiente; 5–6,99 = regular)
----------------------------------------------- */
-function classificarFaixa(nota) {
-  const n = Number(nota || 0);
-  if (n >= 8.5) return 'excepcional';
-  if (n >= 7.0) return 'ótimo/bom';
-  if (n >= 5.0) return 'regular';
-  if (n >= 3.0) return 'insuficiente';
-  return 'incompatível';
-}
-
-/* ---------------------------------------------
-   Templates de mensagens
+   Templates
 ---------------------------------------------- */
 function tplNotaComportamental({ aluno, faixa, nota }) {
-  const titulo = `Aviso de comportamento — ${faixa}`;
+  const titulo = `Aviso de comportamento — ${faixa || 'Informação'}`;
   const texto =
 `Prezados responsáveis de ${aluno?.nome || 'seu(a) filho(a)'} (${aluno?.turma || '—'}),
 
-Informamos que a nota comportamental atual é ${Number(nota || 0).toFixed(2)} (${faixa}). 
+Informamos que a nota comportamental atual é ${Number(nota || 0).toFixed(2)}${faixa ? ` (${faixa})` : ''}.
 Solicitamos acompanhamento e alinhamento com a coordenação para as devidas providências.
 
 Atenciosamente,
 Coordenação CMDPII/CZS`;
+
   const html = `
-    <p>Prezados responsáveis de <strong>${aluno?.nome || 'seu(a) filho(a)'}</strong> (${aluno?.turma || '—'}),</p>
-    <p>Informamos que a nota comportamental atual é <strong>${Number(nota || 0).toFixed(2)} (${faixa})</strong>.</p>
-    <p>Solicitamos acompanhamento e alinhamento com a coordenação para as devidas providências.</p>
-    <p>Atenciosamente,<br/>Coordenação CMDPII/CZS</p>
+    <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#111">
+      <p>Prezados responsáveis de <strong>${aluno?.nome || 'seu(a) filho(a)'}</strong> (${aluno?.turma || '—'}),</p>
+      <p>Informamos que a nota comportamental atual é <strong>${Number(nota || 0).toFixed(2)}</strong>${faixa ? ` (<strong>${faixa}</strong>)` : ''}.</p>
+      <p>Solicitamos acompanhamento e alinhamento com a coordenação para as devidas providências.</p>
+      <p>Atenciosamente,<br/>Coordenação CMDPII/CZS</p>
+      <hr style="border:none;border-top:1px solid #ddd;margin:16px 0" />
+      <p style="font-size:12px;color:#555">Mensagem automática do Sistema Escolar CMDPII/CZS.</p>
+    </div>
   `;
   return { titulo, texto, html };
 }
@@ -113,240 +112,191 @@ Atenciosamente,
 Coordenação CMDPII/CZS`;
 
   const html = `
-    <p>Prezados responsáveis de <strong>${aluno?.nome || 'seu(a) filho(a)'}</strong> (${aluno?.turma || '—'}),</p>
-    <p>Comunicamos que a notificação registrada foi <strong>deferida</strong> pela coordenação.</p>
-    <pre style="white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace">${resumo}</pre>
-    <p>Em caso de dúvidas, entrem em contato com a escola.</p>
-    <p>Atenciosamente,<br/>Coordenação CMDPII/CZS</p>
+    <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#111">
+      <p>Prezados responsáveis de <strong>${aluno?.nome || 'seu(a) filho(a)'}</strong> (${aluno?.turma || '—'}),</p>
+      <p>Comunicamos que a notificação registrada foi <strong>deferida</strong> pela coordenação.</p>
+      ${resumo ? `<pre style="background:#f6f6f6;border:1px solid #e5e7eb;border-radius:6px;padding:10px">${resumo}</pre>` : ''}
+      <p>Em caso de dúvidas, entrem em contato com a escola.</p>
+      <p>Atenciosamente,<br/>Coordenação CMDPII/CZS</p>
+      <hr style="border:none;border-top:1px solid #ddd;margin:16px 0" />
+      <p style="font-size:12px;color:#555">Mensagem automática do Sistema Escolar CMDPII/CZS.</p>
+    </div>
   `;
   return { titulo, texto, html };
 }
 
 /* ---------------------------------------------
-   Fallbacks de envio direto (SMTP / Telegram)
+   GET /api/comunicacao/status  (diagnóstico rápido)
 ---------------------------------------------- */
-async function enviarEmailDireto({ to, subject, text, html }) {
-  if (!nodemailer) return { ok: false, erro: 'nodemailer não disponível' };
-  if (String(process.env.MAIL_ENABLED || '').toLowerCase() !== 'true') {
-    return { ok: false, erro: 'MAIL_ENABLED != true' };
-  }
-  const host = process.env.MAIL_HOST;
-  const port = Number(process.env.MAIL_PORT || 587);
-  const user = process.env.MAIL_USER;
-  const pass = process.env.MAIL_PASS;
-  if (!host || !user || !pass) return { ok: false, erro: 'SMTP envs ausentes' };
-
-  const transporter = nodemailer.createTransport({
-    host, port, secure: port === 465,
-    auth: { user, pass }
-  });
-
-  try {
-    const info = await transporter.sendMail({
-      from: process.env.MAIL_FROM || `"CMDPII/CZS" <${user}>`,
-      to: Array.isArray(to) ? to.join(',') : to,
-      subject, text, html
-    });
-    return { ok: true, messageId: info.messageId };
-  } catch (err) {
-    return { ok: false, erro: String(err && err.message || err) };
-  }
-}
-
-async function enviarTelegramDireto({ chatIds=[], text }) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) return { ok: false, erro: 'TELEGRAM_BOT_TOKEN ausente' };
-  const results = [];
-  for (const chatId of chatIds) {
-    try {
-      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text })
-      });
-      const j = await r.json();
-      results.push({ chatId, ok: r.ok && j.ok, status: r.status, body: j });
-    } catch (err) {
-      results.push({ chatId, ok: false, erro: String(err && err.message || err) });
-    }
-  }
-  const ok = results.some(x => x.ok);
-  return { ok, results };
-}
+router.get('/status', autenticar, (req, res) => {
+  const m = getMensageria(req);
+  const st = m?.getStatus ? m.getStatus() : {
+    MAIL_ENABLED: process.env.EMAIL_ENABLED === 'true',
+    TG_ENABLED: false,
+    hasTransporter: Boolean(buildTransporterFromEnv()),
+    hasTelegramBot: false
+  };
+  res.json({ ok: true, mensageria: st });
+});
 
 /* ---------------------------------------------
    POST /api/comunicacao/nota-comportamental/:alunoId
-   → agora funciona mesmo SEM body (auto calcula nota/faixa)
+   -> SOMENTE E-MAIL (sem WhatsApp/Telegram)
 ---------------------------------------------- */
 router.post('/nota-comportamental/:alunoId', autenticar, async (req, res) => {
   try {
     const { alunoId } = req.params;
-    let { nota, faixa } = req.body || {};
+    const { nota, faixa } = req.body || {};
 
     const aluno = await Aluno.findById(alunoId)
-      .select('nome turma instituicao responsaveis contatos comportamento')
+      .select('nome turma instituicao responsaveis contatos email')
       .lean();
 
-    if (!aluno) return res.status(404).json({ erro: 'Aluno não encontrado' });
-
-    // Se vier vazio no body (caso do painel), calcula aqui.
-    if (nota == null) nota = aluno.comportamento ?? 0;
-    if (!faixa) faixa = classificarFaixa(nota);
+    if (!aluno) return res.status(404).json({ ok:false, erro: 'Aluno não encontrado' });
 
     const { titulo, texto, html } = tplNotaComportamental({ aluno, faixa, nota });
     const mensageria = getMensageria(req);
-    const contatos = extractContatos(aluno);
-    const whatsappLink = buildWhatsappLink({ numeros: contatos.whatsapps, texto });
+    const { emails } = extractContatos(aluno);
 
-    const resultados = { tried: [] };
+    if (!emails.length) {
+      return res.status(400).json({ ok:false, erro: 'Nenhum e-mail de responsável cadastrado para este aluno.' });
+    }
 
-    // 1) Tenta mensageria/queue (se existir)
+    // 1) tentar pela mensageria (se existir)
+    let tentou = false;
+    let resultados = null;
+    let emailEnviado = false;
+
     if (mensageria?.enfileirarParaResponsaveis) {
+      tentou = true;
       try {
-        const r = await mensageria.enfileirarParaResponsaveis({
-          alunoId: String(alunoId),
+        resultados = await mensageria.enfileirarParaResponsaveis({
+          alunoId,
           instituicao: String(aluno.instituicao || req.usuario?.instituicao || ''),
-          preferenciaCanais: ['telegram', 'email'], // prioriza TG e e-mail como você pediu
+          preferenciaCanais: ['email'], // <<<<<< FORÇANDO E-MAIL
           titulo,
           texto,
           html,
           meta: { tipo: 'nota_comportamental', faixa, nota }
         });
-        resultados.queue = r;
-        resultados.tried.push('queue');
-      } catch (err) {
-        resultados.queue = { ok: false, erro: String(err && err.message || err) };
+        // heurística: várias implementações retornam algo como { ok:true, email:{ok:true} }
+        emailEnviado = Boolean(resultados?.ok || resultados?.email?.ok);
+      } catch (e) {
+        console.warn('[COMUNICACAO] mensageria falhou, tentando SMTP direto:', e?.message || e);
       }
     }
 
-    // 2) Fallback: envio direto por email
-    if (!resultados.queue || resultados.queue.ok === false) {
-      if (contatos.emails?.length) {
-        const rEmail = await enviarEmailDireto({
-          to: contatos.emails,
-          subject: titulo,
-          text: texto,
-          html
+    // 2) fallback: SMTP direto via ENVs
+    if (!emailEnviado) {
+      const transporter = buildTransporterFromEnv();
+      if (!transporter) {
+        return res.status(500).json({
+          ok: false,
+          erro: 'Envio por e-mail indisponível (mensageria e SMTP falharam).'
         });
-        resultados.email = { ...rEmail, to: contatos.emails };
-        resultados.tried.push('email');
-      } else {
-        resultados.email = { ok: false, erro: 'Sem e-mails de responsáveis' };
       }
+      const from = process.env.MAIL_FROM || 'CMDPII <no-reply@cmdpii.local>';
+      await transporter.sendMail({
+        from,
+        to: emails.join(','),
+        subject: titulo,
+        text: texto,
+        html
+      });
+      emailEnviado = true;
     }
-
-    // 3) Fallback: envio direto Telegram (se tiver chatIds)
-    if (!resultados.queue || resultados.queue.ok === false) {
-      if (contatos.telegramIds?.length) {
-        const rTg = await enviarTelegramDireto({ chatIds: contatos.telegramIds, text: texto });
-        resultados.telegram = rTg;
-        resultados.tried.push('telegram');
-      } else {
-        resultados.telegram = { ok: false, erro: 'Sem telegramChatId nos responsáveis' };
-      }
-    }
-
-    const sucesso = Boolean(
-      (resultados.queue && resultados.queue.ok) ||
-      (resultados.email && resultados.email.ok) ||
-      (resultados.telegram && resultados.telegram.ok)
-    );
 
     return res.json({
-      ok: sucesso,
-      aluno: { _id: alunoId, nome: aluno.nome, turma: aluno.turma },
-      faixa,
-      nota: Number(nota || 0),
-      comunicacao: { whatsappLink, resultados }
+      ok: true,
+      comunicacao: { emailEnviado, to: emails },
+      tentou,
+      statusMensageria: mensageria?.getStatus ? mensageria.getStatus() : null,
+      contatos: { emails },
+      resultados
     });
   } catch (err) {
     console.error('[COMUNICACAO] nota-comportamental erro:', err);
-    return res.status(500).json({ erro: 'Falha ao iniciar comunicação' });
+    return res.status(500).json({ ok:false, erro: 'Falha ao enviar e-mail.' });
   }
 });
 
 /* ---------------------------------------------
    POST /api/comunicacao/notificacao/:notifId
+   -> SOMENTE E-MAIL (sem WhatsApp/Telegram)
 ---------------------------------------------- */
 router.post('/notificacao/:notifId', autenticar, async (req, res) => {
   try {
     const { notifId } = req.params;
 
     const n = await Notificacao.findById(notifId)
-      .populate('aluno', 'nome turma instituicao responsaveis contatos')
+      .populate('aluno', 'nome turma instituicao responsaveis contatos email')
       .lean();
 
-    if (!n) return res.status(404).json({ erro: 'Notificação não encontrada' });
-    const aluno = n.aluno || {};
+    if (!n) return res.status(404).json({ ok:false, erro: 'Notificação não encontrada' });
 
+    const aluno = n.aluno || {};
     const { titulo, texto, html } = tplNotificacaoDeferida({ aluno, n });
     const mensageria = getMensageria(req);
+    const { emails } = extractContatos(aluno);
 
-    const contatos = extractContatos(aluno);
-    const whatsappLink = buildWhatsappLink({ numeros: contatos.whatsapps, texto });
+    if (!emails.length) {
+      return res.status(400).json({ ok:false, erro: 'Nenhum e-mail de responsável cadastrado para este aluno.' });
+    }
 
-    const resultados = { tried: [] };
+    // 1) mensageria
+    let tentou = false;
+    let resultados = null;
+    let emailEnviado = false;
 
-    // 1) Tenta mensageria/queue
     if (mensageria?.enfileirarParaResponsaveis) {
+      tentou = true;
       try {
-        const r = await mensageria.enfileirarParaResponsaveis({
-          alunoId: String(aluno._id),
+        resultados = await mensageria.enfileirarParaResponsaveis({
+          alunoId: String(aluno._id || ''),
           instituicao: String(aluno.instituicao || req.usuario?.instituicao || ''),
-          preferenciaCanais: ['telegram', 'email'],
+          preferenciaCanais: ['email'], // <<<<<< FORÇANDO E-MAIL
           titulo,
           texto,
           html,
           meta: { tipo: 'notificacao_deferida', notificacaoId: String(n._id) }
         });
-        resultados.queue = r;
-        resultados.tried.push('queue');
-      } catch (err) {
-        resultados.queue = { ok: false, erro: String(err && err.message || err) };
+        emailEnviado = Boolean(resultados?.ok || resultados?.email?.ok);
+      } catch (e) {
+        console.warn('[COMUNICACAO] mensageria falhou, tentando SMTP direto:', e?.message || e);
       }
     }
 
-    // 2) Fallback email
-    if (!resultados.queue || resultados.queue.ok === false) {
-      if (contatos.emails?.length) {
-        const rEmail = await enviarEmailDireto({
-          to: contatos.emails,
-          subject: titulo,
-          text: texto,
-          html
+    // 2) fallback SMTP
+    if (!emailEnviado) {
+      const transporter = buildTransporterFromEnv();
+      if (!transporter) {
+        return res.status(500).json({
+          ok: false,
+          erro: 'Envio por e-mail indisponível (mensageria e SMTP falharam).'
         });
-        resultados.email = { ...rEmail, to: contatos.emails };
-        resultados.tried.push('email');
-      } else {
-        resultados.email = { ok: false, erro: 'Sem e-mails de responsáveis' };
       }
+      const from = process.env.MAIL_FROM || 'CMDPII <no-reply@cmdpii.local>';
+      await transporter.sendMail({
+        from,
+        to: emails.join(','),
+        subject: titulo,
+        text: texto,
+        html
+      });
+      emailEnviado = true;
     }
-
-    // 3) Fallback Telegram
-    if (!resultados.queue || resultados.queue.ok === false) {
-      if (contatos.telegramIds?.length) {
-        const rTg = await enviarTelegramDireto({ chatIds: contatos.telegramIds, text: texto });
-        resultados.telegram = rTg;
-        resultados.tried.push('telegram');
-      } else {
-        resultados.telegram = { ok: false, erro: 'Sem telegramChatId nos responsáveis' };
-      }
-    }
-
-    const sucesso = Boolean(
-      (resultados.queue && resultados.queue.ok) ||
-      (resultados.email && resultados.email.ok) ||
-      (resultados.telegram && resultados.telegram.ok)
-    );
 
     return res.json({
-      ok: sucesso,
-      aluno: { _id: aluno?._id, nome: aluno?.nome, turma: aluno?.turma },
-      comunicacao: { whatsappLink, resultados }
+      ok: true,
+      comunicacao: { emailEnviado, to: emails },
+      tentou,
+      statusMensageria: mensageria?.getStatus ? mensageria.getStatus() : null,
+      contatos: { emails },
+      resultados
     });
   } catch (err) {
     console.error('[COMUNICACAO] notificacao erro:', err);
-    return res.status(500).json({ erro: 'Falha ao iniciar comunicação' });
+    return res.status(500).json({ ok:false, erro: 'Falha ao enviar e-mail.' });
   }
 });
 
