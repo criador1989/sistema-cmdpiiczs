@@ -1,9 +1,18 @@
 // backend/routes/api/comunicacaoPais.js
 const express = require('express');
 const router = express.Router();
-const { autenticar } = require('../../middleware/autenticacao');
 const mongoose = require('mongoose');
+const { autenticar } = require('../../middleware/autenticacao');
 const ComunicacaoPais = require('../../models/ComunicacaoPais');
+
+// tenta carregar helper de PDF (opcional)
+let gerarPdfComunicacao = null;
+try {
+  gerarPdfComunicacao = require('../../utils/pdfComunicacao');
+} catch (_) {
+  // opcional: apenas loga; a rota /:id/pdf responderá 501 se faltar
+  console.warn('⚠️ utils/pdfComunicacao não encontrado. Rota PDF responderá 501.');
+}
 
 // helper: status da mensageria (sem quebrar se não existir)
 function getMensageria(req) {
@@ -11,21 +20,23 @@ function getMensageria(req) {
 }
 
 /* =========================
-   ROTAS FIXAS (primeiro!)
+   ROTAS FIXAS (deve vir primeiro)
    ========================= */
 
 // Status protegido (usa sessão/jwt)
 router.get('/status', autenticar, (req, res) => {
   try {
     const m = getMensageria(req);
-    const st = m?.getStatus ? m.getStatus() : {
-      nodeEnv: process.env.NODE_ENV || '(unset)',
-      MAIL_ENABLED: false,
-      TG_ENABLED: false,
-      hasTransporter: false,
-      hasTelegramBot: false,
-      transportMode: 'NONE',
-    };
+    const st = m?.getStatus
+      ? m.getStatus()
+      : {
+          nodeEnv: process.env.NODE_ENV || '(unset)',
+          MAIL_ENABLED: false,
+          TG_ENABLED: false,
+          hasTransporter: false,
+          hasTelegramBot: false,
+          transportMode: 'NONE',
+        };
     return res.json({ ok: true, mensageria: st });
   } catch (e) {
     console.error('❌ Erro GET /api/comunicacao/status:', e);
@@ -37,14 +48,16 @@ router.get('/status', autenticar, (req, res) => {
 router.get('/status-public', async (req, res) => {
   try {
     const m = getMensageria(req);
-    const st = m?.getStatus ? m.getStatus() : {
-      nodeEnv: process.env.NODE_ENV || '(unset)',
-      MAIL_ENABLED: false,
-      TG_ENABLED: false,
-      hasTransporter: false,
-      hasTelegramBot: false,
-      transportMode: 'NONE',
-    };
+    const st = m?.getStatus
+      ? m.getStatus()
+      : {
+          nodeEnv: process.env.NODE_ENV || '(unset)',
+          MAIL_ENABLED: false,
+          TG_ENABLED: false,
+          hasTransporter: false,
+          hasTelegramBot: false,
+          transportMode: 'NONE',
+        };
     return res.json({ ok: true, mensageria: st });
   } catch (e) {
     console.error('❌ Erro GET /api/comunicacao/status-public:', e);
@@ -53,9 +66,9 @@ router.get('/status-public', async (req, res) => {
 });
 
 /* ======================================================
-   ROTA PARA CRIAÇÃO DE COMUNICAÇÃO DE PAIS (NOVO)
+   CRIAR/RETORNAR COMUNICAÇÃO POR NOTIFICAÇÃO (idempotente)
    ====================================================== */
-
+// POST /api/comunicacao/:notificacao
 router.post('/:notificacao', autenticar, async (req, res) => {
   try {
     const { notificacao } = req.params;
@@ -64,15 +77,15 @@ router.post('/:notificacao', autenticar, async (req, res) => {
       return res.status(400).json({ ok: false, mensagem: 'ID da notificação inválido.' });
     }
 
-    // procura comunicação já existente
+    // já existe?
     let doc = await ComunicacaoPais.findOne({ notificacao });
     if (doc) {
-      console.log('ℹ️ Comunicação existente encontrada para notificação:', notificacao);
+      console.log('ℹ️ Comunicação já existia para notificação:', notificacao);
       return res.json(doc);
     }
 
     // cria nova
-    const novo = new ComunicacaoPais({
+    doc = await ComunicacaoPais.create({
       notificacao,
       dataNotificacao: new Date(),
       dataInicio: new Date(),
@@ -80,21 +93,18 @@ router.post('/:notificacao', autenticar, async (req, res) => {
       observacao: '',
     });
 
-    doc = await novo.save();
     console.log('✅ Nova comunicação criada para notificação:', notificacao);
-
     return res.json(doc);
   } catch (e) {
     console.error('💥 Erro POST /api/comunicacao/:notificacao', e);
-    res.status(500).json({ ok: false, mensagem: 'Falha ao criar comunicação.' });
+    return res.status(500).json({ ok: false, mensagem: 'Falha ao criar comunicação.' });
   }
 });
 
 /* ======================================================
-   ROTAS DINÂMICAS (deixe SEMPRE por último no arquivo)
+   BUSCA POR NOTIFICAÇÃO ESPECÍFICA
    ====================================================== */
-
-// Consulta por notificacao
+// GET /api/comunicacao/por-notificacao/:notificacao
 router.get('/por-notificacao/:notificacao', autenticar, async (req, res) => {
   try {
     const { notificacao } = req.params;
@@ -102,11 +112,9 @@ router.get('/por-notificacao/:notificacao', autenticar, async (req, res) => {
       return res.status(400).json({ ok: false, erro: 'Parâmetro "notificacao" inválido.' });
     }
 
-    const doc = await ComunicacaoPais
-      .findOne({ notificacao: new mongoose.Types.ObjectId(notificacao) })
-      .lean();
-
+    const doc = await ComunicacaoPais.findOne({ notificacao }).lean();
     if (!doc) return res.status(404).json({ ok: false, erro: 'Registro não encontrado.' });
+
     return res.json({ ok: true, data: doc });
   } catch (e) {
     console.error('❌ Erro GET comunicacao por-notificacao:', e);
@@ -114,198 +122,18 @@ router.get('/por-notificacao/:notificacao', autenticar, async (req, res) => {
   }
 });
 
-// Consulta genérica por ID
-router.get('/:id', autenticar, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ ok: false, erro: 'Parâmetro "id" inválido.' });
-    }
-    const doc = await ComunicacaoPais.findById(id).lean();
-    if (!doc) return res.status(404).json({ ok: false, erro: 'Registro não encontrado.' });
-    return res.json({ ok: true, data: doc });
-  } catch (e) {
-    console.error('❌ Erro GET comunicacao :id', e);
-    return res.status(500).json({ ok: false, erro: 'Falha ao buscar registro.' });
-  }
-});
-
-module.exports = router;
-// backend/routes/api/comunicacaoPais.js
-const express = require('express');
-const router = express.Router();
-const { autenticar } = require('../../middleware/autenticacao');
-const mongoose = require('mongoose');
-const ComunicacaoPais = require('../../models/ComunicacaoPais');
-const gerarPdfComunicacao = require('../../utils/pdfComunicacao'); // helper PDF (crie se não existir)
-
-// ===== Helper =====
-function getMensageria(req) {
-  return req.app?.locals?.mensageria || global.mensageria || null;
-}
-
 /* ======================================================
-   STATUS DE MENSAGERIA
+   PDF (defina ANTES do /:id para não colidir)
    ====================================================== */
-
-router.get('/status', autenticar, (req, res) => {
-  try {
-    const m = getMensageria(req);
-    const st = m?.getStatus
-      ? m.getStatus()
-      : {
-          nodeEnv: process.env.NODE_ENV || '(unset)',
-          MAIL_ENABLED: false,
-          TG_ENABLED: false,
-          hasTransporter: false,
-          hasTelegramBot: false,
-          transportMode: 'NONE',
-        };
-    return res.json({ ok: true, mensageria: st });
-  } catch (e) {
-    console.error('❌ Erro GET /api/comunicacao/status:', e);
-    return res.status(500).json({ mensagem: 'Erro ao buscar comunicação.' });
-  }
-});
-
-router.get('/status-public', async (req, res) => {
-  try {
-    const m = getMensageria(req);
-    const st = m?.getStatus
-      ? m.getStatus()
-      : {
-          nodeEnv: process.env.NODE_ENV || '(unset)',
-          MAIL_ENABLED: false,
-          TG_ENABLED: false,
-          hasTransporter: false,
-          hasTelegramBot: false,
-          transportMode: 'NONE',
-        };
-    return res.json({ ok: true, mensageria: st });
-  } catch (e) {
-    console.error('❌ Erro GET /api/comunicacao/status-public:', e);
-    return res.status(500).json({ mensagem: 'Erro ao buscar comunicação.' });
-  }
-});
-
-/* ======================================================
-   CRIA OU RETORNA COMUNICAÇÃO EXISTENTE
-   ====================================================== */
-
-router.post('/:notificacao', autenticar, async (req, res) => {
-  try {
-    const { notificacao } = req.params;
-    if (!mongoose.isValidObjectId(notificacao)) {
-      console.warn('⚠️ ID inválido recebido:', notificacao);
-      return res.status(400).json({ ok: false, mensagem: 'ID da notificação inválido.' });
-    }
-
-    // Verifica se já existe
-    let doc = await ComunicacaoPais.findOne({ notificacao });
-    if (doc) {
-      console.log('ℹ️ Comunicação já existente para notificação:', notificacao);
-      return res.json(doc);
-    }
-
-    // Cria nova
-    const novo = new ComunicacaoPais({
-      notificacao,
-      dataNotificacao: new Date(),
-      dataInicio: new Date(),
-      dataFim: new Date(),
-      observacao: '',
-    });
-
-    doc = await novo.save();
-    console.log('✅ Nova comunicação criada:', notificacao);
-    return res.json(doc);
-  } catch (e) {
-    console.error('💥 Erro POST /api/comunicacao/:notificacao', e);
-    res.status(500).json({ ok: false, mensagem: 'Falha ao criar comunicação.' });
-  }
-});
-
-/* ======================================================
-   ATUALIZA UMA COMUNICAÇÃO EXISTENTE
-   ====================================================== */
-
-router.put('/:id', autenticar, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ ok: false, mensagem: 'ID inválido.' });
-    }
-
-    const update = {
-      observacao: req.body.observacao ?? '',
-      dataInicio: req.body.dataInicio ?? null,
-      dataFim: req.body.dataFim ?? null,
-      horaApresentacao: req.body.horaApresentacao ?? '',
-      horaSaida: req.body.horaSaida ?? '',
-    };
-
-    const doc = await ComunicacaoPais.findByIdAndUpdate(id, update, { new: true });
-    if (!doc) return res.status(404).json({ ok: false, mensagem: 'Registro não encontrado.' });
-
-    console.log(`✏️ Comunicação ${id} atualizada com sucesso.`);
-    return res.json({ ok: true, data: doc });
-  } catch (e) {
-    console.error('❌ Erro PUT /api/comunicacao/:id', e);
-    return res.status(500).json({ ok: false, mensagem: 'Erro ao atualizar comunicação.' });
-  }
-});
-
-/* ======================================================
-   BUSCA POR NOTIFICAÇÃO ESPECÍFICA
-   ====================================================== */
-
-router.get('/por-notificacao/:notificacao', autenticar, async (req, res) => {
-  try {
-    const { notificacao } = req.params;
-    if (!mongoose.isValidObjectId(notificacao)) {
-      return res.status(400).json({ ok: false, erro: 'Parâmetro inválido.' });
-    }
-
-    const doc = await ComunicacaoPais.findOne({ notificacao }).lean();
-    if (!doc) return res.status(404).json({ ok: false, erro: 'Registro não encontrado.' });
-
-    return res.json({ ok: true, data: doc });
-  } catch (e) {
-    console.error('❌ Erro GET /por-notificacao/:notificacao', e);
-    return res.status(500).json({ ok: false, erro: 'Falha ao buscar registro.' });
-  }
-});
-
-/* ======================================================
-   BUSCA GERAL POR ID
-   ====================================================== */
-
-router.get('/:id', autenticar, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ ok: false, erro: 'ID inválido.' });
-    }
-
-    const doc = await ComunicacaoPais.findById(id).lean();
-    if (!doc) return res.status(404).json({ ok: false, erro: 'Registro não encontrado.' });
-
-    return res.json(doc);
-  } catch (e) {
-    console.error('❌ Erro GET /:id', e);
-    return res.status(500).json({ ok: false, erro: 'Falha ao buscar comunicação.' });
-  }
-});
-
-/* ======================================================
-   GERAÇÃO DE PDF (download direto)
-   ====================================================== */
-
+// GET /api/comunicacao/:id/pdf
 router.get('/:id/pdf', autenticar, async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({ mensagem: 'ID inválido.' });
+    }
+    if (!gerarPdfComunicacao) {
+      return res.status(501).json({ mensagem: 'Geração de PDF não configurada no servidor.' });
     }
 
     const doc = await ComunicacaoPais.findById(id).lean();
@@ -314,10 +142,66 @@ router.get('/:id/pdf', autenticar, async (req, res) => {
     const pdfBuffer = await gerarPdfComunicacao(doc);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=comunicacao-${id}.pdf`);
-    res.send(pdfBuffer);
+    return res.send(pdfBuffer);
   } catch (e) {
     console.error('💥 Erro ao gerar PDF de comunicação:', e);
-    res.status(500).json({ mensagem: 'Erro ao gerar PDF.' });
+    return res.status(500).json({ mensagem: 'Erro ao gerar PDF.' });
+  }
+});
+
+/* ======================================================
+   GET/PUT por ID da COMUNICAÇÃO **ou** por ID da NOTIFICAÇÃO
+   (compatível com o front: GET /api/comunicacao/:notificacao)
+   ====================================================== */
+
+// GET /api/comunicacao/:id  (tenta _id e depois notificacao)
+router.get('/:id', autenticar, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ ok: false, erro: 'Parâmetro "id" inválido.' });
+    }
+
+    // 1) tenta por _id
+    let doc = await ComunicacaoPais.findById(id).lean();
+
+    // 2) se não achou, tenta por notificacao == id
+    if (!doc) {
+      doc = await ComunicacaoPais.findOne({ notificacao: id }).lean();
+    }
+
+    if (!doc) return res.status(404).json({ ok: false, erro: 'Registro não encontrado.' });
+    return res.json(doc);
+  } catch (e) {
+    console.error('❌ Erro GET /api/comunicacao/:id', e);
+    return res.status(500).json({ ok: false, erro: 'Falha ao buscar registro.' });
+  }
+});
+
+// PUT /api/comunicacao/:id
+router.put('/:id', autenticar, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ ok: false, mensagem: 'ID inválido.' });
+    }
+
+    const update = {
+      observacao: req.body?.observacao ?? '',
+      dataInicio: req.body?.dataInicio ?? null,
+      dataFim: req.body?.dataFim ?? null,
+      horaApresentacao: req.body?.horaApresentacao ?? '',
+      horaSaida: req.body?.horaSaida ?? '',
+    };
+
+    const doc = await ComunicacaoPais.findByIdAndUpdate(id, { $set: update }, { new: true });
+    if (!doc) return res.status(404).json({ ok: false, mensagem: 'Registro não encontrado.' });
+
+    console.log(`✏️ Comunicação ${id} atualizada com sucesso.`);
+    return res.json({ ok: true, data: doc });
+  } catch (e) {
+    console.error('❌ Erro PUT /api/comunicacao/:id', e);
+    return res.status(500).json({ ok: false, mensagem: 'Erro ao atualizar comunicação.' });
   }
 });
 
