@@ -1,15 +1,25 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "Backend do Sistema Escolar CMDPII/CZS — Node.js + Express + MongoDB",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "postinstall": "pip install -r ./pdf/requirements.txt"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "CMDPII",
+    "sistema-escolar",
+    "express",
+    "mongodb",
+    "mongoose",
+    "render"
+  ],
+  "author": "Colégio Militar Dom Pedro II - Cruzeiro do Sul",
   "license": "ISC",
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
