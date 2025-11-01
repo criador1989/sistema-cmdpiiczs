@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const compression = require('compression');
 const cors = require('cors');
+const os = require('os');
 
 const app = express();
 
@@ -19,7 +20,7 @@ const app = express();
 console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
 app.set('trust proxy', 1);
 
-// Evita cache de HTML (útil em dev)
+// Evita cache de HTML (útil em dev e para PWA não travar)
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
@@ -40,6 +41,7 @@ if (process.env.NODE_ENV === 'production') {
    CORS (antes das rotas)
    ========================= */
 const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:5173').toLowerCase();
+const RENDER_HOST = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
 const allowedOrigins = new Set([
   CLIENT_URL,
   'http://localhost:5173',
@@ -52,10 +54,8 @@ const allowedOrigins = new Set([
   (process.env.DASHBOARD_URL || '').toLowerCase(),
 ]);
 
-const RENDER_HOST = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
-
 function isAllowedOrigin(origin) {
-  if (!origin) return true;
+  if (!origin) return true; // allow same-origin / curl
   try {
     const o = origin.toLowerCase();
     if (allowedOrigins.has(o)) return true;
@@ -63,7 +63,7 @@ function isAllowedOrigin(origin) {
     const u = new URL(o);
     if (RENDER_HOST && u.hostname === RENDER_HOST) return true;
     if (u.hostname.endsWith('.onrender.com')) return true;
-    if (u.hostname === require('os').hostname()) return true;
+    if (u.hostname === os.hostname()) return true;
   } catch (_) {}
   return false;
 }
@@ -115,21 +115,29 @@ try {
 /* =========================
    DEBUG DE E-MAIL (SMTP)
    ========================= */
-const { verify: verifyMail, MAIL_ENABLED, SMTP_HOST, SMTP_PORT, MAIL_USER, MAIL_FROM } = require('./utils/mailer');
+const {
+  verify: verifyMail,
+  MAIL_ENABLED,
+  SMTP_HOST,
+  SMTP_PORT,
+  MAIL_USER,
+  MAIL_FROM,
+  getLastMailError
+} = require('./utils/mailer');
 
-app.get('/debug/mail/verify', async (req, res) => {
+app.get('/debug/mail/verify', async (_req, res) => {
   try {
     if (!MAIL_ENABLED) {
       return res.status(200).json({ ok: false, reason: 'MAIL_DISABLED' });
     }
     const result = await verifyMail();
-    return res.status(result.ok ? 200 : 500).json(result);
+    return res.status(result.ok ? 200 : 500).json({ ...result, lastError: getLastMailError() });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
 });
 
-app.get('/debug/mail/status', (req, res) => {
+app.get('/debug/mail/status', (_req, res) => {
   // NÃO exponha credenciais. Somente status e remetente.
   res.json({
     MAIL_ENABLED: Boolean(MAIL_ENABLED),
@@ -197,12 +205,12 @@ app.use(express.static(publicRoot, {
   }
 }));
 
-app.get('/service-worker.js', (req, res) => {
+app.get('/service-worker.js', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.sendFile(path.join(publicRoot, 'service-worker.js'));
 });
 
-app.get('/', (req, res) => res.redirect('/login.html'));
+app.get('/', (_req, res) => res.redirect('/login.html'));
 
 /* =========================
    AUTH / HTML PROTEGIDOS
@@ -211,29 +219,29 @@ const { autenticar } = require('./middleware/autenticacao');
 
 app.use('/auth', authRoutes);
 
-app.get('/ficha-aluno.html', autenticar, (req, res) =>
+app.get('/ficha-aluno.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'ficha-aluno.html'))
 );
-app.get('/lista-alunos.html', autenticar, (req, res) =>
+app.get('/lista-alunos.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'lista-alunos.html'))
 );
-app.get('/painel-professor.html', autenticar, (req, res) =>
+app.get('/painel-professor.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'painel-professor.html'))
 );
-app.get('/comunicacao-pais.html', autenticar, (req, res) =>
+app.get('/comunicacao-pais.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'comunicacao-pais.html'))
 );
-app.get('/logs.html', autenticar, (req, res) =>
+app.get('/logs.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'logs.html'))
 );
-app.get('/estatisticas.html', autenticar, (req, res) =>
+app.get('/estatisticas.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'estatisticas.html'))
 );
 
-app.get('/aph-atendimentos.html', autenticar, (req, res) =>
+app.get('/aph-atendimentos.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'aph-atendimentos.html'))
 );
-app.get('/aph-atendimento.html', autenticar, (req, res) =>
+app.get('/aph-atendimento.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'aph-atendimento.html'))
 );
 
@@ -293,10 +301,10 @@ try {
 /* =========================
    STATUS / DIAGNÓSTICO
    ========================= */
-app.get('/__version', (req, res) => {
+app.get('/__version', (_req, res) => {
   res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', builtAt: new Date().toISOString() });
 });
-app.get('/healthz', (req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get('/healthz', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 app.use((req, res, next) => {
   if (req.method === 'GET') {
@@ -312,22 +320,32 @@ app.use((err, _req, res, _next) => {
 });
 
 /* =========================
-   CONEXÃO MONGO + START
+   START HTTP + CONEXÃO MONGO (tolerante a falhas)
    ========================= */
 const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 
-(async () => {
-  try {
-    if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
-      console.error('❌ URI do Mongo inválida/ausente.', {
-        MONGODB_URI: process.env.MONGODB_URI,
-        MONGO_URI: process.env.MONGO_URI
-      });
-      process.exit(1);
-    }
-    const masked = URI.replace(/\/\/.*?@/, '//***@');
-    console.log('🔐 Conectando no Mongo:', masked);
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
+  console.log('🧪 Health pronto: /__version e /healthz');
+  console.log('✉️  SMTP: /debug/mail/verify e /debug/mail/status');
+  console.log('🌍 CORS flexível ativo (Render + localhost + *.onrender.com)');
+});
 
+/** Conecta no Mongo sem derrubar o servidor se falhar */
+async function connectMongo() {
+  if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
+    console.error('❌ URI do Mongo inválida/ausente.', {
+      MONGODB_URI: process.env.MONGODB_URI,
+      MONGO_URI: process.env.MONGO_URI
+    });
+    return; // não faz exit; a UI continua carregando
+  }
+
+  const masked = URI.replace(/\/\/.*?@/, '//***@');
+  console.log('🔐 Conectando no Mongo:', masked);
+
+  try {
     await mongoose.connect(URI, {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 20000,
@@ -335,19 +353,13 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
       family: 4,
     });
     console.log('🟢 Conectado ao MongoDB');
-
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
-      console.log('🧪 Health pronto: /__version e /healthz');
-      console.log('✉️  SMTP: /debug/mail/verify e /debug/mail/status');
-      console.log('🌍 CORS flexível ativo (Render + localhost + *.onrender.com)');
-    });
   } catch (err) {
-    console.error('❌ Falha ao conectar no Mongo:', err?.message || err);
-    process.exit(1);
+    console.error('🟡 Falha ao conectar no Mongo (continuando sem DB):', err?.message || err);
+    setTimeout(connectMongo, 15000); // nova tentativa em 15s
   }
-})();
+}
+
+connectMongo();
 
 process.on('SIGINT', async () => {
   try { await mongoose.disconnect(); } catch {}
