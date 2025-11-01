@@ -232,7 +232,7 @@
               <p class="muted"><strong>Art. 51</strong> — Encaminhar ao Núcleo Psicossocial (NP) e registrar no histórico. O NP deve informar os responsáveis.</p>
               <div class="table-wrap">
                 <table class="tabela">
-                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:220px">Ações</th></tr></thead>
+                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:260px">Ações</th></tr></thead>
                   <tbody id="tbody-regular"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
                 </table>
               </div>
@@ -250,8 +250,8 @@
               <p class="muted"><strong>Art. 52</strong> — Coordenador informa responsáveis sobre a situação e a possível não renovação se evoluir para incompatível.</p>
               <div class="table-wrap">
                 <table class="tabela">
-                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:220px">Ações</th></tr></thead>
-                  <tbody id="tbody-insuficiente"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
+                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:260px">Ações</th></tr></thead>
+                <tbody id="tbody-insuficiente"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
                 </table>
               </div>
               <div class="pager">
@@ -311,9 +311,7 @@
     d.className = 'toast ' + (type === 'ok' ? 'ok' : 'err');
     d.textContent = msg;
     document.body.appendChild(d);
-    // força reflow para transição
     requestAnimationFrame(()=> d.classList.add('show'));
-    // remove após 4.5s (ok) / 8s (erro)
     const ttl = (type === 'ok') ? 4500 : 8000;
     d._t = setTimeout(()=> { d.classList.remove('show'); setTimeout(()=>d.remove(), 600); }, ttl);
     return d;
@@ -346,7 +344,7 @@
         const nota  = (typeof data?.nota === 'number') ? ` • nota: ${data.nota.toFixed(2)}` : '';
         const msg = data?.mensagem || data?.message || `Falha de aplicação (${r.status})${faixa}${nota}`;
         showError(msg);
-        console.warn('Resposta lógica:', data);
+        console.log('Resposta lógica:', data); // suavizado
         return {};
       }
       return data;
@@ -366,7 +364,7 @@
       document.getElementById('mAlunos').textContent = alunosCount.toLocaleString('pt-BR');
       document.getElementById('mNotif').textContent  = notifPend.toLocaleString('pt-BR');
       document.getElementById('mMsgs').textContent   = msgs.toLocaleString('pt-BR');
-    }catch(e){ console.warn('overview falhou:', e?.message); }
+    }catch(e){ console.log('overview falhou:', e?.message); }
 
     try{
       const porTurma = await getJSON(API('/estatisticas/comportamento-por-turma'), { timeoutMs: 9000 });
@@ -375,7 +373,7 @@
       const mediaGeral = medias.length ? (medias.reduce((s,n)=>s+n,0)/medias.length) : 0;
       document.getElementById('mMedia').textContent = mediaGeral ? mediaGeral.toFixed(1).replace('.',',') : '—';
     }catch(e){
-      console.warn('por turma falhou:', e?.message);
+      console.log('por turma falhou:', e?.message);
       document.getElementById('mMedia').textContent = '—';
       drawBarChart([]);
     }
@@ -387,7 +385,7 @@
         reg: dist?.regular||0,     ins: dist?.insuficiente||0, inc: dist?.incompativel||0
       });
     }catch(e){
-      console.warn('distribuicao falhou:', e?.message);
+      console.log('distribuicao falhou:', e?.message);
       drawDonutChart({exc:0,oti:0,bom:0,reg:0,ins:0,inc:0});
     }
 
@@ -396,7 +394,7 @@
       const total = Number(k?.total || 0);
       document.getElementById('mPendDevol').textContent = total.toLocaleString('pt-BR');
     }catch(e){
-      console.warn('contador pendencias falhou:', e?.message);
+      console.log('contador pendencias falhou:', e?.message);
       document.getElementById('mPendDevol').textContent = '—';
     }
   }
@@ -451,7 +449,7 @@
     }
   }
 
-  // ===== Alertas de Comportamento (NP/Responsáveis) =====
+  // ===== Alertas de Comportamento =====
   (function(){
     const $ = (sel, ctx=document)=>ctx.querySelector(sel);
     const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
@@ -478,27 +476,30 @@
       insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
     };
 
+    // === linhas === (agora com data-nota e data-faixa)
     function rowReg(a){
+      const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
       return `
         <tr>
           <td>${a.nome}</td>
           <td>${a.turma || '-'}</td>
-          <td><strong>${Number(a.nota ?? a.comportamento ?? a.n).toFixed(2)}</strong></td>
+          <td><strong>${nota}</strong></td>
           <td class="acoes">
             <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
-            <button class="btn" data-acao="comPais" data-id="${a._id}" title="E-mail e Telegram">👪 Comunicar Pais</button>
+            <button class="btn" data-acao="comPais" data-id="${a._id}" data-nota="${nota}" data-faixa="regular" title="E-mail e Telegram">👪 Comunicar Pais</button>
           </td>
         </tr>`;
     }
     function rowIns(a){
+      const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
       return `
         <tr>
           <td>${a.nome}</td>
           <td>${a.turma || '-'}</td>
-          <td><strong>${Number(a.nota ?? a.comportamento ?? a.n).toFixed(2)}</strong></td>
+          <td><strong>${nota}</strong></td>
           <td class="acoes">
             <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
-            <button class="btn" data-acao="comPais" data-id="${a._id}" title="E-mail e Telegram">👪 Comunicar Pais</button>
+            <button class="btn" data-acao="comPais" data-id="${a._id}" data-nota="${nota}" data-faixa="insuficiente" title="E-mail e Telegram">👪 Comunicar Pais</button>
           </td>
         </tr>`;
     }
@@ -569,7 +570,7 @@
       });
     });
 
-    // Ações
+    // Ações (inclui envio de nota/faixa e tratamento de sucesso prático)
     document.addEventListener('click', async (ev)=>{
       const btn = ev.target.closest('button[data-acao]'); if(!btn) return;
       const id = btn.dataset.id; const acao = btn.dataset.acao;
@@ -579,27 +580,49 @@
       }
 
       if (acao === 'comPais') {
+        const nota  = btn.dataset.nota || '';
+        const faixa = btn.dataset.faixa || '';
+
         if (!confirm('Deseja enviar aviso aos pais sobre a nota comportamental deste aluno?')) return;
         btn.disabled = true;
         try{
           const r = await fetch(API(`/comunicacao/nota-comportamental/${id}`), {
-            method:'POST', credentials:'include'
+            method:'POST',
+            credentials:'include',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ nota, faixa })
           });
           const j = await r.json().catch(()=>({}));
-          if (r.ok && (j.ok || j.sucesso || j.resultados)) {
-            showOK('Comunicação enviada aos pais. ✅');
+
+          const temResultado =
+            j?.ok === true ||
+            j?.sucesso === true ||
+            !!j?.resultados ||
+            j?.comunicacao?.telegramEnviado === true ||
+            j?.comunicacao?.emailEnviado === true ||
+            !!j?.comunicacao?.whatsappLink;
+
+          if (r.ok && temResultado) {
+            const wa = j?.comunicacao?.whatsappLink;
+            if (wa) {
+              showOK('Comunicação preparada. Abrindo conversa no WhatsApp…');
+              try { window.open(wa, '_blank'); } catch {}
+            } else {
+              showOK('Comunicação enviada aos pais. ✅');
+            }
             console.log('Detalhes do envio:', j);
           } else {
             const msg = j?.mensagem || j?.error || 'Falha ao enviar comunicação.';
             showError(msg);
-            console.error('Resposta:', j);
+            console.log('Resposta (negada/recusada):', j);
           }
         }catch(e){
           showError('Erro ao enviar comunicação.');
-          console.error(e);
+          console.warn('Falha de rede/comunicação:', e);
         }finally{
           btn.disabled = false;
         }
+        return;
       }
     });
 
@@ -620,7 +643,6 @@
 
     btnReload?.addEventListener('click', carregarAlertasComportamento);
 
-    // Expor no escopo global para o boot
     window._carregarAlertasComportamento = carregarAlertasComportamento;
   })();
 
