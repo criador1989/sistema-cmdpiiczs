@@ -9,83 +9,91 @@
   <link rel="icon" href="./icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
   <style>
-    /* ===== look&feel do painel ===== */
     :root{
       --rubi-1:#8B0000; --rubi-2:#B22222;
-      --glass-bg: rgba(255,255,255,.07);
-      --glass-border: rgba(255,255,255,.38);
-      --glass-inner: rgba(255,255,255,.40);
-      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
-      --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de;
-      --line: rgba(255,255,255,.18);
-      --ok:#10a03c; --warn:#ffb000; --info:#0ea5e9;
+      --line:#ffffff2b; --text:#f2f4f8; --text-soft:#cfd6de;
+      --bg:#1e0506;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:#1e0506;min-height:100vh}
-    body::before{content:"";position:fixed;inset:0;z-index:0;background:
-      linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
-      linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
-      linear-gradient(0deg, #2a0607, #3c0a0d);filter:saturate(125%)}
-    body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:
-      radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
-      radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
-      radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
-      radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%)}
+    body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:var(--bg);min-height:100vh}
     .page{position:relative;z-index:1;display:grid;grid-template-columns:280px 1fr;gap:20px;padding:24px}
     @media (max-width:1024px){.page{grid-template-columns:1fr;padding:16px;gap:16px}}
 
-    .sidebar{display:flex;flex-direction:column;gap:10px;height:calc(100dvh - 48px);position:sticky;top:24px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(0,0,0,.35)}
-    .sb-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid rgba(255,255,255,.12)}
-    .brand{width:36px;height:36px;border-radius:12px;background:var(--rubi-1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.22)}
+    .sidebar{display:flex;flex-direction:column;gap:10px;height:calc(100dvh - 48px);position:sticky;top:24px;border-radius:20px;background:#ffffff10;border:1px solid #ffffff24;backdrop-filter:blur(10px);box-shadow:0 10px 28px #0006}
+    .sb-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid #ffffff24}
+    .brand{width:36px;height:36px;border-radius:12px;background:var(--rubi-1);box-shadow:inset 0 0 0 2px #ffffff44}
     .sb-title{font-weight:700}
     .nav{padding:10px;display:grid;gap:6px}
     .nav a{text-decoration:none;color:var(--text);font-size:.95rem;padding:10px 12px;border-radius:12px;display:flex;gap:10px;border:1px solid transparent}
-    .nav a:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
-    .nav a.active{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(0,0,0,.25)}
-    .sb-foot{margin-top:auto;padding:12px;border-top:1px solid rgba(255,255,255,.12)}
+    .nav a:hover{background:#ffffff14;border-color:#ffffff2d}
+    .nav a.active{background:#ffffff22;border-color:#ffffff44;box-shadow:0 6px 20px #0005}
+    .sb-foot{margin-top:auto;padding:12px;border-top:1px solid #ffffff24}
     .sb-logout{width:100%;border:0;background:var(--rubi-2);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
     .sb-logout:hover{background:var(--rubi-1)}
 
     .content .wrap{width:min(1180px,100%);margin:0 auto 84px}
-    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:24px;backdrop-filter:blur(8px);box-shadow:0 10px 28px rgba(0,0,0,.35);padding:26px 24px 30px}
-    h2{margin:0 0 16px;text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.25)}
+    .card{background:#ffffff10;border:1px solid #ffffff24;border-radius:24px;backdrop-filter:blur(8px);box-shadow:0 10px 28px #0006;padding:26px 24px 30px}
+    h2{margin:0 0 16px;text-align:center;color:#fff;text-shadow:0 2px 6px #0004}
 
-    .filters{display:grid;grid-template-columns:1fr 1fr 150px;gap:12px;margin:12px 0 8px}
+    .filters{display:grid;grid-template-columns:1fr 1fr 160px 160px 120px;gap:12px;margin:12px 0 8px}
     .filters label{display:block;margin:0 0 6px;font-weight:700;color:var(--text-soft)}
-    .filters input,.filters select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff}
+    .filters input,.filters select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0000002c;color:#fff}
+    @media (max-width:900px){
+      .filters{grid-template-columns:1fr 1fr 1fr}
+    }
+
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+    .chip{padding:6px 10px;border:1px solid var(--line);background:#0000002c;color:#fff;border-radius:999px;cursor:pointer;font-size:.9rem}
+    .chip:hover{background:#00000040}
 
     .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:8px 0 2px}
     .counter{color:var(--text-soft);font-size:.9rem}
     .pager{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-    .pager button{padding:6px 10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff;border-radius:10px;cursor:pointer}
+    .pager button{padding:6px 10px;border:1px solid var(--line);background:#0000002c;color:#fff;border-radius:10px;cursor:pointer}
     .pager button[disabled]{opacity:.5;cursor:not-allowed}
     .pager .current{background:var(--rubi-1);border-color:var(--rubi-1)}
 
-    /* ====== cards ====== */
+    .actions-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{padding:8px 12px;border:1px solid var(--line);background:#0000002c;color:#fff;border-radius:10px;cursor:pointer}
+    .btn:hover{background:#00000040}
+
+    .columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+    @media (max-width:1100px){.columns{grid-template-columns:1fr}}
+    .col{border:1px dashed #ffffff25;border-radius:16px;padding:12px}
+    .col h3{margin:0 0 8px;font-size:1.05rem;display:flex;align-items:center;gap:8px;color:#fff}
+    .col h3 .count{color:var(--text-soft);font-weight:500;font-size:.9rem}
+    .col .col-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+
     .list{display:grid;gap:10px;margin-top:8px}
-    .n-card{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);border-radius:16px;box-shadow:var(--glass-shadow);overflow:hidden}
+    .empty{opacity:.7;text-align:center;padding:18px;border:1px dashed #ffffff2c;border-radius:12px}
+
+    .n-card{border:1px solid #ffffff24;background:#ffffff10;border-radius:16px;box-shadow:0 14px 30px #0005;overflow:hidden}
     .n-head{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 14px;cursor:pointer}
     .n-title{font-weight:700}
     .n-sub{color:var(--text-soft);font-size:.9rem}
-    .badge{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.2);font-size:.8rem}
-    .status-pendente{background:rgba(255,180,0,.18)}
-    .status-deferido{background:rgba(16,160,60,.28)}
-    .status-revisao_solicitada{background:rgba(255,210,0,.22)}
-    .status-arquivado{background:rgba(180,180,180,.18)}
-    .n-body{display:none;border-top:1px dashed rgba(255,255,255,.18);padding:12px 14px}
+    .badge{padding:4px 8px;border-radius:999px;border:1px solid #ffffff38;background:#00000030;font-size:.8rem}
+    .status-pendente{background:#ffb00030}
+    .status-deferido{background:#10a03c45}
+    .status-revisao_solicitada{background:#ffd20035}
+    .status-arquivado{background:#b4b4b430}
+    .n-body{display:none;border-top:1px dashed #ffffff2c;padding:12px 14px}
     .n-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-    .n-kv{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px}
+    @media (max-width:800px){.n-row{grid-template-columns:1fr}}
+    .n-kv{background:#0000002c;border:1px solid #ffffff24;border-radius:10px;padding:8px}
     .n-kv b{display:block;color:var(--text-soft);font-size:.85rem;margin-bottom:2px}
     .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .actions button,.actions a{margin:0;padding:8px 12px;font-size:14px;border:none;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
     .pdf-btn{background:#007bff;color:#fff}.edit-btn{background:#ffc107;color:#000}.delete-btn{background:#dc3545;color:#fff}.reenviar-btn{background:#28a745;color:#fff}.comunicacao-btn{background:#0ea5e9;color:#fff}
     .entregue-wrap{display:inline-flex;gap:6px;align-items:center;margin-left:8px}
-    .entregue-wrap input{accent-color:var(--ok);width:18px;height:18px;cursor:pointer}
-    .prazo-chip{margin-left:8px;font-size:.8rem;border-radius:999px;padding:4px 8px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25)}
-    .prazo-chip.atraso{border-color:rgba(255,120,120,.45);background:rgba(255,0,0,.18)}
+    .entregue-wrap input{accent-color:#10a03c;width:18px;height:18px;cursor:pointer}
+    .prazo-chip{margin-left:8px;font-size:.8rem;border-radius:999px;padding:4px 8px;border:1px solid #ffffff2c;background:#00000040}
+    .prazo-chip.atraso{border-color:#ff7878a3;background:#ff00002e}
     .hint{color:var(--text-soft);font-size:.85rem;margin-top:6px}
-    .skeleton{height:14px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16),rgba(255,255,255,.08));background-size:200% 100%;animation:sk 1.1s linear infinite;border-radius:8px}
-    @keyframes sk{to{background-position:-200% 0}}
+
+    .spinner{display:inline-block;width:22px;height:22px;border:3px solid #ffffff2f;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-5px;margin-right:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .voltar-btn{margin-top:16px;border:1px solid var(--line);background:#0000002c;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .voltar-btn:hover{background:#00000040}
   </style>
 </head>
 <body>
@@ -112,6 +120,7 @@
         <section class="card">
           <h2>Notificações Disciplinares</h2>
 
+          <!-- Filtros -->
           <div class="filters">
             <div>
               <label for="filtroTurma">Filtrar por turma</label>
@@ -122,23 +131,56 @@
               <input type="text" id="pesquisaNome" placeholder="Digite o nome do aluno..." />
             </div>
             <div>
+              <label for="dataDe">Data (De)</label>
+              <input type="date" id="dataDe" />
+            </div>
+            <div>
+              <label for="dataAte">Data (Até)</label>
+              <input type="date" id="dataAte" />
+            </div>
+            <div>
               <label for="porPaginaSel">Itens por página</label>
               <select id="porPaginaSel"><option selected>10</option><option>20</option><option>30</option></select>
             </div>
           </div>
 
+          <!-- Chips de período rápido -->
+          <div class="chips">
+            <button class="chip" id="chipHoje">Hoje</button>
+            <button class="chip" id="chip7">Últimos 7 dias</button>
+            <button class="chip" id="chip30">Últimos 30 dias</button>
+            <button class="chip" id="chipLimpar">Limpar período</button>
+            <div class="actions-top" style="margin-left:auto">
+              <button class="btn" id="btnCsv">⬇️ Exportar CSV (filtro atual)</button>
+            </div>
+          </div>
+
           <div class="toolbar">
             <div class="counter" id="resumoResultados">—</div>
-            <div id="paginacaoTop" class="pager"></div>
+            <!-- Paginação geral removida; cada coluna terá a sua -->
           </div>
 
-          <div id="lista" class="list">
-            <div class="skeleton" style="height:140px"></div>
+          <!-- Duas colunas -->
+          <div class="columns">
+            <div class="col">
+              <h3>✅ Deferidas <span class="count" id="countDeferidas">—</span></h3>
+              <div class="col-toolbar">
+                <div class="counter" id="resumoDef">—</div>
+                <div id="pagDef" class="pager"></div>
+              </div>
+              <div id="listaDeferidas" class="list"></div>
+            </div>
+            <div class="col">
+              <h3>⏳ Aguardando parecer <span class="count" id="countPendentes">—</span></h3>
+              <div class="col-toolbar">
+                <div class="counter" id="resumoPen">—</div>
+                <div id="pagPen" class="pager"></div>
+              </div>
+              <div id="listaPendentes" class="list"></div>
+            </div>
           </div>
 
-          <div id="paginacao" class="pager" style="margin-top:10px"></div>
-
-          <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+          <button class="voltar-btn" onclick="history.length>1?history.back():window.location.href='painel.html'">← Voltar</button>
         </section>
       </div>
     </main>
@@ -174,40 +216,49 @@
     document.addEventListener('DOMContentLoaded', () => {
       const filtroTurma = document.getElementById('filtroTurma');
       const pesquisaNome = document.getElementById('pesquisaNome');
-      const lista = document.getElementById('lista');
-      const pagTop = document.getElementById('paginacaoTop');
-      const pagBottom = document.getElementById('paginacao');
       const porPaginaSel = document.getElementById('porPaginaSel');
-      const resumo = document.getElementById('resumoResultados');
+      const resumoGeral = document.getElementById('resumoResultados');
 
-      let pagina = 1;
+      const listaDeferidas = document.getElementById('listaDeferidas');
+      const listaPendentes = document.getElementById('listaPendentes');
+      const countDef = document.getElementById('countDeferidas');
+      const countPen = document.getElementById('countPendentes');
+      const pagDef = document.getElementById('pagDef');
+      const pagPen = document.getElementById('pagPen');
+      const resumoDef = document.getElementById('resumoDef');
+      const resumoPen = document.getElementById('resumoPen');
+
+      const dataDe = document.getElementById('dataDe');
+      const dataAte = document.getElementById('dataAte');
+
+      const chipHoje = document.getElementById('chipHoje');
+      const chip7 = document.getElementById('chip7');
+      const chip30 = document.getElementById('chip30');
+      const chipLimpar = document.getElementById('chipLimpar');
+      const btnCsv = document.getElementById('btnCsv');
+
       let porPagina = Number(porPaginaSel.value);
-      let totalPaginas = 1;
-      let totalItens = 0;
+      let paginaDef = 1;
+      let paginaPen = 1;
 
-      // === Consts de exibição segura (evita multiplicação em dobro no front)
-      const BASES = {
-        'Advertência Escrita': -0.30,
-        'Repreensão': -0.50,
-        'A.E.C.D.E': -0.70,
-        'A.I.A': -1.20
-      };
-      const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+      // Estado dos dados (após filtro)
+      let dataset = [];       // tudo (filtrado por nome/turma/data)
+      let dsDef = [];         // deferidas
+      let dsPen = [];         // aguardando
+      let totalBruto = 0;     // total vindo da API antes dos filtros de data locais
 
-      function clampNota(n){ if(n>10) return 10; if(n<0) return 0; return Number((+n).toFixed(2)); }
-
-      // Deriva o valor total correto
+      // ===== Cálculos de nota (mantidos) =====
+      const BASES = {'Advertência Escrita':-0.30,'Repreensão':-0.50,'A.E.C.D.E':-0.70,'A.I.A':-1.20};
+      const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
+      const clampNota = (n)=> (n>10?10:n<0?0:Number((+n).toFixed(2)));
       function derivarValorTotal(n){
         if (typeof n.valorTotal === 'number') return n.valorTotal;
         const titulo = String(n.tipoMedida || n.tipo || '').trim();
-        const precisaDias = REQUER_DIAS.has(titulo);
-        if (!precisaDias) return Number(n.valorNumerico ?? 0);
+        if (!REQUER_DIAS.has(titulo)) return Number(n.valorNumerico ?? 0);
         const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
         const base = BASES[titulo];
-        if (typeof base === 'number') return Number((base * dias).toFixed(2));
-        return Number(n.valorNumerico ?? 0);
+        return typeof base === 'number' ? Number((base * dias).toFixed(2)) : Number(n.valorNumerico ?? 0);
       }
-
       function faixaNotaPrevista(n){
         const total = derivarValorTotal(n);
         const temPar = (typeof n.notaAnterior === 'number') && (typeof n.notaAtual === 'number');
@@ -224,38 +275,84 @@
         const depois = clampNota(antes + total);
         return { antes, depois, corrigido: true };
       }
+      const fmtValor = (n)=> (isFinite(n) ? n.toFixed(2) : '—');
 
-      function fmtValor(n){ return (isFinite(n) ? n.toFixed(2) : '—'); }
+      const spinnerHTML = `<span class="spinner"></span>Carregando…`;
 
-      carregar();
+      // ===== Carregar tudo, paginando no front =====
+      carregarTudo();
 
-      async function carregar() {
+      async function carregarTudo(){
+        // placeholders (sem “faixa” visual)
+        listaDeferidas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+        listaPendentes.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+        countDef.textContent = countPen.textContent = '—';
+        resumoGeral.textContent = '—';
+
         try {
-          const params = new URLSearchParams({
-            page: String(pagina),
-            limit: String(porPagina),
-          });
-          if (filtroTurma.value) params.set('turma', filtroTurma.value);
-          if (pesquisaNome.value.trim()) params.set('q', pesquisaNome.value.trim());
+          // Monta filtros que o backend aceita
+          const paramsBase = new URLSearchParams();
+          if (filtroTurma.value) paramsBase.set('turma', filtroTurma.value);
+          if (pesquisaNome.value.trim()) paramsBase.set('q', pesquisaNome.value.trim());
+          if (dataDe.value)  paramsBase.set('from', dataDe.value);
+          if (dataAte.value) paramsBase.set('to', dataAte.value);
 
-          lista.innerHTML = `<div class="skeleton" style="height:120px"></div>`;
+          // Busca todas as páginas para processar no front
+          let page = 1, totalPages = 1;
+          const acumulado = [];
+          do{
+            const params = new URLSearchParams(paramsBase);
+            params.set('page', String(page));
+            params.set('limit', '200'); // lote grande p/ reduzir idas à API
+            const r = await fetch(`/api/notificacoes?${params.toString()}`, { credentials:'include', cache:'no-store' });
+            if (r.status === 401) { location.href='./login.html'; return; }
+            const j = await r.json();
+            const data = Array.isArray(j) ? j : (j.data || []);
+            totalPages = Number(j.totalPages ?? 1);
+            totalBruto = Number(j.total ?? data.length);
+            acumulado.push(...data);
+            page++;
+          } while (page <= totalPages && page <= 20); // segurança
 
-          const r = await fetch(`/api/notificacoes?${params.toString()}`, { credentials:'include', cache:'no-store' });
-          if (r.status === 401) { location.href='./login.html'; return; }
-          const j = await r.json();
+          // Filtro local de datas (caso o backend ignore from/to)
+          const de = dataDe.value ? new Date(dataDe.value + 'T00:00:00') : null;
+          const ate = dataAte.value ? new Date(dataAte.value + 'T23:59:59') : null;
+          const parseDataMod = (n) => {
+            const src = n.atualizadoEm || n.updatedAt || n.data;
+            return src ? new Date(src) : null;
+          };
 
-          const data = Array.isArray(j) ? j : (j.data || []);
-          totalPaginas = Number(j.totalPages ?? 1);
-          totalItens   = Number(j.total ?? data.length);
+          dataset = acumulado
+            .filter(n=>{
+              if (!de && !ate) return true;
+              const d = parseDataMod(n); if (!d) return false;
+              if (de && d < de) return false;
+              if (ate && d > ate) return false;
+              return true;
+            })
+            .sort((a,b)=>{
+              const da = parseDataMod(a)?.getTime() ?? 0;
+              const db = parseDataMod(b)?.getTime() ?? 0;
+              return db - da;
+            });
 
-          renderTurmasDoLote(data);
-          renderCards(data);
-          renderPaginacao();
+          // Split por status
+          dsDef = dataset.filter(n => String(n.status||'').toLowerCase()==='deferido');
+          dsPen = dataset.filter(n => String(n.status||'').toLowerCase()!=='deferido');
 
+          // Popular filtro de turmas pelas que retornaram
+          renderTurmasDoLote(dataset);
+
+          // zerar páginas das colunas
+          paginaDef = 1; paginaPen = 1;
+
+          // Render colunas + pagers
+          refreshColumns();
         } catch (e) {
           console.error(e);
           showError('Falha ao carregar notificações.');
-          lista.innerHTML = `<div style="opacity:.7;text-align:center;padding:24px">Erro ao carregar.</div>`;
+          listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+          listaPendentes.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
         }
       }
 
@@ -282,7 +379,8 @@
         const nome = n.aluno?.nome || '—';
         const turma = n.aluno?.turma || '—';
         const medida = n.tipoMedida || n.tipo || '—';
-        const data   = n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—';
+        const dmod = (n.atualizadoEm || n.updatedAt || n.data);
+        const dataTxt = dmod ? new Date(dmod).toLocaleString('pt-BR') : '—';
 
         const vTotal = derivarValorTotal(n);
         const faixa = faixaNotaPrevista(n);
@@ -304,16 +402,12 @@
             </span>` : ''}
           `;
         }
-
-        const devolv = n.devolvidoPeloAluno
-          ? `<span class="badge" title="Assinada e devolvida">📥 Devolvida</span>`
-          : '';
-
+        const devolv = n.devolvidoPeloAluno ? `<span class="badge" title="Assinada e devolvida">📥 Devolvida</span>` : '';
         const flagCorr = faixa.corrigido ? ' title="corrigido na exibição"' : '';
         return `
           <div>
             <div class="n-title">${nome}</div>
-            <div class="n-sub">${turma} • ${medida} • ${data}</div>
+            <div class="n-sub">${turma} • ${medida} • ${dataTxt}</div>
           </div>
           <div>${statusPill(n.status)}</div>
           <div>
@@ -325,16 +419,13 @@
         `;
       }
 
-      function renderCards(data){
-        if (!data.length) {
-          lista.innerHTML = `<div style="opacity:.7;text-align:center;padding:24px">Nenhuma notificação encontrada.</div>`;
-          resumo.textContent = `0–0 de 0 resultado(s)`;
-          pagTop.innerHTML = pagBottom.innerHTML = '';
+      function renderLista(arr, container){
+        container.innerHTML = '';
+        if (!arr.length){
+          container.innerHTML = `<div class="empty">Nada por aqui…</div>`;
           return;
         }
-
-        const frag = document.createDocumentFragment();
-        data.forEach(n => {
+        arr.forEach(n=>{
           const wrap = document.createElement('div');
           wrap.className = 'n-card';
 
@@ -344,7 +435,7 @@
 
           const body = document.createElement('div');
           body.className = 'n-body';
-          body.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
+          body.innerHTML = `<div class="empty"><span class="spinner"></span>Carregando…</div>`;
 
           let loaded = false;
           head.addEventListener('click', async () => {
@@ -361,7 +452,6 @@
 
               const vTotal = (typeof det.valorTotal === 'number') ? det.valorTotal : derivarValorTotal(det);
               const faixa = faixaNotaPrevista(det);
-
               const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g,'');
               const deferida = String(det.status||'').toLowerCase()==='deferido';
               const showCom = deferida && (med==='AIA' || med==='AECDE');
@@ -407,16 +497,17 @@
               loaded = true;
             }catch(e){
               console.error(e);
-              body.innerHTML = `<div style="opacity:.8">Erro ao carregar detalhes.</div>`;
+              body.innerHTML = `<div class="empty">Erro ao carregar detalhes.</div>`;
             }
           });
 
           wrap.appendChild(head);
           wrap.appendChild(body);
-          lista.appendChild(wrap);
+          container.appendChild(wrap);
         });
 
-        document.querySelectorAll('.chk-entregue').forEach(chk => {
+        // checkboxes ENTREGUE
+        container.querySelectorAll('.chk-entregue').forEach(chk => {
           chk.addEventListener('click', async (ev) => {
             ev.stopPropagation();
             const id = chk.dataset.id;
@@ -425,49 +516,100 @@
             try{
               const r = await fetch(`/api/notificacoes/${id}/entregar`, { method:'POST', credentials:'include', cache:'no-store' });
               const j = await r.json();
-              if (!r.ok) {
-                chk.checked = !prev;
-                showError(j.error || 'Falha ao marcar ENTREGUE');
-                return;
-              }
+              if (!r.ok) { chk.checked = !prev; showError(j.error || 'Falha ao marcar ENTREGUE'); return; }
               showToast('Notificação marcada como ENTREGUE.');
-              carregar();
-            }catch(e){
-              chk.checked = !prev;
-              showError('Erro de rede ao marcar ENTREGUE.');
-            }
+              carregarTudo();
+            }catch(e){ chk.checked = !prev; showError('Erro de rede ao marcar ENTREGUE.'); }
           });
         });
-
-        const ini = (totalItens===0) ? 0 : ((pagina-1)*porPagina + 1);
-        const fim = Math.min(totalItens || (pagina*porPagina), ini + data.length - 1);
-        resumo.textContent = `${ini}–${fim} de ${totalItens || data.length} resultado(s)`;
       }
 
-      function renderPaginacao(){
-        const make = (el) => {
-          el.innerHTML = '';
-          const add = (label, goTo, disabled=false, current=false) => {
-            const btn = document.createElement('button');
-            btn.textContent = label;
-            if (current) btn.classList.add('current');
-            btn.disabled = disabled;
-            btn.onclick = () => { pagina = goTo; carregar(); };
-            el.appendChild(btn);
-          };
-          add('« Primeiro', 1, pagina===1);
-          add('‹ Anterior', Math.max(1, pagina-1), pagina===1);
-          const start = Math.max(1, pagina-3);
-          const end = Math.min(totalPaginas, start+6);
-          for(let i=start;i<=end;i++) add(String(i), i, false, i===pagina);
-          add('Próximo ›', Math.min(totalPaginas, pagina+1), pagina===totalPaginas);
-          add('Último »', totalPaginas, pagina===totalPaginas);
+      // Paginação por coluna (front)
+      function paginar(arr, page, perPage){
+        const total = arr.length;
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const start = (page-1)*perPage;
+        return { slice: arr.slice(start, start+perPage), total, totalPages };
+      }
+      function buildPager(el, current, totalPages, onGo){
+        el.innerHTML = '';
+        const add = (lbl, goto, dis=false, cur=false) => {
+          const b = document.createElement('button');
+          b.textContent = lbl;
+          if (cur) b.classList.add('current');
+          b.disabled = dis;
+          b.onclick = ()=> onGo(goto);
+          el.appendChild(b);
         };
-        make(pagTop);
-        make(pagBottom);
+        add('«', 1, current===1);
+        add('‹', Math.max(1,current-1), current===1);
+        const s = Math.max(1, current-2);
+        const e = Math.min(totalPages, s+4);
+        for(let i=s;i<=e;i++) add(String(i), i, false, i===current);
+        add('›', Math.min(totalPages, current+1), current===totalPages);
+        add('»', totalPages, current===totalPages);
       }
 
-      // ====== ALTERADO: agora baixa DOCX (não abre nova aba)
+      function refreshColumns(){
+        countDef.textContent = `(${dsDef.length})`;
+        countPen.textContent = `(${dsPen.length})`;
+
+        const per = porPagina;
+
+        // DEF
+        const pDef = paginar(dsDef, paginaDef, per);
+        renderLista(pDef.slice, listaDeferidas);
+        buildPager(pagDef, paginaDef, pDef.totalPages, (g)=>{ paginaDef=g; refreshColumns(); });
+        resumoDef.textContent = pDef.total ? `${(paginaDef-1)*per+1}–${Math.min(paginaDef*per, pDef.total)} de ${pDef.total}` : '0–0 de 0';
+
+        // PEN
+        const pPen = paginar(dsPen, paginaPen, per);
+        renderLista(pPen.slice, listaPendentes);
+        buildPager(pagPen, paginaPen, pPen.totalPages, (g)=>{ paginaPen=g; refreshColumns(); });
+        resumoPen.textContent = pPen.total ? `${(paginaPen-1)*per+1}–${Math.min(paginaPen*per, pPen.total)} de ${pPen.total}` : '0–0 de 0';
+
+        // Resumo geral
+        resumoGeral.textContent = `${dataset.length} resultado(s) filtrados de ${totalBruto} no total`;
+      }
+
+      // ===== CSV do filtro atual =====
+      btnCsv.addEventListener('click', ()=>{
+        if (!dataset.length){ showError('Nada para exportar.'); return; }
+        const head = ['Status','Aluno','Turma','Tipo','Data','Valor','NotaAntes','NotaDepois','Nº Sequencial','Artigo','Inciso','Entregue','PrazoDevolucao','Devolvida'];
+        const rows = [];
+        const all = [...dsDef.map(n=>({n,st:'Deferido'})), ...dsPen.map(n=>({n,st:'Aguardando/' + String(n.status||'')}))];
+
+        for (const {n,st} of all){
+          const nome = n.aluno?.nome || '';
+          const turma = n.aluno?.turma || '';
+          const tipo = n.tipoMedida || n.tipo || '';
+          const dmod = (n.atualizadoEm || n.updatedAt || n.data);
+          const dataTxt = dmod ? new Date(dmod).toLocaleString('pt-BR') : '';
+          const vTotal = derivarValorTotal(n);
+          const faixa = faixaNotaPrevista(n);
+          rows.push([
+            st, nome, turma, tipo, dataTxt, vTotal,
+            faixa.antes ?? '', faixa.depois ?? '',
+            n.numeroSequencial ?? '', n.artigo ?? '', n.inciso ?? '',
+            n.entregue ? 'Sim' : 'Não',
+            n.prazoDevolucao ? new Date(n.prazoDevolucao).toLocaleString('pt-BR') : '',
+            n.devolvidoPeloAluno ? 'Sim' : 'Não'
+          ]);
+        }
+        const csv = [head, ...rows].map(r=>r.map(v=>{
+          const s = String(v ?? '');
+          if (s.includes(';') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g,'""')}"`;
+          return s;
+        }).join(';')).join('\n');
+
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = `notificacoes_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      });
+
+      // ===== Ações já existentes =====
       async function gerarPDF(id) {
         try {
           const r = await fetch(`/api/pdf/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
@@ -480,27 +622,21 @@
           const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disp);
           const nome = m ? m[1].replace(/['"]/g, '') : `notificacao_${Date.now()}.docx`;
           a.download = nome.endsWith('.docx') ? nome : (nome + '.docx');
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-        } catch {
-          showError('Erro ao gerar documento.');
-        }
+          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        } catch { showError('Erro ao gerar documento.'); }
       }
-
       async function reenviarNotificacao(id) {
         try {
           const r = await fetch(`/api/notificacoes/${id}/reenviar`, { method:'PUT', credentials:'include', cache:'no-store' });
-        const j = await r.json();
-          if (r.ok) carregar(); else showError(j.message || 'Erro ao reenviar.');
+          const j = await r.json();
+          if (r.ok) carregarTudo(); else showError(j.message || 'Erro ao reenviar.');
         } catch { showError('Erro ao reenviar a notificação.'); }
       }
       async function excluirNotificacao(id) {
         if (!confirm('Deseja excluir esta notificação?')) return;
         try {
           const r = await fetch(`/api/notificacoes/${id}`, { method:'DELETE', credentials:'include', cache:'no-store' });
-          if (r.ok) carregar(); else showError('Erro ao excluir a notificação.');
+          if (r.ok) carregarTudo(); else showError('Erro ao excluir a notificação.');
         } catch { showError('Erro ao conectar com o servidor.'); }
       }
       async function abrirComunicacao(id) {
@@ -517,8 +653,7 @@
           const r = await fetch(`/api/notificacoes/${id}/entregar`, { method:'POST', credentials:'include', cache:'no-store' });
           const j = await r.json();
           if (!r.ok) { showError(j.error || 'Falha ao marcar ENTREGUE'); btn && (btn.disabled=false); return; }
-          showToast('Notificação marcada como ENTREGUE.');
-          carregar();
+          showToast('Notificação marcada como ENTREGUE.'); carregarTudo();
         }catch(e){ showError('Erro de rede ao marcar ENTREGUE.'); btn && (btn.disabled=false); }
       }
       async function marcarDevolvida(id, btn){
@@ -527,12 +662,11 @@
           const r = await fetch(`/api/notificacoes/${id}/devolver`, { method:'POST', credentials:'include', cache:'no-store' });
           const j = await r.json();
           if (!r.ok) { showError(j.error || 'Falha ao marcar DEVOLVIDA'); btn && (btn.disabled=false); return; }
-          showToast('Notificação marcada como DEVOLVIDA.');
-          carregar();
-        }catch(e){ showError('Erro de rede ao marcar DEVOLVIDA.'); btn && (btn.disabled=false); }
+          showToast('Notificação marcada como DEVOLVIDA.'); carregarTudo();
+        }catch(e){ showError('Erro ao marcar DEVOLVIDA.'); btn && (btn.disabled=false); }
       }
 
-      // export
+      // Export para escopo global (ações em botões)
       window.gerarPDF = gerarPDF;
       window.reenviarNotificacao = reenviarNotificacao;
       window.excluirNotificacao = excluirNotificacao;
@@ -540,14 +674,33 @@
       window.marcarEntregue = marcarEntregue;
       window.marcarDevolvida = marcarDevolvida;
 
-      // eventos
+      // ===== Eventos =====
       const debounce = (fn,ms=250)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
-      pesquisaNome.addEventListener('input', debounce(()=>{ pagina = 1; carregar(); }, 200));
-      filtroTurma.addEventListener('change', ()=>{ pagina = 1; carregar(); });
-      porPaginaSel.addEventListener('change', ()=>{ porPagina = Number(porPaginaSel.value); pagina = 1; carregar(); });
+      pesquisaNome.addEventListener('input', debounce(()=>{ carregarTudo(); }, 200));
+      filtroTurma.addEventListener('change', ()=>{ carregarTudo(); });
+      porPaginaSel.addEventListener('change', ()=>{ porPagina = Number(porPaginaSel.value); paginaDef=1; paginaPen=1; refreshColumns(); });
+      dataDe.addEventListener('change', ()=>{ carregarTudo(); });
+      dataAte.addEventListener('change', ()=>{ carregarTudo(); });
+
+      // Chips de período
+      function fmtDate(d){ return d.toISOString().slice(0,10); }
+      chipHoje.addEventListener('click', ()=>{
+        const now = new Date();
+        dataDe.value = fmtDate(now); dataAte.value = fmtDate(now); carregarTudo();
+      });
+      chip7.addEventListener('click', ()=>{
+        const now = new Date(); const de = new Date(); de.setDate(now.getDate()-6);
+        dataDe.value = fmtDate(de); dataAte.value = fmtDate(now); carregarTudo();
+      });
+      chip30.addEventListener('click', ()=>{
+        const now = new Date(); const de = new Date(); de.setDate(now.getDate()-29);
+        dataDe.value = fmtDate(de); dataAte.value = fmtDate(now); carregarTudo();
+      });
+      chipLimpar.addEventListener('click', ()=>{
+        dataDe.value = ''; dataAte.value=''; carregarTudo();
+      });
     });
   </script>
   <script src="notify.js"></script>
-
 </body>
 </html>

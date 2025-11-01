@@ -1,38 +1,45 @@
-// backend/models/AphAtendimento.js
 const mongoose = require('mongoose');
 
 const AphAtendimentoSchema = new mongoose.Schema(
   {
+    instituicao: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+
     alunoId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       index: true,
-      ref: 'Aluno', // opcional, só se você tiver o model Aluno
+      ref: 'Aluno',
     },
 
     // Identificação & contexto
     responsavel: { type: String, trim: true, default: '' },
-    local: { type: String, trim: true, default: '' },     // Sala, Pátio, etc.
-    hora: { type: String, trim: true, default: '' },      // "14:35" (texto livre)
+    local: { type: String, trim: true, default: '' },
+    hora: { type: String, trim: true, default: '' },
+    data: { type: Date, default: Date.now },
 
     // Seleções do formulário
-    tipos: { type: [String], default: [] },               // ex: ["Arranhão / escoriação", "Queda"]
-    materiais: { type: [String], default: [] },           // ex: ["Curativo simples", "Bolsa de gelo"]
+    tipos: { type: [String], default: [] },
+    materiais: { type: [String], default: [] },
 
-    // Observações gerais
-    observacoes: { type: String, trim: true, default: '' },
+    // Campos livres (compat com versões anteriores)
+    sinaisESintomas: { type: String, trim: true, default: '' },
+    procedimentos:   { type: String, trim: true, default: '' },
+    observacoes:     { type: String, trim: true, default: '' },
+    observacao:      { type: String, trim: true, default: '' }, // legado
 
-    // Comunicação
-    responsaveisInformados: { type: String, trim: true, default: '' }, // "Sim" | "Não"
-    meioComunicacao: { type: String, trim: true, default: '' },        // "WhatsApp" | "Telefone" | "Pessoalmente"
-    encaminhamento: { type: String, trim: true, default: '' },         // hospital/posto etc.
+    // Comunicação com responsáveis
+    responsaveisInformados: { type: String, enum: ['Sim', 'Não'], default: 'Não' },
+    meioComunicacao: { type: String, trim: true, default: '' },
 
-    // Metadados
-    criadoPor: { type: String, trim: true, default: '' }, // usuário do sistema (se desejar)
+    // Encaminhamento
+    houveEncaminhamento: { type: Boolean, default: false },
+    encaminhamento: { type: String, trim: true, default: '' },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true }
 );
 
-AphAtendimentoSchema.index({ alunoId: 1, createdAt: -1 });
-
-module.exports = mongoose.model('AphAtendimento', AphAtendimentoSchema);
+module.exports = mongoose.models.AphAtendimento || mongoose.model('AphAtendimento', AphAtendimentoSchema);

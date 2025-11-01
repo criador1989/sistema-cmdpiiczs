@@ -209,7 +209,7 @@
           </section>
           <!-- ===== FIM SEÇÃO RESTAURADA ===== -->
 
-          <!-- ===== NOVO BLOCO: Ações obrigatórias por comportamento ===== -->
+          <!-- ===== BLOCO: Ações obrigatórias por comportamento ===== -->
           <section class="alertas-comportamento" id="acSection">
             <header class="ac-head">
               <h3 style="margin:0">✅ Comportamento — Ações Obrigatórias</h3>
@@ -225,11 +225,12 @@
               <button class="tab-btn" data-tab="tab-insuficiente" role="tab" aria-selected="false">Informar responsáveis (3,00–4,99)</button>
             </nav>
 
+            <!-- NP (5,00–6,99) -->
             <div id="tab-regular" class="tab-panel" aria-hidden="false">
               <p class="muted"><strong>Art. 51</strong> — Encaminhar ao Núcleo Psicossocial (NP) e registrar no histórico. O NP deve informar os responsáveis.</p>
               <div class="table-wrap">
                 <table class="tabela">
-                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:180px">Ações</th></tr></thead>
+                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:220px">Ações</th></tr></thead>
                   <tbody id="tbody-regular"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
                 </table>
               </div>
@@ -242,11 +243,12 @@
               </div>
             </div>
 
+            <!-- 3,00–4,99 -->
             <div id="tab-insuficiente" class="tab-panel" aria-hidden="true" style="display:none">
               <p class="muted"><strong>Art. 52</strong> — Coordenador informa responsáveis sobre a situação e a possível não renovação se evoluir para incompatível.</p>
               <div class="table-wrap">
                 <table class="tabela">
-                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:180px">Ações</th></tr></thead>
+                  <thead><tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:220px">Ações</th></tr></thead>
                   <tbody id="tbody-insuficiente"><tr><td colspan="4" style="opacity:.7">Carregando…</td></tr></tbody>
                 </table>
               </div>
@@ -263,7 +265,7 @@
               <small class="muted">Atualiza automaticamente a cada 60s • <span id="ac-last-update">—</span></small>
             </footer>
           </section>
-          <!-- ===== FIM DO BLOCO NOVO ===== -->
+          <!-- ===== FIM DO BLOCO ===== -->
 
           <div class="charts">
             <div class="chart-card">
@@ -301,7 +303,7 @@
   </nav>
 
   <script>
-  // ===== DEV: limpar SW/caches para não travar cookies em localhost =====
+  // ===== DEV: limpar SW/caches em localhost =====
   if (['localhost','127.0.0.1'].includes(location.hostname)) {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
@@ -309,10 +311,7 @@
     if (window.caches) { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); }
   }
 
-  // ===== Base da API (Vite usa porta 5173, api em 5000) =====
   const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
-
-  // Helpers de URL com BASE + prefixo garantido
   const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
@@ -337,6 +336,17 @@
     }
     el.textContent = `Erro: ${msg}`;
     clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
+  }
+  function showOK(msg){
+    let el = document.getElementById('okBanner');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'okBanner';
+      el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#14532d;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 4500);
   }
 
   // ===== Métricas =====
@@ -381,7 +391,7 @@
     }
   }
 
-  // ===== SEÇÃO RESTAURADA: Pendências de devolução =====
+  // ===== Pendências de devolução =====
   async function carregarPendenciasDevolucao(){
     const resumo = document.getElementById('pendResumo');
     const tbody  = document.getElementById('pendTableBody');
@@ -431,7 +441,7 @@
     }
   }
 
-  // ===== NOVO: Alertas de Comportamento (NP/Responsáveis) =====
+  // ===== Alertas de Comportamento (NP/Responsáveis) =====
   (function(){
     const $ = (sel, ctx=document)=>ctx.querySelector(sel);
     const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
@@ -458,7 +468,8 @@
       insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
     };
 
-    function row(a){
+    // === linhas: agora NP também tem "Comunicar Pais"
+    function rowReg(a){
       return `
         <tr>
           <td>${a.nome}</td>
@@ -466,16 +477,28 @@
           <td><strong>${Number(a.nota ?? a.comportamento ?? a.n).toFixed(2)}</strong></td>
           <td class="acoes">
             <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+            <button class="btn" data-acao="comPais" data-id="${a._id}" title="E-mail e Telegram">👪 Comunicar Pais</button>
+          </td>
+        </tr>`;
+    }
+    function rowIns(a){
+      return `
+        <tr>
+          <td>${a.nome}</td>
+          <td>${a.turma || '-'}</td>
+          <td><strong>${Number(a.nota ?? a.comportamento ?? a.n).toFixed(2)}</strong></td>
+          <td class="acoes">
+            <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+            <button class="btn" data-acao="comPais" data-id="${a._id}" title="E-mail e Telegram">👪 Comunicar Pais</button>
           </td>
         </tr>`;
     }
 
-    function renderPaged(tbody, arr, st, pageEl, pagesEl){
+    function renderPaged(tbody, arr, st, pageEl, pagesEl, rowFn){
       const total = arr.length;
       const pages = Math.max(1, Math.ceil(total / st.size));
       st.page = Math.min(Math.max(1, st.page), pages);
 
-      // atualizar UI paginação
       pageEl.textContent  = String(st.page);
       pagesEl.textContent = String(pages);
 
@@ -483,17 +506,16 @@
       const slice = arr.slice(start, start + st.size);
 
       tbody.innerHTML = slice.length
-        ? slice.map(row).join('')
+        ? slice.map(rowFn).join('')
         : `<tr><td colspan="4" style="opacity:.7">Sem itens.</td></tr>`;
 
       return { pages };
     }
 
     function renderAll(){
-      const r = renderPaged(tbodyReg, REG_DATA, state.reg, el.regPage, el.regPages);
-      const i = renderPaged(tbodyIns, INS_DATA, state.ins, el.insPage, el.insPages);
+      const r = renderPaged(tbodyReg, REG_DATA, state.reg, el.regPage, el.regPages, rowReg);
+      const i = renderPaged(tbodyIns, INS_DATA, state.ins, el.insPage, el.insPages, rowIns);
 
-      // habilitar/desabilitar botões
       el.regPrev.disabled = state.reg.page <= 1;
       el.regNext.disabled = state.reg.page >= r.pages;
       el.insPrev.disabled = state.ins.page <= 1;
@@ -513,7 +535,6 @@
         cntReg.textContent = REG_DATA.length;
         cntIns.textContent = INS_DATA.length;
 
-        // reset de páginas ao recarregar
         state.reg.page = 1;
         state.ins.page = 1;
 
@@ -540,12 +561,37 @@
       });
     });
 
-    // Ações (apenas "Registrar" → ficha na aba Observações)
-    document.addEventListener('click', (ev)=>{
+    // Ações
+    document.addEventListener('click', async (ev)=>{
       const btn = ev.target.closest('button[data-acao]'); if(!btn) return;
       const id = btn.dataset.id; const acao = btn.dataset.acao;
+
       if (acao === 'registrar') {
-        location.href = `./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`;
+        return location.href = `./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`;
+      }
+
+      if (acao === 'comPais') {
+        if (!confirm('Deseja enviar aviso aos pais sobre a nota comportamental deste aluno?')) return;
+        btn.disabled = true;
+        try{
+          const r = await fetch(API(`/comunicacao/nota-comportamental/${id}`), {
+            method:'POST', credentials:'include'
+          });
+          const j = await r.json().catch(()=>({}));
+          if (r.ok && (j.ok || j.sucesso || j.resultados)) {
+            showOK('Comunicação enviada aos pais. ✅');
+            console.log('Detalhes do envio:', j);
+          } else {
+            const msg = j?.mensagem || j?.error || 'Falha ao enviar comunicação.';
+            showError(msg);
+            console.error('Resposta:', j);
+          }
+        }catch(e){
+          showError('Erro ao enviar comunicação.');
+          console.error(e);
+        }finally{
+          btn.disabled = false;
+        }
       }
     });
 
@@ -566,7 +612,7 @@
 
     btnReload?.addEventListener('click', carregarAlertasComportamento);
 
-    // Expor no escopo global para chamar no boot
+    // Expor no escopo global para o boot
     window._carregarAlertasComportamento = carregarAlertasComportamento;
   })();
 
@@ -661,11 +707,9 @@
     await verificarUsuario();
     await verificarAdmin();
     await carregarMetricas();
-
-    // RESTAURADO: carregar pendências de devolução
     await carregarPendenciasDevolucao();
 
-    // NOVO: carregar alertas de comportamento + auto refresh
+    // carregar alertas + auto refresh
     if (window._carregarAlertasComportamento) {
       await window._carregarAlertasComportamento();
       setInterval(window._carregarAlertasComportamento, 60000);

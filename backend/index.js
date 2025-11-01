@@ -10,39 +10,89 @@ const cors = require('cors');
 
 const app = express();
 
-// ====== DIAGNÓSTICO / SEGURANÇA BÁSICA ======
+/* =========================
+   DIAGNÓSTICO / SEGURANÇA
+   ========================= */
 console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
 app.set('trust proxy', 1);
 
-// evita cache geral em dev
+// Evita cache de HTML (útil em dev)
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
 
-// ====== CORS (antes das rotas)
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
-app.use(cors({
-  origin: CLIENT_URL,
+// Cabeçalhos mínimos de segurança em produção
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    next();
+  });
+}
+
+/* =========================
+   CORS (antes das rotas)
+   ========================= */
+const DEV_ALLOWED = [
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // curl/postman
+    if (process.env.NODE_ENV === 'production') {
+      const allowed = (process.env.CLIENT_URL || '').split(',').map(s => s.trim()).filter(Boolean);
+      return allowed.includes(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'));
+    }
+    if (DEV_ALLOWED.includes(origin)) return cb(null, true);
+    if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return cb(null, true);
+    return cb(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'],
-}));
+};
+app.use(cors(corsOptions));
 
-// ====== PARSERS ======
+/* =========================
+   PARSERS
+   ========================= */
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ====== MODELS ======
+/* =========================
+   MODELS
+   ========================= */
 try { require('./models/Aluno'); } catch {}
 try { require('./models/Notificacao'); } catch {}
 try { require('./models/Usuario'); } catch {}
 try { require('./models/Log'); } catch {}
 try { require('./models/Instituicao'); } catch {}
+try { require('./models/AphAtendimento'); } catch {}
 
-// ====== ROTAS ======
+/* =========================
+   MENSAEGERIA (INJEÇÃO)
+   ========================= */
+try {
+  const mensageria = require('./services/mensageria');
+  app.locals.mensageria = mensageria;
+  global.mensageria = mensageria;
+  console.log('✉️  Mensageria injetada (email/telegram/whatsapp).');
+} catch (e) {
+  console.warn('⚠️  Mensageria não carregada:', e?.message || e);
+}
+
+/* =========================
+   ROTAS
+   ========================= */
 const alunoRoutes = require('./routes/api/alunos');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
@@ -69,35 +119,47 @@ const observacoesRoutes = require('./routes/api/observacoes');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
 const dashboardFastRoutes = require('./routes/api/dashboard-fast');
-const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
 const instituicoesRoutes = require('./routes/api/instituicoes');
 const authRoutes = require('./routes/authRoutes');
 const alertasRoutes = require('./routes/api/alunos-alertas');
 const aphEstatisticasRoutes = require('./routes/api/aph-estatisticas');
 const aphPdfRoutes = require('./routes/api/aph-pdf');
+const telegramBotRoutes = require('./routes/api/telegramBot');
+const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
+const comunicacaoAutoRoutes = require('./routes/api/comunicacao');
 
-// ====== CONFIG SERVIDOR ======
+/* =========================
+   CONFIG SERVIDOR / ESTÁTICOS
+   ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
 fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
 
-// ====== ESTÁTICOS ======
 app.use('/uploads', express.static(uploadRoot));
 app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), { maxAge: '7d', immutable: true }));
+
 app.use(express.static(publicRoot, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
   }
 }));
+
+app.get('/service-worker.js', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(publicRoot, 'service-worker.js'));
+});
+
 app.get('/', (req, res) => res.redirect('/login.html'));
 
-// ====== AUTH (router dedicado)
+/* =========================
+   AUTH / HTML PROTEGIDOS
+   ========================= */
+const { autenticar } = require('./middleware/autenticacao');
+
 app.use('/auth', authRoutes);
 
-// ====== HTMLs protegidos ======
-const { autenticar } = require('./middleware/autenticacao');
 app.get('/ficha-aluno.html', autenticar, (req, res) =>
   res.sendFile(path.join(publicRoot, 'ficha-aluno.html'))
 );
@@ -117,7 +179,6 @@ app.get('/estatisticas.html', autenticar, (req, res) =>
   res.sendFile(path.join(publicRoot, 'estatisticas.html'))
 );
 
-// ✅ APH: páginas HTML protegidas
 app.get('/aph-atendimentos.html', autenticar, (req, res) =>
   res.sendFile(path.join(publicRoot, 'aph-atendimentos.html'))
 );
@@ -125,12 +186,16 @@ app.get('/aph-atendimento.html', autenticar, (req, res) =>
   res.sendFile(path.join(publicRoot, 'aph-atendimento.html'))
 );
 
-// ====== APIs ======
+/* =========================
+   APIs
+   ========================= */
 app.use('/api/ficha', autenticar, fichaApiRoutes);
 app.use('/ficha', autenticar, fichaViewRoutes);
 app.use('/api', fichaTesteRoute);
+
 app.use('/api/alunos', alunoRoutes);
 app.use('/api/notificacoes', notificacoesApiRoutes);
+
 app.use('/api', pdfRoutes);
 app.use('/api', fichaPdfRoutes);
 app.use('/notificacoes', notificacoesViewRoutes);
@@ -142,6 +207,7 @@ app.use('/api/professores', professoresRoute);
 app.use('/api/qrcode-professor', qrcodeProfessoresRoute);
 app.use('/api/qrcode-professores', qrcodeProfessoresRoute);
 app.use('/api/professores/qrcode', qrcodeProfessoresRoute);
+
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
@@ -149,9 +215,8 @@ app.use('/api', relatorioNotificacoesRoute);
 app.use('/api/estatisticas', estatisticasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
-app.use('/api/usuarios', acessoProfessorRoute); // (se não for intencional, considere mover p/ /api/acesso-professor)
+app.use('/api/usuarios', acessoProfessorRoute);
 app.use('/api/diagnostico', diagnosticoNotaRoutes);
-app.use('/api/comunicacao', comunicacaoPaisRoutes);
 app.use('/api/dashboard-fast', autenticar, dashboardFastRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/notificacoes', require('./routes/api/notificacoes.metrics'));
@@ -160,33 +225,43 @@ app.use('/api/instituicoes', instituicoesRoutes);
 app.use('/api/alertas', alertasRoutes);
 app.use('/api/aph', aphEstatisticasRoutes);
 app.use('/api/aph', aphPdfRoutes);
+app.use('/api/telegram', telegramBotRoutes);
+app.use('/api/comunicacao', comunicacaoPaisRoutes);
+app.use('/api/comunicacao', comunicacaoAutoRoutes);
 
-// ✅ APH: API opcional (não quebra caso o arquivo não exista)
 try {
-  const aphRoutes = require('./routes/api/aph'); // crie em routes/api/aph.js se ainda não tiver
+  const aphRoutes = require('./routes/api/aph');
+  // obs: os handlers já têm `autenticar`, mas manter aqui não faz mal
   app.use('/api/aph', autenticar, aphRoutes);
   console.log('API APH ligada em /api/aph');
 } catch (e) {
-  console.warn('API APH não encontrada (routes/api/aph.js). Prosseguindo sem ela.');
+  console.warn('API APH não encontrada. Prosseguindo sem ela.');
 }
 
-// ====== STATUS ======
+/* =========================
+   STATUS / DIAGNÓSTICO
+   ========================= */
 app.get('/__version', (req, res) => {
   res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', builtAt: new Date().toISOString() });
 });
 app.get('/healthz', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
-// ====== DEBUG DE COOKIES ======
-app.get('/debug/set-cookie', (req, res) => {
-  res.cookie('debug_plain', 'ok', { path: '/' });
-  res.cookie('debug_http', 'ok', { httpOnly: true, path: '/' });
-  res.json({ ok: true, msg: 'cookies enviados' });
-});
-app.get('/debug/show-cookie', (req, res) => {
-  res.json({ cookiesRecebidos: req.headers.cookie || '(nenhum)' });
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    const notFound = path.join(__dirname, 'public', '404.html');
+    if (fs.existsSync(notFound)) return res.status(404).sendFile(notFound);
+  }
+  res.status(404).json({ error: 'Rota não encontrada' });
 });
 
-// ====== CONEXÃO MONGO + START SERVER ======
+app.use((err, _req, res, _next) => {
+  console.error('❌ Erro não tratado:', err);
+  res.status(500).json({ error: 'Erro interno do servidor' });
+});
+
+/* =========================
+   CONEXÃO MONGO + START
+   ========================= */
 const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 
 (async () => {
@@ -213,7 +288,7 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
       console.log('🧪 Health pronto: /__version e /healthz');
-      console.log('🌍 CORS origin:', CLIENT_URL);
+      console.log('🌍 CORS dev liberado para 5000/5173');
     });
   } catch (err) {
     console.error('❌ Falha ao conectar no Mongo:', err?.message || err);
@@ -221,7 +296,6 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
   }
 })();
 
-// Encerramento gracioso
 process.on('SIGINT', async () => {
   try { await mongoose.disconnect(); } catch {}
   console.log('\n👋 Encerrado com sucesso');

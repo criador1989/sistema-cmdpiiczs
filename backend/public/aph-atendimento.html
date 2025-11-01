@@ -1,376 +1,347 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>APH · Atendimento (Criar/Visualizar)</title>
-  <style>
-    :root{
-      --rubi-1:#8B0000; --rubi-2:#B22222; --rubi-3:#d82327;
-      --gold:#E7C873; --bg:#0f0f12; --card:#14161a; --muted:#a3a7ad; --text:#e7e9ee;
-      --line:#2a2f37; --shadow:0 10px 30px rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:radial-gradient(900px 400px at 0% -10%,rgba(216,35,39,.2),transparent),
-                 linear-gradient(180deg,#0b0c10,#0a0b0f);
-      color:var(--text);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APH - Novo Atendimento</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192x192.png">
+<meta name="theme-color" content="#8B0000">
+<style>
+:root{
+  --rubi1:#8B0000; --rubi2:#D82327; --gold:#E7C873;
+  --bg:#0c0e11; --panel:#121418; --card:#171a1f; --line:#2a2f39;
+  --txt:#EAECEF; --muted:#9aa3ad; --ok:#1aa46f; --warn:#e2b93b; --bad:#e55353;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--txt); font-family:"Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background:
+    radial-gradient(1100px 480px at -20% -10%, rgba(216,35,39,.22), transparent 60%),
+    radial-gradient(1100px 480px at 120% -10%, rgba(139,0,0,.25), transparent 60%),
+    linear-gradient(180deg, #0c0e11, #0a0c0f);
+}
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(90deg,#1b2027,#1b2027dd);
+  border-bottom:1px solid #2a2f39; backdrop-filter:saturate(140%) blur(6px);
+}
+.topbar .in{max-width:1080px; margin:0 auto; padding:12px 16px; display:flex; gap:8px; align-items:center}
+.h1{margin:0 auto 0 0; font-weight:800}
+.btn{
+  appearance:none; border:1px solid #303645; background:#1e2430; color:#fff;
+  padding:10px 14px; border-radius:12px; font-weight:800; cursor:pointer; display:inline-flex; gap:8px; align-items:center;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn.rubi{background:linear-gradient(90deg,var(--rubi1),var(--rubi2)); border-color:#5e0a0a; box-shadow:0 12px 30px rgba(139,0,0,.28)}
+.page{max-width:1080px; margin:18px auto 28px; padding:0 16px}
 
-    /* topbar fixa */
-    .topbar{
-      position:sticky; top:0; z-index:50;
-      background:rgba(139,0,0,.9); backdrop-filter:blur(8px) saturate(140%);
-      border-bottom:1px solid rgba(231,200,115,.35);
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:10px 16px;
-    }
-    .topbar .btn{
-      border:1px solid rgba(231,200,115,.4);
-      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
-      color:#fff; border-radius:10px; padding:8px 12px; font-weight:700; cursor:pointer;
-      display:inline-flex; align-items:center; gap:6px;
-    }
-    .topbar .btn.ghost{background:transparent}
-    .topbar h1{margin:0; font-size:18px}
+.section{
+  background:linear-gradient(135deg,#151920 0%, #14181d 60%, #13171b 100%);
+  border:1px solid #262b34; border-radius:var(--radius); box-shadow:0 18px 50px rgba(0,0,0,.35);
+  padding:18px; margin-top:16px;
+}
+.legend{font-weight:900; color:#fff; margin-bottom:10px}
+.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:980px){ .grid-3{grid-template-columns:1fr 1fr} }
+@media (max-width:680px){ .grid-3,.grid-2{grid-template-columns:1fr} }
 
-    .wrap{max-width:1150px; margin:20px auto; padding:0 16px}
-    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow); margin-bottom:16px}
-    .card h2{margin:0 0 10px; font-size:18px; color:var(--gold)}
-    .row{display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-bottom:10px}
-    .col-3{grid-column:span 3} .col-4{grid-column:span 4} .col-6{grid-column:span 6} .col-8{grid-column:span 8} .col-12{grid-column:span 12}
-    @media (max-width: 900px){ .col-3,.col-4,.col-6,.col-8{grid-column:span 12} }
+label{font-weight:700; font-size:.95rem}
+.input, select, textarea{
+  width:100%; background:#0f1217; color:#e9ecf1; border:1px solid #2a303a; border-radius:12px; padding:10px;
+}
+textarea{resize:vertical; min-height:90px}
 
-    label.lab{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input[type="text"], input[type="date"], select, textarea{
-      width:100%; background:#0f1116; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px;
-      outline:none; transition: .2s border-color, .2s box-shadow;
-    }
-    textarea{min-height:110px; resize:vertical}
-    input:focus,select:focus,textarea:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(231,200,115,.15)}
+.cards{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:980px){ .cards{grid-template-columns:1fr} }
 
-    .check-grid{display:grid; grid-template-columns:repeat(3,minmax(220px,1fr)); gap:10px}
-    @media (max-width:920px){ .check-grid{grid-template-columns:repeat(2,minmax(220px,1fr))} }
-    @media (max-width:620px){ .check-grid{grid-template-columns:1fr} }
+.cardChoice{
+  background:#0f1216; border:1px solid #2a2f39; border-radius:14px; padding:12px;
+  display:flex; gap:12px; align-items:flex-start; transition:.15s filter, .15s border-color, .15s background;
+}
+.cardChoice:hover{filter:brightness(1.06)}
+.cardChoice.active{border-color:#4b5668; background:#11161d}
+.icon{
+  width:26px; height:26px; display:grid; place-items:center; border-radius:8px;
+  background:#0b0e12; border:1px solid #2a2f39; font-size:15px;
+}
+.ctitle{font-weight:800; color:#f3f5f7}
+.cdesc{color:var(--muted); font-size:.92rem; margin-top:2px}
+.cardChoice input{margin-right:6px; accent-color:#d82327}
 
-    .check{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg,#14171d,#101319)}
-    .check input{transform:translateY(2px)}
-    .check .t{font-size:14px;font-weight:700}
-    .check small{color:var(--muted); display:block; margin-top:3px}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.right{margin-left:auto}
+.actions{display:flex; gap:10px; justify-content:flex-end; margin-top:16px}
+.small{font-size:.88rem; color:var(--muted)}
+.badge{
+  display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+  border:1px solid #2f3541; background:#141a22; font-weight:800
+}
 
-    .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{background:#1d2026;border:1px solid #2a2f37;padding:6px 10px;border-radius:999px;font-size:12px}
-
-    .footerbar{position:sticky; bottom:8px; z-index:5}
-    .footerbar .actions{display:flex;gap:10px;justify-content:flex-end}
-    .btn{
-      border:1px solid var(--line); background:linear-gradient(180deg,#151820,#0f1218); color:#fff;
-      padding:10px 16px; border-radius:12px; font-weight:800; cursor:pointer;
-    }
-    .btn.primary{background:linear-gradient(135deg,var(--rubi-1),var(--rubi-3)); border-color:rgba(231,200,115,.45)}
-    .btn.ghost{background:transparent}
-    .btn.warn{background:linear-gradient(135deg,#7a6b11,#e7c873); color:#1b1b1b}
-
-    .notice{font-size:13px;color:#cbd1db}
-    .ro input,.ro select,.ro textarea{background:#0e1014; color:#c8ccd5; border-color:#262a31}
-  </style>
+/* Encaminhamento */
+.switch{
+  display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer;
+}
+.switch input{width:18px; height:18px; accent-color:#d82327}
+.muted{color:var(--muted)}
+</style>
 </head>
 <body>
   <div class="topbar">
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn ghost" id="btnVoltarFicha">← Ficha do Aluno</button>
-      <button class="btn" id="btnPainel">🏠 Painel</button>
-    </div>
-    <h1 id="titulo">APH · Novo Atendimento</h1>
-    <div style="display:flex;gap:8px">
-      <button class="btn ghost" id="btnVerLista">📄 Ver atendimentos</button>
+    <div class="in">
+      <div class="h1">APH - Novo Atendimento</div>
+      <button class="btn" id="btnVoltar">← Ficha do Aluno</button>
+      <a class="btn" href="/painel.html">🏠 Painel</a>
+      <div class="right"></div>
+      <button class="btn" id="btnLimpar">Limpar</button>
+      <button class="btn rubi" id="btnSalvar">Salvar</button>
     </div>
   </div>
 
-  <div class="wrap">
-    <section class="card">
-      <h2>Identificação & Contexto</h2>
-      <div class="row">
-        <div class="col-6">
-          <label class="lab">Responsável pelo registro</label>
-          <input id="f-resp" type="text" placeholder="Nome do monitor/professor/bombeiro" />
+  <main class="page">
+    <!-- Identificação & Contexto -->
+    <section class="section">
+      <div class="legend">Identificação & Contexto</div>
+      <div class="grid-3">
+        <div>
+          <label>Responsável pelo registro</label>
+          <input id="inpResp" class="input" placeholder="Nome do monitor/professor/bombeiro">
         </div>
-        <div class="col-3">
-          <label class="lab">Local do ocorrido</label>
-          <select id="f-local">
+        <div>
+          <label>Local do ocorrido</label>
+          <select id="inpLocal" class="input">
             <option value="">Selecione...</option>
-            <option>Sala de aula</option>
-            <option>Pátio</option>
-            <option>Refeitório</option>
-            <option>Quadra</option>
-            <option>Corredor</option>
-            <option>Outro local</option>
+            <option>Sala</option><option>Pátio</option><option>Quadra</option>
+            <option>Corredor</option><option>Refeitório</option><option>Banheiro</option>
+            <option>Entrada/Saída</option><option>Área externa</option><option>Outro</option>
           </select>
         </div>
-        <div class="col-3">
-          <label class="lab">Horário aproximado</label>
-          <input id="f-hora" type="text" placeholder="14:35" />
+        <div>
+          <label>Horário aproximado</label>
+          <input id="inpHora" type="time" class="input">
         </div>
       </div>
-
-      <div class="row">
-        <div class="col-6"><span class="chip" id="chip-aluno">Aluno: —</span></div>
-        <div class="col-6" style="text-align:right"><span class="chip" id="chip-data"></span></div>
-      </div>
-
-      <h2 style="margin-top:10px">Tipo de Ocorrência</h2>
-      <div class="check-grid" id="tipos">
-        <label class="check"><input type="checkbox" data-chip="Arranhão / escoriação"><div><div class="t">🩹 Arranhão / escoriação</div><small>Limpou-se a área e fez curativo simples.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Corte leve"><div><div class="t">✂️ Corte leve</div><small>Antisséptico + gaze/atadura.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Queimadura"><div><div class="t">🔥 Queimadura</div><small>Resfriamento local.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Torção"><div><div class="t">🦶 Torção</div><small>Gelo + repouso.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Luxação"><div><div class="t">🦴 Luxação</div><small>Imobilização provisória.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Fratura suspeita"><div><div class="t">🩼 Fratura suspeita</div><small>Imobilizar e encaminhar.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Sangramento nasal"><div><div class="t">🩸 Sangramento nasal</div><small>Compressão suave.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Queda"><div><div class="t">🧒 Queda</div><small>Inspeção; gelo se preciso.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Convulsão / crise epiléptica"><div><div class="t">⚡ Convulsão / crise epiléptica</div><small>Proteger cabeça; lateralizar.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Ansiedade / pânico"><div><div class="t">🧠 Ansiedade / pânico</div><small>Ambiente calmo; respiração guiada.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Gripe/febre/tosse (máscara)"><div><div class="t">😷 Gripe/febre/tosse (máscara)</div><small>Máscara oferecida.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Outro"><div><div class="t">📝 Outro</div><small>Especificar nas observações.</small></div></label>
-      </div>
-
-      <h2 style="margin-top:10px">Materiais & Procedimentos</h2>
-      <div class="check-grid" id="materiais">
-        <label class="check"><input type="checkbox" data-chip="Curativo simples"><div><div class="t">🩹 Curativo simples</div><small>Bandagem, micropore, etc.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Gaze / Atadura"><div><div class="t">🧻 Gaze / Atadura</div><small>Compressão / fixação.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Antisséptico"><div><div class="t">🧴 Antisséptico</div><small>Clorexidina / iodo.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Bolsa de gelo"><div><div class="t">🧊 Bolsa de gelo</div><small>Com proteção têxtil.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Imobilização provisória"><div><div class="t">🩼 Imobilização provisória</div><small>Até avaliação.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Compressa morna/fria"><div><div class="t">🧯 Compressa morna/fria</div><small>Conforme orientação.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Higienização"><div><div class="t">🫧 Higienização</div><small>Limpeza inicial.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Hidratação"><div><div class="t">💧 Hidratação</div><small>Água oferecida.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Máscara fornecida"><div><div class="t">😷 Máscara fornecida</div><small>Sintomas respiratórios.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Apoio emocional"><div><div class="t">🤝 Apoio emocional</div><small>Acolhimento.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Encaminhado ao hospital"><div><div class="t">🏥 Encaminhado ao hospital/posto</div><small>Registrado abaixo.</small></div></label>
-        <label class="check"><input type="checkbox" data-chip="Contato responsável"><div><div class="t">📞 Contato responsável</div><small>Ver comunicação.</small></div></label>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="col-12">
-          <label class="lab">Observações</label>
-          <textarea id="f-obs" placeholder="Breve descrição e evolução imediata..."></textarea>
-        </div>
+      <div class="row" style="margin-top:8px">
+        <span class="badge">Aluno: <b id="alunoNome" style="margin-left:6px">—</b></span>
+        <span class="badge">Turma: <b id="alunoTurma" style="margin-left:6px">—</b></span>
+        <span class="right small"><input id="inpData" type="date" class="input" style="width:auto"></span>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Comunicação</h2>
-      <div class="row">
-        <div class="col-4">
-          <label class="lab">Responsáveis informados?</label>
-          <select id="f-inf"><option>Não</option><option>Sim</option></select>
-        </div>
-        <div class="col-4">
-          <label class="lab">Meio</label>
-          <select id="f-meio">
-            <option></option>
-            <option>Telefone</option>
-            <option>WhatsApp</option>
-            <option>Pessoalmente</option>
-          </select>
-        </div>
-        <div class="col-12">
-          <label class="lab">Encaminhamento</label>
-          <input id="f-enc" type="text" placeholder="Hospital/UBS (se houver) · Acompanhado por (nome)" />
-        </div>
-      </div>
-      <div class="notice">Ao salvar, o registro fica disponível na lista e pode ser impresso.</div>
+    <!-- Tipo de Ocorrência -->
+    <section class="section">
+      <div class="legend">Tipo de Ocorrência</div>
+      <div id="tiposBox" class="cards"></div>
     </section>
 
-    <div class="footerbar">
+    <!-- Materiais & Procedimentos -->
+    <section class="section">
+      <div class="legend">Materiais & Procedimentos</div>
+      <div id="materiaisBox" class="cards"></div>
+      <div style="margin-top:12px">
+        <label>Observações</label>
+        <textarea id="inpObs" class="input" placeholder="Breve descrição e evolução imediata..."></textarea>
+      </div>
+    </section>
+
+    <!-- Encaminhamento -->
+    <section class="section">
+      <div class="legend">Encaminhamento</div>
+      <div class="row" style="margin-bottom:10px">
+        <label class="switch">
+          <input type="checkbox" id="chkEncaminhamento">
+          <span>Houve encaminhamento</span>
+        </label>
+        <span class="muted">Marque se o aluno foi encaminhado (ex.: posto de saúde, hospital, retorno para casa, etc.).</span>
+      </div>
+      <div>
+        <label>Para onde / como foi encaminhado</label>
+        <textarea id="txtEncaminhamento" class="input" placeholder="Ex.: Responsáveis acionados; aluno conduzido ao UPA; acompanhamento realizado..."></textarea>
+      </div>
+    </section>
+
+    <!-- Comunicação -->
+    <section class="section">
+      <div class="legend">Comunicação</div>
+      <div class="grid-2">
+        <div>
+          <label>Responsáveis informados?</label>
+          <select id="selRespInf" class="input">
+            <option value="Não">Não</option>
+            <option value="Sim">Sim</option>
+          </select>
+        </div>
+        <div>
+          <label>Meio</label>
+          <select id="selMeio" class="input">
+            <option value="">—</option>
+            <option value="Email">E-mail</option>
+            <option value="Telegram">Telegram</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Telefone">Telefone</option>
+            <option value="Agenda">Agenda</option>
+          </select>
+        </div>
+      </div>
       <div class="actions">
-        <button class="btn ghost" id="btnLimpar">Limpar</button>
-        <button class="btn warn" id="btnEditar" style="display:none">Editar</button>
-        <button class="btn primary" id="btnSalvar">Salvar</button>
+        <button class="btn" id="btnLimpar2">Limpar</button>
+        <button class="btn rubi" id="btnSalvar2">Salvar</button>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <script>
-    // util
-    const qs=(s)=>document.querySelector(s);
-    const qsa=(s)=>Array.from(document.querySelectorAll(s));
-    const params=new URLSearchParams(location.search);
-    const alunoId=params.get('id')||'';
-    const viewId=params.get('view')||'';
+<script>
+// ===== util / dados =====
+const $ = (s)=>document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const alunoId = params.get('alunoId') || params.get('id');
 
-    // navegação
-    qs('#btnVoltarFicha').onclick=()=>{ location.href='/ficha-aluno.html?id='+encodeURIComponent(alunoId); };
-    qs('#btnPainel').onclick=()=>{ location.href='/painel.html'; };
-    qs('#btnVerLista').onclick=()=>{ location.href='/aph-atendimentos.html?id='+encodeURIComponent(alunoId); };
+const TIPOS = [
+  { t:'Arranhão / escoriação', i:'🩹', d:'Limpeza e curativo simples.' },
+  { t:'Corte leve',            i:'✂️', d:'Antisséptico + gaze/atadura.' },
+  { t:'Queimadura',            i:'🔥', d:'Resfriamento local.' },
+  { t:'Torc̣ão',               i:'🧊', d:'Gelo + repouso.' },
+  { t:'Luxação',               i:'🦴', d:'Imobilização provisória.' },
+  { t:'Fratura suspeita',      i:'🩻', d:'Imobilizar e encaminhar.' },
+  { t:'Sangramento nasal',     i:'🩸', d:'Compressão suave.' },
+  { t:'Queda',                 i:'⬇️', d:'Inspeção; gelo se preciso.' },
+  { t:'Convulsão / crise epiléptica', i:'⚡', d:'Proteger cabeça; lateralizar.' },
+  { t:'Ansiedade / pânico',    i:'🫱', d:'Ambiente calmo; respiração guiada.' },
+  { t:'Gripe/febre/tosse (máscara)', i:'😷', d:'Máscara oferecida.' },
+  { t:'Outro',                 i:'📝', d:'Especificar nas observações.' }
+];
 
-    // data chip
-    qs('#chip-data').textContent = new Date().toLocaleDateString('pt-BR');
+const MATERIAIS = [
+  { t:'Curativo simples',  i:'🩹', d:'Bandagem, micropore, etc.' },
+  { t:'Gaze / Atadura',    i:'🧻', d:'Compressão / fixação.' },
+  { t:'Antisséptico',      i:'🧴', d:'Clorexidina / iodo.' },
+  { t:'Bolsa de gelo',     i:'🧊', d:'Com proteção têxtil.' },
+  { t:'Imobilização provisória', i:'🦴', d:'Até avaliação.' },
+  { t:'Compressa morna/fria', i:'🧯', d:'Conforme orientação.' },
+  { t:'Higienização',      i:'🧼', d:'Limpeza inicial.' },
+  { t:'Hidratação',        i:'💧', d:'Água oferecida.' },
+  { t:'Máscara fornecida', i:'😷', d:'Sintomas respiratórios.' },
+  { t:'Apoio emocional',   i:'💬', d:'Acolhimento.' },
+  { t:'Encaminhado ao hospital/posto', i:'🏥', d:'Registrado abaixo.' },
+  { t:'Contato responsável', i:'📞', d:'Ver comunicação.' }
+];
 
-    // Helpers
-    function getTipos(){ return qsa('#tipos input:checked').map(i=>i.getAttribute('data-chip')); }
-    function getMateriais(){ return qsa('#materiais input:checked').map(i=>i.getAttribute('data-chip')); }
-    function setChecks(containerSel, arr){
-      const set = new Set(arr || []);
-      qsa(containerSel + ' input[type="checkbox"]').forEach(i => { i.checked = set.has(i.getAttribute('data-chip')); });
-    }
-    function enableReadOnly(ro){
-      const root=document.body;
-      root.classList.toggle('ro', !!ro);
-      qsa('input,textarea,select').forEach(el=>{
-        if(el.id==='btnSalvar'||el.id==='btnLimpar') return;
-        el.disabled = !!ro;
-        if(el.tagName==='TEXTAREA'){ el.readOnly = !!ro; }
-      });
-      qs('#btnSalvar').style.display = ro ? 'none' : '';
-      qs('#btnLimpar').style.display = ro ? 'none' : '';
-      qs('#btnEditar').style.display = ro ? '' : 'none';
-    }
+function cardList(container, items){
+  container.innerHTML = items.map((o,idx)=>`
+    <label class="cardChoice" data-idx="${idx}">
+      <input type="checkbox" value="${o.t}">
+      <div class="icon">${o.i||'•'}</div>
+      <div>
+        <div class="ctitle">${o.t}</div>
+        <div class="cdesc">${o.d||''}</div>
+      </div>
+    </label>
+  `).join('');
+  container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      cb.closest('.cardChoice')?.classList.toggle('active', cb.checked);
+    });
+  });
+}
+function selected(container){ return Array.from(container.querySelectorAll('input:checked')).map(i=>i.value); }
 
-    // Carrega nome do aluno para o chip
-    (function carregaAluno(){
-      if(!alunoId) return;
-      fetch('/api/ficha/dados/'+alunoId,{credentials:'include'})
-        .then(r=>r.ok?r.json():null)
-        .then(j=>{
-          if(j && j.aluno && j.aluno.nome){ qs('#chip-aluno').textContent = 'Aluno: ' + j.aluno.nome; }
-        })
-        .catch(()=>{});
-    })();
+async function api(path, opts={}){
+  const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
+    credentials:'include',
+    method: opts.method || 'GET',
+    headers: opts.headers || { 'Content-Type':'application/json' },
+    body: opts.body
+  });
+  const ct = r.headers.get('content-type')||'';
+  const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+  if(!r.ok) throw new Error(data.message || data.error || `Erro ${r.status}`);
+  return data;
+}
 
-    // Normalização para leitura
-    function normSN(v){
-      if (typeof v === 'string') return v === 'Sim' ? 'Sim' : 'Não';
-      if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
-      return 'Não';
-    }
-    function firstNonEmpty(...vals){
-      for (const v of vals){ if (v != null && String(v).trim() !== '') return String(v).trim(); }
-      return '';
-    }
+async function carregarAluno(){
+  if(!alunoId) return;
+  const { aluno } = await api(`/ficha/dados/${alunoId}`);
+  $('#alunoNome').textContent = aluno?.nome || '—';
+  $('#alunoTurma').textContent = aluno?.turma || '—';
+}
 
-    // Se for visualização, carrega o atendimento e preenche
-    (function carregarSeView(){
-      if(!viewId) return;
-      qs('#titulo').textContent = 'APH · Visualização do Atendimento';
+function limpar(){
+  $('#inpResp').value = '';
+  $('#inpLocal').value = '';
+  const now = new Date();
+  $('#inpHora').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  $('#inpData').value = now.toISOString().slice(0,10);
+  $('#inpObs').value = '';
+  $('#selRespInf').value = 'Não';
+  $('#selMeio').value = '';
+  $('#chkEncaminhamento').checked = false;
+  $('#txtEncaminhamento').value = '';
+  toggleEncaminhamento();
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    cb.checked = false; cb.closest('.cardChoice')?.classList.remove('active');
+  });
+}
 
-      function preencher(atd){
-        if(!atd) return;
-        qs('#f-resp').value = atd.responsavel || '';
-        qs('#f-local').value = atd.local || '';
-        qs('#f-hora').value = atd.hora || '';
-        qs('#f-obs').value  = atd.observacoes || '';
+function toggleEncaminhamento(){
+  const on = $('#chkEncaminhamento').checked;
+  const txt = $('#txtEncaminhamento');
+  txt.disabled = !on;
+  txt.style.opacity = on ? '1' : '.65';
+}
 
-        // responsaveisInformados: string "Sim"/"Não" (schema) | legado boolean
-        const infStr = normSN(
-          atd.responsaveisInformados != null ? atd.responsaveisInformados :
-          (typeof atd.informados === 'boolean' ? atd.informados :
-           (atd.comunicacao && atd.comunicacao.informados))
-        );
-        qs('#f-inf').value = infStr;
+async function salvar(){
+  if(!alunoId) return alert('ID do aluno ausente.');
+  const payload = {
+    alunoId,
+    data: $('#inpData').value || new Date().toISOString().slice(0,10),
+    hora: $('#inpHora').value || '',
+    local: $('#inpLocal').value.trim() || '—',
+    responsavel: $('#inpResp').value.trim(),
+    tipos: selected($('#tiposBox')),
+    materiais: selected($('#materiaisBox')),
+    sinaisESintomas: '',                 // layout concentra em Observações
+    procedimentos: '',                   // compatibilidade
+    observacoes: $('#inpObs').value.trim(),
+    responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
+    meioComunicacao: $('#selMeio').value || '',
+    // NOVO: Encaminhamento
+    houveEncaminhamento: $('#chkEncaminhamento').checked,
+    encaminhamento: $('#txtEncaminhamento').value.trim()
+  };
+  const r = await api('/aph/atendimentos', { method:'POST', body: JSON.stringify(payload) });
+  alert('Atendimento salvo com sucesso!');
+  location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
+}
 
-        // meio (schema: meioComunicacao) com fallback
-        const meio = firstNonEmpty(atd.meioComunicacao, atd.meio, atd.comunicacao && atd.comunicacao.meio);
-        // caso algum valor antigo venha com caixa diferente, alinhar ao option
-        const normalizaMeio = (m)=>{
-          if(!m) return '';
-          const m2 = m.toLowerCase();
-          if (m2.startsWith('tel')) return 'Telefone';
-          if (m2.startsWith('what')) return 'WhatsApp';
-          if (m2.startsWith('pess') || m2.startsWith('pres')) return 'Pessoalmente';
-          return m; // valor livre cai no option vazio (não quebra)
-        };
-        qs('#f-meio').value = normalizaMeio(meio);
+function voltar(){
+  if(alunoId) location.href = `/ficha-aluno.html?id=${encodeURIComponent(alunoId)}`;
+  else history.back();
+}
 
-        // encaminhamento
-        qs('#f-enc').value  = firstNonEmpty(atd.encaminhamento, atd.comunicacao && atd.comunicacao.encaminhamento);
+function init(){
+  if(!alunoId) alert('Atenção: alunoId não informado na URL.');
+  cardList($('#tiposBox'), TIPOS);
+  cardList($('#materiaisBox'), MATERIAIS);
 
-        setChecks('#tipos', atd.tipos);
-        setChecks('#materiais', atd.materiais);
-        enableReadOnly(true);
+  const now = new Date();
+  $('#inpData').value = now.toISOString().slice(0,10);
+  $('#inpHora').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  carregarAluno().catch(console.error);
+  toggleEncaminhamento();
 
-        qs('#btnEditar').onclick = function(){
-          enableReadOnly(false);
-          qs('#titulo').textContent = 'APH · Editar Atendimento';
-          qs('#btnSalvar').onclick = function(){ salvar(true, atd._id); };
-        };
-        qs('#btnSalvar').onclick = function(){ salvar(true, atd._id); };
-      }
+  // binds
+  $('#btnSalvar').addEventListener('click', salvar);
+  $('#btnSalvar2').addEventListener('click', salvar);
+  $('#btnLimpar').addEventListener('click', limpar);
+  $('#btnLimpar2').addEventListener('click', limpar);
+  $('#btnVoltar').addEventListener('click', voltar);
+  $('#chkEncaminhamento').addEventListener('change', toggleEncaminhamento);
+}
 
-      // tenta endpoint direto por id
-      fetch('/api/aph/atendimento/'+viewId,{credentials:'include'})
-        .then(r=>{ if(r.ok) return r.json(); throw new Error('fallback'); })
-        .then(preencher)
-        .catch(function(){
-          // fallback: busca na lista do aluno
-          fetch('/api/aph/atendimentos/'+alunoId,{credentials:'include'})
-            .then(r=>r.ok?r.json():[])
-            .then(arr=>{
-              const atd = (arr||[]).find(x=>String(x._id)===String(viewId));
-              if(!atd){ alert('Registro não encontrado.'); return; }
-              preencher(atd);
-            })
-            .catch(()=>{ alert('Falha ao carregar o atendimento.'); });
-        });
-    })();
-
-    // Limpar (só em modo novo)
-    qs('#btnLimpar').onclick = function(){
-      qsa('input[type="text"]').forEach(i=>{ i.value=''; });
-      qsa('textarea').forEach(i=>{ i.value=''; });
-      qsa('select').forEach(s=>{ s.value=''; });
-      qsa('input[type="checkbox"]').forEach(i=>{ i.checked=false; });
-    };
-
-    // Salvar (POST novo por padrão)
-    qs('#btnSalvar').onclick = function(){ salvar(false); };
-
-    function montarPayload(){
-      return {
-        alunoId: alunoId,
-        responsavel: (qs('#f-resp').value||'').trim(),
-        local: (qs('#f-local').value||'').trim(),
-        hora: (qs('#f-hora').value||'').trim(),
-        tipos: getTipos(),
-        materiais: getMateriais(),
-        observacoes: (qs('#f-obs').value||'').trim(),
-
-        // campos do schema ATUAL
-        responsaveisInformados: qs('#f-inf').value === 'Sim' ? 'Sim' : 'Não',
-        meioComunicacao: (qs('#f-meio').value||'').trim(),
-        encaminhamento: (qs('#f-enc').value||'').trim(),
-      };
-    }
-
-    async function salvar(editar,id){
-      if(!alunoId){ alert('Aluno não informado.'); return; }
-      const payload = montarPayload();
-      try{
-        let r;
-        if(editar && id){
-          r = await fetch('/api/aph/atendimentos/'+id, {
-            method:'PUT', credentials:'include',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(payload)
-          });
-        }else{
-          r = await fetch('/api/aph/atendimentos', {
-            method:'POST', credentials:'include',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(payload)
-          });
-        }
-        if(!r.ok){
-          const j = await r.json().catch(()=> ({}));
-          throw new Error(j.message || j.mensagem || 'Erro ao salvar.');
-        }
-        alert('Atendimento salvo com sucesso!');
-        location.href = '/aph-atendimentos.html?id='+encodeURIComponent(alunoId);
-      }catch(e){
-        alert(e && e.message ? e.message : 'Falha ao salvar.');
-      }
-    }
-  </script>
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
 </body>
 </html>

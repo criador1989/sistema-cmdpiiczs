@@ -15,6 +15,7 @@ const Log = require('../../models/Log');
 const { autenticar } = require('../../middleware/autenticacao');
 const autenticarTokenProfessor = require('../../middleware/tokenProfessor');
 const calcularNotaTSMD = require('../../utils/calculoNota');
+const { enviarTelegram } = require('../../services/mensageria');
 
 // ---------- Upload de foto (multer) ----------
 const pastaAlunos = path.join(__dirname, '../../uploads/alunos');
@@ -83,6 +84,266 @@ function sanitizeUpdate(payload = {}) {
   delete dados.updatedAt;
   return dados;
 }
+
+function normalizeChatId(id) {
+  if (id === null || id === undefined) return '';
+  return String(id).trim();
+}
+
+// ===================== NOVAS ROTAS TELEGRAM & ADESÃO =====================
+
+// GET /api/alunos/adesao/por-turma
+// Retorna: [{ turma, totalAlunos, comTelegram, percentual }]
+router.get('/adesao/por-turma', autenticar, async (req, res) => {
+  try {
+    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const inst = req.usuario.instituicao;
+
+    // Agrupa por turma com contagem total e com Telegram ativo (>=1 chatId)
+    const agreg = await Aluno.aggregate([
+      { $match: { instituicao: inst } },
+      {
+        $group: {
+          _id: '$turma',
+          totalAlunos: { $sum: 1 },
+          comTelegram: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { $gt: [{ $strLenCP: { $ifNull: ['$chatIdResponsavel', ''] } }, 0] },
+                    { $gt: [{ $size: { $ifNull: ['$chatIdsResponsaveis', []] } }, 0] },
+                    { $gt: [{ $strLenCP: { $ifNull: ['$contatos.telegramChatId', ''] } }, 0] } // legado
+                  ]
+                },
+                1, 0
+              ]
+            }
+          }
+        }
+      },
+      { $project: { turma: '$_id', _id: 0, totalAlunos: 1, comTelegram: 1 } }
+    ]);
+
+    // Calcula percentual e ordena naturalmente
+    const resList = agreg.map(it => ({
+      turma: it.turma,
+      totalAlunos: it.totalAlunos,
+      comTelegram: it.comTelegram,
+      percentual: it.totalAlunos ? Math.round((it.comTelegram / it.totalAlunos) * 100) : 0
+    })).sort((a, b) => String(a.turma).localeCompare(String(b.turma), 'pt-BR', { numeric: true, sensitivity: 'base' }));
+
+    res.set('Cache-Control', 'private, max-age=60');
+    res.json({ adesao: resList });
+  } catch (e) {
+    console.error('Erro GET /api/alunos/adesao/por-turma:', e);
+    res.status(500).json({ message: 'Erro ao calcular adesão' });
+  }
+});
+
+// GET /api/alunos/:id/telegram
+// Retorna chatIds atuais do aluno (principal + lista + legado)
+router.get('/:id/telegram', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst })
+      .select('nome turma chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId')
+      .lean();
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    const set = new Set([
+      ...(aluno.chatIdsResponsaveis || []),
+      aluno.chatIdResponsavel || '',
+      aluno.contatos?.telegramChatId || ''
+    ].map(s => String(s || '').trim()).filter(Boolean));
+
+    res.json({
+      nome: aluno.nome,
+      turma: aluno.turma,
+      chatIdResponsavel: aluno.chatIdResponsavel || '',
+      chatIdsResponsaveis: Array.from(set)
+    });
+  } catch (e) {
+    console.error('Erro GET /api/alunos/:id/telegram:', e);
+    res.status(500).json({ message: 'Erro ao obter dados de Telegram' });
+  }
+});
+
+// POST /api/alunos/:id/telegram/vincular
+// body: { chatId: "123456" }  -> adiciona ao array e, se vazio, define como principal
+router.post('/:id/telegram/vincular', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const chatId = normalizeChatId(req.body?.chatId);
+    if (!chatId) return res.status(400).json({ message: 'chatId é obrigatório.' });
+
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    aluno.addChatId(chatId);
+    await aluno.save();
+
+    await Log.create({
+      usuario: req.usuario.id,
+      instituicao: inst,
+      acao: 'Vincular Telegram',
+      entidade: 'Aluno',
+      entidadeId: aluno._id,
+      detalhe: `chatId=${chatId}`
+    });
+
+    res.json({ ok: true, message: 'Vinculado com sucesso.', chatIds: aluno.getAllChatIds() });
+  } catch (e) {
+    console.error('Erro POST /api/alunos/:id/telegram/vincular:', e);
+    res.status(500).json({ message: 'Erro ao vincular chatId' });
+  }
+});
+
+// DELETE /api/alunos/:id/telegram/:chatId
+// Remove um chatId específico
+router.delete('/:id/telegram/:chatId', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const chatId = normalizeChatId(req.params.chatId);
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    aluno.removeChatId(chatId);
+    await aluno.save();
+
+    await Log.create({
+      usuario: req.usuario.id,
+      instituicao: inst,
+      acao: 'Desvincular Telegram',
+      entidade: 'Aluno',
+      entidadeId: aluno._id,
+      detalhe: `chatId=${chatId}`
+    });
+
+    res.json({ ok: true, message: 'ChatId removido.', chatIds: aluno.getAllChatIds() });
+  } catch (e) {
+    console.error('Erro DELETE /api/alunos/:id/telegram/:chatId:', e);
+    res.status(500).json({ message: 'Erro ao remover chatId' });
+  }
+});
+
+// POST /api/alunos/:id/telegram/optout
+// body: { all: true } -> remove todos; caso contrário, remove apenas principal
+router.post('/:id/telegram/optout', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const all = String(req.body?.all || '').toLowerCase() === 'true' || req.body?.all === true;
+
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    if (all) {
+      aluno.chatIdsResponsaveis = [];
+      aluno.chatIdResponsavel = '';
+    } else {
+      // remove só o principal
+      if (aluno.chatIdResponsavel) {
+        aluno.removeChatId(aluno.chatIdResponsavel);
+      }
+    }
+    await aluno.save();
+
+    await Log.create({
+      usuario: req.usuario.id,
+      instituicao: inst,
+      acao: 'Opt-out Telegram',
+      entidade: 'Aluno',
+      entidadeId: aluno._id,
+      detalhe: all ? 'all=true' : 'principal'
+    });
+
+    res.json({ ok: true, message: all ? 'Todos os chatIds removidos.' : 'ChatId principal removido.', chatIds: aluno.getAllChatIds() });
+  } catch (e) {
+    console.error('Erro POST /api/alunos/:id/telegram/optout:', e);
+    res.status(500).json({ message: 'Erro ao processar opt-out' });
+  }
+});
+
+// GET /api/alunos/:id/telegram/deeplink
+// Gera link do tipo: https://t.me/<seu_bot>?start=<TOKEN>
+// Aqui usamos o _id do aluno como TOKEN simples (conforme onboarding sugerido)
+router.get('/:id/telegram/deeplink', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst }).select('_id nome turma').lean();
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    const botUser = process.env.TG_BOT_USERNAME || 'cmdpiiczs_bot'; // defina no .env
+    const token = String(aluno._id); // simples; pode trocar por token assinado se desejar
+    const url = `https://t.me/${botUser}?start=${encodeURIComponent(token)}`;
+
+    res.json({ deeplink: url, bot: botUser, token, aluno: { id: String(aluno._id), nome: aluno.nome, turma: aluno.turma } });
+  } catch (e) {
+    console.error('Erro GET /api/alunos/:id/telegram/deeplink:', e);
+    res.status(500).json({ message: 'Erro ao gerar deeplink' });
+  }
+});
+
+// POST /api/alunos/:id/telegram/teste
+// body: { texto: "..." } -> envia uma mensagem de teste para todos os chatIds do aluno
+router.post('/:id/telegram/teste', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const texto = String(req.body?.texto || '').trim();
+    if (!texto) return res.status(400).json({ message: 'Informe "texto" no corpo da requisição.' });
+
+    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    const chatIds = aluno.getAllChatIds();
+    if (!chatIds.length) return res.status(400).json({ message: 'Aluno sem chatId cadastrado.' });
+
+    const enviados = [];
+    const falhas = [];
+
+    for (const cid of chatIds) {
+      try {
+        const ok = await enviarTelegram(
+          { nome: aluno.nome, turma: aluno.turma }, // objeto aluno (leve) para personalização
+          'Teste',
+          cid,
+          texto
+        );
+        if (ok?.ok) enviados.push(cid);
+        else falhas.push({ cid, motivo: ok?.motivo || ok?.erro || 'desconhecido' });
+      } catch (err) {
+        falhas.push({ cid, motivo: err?.message || 'erro' });
+      }
+    }
+
+    await Log.create({
+      usuario: req.usuario.id,
+      instituicao: inst,
+      acao: 'Envio Teste Telegram',
+      entidade: 'Aluno',
+      entidadeId: aluno._id,
+      detalhe: `enviados=${enviados.length}; falhas=${falhas.length}`
+    });
+
+    res.json({ ok: true, enviados, falhas });
+  } catch (e) {
+    console.error('Erro POST /api/alunos/:id/telegram/teste:', e);
+    res.status(500).json({ message: 'Erro ao enviar teste' });
+  }
+});
 
 // ===================== NOVAS ROTAS RÁPIDAS (ADMIN) =====================
 

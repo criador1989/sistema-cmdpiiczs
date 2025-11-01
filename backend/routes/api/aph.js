@@ -1,182 +1,341 @@
-// routes/api/aph.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
+const { autenticar } = require('../../middleware/autenticacao');
 const AphAtendimento = require('../../models/AphAtendimento');
+const Aluno = require('../../models/Aluno');
 
-// ---------- utils de normalização ----------
-function normSN(v) {
-  // aceita "Sim"/"Não", boolean ou strings variadas
-  if (typeof v === 'string') {
-    return v.trim().toLowerCase().startsWith('s') ? 'Sim' : 'Não';
-  }
-  if (typeof v === 'boolean') {
-    return v ? 'Sim' : 'Não';
-  }
-  return 'Não';
-}
-function pickMeio(body) {
-  // prioridade: campo atual -> legado flat -> legado aninhado
-  return (
-    (body.meioComunicacao || '').trim() ||
-    (body.meio || '').trim() ||
-    (body.comunicacao && (body.comunicacao.meio || '').trim()) ||
-    ''
-  );
-}
-function pickEncaminhamento(body) {
-  return (
-    (body.encaminhamento || '').trim() ||
-    (body.comunicacao && (body.comunicacao.encaminhamento || '').trim()) ||
-    ''
-  );
-}
-function pickInformados(body) {
-  // aceita responsaveisInformados (string), ou informados (boolean), ou comunicacao.informados
-  if (body.responsaveisInformados != null) return normSN(body.responsaveisInformados);
-  if (typeof body.informados === 'boolean') return normSN(body.informados);
-  if (body.comunicacao && typeof body.comunicacao.informados === 'boolean') {
-    return normSN(body.comunicacao.informados);
-  }
-  return 'Não';
-}
-function sanitizeArray(arr) {
-  return Array.isArray(arr) ? arr.filter(x => !!x).map(String) : [];
-}
-function sanitizeStr(s) {
-  return (s == null ? '' : String(s)).trim();
+/* -------------------- utils -------------------- */
+function getMensageria(req) {
+  return req.app?.locals?.mensageria || global.mensageria || null;
 }
 
-// ---------- CREATE ----------
-router.post('/atendimentos', async (req, res) => {
+function montarMensagemAPH({ aluno, at }) {
+  const nome  = aluno?.nome || 'Aluno(a)';
+  const turma = aluno?.turma || '—';
+
+  const data = at?.data ? new Date(at.data) : null;
+  const dataStr = data ? data.toLocaleDateString('pt-BR') : '—';
+  const horaStr = (at?.hora && String(at.hora).trim()) ? String(at.hora).trim() : '—';
+  const local   = at?.local || '—';
+
+  const tipos = Array.isArray(at?.tipos) && at.tipos.length ? at.tipos.join(', ') : '—';
+  const materiais = Array.isArray(at?.materiais) && at.materiais.length ? at.materiais.join(', ') : '—';
+
+  const sintomas = (at?.sinaisESintomas || '').trim();
+  const procedimentos = (at?.procedimentos || '').trim();
+  const observ = (at?.observacoes || at?.observacao || '').trim();
+  const encaminhamento = (at?.houveEncaminhamento || at?.encaminhamento) ? 'Sim' : 'Não';
+
+  const linhas = [
+    `Prezados responsáveis de ${nome} (${turma}),`,
+    ``,
+    `Registramos um atendimento de APH realizado pela escola:`,
+    `• Data: ${dataStr}  • Hora: ${horaStr}  • Local: ${local}`,
+    `• Ocorrência(s): ${tipos}`,
+    `• Materiais/recursos aplicados: ${materiais}`,
+  ];
+  if (sintomas)       linhas.push(`• Sinais/sintomas: ${sintomas}`);
+  if (procedimentos)  linhas.push(`• Procedimentos realizados: ${procedimentos}`);
+  if (observ)         linhas.push(`• Observações: ${observ}`);
+  if (encaminhamento) linhas.push(`• Encaminhamento: ${encaminhamento}`);
+
+  linhas.push(
+    ``,
+    `Este comunicado é informativo. Permanecemos à disposição.`,
+    `Atenciosamente,`,
+    `Coordenação — CMDPII/CZS`
+  );
+
+  return { titulo: `Comunicado de APH — ${nome}`, texto: linhas.join('\n') };
+}
+
+/* =========================================================
+   LISTAS / DETALHES
+   ========================================================= */
+
+// GET /api/aph/atendimentos?alunoId=...&q=...&dtIni=YYYY-MM-DD&dtFim=YYYY-MM-DD&page=1&limit=20
+router.get('/atendimentos', autenticar, async (req, res) => {
   try {
-    const body = req.body || {};
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
 
-    if (!body.alunoId || !mongoose.Types.ObjectId.isValid(body.alunoId)) {
-      return res.status(400).json({ message: 'alunoId inválido ou ausente' });
+    const page  = Math.max(parseInt(req.query.page  || '1', 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
+
+    const filtro = { instituicao: inst };
+
+    if (req.query.alunoId && mongoose.isValidObjectId(req.query.alunoId)) {
+      filtro.alunoId = new mongoose.Types.ObjectId(req.query.alunoId);
     }
 
-    const doc = new AphAtendimento({
-      alunoId: body.alunoId,
-      responsavel: sanitizeStr(body.responsavel),
-      local: sanitizeStr(body.local),
-      hora: sanitizeStr(body.hora),
+    const { dtIni, dtFim } = req.query;
+    if (dtIni || dtFim) {
+      filtro.data = {};
+      if (dtIni) filtro.data.$gte = new Date(dtIni);
+      if (dtFim) filtro.data.$lte = new Date(dtFim);
+    }
 
-      tipos: sanitizeArray(body.tipos),
-      materiais: sanitizeArray(body.materiais),
+    const q = (req.query.q || '').trim();
+    if (q) {
+      const regex = new RegExp(q, 'i');
+      filtro.$or = [
+        { responsavel: regex },
+        { local: regex },
+        { tipos: regex },
+        { materiais: regex },
+        { observacoes: regex },
+        { procedimentos: regex },
+        { sinaisESintomas: regex },
+      ];
+    }
 
-      observacoes: sanitizeStr(body.observacoes),
+    const skip = (page - 1) * limit;
 
-      // comunicação - nomes do schema
-      responsaveisInformados: pickInformados(body), // "Sim"/"Não"
-      meioComunicacao: pickMeio(body),
-      encaminhamento: pickEncaminhamento(body),
+    const [total, list] = await Promise.all([
+      AphAtendimento.countDocuments(filtro),
+      AphAtendimento.find(filtro)
+        .sort({ data: -1, hora: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+    ]);
 
-      // metadados
-      criadoPor: sanitizeStr(body.criadoPor || (req.user && req.user.nome) || ''),
+    return res.json({
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      items: list,  // compat en-US
+      itens: list,  // compat pt-BR
+    });
+  } catch (err) {
+    console.error('[APH] GET /atendimentos erro:', err);
+    res.status(500).json({ message: 'Erro ao listar atendimentos.' });
+  }
+});
+
+// Alias de listagem por aluno
+router.get('/atendimentos/aluno/:alunoId', autenticar, (req, res, next) => {
+  req.url = `/atendimentos?alunoId=${encodeURIComponent(req.params.alunoId)}`;
+  next();
+});
+
+// Contador para a Ficha
+router.get('/atendimentos/count/:alunoId', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const { alunoId } = req.params;
+    if (!mongoose.isValidObjectId(alunoId)) return res.json({ total: 0 });
+    const total = await AphAtendimento.countDocuments({ instituicao: inst, alunoId });
+    res.json({ total });
+  } catch (e) {
+    res.json({ total: 0 });
+  }
+});
+
+// Detalhe
+router.get('/atendimentos/:id', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const _id = req.params.id;
+    if (!mongoose.isValidObjectId(_id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    const doc = await AphAtendimento.findOne({ _id, instituicao: inst }).lean();
+    if (!doc) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    res.json(doc);
+  } catch (err) {
+    console.error('[APH] GET /atendimentos/:id erro:', err);
+    res.status(500).json({ message: 'Erro ao carregar atendimento.' });
+  }
+});
+
+// Alias (compat)
+router.get('/atendimento/:id', autenticar, (req, res, next) => {
+  req.url = `/atendimentos/${req.params.id}`;
+  next();
+});
+
+/* =========================================================
+   CRIAR / EDITAR / EXCLUIR
+   ========================================================= */
+
+router.post('/atendimentos', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const {
+      alunoId,
+      responsavel,
+      local,
+      hora,
+      data,
+      tipos = [],
+      materiais = [],
+      sinaisESintomas = '',
+      procedimentos = '',
+      observacoes = '',
+      responsaveisInformados,
+      meioComunicacao = '',
+      encaminhamento = '',
+      houveEncaminhamento
+    } = req.body || {};
+
+    if (!alunoId || !mongoose.isValidObjectId(alunoId)) {
+      return res.status(400).json({ message: 'alunoId inválido/ausente.' });
+    }
+
+    const aluno = await Aluno.findOne({ _id: alunoId, instituicao: inst })
+      .select('nome turma instituicao contatos responsaveis telefone')
+      .lean();
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' });
+
+    const payload = {
+      alunoId: aluno._id,
+      responsavel: (responsavel || '').trim(),
+      local: (local || '').trim(),
+      hora: (hora || '').trim(),
+      data: data ? new Date(data) : new Date(),
+      tipos: Array.isArray(tipos) ? tipos : [],
+      materiais: Array.isArray(materiais) ? materiais : [],
+      sinaisESintomas,
+      procedimentos,
+      observacoes,
+      responsaveisInformados: (responsaveisInformados === 'Sim' || responsaveisInformados === true) ? 'Sim' : 'Não',
+      meioComunicacao,
+      encaminhamento,
+      houveEncaminhamento: Boolean(houveEncaminhamento),
+      instituicao: inst
+    };
+
+    const novo = await AphAtendimento.create(payload);
+
+    // Disparo de comunicação (tolerante a falhas)
+    let comunicacao = { ok: false, motivo: 'mensageria indisponível' };
+    try {
+      const mensageria = getMensageria(req);
+      if (mensageria?.enfileirarParaResponsaveis) {
+        const { titulo, texto } = montarMensagemAPH({ aluno, at: payload });
+        comunicacao = await mensageria.enfileirarParaResponsaveis({
+          alunoId: String(aluno._id),
+          instituicao: String(inst),
+          preferenciaCanais: ['email', 'telegram', 'whatsapp'],
+          titulo, texto,
+          html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
+          meta: { tipo: 'aph_atendimento', atendimentoId: String(novo._id) }
+        });
+      }
+    } catch (e) {
+      console.warn('[APH] Falha no disparo de comunicação:', e?.message || e);
+    }
+
+    res.status(201).json({ ok: true, atendimento: novo, comunicacao });
+  } catch (err) {
+    console.error('[APH] POST /atendimentos erro:', err);
+    res.status(500).json({ message: 'Erro ao salvar atendimento.' });
+  }
+});
+
+router.put('/atendimentos/:id', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    const patch = {
+      responsavel: (req.body?.responsavel || '').trim(),
+      local: (req.body?.local || '').trim(),
+      hora: (req.body?.hora || '').trim(),
+      tipos: Array.isArray(req.body?.tipos) ? req.body.tipos : [],
+      materiais: Array.isArray(req.body?.materiais) ? req.body.materiais : [],
+      observacoes: (req.body?.observacoes || '').trim(),
+      responsaveisInformados: (req.body?.responsaveisInformados === 'Sim' || req.body?.responsaveisInformados === true) ? 'Sim' : 'Não',
+      meioComunicacao: (req.body?.meioComunicacao || '').trim(),
+      encaminhamento: (req.body?.encaminhamento || '').trim(),
+      sinaisESintomas: (req.body?.sinaisESintomas || '').trim(),
+      procedimentos: (req.body?.procedimentos || '').trim(),
+      houveEncaminhamento: Boolean(req.body?.houveEncaminhamento),
+    };
+
+    const upd = await AphAtendimento.findOneAndUpdate(
+      { _id: id, instituicao: inst },
+      { $set: patch },
+      { new: true }
+    ).lean();
+
+    if (!upd) return res.status(404).json({ message: 'Registro não encontrado.' });
+    res.json({ ok: true, atendimento: upd });
+  } catch (err) {
+    console.error('[APH] PUT /atendimentos/:id erro:', err);
+    res.status(500).json({ message: 'Erro ao atualizar atendimento.' });
+  }
+});
+
+router.delete('/atendimentos/:id', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    const del = await AphAtendimento.findOneAndDelete({ _id: id, instituicao: inst }).lean();
+    if (!del) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[APH] DELETE /atendimentos/:id erro:', err);
+    res.status(500).json({ message: 'Erro ao excluir atendimento.' });
+  }
+});
+
+/* =========================================================
+   REENGATILHAR COMUNICAÇÃO
+   ========================================================= */
+
+router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req, res) => {
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    const at = await AphAtendimento.findOne({ _id: id, instituicao: inst }).lean();
+    if (!at) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    const aluno = await Aluno.findOne({ _id: at.alunoId, instituicao: inst })
+      .select('nome turma instituicao contatos responsaveis telefone')
+      .lean();
+    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
+
+    const mensageria = getMensageria(req);
+    if (!mensageria?.enfileirarParaResponsaveis) {
+      return res.json({ ok: false, comunicacao: { motivo: 'mensageria indisponível' } });
+    }
+
+    const { titulo, texto } = montarMensagemAPH({ aluno, at });
+    const comunicacao = await mensageria.enfileirarParaResponsaveis({
+      alunoId: String(aluno._id),
+      instituicao: String(inst),
+      preferenciaCanais: ['email', 'telegram', 'whatsapp'],
+      titulo, texto,
+      html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
+      meta: { tipo: 'aph_atendimento_reenvio', atendimentoId: String(at._id) }
     });
 
-    const saved = await doc.save();
-    return res.json(saved);
-  } catch (e) {
-    console.error('POST /api/aph/atendimentos erro:', e);
-    return res.status(500).json({ message: 'Falha ao salvar atendimento' });
-  }
-});
-
-// ---------- UPDATE ----------
-router.put('/atendimentos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const body = req.body || {};
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'id inválido' });
-    }
-
-    const update = {
-      responsavel: sanitizeStr(body.responsavel),
-      local: sanitizeStr(body.local),
-      hora: sanitizeStr(body.hora),
-
-      tipos: sanitizeArray(body.tipos),
-      materiais: sanitizeArray(body.materiais),
-
-      observacoes: sanitizeStr(body.observacoes),
-
-      // comunicação (sempre gravar nos campos do schema)
-      responsaveisInformados: pickInformados(body),
-      meioComunicacao: pickMeio(body),
-      encaminhamento: pickEncaminhamento(body),
-    };
-
-    const saved = await AphAtendimento.findByIdAndUpdate(
-      id,
-      { $set: update },
-      { new: true }
-    );
-
-    if (!saved) return res.status(404).json({ message: 'Registro não encontrado' });
-    return res.json(saved);
-  } catch (e) {
-    console.error('PUT /api/aph/atendimentos/:id erro:', e);
-    return res.status(500).json({ message: 'Falha ao atualizar atendimento' });
-  }
-});
-
-// ---------- READ (por aluno) ----------
-router.get('/atendimentos/:alunoId', async (req, res) => {
-  try {
-    const { alunoId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(alunoId)) {
-      return res.status(400).json({ message: 'alunoId inválido' });
-    }
-    const itens = await AphAtendimento.find({ alunoId })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // normaliza campos na resposta (compatibilidade)
-    const norm = itens.map(a => ({
-      ...a,
-      responsaveisInformados: normSN(
-        a.responsaveisInformados != null ? a.responsaveisInformados :
-        (typeof a.informados === 'boolean' ? a.informados : (a.comunicacao && a.comunicacao.informados))
-      ),
-      meioComunicacao: a.meioComunicacao || a.meio || (a.comunicacao && a.comunicacao.meio) || '',
-      encaminhamento: a.encaminhamento || (a.comunicacao && a.comunicacao.encaminhamento) || '',
-    }));
-
-    return res.json(norm);
-  } catch (e) {
-    console.error('GET /api/aph/atendimentos/:alunoId erro:', e);
-    return res.status(500).json({ message: 'Falha ao buscar atendimentos' });
-  }
-});
-
-// ---------- READ (um por id) ----------
-router.get('/atendimento/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'id inválido' });
-    }
-    const a = await AphAtendimento.findById(id).lean();
-    if (!a) return res.status(404).json({ message: 'Registro não encontrado' });
-
-    const norm = {
-      ...a,
-      responsaveisInformados: normSN(
-        a.responsaveisInformados != null ? a.responsaveisInformados :
-        (typeof a.informados === 'boolean' ? a.informados : (a.comunicacao && a.comunicacao.informados))
-      ),
-      meioComunicacao: a.meioComunicacao || a.meio || (a.comunicacao && a.comunicacao.meio) || '',
-      encaminhamento: a.encaminhamento || (a.comunicacao && a.comunicacao.encaminhamento) || '',
-    };
-
-    return res.json(norm);
-  } catch (e) {
-    console.error('GET /api/aph/atendimento/:id erro:', e);
-    return res.status(500).json({ message: 'Falha ao buscar atendimento' });
+    res.json({ ok: Boolean(comunicacao?.ok), comunicacao });
+  } catch (err) {
+    console.error('[APH] POST reengatilhar erro:', err);
+    res.status(500).json({ message: 'Erro ao reenviar comunicado.' });
   }
 });
 

@@ -11,8 +11,10 @@ const enviarWhatsapp = require('../../utils/twilio');
 const { autenticar } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 const { addBusinessDays } = require('../../utils/businessDays');
-
 const { logAction, attachActor } = require('../../utils/audit');
+
+// 🚀 Serviços de mensageria
+const { enviarTelegram, enviarNPEncaminhamento } = require('../../services/mensageria');
 
 // ------------------ Mapas de valores ------------------
 const MAPA_NEGATIVOS = {
@@ -28,6 +30,10 @@ const MAPA_ELOGIOS = {
   mediaAlta: 0.40
 };
 const PRECISA_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+
+// ------------------ ENV (opcionais p/ mensagem NP) ------------------
+const NP_AGENDAMENTO_URL = process.env.NP_AGENDAMENTO_URL || ''; // ex: https://seusistema/np?aluno={{id}}
+const CONTATO_ESCOLA = process.env.CONTATO_ESCOLA || '';          // ex: (68) 9xxxx-xxxx | secretaria@...
 
 // ------------------ Helpers ------------------
 /** Match amplo para campo instituicao (aceita ObjectId, string, ausente e null) */
@@ -61,6 +67,38 @@ function parseDateOnlyLocal(yyyy_mm_dd) {
 function toDayStart(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function toDayEnd(d)   { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 
+/** PT-BR dd/mm/yyyy */
+function formatDataBr(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+/** PT-BR dd/mm/yyyy HH:MM */
+function formatDataHoraBr(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${formatDataBr(d)} ${hh}:${mi}`;
+}
+
+/** Coleta todos os chatIds do Aluno (principal, múltiplos e legado) */
+function getChatIdsFromAlunoDoc(alunoDoc) {
+  if (!alunoDoc) return [];
+  if (typeof alunoDoc.getAllChatIds === 'function') {
+    return (alunoDoc.getAllChatIds() || []).filter(Boolean);
+  }
+  const set = new Set([
+    ...(alunoDoc.chatIdsResponsaveis || []),
+    alunoDoc.chatIdResponsavel || '',
+    alunoDoc?.contatos?.telegramChatId || ''
+  ].map(s => String(s || '').trim()).filter(Boolean));
+  return Array.from(set);
+}
+
 /** Recalcula e persiste a nota ATUAL do aluno até “agora” */
 async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   const instMatch = buildInstMatch(instituicao);
@@ -82,6 +120,49 @@ async function getAlunoInfo(alunoId, instituicao) {
   if (!alunoId) return { alunoNome: '—', alunoTurma: '—' };
   const a = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) }).select('nome turma').lean();
   return { alunoNome: a?.nome || '—', alunoTurma: a?.turma || '—' };
+}
+
+/** Faixa REGULAR (NP) */
+function estaFaixaRegular(nota) {
+  const n = Number(nota);
+  return isFinite(n) && n >= 5.0 && n <= 6.99;
+}
+
+/**
+ * Dispara mensagem ao NP se:
+ * - nota ∈ [5.00, 6.99]
+ * - e nunca enviou, ou a nota mudou desde o último envio.
+ */
+async function verificarEnvioNP(alunoDoc, instituicao) {
+  if (!alunoDoc) return;
+  const nota = Number(alunoDoc.comportamento);
+  if (!estaFaixaRegular(nota)) return;
+
+  const jaEnviadoEm = alunoDoc.alertas?.npRegularEnviadoAt || null;
+  const ultimaNota = typeof alunoDoc.alertas?.npRegularUltimaNota === 'number' ? alunoDoc.alertas.npRegularUltimaNota : null;
+  const precisaEnviar = !jaEnviadoEm || (ultimaNota === null) || Math.abs(Number(ultimaNota) - nota) >= 0.01;
+
+  if (!precisaEnviar) return;
+
+  try {
+    await enviarNPEncaminhamento({
+      alunoId: alunoDoc._id,
+      notaAtual: nota,
+      instituicao,
+      linkAgendamento: NP_AGENDAMENTO_URL,
+      contatoEscola: CONTATO_ESCOLA,
+      preferenciaCanais: ['email', 'telegram'] // prioriza e-mail
+    });
+
+    // marca no aluno para não reenviar repetido
+    alunoDoc.alertas = alunoDoc.alertas || {};
+    alunoDoc.alertas.npRegularEnviadoAt = new Date();
+    alunoDoc.alertas.npRegularUltimaNota = nota;
+    await alunoDoc.save();
+  } catch (e) {
+    // não quebra o fluxo da rota caso o envio falhe
+    console.warn('[NP] Falha ao enviar encaminhamento:', e.message);
+  }
 }
 
 // ------------------------------------------------------
@@ -240,7 +321,7 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
 });
 
 // ------------------------------------------------------
-// POST "/" (criar notificação)
+// POST "/" (criar notificação) + ENVIO TELEGRAM/WHATSAPP
 // ------------------------------------------------------
 router.post('/', autenticar, attachActor, async (req, res) => {
   const {
@@ -413,17 +494,44 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     // (C) Recalcular nota atual do aluno até “agora”
     const alunoAtualizado = await recomputarNotaAlunoAteAgora(aluno, req.usuario.instituicao);
 
+    // ===================== ENVIO MENSAGENS =====================
+
     // WhatsApp (mantido)
     if (alunoRelacionado.telefone) {
-      const mensagem = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.
+      const mensagemWA = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.
       
 Foi registrada uma ${payload.natureza === 'elogio' ? 'menção de elogio' : 'notificação disciplinar'}:
 🔸 Motivo: ${payload.motivo}
-🔸 Medida: ${payload.tipoMedida}
+🔸 Medida: ${payload.tipoMedida}${payload.quantidadeDias > 1 ? ` (${payload.quantidadeDias} dias)` : ''}
 
-Nota atual de comportamento: ${(alunoAtualizado?.comportamento ?? notaNoDia).toFixed(2)}.`;
-      try { await enviarWhatsapp(alunoRelacionado.telefone, mensagem); } catch {}
+Nota de comportamento (no dia do evento): ${Number(notaNoDia).toFixed(2)}
+Nº: ${numeroSequencial}`;
+      try { await enviarWhatsapp(alunoRelacionado.telefone, mensagemWA); } catch {}
     }
+
+    // Telegram (novo)
+    const chatIds = getChatIdsFromAlunoDoc(alunoRelacionado);
+    if (chatIds.length) {
+      const titulo = payload.natureza === 'elogio' ? 'ELOGIO' : 'NOTIFICAÇÃO DISCIPLINAR';
+      const mensagemTG = [
+        `🏫 CMDPII/CZS — ${titulo}`,
+        `Aluno(a): ${alunoRelacionado.nome} (${alunoRelacionado.turma})`,
+        `Data: ${formatDataBr(dt)}`,
+        payload.natureza === 'elogio'
+          ? `Elogio: ${payload.motivo}`
+          : `Motivo: ${payload.motivo}`,
+        payload.tipoMedida ? `Medida: ${payload.tipoMedida}${payload.quantidadeDias > 1 ? ` (${payload.quantidadeDias} dias)` : ''}` : null,
+        `Nota de comportamento (no dia): ${Number(notaNoDia).toFixed(2)}`,
+        `Nº: ${numeroSequencial}`
+      ].filter(Boolean).join('\n');
+
+      for (const cid of chatIds) {
+        try { await enviarTelegram({ nome: alunoRelacionado.nome, turma: alunoRelacionado.turma }, 'Notificação', cid, mensagemTG); } catch {}
+      }
+    }
+
+    // 💡 NOVO: possível disparo de e-mail NP (nota 5.00–6.99)
+    await verificarEnvioNP(alunoAtualizado, req.usuario.instituicao);
 
     res.status(201).json(novaNotificacao);
   } catch (err) {
@@ -543,7 +651,10 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
     });
 
     // Recalcular nota atual
-    await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
+    const alunoApósUpdate = await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
+
+    // 💡 NOVO: possível disparo de e-mail NP (nota 5.00–6.99)
+    await verificarEnvioNP(alunoApósUpdate, req.usuario.instituicao);
 
     res.json({ message: 'Notificação atualizada com sucesso.' });
   } catch (err) {
@@ -585,7 +696,10 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    await recomputarNotaAlunoAteAgora(notificacao.aluno, req.usuario.instituicao);
+    const alunoApósReenviar = await recomputarNotaAlunoAteAgora(notificacao.aluno, req.usuario.instituicao);
+
+    // 💡 NOVO: checa faixa regular após reenviar (por segurança)
+    await verificarEnvioNP(alunoApósReenviar, req.usuario.instituicao);
 
     res.json({ message: 'Notificação reenviada com sucesso.' });
   } catch (err) {
@@ -595,12 +709,12 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
 });
 
 // ------------------------------------------------------
-// POST "/:id/entregar"
+// POST "/:id/entregar"  + AVISO TELEGRAM
 // ------------------------------------------------------
 router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch });
+    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch }).populate('aluno', 'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada');
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -627,7 +741,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
       entidade: 'Notificacao',
       entidadeId: notif._id,
       extra: {
-        alunoId: String(notif.aluno),
+        alunoId: String(notif.aluno._id || notif.aluno),
         alunoNome, alunoTurma,
         tipo: notif.tipo,
         tipoMedida: notif.tipoMedida,
@@ -637,6 +751,28 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
       }
     });
 
+    // Aviso Telegram/WhatsApp da entrega
+    const msgEntrega = [
+      '📩 CMDPII/CZS — Confirmação de ENTREGA de notificação',
+      `Aluno(a): ${alunoNome} (${alunoTurma})`,
+      `Nº: ${notif.numeroSequencial}`,
+      `Entregue em: ${formatDataHoraBr(agora)}`,
+      `Prazo de devolução: ${formatDataBr(prazo)}`
+    ].join('\n');
+
+    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
+    for (const cid of chatIds) {
+      try { await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgEntrega); } catch {}
+    }
+
+    if (notif.aluno?.telefone) {
+      try { await enviarWhatsapp(notif.aluno.telefone, msgEntrega); } catch {}
+    }
+
+    // Nota do aluno NÃO muda aqui, mas checamos faixa por segurança (não custa)
+    const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
+    await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
+
     res.json({ message: 'Marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
   } catch (err) {
     console.error('Erro ao marcar ENTREGUE:', err);
@@ -645,12 +781,12 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
 });
 
 // ------------------------------------------------------
-// POST "/:id/devolver"
+// POST "/:id/devolver"  + AVISO TELEGRAM
 // ------------------------------------------------------
 router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch });
+    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch }).populate('aluno', 'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId');
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -669,7 +805,7 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false;
     await notif.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno._id || notif.aluno, req.usuario.instituicao);
 
     await logAction({
       req,
@@ -677,7 +813,7 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
       entidade: 'Notificacao',
       entidadeId: notif._id,
       extra: {
-        alunoId: String(notif.aluno),
+        alunoId: String(notif.aluno._id || notif.aluno),
         alunoNome, alunoTurma,
         tipo: notif.tipo,
         tipoMedida: notif.tipoMedida,
@@ -685,6 +821,27 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
         devolvidaEm: agora
       }
     });
+
+    // Aviso Telegram/WhatsApp da devolução
+    const msgDev = [
+      '✅ CMDPII/CZS — Notificação DEVOLVIDA',
+      `Aluno(a): ${alunoNome} (${alunoTurma})`,
+      `Nº: ${notif.numeroSequencial}`,
+      `Devolvida em: ${formatDataHoraBr(agora)}`
+    ].join('\n');
+
+    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
+    for (const cid of chatIds) {
+      try { await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgDev); } catch {}
+    }
+
+    if (notif.aluno?.telefone) {
+      try { await enviarWhatsapp(notif.aluno.telefone, msgDev); } catch {}
+    }
+
+    // Nota do aluno não muda aqui, mas checamos faixa por segurança
+    const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
+    await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
 
     res.json({ message: 'Marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
   } catch (err) {
@@ -731,7 +888,10 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     const alunoId = notificacao.aluno;
     await notificacao.deleteOne();
 
-    await recomputarNotaAlunoAteAgora(alunoId, req.usuario.instituicao);
+    const alunoAtual = await recomputarNotaAlunoAteAgora(alunoId, req.usuario.instituicao);
+
+    // 💡 NOVO: checar faixa regular após exclusão
+    await verificarEnvioNP(alunoAtual, req.usuario.instituicao);
 
     res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
   } catch (err) {

@@ -5,6 +5,17 @@ const Notificacao = require('../../models/Notificacao');
 const { autenticar } = require('../../middleware/autenticacao');
 
 /* ============================================================
+   🔹 (NOVO) Mensageria opcional (lazy require, não quebra se não existir)
+   ============================================================ */
+let mensageria = null;
+try {
+  mensageria = require('../../services/mensageria'); // enviarEmail, enviarTelegram, linkWhatsApp
+  console.log('[CTRL-NOTIF] mensageria carregada.');
+} catch (_) {
+  console.log('[CTRL-NOTIF] mensageria NÃO encontrada (ok por enquanto).');
+}
+
+/* ============================================================
    🔹 UTILITÁRIOS
    ============================================================ */
 
@@ -20,6 +31,46 @@ function filtroInstituicaoDoUsuario(usuario) {
       { instituicao: { $eq: null } },
     ],
   };
+}
+
+/* Pequenos helpers para texto/assunto (funcionam mesmo sem templates avançados) */
+function assuntoDeferido(aluno, notif) {
+  const nome = aluno?.nome || 'Aluno';
+  return `Notificação deferida | ${nome}`;
+}
+function htmlDeferido(aluno, notif) {
+  const nome = aluno?.nome || '';
+  const turma = aluno?.turma || '';
+  const tipo  = notif?.tipo || notif?.tipoMedida || '—';
+  const motivo= notif?.motivo || '—';
+  const num   = notif?.numeroSequencial || '—';
+  return `
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222">
+      <p>Prezada família do(a) aluno(a) <strong>${nome}</strong> (${turma}),</p>
+      <p>Informamos que foi <strong>deferida</strong> uma notificação disciplinar referente ao(a) estudante.</p>
+      <p><strong>Resumo:</strong></p>
+      <ul>
+        <li><b>Tipo/Medida:</b> ${tipo}</li>
+        <li><b>Motivo:</b> ${motivo}</li>
+        <li><b>Nº Sequencial:</b> ${num}</li>
+      </ul>
+      <p>Estamos à disposição para esclarecimentos.</p>
+      <p>Atenciosamente,<br/>Coordenação — Colégio Militar Dom Pedro II/CZS</p>
+    </div>
+  `;
+}
+function textoCurtoDeferido(aluno, notif) {
+  const nome = aluno?.nome || '';
+  const turma = aluno?.turma || '';
+  const tipo  = notif?.tipo || notif?.tipoMedida || '—';
+  const num   = notif?.numeroSequencial || '—';
+  return [
+    `COMUNICADO — Notificação deferida`,
+    `Aluno(a): ${nome} (${turma})`,
+    `Tipo/Medida: ${tipo}`,
+    `Nº: ${num}`,
+    `Estamos à disposição. — CMDPII/CZS`
+  ].join('\n');
 }
 
 /* ============================================================
@@ -107,17 +158,85 @@ router.get('/', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 PUT - Deferir notificação
+   🔹 PUT - Deferir notificação (AGORA COM LOGS E DISPARO DE COMUNICAÇÃO)
    ============================================================ */
 router.put('/:id/deferir', autenticar, async (req, res) => {
   try {
+    console.log('[CTRL-NOTIF] deferir chamado para id =', req.params.id);
+
+    // Atualiza para 'deferido' e já traz dados do aluno
     const notificacao = await Notificacao.findByIdAndUpdate(
       req.params.id,
       { status: 'deferido', avaliador: req.usuario._id, comentarioMonitor: '' },
       { new: true }
-    );
-    res.json(notificacao);
+    ).populate('aluno', 'nome turma contatos');
+
+    if (!notificacao) {
+      console.log('[CTRL-NOTIF] não encontrado:', req.params.id);
+      return res.status(404).json({ erro: 'Notificação não encontrada' });
+    }
+
+    console.log('[CTRL-NOTIF] deferido OK. Aluno:', notificacao.aluno?.nome || '(sem aluno)');
+    console.log('[CTRL-NOTIF] mensageria disponível?', !!mensageria);
+
+    // Disparo de comunicação
+    let comunicacao = { tentou: false, resultados: {} };
+    try {
+      const aluno = notificacao.aluno || {};
+      if (mensageria && aluno) {
+        comunicacao.tentou = true;
+
+        const assunto = assuntoDeferido(aluno, notificacao);
+        const html    = htmlDeferido(aluno, notificacao);
+        const texto   = textoCurtoDeferido(aluno, notificacao);
+
+        // E-mail
+        if (aluno?.contatos?.emailResponsavel) {
+          try {
+            comunicacao.resultados.email = await mensageria.enviarEmail(
+              aluno, 'Deferido', html, aluno.contatos.emailResponsavel, assunto
+            );
+          } catch (e) {
+            comunicacao.resultados.email = { ok:false, erro:e.message };
+          }
+        } else {
+          comunicacao.resultados.email = { ok:false, motivo:'sem emailResponsavel' };
+        }
+
+        // Telegram
+        if (aluno?.contatos?.telegramChatId) {
+          try {
+            comunicacao.resultados.telegram = await mensageria.enviarTelegram(
+              aluno, 'Deferido', aluno.contatos.telegramChatId, texto
+            );
+          } catch (e) {
+            comunicacao.resultados.telegram = { ok:false, erro:e.message };
+          }
+        } else {
+          comunicacao.resultados.telegram = { ok:false, motivo:'sem telegramChatId' };
+        }
+
+        // WhatsApp link
+        if (aluno?.contatos?.telefoneResponsavel) {
+          try {
+            const tel = String(aluno.contatos.telefoneResponsavel || '').replace(/\D/g,'');
+            comunicacao.resultados.whatsappLink = mensageria.linkWhatsApp(aluno, 'Deferido', tel, texto);
+          } catch (e) {
+            comunicacao.resultados.whatsappLink = null;
+          }
+        } else {
+          comunicacao.resultados.whatsappLink = null;
+        }
+      }
+    } catch (e) {
+      comunicacao.erro = e.message;
+      console.warn('[CTRL-NOTIF] Falha ao enviar comunicação:', e);
+    }
+
+    console.log('[CTRL-NOTIF] comunicacao:', comunicacao);
+    res.json({ ...notificacao.toObject?.() || notificacao, comunicacao });
   } catch (err) {
+    console.error('Erro ao deferir notificação:', err);
     res.status(500).json({ erro: 'Erro ao deferir notificação' });
   }
 });
