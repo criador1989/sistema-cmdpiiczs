@@ -6,7 +6,7 @@
 
 const TelegramBot = require('node-telegram-bot-api');
 const Aluno = require('../models/Aluno');
-const { send: sendMail, canSendMail, getMailStatus } = require('../utils/mailer');
+const mailer = require('../utils/mailer'); // <<<<<< usa o objeto exportado pelo utils/mailer
 const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento'); // mantenha se existir
 
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -83,9 +83,20 @@ function extractContatosAluno(alunoDoc) {
    Envios de baixo nível
    ========================= */
 async function enviarEmailDireto({ to, subject, text, html }) {
-  // Repassa ao util centralizado
-  const r = await sendMail({ to, subject, text, html });
-  return r.ok ? r : { ok: false, erro: r.erro || 'Falha no envio de e-mail' };
+  const lista = Array.isArray(to) ? to.filter(Boolean) : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!lista.length) return { ok: false, erro: 'Destinatário ausente' };
+
+  try {
+    await mailer.sendMail({
+      to: lista.join(','),
+      subject,
+      html,
+      text
+    });
+    return { ok: true, to: lista };
+  } catch (e) {
+    return { ok: false, erro: e?.message || String(e), to: lista };
+  }
 }
 
 function canSendTelegram() {
@@ -214,53 +225,18 @@ async function enfileirarParaResponsaveis(opts = {}) {
 }
 
 /* =========================
-   Encaminhamento NP
-   ========================= */
-async function enviarNPEncaminhamento({
-  alunoId,
-  notaAtual,
-  linkAgendamento,
-  contatoEscola,
-  instituicao,
-  preferenciaCanais = ['email', 'telegram']
-}) {
-  if (!alunoId) return { ok: false, erro: 'alunoId ausente' };
-
-  const match = { _id: alunoId };
-  if (instituicao) match.instituicao = instituicao;
-
-  const aluno = await Aluno.findOne(match).select('nome turma instituicao').lean();
-  if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
-
-  const { subject, text, html } = montarEmailNP({
-    aluno: aluno.nome,
-    turma: aluno.turma,
-    notaAtual,
-    linkAgendamento: linkAgendamento || '',
-    contatoEscola: contatoEscola || ''
-  });
-
-  return enfileirarParaResponsaveis({
-    alunoId,
-    instituicao,
-    preferenciaCanais,
-    titulo: subject,
-    texto: text,
-    html,
-    meta: { tipo: 'NP_ENCAMINHAMENTO', notaAtual: Number(notaAtual) }
-  });
-}
-
-/* =========================
    Status p/ diagnóstico
    ========================= */
 function getStatus() {
-  const mail = getMailStatus();
   return {
     nodeEnv: process.env.NODE_ENV || '(unset)',
-    ...mail,
+    MAIL_ENABLED: !!mailer?.MAIL_ENABLED,
+    SMTP_HOST: mailer?.SMTP_HOST,
+    SMTP_PORT: mailer?.SMTP_PORT,
+    MAIL_USER: mailer?.MAIL_USER ? '(definido)' : '(vazio)',
     TG_ENABLED,
     hasTelegramBot: Boolean(tgBot),
+    transportMode: mailer?.MAIL_ENABLED ? 'EMAIL' : 'NONE'
   };
 }
 
@@ -269,6 +245,46 @@ module.exports = {
   enviarTelegram,        // legado
   linkWhatsApp,          // legado
   enfileirarParaResponsaveis,
-  enviarNPEncaminhamento,
+  enviarNPEncaminhamento: async (args) => {
+    // mantém a assinatura esperada usando o template NP, se existir
+    const {
+      alunoId,
+      notaAtual,
+      linkAgendamento,
+      contatoEscola,
+      instituicao,
+      preferenciaCanais = ['email', 'telegram']
+    } = args || {};
+
+    if (!alunoId) return { ok: false, erro: 'alunoId ausente' };
+
+    const match = { _id: alunoId };
+    if (instituicao) match.instituicao = instituicao;
+
+    const aluno = await Aluno.findOne(match).select('nome turma instituicao').lean();
+    if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
+
+    const { subject, text, html } = montarEmailNP ? montarEmailNP({
+      aluno: aluno.nome,
+      turma: aluno.turma,
+      notaAtual,
+      linkAgendamento: linkAgendamento || '',
+      contatoEscola: contatoEscola || ''
+    }) : {
+      subject: 'Encaminhamento NP',
+      text: fallbackTexto(aluno, 'NP'),
+      html: `<pre style="white-space:pre-wrap">${fallbackTexto(aluno, 'NP')}</pre>`
+    };
+
+    return enfileirarParaResponsaveis({
+      alunoId,
+      instituicao,
+      preferenciaCanais,
+      titulo: subject,
+      texto: text,
+      html,
+      meta: { tipo: 'NP_ENCAMINHAMENTO', notaAtual: Number(notaAtual) }
+    });
+  },
   getStatus
 };
