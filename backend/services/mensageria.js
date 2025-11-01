@@ -1,72 +1,27 @@
-// services/mensageria.js
+// backend/services/mensageria.js
 // Mensageria unificada: Email (SMTP/Gmail), Telegram e link de WhatsApp.
-// Tolerante a ambiente: envia quando houver credencial; em dev sem credencial, simula envio (ok:true).
+// Usa utils/mailer para centralizar criação/verify do transporter.
 
-const nodemailer = require('nodemailer');
+'use strict';
+
 const TelegramBot = require('node-telegram-bot-api');
 const Aluno = require('../models/Aluno');
-const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento'); // (se não existir, mantenha)
-
-/* =========================
-   Variáveis de ambiente
-   ========================= */
-const MAIL_ENABLED = String(process.env.MAIL_ENABLED || '').toLowerCase() === 'true';
-const TG_ENABLED   = String(process.env.TG_ENABLED   || '').toLowerCase() === 'true';
-
-const MAIL_USER = process.env.MAIL_USER || ''; // ex: gmail
-const MAIL_PASS = process.env.MAIL_PASS || '';
-const MAIL_FROM = process.env.MAIL_FROM || (MAIL_USER ? `"CMDPII/CZS" <${MAIL_USER}>` : 'CMDPII/CZS <no-reply@localhost>');
-
-const SMTP_HOST = process.env.SMTP_HOST || '';
-const SMTP_PORT = Number(process.env.SMTP_PORT || (SMTP_HOST ? 587 : 0));
-const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true';
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-
-const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
+const { send: sendMail, canSendMail, getMailStatus } = require('../utils/mailer');
+const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento'); // mantenha se existir
 
 const IS_PROD = process.env.NODE_ENV === 'production';
+const TG_ENABLED   = String(process.env.TG_ENABLED || '').toLowerCase() === 'true';
+const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
 
 /* =========================
-   Email transport (pool)
-   ========================= */
-let transporter = null;
-try {
-  if (SMTP_HOST) {
-    transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT || 587,
-      secure: SMTP_SECURE || Number(SMTP_PORT) === 465,
-      auth: (SMTP_USER && SMTP_PASS) ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-      pool: true, maxConnections: 4, maxMessages: 100,
-    });
-  } else if (MAIL_USER && MAIL_PASS) {
-    // Gmail com App Password
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: MAIL_USER, pass: MAIL_PASS },
-      pool: true, maxConnections: 3, maxMessages: 60,
-    });
-  } else if (!IS_PROD) {
-    // Dev sem credencial → simula
-    console.warn('[mensageria] Sem SMTP configurado. Em dev, enviaremos em modo LOG.');
-  } else if (MAIL_ENABLED) {
-    console.warn('[mensageria] MAIL_ENABLED=true, mas sem SMTP_HOST nem MAIL_USER/MAIL_PASS.');
-  }
-} catch (e) {
-  console.warn('[mensageria] Falha ao criar transporter SMTP:', e?.message || e);
-}
-
-/* =========================
-   Telegram (envio unidirecional)
+   Telegram (somente envio)
    ========================= */
 let tgBot = null;
 try {
   if (TG_BOT_TOKEN) {
-    // polling:false → só envio
     tgBot = new TelegramBot(TG_BOT_TOKEN, { polling: false });
   } else if (!IS_PROD) {
-    console.warn('[mensageria] Sem TG_BOT_TOKEN. Em dev, enviaremos Telegram em modo LOG.');
+    console.warn('[mensageria] Sem TG_BOT_TOKEN. Em dev, Telegram será simulado no LOG.');
   } else if (TG_ENABLED) {
     console.warn('[mensageria] TG_ENABLED=true, mas sem TG_BOT_TOKEN.');
   }
@@ -127,55 +82,24 @@ function extractContatosAluno(alunoDoc) {
 /* =========================
    Envios de baixo nível
    ========================= */
-function canSendEmail() {
-  // envia se houver transporter, mesmo que MAIL_ENABLED esteja ausente
-  return Boolean(transporter);
+async function enviarEmailDireto({ to, subject, text, html }) {
+  // Repassa ao util centralizado
+  const r = await sendMail({ to, subject, text, html });
+  return r.ok ? r : { ok: false, erro: r.erro || 'Falha no envio de e-mail' };
 }
+
 function canSendTelegram() {
   return Boolean(tgBot);
 }
 
-async function enviarEmailDireto({ to, subject, text, html }) {
-  const destinatarios = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
-  if (destinatarios.length === 0)   return { ok: false, erro: 'destinatário(s) ausente(s)' };
-
-  const subj = subject || 'Comunicado — CMDPII/CZS';
-  const bodyText = text && String(text).trim() ? String(text) : (html ? '' : ' ');
-  const bodyHtml = html && String(html).trim()
-    ? html
-    : (text ? `<pre style="white-space:pre-wrap">${String(text).replace(/</g,'&lt;')}</pre>` : '<p></p>');
-
-  if (!canSendEmail()) {
-    // Em dev sem SMTP → simula
-    if (!IS_PROD) {
-      console.log('📧 [LOG] (simulado) Envio de email:', { to: destinatarios, subject: subj });
-      return { ok: true, simulated: true, to: destinatarios };
-    }
-    return { ok: false, erro: 'SMTP indisponível' };
-  }
-
-  try {
-    const info = await transporter.sendMail({
-      from: MAIL_FROM,
-      to: destinatarios.join(','),
-      subject: subj,
-      text: bodyText,
-      html: bodyHtml,
-    });
-    return { ok: true, id: info.messageId, to: destinatarios };
-  } catch (e) {
-    return { ok: false, erro: e?.message || String(e), to: destinatarios };
-  }
-}
-
 async function enviarTelegramDireto({ chatIds = [], text }) {
   const ids = Array.isArray(chatIds) ? chatIds.filter(Boolean) : [chatIds].filter(Boolean);
-  if (ids.length === 0) return { ok: false, erro: 'chatId ausente' };
-
+  if (!ids.length) return { ok: false, erro: 'chatId ausente' };
   const bodyText = text && String(text).trim() ? String(text) : ' ';
+
   if (!canSendTelegram()) {
     if (!IS_PROD) {
-      console.log('📨 [LOG] (simulado) Envio Telegram:', { chatIds: ids, text: bodyText.slice(0, 100) + '...' });
+      console.log('📨 [LOG] (simulado) Telegram:', { chatIds: ids, text: bodyText.slice(0, 120) + '...' });
       return { ok: true, simulated: true, to: ids };
     }
     return { ok: false, erro: 'Telegram indisponível' };
@@ -219,13 +143,13 @@ function linkWhatsApp(aluno, categoria, telefoneE164, texto) {
 }
 
 /* =========================
-   Envio unificado (preferências)
+   Envio unificado
    ========================= */
 async function enfileirarParaResponsaveis(opts = {}) {
   const {
     alunoId,
     instituicao,
-    preferenciaCanais = ['email', 'telegram'], // prioriza email
+    preferenciaCanais = ['email', 'telegram'],
     titulo = 'Comunicado — CMDPII/CZS',
     texto = '',
     html  = '',
@@ -240,12 +164,11 @@ async function enfileirarParaResponsaveis(opts = {}) {
   const aluno = await Aluno.findOne(match)
     .select('nome turma contatos responsaveis telefone instituicao')
     .lean();
-
   if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
 
   const contatos = extractContatosAluno(aluno);
   const textoFinal = String(texto || '').trim() || fallbackTexto(aluno, 'Informação');
-  const htmlFinal = String(html || '').trim() || `<pre style="white-space:pre-wrap">${textoFinal}</pre>`;
+  const htmlFinal  = String(html  || '').trim() || `<pre style="white-space:pre-wrap">${textoFinal}</pre>`;
 
   const resultados = { tried: [], telegram: null, email: null, whatsapp: null, meta };
 
@@ -291,7 +214,7 @@ async function enfileirarParaResponsaveis(opts = {}) {
 }
 
 /* =========================
-   Encaminhamento NP (template)
+   Encaminhamento NP
    ========================= */
 async function enviarNPEncaminhamento({
   alunoId,
@@ -317,7 +240,7 @@ async function enviarNPEncaminhamento({
     contatoEscola: contatoEscola || ''
   });
 
-  const envio = await enfileirarParaResponsaveis({
+  return enfileirarParaResponsaveis({
     alunoId,
     instituicao,
     preferenciaCanais,
@@ -326,22 +249,18 @@ async function enviarNPEncaminhamento({
     html,
     meta: { tipo: 'NP_ENCAMINHAMENTO', notaAtual: Number(notaAtual) }
   });
-
-  return envio;
 }
 
 /* =========================
    Status p/ diagnóstico
    ========================= */
 function getStatus() {
+  const mail = getMailStatus();
   return {
     nodeEnv: process.env.NODE_ENV || '(unset)',
-    MAIL_ENABLED,
+    ...mail,
     TG_ENABLED,
-    MAIL_FROM,
-    hasTransporter: Boolean(transporter),
     hasTelegramBot: Boolean(tgBot),
-    transportMode: (SMTP_HOST ? 'SMTP_CUSTOM' : (MAIL_USER && MAIL_PASS ? 'GMAIL' : 'NONE')),
   };
 }
 
