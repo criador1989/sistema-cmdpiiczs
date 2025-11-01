@@ -36,29 +36,46 @@ if (process.env.NODE_ENV === 'production') {
 /* =========================
    CORS (antes das rotas)
    ========================= */
-const DEV_ALLOWED = [
-  'http://localhost:5000',
-  'http://127.0.0.1:5000',
+const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:5173').toLowerCase();
+const allowedOrigins = new Set([
+  CLIENT_URL,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-];
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  (process.env.RENDER_EXTERNAL_URL || '').toLowerCase(),
+  (process.env.DASHBOARD_URL || '').toLowerCase(),
+]);
 
-const corsOptions = {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // curl/postman
-    if (process.env.NODE_ENV === 'production') {
-      const allowed = (process.env.CLIENT_URL || '').split(',').map(s => s.trim()).filter(Boolean);
-      return allowed.includes(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'));
-    }
-    if (DEV_ALLOWED.includes(origin)) return cb(null, true);
-    if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return cb(null, true);
-    return cb(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'],
-};
-app.use(cors(corsOptions));
+const RENDER_HOST = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  try {
+    const o = origin.toLowerCase();
+    if (allowedOrigins.has(o)) return true;
+
+    const u = new URL(o);
+    if (RENDER_HOST && u.hostname === RENDER_HOST) return true;
+    if (u.hostname.endsWith('.onrender.com')) return true;
+    if (u.hostname === require('os').hostname()) return true;
+  } catch (_) {}
+  return false;
+}
+
+function corsOptionsDelegate(req, cb) {
+  const origin = req.headers.origin;
+  const allow = isAllowedOrigin(origin);
+  cb(null, {
+    origin: allow,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'],
+    optionsSuccessStatus: 200,
+  });
+}
+
+app.use(cors(corsOptionsDelegate));
 
 /* =========================
    PARSERS
@@ -231,7 +248,6 @@ app.use('/api/comunicacao', comunicacaoAutoRoutes);
 
 try {
   const aphRoutes = require('./routes/api/aph');
-  // obs: os handlers já têm `autenticar`, mas manter aqui não faz mal
   app.use('/api/aph', autenticar, aphRoutes);
   console.log('API APH ligada em /api/aph');
 } catch (e) {
@@ -288,7 +304,7 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
       console.log('🧪 Health pronto: /__version e /healthz');
-      console.log('🌍 CORS dev liberado para 5000/5173');
+      console.log('🌍 CORS flexível ativo (Render + localhost + *.onrender.com)');
     });
   } catch (err) {
     console.error('❌ Falha ao conectar no Mongo:', err?.message || err);
