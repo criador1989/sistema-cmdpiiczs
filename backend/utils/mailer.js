@@ -4,22 +4,23 @@
 const nodemailer = require('nodemailer');
 
 // -------------------- ENV --------------------
-const MAIL_ENABLED = String(process.env.MAIL_ENABLED || 'false').toLowerCase() === 'true';
-const MAIL_HOST = process.env.MAIL_HOST || 'smtp.gmail.com';
-const MAIL_PORT = Number(process.env.MAIL_PORT || 465);
-const MAIL_SECURE = String(process.env.MAIL_SECURE || 'true').toLowerCase() === 'true';
-const MAIL_USER = process.env.MAIL_USER || '';
-const MAIL_PASS = process.env.MAIL_PASS || '';
+const MAIL_ENABLED  = String(process.env.MAIL_ENABLED || 'false').toLowerCase() === 'true';
+const MAIL_HOST     = process.env.MAIL_HOST || 'smtp.gmail.com';
+const MAIL_PORT     = Number(process.env.MAIL_PORT || 465);
+const MAIL_SECURE   = String(process.env.MAIL_SECURE || 'true').toLowerCase() === 'true';
+const MAIL_USER     = process.env.MAIL_USER || '';
+const MAIL_PASS     = process.env.MAIL_PASS || '';
 
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Sistema Escolar';
 const MAIL_FROM_ADDR = process.env.MAIL_FROM_ADDR || MAIL_USER;
 
 // Fallback via API HTTP (sem SMTP)
-const RESEND_API_KEY = process.env.RESEND_API_KEY || ''; // opcional
+const RESEND_API_KEY   = process.env.RESEND_API_KEY || '';     // chave API
+const RESEND_FROM      = process.env.RESEND_FROM || 'onboarding@resend.dev'; // remetente de teste
 
-let transporter = null;
-let lastError = null;
-let lastProvider = null; // "SMTP-465", "SMTP-587", "RESEND"
+let transporter   = null;
+let lastError     = null;
+let lastProvider  = null; // "SMTP-465", "SMTP-587", "RESEND"
 
 // -------------------- SMTP --------------------
 async function makeTransport({ host, port, secure }) {
@@ -42,17 +43,10 @@ async function makeTransport({ host, port, secure }) {
 }
 
 async function ensureTransport() {
-  if (!MAIL_ENABLED) {
-    lastError = 'MAIL_ENABLED=false';
-    return null;
-  }
-  if (!MAIL_USER || !MAIL_PASS) {
-    lastError = 'MAIL_USER/MAIL_PASS ausentes';
-    return null;
-  }
+  if (!MAIL_ENABLED) { lastError = 'MAIL_ENABLED=false'; return null; }
+  if (!MAIL_USER || !MAIL_PASS) { lastError = 'MAIL_USER/MAIL_PASS ausentes'; return null; }
   if (transporter) return transporter;
 
-  // Tentativa principal (porta da ENV)
   try {
     transporter = await makeTransport({ host: MAIL_HOST, port: MAIL_PORT, secure: MAIL_SECURE });
     lastProvider = `SMTP-${MAIL_PORT}`;
@@ -84,11 +78,18 @@ async function ensureTransport() {
 // -------------------- RESEND (HTTP API) --------------------
 async function sendViaResend({ to, subject, html, text }) {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY ausente');
-  const from = `${MAIL_FROM_NAME} <${MAIL_FROM_ADDR || 'onboarding@resend.dev'}>`;
+
+  const toList = Array.isArray(to)
+    ? to.filter(Boolean)
+    : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+
+  if (!toList.length) throw new Error('Destinatário ausente');
+
+  const from = `${MAIL_FROM_NAME} <${MAIL_FROM_ADDR || RESEND_FROM}>`;
   const body = {
     from,
-    to: Array.isArray(to) ? to : String(to).split(',').map(s => s.trim()).filter(Boolean),
-    subject,
+    to: toList,
+    subject: subject || '(sem assunto)',
     html: html || undefined,
     text: text || undefined,
   };
@@ -109,23 +110,28 @@ async function sendViaResend({ to, subject, html, text }) {
 
   const data = await resp.json().catch(() => ({}));
   lastProvider = 'RESEND';
-  console.log(`[MAIL] Enviado via Resend para ${body.to.join(', ')}`);
+  console.log(`[MAIL] Enviado via Resend para ${toList.join(', ')}`);
   return { id: data?.id || null, provider: 'RESEND' };
 }
 
 // -------------------- API pública --------------------
 async function sendMail({ to, subject, html, text }) {
-  // 1) Tenta SMTP se possível
+  // 1) SMTP (se disponível)
   const tx = await ensureTransport();
-
   if (tx) {
+    const toList = Array.isArray(to)
+      ? to.filter(Boolean).join(',')
+      : String(to || '').split(',').map(s => s.trim()).filter(Boolean).join(',');
+
+    if (!toList) throw new Error('Destinatário ausente');
+
     const from = { name: MAIL_FROM_NAME, address: MAIL_FROM_ADDR || MAIL_USER };
-    const info = await tx.sendMail({ from, to, subject, html, text });
-    console.log(`[MAIL] Enviado via ${lastProvider} para ${to}: ${subject}`);
+    const info = await tx.sendMail({ from, to: toList, subject: subject || '(sem assunto)', html, text });
+    console.log(`[MAIL] Enviado via ${lastProvider} para ${toList}: ${subject || '(sem assunto)'}`);
     return { ok: true, info, provider: lastProvider };
   }
 
-  // 2) Se SMTP não disponível (timeout/bloqueado), tenta RESEND
+  // 2) Fallback HTTP (Resend)
   if (RESEND_API_KEY) {
     const info = await sendViaResend({ to, subject, html, text });
     return { ok: true, info, provider: 'RESEND' };
@@ -137,7 +143,6 @@ async function sendMail({ to, subject, html, text }) {
 }
 
 async function verify() {
-  // Verifica SMTP; se indisponível, informa possibilidade de fallback via RESEND
   try {
     const tx = await ensureTransport();
     if (tx) {
@@ -145,7 +150,7 @@ async function verify() {
       return { ok: true, provider: lastProvider || `SMTP-${MAIL_PORT}` };
     }
     if (RESEND_API_KEY) {
-      return { ok: true, provider: 'RESEND (fallback disponível)' };
+      return { ok: true, provider: 'RESEND (fallback disponível)', smtp_error: lastError || null };
     }
     return { ok: false, msg: lastError || 'Sem SMTP e sem RESEND_API_KEY' };
   } catch (e) {
@@ -166,4 +171,5 @@ module.exports = {
   SMTP_HOST: MAIL_HOST,
   SMTP_PORT: MAIL_PORT,
   getLastMailError: () => lastError,
+  getLastProvider: () => lastProvider,
 };

@@ -205,28 +205,53 @@ function toast(msg, type='ok'){
   el._t = setTimeout(()=>{ el.style.display='none'; }, 2600);
 }
 
-// fetch com timeout (evita tela travar)
-async function api(path, opts={}){
-  const ctl = new AbortController();
-  const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000);
-  try{
-    const res = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
-      credentials:'include',
+/* ===== fetch resiliente (timeout + retry anti-AbortError) ===== */
+async function api(path, opts = {}) {
+  const url = `/api${path.startsWith('/') ? path : `/${path}`}`;
+
+  // helper com AbortController
+  const attempt = async (useAbort = true) => {
+    let controller, timer;
+    const headers = { 'Accept': 'application/json', ...(opts.headers||{}) };
+    const fetchOpts = {
+      credentials: 'include',
       method: opts.method || 'GET',
-      headers: { 'Content-Type':'application/json' },
+      headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined,
-      signal: ctl.signal
-    });
-    const ct = res.headers.get('content-type')||'';
-    const json = ct.includes('application/json') ? await res.json().catch(()=> ({})) : {};
-    if (res.status === 401){
-      alert('Sessão expirada. Faça login novamente.');
-      location.href = '/login.html'; throw new Error('401');
+      cache: 'no-store'
+    };
+    if (useAbort) {
+      controller = new AbortController();
+      fetchOpts.signal = controller.signal;
+      const ms = opts.timeoutMs ?? 12000;
+      timer = setTimeout(() => controller.abort('timeout'), ms);
     }
-    if (!res.ok) throw new Error(json.message || json.error || `Erro ${res.status}`);
-    return json;
-  } finally {
-    clearTimeout(id);
+    try {
+      const res = await fetch(url, fetchOpts);
+      const ct = res.headers.get('content-type') || '';
+      const json = ct.includes('application/json') ? await res.json().catch(()=> ({})) : {};
+      if (res.status === 401) {
+        alert('Sessão expirada. Faça login novamente.');
+        location.href = '/login.html';
+        throw new Error('401');
+      }
+      if (!res.ok) throw new Error(json.message || json.error || `Erro ${res.status}`);
+      return json;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+
+  try {
+    // 1ª tentativa: com timeout
+    return await attempt(true);
+  } catch (e) {
+    // Se o SW atualizou ou o AbortController disparou, tentamos novamente SEM sinal
+    if (e && (e.name === 'AbortError' || String(e).toLowerCase().includes('aborted'))) {
+      console.warn('[APH] Requisição abortada; tentando novamente sem AbortController…');
+      return await attempt(false);
+    }
+    throw e;
   }
 }
 
@@ -321,8 +346,7 @@ async function carregarLista(){
           if(!confirm('Excluir este atendimento?')) return;
           btn.disabled = true; btn.textContent = 'Excluindo...';
           try{
-            const r = await fetch(`/api/aph/atendimentos/${id}`, { method:'DELETE', credentials:'include' });
-            if(!r.ok){ alert('Falha ao excluir.'); return; }
+            await api(`/aph/atendimentos/${id}`, { method:'DELETE', timeoutMs: 12000 });
             toast('Atendimento excluído.');
             carregarLista();
           } catch(e){

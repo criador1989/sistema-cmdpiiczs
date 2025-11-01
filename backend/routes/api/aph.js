@@ -1,4 +1,6 @@
 // backend/routes/api/aph.js
+'use strict';
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -17,6 +19,17 @@ function endOfDay(d) {
   const x = new Date(d);
   x.setHours(23, 59, 59, 999);
   return x;
+}
+
+// timeout “macio” para chamadas externas (ex.: mensageria)
+function withTimeout(promise, ms = 8000, label = 'operação') {
+  let t;
+  const timer = new Promise((resolve) => {
+    t = setTimeout(() => {
+      resolve({ __timeout: true, ok: false, erro: `Timeout ${label} (${ms}ms)` });
+    }, ms);
+  });
+  return Promise.race([promise.finally(() => clearTimeout(t)), timer]);
 }
 
 function montarMensagemAPH({ aluno, at }) {
@@ -236,7 +249,7 @@ router.post('/atendimentos', autenticar, async (req, res) => {
       const mensageria = getMensageria(req);
       if (mensageria?.enfileirarParaResponsaveis) {
         const { titulo, texto } = montarMensagemAPH({ aluno, at: payload });
-        comunicacao = await mensageria.enfileirarParaResponsaveis({
+        const prom = mensageria.enfileirarParaResponsaveis({
           alunoId: String(aluno._id),
           instituicao: String(inst),
           // prioriza email, depois telegram; gera link de WhatsApp
@@ -246,6 +259,14 @@ router.post('/atendimentos', autenticar, async (req, res) => {
           html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
           meta: { tipo: 'aph_atendimento', atendimentoId: String(novo._id) }
         });
+
+        const r = await withTimeout(prom, 8000, 'mensageria APH');
+        if (r?.__timeout) {
+          console.warn('[APH] mensageria: timeout — resposta não aguardada (considerando enfileirado).');
+          comunicacao = { ok: true, queued: true, motivo: 'timeout_mensageria' };
+        } else {
+          comunicacao = r;
+        }
       } else {
         console.warn('[APH] mensageria indisponível (não bloqueia o salvamento).');
       }
@@ -341,7 +362,9 @@ router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req
     }
 
     const { titulo, texto } = montarMensagemAPH({ aluno, at });
-    const comunicacao = await mensageria.enfileirarParaResponsaveis({
+
+    // não deixar a requisição travar; timeout curto
+    const prom = mensageria.enfileirarParaResponsaveis({
       alunoId: String(aluno._id),
       instituicao: String(inst),
       preferenciaCanais: ['email', 'telegram', 'whatsapp'],
@@ -351,7 +374,13 @@ router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req
       meta: { tipo: 'aph_atendimento_reenvio', atendimentoId: String(at._id) }
     });
 
-    res.json({ ok: Boolean(comunicacao?.ok), comunicacao });
+    const r = await withTimeout(prom, 8000, 'mensageria reenvio APH');
+    if (r?.__timeout) {
+      console.warn('[APH] reenvio: timeout — resposta não aguardada (considerando enfileirado).');
+      return res.json({ ok: true, queued: true, comunicacao: { motivo: 'timeout_mensageria' } });
+    }
+
+    return res.json({ ok: Boolean(r?.ok), comunicacao: r });
   } catch (err) {
     console.error('[APH] POST reengatilhar erro:', err);
     res.status(500).json({ message: 'Erro ao reenviar comunicado.' });
