@@ -1,21 +1,27 @@
 // backend/utils/mailer.js
+'use strict';
+
 const nodemailer = require('nodemailer');
 
+// -------------------- ENV --------------------
 const MAIL_ENABLED = String(process.env.MAIL_ENABLED || 'false').toLowerCase() === 'true';
 const MAIL_HOST = process.env.MAIL_HOST || 'smtp.gmail.com';
 const MAIL_PORT = Number(process.env.MAIL_PORT || 465);
 const MAIL_SECURE = String(process.env.MAIL_SECURE || 'true').toLowerCase() === 'true';
 const MAIL_USER = process.env.MAIL_USER || '';
 const MAIL_PASS = process.env.MAIL_PASS || '';
+
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Sistema Escolar';
 const MAIL_FROM_ADDR = process.env.MAIL_FROM_ADDR || MAIL_USER;
 
+// Fallback via API HTTP (sem SMTP)
+const RESEND_API_KEY = process.env.RESEND_API_KEY || ''; // opcional
+
 let transporter = null;
 let lastError = null;
+let lastProvider = null; // "SMTP-465", "SMTP-587", "RESEND"
 
-/**
- * Cria o transporter e testa a conexão SMTP.
- */
+// -------------------- SMTP --------------------
 async function makeTransport({ host, port, secure }) {
   const tx = nodemailer.createTransport({
     host,
@@ -26,18 +32,15 @@ async function makeTransport({ host, port, secure }) {
     maxConnections: 3,
     maxMessages: 50,
     tls: {
-      servername: host, // força SNI correto (Render às vezes precisa)
-      rejectUnauthorized: true
-    }
+      servername: host,
+      rejectUnauthorized: true,
+    },
   });
 
-  await tx.verify(); // dispara erro se não autenticar
+  await tx.verify(); // valida conexão/autenticação
   return tx;
 }
 
-/**
- * Garante que o transporter esteja pronto (com fallback se necessário)
- */
 async function ensureTransport() {
   if (!MAIL_ENABLED) {
     lastError = 'MAIL_ENABLED=false';
@@ -47,11 +50,12 @@ async function ensureTransport() {
     lastError = 'MAIL_USER/MAIL_PASS ausentes';
     return null;
   }
-
   if (transporter) return transporter;
 
+  // Tentativa principal (porta da ENV)
   try {
     transporter = await makeTransport({ host: MAIL_HOST, port: MAIL_PORT, secure: MAIL_SECURE });
+    lastProvider = `SMTP-${MAIL_PORT}`;
     console.log(`[MAIL] Conectado: ${MAIL_HOST}:${MAIL_PORT} (secure=${MAIL_SECURE})`);
     lastError = null;
     return transporter;
@@ -60,10 +64,11 @@ async function ensureTransport() {
     lastError = e1?.message || String(e1);
   }
 
-  // Fallback automático Gmail 587 STARTTLS
+  // Fallback Gmail 587 STARTTLS
   if (MAIL_HOST === 'smtp.gmail.com') {
     try {
       transporter = await makeTransport({ host: 'smtp.gmail.com', port: 587, secure: false });
+      lastProvider = 'SMTP-587';
       console.log('[MAIL] Conectado via fallback Gmail 587 (STARTTLS).');
       lastError = null;
       return transporter;
@@ -73,33 +78,81 @@ async function ensureTransport() {
     }
   }
 
-  return null;
+  return null; // deixa sendMail decidir se usa API
 }
 
-/**
- * Envia e-mail com HTML/texto
- */
+// -------------------- RESEND (HTTP API) --------------------
+async function sendViaResend({ to, subject, html, text }) {
+  if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY ausente');
+  const from = `${MAIL_FROM_NAME} <${MAIL_FROM_ADDR || 'onboarding@resend.dev'}>`;
+  const body = {
+    from,
+    to: Array.isArray(to) ? to : String(to).split(',').map(s => s.trim()).filter(Boolean),
+    subject,
+    html: html || undefined,
+    text: text || undefined,
+  };
+
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    throw new Error(`Resend HTTP ${resp.status}: ${errText || resp.statusText}`);
+  }
+
+  const data = await resp.json().catch(() => ({}));
+  lastProvider = 'RESEND';
+  console.log(`[MAIL] Enviado via Resend para ${body.to.join(', ')}`);
+  return { id: data?.id || null, provider: 'RESEND' };
+}
+
+// -------------------- API pública --------------------
 async function sendMail({ to, subject, html, text }) {
+  // 1) Tenta SMTP se possível
   const tx = await ensureTransport();
-  if (!tx) throw new Error(lastError || 'SMTP indisponível');
 
-  const from = { name: MAIL_FROM_NAME, address: MAIL_FROM_ADDR || MAIL_USER };
-  const info = await tx.sendMail({ from, to, subject, html, text });
-  console.log(`[MAIL] Enviado para ${to}: ${subject}`);
-  return info;
+  if (tx) {
+    const from = { name: MAIL_FROM_NAME, address: MAIL_FROM_ADDR || MAIL_USER };
+    const info = await tx.sendMail({ from, to, subject, html, text });
+    console.log(`[MAIL] Enviado via ${lastProvider} para ${to}: ${subject}`);
+    return { ok: true, info, provider: lastProvider };
+  }
+
+  // 2) Se SMTP não disponível (timeout/bloqueado), tenta RESEND
+  if (RESEND_API_KEY) {
+    const info = await sendViaResend({ to, subject, html, text });
+    return { ok: true, info, provider: 'RESEND' };
+  }
+
+  // 3) Sem SMTP e sem RESEND
+  const msg = lastError || 'SMTP indisponível e nenhum provedor HTTP configurado';
+  throw new Error(msg);
 }
 
-/**
- * Teste de conexão (usado por /debug/mail/verify)
- */
 async function verify() {
+  // Verifica SMTP; se indisponível, informa possibilidade de fallback via RESEND
   try {
     const tx = await ensureTransport();
-    if (!tx) return { ok: false, msg: lastError || 'transporter nulo' };
-    await tx.verify();
-    return { ok: true, host: MAIL_HOST, port: MAIL_PORT, secure: MAIL_SECURE };
+    if (tx) {
+      await tx.verify();
+      return { ok: true, provider: lastProvider || `SMTP-${MAIL_PORT}` };
+    }
+    if (RESEND_API_KEY) {
+      return { ok: true, provider: 'RESEND (fallback disponível)' };
+    }
+    return { ok: false, msg: lastError || 'Sem SMTP e sem RESEND_API_KEY' };
   } catch (e) {
     lastError = e?.message || String(e);
+    if (RESEND_API_KEY) {
+      return { ok: true, provider: 'RESEND (SMTP falhou, mas fallback disponível)', smtp_error: lastError };
+    }
     return { ok: false, msg: lastError };
   }
 }
@@ -112,5 +165,5 @@ module.exports = {
   MAIL_FROM: `${MAIL_FROM_NAME} <${MAIL_FROM_ADDR || MAIL_USER}>`,
   SMTP_HOST: MAIL_HOST,
   SMTP_PORT: MAIL_PORT,
-  getLastMailError: () => lastError
+  getLastMailError: () => lastError,
 };
