@@ -1,4 +1,6 @@
 // backend/routes/api/aph.js
+'use strict';
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -6,6 +8,9 @@ const mongoose = require('mongoose');
 const { autenticar } = require('../../middleware/autenticacao');
 const AphAtendimento = require('../../models/AphAtendimento');
 const Aluno = require('../../models/Aluno');
+
+// Usaremos o mailer como fallback caso a mensageria não esteja disponível
+const { safeSendMail, MAIL_ENABLED } = require('../../utils/mailer');
 
 /* -------------------- utils -------------------- */
 function getMensageria(req) {
@@ -50,6 +55,34 @@ function montarMensagemAPH({ aluno, at }) {
   );
 
   return { titulo: `Comunicado de APH — ${nome}`, texto: linhas.join('\n') };
+}
+
+/**
+ * Extrai possíveis e-mails dos responsáveis do objeto aluno (tenta ser tolerante a formatos).
+ * Retorna um array deduplicado.
+ */
+function extrairEmailsResponsaveis(aluno) {
+  const emails = new Set();
+
+  // aluno.contatos?.email
+  const contatoEmail = aluno?.contatos?.email || aluno?.contatoEmail || '';
+  if (contatoEmail) String(contatoEmail).split(/[;, ]+/).forEach(e => e && emails.add(e));
+
+  // aluno.responsaveis: [{ email }, ...] ou variações
+  if (Array.isArray(aluno?.responsaveis)) {
+    for (const r of aluno.responsaveis) {
+      const e = r?.email || r?.contatoEmail || '';
+      if (e) String(e).split(/[;, ]+/).forEach(x => x && emails.add(x));
+    }
+  }
+
+  // Possíveis campos soltos
+  ['email', 'email1', 'email2'].forEach(k => {
+    const v = aluno?.[k];
+    if (v) String(v).split(/[;, ]+/).forEach(x => x && emails.add(x));
+  });
+
+  return Array.from(emails);
 }
 
 /* =========================================================
@@ -170,6 +203,7 @@ router.get('/atendimento/:id', autenticar, (req, res, next) => {
    CRIAR / EDITAR / EXCLUIR
    ========================================================= */
 
+// Salvar atendimento (resposta imediata; comunicação em background)
 router.post('/atendimentos', autenticar, async (req, res) => {
   try {
     const inst = req.usuario?.instituicao;
@@ -197,7 +231,7 @@ router.post('/atendimentos', autenticar, async (req, res) => {
     }
 
     const aluno = await Aluno.findOne({ _id: alunoId, instituicao: inst })
-      .select('nome turma instituicao contatos responsaveis telefone')
+      .select('nome turma instituicao contatos responsaveis telefone email email1 email2')
       .lean();
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' });
 
@@ -221,28 +255,58 @@ router.post('/atendimentos', autenticar, async (req, res) => {
 
     const novo = await AphAtendimento.create(payload);
 
-    // Disparo de comunicação (tolerante a falhas)
-    let comunicacao = { ok: false, motivo: 'mensageria indisponível' };
-    try {
-      const mensageria = getMensageria(req);
-      if (mensageria?.enfileirarParaResponsaveis) {
-        const { titulo, texto } = montarMensagemAPH({ aluno, at: payload });
-        comunicacao = await mensageria.enfileirarParaResponsaveis({
-          alunoId: String(aluno._id),
-          instituicao: String(inst),
-          // prioriza email, depois telegram; gera link de WhatsApp
-          preferenciaCanais: ['email', 'telegram', 'whatsapp'],
-          titulo,
-          texto,
-          html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
-          meta: { tipo: 'aph_atendimento', atendimentoId: String(novo._id) }
-        });
-      }
-    } catch (e) {
-      console.warn('[APH] Falha no disparo de comunicação:', e?.message || e);
-    }
+    // === Responde IMEDIATAMENTE para não travar o front ===
+    res.status(201).json({
+      ok: true,
+      atendimento: novo,
+      comunicacao: { queued: true }
+    });
 
-    res.status(201).json({ ok: true, atendimento: novo, comunicacao });
+    // === Dispara comunicação EM BACKGROUND ===
+    Promise.resolve().then(async () => {
+      try {
+        const { titulo, texto } = montarMensagemAPH({ aluno, at: payload });
+        const mensageria = getMensageria(req);
+
+        if (mensageria?.enfileirarParaResponsaveis) {
+          const comunicacao = await mensageria.enfileirarParaResponsaveis({
+            alunoId: String(aluno._id),
+            instituicao: String(inst),
+            // prioriza email, depois telegram; gera link de WhatsApp
+            preferenciaCanais: ['email', 'telegram', 'whatsapp'],
+            titulo,
+            texto,
+            html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
+            meta: { tipo: 'aph_atendimento', atendimentoId: String(novo._id) }
+          });
+
+          if (!comunicacao?.ok) {
+            console.warn('[APH] Mensageria retornou falha:', comunicacao);
+          }
+        } else if (MAIL_ENABLED) {
+          // Fallback: tenta e-mail direto
+          const destinatarios = extrairEmailsResponsaveis(aluno);
+          if (destinatarios.length) {
+            const result = await safeSendMail({
+              to: destinatarios.join(','),
+              subject: titulo,
+              text: texto,
+              html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
+            });
+            if (!result.ok && !result.skipped) {
+              console.error('[APH] Fallback e-mail falhou:', result.error);
+            }
+          } else {
+            console.warn('[APH] Sem e-mails de responsáveis para fallback do APH.');
+          }
+        } else {
+          console.warn('[APH] Mensageria indisponível e MAIL_ENABLED=false — nenhuma comunicação enviada.');
+        }
+      } catch (e) {
+        console.error('[APH] Erro no disparo em background:', e && e.stack ? e.stack : e);
+      }
+    });
+
   } catch (err) {
     console.error('[APH] POST /atendimentos erro:', err);
     res.status(500).json({ message: 'Erro ao salvar atendimento.' });
@@ -305,7 +369,7 @@ router.delete('/atendimentos/:id', autenticar, async (req, res) => {
 });
 
 /* =========================================================
-   REENGATILHAR COMUNICAÇÃO
+   REENGATILHAR COMUNICAÇÃO (resposta rápida + background)
    ========================================================= */
 
 router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req, res) => {
@@ -320,27 +384,56 @@ router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req
     if (!at) return res.status(404).json({ message: 'Registro não encontrado.' });
 
     const aluno = await Aluno.findOne({ _id: at.alunoId, instituicao: inst })
-      .select('nome turma instituicao contatos responsaveis telefone')
+      .select('nome turma instituicao contatos responsaveis telefone email email1 email2')
       .lean();
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
-    const mensageria = getMensageria(req);
-    if (!mensageria?.enfileirarParaResponsaveis) {
-      return res.json({ ok: false, comunicacao: { motivo: 'mensageria indisponível' } });
-    }
+    // Responde rápido
+    res.json({ ok: true, queued: true });
 
-    const { titulo, texto } = montarMensagemAPH({ aluno, at });
-    const comunicacao = await mensageria.enfileirarParaResponsaveis({
-      alunoId: String(aluno._id),
-      instituicao: String(inst),
-      preferenciaCanais: ['email', 'telegram', 'whatsapp'],
-      titulo,
-      texto,
-      html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
-      meta: { tipo: 'aph_atendimento_reenvio', atendimentoId: String(at._id) }
+    // Dispara em background
+    Promise.resolve().then(async () => {
+      try {
+        const { titulo, texto } = montarMensagemAPH({ aluno, at });
+        const mensageria = getMensageria(req);
+
+        if (mensageria?.enfileirarParaResponsaveis) {
+          const comunicacao = await mensageria.enfileirarParaResponsaveis({
+            alunoId: String(aluno._id),
+            instituicao: String(inst),
+            preferenciaCanais: ['email', 'telegram', 'whatsapp'],
+            titulo,
+            texto,
+            html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
+            meta: { tipo: 'aph_atendimento_reenvio', atendimentoId: String(at._id) }
+          });
+
+          if (!comunicacao?.ok) {
+            console.warn('[APH] Mensageria falhou no reengatilhamento:', comunicacao);
+          }
+        } else if (MAIL_ENABLED) {
+          const destinatarios = extrairEmailsResponsaveis(aluno);
+          if (destinatarios.length) {
+            const result = await safeSendMail({
+              to: destinatarios.join(','),
+              subject: titulo,
+              text: texto,
+              html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
+            });
+            if (!result.ok && !result.skipped) {
+              console.error('[APH] Fallback e-mail falhou (reengatilhar):', result.error);
+            }
+          } else {
+            console.warn('[APH] Sem e-mails de responsáveis para fallback no reengatilhar.');
+          }
+        } else {
+          console.warn('[APH] Mensageria indisponível e MAIL_ENABLED=false no reengatilhar.');
+        }
+      } catch (e) {
+        console.error('[APH] Erro no reengatilhamento em background:', e && e.stack ? e.stack : e);
+      }
     });
 
-    res.json({ ok: Boolean(comunicacao?.ok), comunicacao });
   } catch (err) {
     console.error('[APH] POST reengatilhar erro:', err);
     res.status(500).json({ message: 'Erro ao reenviar comunicado.' });

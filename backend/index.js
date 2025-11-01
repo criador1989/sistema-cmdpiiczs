@@ -1,3 +1,6 @@
+// backend/index.js
+'use strict';
+
 require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
@@ -43,6 +46,8 @@ const allowedOrigins = new Set([
   'http://127.0.0.1:5173',
   'http://localhost:5000',
   'http://127.0.0.1:5000',
+  'https://localhost:5173',
+  'https://127.0.0.1:5173',
   (process.env.RENDER_EXTERNAL_URL || '').toLowerCase(),
   (process.env.DASHBOARD_URL || '').toLowerCase(),
 ]);
@@ -106,6 +111,35 @@ try {
 } catch (e) {
   console.warn('⚠️  Mensageria não carregada:', e?.message || e);
 }
+
+/* =========================
+   DEBUG DE E-MAIL (SMTP)
+   ========================= */
+const { verify: verifyMail, MAIL_ENABLED, SMTP_HOST, SMTP_PORT, MAIL_USER, MAIL_FROM } = require('./utils/mailer');
+
+app.get('/debug/mail/verify', async (req, res) => {
+  try {
+    if (!MAIL_ENABLED) {
+      return res.status(200).json({ ok: false, reason: 'MAIL_DISABLED' });
+    }
+    const result = await verifyMail();
+    return res.status(result.ok ? 200 : 500).json(result);
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+app.get('/debug/mail/status', (req, res) => {
+  // NÃO exponha credenciais. Somente status e remetente.
+  res.json({
+    MAIL_ENABLED: Boolean(MAIL_ENABLED),
+    SMTP_HOST,
+    SMTP_PORT,
+    MAIL_USER: MAIL_USER ? '(definido)' : '(vazio)',
+    MAIL_FROM,
+    nodeEnv: process.env.NODE_ENV || '(unset)',
+  });
+});
 
 /* =========================
    ROTAS
@@ -243,6 +277,8 @@ app.use('/api/alertas', alertasRoutes);
 app.use('/api/aph', aphEstatisticasRoutes);
 app.use('/api/aph', aphPdfRoutes);
 app.use('/api/telegram', telegramBotRoutes);
+
+// ATENÇÃO: manter as rotas de comunicação agrupadas
 app.use('/api/comunicacao', comunicacaoPaisRoutes);
 app.use('/api/comunicacao', comunicacaoAutoRoutes);
 
@@ -304,6 +340,7 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
       console.log('🧪 Health pronto: /__version e /healthz');
+      console.log('✉️  SMTP: /debug/mail/verify e /debug/mail/status');
       console.log('🌍 CORS flexível ativo (Render + localhost + *.onrender.com)');
     });
   } catch (err) {

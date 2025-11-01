@@ -660,19 +660,17 @@
         const fd = new FormData();
         fd.append('foto', file);
         const resp = await fetch('/api/alunos/' + alunoId + '/foto', { method: 'PUT', body: fd, credentials: 'include' });
-        if (!resp.ok) { alert('Falha ao enviar a foto.'); URL.revokeObjectURL(previewURL); return carregarFicha(); }
-        const data = await resp.json();
-        if (data && data.foto) {
-          URL.revokeObjectURL(previewURL);
-          fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">';
-          if (alunoAtual) {
-            alunoAtual.fotoUrl = data.foto;
-            alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
-          }
-          alert('Foto atualizada com sucesso!');
-        } else {
-          throw new Error('Retorno sem URL da foto.');
+        const data = await resp.json().catch(()=> ({}));
+        if (!resp.ok || !data || !data.foto) {
+          throw new Error(data?.mensagem || data?.message || 'Falha ao enviar a foto.');
         }
+        URL.revokeObjectURL(previewURL);
+        fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">';
+        if (alunoAtual) {
+          alunoAtual.fotoUrl = data.foto;
+          alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
+        }
+        alert('Foto atualizada com sucesso!');
       } catch (e) {
         console.error(e);
         alert('Erro ao atualizar a foto.');
@@ -731,9 +729,12 @@
     function voltarLista() {
       try {
         const ref = document.referrer || '';
-        if (ref && new URL(ref, location.href).origin === location.origin) {
-          history.back();
-          return;
+        if (ref) {
+          const u = new URL(ref, location.href);
+          if (u.origin === location.origin) {
+            history.back();
+            return;
+          }
         }
       } catch(_) {}
       if (alunoAtual?.turma) {
@@ -745,7 +746,8 @@
         location.href = `/turma.html?turma=${encodeURIComponent(turmaParam)}`;
         return;
       }
-      location.href = '/alunos.html';
+      // 🔧 Ajuste necessário: usa a rota correta servida pelo backend
+      location.href = '/lista-alunos.html';
     }
 
     // ===== Telegram: gerar/copiar link =====

@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-store" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Comunicação aos Pais</title>
   <meta name="theme-color" content="#8B0000"/>
@@ -9,7 +10,6 @@
   <link rel="icon" href="./icons/icon-192x192.png"/>
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png"/>
   <style>
-    /* ======= ESTILO DO PAINEL (mesmo visual) ======= */
     :root{
       --rubi-1:#8B0000; --rubi-2:#B22222;
       --glass-bg: rgba(255,255,255,.07);
@@ -18,6 +18,7 @@
       --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
       --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de;
       --line: rgba(255,255,255,.18);
+      --ok:#1aa46f; --warn:#e2b93b; --bad:#e55353;
     }
     *{box-sizing:border-box} html,body{height:auto}
     body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:#1e0506;display:block;min-height:100vh;overflow-y:auto}
@@ -63,11 +64,12 @@
     @media (max-width:900px){.row{grid-template-columns:1fr 1fr}}
 
     .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px}
-    .btn{appearance:none;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;color:#fff}
+    .btn{appearance:none;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;color:#fff;display:inline-flex;align-items:center;gap:8px;font-weight:700}
     .btn.primary{background:var(--rubi-2)}
     .btn.primary:hover{background:var(--rubi-1)}
     .btn.ghost{background:rgba(255,255,255,.14)}
     .btn.pdf{background:#0ea5e9}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
 
     .print-area{background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.18);border-radius:16px;padding:16px;margin-top:18px}
     .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:32px}
@@ -75,8 +77,17 @@
     .sig::before{content:"";position:absolute;left:0;right:0;bottom:18px;border-bottom:1px solid rgba(255,255,255,.6)}
     .sig span{position:absolute;left:0;right:0;bottom:0;text-align:center;color:var(--text-soft);font-size:.9rem}
 
+    .statusbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;justify-content:flex-end}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.18);font-weight:800}
+    .pill.ok{border-color:rgba(33,166,122,.6)}
+    .pill.bad{border-color:rgba(229,83,83,.65)}
+
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#151a22;border:1px solid #2a303a;color:#e9ecf1;padding:10px 14px;border-radius:12px;box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:9999;display:none}
+    .toast.ok{border-color:#1f6e52}
+    .toast.err{border-color:#6e1f1f}
+
     @media print{
-      .sidebar, .actions, .bottom-nav { display:none!important }
+      .sidebar, .actions, .bottom-nav, .statusbar { display:none!important }
       .page{display:block;padding:0}
       body{background:#fff;color:#000}
       .card{box-shadow:none;border:0;background:#fff}
@@ -112,8 +123,11 @@
           <h2>Comunicação aos Pais/Responsáveis</h2>
           <div class="subtitle">Cumprimento de medida disciplinar em contraturno</div>
 
+          <!-- Status da mensageria -->
+          <div class="statusbar" id="statusbar" aria-live="polite"></div>
+
           <!-- Dados básicos (somente leitura) -->
-          <div class="grid">
+          <div class="grid" style="margin-top:10px">
             <div>
               <label>Aluno</label>
               <input type="text" id="nomeAluno" readonly>
@@ -172,6 +186,7 @@
             <button class="btn ghost" onclick="history.back()">← Voltar</button>
             <button class="btn pdf" id="btnPdf" disabled>📄 Gerar PDF</button>
             <button class="btn primary" id="btnSalvar">💾 Salvar</button>
+            <button class="btn ghost" id="btnEnviar">✉️ Enviar aos responsáveis</button>
             <button class="btn ghost" onclick="window.print()">🖨️ Imprimir</button>
           </div>
 
@@ -198,20 +213,21 @@
     </div>
   </nav>
 
+  <div id="toast" class="toast"></div>
+
   <script>
     // ===== Helpers =====
     const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
 
     function showError(msg){
-      let el = document.getElementById('errBanner');
-      if(!el){
-        el = document.createElement('div');
-        el.id = 'errBanner';
-        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
-        document.body.appendChild(el);
-      }
-      el.textContent = `Erro: ${msg}`;
-      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
+      toast(`Erro: ${msg}`, 'error');
+    }
+    function toast(msg, type='ok'){
+      const el = document.getElementById('toast');
+      el.className = `toast ${type==='error'?'err':'ok'}`;
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(el._t); el._t = setTimeout(()=>el.style.display='none', 2800);
     }
 
     function toISODate(d){
@@ -223,51 +239,90 @@
       if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y, (m-1), d);
     }
 
+    async function fetchJSON(url, opts={}){
+      const ctl = new AbortController();
+      const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000);
+      try{
+        const r = await fetch(url, { credentials:'include', ...opts, signal: ctl.signal });
+        const ct = r.headers.get('content-type')||'';
+        const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+        if (r.status === 401){ location.href = './login.html'; throw new Error('401'); }
+        if (!r.ok) throw new Error(data.mensagem || data.message || data.error || `Erro ${r.status}`);
+        return data;
+      } finally { clearTimeout(id); }
+    }
+
     async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
+
+    let gNotificacao = null; // objeto da notificação (para pegar alunoId etc.)
+    let gComunic = null;     // comunicação criada/recuperada
 
     document.addEventListener('DOMContentLoaded', init);
 
     async function init(){
       const params = new URLSearchParams(location.search);
-      const notifId = params.get('notificacao');            // <- usamos este sempre
-      const comunicIdParam = params.get('comunicacao');     // opcional
-
+      const notifId = params.get('notificacao');            // obrigatório
       if(!notifId){
         showError('Parâmetro ?notificacao= é obrigatório.');
         return;
       }
 
-      // 1) Garante que exista a comunicação (POST idempotente)
-      let comunic = null;
+      // Status da mensageria
+      renderStatus(await lerStatusMensageria().catch(()=>null));
+
+      // 1) Garante comunicação idempotente para essa notificação
       try{
-        // tenta GET (se já existir)
+        // tenta GET por notificação
         let r = await fetch(`/api/comunicacao/${notifId}`, { credentials:'include' });
         if (r.status === 404) {
-          // cria
+          // cria se não existir
           r = await fetch(`/api/comunicacao/${notifId}`, { method:'POST', credentials:'include' });
         }
         if(!r.ok) throw new Error('Não foi possível abrir/criar a comunicação.');
-        comunic = await r.json();
+        gComunic = await r.json();
       }catch(e){
         showError(e.message||'Falha ao inicializar a comunicação.');
         return;
       }
 
-      // 2) Carrega dados da notificação (para exibir Nº sequencial e conferência)
-      let notif = null;
+      // 2) Carrega dados da notificação (para alunoId, nº sequencial, etc.)
       try{
         const r = await fetch(`/api/notificacoes/${notifId}`, { credentials:'include' });
-        if (r.ok) notif = await r.json();
+        if (r.ok) gNotificacao = await r.json();
       }catch{}
 
       // 3) Preenche UI
-      preencherUI(comunic, notif);
+      preencherUI(gComunic, gNotificacao);
 
       // 4) Bind botões
-      document.getElementById('btnSalvar').onclick = () => salvar(comunic._id);
       const btnPdf = document.getElementById('btnPdf');
       btnPdf.disabled = false;
-      btnPdf.onclick = () => { window.open(`/api/comunicacao/${comunic._id}/pdf`, '_blank'); };
+      btnPdf.onclick = () => window.open(`/api/comunicacao/${gComunic._id}/pdf`, '_blank');
+
+      document.getElementById('btnSalvar').onclick = () => salvar(gComunic._id);
+      document.getElementById('btnEnviar').onclick = () => enviarAgora();
+    }
+
+    function renderStatus(st){
+      const el = document.getElementById('statusbar');
+      if(!st || !st.ok){
+        el.innerHTML = `<span class="pill bad">Mensageria: indisponível</span>`;
+        return;
+      }
+      const s = st.mensageria || {};
+      const pills = [];
+      pills.push(`<span class="pill ${s.MAIL_ENABLED?'ok':'bad'}">📧 MAIL: ${s.MAIL_ENABLED?'ON':'OFF'}</span>`);
+      pills.push(`<span class="pill ${s.TG_ENABLED?'ok':'bad'}">🤖 TG: ${s.TG_ENABLED?'ON':'OFF'}</span>`);
+      pills.push(`<span class="pill">Modo: ${s.transportMode || '—'}</span>`);
+      el.innerHTML = pills.join('');
+    }
+
+    async function lerStatusMensageria(){
+      // rota protegida (preferencial)
+      return fetchJSON('/api/comunicacao/status').catch(async ()=>{
+        // fallback público (se mantido)
+        return fetchJSON('/api/comunicacao/status-public');
+      });
     }
 
     function preencherUI(c, n){
@@ -301,24 +356,91 @@
       };
 
       try{
-        const r = await fetch(`/api/comunicacao/${id}`, {
+        await fetchJSON(`/api/comunicacao/${id}`, {
           method:'PUT',
           headers:{'Content-Type':'application/json'},
-          credentials:'include',
           body: JSON.stringify(payload)
         });
-        if(!r.ok){
-          const j = await r.json().catch(()=> ({}));
-          throw new Error(j.mensagem || 'Erro ao salvar.');
-        }
-        // feedback rápido
-        const ok = document.createElement('div');
-        ok.textContent = 'Salvo com sucesso!';
-        ok.style.cssText = 'position:fixed;right:16px;bottom:16px;background:#0ea5e9;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 10px 20px rgba(0,0,0,.35);z-index:9999';
-        document.body.appendChild(ok);
-        setTimeout(()=>ok.remove(), 1800);
+        toast('Salvo com sucesso!');
       }catch(e){
         showError(e.message);
+      }
+    }
+
+    function buildMensagem(){
+      const nome   = document.getElementById('nomeAluno').value || 'Aluno(a)';
+      const turma  = document.getElementById('turma').value || '—';
+      const nseq   = document.getElementById('numeroSequencial').value || '—';
+      const di     = document.getElementById('dataInicio').value;
+      const df     = document.getElementById('dataFim').value;
+      const hi     = document.getElementById('horaApresentacao').value || '14:00';
+      const hf     = document.getElementById('horaSaida').value || '18:00';
+      const obs    = (document.getElementById('observacao').value || '').trim();
+
+      const titulo = `Comunicado — Contraturno (Notif. Nº ${nseq}) — ${nome}`;
+      const linhas = [
+        `Prezados responsáveis de ${nome} (${turma}),`,
+        ``,
+        `Informamos o cumprimento de medida disciplinar em contraturno conforme Notificação Nº ${nseq}.`,
+        `• Período: ${formatBR(di)} a ${formatBR(df)}`,
+        `• Horários: apresentação ${hi} — saída ${hf}`,
+      ];
+      if (obs) linhas.push(`• Observações: ${obs}`);
+      linhas.push(
+        ``,
+        `Solicitamos que o(a) estudante apresente-se pontualmente no local indicado pela coordenação.`,
+        `Atenciosamente,`,
+        `Coordenação — CMDPII/CZS`
+      );
+
+      const texto = linhas.join('\n');
+      const html = `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`;
+      return { titulo, texto, html };
+    }
+
+    function formatBR(iso){
+      if(!iso) return '—';
+      try{ return new Date(iso).toLocaleDateString('pt-BR'); }catch{ return iso; }
+    }
+
+    async function enviarAgora(){
+      try{
+        const alunoId = gNotificacao?.aluno?._id || gNotificacao?.alunoId;
+        if(!alunoId){
+          return showError('Não foi possível identificar o aluno desta notificação.');
+        }
+        const { titulo, texto, html } = buildMensagem();
+
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = true; btn.textContent = 'Enfileirando...';
+
+        const payload = {
+          titulo,
+          texto,
+          html,
+          alunoId,
+          preferenciaCanais: ['email','telegram','whatsapp'],
+          meta: { origem:'comunicacao_pais_html', notificacaoId: gNotificacao?._id || null }
+        };
+
+        const j = await fetchJSON('/api/comunicacao/enviar', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+
+        if (j?.ok) {
+          toast('Comunicado enfileirado para envio.', 'ok');
+        } else {
+          showError('Envio não confirmado. Verifique logs.');
+        }
+      } catch(e){
+        showError(e.message || 'Falha ao enfileirar comunicado.');
+      } finally {
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = false; btn.textContent = '✉️ Enviar aos responsáveis';
+        // Atualiza status de mensageria após tentativa
+        renderStatus(await lerStatusMensageria().catch(()=>null));
       }
     }
   </script>

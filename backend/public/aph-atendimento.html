@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-store" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>APH - Novo Atendimento</title>
 <link rel="manifest" href="/manifest.json">
@@ -33,8 +34,12 @@ body{
 .btn{
   appearance:none; border:1px solid #303645; background:#1e2430; color:#fff;
   padding:10px 14px; border-radius:12px; font-weight:800; cursor:pointer; display:inline-flex; gap:8px; align-items:center;
+  transition: .15s filter, .15s opacity, .15s transform;
 }
 .btn:hover{filter:brightness(1.06)}
+.btn:disabled{
+  opacity:.6; cursor:not-allowed; transform:none !important;
+}
 .btn.rubi{background:linear-gradient(90deg,var(--rubi1),var(--rubi2)); border-color:#5e0a0a; box-shadow:0 12px 30px rgba(139,0,0,.28)}
 .page{max-width:1080px; margin:18px auto 28px; padding:0 16px}
 
@@ -62,7 +67,7 @@ textarea{resize:vertical; min-height:90px}
   background:#0f1216; border:1px solid #2a2f39; border-radius:14px; padding:12px;
   display:flex; gap:12px; align-items:flex-start; transition:.15s filter, .15s border-color, .15s background;
 }
-.cardChoice:hover{filter:brightness(1.06))}
+.cardChoice:hover{filter:brightness(1.06);}
 .cardChoice.active{border-color:#4b5668; background:#11161d}
 .icon{
   width:26px; height:26px; display:grid; place-items:center; border-radius:8px;
@@ -266,17 +271,25 @@ function cardList(container, items){
 }
 function selected(container){ return Array.from(container.querySelectorAll('input:checked')).map(i=>i.value); }
 
+// fetch com timeout para não travar
 async function api(path, opts={}){
-  const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
-    credentials:'include',
-    method: opts.method || 'GET',
-    headers: { 'Content-Type':'application/json' },
-    body: opts.body
-  });
-  const ct = r.headers.get('content-type')||'';
-  const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
-  if(!r.ok) throw new Error(data.message || data.error || `Erro ${r.status}`);
-  return data;
+  const ctl = new AbortController();
+  const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000); // 12s
+  try{
+    const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
+      credentials:'include',
+      method: opts.method || 'GET',
+      headers: { 'Content-Type':'application/json' },
+      body: opts.body,
+      signal: ctl.signal
+    });
+    const ct = r.headers.get('content-type')||'';
+    const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+    if(!r.ok) throw new Error(data.message || data.error || `Erro ${r.status}`);
+    return data;
+  } finally {
+    clearTimeout(id);
+  }
 }
 
 async function carregarAluno(){
@@ -310,32 +323,74 @@ function toggleEncaminhamento(){
   txt.style.opacity = on ? '1' : '.65';
 }
 
+let saving = false;
+function setSavingState(on){
+  saving = on;
+  ['#btnSalvar','#btnSalvar2','#btnLimpar','#btnLimpar2','#btnVoltar'].forEach(sel=>{
+    const b = $(sel);
+    if (b) b.disabled = on;
+  });
+  const b1 = $('#btnSalvar');
+  const b2 = $('#btnSalvar2');
+  if(on){
+    if(b1) b1.textContent = 'Salvando...';
+    if(b2) b2.textContent = 'Salvando...';
+  }else{
+    if(b1) b1.textContent = 'Salvar';
+    if(b2) b2.textContent = 'Salvar';
+  }
+}
+
 async function salvar(){
+  if(saving) return;
   try{
     if(!alunoId) return toast('ID do aluno ausente.', 'error');
+
+    setSavingState(true);
+
     const payload = {
       alunoId,
       data: $('#inpData').value || new Date().toISOString().slice(0,10),
       hora: $('#inpHora').value || '',
-      local: $('#inpLocal').value.trim() || '—',
-      responsavel: $('#inpResp').value.trim(),
+      local: ($('#inpLocal').value || '').trim() || '—',
+      responsavel: ($('#inpResp').value || '').trim(),
       tipos: selected($('#tiposBox')),
       materiais: selected($('#materiaisBox')),
-      sinaisESintomas: '',                 // layout concentra em Observações
-      procedimentos: '',                   // compatibilidade
-      observacoes: $('#inpObs').value.trim(),
+      sinaisESintomas: '',
+      procedimentos: '',
+      observacoes: ($('#inpObs').value || '').trim(),
       responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
       meioComunicacao: $('#selMeio').value || '',
       houveEncaminhamento: $('#chkEncaminhamento').checked,
-      encaminhamento: $('#txtEncaminhamento').value.trim()
+      encaminhamento: ($('#txtEncaminhamento').value || '').trim()
     };
-    const r = await api('/aph/atendimentos', { method:'POST', body: JSON.stringify(payload) });
-    toast('Atendimento salvo com sucesso!', 'ok');
-    // opcional: pode inspecionar r.comunicacao aqui se quiser mostrar detalhes
-    setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 650);
+
+    const resp = await api('/aph/atendimentos', {
+      method:'POST',
+      body: JSON.stringify(payload),
+      timeoutMs: 12000
+    });
+
+    if (resp?.ok) {
+      if (resp?.comunicacao?.queued) {
+        toast('Atendimento salvo. Comunicado enfileirado para envio.', 'ok');
+      } else {
+        toast('Atendimento salvo com sucesso!', 'ok');
+      }
+      setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 700);
+    } else {
+      toast('Salvo, mas sem confirmação de comunicação.', 'ok');
+      setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 900);
+    }
+
   } catch(e){
     console.error(e);
-    toast(`Erro ao salvar: ${e.message}`, 'error');
+    const msg = e.name === 'AbortError'
+      ? 'Tempo esgotado. Verifique a conexão e tente novamente.'
+      : (e.message || 'Erro ao salvar.');
+    toast(msg, 'error');
+  } finally {
+    setSavingState(false);
   }
 }
 
