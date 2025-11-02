@@ -15,6 +15,7 @@ const MAIL_PASS   = process.env.MAIL_PASS || '';
 
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Sistema Escolar';
 const MAIL_FROM_ADDR = process.env.MAIL_FROM_ADDR || MAIL_USER || '';
+const MAIL_REPLY_TO  = process.env.MAIL_REPLY_TO || MAIL_FROM_ADDR || MAIL_USER || '';
 
 const MAIL_POOL   = String(process.env.MAIL_POOL || 'true').toLowerCase() === 'true';
 const MAIL_DEBUG  = String(process.env.MAIL_DEBUG || 'false').toLowerCase() === 'true';
@@ -22,14 +23,14 @@ const MAIL_DEBUG  = String(process.env.MAIL_DEBUG || 'false').toLowerCase() === 
 const MAIL_CONNECTION_TIMEOUT_MS = Number(process.env.MAIL_CONNECTION_TIMEOUT_MS || 10000);
 const MAIL_SOCKET_TIMEOUT_MS     = Number(process.env.MAIL_SOCKET_TIMEOUT_MS || 15000);
 
-// Fallbacks HTTP
+// HTTP providers (gratuitos)
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const SENDGRID_FROM    = process.env.SENDGRID_FROM || MAIL_FROM_ADDR || '';
 const RESEND_API_KEY   = process.env.RESEND_API_KEY || '';
 const RESEND_FROM      = process.env.RESEND_FROM || 'onboarding@resend.dev';
 
 /* =========================
-   ESTADO INTERNO
+   ESTADO
    ========================= */
 let transporter  = null;
 let lastError    = null;
@@ -42,21 +43,25 @@ function normalizeToList(to) {
   if (Array.isArray(to)) return to.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
   return String(to || '').split(',').map(s => s.trim()).filter(Boolean);
 }
-
 function buildFrom() {
   const address = MAIL_FROM_ADDR || MAIL_USER || SENDGRID_FROM || RESEND_FROM;
   return { name: MAIL_FROM_NAME || 'Sistema Escolar', address };
 }
+function isGmailAddress(addr = '') {
+  return /@gmail\.com$/i.test(String(addr).trim());
+}
+function hasAnyGmail(recipients = []) {
+  return recipients.some(isGmailAddress);
+}
 
 /* =========================
-   SMTP (Nodemailer)
+   SMTP (Nodemailer) — para @gmail.com
    ========================= */
 async function makeTransport() {
   if (!MAIL_USER || !MAIL_PASS) {
     lastError = 'MAIL_USER/MAIL_PASS ausentes.';
     return null;
   }
-
   const tx = nodemailer.createTransport({
     host: MAIL_HOST,
     port: MAIL_PORT,
@@ -68,7 +73,6 @@ async function makeTransport() {
     tls: { servername: MAIL_HOST, rejectUnauthorized: true },
     debug: MAIL_DEBUG,
   });
-
   await tx.verify();
   return tx;
 }
@@ -76,7 +80,6 @@ async function makeTransport() {
 async function ensureTransport() {
   if (!MAIL_ENABLED) { lastError = 'MAIL_ENABLED=false'; return null; }
   if (transporter) return transporter;
-
   try {
     const tx = await makeTransport();
     if (tx) {
@@ -93,7 +96,7 @@ async function ensureTransport() {
 }
 
 /* =========================
-   SENDGRID (HTTP API) — corrigido
+   SENDGRID (HTTP API) — text/plain antes do html
    ========================= */
 function stripHtmlToText(html = '') {
   try {
@@ -130,17 +133,17 @@ async function sendViaSendGrid({ to, subject, html, text }) {
 
   const body = {
     from: { email: fromEmail, name: MAIL_FROM_NAME || 'Sistema Escolar' },
-    personalizations: [{ to: toList.map(e => ({ email: e })) }],
+    personalizations: [{
+      to: toList.map(e => ({ email: e })),
+      ...(MAIL_REPLY_TO ? { headers: { 'Reply-To': MAIL_REPLY_TO } } : {})
+    }],
     subject: subject || '(sem assunto)',
     content
   };
 
   const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${SENDGRID_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
@@ -154,7 +157,7 @@ async function sendViaSendGrid({ to, subject, html, text }) {
 }
 
 /* =========================
-   RESEND (HTTP API)
+   RESEND (opcional)
    ========================= */
 async function sendViaResend({ to, subject, html, text }) {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY ausente');
@@ -169,14 +172,12 @@ async function sendViaResend({ to, subject, html, text }) {
     subject: subject || '(sem assunto)',
     html: html || undefined,
     text: text || undefined,
+    ...(MAIL_REPLY_TO ? { reply_to: MAIL_REPLY_TO } : {})
   };
 
   const resp = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
@@ -191,30 +192,45 @@ async function sendViaResend({ to, subject, html, text }) {
 }
 
 /* =========================
-   API PÚBLICA
+   API PÚBLICA — lógica híbrida
    ========================= */
 async function sendMail({ to, subject, html, text }) {
   if (!MAIL_ENABLED) throw new Error('MAIL desabilitado (MAIL_ENABLED=false)');
 
-  const tx = await ensureTransport();
-  if (tx) {
-    const toList = normalizeToList(to);
-    const from = buildFrom();
-    const info = await tx.sendMail({ from, to: toList.join(','), subject, html, text });
-    lastProvider = lastProvider || `SMTP-${MAIL_PORT}`;
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via ${lastProvider} → ${toList.join(', ')}`);
-    return { ok: true, info, provider: lastProvider };
+  const toList = normalizeToList(to);
+  if (!toList.length) throw new Error('Destinatário ausente');
+
+  // 1) Se houver qualquer destinatário @gmail.com, tenta SMTP (Gmail) primeiro
+  if (hasAnyGmail(toList)) {
+    const tx = await ensureTransport();
+    if (tx) {
+      const info = await tx.sendMail({
+        from: buildFrom(),
+        to: toList.join(','),
+        subject: subject || '(sem assunto)',
+        html,
+        text,
+        ...(MAIL_REPLY_TO ? { replyTo: MAIL_REPLY_TO } : {})
+      });
+      lastProvider = `SMTP-${MAIL_PORT}`;
+      if (MAIL_DEBUG) console.log(`[MAIL] Enviado via ${lastProvider} → ${toList.join(', ')}`);
+      return { ok: true, info, provider: lastProvider };
+    }
+    // se SMTP falhar, cai para SendGrid (pode não entregar no Gmail, mas tentamos)
+    if (MAIL_DEBUG) console.warn('[MAIL] SMTP indisponível; fallback SendGrid para @gmail.com');
   }
 
+  // 2) Demais domínios (ou fallback)
   if (SENDGRID_API_KEY) {
-    const info = await sendViaSendGrid({ to, subject, html, text });
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via SENDGRID → ${normalizeToList(to).join(', ')}`);
+    const info = await sendViaSendGrid({ to: toList, subject, html, text });
+    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via SENDGRID → ${toList.join(', ')}`);
     return { ok: true, info, provider: 'SENDGRID' };
   }
 
+  // 3) Último fallback: Resend (se configurado)
   if (RESEND_API_KEY) {
-    const info = await sendViaResend({ to, subject, html, text });
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via RESEND → ${normalizeToList(to).join(', ')}`);
+    const info = await sendViaResend({ to: toList, subject, html, text });
+    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via RESEND → ${toList.join(', ')}`);
     return { ok: true, info, provider: 'RESEND' };
   }
 
@@ -223,7 +239,7 @@ async function sendMail({ to, subject, html, text }) {
 }
 
 /* =========================
-   VERIFICAÇÃO
+   VERIFY
    ========================= */
 async function verify() {
   try {
@@ -233,12 +249,12 @@ async function verify() {
       return { ok: true, provider: lastProvider || `SMTP-${MAIL_PORT}` };
     }
     if (SENDGRID_API_KEY) return { ok: true, provider: 'SENDGRID', smtp_error: lastError || null };
-    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND', smtp_error: lastError || null };
+    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND',  smtp_error: lastError || null };
     return { ok: false, msg: lastError || 'Sem SMTP e sem provedor HTTP configurado' };
   } catch (e) {
     lastError = e?.message || String(e);
     if (SENDGRID_API_KEY) return { ok: true, provider: 'SENDGRID (fallback)', smtp_error: lastError };
-    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND (fallback)', smtp_error: lastError };
+    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND (fallback)',  smtp_error: lastError };
     return { ok: false, msg: lastError };
   }
 }
