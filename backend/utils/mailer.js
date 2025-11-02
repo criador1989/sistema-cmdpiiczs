@@ -20,10 +20,10 @@ const MAIL_REPLY_TO  = process.env.MAIL_REPLY_TO || MAIL_FROM_ADDR || MAIL_USER 
 const MAIL_POOL   = String(process.env.MAIL_POOL || 'true').toLowerCase() === 'true';
 const MAIL_DEBUG  = String(process.env.MAIL_DEBUG || 'false').toLowerCase() === 'true';
 
-const MAIL_CONNECTION_TIMEOUT_MS = Number(process.env.MAIL_CONNECTION_TIMEOUT_MS || 10000);
-const MAIL_SOCKET_TIMEOUT_MS     = Number(process.env.MAIL_SOCKET_TIMEOUT_MS || 15000);
+const MAIL_CONNECTION_TIMEOUT_MS = Number(process.env.MAIL_CONNECTION_TIMEOUT_MS || 12000);
+const MAIL_SOCKET_TIMEOUT_MS     = Number(process.env.MAIL_SOCKET_TIMEOUT_MS || 20000);
 
-// HTTP providers (gratuitos)
+// HTTP providers
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const SENDGRID_FROM    = process.env.SENDGRID_FROM || MAIL_FROM_ADDR || '';
 const RESEND_API_KEY   = process.env.RESEND_API_KEY || '';
@@ -39,23 +39,58 @@ let lastProvider = null; // "SMTP", "SENDGRID", "RESEND"
 /* =========================
    HELPERS
    ========================= */
-function normalizeToList(to) {
-  if (Array.isArray(to)) return to.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
-  return String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+function extractEmail(s) {
+  if (!s) return '';
+  const str = String(s).trim();
+  const m = str.match(/<([^>]+)>/);       // "Nome <email@dominio>"
+  if (m && m[1]) return m[1].trim();
+  if (str.startsWith('mailto:')) return str.slice(7).trim();
+  return str;
 }
+
+function normalizeToList(to) {
+  const arr = Array.isArray(to) ? to : String(to || '').split(',');
+  return arr
+    .map(extractEmail)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function isGmailAddress(addr = '') {
+  const email = extractEmail(addr).toLowerCase();
+  return /@gmail\.com$/.test(email);
+}
+
+function splitByDomain(list) {
+  const gmail = [];
+  const others = [];
+  for (const r of list) (isGmailAddress(r) ? gmail : others).push(extractEmail(r));
+  return { gmail, others };
+}
+
 function buildFrom() {
   const address = MAIL_FROM_ADDR || MAIL_USER || SENDGRID_FROM || RESEND_FROM;
   return { name: MAIL_FROM_NAME || 'Sistema Escolar', address };
 }
-function isGmailAddress(addr = '') {
-  return /@gmail\.com$/i.test(String(addr).trim());
-}
-function hasAnyGmail(recipients = []) {
-  return recipients.some(isGmailAddress);
+
+function stripHtmlToText(html = '') {
+  try {
+    return String(html)
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .trim();
+  } catch { return ''; }
 }
 
 /* =========================
-   SMTP (Nodemailer) — para @gmail.com
+   SMTP (Gmail) — para @gmail.com
    ========================= */
 async function makeTransport() {
   if (!MAIL_USER || !MAIL_PASS) {
@@ -96,24 +131,8 @@ async function ensureTransport() {
 }
 
 /* =========================
-   SENDGRID (HTTP API) — text/plain antes do html
+   SENDGRID (HTTP API) — text/plain antes de text/html
    ========================= */
-function stripHtmlToText(html = '') {
-  try {
-    return String(html)
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .trim();
-  } catch { return ''; }
-}
-
 async function sendViaSendGrid({ to, subject, html, text }) {
   if (!SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY ausente');
 
@@ -133,12 +152,10 @@ async function sendViaSendGrid({ to, subject, html, text }) {
 
   const body = {
     from: { email: fromEmail, name: MAIL_FROM_NAME || 'Sistema Escolar' },
-    personalizations: [{
-      to: toList.map(e => ({ email: e })),
-      ...(MAIL_REPLY_TO ? { headers: { 'Reply-To': MAIL_REPLY_TO } } : {})
-    }],
+    personalizations: [{ to: toList.map(e => ({ email: e })) }],
     subject: subject || '(sem assunto)',
-    content
+    content,
+    ...(MAIL_REPLY_TO ? { reply_to: { email: MAIL_REPLY_TO, name: MAIL_FROM_NAME || 'Sistema Escolar' } } : {})
   };
 
   const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -192,50 +209,56 @@ async function sendViaResend({ to, subject, html, text }) {
 }
 
 /* =========================
-   API PÚBLICA — lógica híbrida
+   API PÚBLICA — split por domínio
    ========================= */
 async function sendMail({ to, subject, html, text }) {
   if (!MAIL_ENABLED) throw new Error('MAIL desabilitado (MAIL_ENABLED=false)');
 
-  const toList = normalizeToList(to);
-  if (!toList.length) throw new Error('Destinatário ausente');
+  const all = normalizeToList(to);
+  if (!all.length) throw new Error('Destinatário ausente');
 
-  // 1) Se houver qualquer destinatário @gmail.com, tenta SMTP (Gmail) primeiro
-  if (hasAnyGmail(toList)) {
+  const { gmail, others } = splitByDomain(all);
+
+  // 1) Gmail por SMTP (se possível)
+  if (gmail.length) {
     const tx = await ensureTransport();
-    if (tx) {
+    if (!tx) {
+      if (MAIL_DEBUG) console.warn('[MAIL] SMTP indisponível; Gmail cairá em SendGrid (pode não entregar).');
+    } else {
       const info = await tx.sendMail({
         from: buildFrom(),
-        to: toList.join(','),
+        to: gmail.join(','),
         subject: subject || '(sem assunto)',
         html,
         text,
         ...(MAIL_REPLY_TO ? { replyTo: MAIL_REPLY_TO } : {})
       });
+      if (MAIL_DEBUG) console.log(`[MAIL] Gmail via SMTP → ${gmail.join(', ')}`);
       lastProvider = `SMTP-${MAIL_PORT}`;
-      if (MAIL_DEBUG) console.log(`[MAIL] Enviado via ${lastProvider} → ${toList.join(', ')}`);
-      return { ok: true, info, provider: lastProvider };
     }
-    // se SMTP falhar, cai para SendGrid (pode não entregar no Gmail, mas tentamos)
-    if (MAIL_DEBUG) console.warn('[MAIL] SMTP indisponível; fallback SendGrid para @gmail.com');
   }
 
-  // 2) Demais domínios (ou fallback)
-  if (SENDGRID_API_KEY) {
-    const info = await sendViaSendGrid({ to: toList, subject, html, text });
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via SENDGRID → ${toList.join(', ')}`);
+  // 2) Demais domínios via SendGrid
+  if (others.length) {
+    if (!SENDGRID_API_KEY) {
+      // fallback opcional Resend
+      if (RESEND_API_KEY) {
+        const info = await sendViaResend({ to: others, subject, html, text });
+        if (MAIL_DEBUG) console.log(`[MAIL] Outros via RESEND → ${others.join(', ')}`);
+        return { ok: true, info, provider: 'RESEND' };
+      }
+      throw new Error('SENDGRID_API_KEY ausente para domínios não-Gmail');
+    }
+    const info = await sendViaSendGrid({ to: others, subject, html, text });
+    if (MAIL_DEBUG) console.log(`[MAIL] Outros via SENDGRID → ${others.join(', ')}`);
     return { ok: true, info, provider: 'SENDGRID' };
   }
 
-  // 3) Último fallback: Resend (se configurado)
-  if (RESEND_API_KEY) {
-    const info = await sendViaResend({ to: toList, subject, html, text });
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via RESEND → ${toList.join(', ')}`);
-    return { ok: true, info, provider: 'RESEND' };
-  }
+  // 3) Se só havia Gmail e foi via SMTP, retorna ok
+  if (gmail.length) return { ok: true, provider: lastProvider || `SMTP-${MAIL_PORT}` };
 
-  const msg = lastError || 'Nenhum provedor de e-mail configurado (SMTP / SendGrid / Resend)';
-  throw new Error(msg);
+  // 4) Nada para enviar
+  throw new Error('Nenhum destinatário válido após normalização');
 }
 
 /* =========================
