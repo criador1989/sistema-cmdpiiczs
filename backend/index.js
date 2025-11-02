@@ -117,12 +117,14 @@ try {
    ========================= */
 const {
   verify: verifyMail,
+  verifyAll,               // ⟵ adicionado para checar todos candidatos na subida
   MAIL_ENABLED,
   SMTP_HOST,
   SMTP_PORT,
   MAIL_USER,
   MAIL_FROM,
-  getLastMailError
+  getLastMailError,
+  getLastProvider,         // ⟵ exibir provedor atual em /debug/mail/status
 } = require('./utils/mailer');
 
 app.get('/debug/mail/verify', async (_req, res) => {
@@ -145,9 +147,18 @@ app.get('/debug/mail/status', (_req, res) => {
     SMTP_PORT,
     MAIL_USER: MAIL_USER ? '(definido)' : '(vazio)',
     MAIL_FROM,
+    provider: getLastProvider && getLastProvider(),
     nodeEnv: process.env.NODE_ENV || '(unset)',
   });
 });
+
+// Rota de health de e-mail (opcional). Se o arquivo não existir, não quebra a app.
+try {
+  app.use('/api', require('./routes/api/mail-health'));
+  console.log('🩺  Mail health ligado em /api/_mail/health');
+} catch (e) {
+  console.warn('ℹ️  /api/_mail/health indisponível (arquivo não encontrado).');
+}
 
 /* =========================
    ROTAS
@@ -188,9 +199,7 @@ const telegramBotRoutes = require('./routes/api/telegramBot');
 const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
 const comunicacaoAutoRoutes = require('./routes/api/comunicacao');
 
-/* =========================
-   CONFIG SERVIDOR / ESTÁTICOS
-   ========================= */
+// Estáticos e HTML protegidos
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
@@ -237,7 +246,6 @@ app.get('/logs.html', autenticar, (_req, res) =>
 app.get('/estatisticas.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'estatisticas.html'))
 );
-
 app.get('/aph-atendimentos.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'aph-atendimentos.html'))
 );
@@ -330,6 +338,13 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🧪 Health pronto: /__version e /healthz');
   console.log('✉️  SMTP: /debug/mail/verify e /debug/mail/status');
   console.log('🌍 CORS flexível ativo (Render + localhost + *.onrender.com)');
+
+  // ⟵ verifica SMTP na subida (tenta 587, depois 465, conforme mailer.js)
+  (async () => {
+    try {
+      await verifyAll();
+    } catch {}
+  })();
 });
 
 /** Conecta no Mongo sem derrubar o servidor se falhar */

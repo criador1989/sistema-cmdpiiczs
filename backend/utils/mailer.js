@@ -3,98 +3,186 @@
 
 const nodemailer = require('nodemailer');
 
-// -------------------- ENV --------------------
-const MAIL_ENABLED  = String(process.env.MAIL_ENABLED || 'false').toLowerCase() === 'true';
-const MAIL_HOST     = process.env.MAIL_HOST || 'smtp.gmail.com';
-const MAIL_PORT     = Number(process.env.MAIL_PORT || 465);
-const MAIL_SECURE   = String(process.env.MAIL_SECURE || 'true').toLowerCase() === 'true';
-const MAIL_USER     = process.env.MAIL_USER || '';
-const MAIL_PASS     = process.env.MAIL_PASS || '';
+// ---------------------------------------------------
+// fetch para Node < 18 (fallback)
+// ---------------------------------------------------
+let _fetch = global.fetch;
+if (typeof _fetch !== 'function') {
+  try {
+    _fetch = require('node-fetch');
+  } catch {
+    _fetch = null;
+  }
+}
 
-const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Sistema Escolar';
-const MAIL_FROM_ADDR = process.env.MAIL_FROM_ADDR || MAIL_USER;
+// -------------------- ENV HELPERS --------------------
+function asBool(v, def = false) {
+  if (v === undefined || v === null) return def;
+  return String(v).trim().toLowerCase() === 'true';
+}
+function asNum(v, def) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+function asStr(v, def = '') {
+  return (v === undefined || v === null) ? def : String(v);
+}
+
+// -------------------- ENV --------------------
+const MAIL_ENABLED   = asBool(process.env.MAIL_ENABLED, false);
+const MAIL_HOST      = asStr(process.env.MAIL_HOST, 'smtp.gmail.com');
+const MAIL_PORT      = asNum(process.env.MAIL_PORT, NaN);           // se NaN, vamos tentar 587/465
+const MAIL_SECURE    = (process.env.MAIL_SECURE !== undefined)
+  ? asBool(process.env.MAIL_SECURE, false)
+  : undefined; // undefined = não forçar (permite tentar 587 e 465)
+
+const MAIL_USER      = asStr(process.env.MAIL_USER);
+const MAIL_PASS      = asStr(process.env.MAIL_PASS);
+
+const MAIL_FROM_NAME = asStr(process.env.MAIL_FROM_NAME, 'Sistema Escolar');
+const MAIL_FROM_ADDR = asStr(process.env.MAIL_FROM_ADDR, MAIL_USER);
+
+const MAIL_POOL      = asBool(process.env.MAIL_POOL, true);
+const MAIL_DEBUG     = asBool(process.env.MAIL_DEBUG, false);
+
+const CONN_TIMEOUT   = asNum(process.env.MAIL_CONNECTION_TIMEOUT_MS, 10000);
+const SOCK_TIMEOUT   = asNum(process.env.MAIL_SOCKET_TIMEOUT_MS, 15000);
 
 // Fallback via API HTTP (sem SMTP)
-const RESEND_API_KEY   = process.env.RESEND_API_KEY || '';     // chave API
-const RESEND_FROM      = process.env.RESEND_FROM || 'onboarding@resend.dev'; // remetente de teste
+const RESEND_API_KEY = asStr(process.env.RESEND_API_KEY);
+const RESEND_FROM    = asStr(process.env.RESEND_FROM, 'onboarding@resend.dev');
 
-let transporter   = null;
 let lastError     = null;
-let lastProvider  = null; // "SMTP-465", "SMTP-587", "RESEND"
+let lastProvider  = null; // "SMTP:host:port(secure=...)" | "RESEND"
 
-// -------------------- SMTP --------------------
-async function makeTransport({ host, port, secure }) {
-  const tx = nodemailer.createTransport({
-    host,
-    port,
-    secure,
+// -------------------- Build candidate transports --------------------
+/**
+ * Retorna uma lista de configurações de transporte que vamos tentar em ordem.
+ * Se PORT/SECURE vierem no .env, respeitamos e tentamos apenas esse.
+ * Senão: tentamos 587(STARTTLS) e depois 465(SSL).
+ */
+function transportCandidates() {
+  const base = {
+    host: MAIL_HOST,
     auth: { user: MAIL_USER, pass: MAIL_PASS },
-    pool: true,
-    maxConnections: 3,
-    maxMessages: 50,
+    pool: MAIL_POOL,
+    maxConnections: MAIL_POOL ? 3 : 1,
+    maxMessages: MAIL_POOL ? 100 : undefined,
+    connectionTimeout: CONN_TIMEOUT,
+    socketTimeout:     SOCK_TIMEOUT,
+    logger: MAIL_DEBUG,
+    debug:  MAIL_DEBUG,
+    requireTLS: false, // em 587 o STARTTLS será negociado
     tls: {
-      servername: host,
+      // Força SNI, ajuda em alguns provedores
+      servername: MAIL_HOST,
       rejectUnauthorized: true,
     },
+  };
+
+  // Se usuário fixou porta/secure, tentar só essa combinação
+  if (!Number.isNaN(MAIL_PORT) && MAIL_SECURE !== undefined) {
+    return [{
+      ...base,
+      port: MAIL_PORT,
+      secure: MAIL_SECURE,
+      __label: `SMTP:${MAIL_HOST}:${MAIL_PORT}(secure=${MAIL_SECURE})`
+    }];
+  }
+
+  // Caso contrário, preparar tentativa dupla padrão Gmail
+  const p587 = {
+    ...base,
+    port: 587,
+    secure: false,
+    __label: `SMTP:${MAIL_HOST}:587(secure=false)`
+  };
+  const p465 = {
+    ...base,
+    port: 465,
+    secure: true,
+    __label: `SMTP:${MAIL_HOST}:465(secure=true)`
+  };
+
+  // Se o host não for gmail, ainda vale tentar nas duas portas padrão
+  return [p587, p465];
+}
+
+// -------------------- Criar e verificar transport --------------------
+async function createAndVerifyTransport(cfg) {
+  const tx = nodemailer.createTransport(cfg);
+  // `verify` pode travar em redes ruins; proteja com timeout próprio
+  const verifyWithGuard = new Promise((resolve, reject) => {
+    let done = false;
+    const t = setTimeout(() => {
+      if (!done) {
+        done = true;
+        reject(new Error('verify timeout'));
+      }
+    }, Math.max(3000, Math.min(CONN_TIMEOUT + 2000, 20000)));
+
+    tx.verify().then(
+      (ok) => { if (!done) { done = true; clearTimeout(t); resolve(ok); } },
+      (err) => { if (!done) { done = true; clearTimeout(t); reject(err); } }
+    );
   });
 
-  await tx.verify(); // valida conexão/autenticação
+  await verifyWithGuard;
   return tx;
 }
 
+// -------------------- Resolvedor de transport (com cache) --------------------
+let cachedTransport = null;
+
 async function ensureTransport() {
-  if (!MAIL_ENABLED) { lastError = 'MAIL_ENABLED=false'; return null; }
-  if (!MAIL_USER || !MAIL_PASS) { lastError = 'MAIL_USER/MAIL_PASS ausentes'; return null; }
-  if (transporter) return transporter;
-
-  try {
-    transporter = await makeTransport({ host: MAIL_HOST, port: MAIL_PORT, secure: MAIL_SECURE });
-    lastProvider = `SMTP-${MAIL_PORT}`;
-    console.log(`[MAIL] Conectado: ${MAIL_HOST}:${MAIL_PORT} (secure=${MAIL_SECURE})`);
-    lastError = null;
-    return transporter;
-  } catch (e1) {
-    console.error('[MAIL] Falha no SMTP principal:', e1?.message || e1);
-    lastError = e1?.message || String(e1);
+  if (!MAIL_ENABLED) {
+    lastError = 'MAIL_ENABLED=false';
+    return null;
   }
+  if (!MAIL_USER || !MAIL_PASS) {
+    lastError = 'MAIL_USER/MAIL_PASS ausentes';
+    return null;
+  }
+  if (cachedTransport) return cachedTransport;
 
-  // Fallback Gmail 587 STARTTLS
-  if (MAIL_HOST === 'smtp.gmail.com') {
+  const candidates = transportCandidates();
+
+  for (const cfg of candidates) {
     try {
-      transporter = await makeTransport({ host: 'smtp.gmail.com', port: 587, secure: false });
-      lastProvider = 'SMTP-587';
-      console.log('[MAIL] Conectado via fallback Gmail 587 (STARTTLS).');
+      const tx = await createAndVerifyTransport(cfg);
+      cachedTransport = tx;
+      lastProvider = cfg.__label;
+      console.info(`[MAIL] Conectado: ${cfg.__label}`);
       lastError = null;
-      return transporter;
-    } catch (e2) {
-      console.error('[MAIL] Falha no fallback 587:', e2?.message || e2);
-      lastError = `${lastError} | fallback: ${e2?.message || e2}`;
+      return cachedTransport;
+    } catch (err) {
+      console.error(`[MAIL] Falha ao verificar ${cfg.__label}: ${err && err.message}`);
+      lastError = err?.message || String(err);
+      // tenta o próximo candidato
     }
   }
 
-  return null; // deixa sendMail decidir se usa API
+  // nenhum SMTP conectou
+  return null;
 }
 
 // -------------------- RESEND (HTTP API) --------------------
 async function sendViaResend({ to, subject, html, text }) {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY ausente');
+  if (!_fetch) throw new Error('fetch indisponível e RESEND exige HTTP');
 
   const toList = Array.isArray(to)
     ? to.filter(Boolean)
-    : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+    : asStr(to).split(',').map(s => s.trim()).filter(Boolean);
 
   if (!toList.length) throw new Error('Destinatário ausente');
 
   const from = `${MAIL_FROM_NAME} <${MAIL_FROM_ADDR || RESEND_FROM}>`;
-  const body = {
-    from,
-    to: toList,
-    subject: subject || '(sem assunto)',
-    html: html || undefined,
-    text: text || undefined,
-  };
+  const body = { from, to: toList, subject: subject || '(sem assunto)' };
+  if (html) body.html = html;
+  if (text) body.text = text;
 
-  const resp = await fetch('https://api.resend.com/emails', {
+  const resp = await _fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${RESEND_API_KEY}`,
@@ -110,8 +198,33 @@ async function sendViaResend({ to, subject, html, text }) {
 
   const data = await resp.json().catch(() => ({}));
   lastProvider = 'RESEND';
-  console.log(`[MAIL] Enviado via Resend para ${toList.join(', ')}`);
+  console.info(`[MAIL] Enviado via RESEND para ${toList.join(', ')}`);
   return { id: data?.id || null, provider: 'RESEND' };
+}
+
+// -------------------- Envio com retry/backoff --------------------
+async function trySendWithTransport(tx, mailOpts, attempts = 3) {
+  let last;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      const info = await tx.sendMail(mailOpts);
+      return info;
+    } catch (e) {
+      last = e;
+      const msg = (e && e.message) || String(e);
+      const isTimeout = /timed?out|ETIMEDOUT|socket|ESOCKET/i.test(msg);
+      const isConnRef = /ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH/i.test(msg);
+      const retryable = isTimeout || isConnRef;
+
+      console.error(`[MAIL] Tentativa ${i}/${attempts} falhou: ${msg}`);
+      if (!retryable || i === attempts) break;
+
+      // backoff: 1s, 3s, 7s...
+      const waitMs = i === 1 ? 1000 : i === 2 ? 3000 : 7000;
+      await new Promise(r => setTimeout(r, waitMs));
+    }
+  }
+  throw last || new Error('Falha desconhecida no envio SMTP');
 }
 
 // -------------------- API pública --------------------
@@ -121,13 +234,15 @@ async function sendMail({ to, subject, html, text }) {
   if (tx) {
     const toList = Array.isArray(to)
       ? to.filter(Boolean).join(',')
-      : String(to || '').split(',').map(s => s.trim()).filter(Boolean).join(',');
+      : asStr(to).split(',').map(s => s.trim()).filter(Boolean).join(',');
 
     if (!toList) throw new Error('Destinatário ausente');
 
     const from = { name: MAIL_FROM_NAME, address: MAIL_FROM_ADDR || MAIL_USER };
-    const info = await tx.sendMail({ from, to: toList, subject: subject || '(sem assunto)', html, text });
-    console.log(`[MAIL] Enviado via ${lastProvider} para ${toList}: ${subject || '(sem assunto)'}`);
+    const mailOpts = { from, to: toList, subject: subject || '(sem assunto)', html, text };
+
+    const info = await trySendWithTransport(tx, mailOpts, 3);
+    console.info(`[MAIL] Enviado via ${lastProvider} para ${toList}: ${subject || '(sem assunto)'}`);
     return { ok: true, info, provider: lastProvider };
   }
 
@@ -146,8 +261,9 @@ async function verify() {
   try {
     const tx = await ensureTransport();
     if (tx) {
+      // verify extra para deixar claro no log
       await tx.verify();
-      return { ok: true, provider: lastProvider || `SMTP-${MAIL_PORT}` };
+      return { ok: true, provider: lastProvider };
     }
     if (RESEND_API_KEY) {
       return { ok: true, provider: 'RESEND (fallback disponível)', smtp_error: lastError || null };
@@ -162,14 +278,44 @@ async function verify() {
   }
 }
 
+// Verifica todos os candidatos — útil no boot da app
+async function verifyAll() {
+  if (!MAIL_ENABLED) {
+    console.warn('[MAIL] MAIL_ENABLED=false — verificação suprimida.');
+    return;
+  }
+  if (!MAIL_USER || !MAIL_PASS) {
+    console.error('[MAIL] MAIL_USER/MAIL_PASS ausentes.');
+    return;
+  }
+  const candidates = transportCandidates();
+  for (const cfg of candidates) {
+    try {
+      console.info(`[MAIL] Verificando ${cfg.__label}...`);
+      const tx = await createAndVerifyTransport(cfg);
+      console.info(`[MAIL] OK: ${cfg.__label}`);
+      // manter apenas o primeiro OK como cache
+      if (!cachedTransport) {
+        cachedTransport = tx;
+        lastProvider = cfg.__label;
+      } else {
+        try { tx.close && tx.close(); } catch {}
+      }
+    } catch (e) {
+      console.error(`[MAIL] Indisponível ${cfg.__label}: ${e && e.message}`);
+    }
+  }
+}
+
 module.exports = {
   sendMail,
   verify,
+  verifyAll,
   MAIL_ENABLED,
   MAIL_USER,
   MAIL_FROM: `${MAIL_FROM_NAME} <${MAIL_FROM_ADDR || MAIL_USER}>`,
   SMTP_HOST: MAIL_HOST,
-  SMTP_PORT: MAIL_PORT,
+  SMTP_PORT: Number.isNaN(MAIL_PORT) ? undefined : MAIL_PORT,
   getLastMailError: () => lastError,
   getLastProvider: () => lastProvider,
 };
