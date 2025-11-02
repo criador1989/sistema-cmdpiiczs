@@ -14,7 +14,6 @@ const { addBusinessDays } = require('../../utils/businessDays');
 const { logAction, attachActor } = require('../../utils/audit');
 
 // 🚀 Serviços de mensageria (telegram + NP)
-// (enviarTelegram é usado em outras rotas; e-mail/telegram unificados via app.locals.mensageria)
 const { enviarTelegram, enviarNPEncaminhamento } = require('../../services/mensageria');
 
 /* =========================================================
@@ -99,10 +98,7 @@ function montarEmailDeferido({ aluno, notif }) {
 }
 
 /**
- * Dispara aviso de DEFERIDO (e-mail + telegram) de forma idempotente:
- * - só envia se status === 'deferido'
- * - não envia se mensagemEnviada === true
- * - após enviar, marca mensagemEnviada/mensagemEnviadaEm e deferidoEm (se ainda não houver)
+ * Dispara aviso de DEFERIDO (e-mail + telegram) de forma idempotente
  */
 async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
   const mensageria = getMensageria(req);
@@ -114,7 +110,6 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
   const aluno = await Aluno.findById(notif.aluno).lean();
   const { subject, text, html } = montarEmailDeferido({ aluno, notif });
 
-  // === ENVIO UNIFICADO (email + telegram) ===
   if (mensageria && typeof mensageria.enfileirarParaResponsaveis === 'function') {
     try {
       await mensageria.enfileirarParaResponsaveis({
@@ -128,7 +123,6 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
       });
     } catch (e) {
       console.warn('[deferido] falha no enfileirarParaResponsaveis:', e?.message || e);
-      // fallback mínimo: Telegram direto (se tiver chatId)
       const chatIds = getChatIdsFromAlunoDoc(aluno);
       if (chatIds.length) {
         const msgTG = [
@@ -254,6 +248,70 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
     await alunoDoc.save();
   } catch (e) {
     console.warn('[NP] Falha ao enviar encaminhamento:', e.message);
+  }
+}
+
+/* ========= NOVO HELPER: recalcular campos nota da própria notificação ========= */
+async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
+  try {
+    const alunoDoc = await Aluno.findOne({ _id: notif.aluno, ...buildAlunoMatch(instituicao) })
+      .select('dataEntrada')
+      .lean();
+
+    if (!alunoDoc) return;
+
+    const dt = notif.data || new Date();
+    const dayStart = toDayStart(dt);
+    const dayEnd   = toDayEnd(dt);
+    const endOntem = new Date(dayStart.getTime() - 1);
+    const instMatch = buildInstMatch(instituicao);
+
+    // Notas antes de hoje (para notaAnterior)
+    const notificacoesAntes = await Notificacao.find({
+      aluno: notif.aluno, ...instMatch, data: { $lt: dayStart }
+    })
+      .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
+      .sort({ data: 1, createdAt: 1 });
+
+    const notaAnterior = calcularNotaTSMD(alunoDoc.dataEntrada, endOntem, notificacoesAntes);
+
+    // Notas até o fim do dia (para notaAtual / nota no dia)
+    const notificacoesAteDia = await Notificacao.find({
+      aluno: notif.aluno, ...instMatch, data: { $lt: dayEnd }
+    })
+      .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
+      .sort({ data: 1, createdAt: 1 });
+
+    const listaDia = [
+      ...notificacoesAteDia.map(n => ({
+        data: n.data,
+        createdAt: n.createdAt,
+        valorNumerico: n.valorNumerico,
+        quantidadeDias: n.quantidadeDias,
+        tipoMedida: n.tipoMedida,
+        natureza: n.natureza
+      })),
+      // garante inclusão dos valores atuais desta própria notificação
+      {
+        data: dt,
+        createdAt: notif.createdAt || dt,
+        valorNumerico: Number(notif.valorNumerico || 0),
+        quantidadeDias: notif.quantidadeDias ?? 1,
+        tipoMedida: notif.tipoMedida,
+        natureza: notif.natureza
+      }
+    ];
+
+    const notaNoDia = calcularNotaTSMD(alunoDoc.dataEntrada, dayEnd, listaDia);
+
+    await Notificacao.findByIdAndUpdate(notif._id, {
+      $set: {
+        notaAnterior: Number(notaAnterior.toFixed?.(2) ?? notaAnterior),
+        notaAtual: Number(notaNoDia.toFixed?.(2) ?? notaNoDia)
+      }
+    });
+  } catch (e) {
+    console.warn('[recomputarCamposNotaDaNotificacao] falha:', e?.message || e);
   }
 }
 
@@ -392,10 +450,16 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
     const valorTotal = Number(notificacao.valorNumerico || 0);
     const valorUnitario = precisaDias ? Number((valorTotal / dias).toFixed(2)) : valorTotal;
 
+    // campo auxiliar útil caso o front/docx consuma esta rota
+    const notaPublicavel = typeof notificacao.notaAtual === 'number'
+      ? Number(notificacao.notaAtual).toFixed(2)
+      : (typeof notificacao.notaAnterior === 'number' ? Number(notificacao.notaAnterior).toFixed(2) : null);
+
     res.json({
       ...notificacao.toObject(),
       valorTotal,
-      valorUnitario
+      valorUnitario,
+      notaPublicavel
     });
   } catch (err) {
     console.error('Erro ao carregar notificação:', err);
@@ -697,6 +761,9 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
 
     await notif.save();
 
+    // 🔁 NOVO: mantemos notaAnterior/notaAtual sempre consistentes após edições
+    await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
+
     const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
     await logAction({
@@ -731,7 +798,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
     // 💡 NP (faixa 5.00–6.99)
     await verificarEnvioNP(alunoApósUpdate, req.usuario.instituicao);
 
-    // 🚀 NOVO: se virou DEFERIDO, dispara comunicado (idempotente)
+    // 🚀 se virou DEFERIDO, dispara comunicado (idempotente)
     if (virouDeferido) {
       try {
         await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
@@ -922,7 +989,7 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// 💥 NOVA ROTA: PUT "/:id/deferir" — muda status para DEFERIDO e dispara comunicado
+// 💥 PUT "/:id/deferir"
 router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -932,14 +999,14 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
     });
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
-    // atualiza somente se não estiver deferido ainda
     if (notif.status !== 'deferido') {
       notif.status = 'deferido';
       notif.deferidoEm = new Date();
       await notif.save();
+      // mantém notas consistentes no registro
+      await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
     }
 
-    // dispara comunicado idempotente
     try {
       await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
     } catch (e) {
