@@ -22,7 +22,7 @@ const MAIL_DEBUG  = String(process.env.MAIL_DEBUG || 'false').toLowerCase() === 
 const MAIL_CONNECTION_TIMEOUT_MS = Number(process.env.MAIL_CONNECTION_TIMEOUT_MS || 10000);
 const MAIL_SOCKET_TIMEOUT_MS     = Number(process.env.MAIL_SOCKET_TIMEOUT_MS || 15000);
 
-// Fallbacks por API (HTTPS 443)
+// Fallbacks HTTP
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const SENDGRID_FROM    = process.env.SENDGRID_FROM || MAIL_FROM_ADDR || '';
 const RESEND_API_KEY   = process.env.RESEND_API_KEY || '';
@@ -33,17 +33,14 @@ const RESEND_FROM      = process.env.RESEND_FROM || 'onboarding@resend.dev';
    ========================= */
 let transporter  = null;
 let lastError    = null;
-let lastProvider = null; // "SMTP-587", "SENDGRID", "RESEND"
+let lastProvider = null; // "SMTP", "SENDGRID", "RESEND"
 
 /* =========================
    HELPERS
    ========================= */
 function normalizeToList(to) {
   if (Array.isArray(to)) return to.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
-  return String(to || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+  return String(to || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 
 function buildFrom() {
@@ -72,39 +69,48 @@ async function makeTransport() {
     debug: MAIL_DEBUG,
   });
 
-  await tx.verify(); // valida conexão/autenticação
+  await tx.verify();
   return tx;
 }
 
 async function ensureTransport() {
   if (!MAIL_ENABLED) { lastError = 'MAIL_ENABLED=false'; return null; }
-
   if (transporter) return transporter;
 
-  // 1) Tenta SMTP (funciona no localhost; geralmente bloqueado no Render)
   try {
     const tx = await makeTransport();
     if (tx) {
       transporter = tx;
       lastProvider = `SMTP-${MAIL_PORT}`;
-      if (MAIL_DEBUG) {
-        console.log(`[MAIL] Verificado SMTP:${MAIL_HOST}:${MAIL_PORT}(secure=${MAIL_SECURE})`);
-      }
-      lastError = null;
+      if (MAIL_DEBUG) console.log(`[MAIL] SMTP OK: ${MAIL_HOST}:${MAIL_PORT}`);
       return transporter;
     }
   } catch (e) {
     lastError = e?.message || String(e);
     if (MAIL_DEBUG) console.error('[MAIL] Falha SMTP:', lastError);
   }
-
-  // Sem transporter SMTP; deixe o sendMail decidir pelo fallback (SendGrid/Resend)
   return null;
 }
 
 /* =========================
-   SENDGRID (HTTP API)
+   SENDGRID (HTTP API) — corrigido
    ========================= */
+function stripHtmlToText(html = '') {
+  try {
+    return String(html)
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .trim();
+  } catch { return ''; }
+}
+
 async function sendViaSendGrid({ to, subject, html, text }) {
   if (!SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY ausente');
 
@@ -114,16 +120,20 @@ async function sendViaSendGrid({ to, subject, html, text }) {
   const fromEmail = SENDGRID_FROM || MAIL_FROM_ADDR || MAIL_USER;
   if (!fromEmail) throw new Error('Remetente inválido para SendGrid');
 
+  let plain = (text && String(text).trim()) || '';
+  if (!plain && html) plain = stripHtmlToText(html);
+
+  const content = [];
+  if (plain) content.push({ type: 'text/plain', value: plain });
+  if (html)  content.push({ type: 'text/html',  value: html  });
+  if (!content.length) content.push({ type: 'text/plain', value: '(sem conteúdo)' });
+
   const body = {
     from: { email: fromEmail, name: MAIL_FROM_NAME || 'Sistema Escolar' },
     personalizations: [{ to: toList.map(e => ({ email: e })) }],
     subject: subject || '(sem assunto)',
-    content: [],
+    content
   };
-
-  if (html) body.content.push({ type: 'text/html', value: html });
-  if (text) body.content.push({ type: 'text/plain', value: text });
-  if (!body.content.length) body.content.push({ type: 'text/plain', value: '(sem conteúdo)' });
 
   const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
@@ -144,7 +154,7 @@ async function sendViaSendGrid({ to, subject, html, text }) {
 }
 
 /* =========================
-   RESEND (HTTP API) — opcional
+   RESEND (HTTP API)
    ========================= */
 async function sendViaResend({ to, subject, html, text }) {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY ausente');
@@ -186,44 +196,35 @@ async function sendViaResend({ to, subject, html, text }) {
 async function sendMail({ to, subject, html, text }) {
   if (!MAIL_ENABLED) throw new Error('MAIL desabilitado (MAIL_ENABLED=false)');
 
-  // 1) SMTP se disponível
   const tx = await ensureTransport();
   if (tx) {
     const toList = normalizeToList(to);
-    if (!toList.length) throw new Error('Destinatário ausente');
     const from = buildFrom();
-
-    const info = await tx.sendMail({
-      from,
-      to: toList.join(','),
-      subject: subject || '(sem assunto)',
-      html,
-      text,
-    });
+    const info = await tx.sendMail({ from, to: toList.join(','), subject, html, text });
     lastProvider = lastProvider || `SMTP-${MAIL_PORT}`;
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via ${lastProvider} para ${toList.join(', ')}`);
+    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via ${lastProvider} → ${toList.join(', ')}`);
     return { ok: true, info, provider: lastProvider };
   }
 
-  // 2) Fallback SendGrid (libera envio para qualquer destinatário sem domínio próprio)
   if (SENDGRID_API_KEY) {
     const info = await sendViaSendGrid({ to, subject, html, text });
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via SENDGRID para ${normalizeToList(to).join(', ')}`);
+    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via SENDGRID → ${normalizeToList(to).join(', ')}`);
     return { ok: true, info, provider: 'SENDGRID' };
   }
 
-  // 3) Fallback Resend (se configurado)
   if (RESEND_API_KEY) {
     const info = await sendViaResend({ to, subject, html, text });
-    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via RESEND para ${normalizeToList(to).join(', ')}`);
+    if (MAIL_DEBUG) console.log(`[MAIL] Enviado via RESEND → ${normalizeToList(to).join(', ')}`);
     return { ok: true, info, provider: 'RESEND' };
   }
 
-  // 4) Nada disponível
-  const msg = lastError || 'SMTP indisponível e nenhum provedor HTTP (SendGrid/Resend) configurado';
+  const msg = lastError || 'Nenhum provedor de e-mail configurado (SMTP / SendGrid / Resend)';
   throw new Error(msg);
 }
 
+/* =========================
+   VERIFICAÇÃO
+   ========================= */
 async function verify() {
   try {
     const tx = await ensureTransport();
@@ -231,18 +232,20 @@ async function verify() {
       await tx.verify();
       return { ok: true, provider: lastProvider || `SMTP-${MAIL_PORT}` };
     }
-    // sem SMTP; mas se houver provedor HTTP configurado, considere OK (fallback pronto)
-    if (SENDGRID_API_KEY) return { ok: true, provider: 'SENDGRID (fallback disponível)', smtp_error: lastError || null };
-    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND (fallback disponível)',   smtp_error: lastError || null };
+    if (SENDGRID_API_KEY) return { ok: true, provider: 'SENDGRID', smtp_error: lastError || null };
+    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND', smtp_error: lastError || null };
     return { ok: false, msg: lastError || 'Sem SMTP e sem provedor HTTP configurado' };
   } catch (e) {
     lastError = e?.message || String(e);
-    if (SENDGRID_API_KEY) return { ok: true, provider: 'SENDGRID (SMTP falhou, fallback disponível)', smtp_error: lastError };
-    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND (SMTP falhou, fallback disponível)',   smtp_error: lastError };
+    if (SENDGRID_API_KEY) return { ok: true, provider: 'SENDGRID (fallback)', smtp_error: lastError };
+    if (RESEND_API_KEY)   return { ok: true, provider: 'RESEND (fallback)', smtp_error: lastError };
     return { ok: false, msg: lastError };
   }
 }
 
+/* =========================
+   EXPORTS
+   ========================= */
 module.exports = {
   sendMail,
   verify,
