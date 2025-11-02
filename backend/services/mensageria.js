@@ -83,7 +83,9 @@ function extractContatosAluno(alunoDoc) {
    Envios de baixo nível
    ========================= */
 async function enviarEmailDireto({ to, subject, text, html }) {
-  const lista = Array.isArray(to) ? to.filter(Boolean) : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+  const lista = Array.isArray(to)
+    ? to.filter(Boolean)
+    : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
   if (!lista.length) return { ok: false, erro: 'Destinatário ausente' };
 
   try {
@@ -240,13 +242,44 @@ function getStatus() {
   };
 }
 
+/* =========================================================
+   === FACADE para app.locals.mensageria (compatível com as rotas)
+   ========================================================= */
+/**
+ * Objeto mínimo para ser usado por getMensageria(req) nas rotas:
+ * - sendEmail({ to, subject, text, html })
+ * - sendTelegram({ chatId?, chatIds?, text })
+ */
+const mensageriaForApp = {
+  async sendEmail({ to, subject, text, html }) {
+    return enviarEmailDireto({ to, subject, text, html });
+  },
+  async sendTelegram({ chatId, chatIds, text }) {
+    const ids = chatIds && Array.isArray(chatIds) ? chatIds
+      : (chatId ? [chatId] : []);
+    return enviarTelegramDireto({ chatIds: ids, text });
+  }
+};
+
+/**
+ * Chame no index.js após criar o app:
+ *   const { initMensageria } = require('./services/mensageria');
+ *   initMensageria(app);
+ */
+function initMensageria(app) {
+  if (!app?.locals) return;
+  app.locals.mensageria = mensageriaForApp;
+}
+
 module.exports = {
-  enviarEmail,           // legado
-  enviarTelegram,        // legado
-  linkWhatsApp,          // legado
+  // legado / alto nível
+  enviarEmail,
+  enviarTelegram,
+  linkWhatsApp,
   enfileirarParaResponsaveis,
+
+  // NP (mantém assinatura esperada)
   enviarNPEncaminhamento: async (args) => {
-    // mantém a assinatura esperada usando o template NP, se existir
     const {
       alunoId,
       notaAtual,
@@ -286,5 +319,11 @@ module.exports = {
       meta: { tipo: 'NP_ENCAMINHAMENTO', notaAtual: Number(notaAtual) }
     });
   },
-  getStatus
+
+  // diagnóstico
+  getStatus,
+
+  // facade p/ app.locals
+  mensageriaForApp,
+  initMensageria
 };

@@ -1,4 +1,5 @@
 // backend/models/Notificacao.js
+'use strict';
 const mongoose = require('mongoose');
 
 const notificacaoSchema = new mongoose.Schema({
@@ -19,13 +20,14 @@ const notificacaoSchema = new mongoose.Schema({
   },
 
   // rótulos exibidos
-  tipo:        { type: String, required: true },       // ex.: 'Advertência Escrita' | 'Elogio'
-  motivo:      { type: String, required: true },       // ato de indisciplina OU descrição do elogio
-  tipoMedida:  { type: String, required: true },       // ex.: 'A.I.A' | 'A.E.C.D.E' | 'Elogio'
+  tipo:       { type: String, required: true }, // ex.: 'Advertência Escrita' | 'Elogio'
+  motivo:     { type: String, required: true }, // ato de indisciplina OU descrição do elogio
+  tipoMedida: { type: String, required: true }, // ex.: 'A.I.A' | 'A.E.C.D.E' | 'Elogio'
 
   // valor usado no cálculo (negativo p/ medidas, positivo p/ elogios)
   valorNumerico: { type: Number, required: true },
 
+  // para medidas com dias (A.E.C.D.E, A.I.A). Em elogio fica null.
   quantidadeDias: { type: Number, default: 1 },
 
   observacao: { type: String },
@@ -56,6 +58,11 @@ const notificacaoSchema = new mongoose.Schema({
   avaliador: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', index: true },
   comentarioMonitor: { type: String },
   comentarioRevisao: { type: String },
+
+  // ✅ pontos para o disparo automático quando deferir
+  deferidoEm: { type: Date, default: null },
+  mensagemEnviada: { type: Boolean, default: false, index: true }, // evita disparo duplicado
+  mensagemEnviadaEm: { type: Date, default: null },
 
   // DEVOLUÇÃO (fluxo físico)
   entregue: { type: Boolean, default: false, index: true },
@@ -93,11 +100,14 @@ notificacaoSchema.index({ instituicao: 1, ativo: 1, arquivada: 1, lida: 1, creat
 notificacaoSchema.index({ instituicao: 1, status: 1, createdAt: -1 });
 notificacaoSchema.index({ instituicao: 1, createdAt: -1 });
 
-// busca por número
+// busca por número (único por instituição)
 notificacaoSchema.index({ instituicao: 1, numeroSequencial: 1 }, { unique: true });
 
 // filtros de pendência de devolução (usados no painel)
 notificacaoSchema.index({ instituicao: 1, status: 1, entregue: 1, devolvidoPeloAluno: 1, prazoDevolucao: 1 });
+
+// suporte a monitoramento de deferimentos ainda não comunicados
+notificacaoSchema.index({ instituicao: 1, status: 1, mensagemEnviada: 1, deferidoEm: -1 });
 
 // ==================== REGRAS (anti dupla multiplicação) ====================
 
@@ -109,7 +119,7 @@ const MAPA_NEGATIVOS = {
   'A.I.A':               -1.20,
 };
 const MAPA_ELOGIOS = {
-  elogioVerbal:            0.15,
+  elogioVerbal:             0.15,
   boletimInternoIndividual: 0.60,
   boletimInternoColetivo:   0.20,
   mediaAlta:                0.40,
@@ -122,8 +132,19 @@ function fix2(n) {
   return Number(n.toFixed(2));
 }
 
+// Normalização leve de strings
+function trimStr(s) { return typeof s === 'string' ? s.trim() : s; }
+
 notificacaoSchema.pre('validate', function () {
   // normaliza rótulos
+  this.tipo       = trimStr(this.tipo);
+  this.motivo     = trimStr(this.motivo);
+  this.tipoMedida = trimStr(this.tipoMedida);
+  this.artigo     = trimStr(this.artigo);
+  this.paragrafo  = trimStr(this.paragrafo);
+  this.inciso     = trimStr(this.inciso);
+  this.classificacaoRegulamento = trimStr(this.classificacaoRegulamento);
+
   if (!this.tipo && this.tipoMedida) this.tipo = this.tipoMedida;
 
   // ----- ELOGIO -----
@@ -142,6 +163,9 @@ notificacaoSchema.pre('validate', function () {
     // garante rótulos coerentes
     this.tipo = this.tipo || 'Elogio';
     this.tipoMedida = 'Elogio';
+
+    // limpa resquícios normativos
+    this.artigo = this.paragrafo = this.inciso = this.classificacaoRegulamento = null;
     return; // nada mais a fazer
   }
 

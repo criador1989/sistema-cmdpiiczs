@@ -13,8 +13,151 @@ const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 const { addBusinessDays } = require('../../utils/businessDays');
 const { logAction, attachActor } = require('../../utils/audit');
 
-// 🚀 Serviços de mensageria
+// 🚀 Serviços de mensageria (telegram + NP)
+// (enviarTelegram é usado em outras rotas; e-mail/telegram unificados via app.locals.mensageria)
 const { enviarTelegram, enviarNPEncaminhamento } = require('../../services/mensageria');
+
+/* =========================================================
+   ===== NOVOS HELPERS: Mensageria / E-mail Deferido =======
+   ========================================================= */
+
+function getMensageria(req) {
+  return req.app?.locals?.mensageria || global.mensageria || null;
+}
+
+/** Reaproveita sua coleta de chatIds já existente (para telegram) */
+function getChatIdsFromAlunoDoc(alunoDoc) {
+  if (!alunoDoc) return [];
+  if (typeof alunoDoc.getAllChatIds === 'function') {
+    return (alunoDoc.getAllChatIds() || []).filter(Boolean);
+  }
+  const set = new Set([
+    ...(alunoDoc.chatIdsResponsaveis || []),
+    alunoDoc.chatIdResponsavel || '',
+    alunoDoc?.contatos?.telegramChatId || ''
+  ].map(s => String(s || '').trim()).filter(Boolean));
+  return Array.from(set);
+}
+
+/** pt-BR data/hora helpers (reutilizados abaixo) */
+function formatDataBr(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+function formatDataHoraBr(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${formatDataBr(d)} ${hh}:${mi}`;
+}
+
+/** Monta assunto/corpo do comunicado de DEFERIMENTO */
+function montarEmailDeferido({ aluno, notif }) {
+  const nome = aluno?.nome || 'Aluno(a)';
+  const turma = aluno?.turma || '—';
+  const numero = notif?.numeroSequencial || '—';
+  const dataStr = notif?.data ? formatDataBr(notif.data) : formatDataBr(new Date());
+  const inciso = (notif?.inciso || '').trim();
+  const motivo = (notif?.motivo || '').trim() || '—';
+  const medida = notif?.tipoMedida || notif?.tipo || '—';
+  const dias = notif?.quantidadeDias && notif.quantidadeDias > 1 ? ` (${notif.quantidadeDias} dias)` : '';
+  const assunto = `Nova Notificação Disciplinar DEFERIDA — ${nome} (${turma}) — Nº ${numero}`;
+  const text = [
+    'Prezada família,',
+    '',
+    `Informamos que foi DEFERIDA uma Notificação Disciplinar referente a ${nome} (turma ${turma}).`,
+    `Data: ${dataStr}`,
+    `Medida: ${medida}${dias}`,
+    inciso ? `Inciso: ${inciso}` : null,
+    `Motivo/Descrição: ${motivo}`,
+    `Nº: ${numero}`,
+    '',
+    'Este é um comunicado automático do CMDPII/CZS.'
+  ].filter(Boolean).join('\n');
+
+  const html = `
+    <div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.5;color:#111">
+      <p>Prezada família,</p>
+      <p>Informamos que foi <strong>DEFERIDA</strong> uma Notificação Disciplinar referente a
+      <strong>${nome}</strong> (turma <strong>${turma}</strong>).</p>
+      <p>
+        <b>Data:</b> ${dataStr}<br/>
+        <b>Medida:</b> ${medida}${dias}<br/>
+        ${inciso ? `<b>Inciso:</b> ${inciso}<br/>` : ``}
+        <b>Motivo/Descrição:</b> ${motivo}<br/>
+        <b>Nº:</b> ${numero}
+      </p>
+      <p style="margin-top:16px">Este é um comunicado automático do <b>CMDPII/CZS</b>.</p>
+    </div>
+  `;
+  return { subject: assunto, text, html };
+}
+
+/**
+ * Dispara aviso de DEFERIDO (e-mail + telegram) de forma idempotente:
+ * - só envia se status === 'deferido'
+ * - não envia se mensagemEnviada === true
+ * - após enviar, marca mensagemEnviada/mensagemEnviadaEm e deferidoEm (se ainda não houver)
+ */
+async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
+  const mensageria = getMensageria(req);
+  const notif = await Notificacao.findById(notifId).lean();
+  if (!notif) return { skipped: true, reason: 'notificação não encontrada' };
+  if (notif.status !== 'deferido') return { skipped: true, reason: 'status não é deferido' };
+  if (notif.mensagemEnviada) return { skipped: true, reason: 'mensagem já enviada' };
+
+  const aluno = await Aluno.findById(notif.aluno).lean();
+  const { subject, text, html } = montarEmailDeferido({ aluno, notif });
+
+  // === ENVIO UNIFICADO (email + telegram) ===
+  if (mensageria && typeof mensageria.enfileirarParaResponsaveis === 'function') {
+    try {
+      await mensageria.enfileirarParaResponsaveis({
+        alunoId: aluno._id,
+        instituicao: notif.instituicao,
+        preferenciaCanais: ['email', 'telegram'],
+        titulo: subject,
+        texto: text,
+        html,
+        meta: { tipo: 'NOTIFICACAO_DEFERIDA', notifId: String(notif._id) }
+      });
+    } catch (e) {
+      console.warn('[deferido] falha no enfileirarParaResponsaveis:', e?.message || e);
+      // fallback mínimo: Telegram direto (se tiver chatId)
+      const chatIds = getChatIdsFromAlunoDoc(aluno);
+      if (chatIds.length) {
+        const msgTG = [
+          '🔔 CMDPII/CZS — Notificação DEFERIDA',
+          `Aluno(a): ${aluno?.nome || '—'} (${aluno?.turma || '—'})`,
+          `Medida: ${notif?.tipoMedida || notif?.tipo || '—'}${notif?.quantidadeDias > 1 ? ` (${notif.quantidadeDias} dias)` : ''}`,
+          `Nº: ${notif?.numeroSequencial || '—'}`,
+          `Data: ${notif?.data ? formatDataBr(notif.data) : formatDataBr(new Date())}`
+        ].join('\n');
+        for (const cid of chatIds) {
+          try { await enviarTelegram({ nome: aluno?.nome, turma: aluno?.turma }, 'Notificação', cid, msgTG); } catch {}
+        }
+      }
+    }
+  }
+
+  await Notificacao.findByIdAndUpdate(notifId, {
+    $set: {
+      mensagemEnviada: true,
+      mensagemEnviadaEm: new Date(),
+      deferidoEm: notif.deferidoEm || new Date()
+    }
+  });
+  return { ok: true };
+}
+
+/* =========================================================
+   ========  RESTO DO ARQUIVO (o que você já tinha)  =======
+   ========================================================= */
 
 // ------------------ Mapas de valores ------------------
 const MAPA_NEGATIVOS = {
@@ -32,11 +175,10 @@ const MAPA_ELOGIOS = {
 const PRECISA_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
 
 // ------------------ ENV (opcionais p/ mensagem NP) ------------------
-const NP_AGENDAMENTO_URL = process.env.NP_AGENDAMENTO_URL || ''; // ex: https://seusistema/np?aluno={{id}}
-const CONTATO_ESCOLA = process.env.CONTATO_ESCOLA || '';          // ex: (68) 9xxxx-xxxx | secretaria@...
+const NP_AGENDAMENTO_URL = process.env.NP_AGENDAMENTO_URL || '';
+const CONTATO_ESCOLA = process.env.CONTATO_ESCOLA || '';
 
-// ------------------ Helpers ------------------
-/** Match amplo para campo instituicao (aceita ObjectId, string, ausente e null) */
+// ------------------ Helpers já existentes ------------------
 function buildInstMatch(inst) {
   const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
   if (!inst) return { $or: ors };
@@ -47,8 +189,6 @@ function buildInstMatch(inst) {
   }
   return { $or: ors };
 }
-
-/** Match para Aluno por instituicao (string OU ObjectId) */
 function buildAlunoMatch(inst) {
   const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
   if (inst) {
@@ -57,8 +197,6 @@ function buildAlunoMatch(inst) {
   }
   return { $or: ors };
 }
-
-/** Data-only local (evita parse UTC “+1 dia”) */
 function parseDateOnlyLocal(yyyy_mm_dd) {
   if (!yyyy_mm_dd) return new Date();
   const [y, m, d] = String(yyyy_mm_dd).split('-').map(Number);
@@ -66,40 +204,10 @@ function parseDateOnlyLocal(yyyy_mm_dd) {
 }
 function toDayStart(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function toDayEnd(d)   { const x = new Date(d); x.setHours(23,59,59,999); return x; }
-
-/** PT-BR dd/mm/yyyy */
-function formatDataBr(dt) {
-  if (!dt) return '';
-  const d = new Date(dt);
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+function estaFaixaRegular(nota) {
+  const n = Number(nota);
+  return isFinite(n) && n >= 5.0 && n <= 6.99;
 }
-/** PT-BR dd/mm/yyyy HH:MM */
-function formatDataHoraBr(dt) {
-  if (!dt) return '';
-  const d = new Date(dt);
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mi = String(d.getMinutes()).padStart(2,'0');
-  return `${formatDataBr(d)} ${hh}:${mi}`;
-}
-
-/** Coleta todos os chatIds do Aluno (principal, múltiplos e legado) */
-function getChatIdsFromAlunoDoc(alunoDoc) {
-  if (!alunoDoc) return [];
-  if (typeof alunoDoc.getAllChatIds === 'function') {
-    return (alunoDoc.getAllChatIds() || []).filter(Boolean);
-  }
-  const set = new Set([
-    ...(alunoDoc.chatIdsResponsaveis || []),
-    alunoDoc.chatIdResponsavel || '',
-    alunoDoc?.contatos?.telegramChatId || ''
-  ].map(s => String(s || '').trim()).filter(Boolean));
-  return Array.from(set);
-}
-
-/** Recalcula e persiste a nota ATUAL do aluno até “agora” */
 async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   const instMatch = buildInstMatch(instituicao);
   const aluno = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) });
@@ -114,25 +222,11 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   await aluno.save();
   return aluno;
 }
-
-/** Busca nome/turma para logs */
 async function getAlunoInfo(alunoId, instituicao) {
   if (!alunoId) return { alunoNome: '—', alunoTurma: '—' };
   const a = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) }).select('nome turma').lean();
   return { alunoNome: a?.nome || '—', alunoTurma: a?.turma || '—' };
 }
-
-/** Faixa REGULAR (NP) */
-function estaFaixaRegular(nota) {
-  const n = Number(nota);
-  return isFinite(n) && n >= 5.0 && n <= 6.99;
-}
-
-/**
- * Dispara mensagem ao NP se:
- * - nota ∈ [5.00, 6.99]
- * - e nunca enviou, ou a nota mudou desde o último envio.
- */
 async function verificarEnvioNP(alunoDoc, instituicao) {
   if (!alunoDoc) return;
   const nota = Number(alunoDoc.comportamento);
@@ -151,30 +245,26 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
       instituicao,
       linkAgendamento: NP_AGENDAMENTO_URL,
       contatoEscola: CONTATO_ESCOLA,
-      preferenciaCanais: ['email', 'telegram'] // prioriza e-mail
+      preferenciaCanais: ['email', 'telegram']
     });
 
-    // marca no aluno para não reenviar repetido
     alunoDoc.alertas = alunoDoc.alertas || {};
     alunoDoc.alertas.npRegularEnviadoAt = new Date();
     alunoDoc.alertas.npRegularUltimaNota = nota;
     await alunoDoc.save();
   } catch (e) {
-    // não quebra o fluxo da rota caso o envio falhe
     console.warn('[NP] Falha ao enviar encaminhamento:', e.message);
   }
 }
 
-// ------------------------------------------------------
+/* ================= ROTAS ================= */
+
 // GET "/novas" (placeholder)
-// ------------------------------------------------------
 router.get('/novas', autenticar, attachActor, async (_req, res) => {
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
-// ------------------------------------------------------
 // GET "/pendencias/devolucao/contador"
-// ------------------------------------------------------
 router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -193,9 +283,7 @@ router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req
   }
 });
 
-// ------------------------------------------------------
 // GET "/pendencias/devolucao"
-// ------------------------------------------------------
 router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -224,9 +312,7 @@ router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) =>
   }
 });
 
-// ------------------------------------------------------
 // GET "/" (lista paginada)
-// ------------------------------------------------------
 router.get('/', autenticar, attachActor, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
@@ -265,7 +351,7 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       .sort({ data: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('aluno tipo tipoMedida data status valorNumerico quantidadeDias notaAnterior notaAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm natureza')
+      .select('aluno tipo tipoMedida data status valorNumerico quantidadeDias notaAnterior notaAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm natureza mensagemEnviada deferidoEm')
       .populate({
         path: 'aluno',
         select: 'nome turma instituicao',
@@ -275,7 +361,6 @@ router.get('/', autenticar, attachActor, async (req, res) => {
 
     const dataRaw = (notificacoes || []).filter(n => n.aluno);
 
-    // Deriva campos para exibição (evita a UI multiplicar novamente pelos dias)
     const data = dataRaw.map(n => {
       const precisaDias = PRECISA_DIAS.has(n.tipoMedida);
       const dias = precisaDias ? Math.max(1, parseInt(n.quantidadeDias || 1, 10)) : 1;
@@ -291,9 +376,7 @@ router.get('/', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
 // GET "/:id" (detalhes)
-// ------------------------------------------------------
 router.get('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -320,9 +403,7 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
 // POST "/" (criar notificação) + ENVIO TELEGRAM/WHATSAPP
-// ------------------------------------------------------
 router.post('/', autenticar, attachActor, async (req, res) => {
   const {
     aluno, motivo, tipo, tipoMedida, observacao, data,
@@ -381,12 +462,11 @@ router.post('/', autenticar, attachActor, async (req, res) => {
       const precisaDias = PRECISA_DIAS.has(tituloMedida);
       const dias = precisaDias ? Math.max(1, parseInt(quantidadeDias || 1, 10)) : 1;
 
-      // 🔧 REGRA: se vier valorNumerico do frontend, ele JÁ É o TOTAL (não multiplicar de novo).
       if (typeof valorNumerico === 'number') {
         valor = Number(valorNumerico);
       } else {
         const base = (MAPA_NEGATIVOS[tituloMedida] || 0);
-        valor = Number((base * dias).toFixed(2)); // calcula total quando não veio valorNumerico
+        valor = Number((base * dias).toFixed(2));
       }
 
       const dadosRegulamento = obterDadosDoRegulamento(motivo || '');
@@ -395,7 +475,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
         tipo: tituloMedida || 'Medida',
         tipoMedida: tituloMedida || 'Medida',
         motivo,
-        valorNumerico: valor,                 // ← grava sempre o TOTAL
+        valorNumerico: valor,
         quantidadeDias: precisaDias ? dias : 1,
         artigo: dadosRegulamento.artigo,
         paragrafo: dadosRegulamento.paragrafo,
@@ -408,7 +488,6 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     const dayStart = toDayStart(dt);
     const dayEnd   = toDayEnd(dt);
 
-    // (A) nota até ontem
     const endOntem = new Date(dayStart.getTime() - 1);
     const instMatch = buildInstMatch(req.usuario.instituicao);
 
@@ -418,7 +497,6 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 
     const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
 
-    // (B) nota até o fim do dia do evento + esta ocorrência
     const notificacoesAteDia = await Notificacao.find({
       aluno, ...instMatch, data: { $lt: dayEnd }
     }).select('data valorNumerico createdAt quantidadeDias tipoMedida natureza').sort({ data: 1, createdAt: 1 });
@@ -494,7 +572,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     // (C) Recalcular nota atual do aluno até “agora”
     const alunoAtualizado = await recomputarNotaAlunoAteAgora(aluno, req.usuario.instituicao);
 
-    // ===================== ENVIO MENSAGENS =====================
+    // ===================== ENVIO MENSAGENS (criação) =====================
 
     // WhatsApp (mantido)
     if (alunoRelacionado.telefone) {
@@ -509,7 +587,7 @@ Nº: ${numeroSequencial}`;
       try { await enviarWhatsapp(alunoRelacionado.telefone, mensagemWA); } catch {}
     }
 
-    // Telegram (novo)
+    // Telegram (mantido)
     const chatIds = getChatIdsFromAlunoDoc(alunoRelacionado);
     if (chatIds.length) {
       const titulo = payload.natureza === 'elogio' ? 'ELOGIO' : 'NOTIFICAÇÃO DISCIPLINAR';
@@ -530,7 +608,7 @@ Nº: ${numeroSequencial}`;
       }
     }
 
-    // 💡 NOVO: possível disparo de e-mail NP (nota 5.00–6.99)
+    // 💡 NP (faixa 5.00–6.99)
     await verificarEnvioNP(alunoAtualizado, req.usuario.instituicao);
 
     res.status(201).json(novaNotificacao);
@@ -540,9 +618,7 @@ Nº: ${numeroSequencial}`;
   }
 });
 
-// ------------------------------------------------------
-// PUT "/:id" (atualizar notificação)
-// ------------------------------------------------------
+// PUT "/:id" (atualizar notificação) — inclui disparo quando virar DEFERIDO
 router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -558,7 +634,6 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       'artigo','paragrafo','inciso','classificacaoRegulamento'
     ];
 
-    // snapshot "antes" para o LOG
     const antes = {
       aluno: notif.aluno,
       tipo: notif.tipo,
@@ -572,7 +647,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       numeroSequencial: notif.numeroSequencial
     };
 
-    // atualizar campos
+    // aplicar mudanças
     for (const campo of camposEditaveis) {
       if (req.body[campo] !== undefined) {
         if (campo === 'data' && typeof req.body[campo] === 'string') {
@@ -583,7 +658,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     }
 
-    // ===== AJUSTES AUTOMÁTICOS / REGRAS DE CÁLCULO =====
+    // regras de cálculo
     if (notif.natureza === 'elogio') {
       if (req.body.valorNumerico === undefined && req.body.tipoElogio) {
         notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
@@ -592,7 +667,6 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
         notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
       }
     } else {
-      // INDISCIPLINA: recalcular quando (tipo OU quantidadeDias) mudarem e valorNumerico NÃO vier
       const tipoMudou = typeof req.body.tipoMedida !== 'undefined' || typeof req.body.tipo !== 'undefined';
       const diasMudou = typeof req.body.quantidadeDias !== 'undefined';
 
@@ -618,11 +692,13 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     }
 
+    // detectar transição para DEFERIDO
+    const virouDeferido = (antes.status !== 'deferido' && notif.status === 'deferido');
+
     await notif.save();
 
     const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
-    // 🔎 LOG
     await logAction({
       req,
       acao: 'NOTIFICACAO_ATUALIZADA',
@@ -650,11 +726,19 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    // Recalcular nota atual
     const alunoApósUpdate = await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
 
-    // 💡 NOVO: possível disparo de e-mail NP (nota 5.00–6.99)
+    // 💡 NP (faixa 5.00–6.99)
     await verificarEnvioNP(alunoApósUpdate, req.usuario.instituicao);
+
+    // 🚀 NOVO: se virou DEFERIDO, dispara comunicado (idempotente)
+    if (virouDeferido) {
+      try {
+        await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
+      } catch (e) {
+        console.warn('[deferido/update] falha disparo:', e.message);
+      }
+    }
 
     res.json({ message: 'Notificação atualizada com sucesso.' });
   } catch (err) {
@@ -663,9 +747,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
 // PUT "/:id/reenviar" (voltar para pendente)
-// ------------------------------------------------------
 router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -697,8 +779,6 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
     });
 
     const alunoApósReenviar = await recomputarNotaAlunoAteAgora(notificacao.aluno, req.usuario.instituicao);
-
-    // 💡 NOVO: checa faixa regular após reenviar (por segurança)
     await verificarEnvioNP(alunoApósReenviar, req.usuario.instituicao);
 
     res.json({ message: 'Notificação reenviada com sucesso.' });
@@ -708,9 +788,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
 // POST "/:id/entregar"  + AVISO TELEGRAM
-// ------------------------------------------------------
 router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -751,7 +829,6 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    // Aviso Telegram/WhatsApp da entrega
     const msgEntrega = [
       '📩 CMDPII/CZS — Confirmação de ENTREGA de notificação',
       `Aluno(a): ${alunoNome} (${alunoTurma})`,
@@ -769,7 +846,6 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
       try { await enviarWhatsapp(notif.aluno.telefone, msgEntrega); } catch {}
     }
 
-    // Nota do aluno NÃO muda aqui, mas checamos faixa por segurança (não custa)
     const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
     await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
 
@@ -780,9 +856,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
 // POST "/:id/devolver"  + AVISO TELEGRAM
-// ------------------------------------------------------
 router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -822,7 +896,6 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    // Aviso Telegram/WhatsApp da devolução
     const msgDev = [
       '✅ CMDPII/CZS — Notificação DEVOLVIDA',
       `Aluno(a): ${alunoNome} (${alunoTurma})`,
@@ -839,7 +912,6 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
       try { await enviarWhatsapp(notif.aluno.telefone, msgDev); } catch {}
     }
 
-    // Nota do aluno não muda aqui, mas checamos faixa por segurança
     const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
     await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
 
@@ -850,9 +922,54 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------
+// 💥 NOVA ROTA: PUT "/:id/deferir" — muda status para DEFERIDO e dispara comunicado
+router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
+  try {
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const notif = await Notificacao.findOne({
+      _id: req.params.id,
+      ...instMatch
+    });
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
+
+    // atualiza somente se não estiver deferido ainda
+    if (notif.status !== 'deferido') {
+      notif.status = 'deferido';
+      notif.deferidoEm = new Date();
+      await notif.save();
+    }
+
+    // dispara comunicado idempotente
+    try {
+      await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
+    } catch (e) {
+      console.warn('[deferido/endpoint] falha disparo:', e.message);
+    }
+
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
+    await logAction({
+      req,
+      acao: 'NOTIFICACAO_DEFERIDA',
+      entidade: 'Notificacao',
+      entidadeId: notif._id,
+      extra: {
+        alunoId: String(notif.aluno),
+        alunoNome, alunoTurma,
+        tipo: notif.tipo,
+        tipoMedida: notif.tipoMedida,
+        numeroSequencial: notif.numeroSequencial,
+        deferidoEm: notif.deferidoEm
+      }
+    });
+
+    res.json({ message: 'Notificação deferida e comunicado disparado (quando aplicável).', notificacao: notif });
+  } catch (err) {
+    console.error('Erro ao deferir notificação:', err);
+    res.status(500).json({ error: 'Erro ao deferir notificação.' });
+  }
+});
+
 // DELETE "/:id"
-// ------------------------------------------------------
 router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -889,8 +1006,6 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     await notificacao.deleteOne();
 
     const alunoAtual = await recomputarNotaAlunoAteAgora(alunoId, req.usuario.instituicao);
-
-    // 💡 NOVO: checar faixa regular após exclusão
     await verificarEnvioNP(alunoAtual, req.usuario.instituicao);
 
     res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });

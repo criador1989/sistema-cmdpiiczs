@@ -104,10 +104,20 @@ try { require('./models/AphAtendimento'); } catch {}
    MENSAEGERIA (INJEÇÃO)
    ========================= */
 try {
-  const mensageria = require('./services/mensageria');
-  app.locals.mensageria = mensageria;
-  global.mensageria = mensageria;
+  const { initMensageria, getStatus: getMensageriaStatus } = require('./services/mensageria');
+  initMensageria(app);                  // injeta app.locals.mensageria (sendEmail/sendTelegram)
+  global.mensageria = app.locals.mensageria; // compatibilidade com getMensageria(req) legado
   console.log('✉️  Mensageria injetada (email/telegram/whatsapp).');
+
+  // Diagnóstico rápido da mensageria
+  app.get('/debug/mensageria/status', (_req, res) => {
+    try {
+      const st = typeof getMensageriaStatus === 'function' ? getMensageriaStatus() : {};
+      res.json({ ...st, hasAppMensageria: !!app.locals.mensageria });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: String(e?.message || e) });
+    }
+  });
 } catch (e) {
   console.warn('⚠️  Mensageria não carregada:', e?.message || e);
 }
@@ -117,14 +127,14 @@ try {
    ========================= */
 const {
   verify: verifyMail,
-  verifyAll,               // ⟵ adicionado para checar todos candidatos na subida
+  verifyAll,               // ⟵ checa todos candidatos na subida
   MAIL_ENABLED,
   SMTP_HOST,
   SMTP_PORT,
   MAIL_USER,
   MAIL_FROM,
   getLastMailError,
-  getLastProvider,         // ⟵ exibir provedor atual em /debug/mail/status
+  getLastProvider,         // ⟵ exibe provedor atual em /debug/mail/status
 } = require('./utils/mailer');
 
 app.get('/debug/mail/verify', async (_req, res) => {
