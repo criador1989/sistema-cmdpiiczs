@@ -7,98 +7,169 @@
 <title>APH - Novo Atendimento</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192x192.png">
-<meta name="theme-color" content="#8B0000">
+<meta name="theme-color" content="#0A1322">
 <style>
+/* =====================================================
+   TEMA GLASS AZUL-CLARO + BOKEH FIXO
+   ===================================================== */
 :root{
-  --rubi1:#8B0000; --rubi2:#D82327; --gold:#E7C873;
-  --bg:#0c0e11; --panel:#121418; --card:#171a1f; --line:#2a2f39;
-  --txt:#EAECEF; --muted:#9aa3ad; --ok:#1aa46f; --warn:#e2b93b; --bad:#e55353;
-  --radius:16px;
+  --txt:#eaf1ff;
+  --muted:#b7c4d8;
+  --line:rgba(255,255,255,.25);
+  --glass:rgba(255,255,255,.10);
+  --glass-strong:rgba(255,255,255,.16);
+  --accent:#5daeff;
+  --radius:18px;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  margin:0; color:var(--txt); font-family:"Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  color:var(--txt);
+  font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
   background:
-    radial-gradient(1100px 480px at -20% -10%, rgba(216,35,39,.22), transparent 60%),
-    radial-gradient(1100px 480px at 120% -10%, rgba(139,0,0,.25), transparent 60%),
-    linear-gradient(180deg, #0c0e11, #0a0c0f);
+    radial-gradient(900px 480px at -10% -10%, rgba(255,255,255,.18), transparent 60%),
+    radial-gradient(900px 480px at 120% -10%, rgba(255,255,255,.14), transparent 60%),
+    radial-gradient(800px 380px at 50% 90%, rgba(255,255,255,.10), transparent 70%),
+    linear-gradient(180deg,#3c5878 0%,#203247 80%,#17283b 100%);
+  background-attachment: fixed;
+  background-blend-mode: screen, screen, normal;
+  -webkit-font-smoothing:antialiased;
 }
+
+/* Topbar ------------------------------------------------- */
 .topbar{
-  position:sticky; top:0; z-index:50;
-  background:linear-gradient(90deg,#1b2027,#1b2027dd);
-  border-bottom:1px solid #2a2f39; backdrop-filter:saturate(140%) blur(6px);
+  position:sticky;top:0;z-index:10;
+  background:rgba(28,42,65,.45);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(16px) saturate(150%);
+  -webkit-backdrop-filter:blur(16px) saturate(150%);
 }
-.topbar .in{max-width:1080px; margin:0 auto; padding:12px 16px; display:flex; gap:8px; align-items:center}
-.h1{margin:0 auto 0 0; font-weight:800}
+.topbar .in{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;gap:10px;align-items:center}
+.h1{margin-right:auto;font-weight:800;font-size:1.2rem;color:#f7fbff}
 .btn{
-  appearance:none; border:1px solid #303645; background:#1e2430; color:#fff;
-  padding:10px 14px; border-radius:12px; font-weight:800; cursor:pointer; display:inline-flex; gap:8px; align-items:center;
-  transition: .15s filter, .15s opacity, .15s transform;
+  appearance:none;border:1px solid rgba(255,255,255,.28);
+  background:var(--glass);color:#f3f7ff;
+  padding:9px 14px;border-radius:12px;font-weight:700;
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;
+  transition:.22s filter,.22s transform;
 }
-.btn:hover{filter:brightness(1.06)}
-.btn:disabled{
-  opacity:.6; cursor:not-allowed; transform:none !important;
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.primary{
+  background:linear-gradient(135deg, rgba(80,140,230,.35), rgba(70,130,210,.28));
+  border-color:rgba(255,255,255,.36);
+  box-shadow:0 8px 28px rgba(100,160,240,.28);
 }
-.btn.rubi{background:linear-gradient(90deg,var(--rubi1),var(--rubi2)); border-color:#5e0a0a; box-shadow:0 12px 30px rgba(139,0,0,.28)}
-.page{max-width:1080px; margin:18px auto 28px; padding:0 16px}
 
+/* Page ---------------------------------------------------- */
+.page{max-width:1080px;margin:22px auto;padding:0 16px;animation:fadeIn .35s ease-out both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* Seções -------------------------------------------------- */
 .section{
-  background:linear-gradient(135deg,#151920 0%, #14181d 60%, #13171b 100%);
-  border:1px solid #262b34; border-radius:var(--radius); box-shadow:0 18px 50px rgba(0,0,0,.35);
-  padding:18px; margin-top:16px;
+  margin-top:16px;background:var(--glass);
+  border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
+  box-shadow:0 10px 40px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.1);
+  padding:18px;
 }
-.legend{font-weight:900; color:#fff; margin-bottom:10px}
-.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px}
-.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media (max-width:980px){ .grid-3{grid-template-columns:1fr 1fr} }
-@media (max-width:680px){ .grid-3,.grid-2{grid-template-columns:1fr} }
+.legend{font-weight:800;color:#ffffff;margin-bottom:10px;letter-spacing:.3px}
 
-label{font-weight:700; font-size:.95rem}
-.input, select, textarea{
-  width:100%; background:#0f1217; color:#e9ecf1; border:1px solid #2a303a; border-radius:12px; padding:10px;
+/* Grades -------------------------------------------------- */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:980px){.grid-3{grid-template-columns:1fr 1fr}}
+@media (max-width:680px){.grid-3,.grid-2{grid-template-columns:1fr}}
+
+label{font-weight:700;font-size:.95rem}
+.input,select,textarea{
+  width:100%;background:rgba(255,255,255,.06);
+  color:#f2f6ff;border:1px solid rgba(255,255,255,.22);
+  border-radius:12px;padding:10px;backdrop-filter:blur(8px);
 }
-textarea{resize:vertical; min-height:90px}
+textarea{resize:vertical;min-height:90px}
 
-.cards{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media (max-width:980px){ .cards{grid-template-columns:1fr} }
+/* Corrige contraste do menu dropdown */
+select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
+
+/* Badges / row -------------------------------------------- */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.28);
+  background:var(--glass);font-weight:700
+}
+.muted{color:var(--muted)}
+.right{margin-left:auto}
+
+/* Cards de escolha (estilo BOTÃO com checkbox visível) ---- */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:980px){.cards{grid-template-columns:1fr}}
 
 .cardChoice{
-  background:#0f1216; border:1px solid #2a2f39; border-radius:14px; padding:12px;
-  display:flex; gap:12px; align-items:flex-start; transition:.15s filter, .15s border-color, .15s background;
+  position:relative;display:flex;align-items:flex-start;gap:12px;
+  padding:12px;border-radius:14px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.20);
+  transition:.2s border-color,.2s background,.2s filter;
+  cursor:pointer;
 }
-.cardChoice:hover{filter:brightness(1.06);}
-.cardChoice.active{border-color:#4b5668; background:#11161d}
+.cardChoice:hover{filter:brightness(1.06)}
+.cardChoice:has(input:checked){
+  background:var(--glass-strong);
+  border-color:rgba(255,255,255,.38);
+  box-shadow:0 8px 28px rgba(100,160,240,.18) inset;
+}
+
+/* Checkbox custom */
+.cardChoice input[type="checkbox"]{
+  position:absolute;opacity:0;inset:0;cursor:pointer;
+}
+.check{
+  width:20px;height:20px;border-radius:6px;
+  border:2px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.03);
+  margin-top:2px;flex:0 0 20px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.cardChoice:has(input:checked) .check{
+  border-color:var(--accent);
+  background:linear-gradient(180deg, rgba(120,200,255,.85), rgba(90,160,235,.85));
+  box-shadow:0 0 0 3px rgba(93,174,255,.25);
+}
+
+/* Ícone e textos */
 .icon{
-  width:26px; height:26px; display:grid; place-items:center; border-radius:8px;
-  background:#0b0e12; border:1px solid #2a2f39; font-size:15px;
+  width:28px;height:28px;display:grid;place-items:center;
+  border-radius:8px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.25);flex:0 0 28px;
 }
-.ctitle{font-weight:800; color:#f3f5f7}
-.cdesc{color:var(--muted); font-size:.92rem; margin-top:2px}
-.cardChoice input{margin-right:6px; accent-color:#d82327}
+.ctitle{font-weight:700;color:#f4f7ff}
+.cdesc{color:var(--muted);font-size:.92rem;margin-top:2px}
 
-.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-.right{margin-left:auto}
-.actions{display:flex; gap:10px; justify-content:flex-end; margin-top:16px}
-.small{font-size:.88rem; color:var(--muted)}
-.badge{
-  display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
-  border:1px solid #2f3541; background:#141a22; font-weight:800
-}
+/* Ações / switches ---------------------------------------- */
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.small{font-size:.88rem;color:var(--muted)}
+.switch{display:inline-flex;align-items:center;gap:8px;user-select:none;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--accent)}
 
-/* Encaminhamento */
-.switch{ display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer; }
-.switch input{width:18px; height:18px; accent-color:#d82327}
-.muted{color:var(--muted)}
-
-/* Toast */
+/* Toast ---------------------------------------------------- */
 .toast{
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-  background: #151a22; border:1px solid #2a303a; color:#e9ecf1; padding:10px 14px;
-  border-radius:12px; box-shadow:0 12px 35px rgba(0,0,0,.35); z-index:9999; display:none;
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.30);
+  color:#ffffff;padding:10px 14px;border-radius:12px;
+  box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:9999;display:none;
+  backdrop-filter:blur(10px);
 }
-.toast.ok{border-color:#1f6e52}
-.toast.err{border-color:#6e1f1f}
+.toast.ok{border-color:#4bd7b1}
+.toast.err{border-color:#d14d4d}
+
+/* Print ---------------------------------------------------- */
+@media print{
+  .topbar,.btn{display:none!important}
+  body{background:#fff;color:#000}
+  .section{background:#fff;color:#000;border-color:#999}
+}
 </style>
 </head>
 <body>
@@ -109,7 +180,7 @@ textarea{resize:vertical; min-height:90px}
       <a class="btn" href="/painel.html">🏠 Painel</a>
       <div class="right"></div>
       <button class="btn" id="btnLimpar">Limpar</button>
-      <button class="btn rubi" id="btnSalvar">Salvar</button>
+      <button class="btn primary" id="btnSalvar">Salvar</button>
     </div>
   </div>
 
@@ -167,11 +238,11 @@ textarea{resize:vertical; min-height:90px}
           <input type="checkbox" id="chkEncaminhamento">
           <span>Houve encaminhamento</span>
         </label>
-        <span class="muted">Marque se o aluno foi encaminhado (ex.: posto de saúde, hospital, retorno para casa, etc.).</span>
+        <span class="muted">Marque se o aluno foi encaminhado (posto de saúde, hospital, etc.).</span>
       </div>
       <div>
         <label>Para onde / como foi encaminhado</label>
-        <textarea id="txtEncaminhamento" class="input" placeholder="Ex.: Responsáveis acionados; aluno conduzido ao UPA; acompanhamento realizado..."></textarea>
+        <textarea id="txtEncaminhamento" class="input" placeholder="Ex.: Responsáveis acionados; aluno conduzido ao UPA; ..."></textarea>
       </div>
     </section>
 
@@ -200,7 +271,7 @@ textarea{resize:vertical; min-height:90px}
       </div>
       <div class="actions">
         <button class="btn" id="btnLimpar2">Limpar</button>
-        <button class="btn rubi" id="btnSalvar2">Salvar</button>
+        <button class="btn primary" id="btnSalvar2">Salvar</button>
       </div>
     </section>
   </main>
@@ -208,7 +279,7 @@ textarea{resize:vertical; min-height:90px}
   <div id="toast" class="toast"></div>
 
 <script>
-// ===== util / dados =====
+/* ===== helpers / dados ===== */
 const $ = (s)=>document.querySelector(s);
 const params = new URLSearchParams(location.search);
 const alunoId = params.get('alunoId') || params.get('id');
@@ -249,32 +320,31 @@ function toast(msg, type='ok'){
   el.textContent = msg;
   el.style.display = 'block';
   clearTimeout(el._t);
-  el._t = setTimeout(()=>{ el.style.display='none'; }, 2800);
+  el._t = setTimeout(()=>{ el.style.display='none'; }, 2600);
 }
 
+/* Montagem dos cards com checkbox visível */
 function cardList(container, items){
   container.innerHTML = items.map((o,idx)=>`
     <label class="cardChoice" data-idx="${idx}">
       <input type="checkbox" value="${o.t}">
-      <div class="icon">${o.i||'•'}</div>
+      <span class="check" aria-hidden="true"></span>
+      <span class="icon">${o.i||'•'}</span>
       <div>
         <div class="ctitle">${o.t}</div>
         <div class="cdesc">${o.d||''}</div>
       </div>
     </label>
   `).join('');
-  container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-    cb.addEventListener('change', ()=> {
-      cb.closest('.cardChoice')?.classList.toggle('active', cb.checked);
-    });
-  });
 }
+
+/* Retorna selecionados por value */
 function selected(container){ return Array.from(container.querySelectorAll('input:checked')).map(i=>i.value); }
 
-// fetch com timeout para não travar
-async function api(path, opts={}){
+/* fetch com timeout */
+async function api(path, opts = {}){
   const ctl = new AbortController();
-  const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000); // 12s
+  const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000);
   try{
     const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
       credentials:'include',
@@ -287,9 +357,7 @@ async function api(path, opts={}){
     const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
     if(!r.ok) throw new Error(data.message || data.error || `Erro ${r.status}`);
     return data;
-  } finally {
-    clearTimeout(id);
-  }
+  } finally { clearTimeout(id); }
 }
 
 async function carregarAluno(){
@@ -300,52 +368,37 @@ async function carregarAluno(){
 }
 
 function limpar(){
-  $('#inpResp').value = '';
-  $('#inpLocal').value = '';
-  const now = new Date();
-  $('#inpHora').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  $('#inpData').value = now.toISOString().slice(0,10);
-  $('#inpObs').value = '';
-  $('#selRespInf').value = 'Não';
-  $('#selMeio').value = '';
-  $('#chkEncaminhamento').checked = false;
-  $('#txtEncaminhamento').value = '';
-  toggleEncaminhamento();
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-    cb.checked = false; cb.closest('.cardChoice')?.classList.remove('active');
-  });
+  $('#inpResp').value=''; $('#inpLocal').value='';
+  const now=new Date();
+  $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  $('#inpData').value=now.toISOString().slice(0,10);
+  $('#inpObs').value='';
+  $('#selRespInf').value='Não'; $('#selMeio').value='';
+  $('#chkEncaminhamento').checked=false; toggleEncaminhamento();
+  document.querySelectorAll('.cards input[type="checkbox"]').forEach(cb=>cb.checked=false);
 }
 
 function toggleEncaminhamento(){
   const on = $('#chkEncaminhamento').checked;
   const txt = $('#txtEncaminhamento');
-  txt.disabled = !on;
-  txt.style.opacity = on ? '1' : '.65';
+  txt.disabled = !on; txt.style.opacity = on ? '1' : '.65';
 }
 
-let saving = false;
+let saving=false;
 function setSavingState(on){
-  saving = on;
+  saving=on;
   ['#btnSalvar','#btnSalvar2','#btnLimpar','#btnLimpar2','#btnVoltar'].forEach(sel=>{
-    const b = $(sel);
-    if (b) b.disabled = on;
+    const b=$(sel); if(b) b.disabled=on;
   });
-  const b1 = $('#btnSalvar');
-  const b2 = $('#btnSalvar2');
-  if(on){
-    if(b1) b1.textContent = 'Salvando...';
-    if(b2) b2.textContent = 'Salvando...';
-  }else{
-    if(b1) b1.textContent = 'Salvar';
-    if(b2) b2.textContent = 'Salvar';
-  }
+  const b1=$('#btnSalvar'), b2=$('#btnSalvar2');
+  if(on){ if(b1) b1.textContent='Salvando...'; if(b2) b2.textContent='Salvando...'; }
+  else { if(b1) b1.textContent='Salvar'; if(b2) b2.textContent='Salvar'; }
 }
 
 async function salvar(){
   if(saving) return;
   try{
     if(!alunoId) return toast('ID do aluno ausente.', 'error');
-
     setSavingState(true);
 
     const payload = {
@@ -365,33 +418,20 @@ async function salvar(){
       encaminhamento: ($('#txtEncaminhamento').value || '').trim()
     };
 
-    const resp = await api('/aph/atendimentos', {
-      method:'POST',
-      body: JSON.stringify(payload),
-      timeoutMs: 12000
-    });
+    const resp = await api('/aph/atendimentos', { method:'POST', body: JSON.stringify(payload), timeoutMs:12000 });
 
     if (resp?.ok) {
-      if (resp?.comunicacao?.queued) {
-        toast('Atendimento salvo. Comunicado enfileirado para envio.', 'ok');
-      } else {
-        toast('Atendimento salvo com sucesso!', 'ok');
-      }
+      if (resp?.comunicacao?.queued) { toast('Atendimento salvo. Comunicado enfileirado para envio.', 'ok'); }
+      else { toast('Atendimento salvo com sucesso!', 'ok'); }
       setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 700);
     } else {
       toast('Salvo, mas sem confirmação de comunicação.', 'ok');
       setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 900);
     }
-
   } catch(e){
     console.error(e);
-    const msg = e.name === 'AbortError'
-      ? 'Tempo esgotado. Verifique a conexão e tente novamente.'
-      : (e.message || 'Erro ao salvar.');
-    toast(msg, 'error');
-  } finally {
-    setSavingState(false);
-  }
+    toast(e.name==='AbortError'?'Tempo esgotado. Verifique a conexão.':(e.message||'Erro ao salvar.'),'error');
+  } finally { setSavingState(false); }
 }
 
 function voltar(){
@@ -401,12 +441,13 @@ function voltar(){
 
 function init(){
   if(!alunoId) toast('Atenção: alunoId não informado na URL.', 'error');
+
   cardList($('#tiposBox'), TIPOS);
   cardList($('#materiaisBox'), MATERIAIS);
 
-  const now = new Date();
-  $('#inpData').value = now.toISOString().slice(0,10);
-  $('#inpHora').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const now=new Date();
+  $('#inpData').value=now.toISOString().slice(0,10);
+  $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   carregarAluno().catch(console.error);
   toggleEncaminhamento();
 
@@ -418,7 +459,6 @@ function init(){
   $('#btnVoltar').addEventListener('click', voltar);
   $('#chkEncaminhamento').addEventListener('change', toggleEncaminhamento);
 }
-
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 </script>
 </body>
