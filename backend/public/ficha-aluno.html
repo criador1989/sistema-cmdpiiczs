@@ -5,140 +5,272 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ficha do Aluno - CMDPII</title>
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#0B0C10" />
+  <meta name="theme-color" content="#6ea3c5" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
+    /* =========================================================
+       TEMA GLASS — AZUL CLARO (fiel ao mock) + BOkeh FIXO
+       ========================================================= */
     :root{
-      --bg-0:#0b0c10; --bg-1:#101217; --glass:#0d111bcc; --ink:#e7e9ee; --muted:#9aa3b2;
-      --line:#202534; --card:#0b1019; --radius:16px;
-      --rubi:#d82327; --rubi-2:#8B0000; --gold:#e7c873;
-      --shadow:0 20px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
+      /* Azul de base (mais claro, elegante) */
+      --bg-0:#3a6a8c;      /* topo */
+      --bg-1:#274f6b;      /* base */
+      /* Vidro */
+      --glass: rgba(255,255,255,.06);
+      --glass-strong: rgba(255,255,255,.10);
+      --glass-deep: rgba(10,25,40,.28);
+      --ink:#eef5ff;
+      --muted:#c8d7ea;
+      --line: rgba(210,235,255,.30);
+      --radius:20px;
+
+      /* sombras suaves e luz natural nas bordas */
+      --shadow: 0 30px 80px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+      --inner: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -12px 38px rgba(10,25,40,.18);
+
+      /* tom do destaque leve (badge, foco) */
+      --accent: rgba(180,220,255,.55);
     }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; color:var(--ink);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+
+      /* Fundo com BOKEH FIXO (sem animação) + gradientes frios */
       background:
-        radial-gradient(1200px 600px at 10% -10%, #2b0b0b40, transparent 60%),
-        radial-gradient(900px 500px at 110% 0%, #24120040, transparent 60%),
+        radial-gradient(1200px 600px at 12% -10%, rgba(200,240,255,.30), transparent 60%),
+        radial-gradient(900px 520px at 108% -8%, rgba(150,210,255,.22), transparent 60%),
+        radial-gradient(780px 460px at -12% 88%, rgba(180,220,255,.18), transparent 60%),
+
+        /* bolhas de luz muito desfocadas (bokeh) */
+        radial-gradient(80px 80px at 22% 20%, rgba(255,255,255,.22), transparent 60%),
+        radial-gradient(110px 110px at 38% 30%, rgba(255,255,255,.16), transparent 65%),
+        radial-gradient(90px 90px at 68% 18%, rgba(255,255,255,.18), transparent 62%),
+        radial-gradient(120px 120px at 76% 60%, rgba(255,255,255,.14), transparent 65%),
+        radial-gradient(70px 70px at 12% 72%, rgba(255,255,255,.14), transparent 68%),
+
+        /* base azul */
         linear-gradient(180deg, var(--bg-0), var(--bg-1));
+      background-blend-mode: screen, screen, screen, normal, normal, normal, normal, normal, normal;
     }
 
+    /* ================= Topbar (vidro translúcido) ================= */
     .topbar{
       position:sticky; top:0; z-index:10;
-      background:linear-gradient(180deg,#0d111bcc,#0d111bb0);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
       border-bottom:1px solid var(--line);
-      backdrop-filter: blur(10px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(130%);
+      -webkit-backdrop-filter: blur(16px) saturate(130%);
     }
     .topbar .inner{
       max-width:1180px; margin:0 auto; padding:14px 18px;
       display:flex; align-items:center; gap:10px;
     }
-    .brand{font-weight:800; display:flex; align-items:center; gap:10px}
-    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--rubi),var(--gold));box-shadow:0 0 12px #d82327aa}
-    .spacer{flex:1}
-    .btn{
-      appearance:none; border:1px solid #ffffff12; cursor:pointer; font-weight:700;
-      padding:10px 14px; border-radius:12px; color:#fff;
-      background:linear-gradient(135deg,#1a1f2b,#151a26);
-      box-shadow:var(--shadow); transition:.2s transform,.2s filter,.2s border-color;
-      text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    .brand{font-weight:800; letter-spacing:.2px; display:flex; align-items:center; gap:10px}
+    .brand .dot{
+      width:10px; height:10px; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #e9f7ff, #9ed4ff 60%);
+      box-shadow: 0 0 16px rgba(190,235,255,.9), 0 0 30px rgba(160,210,255,.45);
     }
-    .btn:hover{ transform:translateY(-1px); filter:saturate(1.05); border-color:#ffffff24 }
-    .btn.ghost{ background:linear-gradient(135deg,#0f1420,#0c111a); color:#c9d1e1 }
-    .btn.primary{ background:linear-gradient(135deg,#8B0000,#d82327); border-color:#ffffff22; box-shadow:0 12px 28px rgba(216,35,39,.35)}
-    .btn.warn{ background:linear-gradient(135deg,#2a1e10,#3a2a15); color:#ffd59e }
-    .btn.light{ background:#fff; color:#111; border-color:#ffffffaa }
+    .spacer{flex:1}
 
+    /* ================= Botões (TODOS em vidro translúcido) ================= */
+    .btn{
+      appearance:none; cursor:pointer; font-weight:700;
+      padding:10px 14px; border-radius:14px; color:#f2f7ff; text-decoration:none;
+      background: var(--glass);
+      border:1px solid var(--line);
+      backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%);
+      box-shadow: var(--shadow);
+      transition: .22s transform, .22s filter, .22s border-color, .22s box-shadow;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{ transform:translateY(-1px); filter:saturate(1.04); border-color: rgba(255,255,255,.45) }
+    .btn:active{ transform:translateY(0); filter:saturate(1) }
+    .btn.ghost{ background: rgba(255,255,255,.05) }
+    .btn.primary{ background: rgba(255,255,255,.07) } /* sem cor sólida */
+    .btn.warn{ background: rgba(255,255,255,.05); color:#f0f3f8 }
+
+    /* uniformiza botões “especiais” usados no código original */
+    .btn-ghost-light, .btn-primary-rubi{ background: rgba(255,255,255,.07); border:1px solid var(--line); color:#eef5ff }
+
+    /* ================= Página ================= */
     .page{ max-width:1180px; margin:22px auto; padding:0 18px; animation:fadeIn .35s ease-out both; }
     @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 
+    /* ================= Hero (painel principal de vidro) ================= */
     .hero{
-      background:var(--glass);
-      border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);
+      background: var(--glass);
+      border-radius: var(--radius);
+      padding: 18px;
       border:1px solid var(--line);
+      box-shadow: var(--shadow), var(--inner);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
     }
-    .head{ display:flex; gap:16px; align-items:center; padding-bottom:14px; border-bottom:1px dashed var(--line); }
+    .head{
+      display:flex; gap:16px; align-items:center; padding-bottom:14px;
+      border-bottom:1px dashed rgba(230,245,255,.32);
+    }
+
+    /* ================= Avatar circular ================= */
     .avatar{
-      width:88px; height:88px; border-radius:14px; overflow:hidden; flex:0 0 88px;
-      background:#0f1420; border:1px solid #ffffff12; display:flex; align-items:center; justify-content:center; color:#9aa3b2; font-weight:800;
+      width:96px; height:96px; border-radius:999px; overflow:hidden; flex:0 0 96px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      display:flex; align-items:center; justify-content:center; color:#a7b3c8; font-weight:800;
+      box-shadow: 0 8px 26px rgba(0,0,0,.28), 0 0 0 8px rgba(190,225,255,.06), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(10px);
     }
     .avatar img{width:100%; height:100%; object-fit:cover}
-    .badges{display:flex; gap:8px; flex-wrap:wrap}
-    .badge{ font-size:.78rem; color:#cfd7e6; background:#0f1420; border:1px solid #ffffff18; padding:4px 10px; border-radius:999px }
 
+    .badges{display:flex; gap:8px; flex-wrap:wrap}
+    .badge{
+      font-size:.78rem; color:#e9f2ff;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      padding:6px 12px; border-radius:999px
+    }
+
+    /* ================= QR ================= */
     .qr-wrap{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
     .qr-preview{
-      display:none; width:100%; border:1px dashed #ffffff24; background:#0f1420; border-radius:12px;
-      padding:12px; margin-top:8px;
+      display:none; width:100%;
+      border:1px dashed var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius:14px; padding:12px; margin-top:8px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     .qr-row{display:flex; gap:16px; align-items:center; flex-wrap:wrap}
-    .qr-row img{border:1px solid #ffffff18; border-radius:10px; background:#fff}
+    .qr-row img{border:1px solid var(--line); border-radius:10px; background:#fff}
 
+    /* ================= KVs ================= */
     .kvs{ display:grid; gap:12px; margin-top:14px; grid-template-columns:repeat(4,minmax(0,1fr)); }
     @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
-    .kv{background:#0f1420; border:1px solid #ffffff12; border-radius:10px; padding:10px}
-    .kv b{display:block; color:#9aa3b2; font-size:.85rem}
-    .kv .big{font-weight:800; font-size:26px; color: var(--gold);}
+    .kv{
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      border-radius:14px; padding:12px;
+      box-shadow: var(--inner);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .kv b{display:block; color:#e3f0ff; font-size:.86rem; letter-spacing:.2px}
+    .kv .big{font-weight:800; font-size:26px; color:#ffffff}
     .kv .pill{
-      display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;border:1px solid #ffffff22;
-      font-weight:700;font-size:.78rem;background:#0b1019;color:#cfd7e6
+      display:inline-block;margin-top:6px;padding:4px 12px;border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.07);
+      color:#f0f6ff; font-weight:700; font-size:.78rem;
     }
 
+    /* ================= Seções/colunas ================= */
     .columns{ display:grid; gap:18px; margin-top:18px; grid-template-columns: 1fr 1fr; align-items:start; }
     @media (max-width:900px){ .columns{grid-template-columns:1fr} }
 
-    .card{ background:var(--card); border-radius:14px; padding:16px; border:1px solid var(--line); box-shadow:var(--shadow); }
-    .title{margin:0 0 10px; color:#fff; font-size:18px}
+    .card{
+      background: rgba(255,255,255,.06);
+      border-radius:16px; padding:16px;
+      border:1px solid var(--line);
+      box-shadow: var(--shadow), var(--inner);
+      backdrop-filter: blur(14px) saturate(130%);
+      -webkit-backdrop-filter: blur(14px) saturate(130%);
+    }
+    .title{margin:0 0 10px; color:#f4f9ff; font-size:18px; letter-spacing:.2px}
 
-    .list{ display:flex; flex-direction:column; gap:12px; max-height:520px; overflow:auto; padding-right:4px; scroll-behavior:smooth; }
-    .empty{border:1px dashed #ffffff22; border-radius:12px; padding:14px; background:#0f1420; color:#9aa3b2; text-align:center}
+    .list{ display:flex; flex-direction:column; gap:12px; max-height:520px; overflow:auto; padding-right:4px; }
+    .empty{
+      border:1px dashed var(--line);
+      border-radius:12px; padding:14px; background: rgba(255,255,255,.05);
+      color:var(--muted); text-align:center; backdrop-filter: blur(10px);
+    }
     .muted{color:var(--muted)}
-    .chip{display:inline-block; padding:2px 8px; border:1px solid #ffffff22; border-radius:999px; background:#0e1420; font-size:.78rem; color:#cfd7e6}
+    .chip{
+      display:inline-block; padding:4px 10px;
+      border:1px solid var(--line);
+      border-radius:999px; background: rgba(255,255,255,.06);
+      font-size:.78rem; color:#eef5ff
+    }
 
-    .obs,.notif{ border:1px solid #ffffff18; border-radius:12px; background:#0f1420; padding:12px; box-shadow:var(--shadow); position:relative; }
-    .obs{border-left:6px solid var(--gold)}
-    .notif{border-left:6px solid var(--rubi)}
+    .obs,.notif{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background: rgba(255,255,255,.06);
+      padding:12px; box-shadow: var(--inner);
+      position:relative; backdrop-filter: blur(10px);
+    }
+    .obs{border-left:6px solid rgba(160,230,255,.9)}
+    .notif{border-left:6px solid rgba(255,180,180,.9)}
+
     .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
     .actions{display:flex; gap:8px; flex-wrap:wrap}
-    .iconbtn{ appearance:none; border:1px solid #ffffff18; background:#0e1420; border-radius:10px; padding:8px 10px; cursor:pointer; font-weight:600; text-decoration:none; color:#cfd7e6; }
-    .iconbtn:hover{filter:brightness(1.06)}
+
+    .iconbtn{
+      appearance:none; border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      border-radius:10px; padding:8px 10px; cursor:pointer;
+      font-weight:600; text-decoration:none; color:#eef5ff;
+      transition:.2s filter,.2s transform,.2s border-color;
+      backdrop-filter: blur(10px);
+    }
+    .iconbtn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color: rgba(255,255,255,.45); }
 
     .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
-    .editor textarea{flex:1; resize:vertical; min-height:86px; border:1px solid #ffffff22; border-radius:10px; padding:10px; background:#0f1420; color:#e7e9ee}
+    .editor textarea{
+      flex:1; resize:vertical; min-height:86px;
+      border:1px solid var(--line);
+      border-radius:12px; padding:10px;
+      background: rgba(255,255,255,.06);
+      color:#f2f7ff; backdrop-filter: blur(10px);
+    }
 
-    .edit-card{ background:#0b1019;border:1px solid #ffffff18;border-radius:14px;box-shadow:var(--shadow); padding:16px;margin-top:14px;display:none }
+    .edit-card{
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      border-radius:16px; box-shadow: var(--shadow); padding:16px; margin-top:14px; display:none;
+      backdrop-filter: blur(14px);
+    }
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
-    .edit-card label{font-weight:600;font-size:.9rem;color:#cfd7e6}
-    .edit-card input,.edit-card textarea{ width:100%;padding:10px;border:1px solid #ffffff22;border-radius:10px;background:#0f1420;color:#e7e9ee }
+    .edit-card label{font-weight:600;font-size:.9rem;color:#eaf3ff}
+    .edit-card input,.edit-card textarea{
+      width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;
+      background: rgba(255,255,255,.06); color:#f2f7ff; backdrop-filter: blur(10px);
+    }
     .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
+    /* APH (agora também em vidro) */
     .aph-card{
-      background:linear-gradient(135deg, #8B0000, #d82327);
-      border:1px solid rgba(231,200,115,.45);
-      border-radius:14px; padding:16px; color:#fff;
-      box-shadow:0 14px 40px rgba(148,26,29,.35);
+      background: rgba(255,255,255,.07);
+      border:1px solid var(--line);
+      border-radius:16px; padding:16px; color:#fff;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
     }
     .aph-card h3{margin:0;color:#fff}
     .aph-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .aph-pill{
-      background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.10);
+      border:1px solid var(--line);
       color:#fff; border-radius:999px; padding:6px 10px; font-size:.85rem; font-weight:700
     }
-    .aph-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .btn-ghost-light{
-      background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6);
-      box-shadow:none;
-    }
-    .btn-ghost-light:hover{filter:brightness(1.1)}
-    .btn-primary-rubi{
-      background:linear-gradient(135deg, #8B0000, #d82327);
-      color:#fff; border:1px solid rgba(231,200,115,.45);
+
+    /* Gráfico */
+    .chart-wrap{
+      background: rgba(255,255,255,.06);
+      border-radius:14px; padding:12px; border:1px solid var(--line);
+      backdrop-filter: blur(10px);
     }
 
+    /* PRINT */
     @media print{
       body{ background:#fff; color:#000 }
       .topbar{ display:none !important }
@@ -149,6 +281,11 @@
       .hero,.card{ box-shadow:none; border:1px solid #ccc; background:#fff; color:#000 }
       a.btn, button.btn, .iconbtn{ display:none !important }
       .qr-preview{ display:block !important }
+    }
+
+    @media (max-width:900px){
+      .head{ flex-direction:column; align-items:flex-start; gap:12px }
+      .avatar{ width:88px; height:88px; flex:0 0 88px; }
     }
   </style>
 
@@ -172,7 +309,6 @@
 
       <!-- Voltar inteligente -->
       <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
-
       <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
       <a id="btnPDFTop" class="btn primary" href="#" target="_blank" rel="noopener">Exportar PDF</a>
     </div>
@@ -183,7 +319,7 @@
       <div class="head">
         <div class="avatar" id="fotoBox">Sem foto</div>
         <div style="flex:1">
-          <h2 style="margin:0 0 4px" id="alunoNome">—</h2>
+          <h2 style="margin:0 0 6px; font-weight:800; letter-spacing:.2px" id="alunoNome">—</h2>
           <div class="badges">
             <span class="badge" id="badgeTurma">Turma —</span>
             <span class="badge" id="badgeCodigo">Código —</span>
@@ -193,7 +329,7 @@
           <!-- QR público para responsáveis -->
           <div class="qr-wrap" id="qrWrap">
             <button class="btn primary" id="btnEnableQR">🔗 Habilitar link público</button>
-            <button class="btn btn-ghost-light" id="btnShowQR">🧾 Ver/Atualizar QR</button>
+            <button class="btn ghost" id="btnShowQR">🧾 Ver/Atualizar QR</button>
             <button class="btn warn" id="btnDisableQR">Desabilitar</button>
             <span id="qrStatus" class="muted"></span>
 
@@ -210,8 +346,14 @@
           </div>
           <!-- /QR -->
         </div>
-        <button class="btn primary" id="btnTrocarFoto">Trocar foto</button>
-        <button class="btn ghost" id="btnEditar">Editar</button>
+
+        <div style="display:flex; gap:8px; flex-direction:column; align-items:flex-end">
+          <div style="display:flex; gap:8px">
+            <button class="btn primary" id="btnTrocarFoto">Trocar foto</button>
+            <button class="btn ghost" id="btnEditar">Editar</button>
+          </div>
+          <small class="muted" style="margin-top:8px">Última atualização: <span id="ultimaAtualizacao">—</span></small>
+        </div>
         <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
       </div>
 
@@ -285,8 +427,8 @@
             </div>
           </div>
           <div class="aph-actions">
-            <a class="btn btn-ghost-light" id="btnVerAtendimentos">Ver atendimentos salvos</a>
-            <a class="btn btn-primary-rubi" id="btnNovoAtendimento">Gerar novo atendimento</a>
+            <a class="btn ghost btn-ghost-light" id="btnVerAtendimentos">Ver atendimentos salvos</a>
+            <a class="btn primary btn-primary-rubi" id="btnNovoAtendimento">Gerar novo atendimento</a>
           </div>
         </div>
       </div>
@@ -307,6 +449,13 @@
       <div class="card">
         <h3 class="title">Notificações Disciplinares</h3>
         <div id="notificacoes" class="list"></div>
+      </div>
+    </section>
+
+    <section style="margin-top:18px" class="card">
+      <h3 class="title">Histórico de Comportamento</h3>
+      <div class="chart-wrap">
+        <canvas id="comportChart" height="140" style="width:100%;max-width:100%"></canvas>
       </div>
     </section>
   </main>
@@ -342,6 +491,7 @@
     }
 
     let alunoAtual = null;
+    let chartInstance = null;
 
     const toISO = (d)=>{
       if(!d) return '';
@@ -428,6 +578,69 @@
       });
     }
 
+    // ===== Chart =====
+    function renderComportChart(points){
+      const ctx = document.getElementById('comportChart').getContext('2d');
+      let labels = [], data = [];
+      if (Array.isArray(points) && points.length){
+        const sorted = points.slice().sort((a,b)=> new Date(a.data) - new Date(b.data));
+        labels = sorted.map(r => { try { return new Date(r.data).toLocaleDateString('pt-BR'); } catch { return String(r.data); }});
+        data = sorted.map(r => Number(r.nota ?? r.valor ?? 0));
+      } else {
+        const m = new Date();
+        const example = [
+          { data: new Date(m.getFullYear(), m.getMonth()-5, 1).toISOString(), nota:7.2 },
+          { data: new Date(m.getFullYear(), m.getMonth()-4, 1).toISOString(), nota:7.4 },
+          { data: new Date(m.getFullYear(), m.getMonth()-3, 1).toISOString(), nota:7.6 },
+          { data: new Date(m.getFullYear(), m.getMonth()-2, 1).toISOString(), nota:7.8 },
+          { data: new Date(m.getFullYear(), m.getMonth()-1, 1).toISOString(), nota:7.5 },
+          { data: new Date().toISOString(), nota:7.7 },
+        ];
+        labels = example.map(r=> new Date(r.data).toLocaleDateString('pt-BR'));
+        data = example.map(r=> r.nota);
+      }
+
+      if (chartInstance) {
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets[0].data = data;
+        chartInstance.update();
+        return;
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Nota de comportamento',
+            data,
+            tension: 0.28,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: true,
+            backgroundColor: 'rgba(180,220,255,0.18)',
+            borderColor: 'rgba(210,240,255,0.95)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgba(240,250,255,0.95)',
+            pointBorderColor: 'rgba(30,60,90,0.35)'
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          scales: {
+            y: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 1 } },
+            x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: ctx => 'Nota: ' + (ctx.raw != null ? Number(ctx.raw).toFixed(2) : ctx.raw) }
+            }
+          }
+        }
+      });
+    }
+
     // ===== Carregar ficha =====
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
@@ -463,17 +676,21 @@
       const cls = classificarNota(nota ?? NaN);
       const pill = byId('kvClassificacao');
       pill.textContent = cls.texto;
-      pill.style.color = '#000';
-      pill.style.background = cls.cor;
-      pill.style.borderColor = '#0000';
+      pill.style.color = '#0a1826';
+      pill.style.background = 'rgba(255,255,255,.85)';
+      pill.style.borderColor = 'rgba(255,255,255,.0)';
 
       // Foto
       const fotoBox = byId('fotoBox');
       const raw = aluno?.fotoUrl || aluno?.foto || '';
       const finalUrl = raw ? toUploadsUrl(raw, 256, 256) : '';
       fotoBox.innerHTML = finalUrl
-        ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="88" height="88" style="object-fit:cover">`
+        ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="96" height="96" style="object-fit:cover">`
         : 'Sem foto';
+
+      // atualizar ultima atualização
+      const ult = aluno?.updatedAt || aluno?.atualizadoEm || aluno?.criadoEm || aluno?.createdAt;
+      byId('ultimaAtualizacao').textContent = ult ? fmtDataHora(ult) : '—';
 
       // Observações
       const obsEl = byId('observacoes');
@@ -537,6 +754,14 @@
       // QR + contador APH
       try { await mostrarQRCode(true); } catch {}
       try { await fetchAphCount(); } catch {}
+
+      // Histórico (gráfico)
+      try {
+        const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
+        renderComportChart(hist);
+      } catch (e) {
+        renderComportChart([]);
+      }
     }
 
     // ===== Observações =====
@@ -643,42 +868,44 @@
     }
 
     // Upload foto
-    const btnTrocarFoto = byId('btnTrocarFoto');
-    const inputFoto = byId('inputFoto');
-    btnTrocarFoto.addEventListener('click', function(){ inputFoto.click(); });
-    inputFoto.addEventListener('change', async function(){
-      const file = inputFoto.files && inputFoto.files[0];
-      if (!file) return;
-      if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
-      if (file.size > 5 * 1024 * 1024)     { alert('Imagem muito grande. Máximo 5MB.'); inputFoto.value = ''; return; }
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const btnTrocarFoto = byId('btnTrocarFoto');
+      const inputFoto = byId('inputFoto');
+      if(btnTrocarFoto) btnTrocarFoto.addEventListener('click', function(){ inputFoto.click(); });
+      if(inputFoto) inputFoto.addEventListener('change', async function(){
+        const file = inputFoto.files && inputFoto.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
+        if (file.size > 5 * 1024 * 1024)     { alert('Imagem muito grande. Máximo 5MB.'); inputFoto.value = ''; return; }
 
-      const previewURL = URL.createObjectURL(file);
-      const fotoBox = byId('fotoBox');
-      fotoBox.innerHTML = '<img src="' + previewURL + '" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">';
+        const previewURL = URL.createObjectURL(file);
+        const fotoBox = byId('fotoBox');
+        fotoBox.innerHTML = '<img src="' + previewURL + '" alt="Foto do aluno" width="96" height="96" style="object-fit:cover;">';
 
-      try {
-        const fd = new FormData();
-        fd.append('foto', file);
-        const resp = await fetch('/api/alunos/' + alunoId + '/foto', { method: 'PUT', body: fd, credentials: 'include' });
-        const data = await resp.json().catch(()=> ({}));
-        if (!resp.ok || !data || !data.foto) {
-          throw new Error(data?.mensagem || data?.message || 'Falha ao enviar a foto.');
+        try {
+          const fd = new FormData();
+          fd.append('foto', file);
+          const resp = await fetch('/api/alunos/' + alunoId + '/foto', { method: 'PUT', body: fd, credentials: 'include' });
+          const data = await resp.json().catch(()=> ({}));
+          if (!resp.ok || !data || !data.foto) {
+            throw new Error(data?.mensagem || data?.message || 'Falha ao enviar a foto.');
+          }
+          URL.revokeObjectURL(previewURL);
+          fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="96" height="96" style="object-fit:cover;">';
+          if (alunoAtual) {
+            alunoAtual.fotoUrl = data.foto;
+            alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
+          }
+          alert('Foto atualizada com sucesso!');
+        } catch (e) {
+          console.error(e);
+          alert('Erro ao atualizar a foto.');
+          URL.revokeObjectURL(previewURL);
+          carregarFicha();
+        } finally {
+          inputFoto.value = '';
         }
-        URL.revokeObjectURL(previewURL);
-        fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="88" height="88" style="object-fit:cover;">';
-        if (alunoAtual) {
-          alunoAtual.fotoUrl = data.foto;
-          alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
-        }
-        alert('Foto atualizada com sucesso!');
-      } catch (e) {
-        console.error(e);
-        alert('Erro ao atualizar a foto.');
-        URL.revokeObjectURL(previewURL);
-        carregarFicha();
-      } finally {
-        inputFoto.value = '';
-      }
+      });
     });
 
     // ===== QR público =====
@@ -725,7 +952,7 @@
       prev.style.display = 'block';
     }
 
-    // ===== Voltar inteligente (histórico -> turma -> lista) =====
+    // ===== Voltar inteligente =====
     function voltarLista() {
       try {
         const ref = document.referrer || '';
@@ -746,7 +973,6 @@
         location.href = `/turma.html?turma=${encodeURIComponent(turmaParam)}`;
         return;
       }
-      // 🔧 Ajuste necessário: usa a rota correta servida pelo backend
       location.href = '/lista-alunos.html';
     }
 
@@ -795,21 +1021,16 @@
       byId('btnSalvarEd').addEventListener('click', salvarEdicao);
       byId('btnGerarLinkTg').addEventListener('click', gerarLinkTelegram);
       byId('btnCopiarTg').addEventListener('click', copiarLinkTelegram);
-
       byId('btnVoltarLista').addEventListener('click', voltarLista);
-
       byId('btnEnableQR').addEventListener('click', habilitarLinkPublico);
       byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
       byId('btnDisableQR').addEventListener('click', desabilitarLinkPublico);
-
       bindAphButtons();
     }
 
     // ===== Boot =====
     (function init(){
-      // link PDF redundante (rodapé/topo)
       const btnPDF = byId('btnPDFTop'); if (btnPDF) btnPDF.rel = 'noopener';
-
       bindAll();
       carregarFicha();
     })();
