@@ -252,17 +252,21 @@
       } finally { clearTimeout(id); }
     }
 
-    async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
+    async function logout(){
+      try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{}
+      location.href='./login.html';
+    }
 
-    let gNotificacao = null; // objeto da notificação (para pegar alunoId etc.)
-    let gComunic = null;     // comunicação criada/recuperada
+    let gNotificacao = null; // notificação (para pegar alunoId etc.)
+    let gComunicDoc = null;  // documento da comunicação (objeto do Mongo)
+    let gComunicId  = null;  // _id do documento
 
     document.addEventListener('DOMContentLoaded', init);
 
     async function init(){
       const params = new URLSearchParams(location.search);
-      const notifId = params.get('notificacao');            // obrigatório
-      if(!notifId){
+      const notifParam = params.get('notificacao'); // obrigatório
+      if(!notifParam){
         showError('Parâmetro ?notificacao= é obrigatório.');
         return;
       }
@@ -273,13 +277,22 @@
       // 1) Garante comunicação idempotente para essa notificação
       try{
         // tenta GET por notificação
-        let r = await fetch(`/api/comunicacao/${notifId}`, { credentials:'include' });
+        let r = await fetch(`/api/comunicacao/${notifParam}`, { credentials:'include' });
         if (r.status === 404) {
           // cria se não existir
-          r = await fetch(`/api/comunicacao/${notifId}`, { method:'POST', credentials:'include' });
+          r = await fetch(`/api/comunicacao/${notifParam}`, {
+            method:'POST',
+            credentials:'include'
+          });
         }
         if(!r.ok) throw new Error('Não foi possível abrir/criar a comunicação.');
-        gComunic = await r.json();
+        const j = await r.json();
+        // Se a API vier como {ok, data}, desembrulha; se vier direta, usa direto
+        gComunicDoc = j?.data || j;
+        gComunicId  = gComunicDoc?._id || null;
+        if(!gComunicId){
+          throw new Error('Documento de comunicação sem _id.');
+        }
       }catch(e){
         showError(e.message||'Falha ao inicializar a comunicação.');
         return;
@@ -287,19 +300,19 @@
 
       // 2) Carrega dados da notificação (para alunoId, nº sequencial, etc.)
       try{
-        const r = await fetch(`/api/notificacoes/${notifId}`, { credentials:'include' });
+        const r = await fetch(`/api/notificacoes/${notifParam}`, { credentials:'include' });
         if (r.ok) gNotificacao = await r.json();
       }catch{}
 
       // 3) Preenche UI
-      preencherUI(gComunic, gNotificacao);
+      preencherUI(gComunicDoc, gNotificacao);
 
       // 4) Bind botões
       const btnPdf = document.getElementById('btnPdf');
       btnPdf.disabled = false;
-      btnPdf.onclick = () => window.open(`/api/comunicacao/${gComunic._id}/pdf`, '_blank');
+      btnPdf.onclick = () => window.open(`/api/comunicacao/${gComunicId}/pdf`, '_blank');
 
-      document.getElementById('btnSalvar').onclick = () => salvar(gComunic._id);
+      document.getElementById('btnSalvar').onclick = () => salvar(gComunicId);
       document.getElementById('btnEnviar').onclick = () => enviarAgora();
     }
 
@@ -341,6 +354,7 @@
     }
 
     async function salvar(id){
+      if(!id){ return showError('ID de comunicação não disponível.'); }
       // validações simples
       const di = fromISODate(document.getElementById('dataInicio').value);
       const df = fromISODate(document.getElementById('dataFim').value);
@@ -356,11 +370,13 @@
       };
 
       try{
-        await fetchJSON(`/api/comunicacao/${id}`, {
+        const j = await fetchJSON(`/api/comunicacao/${id}`, {
           method:'PUT',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify(payload)
         });
+        // suporte a {ok,data}
+        gComunicDoc = j?.data || j;
         toast('Salvo com sucesso!');
       }catch(e){
         showError(e.message);
