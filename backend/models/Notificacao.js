@@ -95,6 +95,9 @@ notificacaoSchema.index({ aluno: 1, data: 1 });
 notificacaoSchema.index({ instituicao: 1, aluno: 1, natureza: 1 });
 notificacaoSchema.index({ instituicao: 1, aluno: 1, data: 1, createdAt: 1 });
 
+// 🔹 índice extra usado nas ordenações da ficha (por aluno, data, createdAt)
+notificacaoSchema.index({ aluno: 1, data: 1, createdAt: 1 });
+
 // listas/paginação no controle
 notificacaoSchema.index({ instituicao: 1, ativo: 1, arquivada: 1, lida: 1, createdAt: -1 });
 notificacaoSchema.index({ instituicao: 1, status: 1, createdAt: -1 });
@@ -111,7 +114,6 @@ notificacaoSchema.index({ instituicao: 1, status: 1, mensagemEnviada: 1, deferid
 
 // ==================== REGRAS (anti dupla multiplicação) ====================
 
-// mapas de valores base
 const MAPA_NEGATIVOS = {
   'Advertência Escrita': -0.30,
   'Repreensão':          -0.50,
@@ -126,17 +128,13 @@ const MAPA_ELOGIOS = {
 };
 const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
 
-// Helper: fixa casas e número
 function fix2(n) {
   if (typeof n !== 'number' || !isFinite(n)) return n;
   return Number(n.toFixed(2));
 }
-
-// Normalização leve de strings
 function trimStr(s) { return typeof s === 'string' ? s.trim() : s; }
 
 notificacaoSchema.pre('validate', function () {
-  // normaliza rótulos
   this.tipo       = trimStr(this.tipo);
   this.motivo     = trimStr(this.motivo);
   this.tipoMedida = trimStr(this.tipoMedida);
@@ -149,10 +147,8 @@ notificacaoSchema.pre('validate', function () {
 
   // ----- ELOGIO -----
   if (this.natureza === 'elogio') {
-    // elogio não tem quantidadeDias
     this.quantidadeDias = null;
 
-    // se valor não veio, derive do tipoElogio
     if (this.valorNumerico === undefined || this.valorNumerico === null || isNaN(this.valorNumerico)) {
       const v = MAPA_ELOGIOS[this.tipoElogio || ''] ?? 0;
       this.valorNumerico = fix2(v);
@@ -160,17 +156,14 @@ notificacaoSchema.pre('validate', function () {
       this.valorNumerico = fix2(Number(this.valorNumerico));
     }
 
-    // garante rótulos coerentes
     this.tipo = this.tipo || 'Elogio';
     this.tipoMedida = 'Elogio';
 
-    // limpa resquícios normativos
     this.artigo = this.paragrafo = this.inciso = this.classificacaoRegulamento = null;
-    return; // nada mais a fazer
+    return;
   }
 
   // ----- INDISCIPLINA -----
-  // quantidadeDias apenas para medidas que requerem dias
   const titulo = (this.tipoMedida || this.tipo || '').trim();
   const precisaDias = REQUER_DIAS.has(titulo);
 
@@ -181,27 +174,19 @@ notificacaoSchema.pre('validate', function () {
     this.quantidadeDias = 1;
   }
 
-  // Se o valor já foi definido (pela rota), NÃO recalcular aqui
   const valorFoiFornecido = (this.valorNumerico !== undefined && this.valorNumerico !== null && !isNaN(this.valorNumerico));
 
   if (!valorFoiFornecido) {
-    // calcular apenas quando não foi informado
     const base = MAPA_NEGATIVOS[titulo] ?? 0;
     const mult = precisaDias ? this.quantidadeDias : 1;
     this.valorNumerico = fix2(base * mult);
   } else {
-    // apenas normaliza casas
     this.valorNumerico = fix2(Number(this.valorNumerico));
   }
 });
 
-// Em updates: se tipoMedida/quantidadeDias mudarem mas o código **passou** valorNumerico, respeitamos.
-// Se NÃO passou valorNumerico, recalculamos.
 notificacaoSchema.pre('save', function () {
-  if (this.natureza === 'elogio') {
-    // já tratado no pre('validate')
-    return;
-  }
+  if (this.natureza === 'elogio') return;
 
   const titulo = (this.tipoMedida || this.tipo || '').trim();
   const precisaDias = REQUER_DIAS.has(titulo);
@@ -213,7 +198,6 @@ notificacaoSchema.pre('save', function () {
     this.quantidadeDias = 1;
   }
 
-  // só recalcula se NÃO veio valor
   const valorFoiFornecido = (this.valorNumerico !== undefined && this.valorNumerico !== null && !isNaN(this.valorNumerico));
   const camposDiasMudaram = this.isModified('tipoMedida') || this.isModified('quantidadeDias');
 

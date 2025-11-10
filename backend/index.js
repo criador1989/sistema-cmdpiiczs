@@ -20,7 +20,7 @@ const app = express();
 console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
 app.set('trust proxy', 1);
 
-// Evita cache de HTML (útil em dev e para PWA não travar)
+// Evita cache de HTML
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
@@ -38,7 +38,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 /* =========================
-   CORS (antes das rotas)
+   CORS
    ========================= */
 const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:5173').toLowerCase();
 const RENDER_HOST = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
@@ -55,11 +55,10 @@ const allowedOrigins = new Set([
 ]);
 
 function isAllowedOrigin(origin) {
-  if (!origin) return true; // allow same-origin / curl
+  if (!origin) return true;
   try {
     const o = origin.toLowerCase();
     if (allowedOrigins.has(o)) return true;
-
     const u = new URL(o);
     if (RENDER_HOST && u.hostname === RENDER_HOST) return true;
     if (u.hostname.endsWith('.onrender.com')) return true;
@@ -99,17 +98,18 @@ try { require('./models/Usuario'); } catch {}
 try { require('./models/Log'); } catch {}
 try { require('./models/Instituicao'); } catch {}
 try { require('./models/AphAtendimento'); } catch {}
+try { require('./models/Counter'); } catch {}
+try { require('./models/Observacao'); } catch {} // garante Observacao carregado
 
 /* =========================
-   MENSAEGERIA (INJEÇÃO)
+   MENSAEGERIA
    ========================= */
 try {
   const { initMensageria, getStatus: getMensageriaStatus } = require('./services/mensageria');
-  initMensageria(app);                  // injeta app.locals.mensageria (sendEmail/sendTelegram)
-  global.mensageria = app.locals.mensageria; // compatibilidade com getMensageria(req) legado
+  initMensageria(app);
+  global.mensageria = app.locals.mensageria;
   console.log('✉️  Mensageria injetada (email/telegram/whatsapp).');
 
-  // Diagnóstico rápido da mensageria
   app.get('/debug/mensageria/status', (_req, res) => {
     try {
       const st = typeof getMensageriaStatus === 'function' ? getMensageriaStatus() : {};
@@ -123,25 +123,23 @@ try {
 }
 
 /* =========================
-   DEBUG DE E-MAIL (SMTP)
+   DEBUG DE E-MAIL
    ========================= */
 const {
   verify: verifyMail,
-  verifyAll,               // ⟵ checa todos candidatos na subida
+  verifyAll,
   MAIL_ENABLED,
   SMTP_HOST,
   SMTP_PORT,
   MAIL_USER,
   MAIL_FROM,
   getLastMailError,
-  getLastProvider,         // ⟵ exibe provedor atual em /debug/mail/status
+  getLastProvider,
 } = require('./utils/mailer');
 
 app.get('/debug/mail/verify', async (_req, res) => {
   try {
-    if (!MAIL_ENABLED) {
-      return res.status(200).json({ ok: false, reason: 'MAIL_DISABLED' });
-    }
+    if (!MAIL_ENABLED) return res.status(200).json({ ok: false, reason: 'MAIL_DISABLED' });
     const result = await verifyMail();
     return res.status(result.ok ? 200 : 500).json({ ...result, lastError: getLastMailError() });
   } catch (e) {
@@ -150,7 +148,6 @@ app.get('/debug/mail/verify', async (_req, res) => {
 });
 
 app.get('/debug/mail/status', (_req, res) => {
-  // NÃO exponha credenciais. Somente status e remetente.
   res.json({
     MAIL_ENABLED: Boolean(MAIL_ENABLED),
     SMTP_HOST,
@@ -162,12 +159,11 @@ app.get('/debug/mail/status', (_req, res) => {
   });
 });
 
-// Rota de health de e-mail (opcional). Se o arquivo não existir, não quebra a app.
 try {
   app.use('/api', require('./routes/api/mail-health'));
   console.log('🩺  Mail health ligado em /api/_mail/health');
 } catch (e) {
-  console.warn('ℹ️  /api/_mail/health indisponível (arquivo não encontrado).');
+  console.warn('ℹ️  /api/_mail/health indisponível.');
 }
 
 /* =========================
@@ -187,6 +183,7 @@ const acessoProfessorRoute = require('./routes/api/acessoProfessor');
 const pdfRoutes = require('./routes/api/pdf');
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
+const fichaAlunoRoutes = require('./routes/api/fichaAluno'); // 🔹 Adicionado
 const fichaViewRoutes = require('./routes/views/fichaView');
 const motivosRoutes = require('./routes/api/motivos');
 const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
@@ -209,7 +206,12 @@ const telegramBotRoutes = require('./routes/api/telegramBot');
 const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
 const comunicacaoAutoRoutes = require('./routes/api/comunicacao');
 
-// Estáticos e HTML protegidos
+// 🔹 CRUD do APH (faltava montar)
+const aphCrudRoutes = require('./routes/api/aph');
+
+/* =========================
+   ESTÁTICOS
+   ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
@@ -235,44 +237,26 @@ app.get('/', (_req, res) => res.redirect('/login.html'));
    AUTH / HTML PROTEGIDOS
    ========================= */
 const { autenticar } = require('./middleware/autenticacao');
-
 app.use('/auth', authRoutes);
 
+// HTML protegidos
 app.get('/ficha-aluno.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'ficha-aluno.html'))
 );
 app.get('/lista-alunos.html', autenticar, (_req, res) =>
   res.sendFile(path.join(publicRoot, 'lista-alunos.html'))
 );
-app.get('/painel-professor.html', autenticar, (_req, res) =>
-  res.sendFile(path.join(publicRoot, 'painel-professor.html'))
-);
-app.get('/comunicacao-pais.html', autenticar, (_req, res) =>
-  res.sendFile(path.join(publicRoot, 'comunicacao-pais.html'))
-);
-app.get('/logs.html', autenticar, (_req, res) =>
-  res.sendFile(path.join(publicRoot, 'logs.html'))
-);
-app.get('/estatisticas.html', autenticar, (_req, res) =>
-  res.sendFile(path.join(publicRoot, 'estatisticas.html'))
-);
-app.get('/aph-atendimentos.html', autenticar, (_req, res) =>
-  res.sendFile(path.join(publicRoot, 'aph-atendimentos.html'))
-);
-app.get('/aph-atendimento.html', autenticar, (_req, res) =>
-  res.sendFile(path.join(publicRoot, 'aph-atendimento.html'))
-);
 
 /* =========================
    APIs
    ========================= */
 app.use('/api/ficha', autenticar, fichaApiRoutes);
+app.use('/api/fichaAluno', autenticar, fichaAlunoRoutes); // 🔹 Nova rota
 app.use('/ficha', autenticar, fichaViewRoutes);
 app.use('/api', fichaTesteRoute);
 
 app.use('/api/alunos', alunoRoutes);
 app.use('/api/notificacoes', notificacoesApiRoutes);
-
 app.use('/api', pdfRoutes);
 app.use('/api', fichaPdfRoutes);
 app.use('/notificacoes', notificacoesViewRoutes);
@@ -281,10 +265,7 @@ app.use('/api/motivos', motivosRoutes);
 app.use('/api/cartoes', cartoesRoutes);
 app.use('/api/cartoes-professores', cartoesProfessoresRoute);
 app.use('/api/professores', professoresRoute);
-app.use('/api/qrcode-professor', qrcodeProfessoresRoute);
 app.use('/api/qrcode-professores', qrcodeProfessoresRoute);
-app.use('/api/professores/qrcode', qrcodeProfessoresRoute);
-
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
@@ -292,29 +273,21 @@ app.use('/api', relatorioNotificacoesRoute);
 app.use('/api/estatisticas', estatisticasRoutes);
 app.use('/api/mensagens', mensagensRoutes);
 app.use('/api/observacoes', observacoesRoutes);
-app.use('/api/usuarios', acessoProfessorRoute);
 app.use('/api/diagnostico', diagnosticoNotaRoutes);
 app.use('/api/dashboard-fast', autenticar, dashboardFastRoutes);
 app.use('/api/metrics', metricsRoutes);
-app.use('/api/notificacoes', require('./routes/api/notificacoes.metrics'));
 app.use('/api', publicAlunoRoutes);
 app.use('/api/instituicoes', instituicoesRoutes);
 app.use('/api/alertas', alertasRoutes);
+
+// 🔹 Montagem correta do APH (CRUD + estatísticas + pdf)
+app.use('/api/aph', autenticar, aphCrudRoutes); // <— CRUD do APH agora ativo
 app.use('/api/aph', aphEstatisticasRoutes);
 app.use('/api/aph', aphPdfRoutes);
-app.use('/api/telegram', telegramBotRoutes);
 
-// ATENÇÃO: manter as rotas de comunicação agrupadas
+app.use('/api/telegram', telegramBotRoutes);
 app.use('/api/comunicacao', comunicacaoPaisRoutes);
 app.use('/api/comunicacao', comunicacaoAutoRoutes);
-
-try {
-  const aphRoutes = require('./routes/api/aph');
-  app.use('/api/aph', autenticar, aphRoutes);
-  console.log('API APH ligada em /api/aph');
-} catch (e) {
-  console.warn('API APH não encontrada. Prosseguindo sem ela.');
-}
 
 /* =========================
    STATUS / DIAGNÓSTICO
@@ -338,33 +311,23 @@ app.use((err, _req, res, _next) => {
 });
 
 /* =========================
-   START HTTP + CONEXÃO MONGO (tolerante a falhas)
+   START HTTP + MONGO
    ========================= */
 const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
-
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
   console.log('🧪 Health pronto: /__version e /healthz');
   console.log('✉️  SMTP: /debug/mail/verify e /debug/mail/status');
   console.log('🌍 CORS flexível ativo (Render + localhost + *.onrender.com)');
-
-  // ⟵ verifica SMTP na subida (tenta 587, depois 465, conforme mailer.js)
-  (async () => {
-    try {
-      await verifyAll();
-    } catch {}
-  })();
+  (async () => { try { await verifyAll(); } catch {} })();
 });
 
-/** Conecta no Mongo sem derrubar o servidor se falhar */
 async function connectMongo() {
   if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
-    console.error('❌ URI do Mongo inválida/ausente.', {
-      MONGODB_URI: process.env.MONGODB_URI,
-      MONGO_URI: process.env.MONGO_URI
-    });
-    return; // não faz exit; a UI continua carregando
+    console.error('❌ URI do Mongo inválida/ausente.');
+    return;
   }
 
   const masked = URI.replace(/\/\/.*?@/, '//***@');
@@ -372,18 +335,22 @@ async function connectMongo() {
 
   try {
     await mongoose.connect(URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 20000,
-      maxPoolSize: 10,
-      family: 4,
+      // Opções compatíveis com driver 6.x / Mongoose 8
+      serverSelectionTimeoutMS: Number(process.env.DB_SERVER_SEL_MS || 60000),
+      socketTimeoutMS:          Number(process.env.DB_SOCKET_MS || 60000),
+      heartbeatFrequencyMS:     10000,
+      maxPoolSize:              Number(process.env.DB_MAX_POOL || 20),
+      minPoolSize:              Number(process.env.DB_MIN_POOL || 0),
+      retryWrites:              true,
+      family:                   4, // força IPv4 (bom em Windows/DNS IPv6)
+      // ⚠️ keepAlive/keepAliveInitialDelay REMOVIDOS — não suportados no driver v6
     });
     console.log('🟢 Conectado ao MongoDB');
   } catch (err) {
-    console.error('🟡 Falha ao conectar no Mongo (continuando sem DB):', err?.message || err);
-    setTimeout(connectMongo, 15000); // nova tentativa em 15s
+    console.error('🟡 Falha ao conectar no Mongo:', err?.message || err);
+    setTimeout(connectMongo, 15000);
   }
 }
-
 connectMongo();
 
 process.on('SIGINT', async () => {
