@@ -305,7 +305,7 @@
 
       <!-- Voltar inteligente -->
       <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
-      <!-- NOVO: Voltar ao Painel -->
+      <!-- Voltar ao Painel -->
       <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
 
       <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
@@ -557,7 +557,7 @@
       return {texto:'Incompatível', cor:'#e7e9ee'};
     }
 
-    // ✅ Helper API atualizado: inclui Authorization: Bearer <token>
+    // API helper com Bearer opcional
     async function api(path, opts = {}){
       const method = (opts.method || 'GET').toUpperCase();
       const headers = { ...(opts.headers || {}) };
@@ -585,6 +585,50 @@
       }
       return data;
     }
+
+    // ------- HOTFIX de rota: helpers -------
+    async function tentarRotasSequencialmente(rotas) {
+      let ultimaErro;
+      for (const r of rotas) {
+        try {
+          const j = await api(r, { method:'GET' });
+          console.info('[ficha] usando endpoint:', r);
+          return { ok:true, data:j, endpoint:r };
+        } catch (e) {
+          ultimaErro = e;
+          if (!/404|rota.*não.*encontrada/i.test(String(e?.message||''))) {
+            throw e; // erro real (401/500) não mascara
+          }
+        }
+      }
+      const err = new Error('Rota de ficha do aluno não encontrada nas opções conhecidas.');
+      err.cause = ultimaErro;
+      throw err;
+    }
+
+    function normalizarFichaPayload(raw) {
+      if (!raw) return { aluno:null, notificacoes:[], observacoes:[] };
+      if (raw.aluno) {
+        return {
+          aluno: raw.aluno,
+          notificacoes: Array.isArray(raw.notificacoes)? raw.notificacoes : (raw.aluno.notificacoes || []),
+          observacoes: Array.isArray(raw.observacoes)? raw.observacoes : (raw.aluno.observacoes || []),
+        };
+      }
+      if (raw.data && raw.data.aluno) {
+        const d = raw.data;
+        return {
+          aluno: d.aluno,
+          notificacoes: Array.isArray(d.notificacoes)? d.notificacoes : (d.aluno.notificacoes || []),
+          observacoes: Array.isArray(d.observacoes)? d.observacoes : (d.aluno.observacoes || []),
+        };
+      }
+      if (raw._id || raw.nome || raw.turma) {
+        return { aluno: raw, notificacoes: raw.notificacoes || [], observacoes: raw.observacoes || [] };
+      }
+      return { aluno:null, notificacoes:[], observacoes:[] };
+    }
+    // ---------------------------------------
 
     // ===== APH: contador + navegação =====
     async function fetchAphCount(){
@@ -680,24 +724,39 @@
       });
     }
 
-    // ===== Carregar ficha =====
+    // ===== Carregar ficha (HOTFIX de rota) =====
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
 
+      const rotas = [
+        `/fichaAluno/${alunoId}`,
+        `/alunos/${alunoId}/ficha`,
+        `/aluno/${alunoId}/ficha`,
+        `/ficha/${alunoId}`,
+        `/alunos/${alunoId}`,
+        `/aluno/${alunoId}`,
+      ];
+
       let payload;
       try{
-        payload = await api(`/fichaAluno/${alunoId}`, { method:'GET' });
+        const res = await tentarRotasSequencialmente(rotas);
+        payload = normalizarFichaPayload(res.data);
       }catch(e){
-        if (String(e.message).includes('401') || /não autorizado|token/i.test(String(e.message))) {
+        if (String(e.message).match(/401|não autorizado|token/i)) {
           alert('Sessão expirada. Faça login novamente.');
-          return (window.location.href = '/login.html');
+          window.location.href = '/login.html';
+          return;
         }
         console.error('Falha ao buscar ficha:', e);
-        alert('Falha ao carregar ficha.');
+        alert('Falha ao carregar ficha (rota da ficha não encontrada em produção).');
         return;
       }
 
       const { aluno, notificacoes=[], observacoes=[] } = payload || {};
+      if (!aluno) {
+        alert('Aluno não encontrado.');
+        return;
+      }
       alunoAtual = aluno;
 
       // Cabeçalho
@@ -706,8 +765,11 @@
       byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
       byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
 
-      // botões topo
-      byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
+      // PDF (ajuste se sua API usar outro caminho)
+      const pdfEl = byId('btnPDFTop');
+      if (pdfEl && aluno?._id) {
+        pdfEl.href = `/api/ficha/${aluno._id}`;
+      }
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
       byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
@@ -807,15 +869,13 @@
         }).join('');
       }
 
-      // QR + contador APH
+      // QR + APH + gráfico
       try { await mostrarQRCode(true); } catch {}
       try { await fetchAphCount(); } catch {}
-
-      // Render chart
       try {
         const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
         renderComportChart(hist);
-      } catch (e) {
+      } catch {
         renderComportChart([]);
       }
     }
@@ -1078,7 +1138,7 @@
       byId('btnCopiarTg').addEventListener('click', copiarLinkTelegram);
       byId('btnVoltarLista').addEventListener('click', voltarLista);
 
-      // NOVO: ação do botão Voltar ao Painel
+      // Voltar ao Painel
       const btnPainel = byId('btnVoltarPainel');
       if (btnPainel) btnPainel.addEventListener('click', ()=> { location.href = '/painel.html'; });
 
