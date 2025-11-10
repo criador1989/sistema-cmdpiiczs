@@ -305,7 +305,7 @@
 
       <!-- Voltar inteligente -->
       <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
-      <!-- Voltar ao Painel -->
+      <!-- NOVO: Voltar ao Painel (entre Voltar e Imprimir) -->
       <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
 
       <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
@@ -465,16 +465,16 @@
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
 
-    // —— Helpers de data robustos ——
+    // —— Helpers de data robustos —— 
     function parseDateLike(d){
       if (!d && d !== 0) return null;
       if (d instanceof Date) return isNaN(+d) ? null : d;
       if (typeof d === 'number') {
-        const ms = d < 1e12 ? d * 1000 : d; // segundos -> ms
+        const ms = d < 1e12 ? d * 1000 : d;
         const dt = new Date(ms);
         return isNaN(+dt) ? null : dt;
       }
-      const s = String(d).trim().replace(/\s+/, 'T'); // "YYYY-MM-DD HH:mm" -> "YYYY-MM-DDTHH:mm"
+      const s = String(d).trim().replace(/\s+/, 'T');
       const dt = new Date(s);
       return isNaN(+dt) ? null : dt;
     }
@@ -557,7 +557,7 @@
       return {texto:'Incompatível', cor:'#e7e9ee'};
     }
 
-    // API helper com Bearer opcional
+    // ✅ Helper API: inclui Authorization se existir
     async function api(path, opts = {}){
       const method = (opts.method || 'GET').toUpperCase();
       const headers = { ...(opts.headers || {}) };
@@ -586,49 +586,50 @@
       return data;
     }
 
-    // ------- HOTFIX de rota: helpers -------
-    async function tentarRotasSequencialmente(rotas) {
-      let ultimaErro;
-      for (const r of rotas) {
-        try {
-          const j = await api(r, { method:'GET' });
-          console.info('[ficha] usando endpoint:', r);
-          return { ok:true, data:j, endpoint:r };
-        } catch (e) {
-          ultimaErro = e;
-          if (!/404|rota.*não.*encontrada/i.test(String(e?.message||''))) {
-            throw e; // erro real (401/500) não mascara
-          }
-        }
-      }
-      const err = new Error('Rota de ficha do aluno não encontrada nas opções conhecidas.');
-      err.cause = ultimaErro;
-      throw err;
-    }
+    // ===== Fallback seguro para buscar a ficha (apenas JSON) =====
+    async function fetchFichaComFallback(id){
+      const endpoints = [
+        `/fichaAluno/${id}`,                 // seu endpoint principal
+        `/alunos/${id}/ficha`,               // variações comuns
+        `/aluno/${id}/ficha`,
+        `/alunos/${id}`,
+        `/aluno/${id}`,
+        `/alunos/find/${id}`,
+        `/alunos/by-id/${id}`,
+        `/alunos/detalhes/${id}`,
+        `/aluno?id=${encodeURIComponent(id)}`,
+        `/alunos?id=${encodeURIComponent(id)}`
+      ];
 
-    function normalizarFichaPayload(raw) {
-      if (!raw) return { aluno:null, notificacoes:[], observacoes:[] };
-      if (raw.aluno) {
-        return {
-          aluno: raw.aluno,
-          notificacoes: Array.isArray(raw.notificacoes)? raw.notificacoes : (raw.aluno.notificacoes || []),
-          observacoes: Array.isArray(raw.observacoes)? raw.observacoes : (raw.aluno.observacoes || []),
-        };
+      let lastErr;
+      for (const ep of endpoints){
+        try{
+          // fetch "manual" para validar content-type JSON
+          const resp = await fetch(`/api${ep}`, { credentials:'include', cache:'no-store' });
+          const ct = (resp.headers.get('content-type')||'').toLowerCase();
+          if (!ct.includes('application/json')) { lastErr = new Error('NAO_JSON'); continue; }
+          if (!resp.ok){ lastErr = new Error(`HTTP ${resp.status}`); continue; }
+          const data = await resp.json();
+
+          // normaliza payload para { aluno, observacoes, notificacoes }
+          if (data && (data.aluno || data._id || data.id)) {
+            const aluno = data.aluno || data;
+            return {
+              aluno,
+              observacoes: data.observacoes || [],
+              notificacoes: data.notificacoes || []
+            };
+          }
+          if (data && data.result && (data.result.aluno || data.result._id)){
+            const a = data.result.aluno || data.result;
+            return { aluno:a, observacoes: data.result.observacoes||[], notificacoes: data.result.notificacoes||[] };
+          }
+          // se chegou aqui, formato inesperado — tenta próximo
+          lastErr = new Error('Formato inesperado');
+        }catch(e){ lastErr = e; }
       }
-      if (raw.data && raw.data.aluno) {
-        const d = raw.data;
-        return {
-          aluno: d.aluno,
-          notificacoes: Array.isArray(d.notificacoes)? d.notificacoes : (d.aluno.notificacoes || []),
-          observacoes: Array.isArray(d.observacoes)? d.observacoes : (d.aluno.observacoes || []),
-        };
-      }
-      if (raw._id || raw.nome || raw.turma) {
-        return { aluno: raw, notificacoes: raw.notificacoes || [], observacoes: raw.observacoes || [] };
-      }
-      return { aluno:null, notificacoes:[], observacoes:[] };
+      throw lastErr || new Error('Nenhum endpoint JSON retornou ficha.');
     }
-    // ---------------------------------------
 
     // ===== APH: contador + navegação =====
     async function fetchAphCount(){
@@ -724,39 +725,37 @@
       });
     }
 
-    // ===== Carregar ficha (HOTFIX de rota) =====
+    // ===== Carregar ficha =====
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
 
-      const rotas = [
-        `/fichaAluno/${alunoId}`,
-        `/alunos/${alunoId}/ficha`,
-        `/aluno/${alunoId}/ficha`,
-        `/ficha/${alunoId}`,
-        `/alunos/${alunoId}`,
-        `/aluno/${alunoId}`,
-      ];
-
       let payload;
       try{
-        const res = await tentarRotasSequencialmente(rotas);
-        payload = normalizarFichaPayload(res.data);
+        // tenta principal; se falhar, cai para fallback
+        try{
+          payload = await api(`/fichaAluno/${alunoId}`, { method:'GET' });
+          if (!payload || (!payload.aluno && !payload._id)) {
+            // se vier formato estranho, usa fallback
+            throw new Error('Formato inesperado');
+          }
+          if (payload && payload._id) {
+            // caso a rota retorne o aluno "cru"
+            payload = { aluno: payload, observacoes: [], notificacoes: [] };
+          }
+        }catch(_){
+          payload = await fetchFichaComFallback(alunoId);
+        }
       }catch(e){
-        if (String(e.message).match(/401|não autorizado|token/i)) {
+        if (String(e.message).includes('401') || /não autorizado|token/i.test(String(e.message))) {
           alert('Sessão expirada. Faça login novamente.');
-          window.location.href = '/login.html';
-          return;
+          return (window.location.href = '/login.html');
         }
         console.error('Falha ao buscar ficha:', e);
-        alert('Falha ao carregar ficha (rota da ficha não encontrada em produção).');
+        alert('Falha ao carregar ficha.');
         return;
       }
 
       const { aluno, notificacoes=[], observacoes=[] } = payload || {};
-      if (!aluno) {
-        alert('Aluno não encontrado.');
-        return;
-      }
       alunoAtual = aluno;
 
       // Cabeçalho
@@ -765,11 +764,8 @@
       byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
       byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
 
-      // PDF (ajuste se sua API usar outro caminho)
-      const pdfEl = byId('btnPDFTop');
-      if (pdfEl && aluno?._id) {
-        pdfEl.href = `/api/ficha/${aluno._id}`;
-      }
+      // botões topo
+      byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
       byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
@@ -869,13 +865,15 @@
         }).join('');
       }
 
-      // QR + APH + gráfico
+      // QR + contador APH
       try { await mostrarQRCode(true); } catch {}
       try { await fetchAphCount(); } catch {}
+
+      // Render chart
       try {
         const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
         renderComportChart(hist);
-      } catch {
+      } catch (e) {
         renderComportChart([]);
       }
     }
