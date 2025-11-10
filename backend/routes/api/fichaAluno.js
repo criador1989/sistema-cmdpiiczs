@@ -1,79 +1,163 @@
+// backend/routes/api/fichaAluno.js
+'use strict';
+
 const express = require('express');
 const router = express.Router();
 
-// POST /api/ficha/salvar/:id
-router.post('/salvar/:id', async (req, res) => {
-  // Exemplo simples de resposta
-  res.json({ mensagem: 'Observação salva com sucesso (rota funcional).' });
-});
-
-module.exports = router;
-const express = require('express');
-const router = express.Router();
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
 const { autenticar } = require('../../middleware/autenticacao');
 
-// Se você já tem util de cálculo de comportamento, use:
+// tenta carregar util de cálculo de comportamento, se existir
 let calcularNotaTSMD;
 try {
-  calcularNotaTSMD = require('../../utils/calculoNota'); // mantém como opcional
-} catch (e) { calcularNotaTSMD = null; }
+  calcularNotaTSMD = require('../../utils/calculoNota');
+} catch {
+  calcularNotaTSMD = null;
+}
 
-// GET /api/alunos/:id/ficha  (protegido)
-router.get('/alunos/:id/ficha', autenticar, async (req, res) => {
+// Normaliza caminho de imagem para URL pública sob /uploads
+function toPublicUrl(p) {
+  if (!p) return null;
+  let s = String(p).trim().replace(/\\/g, '/');
+  // já é URL absoluta ou data URI?
+  if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s)) return s;
+  // garante prefixo /uploads
+  if (!/^\/?uploads\//i.test(s)) s = 'uploads/' + s.replace(/^\/+/, '');
+  return '/' + s.replace(/^\/+/, '');
+}
+
+// Projeções enxutas para performance
+const PROJ_ALUNO = 'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento';
+const PROJ_NOTIF = 'data tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
+const PROJ_OBS   = 'texto autor criadoEm';
+
+/* ======================================================
+   GET /api/fichaAluno/:id
+   Retorna os dados completos da ficha do aluno
+   ====================================================== */
+router.get('/:id', autenticar, async (req, res) => {
   try {
     const { id } = req.params;
-    const instituicao = req.usuario.instituicao;
+    const instituicao = req.usuario?.instituicao;
+    if (!instituicao) {
+      return res.status(401).json({ erro: 'Não autenticado.' });
+    }
 
-    // Busca aluno limitado à instituição do usuário logado
-    const aluno = await Aluno.findOne({ _id: id, instituicao }).lean();
+    // busca aluno vinculado à instituição do usuário logado
+    const aluno = await Aluno.findOne({ _id: id, instituicao }).select(PROJ_ALUNO).lean();
     if (!aluno) {
       return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
     }
 
-    // Notificações do aluno (mais recentes primeiro)
+    // busca notificações do aluno (ordenadas por índice-friendly: data, createdAt)
     const notificacoes = await Notificacao.find({ aluno: aluno._id, instituicao })
-      .sort({ createdAt: -1 })
-      .select('tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento observacoes data createdAt')
+      .sort({ data: 1, createdAt: 1 })
+      .select(PROJ_NOTIF)
       .lean();
 
-    // Observações manuais (seu modelo pode chamar “Observacao”)
-    const observacoes = await Observacao.find({ aluno: aluno._id, instituicao })
-      .sort({ createdAt: -1 })
-      .select('texto autor createdAt')
+    // observações manuais (⚠ seu schema usa `criadoEm` e `instituicao` como String)
+    const instStr = String(instituicao);
+    const observacoes = await Observacao.find({ aluno: aluno._id, instituicao: instStr })
+      .sort({ criadoEm: -1 })
+      .select(PROJ_OBS)
       .lean();
 
-    // Nota de comportamento (tenta calcular; se não houver util, usa campo salvo)
-    let notaComportamento = typeof aluno.comportamento === 'number' ? aluno.comportamento : 8.0;
+    // calcula nota de comportamento
+    let notaComportamento =
+      typeof aluno.comportamento === 'number' ? aluno.comportamento : 8.0;
+
     if (calcularNotaTSMD) {
-      const eventos = notificacoes.map(n => ({
+      // montar eventos com data (prioriza `data`, cai para `createdAt`)
+      const eventos = (notificacoes || []).map(n => ({
         data: n.data || n.createdAt,
-        valorNumerico: n.valorNumerico || 0
+        valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
       }));
+
       try {
         const dataEntrada = aluno.dataEntrada ? new Date(aluno.dataEntrada) : null;
         notaComportamento = calcularNotaTSMD(dataEntrada, new Date(), eventos);
-      } catch { /* mantém nota existente */ }
+      } catch (e) {
+        console.warn('Erro ao recalcular nota de comportamento:', e?.message || e);
+      }
     }
 
+    // monta URLs de imagem
+    const fotoUrl = toPublicUrl(aluno.foto || aluno.fotoThumb || null);
+
+    res.set('Cache-Control', 'private, max-age=15');
     res.json({
       aluno: {
         _id: aluno._id,
         nome: aluno.nome,
         turma: aluno.turma,
-        fotoUrl: aluno.fotoUrl || null,
         dataEntrada: aluno.dataEntrada || null,
+        nascimento: aluno.nascimento || null,
+        nomePai: aluno.nomePai || null,
+        nomeMae: aluno.nomeMae || null,
+        telefone: aluno.telefone || null,
+        endereco: aluno.endereco || null,
         codigoAcesso: aluno.codigoAcesso || null,
-        comportamento: Number(notaComportamento.toFixed(2)),
+        comportamento: Number((+notaComportamento || 0).toFixed(2)),
+        // imagens
+        foto: aluno.foto || null,
+        fotoThumb: aluno.fotoThumb || null,
+        fotoUrl
       },
       notificacoes,
-      observacoes
+      observacoes,
     });
   } catch (erro) {
     console.error('Erro ao montar ficha do aluno:', erro);
     res.status(500).json({ erro: 'Erro ao montar ficha do aluno.' });
+  }
+});
+
+/* ======================================================
+   POST /api/fichaAluno/salvar/:id
+   Adiciona uma observação manual na ficha do aluno
+   ====================================================== */
+router.post('/salvar/:id', autenticar, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { texto } = req.body;
+    const instituicao = req.usuario?.instituicao;
+    const autor = req.usuario?.nome || req.usuario?.email || 'Sistema';
+
+    if (!instituicao) {
+      return res.status(401).json({ erro: 'Não autenticado.' });
+    }
+
+    if (!texto || String(texto).trim().length === 0) {
+      return res.status(400).json({ erro: 'Texto da observação é obrigatório.' });
+    }
+
+    // valida aluno na mesma instituição
+    const exists = await Aluno.exists({ _id: id, instituicao });
+    if (!exists) {
+      return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
+    }
+
+    const novaObs = await Observacao.create({
+      aluno: id,
+      instituicao: String(instituicao), // ⚠ seu schema espera String
+      texto: String(texto).trim(),
+      autor, // `criadoEm` é setado pelo default do schema
+    });
+
+    res.json({
+      mensagem: 'Observação salva com sucesso.',
+      observacao: {
+        _id: novaObs._id,
+        texto: novaObs.texto,
+        autor: novaObs.autor,
+        criadoEm: novaObs.criadoEm,
+      },
+    });
+  } catch (erro) {
+    console.error('Erro ao salvar observação:', erro);
+    res.status(500).json({ erro: 'Erro ao salvar observação.' });
   }
 });
 
