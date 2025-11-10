@@ -96,11 +96,29 @@
   }
   .btn.warn{ background:linear-gradient(135deg,#4b381c,#6a4a22); color:#ffdcae }
 
-  /* Page */
+  .btn-ghost-light{
+    background:linear-gradient(135deg, rgba(40,70,120,.42), rgba(26,50,92,.38));
+    border:1px solid rgba(190,220,255,.36);
+    color:#eaf3ff;
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.22),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .btn-ghost-light:hover{ filter:brightness(1.05) saturate(1.05) }
+
+  .btn-primary-rubi{
+    background:linear-gradient(135deg, var(--rubi), var(--rubi-2));
+    border:1px solid rgba(231,200,115,.66);
+    color:#fffbe9;
+    box-shadow:
+      0 12px 34px rgba(216,35,39,.35),
+      inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  .btn-primary-rubi:hover{ filter:brightness(1.06) }
+
   .page{ max-width:1180px; margin:22px auto; padding:0 18px; animation:fadeIn .35s ease-out both; }
   @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 
-  /* Hero (ficha) */
   .hero{
     background:linear-gradient(180deg, rgba(26,46,82,.70), rgba(18,36,66,.66));
     border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);
@@ -113,7 +131,6 @@
     border-bottom:1px dashed rgba(170,200,240,.38);
   }
 
-  /* Avatar */
   .avatar{
     width:96px; height:96px; border-radius:999px; overflow:hidden; flex:0 0 96px;
     background:linear-gradient(180deg,#152c53,#122749);
@@ -134,7 +151,6 @@
     padding:4px 10px; border-radius:999px
   }
 
-  /* QR */
   .qr-wrap{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
   .qr-preview{
     display:none; width:100%;
@@ -146,7 +162,6 @@
   .qr-row{display:flex; gap:16px; align-items:center; flex-wrap:wrap}
   .qr-row img{border:1px solid rgba(180,210,245,.38); border-radius:10px; background:#fff}
 
-  /* KVs */
   .kvs{ display:grid; gap:12px; margin-top:14px; grid-template-columns:repeat(4,minmax(0,1fr)); }
   @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
   .kv{
@@ -165,11 +180,9 @@
     color:#f0f6ff
   }
 
-  /* Columns */
   .columns{ display:grid; gap:18px; margin-top:18px; grid-template-columns: 1fr 1fr; align-items:start; }
   @media (max-width:900px){ .columns{grid-template-columns:1fr} }
 
-  /* Cards */
   .card{
     background:linear-gradient(180deg, rgba(24,44,78,.58), rgba(18,36,66,.54));
     border-radius:14px; padding:16px;
@@ -196,7 +209,6 @@
     font-size:.78rem; color:#eef5ff
   }
 
-  /* Obs / Notif */
   .obs,.notif{
     border:1px solid rgba(180,210,245,.34);
     border-radius:12px;
@@ -221,7 +233,6 @@
   }
   .iconbtn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:rgba(210,235,255,.44); }
 
-  /* Editor */
   .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
   .editor textarea{
     flex:1; resize:vertical; min-height:86px;
@@ -238,7 +249,6 @@
   .edit-card input,.edit-card textarea{ width:100%;padding:10px;border:1px solid rgba(180,210,245,.36); border-radius:10px;background:linear-gradient(180deg, rgba(26,46,82,.58), rgba(18,36,66,.54)); color:#eef3ff }
   .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
-  /* APH */
   .aph-card{
     background:linear-gradient(135deg, #1c3b69 0%, #24548e 65%, #2b62a8 100%);
     border:1px solid rgba(150,200,255,.38);
@@ -252,13 +262,11 @@
     color:#fff; border-radius:999px; padding:6px 10px; font-size:.85rem; font-weight:700
   }
 
-  /* History chart container */
   .chart-wrap{
     background:linear-gradient(180deg, rgba(18,34,60,.36), rgba(18,36,66,.24));
     border-radius:12px; padding:12px; border:1px solid rgba(180,210,245,.18);
   }
 
-  /* PRINT adjustments (keep functionality) */
   @media print{
     body{ background:#fff; color:#000 }
     .topbar{ display:none !important }
@@ -271,7 +279,6 @@
     .qr-preview{ display:block !important }
   }
 
-  /* Responsive tweaks */
   @media (max-width:900px){
     .head{ flex-direction:column; align-items:flex-start; gap:12px }
     .avatar{ width:88px; height:88px; flex:0 0 88px; }
@@ -298,6 +305,8 @@
 
       <!-- Voltar inteligente -->
       <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
+      <!-- NOVO: Voltar ao Painel -->
+      <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
 
       <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
       <a id="btnPDFTop" class="btn primary" href="#" target="_blank" rel="noopener">Exportar PDF</a>
@@ -456,8 +465,31 @@
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
 
-    const fmtData = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
-    const fmtDataHora = d => d ? new Date(d).toLocaleString('pt-BR') : '—';
+    // —— Helpers de data robustos ——
+    function parseDateLike(d){
+      if (!d && d !== 0) return null;
+      if (d instanceof Date) return isNaN(+d) ? null : d;
+      if (typeof d === 'number') {
+        const ms = d < 1e12 ? d * 1000 : d; // segundos -> ms
+        const dt = new Date(ms);
+        return isNaN(+dt) ? null : dt;
+      }
+      const s = String(d).trim().replace(/\s+/, 'T'); // "YYYY-MM-DD HH:mm" -> "YYYY-MM-DDTHH:mm"
+      const dt = new Date(s);
+      return isNaN(+dt) ? null : dt;
+    }
+    const fmtData     = (d)=>{ const x = parseDateLike(d); return x ? x.toLocaleDateString('pt-BR')   : '—'; };
+    const fmtDataHora = (d)=>{ const x = parseDateLike(d); return x ? x.toLocaleString('pt-BR')       : '—'; };
+
+    function getDateFrom(obj, ...keys){
+      for (const k of keys){
+        const v = k.includes('.') ? k.split('.').reduce((o,p)=>o?.[p], obj) : obj?.[k];
+        const dt = parseDateLike(v);
+        if (dt) return dt;
+      }
+      return null;
+    }
+
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
     const BASES = {
@@ -484,7 +516,8 @@
 
     const toISO = (d)=>{
       if(!d) return '';
-      const x = new Date(d);
+      const x = parseDateLike(d);
+      if(!x) return '';
       const yyyy = x.getFullYear();
       const mm = String(x.getMonth()+1).padStart(2,'0');
       const dd = String(x.getDate()).padStart(2,'0');
@@ -524,14 +557,23 @@
       return {texto:'Incompatível', cor:'#e7e9ee'};
     }
 
+    // ✅ Helper API atualizado: inclui Authorization: Bearer <token>
     async function api(path, opts = {}){
       const method = (opts.method || 'GET').toUpperCase();
       const headers = { ...(opts.headers || {}) };
-      if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type']) {
+
+      const token = localStorage.getItem('token');
+      if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type'] && !(opts.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
       }
+
       const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
         credentials:'include',
+        cache:'no-store',
         headers,
         ...opts
       });
@@ -569,7 +611,6 @@
 
     // ===== Chart rendering =====
     function renderComportChart(points){
-      // points: [{data:'2025-01-01', nota:7.8}, ...]
       const ctx = document.getElementById('comportChart').getContext('2d');
       let labels = [], data = [];
       if (Array.isArray(points) && points.length){
@@ -579,7 +620,6 @@
         });
         data = sorted.map(r => Number(r.nota ?? r.valor ?? 0));
       } else {
-        // dados de exemplo caso não haja histórico
         const m = new Date();
         const example = [
           { data: new Date(m.getFullYear(), m.getMonth()-5, 1).toISOString(), nota:7.2 },
@@ -644,17 +684,20 @@
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
 
-      const url = `/api/ficha/dados/${alunoId}?t=${Date.now()}`;
-      const r = await fetch(url, { credentials:'include', cache:'no-store' });
-      if(!r.ok){
-        if (r.status === 401) {
+      let payload;
+      try{
+        payload = await api(`/fichaAluno/${alunoId}`, { method:'GET' });
+      }catch(e){
+        if (String(e.message).includes('401') || /não autorizado|token/i.test(String(e.message))) {
           alert('Sessão expirada. Faça login novamente.');
           return (window.location.href = '/login.html');
         }
+        console.error('Falha ao buscar ficha:', e);
         alert('Falha ao carregar ficha.');
         return;
       }
-      const { aluno, notificacoes=[], observacoes=[] } = await r.json();
+
+      const { aluno, notificacoes=[], observacoes=[] } = payload || {};
       alunoAtual = aluno;
 
       // Cabeçalho
@@ -667,7 +710,7 @@
       byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
-      byId('kvEntrada').textContent = aluno?.dataEntrada ? fmtData(aluno.dataEntrada) : '—';
+      byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
       byId('kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
 
       const nota = (typeof aluno?.comportamento === 'number') ? aluno.comportamento : null;
@@ -687,9 +730,15 @@
         ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="96" height="96" style="object-fit:cover">`
         : 'Sem foto';
 
-      // atualizar ultima atualização
-      const ult = aluno?.updatedAt || aluno?.atualizadoEm || aluno?.criadoEm || aluno?.createdAt;
-      byId('ultimaAtualizacao').textContent = ult ? fmtDataHora(ult) : '—';
+      // Última atualização (robusto)
+      const ultDate = getDateFrom(
+        aluno,
+        'updatedAt','atualizadoEm','ultimaAtualizacao',
+        'createdAt','criadoEm','lastUpdate'
+      );
+      byId('ultimaAtualizacao').textContent = ultDate
+        ? ultDate.toLocaleString('pt-BR')
+        : '—';
 
       // Observações
       const obsEl = byId('observacoes');
@@ -697,18 +746,22 @@
       if(!observacoes.length){
         obsEl.innerHTML = '<div class="empty">Nenhuma observação registrada.</div>';
       }else{
-        obsEl.innerHTML = observacoes.map(o=>(
-          '<div class="obs">' +
-            '<div class="row">' +
-              '<div class="muted">' + fmtDataHora(o.createdAt || o.criadoEm) + ' — ' + (o.autor || 'Autor não informado') + '</div>' +
-              '<div class="actions">' +
-                '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
-                '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
+        obsEl.innerHTML = observacoes.map(o=>{
+          const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
+          const dataObsStr = dataObs ? dataObs.toLocaleString('pt-BR') : '—';
+          return (
+            '<div class="obs">' +
+              '<div class="row">' +
+                '<div class="muted">' + dataObsStr + ' — ' + (o.autor || 'Autor não informado') + '</div>' +
+                '<div class="actions">' +
+                  '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
+                  '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
+                '</div>' +
               '</div>' +
-            '</div>' +
-            '<div style="margin-top:6px" class="texto">' + (String(o.texto||'').replace(/\n/g,'<br>')) + '</div>' +
-          '</div>'
-        )).join('');
+              '<div style="margin-top:6px" class="texto">' + (String(o.texto||'').replace(/\n/g,'<br>')) + '</div>' +
+            '</div>'
+          );
+        }).join('');
       }
 
       // Notificações
@@ -727,11 +780,15 @@
           const valor = fmtValor(valorCorrigido);
           const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + n.observacoes + '</div>' : '';
           const idN = n._id || '';
+
+          const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
+          const dataNStr = dataN ? dataN.toLocaleDateString('pt-BR') : '—';
+
           return (
             '<div class="notif">' +
               '<div class="row">' +
                 '<div><span class="chip">' + tipo + '</span></div>' +
-                '<div class="muted">' + fmtData(n.data || n.createdAt) + '</div>' +
+                '<div class="muted">' + dataNStr + '</div>' +
               '</div>' +
               '<div style="margin-top:6px"><b>Motivo:</b> ' + motivo + '</div>' +
               '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">' +
@@ -754,7 +811,7 @@
       try { await mostrarQRCode(true); } catch {}
       try { await fetchAphCount(); } catch {}
 
-      // Render chart (usa aluno.historicoComportamento ou exemplo)
+      // Render chart
       try {
         const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
         renderComportChart(hist);
@@ -983,10 +1040,9 @@
       linkEl.href = '#';
       copiarBtn.style.display = 'none';
       try{
-        const r = await fetch(`/api/telegram/start-link/${alunoId}`, { credentials:'include' });
-        const j = await r.json();
-        if(!r.ok || !j.ok || !j.url){
-          throw new Error(j.msg || 'Falha ao gerar link do Telegram');
+        const j = await api(`/telegram/start-link/${alunoId}`, { method:'GET' });
+        if(!j || !j.ok || !j.url){
+          throw new Error(j?.msg || 'Falha ao gerar link do Telegram');
         }
         linkEl.textContent = j.url;
         linkEl.href = j.url;
@@ -1021,6 +1077,11 @@
       byId('btnGerarLinkTg').addEventListener('click', gerarLinkTelegram);
       byId('btnCopiarTg').addEventListener('click', copiarLinkTelegram);
       byId('btnVoltarLista').addEventListener('click', voltarLista);
+
+      // NOVO: ação do botão Voltar ao Painel
+      const btnPainel = byId('btnVoltarPainel');
+      if (btnPainel) btnPainel.addEventListener('click', ()=> { location.href = '/painel.html'; });
+
       byId('btnEnableQR').addEventListener('click', habilitarLinkPublico);
       byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
       byId('btnDisableQR').addEventListener('click', desabilitarLinkPublico);
