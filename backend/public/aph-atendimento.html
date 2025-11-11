@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-store" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>APH - Novo Atendimento</title>
+<title>APH - Atendimento</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon-192x192.png">
 <meta name="theme-color" content="#0A1322">
@@ -88,8 +88,6 @@ label{font-weight:700;font-size:.95rem}
   border-radius:12px;padding:10px;backdrop-filter:blur(8px);
 }
 textarea{resize:vertical;min-height:90px}
-
-/* Corrige contraste do menu dropdown */
 select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
 
 /* Badges / row -------------------------------------------- */
@@ -102,7 +100,7 @@ select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
 .muted{color:var(--muted)}
 .right{margin-left:auto}
 
-/* Cards de escolha (estilo BOTÃO com checkbox visível) ---- */
+/* Cards de escolha ---------------------------------------- */
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:980px){.cards{grid-template-columns:1fr}}
 
@@ -120,8 +118,6 @@ select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
   border-color:rgba(255,255,255,.38);
   box-shadow:0 8px 28px rgba(100,160,240,.18) inset;
 }
-
-/* Checkbox custom */
 .cardChoice input[type="checkbox"]{
   position:absolute;opacity:0;inset:0;cursor:pointer;
 }
@@ -137,17 +133,11 @@ select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
   background:linear-gradient(180deg, rgba(120,200,255,.85), rgba(90,160,235,.85));
   box-shadow:0 0 0 3px rgba(93,174,255,.25);
 }
-
-/* Ícone e textos */
-.icon{
-  width:28px;height:28px;display:grid;place-items:center;
-  border-radius:8px;background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.25);flex:0 0 28px;
-}
+.icon{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);flex:0 0 28px}
 .ctitle{font-weight:700;color:#f4f7ff}
 .cdesc{color:var(--muted);font-size:.92rem;margin-top:2px}
 
-/* Ações / switches ---------------------------------------- */
+/* Ações ---------------------------------------------------- */
 .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
 .small{font-size:.88rem;color:var(--muted)}
 .switch{display:inline-flex;align-items:center;gap:8px;user-select:none;cursor:pointer}
@@ -175,12 +165,13 @@ select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
 <body>
   <div class="topbar">
     <div class="in">
-      <div class="h1">APH - Novo Atendimento</div>
+      <div class="h1" id="title">APH - Atendimento</div>
       <button class="btn" id="btnVoltar">← Ficha do Aluno</button>
       <a class="btn" href="/painel.html">🏠 Painel</a>
       <div class="right"></div>
       <button class="btn" id="btnLimpar">Limpar</button>
       <button class="btn primary" id="btnSalvar">Salvar</button>
+      <button class="btn primary" id="btnEditar" style="display:none">✏️ Editar</button>
     </div>
   </div>
 
@@ -282,7 +273,10 @@ select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
 /* ===== helpers / dados ===== */
 const $ = (s)=>document.querySelector(s);
 const params = new URLSearchParams(location.search);
-const alunoId = params.get('alunoId') || params.get('id');
+let alunoId = params.get('alunoId') || params.get('id') || '';   // pode vir vazio e ser preenchido após carregar o doc
+const atendimentoId = params.get('id');                          // id do atendimento (quando VER/EDITAR)
+const modeParam = (params.get('mode') || '').toLowerCase();
+let mode = atendimentoId ? (modeParam || 'view') : 'new';        // new | view | edit
 
 const TIPOS = [
   { t:'Arranhão / escoriação', i:'🩹', d:'Limpeza e curativo simples.' },
@@ -337,9 +331,13 @@ function cardList(container, items){
     </label>
   `).join('');
 }
-
-/* Retorna selecionados por value */
 function selected(container){ return Array.from(container.querySelectorAll('input:checked')).map(i=>i.value); }
+function setSelected(container, values = []){
+  const set = new Set(values);
+  container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+    cb.checked = set.has(cb.value);
+  });
+}
 
 /* fetch com timeout */
 async function api(path, opts = {}){
@@ -355,11 +353,45 @@ async function api(path, opts = {}){
     });
     const ct = r.headers.get('content-type')||'';
     const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+    if (r.status === 401) { alert('Sessão expirada. Faça login.'); location.href='/login.html'; return Promise.reject(new Error('401')); }
     if(!r.ok) throw new Error(data.message || data.error || `Erro ${r.status}`);
     return data;
   } finally { clearTimeout(id); }
 }
 
+/* ===== Modo (view/edit/new) ===== */
+function applyMode(){
+  const isView = (mode === 'view');
+  const isNew  = (mode === 'new');
+  const isEdit = (mode === 'edit');
+
+  // título e botões
+  $('#title').textContent =
+    isNew  ? 'APH - Novo Atendimento' :
+    isEdit ? 'APH - Editar Atendimento' :
+             'APH - Visualização do Atendimento';
+
+  // Mostrar/ocultar botões
+  $('#btnSalvar').style.display  = (isNew || isEdit) ? '' : 'none';
+  $('#btnSalvar2').style.display = (isNew || isEdit) ? '' : 'none';
+  $('#btnLimpar').style.display  = isNew ? '' : 'none';
+  $('#btnLimpar2').style.display = isNew ? '' : 'none';
+  $('#btnEditar').style.display  = isView ? '' : 'none';
+
+  // Travar/destravar campos
+  const disable = isView;
+  document.querySelectorAll('input, select, textarea').forEach(el=>{
+    // exceto botão-voltar e afins (já não são inputs)
+    if (el.id !== 'btnVoltar') el.disabled = disable && el.id !== 'inpData'; // inpData também trava abaixo
+  });
+  // garantir que o date também trave no modo view
+  $('#inpData').disabled = disable;
+
+  // aparência do encaminhamento
+  toggleEncaminhamento();
+}
+
+/* ===== aluno ===== */
 async function carregarAluno(){
   if(!alunoId) return;
   const { aluno } = await api(`/ficha/dados/${alunoId}`);
@@ -367,6 +399,40 @@ async function carregarAluno(){
   $('#alunoTurma').textContent = aluno?.turma || '—';
 }
 
+/* ===== carregar atendimento (quando id) ===== */
+async function carregarAtendimento(){
+  if (!atendimentoId) return;
+
+  const at = await api(`/aph/atendimentos/${atendimentoId}`);
+  // Pode vir alunoId do documento; se não tínhamos na URL, fixa aqui
+  if (!alunoId && at?.alunoId) alunoId = String(at.alunoId);
+
+  // Preenche campos
+  $('#inpResp').value  = at.responsavel || '';
+  $('#inpLocal').value = at.local || '';
+  $('#inpHora').value  = (at.hora || '').slice(0,5);
+
+  // data -> YYYY-MM-DD
+  const d = at.data ? new Date(at.data) : null;
+  $('#inpData').value = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
+
+  // checkboxes
+  setSelected($('#tiposBox'), at.tipos || []);
+  setSelected($('#materiaisBox'), at.materiais || []);
+
+  $('#inpObs').value     = at.observacoes || at.observacao || '';
+  $('#selRespInf').value = (at.responsaveisInformados === 'Sim') ? 'Sim' : 'Não';
+  $('#selMeio').value    = at.meioComunicacao || '';
+  $('#chkEncaminhamento').checked = !!(at.houveEncaminhamento || at.encaminhamento);
+  $('#txtEncaminhamento').value   = at.encaminhamento || '';
+
+  toggleEncaminhamento();
+
+  // Carrega identificações do aluno
+  await carregarAluno().catch(()=>{});
+}
+
+/* ===== controles de formulário ===== */
 function limpar(){
   $('#inpResp').value=''; $('#inpLocal').value='';
   const now=new Date();
@@ -377,52 +443,68 @@ function limpar(){
   $('#chkEncaminhamento').checked=false; toggleEncaminhamento();
   document.querySelectorAll('.cards input[type="checkbox"]').forEach(cb=>cb.checked=false);
 }
-
 function toggleEncaminhamento(){
   const on = $('#chkEncaminhamento').checked;
   const txt = $('#txtEncaminhamento');
-  txt.disabled = !on; txt.style.opacity = on ? '1' : '.65';
+  txt.disabled = !on || (mode==='view');
+  txt.style.opacity = on ? '1' : '.65';
 }
 
 let saving=false;
 function setSavingState(on){
   saving=on;
-  ['#btnSalvar','#btnSalvar2','#btnLimpar','#btnLimpar2','#btnVoltar'].forEach(sel=>{
+  ['#btnSalvar','#btnSalvar2','#btnLimpar','#btnLimpar2','#btnVoltar','#btnEditar'].forEach(sel=>{
     const b=$(sel); if(b) b.disabled=on;
   });
   const b1=$('#btnSalvar'), b2=$('#btnSalvar2');
-  if(on){ if(b1) b1.textContent='Salvando...'; if(b2) b2.textContent='Salvando...'; }
-  else { if(b1) b1.textContent='Salvar'; if(b2) b2.textContent='Salvar'; }
+  if(on){ if(b1) b1.textContent=(mode==='edit'?'Atualizando...':'Salvando...'); if(b2) b2.textContent=b1.textContent; }
+  else { if(b1) b1.textContent=(mode==='edit'?'Atualizar':'Salvar'); if(b2) b2.textContent=b1.textContent; }
+}
+
+function payloadFromUI(){
+  return {
+    alunoId,
+    data: $('#inpData').value || new Date().toISOString().slice(0,10),
+    hora: $('#inpHora').value || '',
+    local: ($('#inpLocal').value || '').trim() || '—',
+    responsavel: ($('#inpResp').value || '').trim(),
+    tipos: selected($('#tiposBox')),
+    materiais: selected($('#materiaisBox')),
+    sinaisESintomas: '',
+    procedimentos: '',
+    observacoes: ($('#inpObs').value || '').trim(),
+    responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
+    meioComunicacao: $('#selMeio').value || '',
+    houveEncaminhamento: $('#chkEncaminhamento').checked,
+    encaminhamento: ($('#txtEncaminhamento').value || '').trim()
+  };
 }
 
 async function salvar(){
   if(saving) return;
   try{
-    if(!alunoId) return toast('ID do aluno ausente.', 'error');
+    if(!alunoId) { toast('ID do aluno ausente.', 'error'); return; }
     setSavingState(true);
+    const body = JSON.stringify(payloadFromUI());
 
-    const payload = {
-      alunoId,
-      data: $('#inpData').value || new Date().toISOString().slice(0,10),
-      hora: $('#inpHora').value || '',
-      local: ($('#inpLocal').value || '').trim() || '—',
-      responsavel: ($('#inpResp').value || '').trim(),
-      tipos: selected($('#tiposBox')),
-      materiais: selected($('#materiaisBox')),
-      sinaisESintomas: '',
-      procedimentos: '',
-      observacoes: ($('#inpObs').value || '').trim(),
-      responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
-      meioComunicacao: $('#selMeio').value || '',
-      houveEncaminhamento: $('#chkEncaminhamento').checked,
-      encaminhamento: ($('#txtEncaminhamento').value || '').trim()
-    };
+    if (mode === 'edit' && atendimentoId){
+      // PUT (atualizar)
+      const resp = await api(`/aph/atendimentos/${atendimentoId}`, { method:'PUT', body, timeoutMs:12000 });
+      if (resp?.ok){
+        toast('Atendimento atualizado.', 'ok');
+        setTimeout(()=>{
+          location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
+        }, 700);
+      } else {
+        toast('Atualização sem confirmação.', 'error');
+      }
+      return;
+    }
 
-    const resp = await api('/aph/atendimentos', { method:'POST', body: JSON.stringify(payload), timeoutMs:12000 });
-
+    // POST (novo)
+    const resp = await api('/aph/atendimentos', { method:'POST', body, timeoutMs:12000 });
     if (resp?.ok) {
-      if (resp?.comunicacao?.queued) { toast('Atendimento salvo. Comunicado enfileirado para envio.', 'ok'); }
-      else { toast('Atendimento salvo com sucesso!', 'ok'); }
+      toast('Atendimento salvo com sucesso!', 'ok');
       setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 700);
     } else {
       toast('Salvo, mas sem confirmação de comunicação.', 'ok');
@@ -439,17 +521,36 @@ function voltar(){
   else history.back();
 }
 
-function init(){
-  if(!alunoId) toast('Atenção: alunoId não informado na URL.', 'error');
+function goEdit(){
+  const qp = new URLSearchParams(location.search);
+  qp.set('mode','edit');
+  // garante que alunoId continue na URL
+  if (alunoId) qp.set('alunoId', alunoId);
+  location.search = `?${qp.toString()}`;
+}
 
+/* ===== boot ===== */
+async function init(){
   cardList($('#tiposBox'), TIPOS);
   cardList($('#materiaisBox'), MATERIAIS);
 
-  const now=new Date();
-  $('#inpData').value=now.toISOString().slice(0,10);
-  $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  carregarAluno().catch(console.error);
-  toggleEncaminhamento();
+  // default de data/hora quando novo
+  if (mode === 'new'){
+    const now=new Date();
+    $('#inpData').value=now.toISOString().slice(0,10);
+    $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  }
+
+  // carregar doc se for view/edit
+  if (atendimentoId){
+    try { await carregarAtendimento(); }
+    catch(e){ console.error(e); toast(e.message || 'Erro ao carregar atendimento.','error'); }
+  } else {
+    // novo → carrega aluno se já temos alunoId
+    if (alunoId) await carregarAluno().catch(()=>{});
+  }
+
+  applyMode();
 
   // binds
   $('#btnSalvar').addEventListener('click', salvar);
@@ -457,6 +558,7 @@ function init(){
   $('#btnLimpar').addEventListener('click', limpar);
   $('#btnLimpar2').addEventListener('click', limpar);
   $('#btnVoltar').addEventListener('click', voltar);
+  $('#btnEditar').addEventListener('click', goEdit);
   $('#chkEncaminhamento').addEventListener('change', toggleEncaminhamento);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();

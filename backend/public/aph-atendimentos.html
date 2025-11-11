@@ -69,7 +69,7 @@ body{
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
 
-/* ===== Top bar (translúcida, sem brilho exagerado) ===== */
+/* ===== Top bar ===== */
 .top{
   position:sticky; top:0; z-index:10;
   background:linear-gradient(180deg, rgba(23,45,82,.72), rgba(20,40,73,.58));
@@ -84,7 +84,7 @@ body{
 .brand{font-weight:800}
 .sp{flex:1}
 
-/* ===== Botões e campos no estilo vidro ===== */
+/* ===== Botões / Inputs ===== */
 .btn{
   appearance:none; cursor:pointer;
   padding:9px 14px; border-radius:12px;
@@ -98,8 +98,6 @@ body{
 .btn:hover{ transform:translateY(-1px); filter:saturate(1.06); }
 .btn:disabled{opacity:.6; cursor:not-allowed}
 
-/* “.rubi” do arquivo original passa a ser o “primary” azul,
-   para não quebrar o JS que usa .rubi */
 .btn.rubi{
   background:var(--btn-main);
   border-color:rgba(180,210,245,.36);
@@ -107,13 +105,11 @@ body{
   color:#fff;
 }
 .btn.small{padding:7px 12px; border-radius:10px; font-size:.95rem}
-
 .btn.danger{
   background:linear-gradient(135deg, rgba(80,20,20,.55), rgba(70,20,20,.50));
   border-color:rgba(255,120,120,.28);
 }
 
-/* Inputs */
 .input, select{
   color:#eef3ff; border-radius:10px; padding:8px 10px;
   border:1px solid rgba(180,210,245,.30);
@@ -193,7 +189,7 @@ body{
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ===== Toast (vidro) ===== */
+/* ===== Toast ===== */
 .toast{
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
   background: linear-gradient(180deg, rgba(24,44,78,.60), rgba(18,36,66,.56));
@@ -220,7 +216,6 @@ body{
       <div class="sp"></div>
       <input id="busca" class="input" placeholder="Buscar por tipo, material, observação" aria-label="Buscar">
       <button class="btn" id="btnBuscar">Buscar</button>
-      <!-- mantém a classe .rubi para não quebrar JS; visual é azul primário -->
       <button class="btn rubi" id="btnNovo">+ Novo atendimento</button>
     </div>
   </div>
@@ -258,7 +253,7 @@ body{
             <th>Local</th>
             <th>Tipos</th>
             <th>Materiais</th>
-            <th style="width:320px">Ações</th>
+            <th style="width:380px">Ações</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -290,14 +285,23 @@ function toast(msg, type='ok'){
   el._t = setTimeout(()=>{ el.style.display='none'; }, 2600);
 }
 
+/* Monta URL para o formulário garantindo que NÃO cria novo registro */
+function buildAtUrl(id, mode='view'){
+  const base = '/aph-atendimento.html';
+  const qp = new URLSearchParams();
+  if (alunoId) qp.set('alunoId', alunoId);
+  if (id) qp.set('id', id);          // <— chave que o formulário deve ler
+  if (mode) qp.set('mode', mode);    // view | edit
+  return `${base}?${qp.toString()}`;
+}
+
 /* ===== fetch resiliente (timeout + retry anti-AbortError) ===== */
 async function api(path, opts = {}) {
   const url = `/api${path.startsWith('/') ? path : `/${path}`}`;
 
-  // helper com AbortController
   const attempt = async (useAbort = true) => {
     let controller, timer;
-    const headers = { 'Accept': 'application/json', ...(opts.headers||{}) };
+    const headers = { 'Accept': 'application/json', ...(opts.headers||{}), 'Content-Type':'application/json' };
     const fetchOpts = {
       credentials: 'include',
       method: opts.method || 'GET',
@@ -328,10 +332,8 @@ async function api(path, opts = {}) {
   };
 
   try {
-    // 1ª tentativa: com timeout
     return await attempt(true);
   } catch (e) {
-    // Se o SW atualizou ou o AbortController disparou, tentamos novamente SEM sinal
     if (e && (e.name === 'AbortError' || String(e).toLowerCase().includes('aborted'))) {
       console.warn('[APH] Requisição abortada; tentando novamente sem AbortController…');
       return await attempt(false);
@@ -370,7 +372,7 @@ function periodoSelecionado(){
   return { dtIni: iso(ini), dtFim: iso(fim) };
 }
 
-/* ===== load/list ===== */
+/* ===== listagem ===== */
 async function carregarLista(){
   if(!alunoId){ alert('Atenção: alunoId não informado na URL.'); return; }
   showLoader(true);
@@ -384,7 +386,6 @@ async function carregarLista(){
     const items = data.items || data.itens || [];
     $('#total').textContent = String(data.total ?? items.length ?? 0);
 
-    // tabela
     const tb = $('#tbody'); tb.innerHTML = '';
     if(!items.length){
       $('#vazio').style.display='block';
@@ -397,6 +398,7 @@ async function carregarLista(){
         (it.materiais||[]).forEach(t=> matCount.set(t, (matCount.get(t)||0)+1 ));
 
         const tr = document.createElement('tr');
+        const id = it._id;
         tr.innerHTML = `
           <td>${fmtData(it.data || it.createdAt)}</td>
           <td>${it.responsavel || '—'}</td>
@@ -404,10 +406,11 @@ async function carregarLista(){
           <td>${joinTags(it.tipos)}</td>
           <td>${joinTags(it.materiais)}</td>
           <td class="actions">
-            <a class="btn small" href="/aph-atendimento.html?alunoId=${encodeURIComponent(alunoId)}&edit=${it._id}">👁️ Ver</a>
-            <a class="btn small" target="_blank" rel="noopener" href="/api/aph/pdf/${it._id}">🧾 PDF</a>
-            <button class="btn small" data-retry="${it._id}">↻ Reenviar comunicado</button>
-            <button class="btn small danger" data-del="${it._id}">⛔ Excluir</button>
+            <a class="btn small" href="${buildAtUrl(id,'view')}">👁️ Ver</a>
+            <a class="btn small" href="${buildAtUrl(id,'edit')}">✏️ Editar</a>
+            <a class="btn small" target="_blank" rel="noopener" href="/api/aph/pdf/${id}">🧾 PDF</a>
+            <button class="btn small" data-retry="${id}">↻ Reenviar comunicado</button>
+            <button class="btn small danger" data-del="${id}">⛔ Excluir</button>
           </td>
         `;
         tb.appendChild(tr);
