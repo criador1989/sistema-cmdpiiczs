@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Cache-Control" content="no-store" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ficha do Monitor</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192x192.png">
+<meta name="theme-color" content="#0A1322">
+<style>
+  :root{
+    --bg-0:#0f2f53; --bg-1:#0c2745; --glass:rgba(255,255,255,0.06);
+    --stroke:rgba(255,255,255,.15); --txt:#eaf1ff; --muted:#bcd0ea;
+    --acc:#6ec1ff; --ok:#44d07a; --warn:#ffd166; --err:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+    color:var(--txt);
+    background:linear-gradient(180deg, #0b213a 0%, #08192c 100%);
+    min-height:100vh;
+  }
+  header{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; position:sticky; top:0; border-bottom:1px solid var(--stroke); backdrop-filter:blur(10px); background:linear-gradient(0deg, transparent, rgba(0,0,0,.25));}
+  .actions{display:flex; gap:10px; flex-wrap:wrap}
+  button{
+    border:1px solid var(--stroke); background:var(--glass); color:var(--txt);
+    padding:10px 12px; border-radius:12px; cursor:pointer; transition:.2s;
+    box-shadow:0 8px 24px rgba(0,0,0,.2) inset, 0 2px 8px rgba(0,0,0,.15);
+  }
+  button:hover{transform:translateY(-1px); background:rgba(255,255,255,.08)}
+  main{padding:16px; display:grid; grid-template-columns: 1.1fr .9fr; gap:16px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.06) inset;}
+  h3{margin:0 0 10px 0; font-size:16px}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  input, select, textarea{width:100%; border-radius:12px; border:1px solid var(--stroke); background:rgba(255,255,255,.05); color:var(--txt); padding:10px 12px; outline:none;}
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  thead th{text-align:left; font-weight:600; color:#dfeaff; border-bottom:1px solid var(--stroke); padding:10px 6px;}
+  tbody td{padding:10px 6px; border-bottom:1px dashed var(--stroke)}
+  .tag{padding:2px 8px; border-radius:999px; border:1px solid var(--stroke); font-size:12px}
+  .ok{background:rgba(68,208,122,.12); border-color:rgba(68,208,122,.35)}
+  .warn{background:rgba(255,209,102,.12); border-color:rgba(255,209,102,.35)}
+  .err{background:rgba(255,107,107,.12); border-color:rgba(255,107,107,.35)}
+  @media print{
+    header,.actions{display:none!important}
+    main{grid-template-columns:1fr}
+    body{background:white; color:black}
+    .card{box-shadow:none; border-color:#ccc}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div id="titulo">Monitor</div>
+  <div class="actions">
+    <button onclick="history.back()">⟵ Voltar</button>
+    <button onclick="window.print()">🖨️ Imprimir / PDF</button>
+  </div>
+</header>
+
+<main>
+  <!-- Dados cadastrais -->
+  <section class="card">
+    <h3>Dados do Monitor</h3>
+    <div class="grid2">
+      <input id="f-nome" placeholder="Nome *">
+      <input id="f-matricula" placeholder="Matrícula">
+    </div>
+    <div class="grid2">
+      <input id="f-telefone" placeholder="Telefone">
+      <input id="f-email" placeholder="E-mail">
+    </div>
+    <div class="grid2">
+      <select id="f-turno">
+        <option>tarde</option><option>manhã</option><option>noite</option><option>integral</option>
+      </select>
+      <select id="f-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select>
+    </div>
+    <textarea id="f-obs" placeholder="Observação geral" rows="3" style="margin-top:8px"></textarea>
+    <div style="display:flex; gap:10px; margin-top:10px">
+      <button onclick="salvarCadastro()">Salvar</button>
+      <div class="tag">Score: <b id="score">0</b></div>
+    </div>
+  </section>
+
+  <!-- Presenças e Notas -->
+  <aside class="card">
+    <h3>Registro Diário</h3>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <button onclick="marcar('P')">✔️ Presença (hoje)</button>
+      <button onclick="marcar('A')">❌ Ausência (hoje)</button>
+      <button onclick="marcar('FJ')">📝 Falta Justificada (hoje)</button>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <input type="date" id="de">
+      <input type="date" id="ate">
+    </div>
+    <button style="margin-top:8px" onclick="listarPresencas()">Listar Presenças</button>
+    <table style="margin-top:8px">
+      <thead><tr><th>Data</th><th>Status</th><th>Motivo/Obs.</th></tr></thead>
+      <tbody id="tb-pres"></tbody>
+    </table>
+  </aside>
+
+  <section class="card" style="grid-column: 1 / -1">
+    <h3>Observações / Pontuação</h3>
+    <div class="grid2">
+      <select id="n-tipo">
+        <option value="observacao">Observação</option>
+        <option value="elogio">Elogio</option>
+        <option value="advertencia">Advertência</option>
+      </select>
+      <input id="n-pontos" type="number" step="1" value="0" placeholder="Pontos (+/-)">
+    </div>
+    <textarea id="n-texto" rows="3" placeholder="Descreva a observação..." style="margin-top:8px"></textarea>
+    <div style="margin-top:8px">
+      <button onclick="adicionarNota()">Adicionar</button>
+    </div>
+    <table style="margin-top:10px">
+      <thead><tr><th>Data</th><th>Tipo</th><th>Texto</th><th>Pontos</th></tr></thead>
+      <tbody id="tb-notas"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const API = '/api/monitores';
+
+  // 👇 Guard: se abrir sem ?id=, volta para a lista
+  const url = new URL(location.href);
+  const id = url.searchParams.get('id');
+  if (!id || id === 'null' || id === 'undefined') {
+    alert('Acesso direto à ficha sem ID do monitor. Selecione um monitor no painel.');
+    location.replace('/monitores.html');
+    // evita executar o resto do script
+    throw new Error('Sem ID do monitor — redirecionando...');
+  }
+
+  let MONITOR = null;
+
+  function safeText(v){ return (v ?? '').toString(); }
+
+  async function carregar(){
+    const r = await fetch(`${API}/${id}`);
+    if(!r.ok){
+      if (r.status === 403) {
+        alert('Acesso restrito ao administrador.');
+      } else if (r.status === 404) {
+        alert('Monitor não encontrado. Voltando para a lista.');
+        location.replace('/monitores.html');
+      } else {
+        alert('Falha ao carregar a ficha.');
+      }
+      return;
+    }
+    MONITOR = await r.json();
+    document.getElementById('titulo').textContent = `Monitor – ${safeText(MONITOR.nome)}`;
+    document.getElementById('f-nome').value = safeText(MONITOR.nome);
+    document.getElementById('f-matricula').value = safeText(MONITOR.matricula);
+    document.getElementById('f-telefone').value = safeText(MONITOR.telefone);
+    document.getElementById('f-email').value = safeText(MONITOR.email);
+    document.getElementById('f-turno').value = MONITOR.turno || 'tarde';
+    document.getElementById('f-ativo').value = String(!!MONITOR.ativo);
+    document.getElementById('f-obs').value = safeText(MONITOR.observacaoGeral);
+    document.getElementById('score').textContent = MONITOR.score ?? 0;
+
+    listarPresencas();
+    listarNotas();
+  }
+
+  async function salvarCadastro(){
+    const payload = {
+      nome: document.getElementById('f-nome').value.trim(),
+      matricula: document.getElementById('f-matricula').value.trim(),
+      telefone: document.getElementById('f-telefone').value.trim(),
+      email: document.getElementById('f-email').value.trim(),
+      turno: document.getElementById('f-turno').value,
+      ativo: document.getElementById('f-ativo').value === 'true',
+      observacaoGeral: document.getElementById('f-obs').value.trim()
+    };
+    const r = await fetch(`${API}/${id}`, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!r.ok){ alert('Falha ao salvar'); return; }
+    const upd = await r.json(); MONITOR = upd;
+    document.getElementById('score').textContent = MONITOR.score ?? 0;
+    alert('Salvo.');
+  }
+
+  async function marcar(status){
+    let motivo = ''; if(status==='FJ'){ motivo = prompt('Motivo (opcional):') || ''; }
+    const r = await fetch(`${API}/${id}/presencas`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ status, motivo })
+    });
+    if(!r.ok){ alert('Erro ao marcar'); return; }
+    listarPresencas();
+  }
+
+  async function listarPresencas(){
+    const de = document.getElementById('de').value;
+    const ate = document.getElementById('ate').value;
+    const url = `${API}/${id}/presencas${(de||ate)?`?${de?`de=${de}`:''}${(de&&ate)?'&':''}${ate?`ate=${ate}`:''}`:''}`;
+    const r = await fetch(url); if(!r.ok){ return; }
+    const itens = await r.json();
+    const tb = document.getElementById('tb-pres');
+    tb.innerHTML = itens.map(p=>{
+      const dt = new Date(p.data).toLocaleDateString('pt-BR');
+      const lab = p.status==='P' ? '<span class="tag ok">Presença</span>' : (p.status==='A' ? '<span class="tag err">Ausência</span>' : '<span class="tag warn">Falta Justificada</span>');
+      const mo = [p.motivo,p.observacao].filter(Boolean).join(' — ');
+      return `<tr><td>${dt}</td><td>${lab}</td><td>${mo||''}</td></tr>`;
+    }).join('');
+  }
+
+  async function adicionarNota(){
+    const payload = {
+      tipo: document.getElementById('n-tipo').value,
+      pontos: Number(document.getElementById('n-pontos').value||0),
+      texto: document.getElementById('n-texto').value.trim()
+    };
+    if(!payload.texto){ alert('Descreva a observação.'); return; }
+    const r = await fetch(`${API}/${id}/notas`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!r.ok){ alert('Falha ao adicionar'); return; }
+    document.getElementById('n-texto').value = '';
+    document.getElementById('n-pontos').value = 0;
+    document.getElementById('n-tipo').value='observacao';
+    await carregar(); // recarrega score
+    listarNotas();
+  }
+
+  async function listarNotas(){
+    const r = await fetch(`${API}/${id}/notas`); if(!r.ok){ return; }
+    const itens = await r.json();
+    const tb = document.getElementById('tb-notas');
+    tb.innerHTML = itens.map(n=>{
+      const dt = new Date(n.data||n.createdAt).toLocaleString('pt-BR');
+      const pts = Number(n.pontos||0);
+      return `<tr><td>${dt}</td><td>${n.tipo}</td><td>${n.texto}</td><td style="font-weight:600; ${pts>0?'color:#44d07a':(pts<0?'color:#ff6b6b':'')}">${pts}</td></tr>`;
+    }).join('');
+  }
+
+  carregar();
+</script>
+
+</body>
+</html>

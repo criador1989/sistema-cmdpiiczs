@@ -148,6 +148,9 @@
         <a href="/notificacoes">🔔 Notificações</a>
         <a href="estatisticas.html">📉 Relatórios</a>
         <a href="mensagens.html">✉️ Mensagens</a>
+        <!-- 🔹 Controle de Monitores na barra lateral -->
+        <a href="/monitores.html">🧭 Monitores</a>
+        <a href="transferir-turma.html">🔁 Transferir Turmas</a>
         <a href="usuarios.html">⚙️ Administração</a>
         <a href="logs.html">🧾 Logs</a>
       </nav>
@@ -173,10 +176,9 @@
             <div class="metric"><div class="k">Mensagens não lidas</div><div class="v" id="mMsgs">—</div></div>
             <div class="metric"><div class="k">Devoluções em atraso</div><div class="v" id="mPendDevol">—</div></div>
           </div>
+
           <div class="menu-windows">
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'">
-              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3></div></div>
-            </div>
+            <!-- Mantidos os cartões; "Transferir Turma" movido para depois de Mensagens -->
             <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'">
               <div class="window-content"><div class="card-copy"><div class="kicker">MÓDULO</div><h3>Cadastrar Aluno</h3></div></div>
             </div>
@@ -195,6 +197,10 @@
             <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'">
               <div class="window-content"><div class="card-copy"><div class="kicker">COMUNICAÇÃO</div><h3>Mensagens</h3></div></div>
             </div>
+            <!-- 🔁 Transferir Turma agora vem logo após Mensagens -->
+            <div class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'">
+              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3></div></div>
+            </div>
           </div>
 
           <!-- Pendências -->
@@ -211,6 +217,7 @@
               </table>
             </div>
           </section>
+
           <!-- ===== BLOCO: Ações obrigatórias por comportamento ===== -->
           <section class="alertas-comportamento" id="acSection">
             <header class="ac-head">
@@ -344,7 +351,7 @@
         const nota  = (typeof data?.nota === 'number') ? ` • nota: ${data.nota.toFixed(2)}` : '';
         const msg = data?.mensagem || data?.message || `Falha de aplicação (${r.status})${faixa}${nota}`;
         showError(msg);
-        console.log('Resposta lógica:', data); // suavizado
+        console.log('Resposta lógica:', data);
         return {};
       }
       return data;
@@ -476,7 +483,7 @@
       insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
     };
 
-    // === linhas === (agora com data-nota e data-faixa)
+    // === linhas ===
     function rowReg(a){
       const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
       return `
@@ -570,7 +577,7 @@
       });
     });
 
-    // Ações (inclui envio de nota/faixa e tratamento de sucesso prático)
+    // Ações
     document.addEventListener('click', async (ev)=>{
       const btn = ev.target.closest('button[data-acao]'); if(!btn) return;
       const id = btn.dataset.id; const acao = btn.dataset.acao;
