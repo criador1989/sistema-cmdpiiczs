@@ -475,6 +475,7 @@ router.get(['/contagem', '/count'], autenticar, async (req, res) => {
   }
 });
 
+// GET /api/alunos
 router.get('/', autenticar, async (req, res) => {
   try {
     const semNota = ['1','true'].includes(String(req.query.semNota || '').toLowerCase());
@@ -501,6 +502,54 @@ router.get('/', autenticar, async (req, res) => {
   } catch (error) {
     console.error('Erro GET /api/alunos:', error);
     res.status(500).json({ message: 'Erro ao buscar alunos', error });
+  }
+});
+
+/* === CRIAÇÃO DE NOVO ALUNO === */
+// POST /api/alunos
+router.post('/', autenticar, async (req, res) => {
+  try {
+    if (!req.usuario?.instituicao) {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
+
+    let { nome, turma, dataEntrada, telefone } = req.body;
+    nome = String(nome || '').trim();
+    turma = normalizaTurma(turma);
+
+    if (!nome || !turma) {
+      return res.status(400).json({ message: 'Nome e turma são obrigatórios.' });
+    }
+
+    let dtEntrada;
+    if (dataEntrada) {
+      // vem do <input type="date"> → "yyyy-mm-dd"
+      const iso = String(dataEntrada).trim();
+      const dt = new Date(iso + 'T00:00:00');
+      if (!isNaN(dt.getTime())) dtEntrada = dt;
+    }
+
+    const novoAluno = await Aluno.create({
+      nome,
+      turma,
+      dataEntrada: dtEntrada,
+      telefone: String(telefone || '').trim(),
+      instituicao: req.usuario.instituicao,
+      ativo: true
+    });
+
+    await Log.create({
+      usuario: req.usuario.id,
+      instituicao: req.usuario.instituicao,
+      acao: 'Criação de Aluno',
+      entidade: 'Aluno',
+      entidadeId: novoAluno._id
+    });
+
+    res.status(201).json(anexarThumb(novoAluno));
+  } catch (error) {
+    console.error('Erro POST /api/alunos:', error);
+    res.status(500).json({ message: 'Erro ao criar aluno', error: error?.message || error });
   }
 });
 
