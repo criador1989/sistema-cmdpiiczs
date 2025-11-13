@@ -161,7 +161,7 @@ try {
 const alunoRoutes                   = require('./routes/api/alunos');
 const notificacoesMetricsRoutes     = require('./routes/api/notificacoes.metrics');
 const notificacoesApiRoutes         = require('./routes/api/notificacoes');
-const dashboardCompatRoutes         = require('./routes/api/dashboard-compat');
+// const dashboardCompatRoutes      = require('./routes/api/dashboard-compat'); // removido
 const alertasRoutes                 = require('./routes/api/alunos-alertas');
 const dashboardFastRoutes           = require('./routes/api/dashboard-fast');
 
@@ -296,8 +296,8 @@ function mountIf(prefix, router, ...middlewares) {
 mountIf('/api/notificacoes', notificacoesMetricsRoutes);
 mountIf('/api/notificacoes', notificacoesApiRoutes);
 
-// Dashboard compat
-mountIf('/api/dashboard', dashboardCompatRoutes);
+// (dashboard-compat removido)
+// mountIf('/api/dashboard', dashboardCompatRoutes);
 
 // Dashboard-fast protegido
 mountIf('/api/dashboard-fast', dashboardFastRoutes, autenticar);
@@ -335,7 +335,7 @@ mountIf('/api/telegram',       telegramBotRoutes);
 mountIf('/api/comunicacao',    comunicacaoPaisRoutes);
 mountIf('/api/comunicacao',    comunicacaoAutoRoutes);
 
-/* 🔥 🔒 CORREÇÃO AQUI — PROTEGENDO API MONITORES */
+/* 🔥 🔒 API MONITORES protegida com autenticação */
 mountIf('/api/monitores', monitoresApiRoutes, autenticar);
 
 // APH
