@@ -44,7 +44,8 @@
     }
 
     .topbar{
-      position:sticky; top:0; z-index:30; display:flex; gap:.75rem; align-items:center;
+      position:sticky; top:0; z-index:30;
+      display:flex; gap:.75rem; align-items:center;
       padding:12px 16px; backdrop-filter: blur(10px);
       background: rgba(30,5,6,.6); border-bottom:1px solid var(--fine2);
     }
@@ -53,6 +54,7 @@
     .pill-btn{
       border:1px solid var(--fine); color:#fff; text-decoration:none;
       background:rgba(255,255,255,.06); padding:.55rem .8rem; border-radius:12px;
+      white-space:nowrap;
     }
 
     /* Campo de busca */
@@ -143,10 +145,87 @@
     .kv label{color:var(--muted)}
     .nota{font-size:1.6rem; font-weight:900; letter-spacing:.5px; padding:.4rem .8rem; border-radius:12px; width:max-content; background:#0b0b0e; border:1px solid #ffffff18}
     .nota.ok{border-color:#16a34a80; box-shadow:0 0 0 1px #16a34a30 inset}
-    .actions{display:flex; gap:.5rem; margin-top:12px}
+    .actions{display:flex; gap:.5rem; margin-top:12px; flex-wrap:wrap}
     .btn{background: linear-gradient(180deg, #ffffff10, #ffffff08); border:1px solid #ffffff24; color:#fff; border-radius:12px; padding:.6rem .9rem; font-weight:700; cursor:pointer}
     .btn:hover{border-color:#ffffff38}
     .empty{opacity:.8; color:var(--muted); padding:14px}
+
+    /* =========================
+       RESPONSIVIDADE
+       ========================= */
+
+    /* Tablet / celular: topbar quebra em linhas e inputs ocupam largura total */
+    @media (max-width: 900px) {
+      .topbar{
+        flex-wrap:wrap;
+        gap:.5rem .75rem;
+      }
+      .brand{
+        flex-basis: 100%;
+        font-size:.95rem;
+      }
+      .spacer{
+        display:none;
+      }
+      .input,
+      #selTurma{
+        flex:1 1 calc(50% - .75rem);
+        min-width:0;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .topbar{
+        padding:10px 10px;
+      }
+      .pill-btn{
+        font-size:.8rem;
+        padding:.45rem .7rem;
+      }
+      .wrap{
+        padding:12px;
+      }
+      #grade-alunos{
+        grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+      }
+      .avatar-wrap{
+        width:52px;
+        height:52px;
+      }
+      .card{
+        padding:10px 12px;
+      }
+      .input,
+      #selTurma{
+        flex:1 1 100%;
+      }
+      .input{
+        order:2;
+      }
+      #selTurma{
+        order:3;
+      }
+    }
+
+    /* Modal em 1 coluna no celular */
+    @media (max-width: 768px) {
+      .modal{
+        padding:14px;
+      }
+      .ficha{
+        grid-template-columns: 1fr;
+      }
+      .foto{
+        max-width:260px;
+        margin:0 auto 10px;
+      }
+      .kv{
+        grid-template-columns: 1fr;
+      }
+      .nota{
+        font-size:1.3rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -268,24 +347,38 @@
     if (turma) carregar();
   });
 
-  function avatarComFoto(id, nome){
+  function normalizarUploadsPath(p){
+    if(!p) return '';
+    let s=String(p).trim().replace(/^\/+/, '').replace(/\\/g,'/');
+    if(!/^uploads\//i.test(s) && !/^https?:\/\//i.test(s) && !/^data:image\//i.test(s)){
+      s='uploads/'+s;
+    }
+    return /^https?:\/\//i.test(s) || /^data:image\//i.test(s) ? s : '/'+s;
+  }
+
+  function avatarComFoto(a){
     const wrap = document.createElement('div');
     wrap.className = 'avatar-wrap';
 
     const inic = document.createElement('div');
     inic.className = 'avatar-iniciais';
-    const letras = (nome||'').split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('');
+    const letras = (a.nome||'').split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('');
     inic.textContent = letras || '?';
 
     const img = document.createElement('img');
     img.className = 'avatar-img';
-    img.alt = `Foto de ${nome || 'aluno'}`;
+    img.alt = `Foto de ${a.nome || 'aluno'}`;
     img.loading = 'lazy';
     img.decoding = 'async';
     img.referrerPolicy = 'no-referrer';
-    img.dataset.src = `/api/imagens/thumb/${id}`;
-    img.addEventListener('load', () => img.classList.add('show'));
-    img.addEventListener('error', () => { img.remove(); });
+
+    // sem chamadas /api/imagens/*
+    const src = a.fotoUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
+    if (src) {
+      img.dataset.src = src;
+      img.addEventListener('load', () => img.classList.add('show'));
+      img.addEventListener('error', () => { img.remove(); });
+    }
 
     wrap.append(inic, img);
     return wrap;
@@ -324,7 +417,7 @@
     const btn = document.createElement('button');
     btn.className = 'card'; btn.type = 'button'; btn.dataset.id = a._id;
 
-    btn.append(trashButton(a._id), avatarComFoto(a._id, a.nome), infoBlock(a));
+    btn.append(trashButton(a._id), avatarComFoto(a), infoBlock(a));
     btn.addEventListener('click', () => abrirFicha(a));
     // observar para lazy da imagem
     ioImg.observe(btn);
@@ -378,20 +471,27 @@
   async function abrirFicha(aCard) {
     const id = aCard._id;
     try {
-      // imagem: thumb instantâneo -> preview 640
       const img = qs('#modal-foto');
-      img.src = `/api/imagens/thumb/${id}`;
-      const previewUrl = `/api/imagens/preview/${id}?w=640`;
-      const preload = new Image();
-      preload.onload = () => { img.src = previewUrl; };
-      preload.src = previewUrl;
+      const fotoLocal = aCard.fotoUrl || aCard.fotoThumb || (aCard.foto ? normalizarUploadsPath(aCard.foto) : '');
+      if (fotoLocal) {
+        img.src = fotoLocal;
+        img.onerror = () => { img.removeAttribute('src'); };
+      } else {
+        img.removeAttribute('src');
+      }
 
-      const url = `/api/alunos/${id}/detalhes`;
+      const url = `/api/fichaAluno/${id}`;
       const res = await fetch(url, { credentials: 'include', cache:'no-store' });
       if (!res.ok) throw new Error('Falha ao buscar detalhes');
       const data = await res.json();
 
       const a = data.aluno || {};
+      const fotoFicha = a.fotoUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
+      if (fotoFicha) {
+        img.src = fotoFicha;
+        img.onerror = () => { img.removeAttribute('src'); };
+      }
+
       qs('#badge-turma').textContent = a.turma || '—';
       qs('#modal-nome').textContent = a.nome || 'Aluno';
       qs('#kv-nome').textContent = a.nome || '—';
@@ -402,9 +502,12 @@
       qs('#kv-endereco').textContent = a.endereco || '—';
 
       const notaEl = qs('#modal-nota');
-      if (typeof data.notaAtual === 'number') {
-        notaEl.textContent = data.notaAtual.toFixed(2).replace('.', ',');
-        notaEl.classList.toggle('ok', data.notaAtual >= 8.5);
+      if (typeof a.comportamento === 'number') {
+        notaEl.textContent = a.comportamento.toFixed(2).replace('.', ',');
+        notaEl.classList.toggle('ok', a.comportamento >= 8.5);
+      } else if (typeof data.notaComportamento === 'number') {
+        notaEl.textContent = data.notaComportamento.toFixed(2).replace('.', ',');
+        notaEl.classList.toggle('ok', data.notaComportamento >= 8.5);
       } else {
         notaEl.textContent = '—';
         notaEl.classList.remove('ok');
@@ -451,7 +554,10 @@
       if (!entry.isIntersecting) return;
       const card = entry.target;
       const img = card.querySelector('.avatar-img');
-      if (img && !img.src) img.src = img.dataset.src;
+      if (img && !img.src && img.dataset.src) {
+        img.src = img.dataset.src;
+        img.onload = () => img.classList.add('show');
+      }
       ioImg.unobserve(card);
     });
   }, { root: null, rootMargin: '200px 0px', threshold: 0 });
@@ -465,5 +571,7 @@
   });
 })();
 </script>
+<script src="notify.js"></script>
+
 </body>
 </html>
