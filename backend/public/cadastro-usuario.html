@@ -62,7 +62,8 @@
       <input type="text" id="nome" placeholder="Nome completo" required />
       <input type="email" id="email" placeholder="E-mail institucional" required />
       <input type="password" id="senha" placeholder="Senha (mín. 6 caracteres)" required />
-      <input type="text" id="instituicao" placeholder="Instituição (ex: Colégio Militar D. Pedro II)" required />
+      <!-- Campo apenas informativo (backend usa a instituição do admin logado) -->
+      <input type="text" id="instituicao" placeholder="Instituição (ex: Colégio Militar D. Pedro II)" />
       <select id="tipo" required>
         <option value="">Selecione o tipo de usuário</option>
         <option value="admin">Administrador</option>
@@ -113,7 +114,6 @@
       const nomeVal = document.getElementById('nome').value.trim();
       const email = document.getElementById('email').value.trim();
       const senha = document.getElementById('senha').value.trim();
-      const instituicao = document.getElementById('instituicao').value.trim();
       const tipo = document.getElementById('tipo').value;
       const msg = document.getElementById('mensagem');
       msg.textContent = '';
@@ -129,7 +129,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ nome: nomeVal, email, senha, instituicao, tipo })
+          // 🔴 NÃO enviamos mais "instituicao" aqui.
+          body: JSON.stringify({ nome: nomeVal, email, senha, tipo })
         });
         const data = await r.json().catch(() => ({}));
         if (r.ok) {
