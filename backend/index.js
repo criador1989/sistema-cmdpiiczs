@@ -20,13 +20,11 @@ const app = express();
 console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
 app.set('trust proxy', 1);
 
-// Evita cache de HTML
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
 
-// Cabeçalhos de segurança em produção
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -161,7 +159,6 @@ try {
 const alunoRoutes                   = require('./routes/api/alunos');
 const notificacoesMetricsRoutes     = require('./routes/api/notificacoes.metrics');
 const notificacoesApiRoutes         = require('./routes/api/notificacoes');
-// const dashboardCompatRoutes      = require('./routes/api/dashboard-compat'); // removido
 const alertasRoutes                 = require('./routes/api/alunos-alertas');
 const dashboardFastRoutes           = require('./routes/api/dashboard-fast');
 
@@ -234,7 +231,6 @@ app.get('/api/usuario-logado', autenticar, (req, res) => {
   });
 });
 
-// Debug opcional
 app.get('/api/debug/whoami-raw', (req, res) => {
   res.json({
     cookies: req.cookies || {},
@@ -292,17 +288,11 @@ function mountIf(prefix, router, ...middlewares) {
   else app.use(prefix, router);
 }
 
-// Notificações
 mountIf('/api/notificacoes', notificacoesMetricsRoutes);
 mountIf('/api/notificacoes', notificacoesApiRoutes);
 
-// (dashboard-compat removido)
-// mountIf('/api/dashboard', dashboardCompatRoutes);
-
-// Dashboard-fast protegido
 mountIf('/api/dashboard-fast', dashboardFastRoutes, autenticar);
 
-// APIs diversas
 mountIf('/api/ficha',          fichaApiRoutes, autenticar);
 mountIf('/api/fichaAluno',     fichaAlunoRoutes, autenticar);
 mountIf('/ficha',              fichaViewRoutes, autenticar);
@@ -335,10 +325,8 @@ mountIf('/api/telegram',       telegramBotRoutes);
 mountIf('/api/comunicacao',    comunicacaoPaisRoutes);
 mountIf('/api/comunicacao',    comunicacaoAutoRoutes);
 
-/* 🔥 🔒 API MONITORES protegida com autenticação */
-mountIf('/api/monitores', monitoresApiRoutes, autenticar);
+mountIf('/api/monitores',      monitoresApiRoutes, autenticar);
 
-// APH
 mountIf('/api/aph', aphCrudRoutes, autenticar);
 mountIf('/api/aph', aphEstatisticasRoutes);
 mountIf('/api/aph', aphPdfRoutes);
@@ -348,11 +336,24 @@ mountIf('/api/aph', aphPdfRoutes);
    ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
+const imgRoot    = path.join(__dirname, 'img');
+
+// garantir pastas
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
 fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
+fs.mkdirSync(imgRoot, { recursive: true });
 
 app.use('/uploads', express.static(uploadRoot));
-app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), { maxAge: '7d', immutable: true }));
+app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), {
+  maxAge: '7d',
+  immutable: true
+}));
+
+// 🔥 onde ficará o papel de parede: backend/img/bg-painel-smart.png
+app.use('/img', express.static(imgRoot, {
+  maxAge: '30d',
+  immutable: true
+}));
 
 app.use(express.static(publicRoot, {
   setHeaders: (res, filePath) => {

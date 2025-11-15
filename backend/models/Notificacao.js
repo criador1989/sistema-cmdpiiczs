@@ -46,7 +46,12 @@ const notificacaoSchema = new mongoose.Schema({
   numeroSequencial: { type: String, required: true },
 
   // ✅ ObjectId (ref Instituicao)
-  instituicao: { type: mongoose.Schema.Types.ObjectId, ref: 'Instituicao', required: true, index: true },
+  instituicao: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Instituicao',
+    required: true,
+    index: true,
+  },
 
   // fluxo de aprovação
   status: {

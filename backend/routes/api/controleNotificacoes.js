@@ -377,4 +377,52 @@ router.get('/estatisticas', autenticar, async (req, res) => {
   }
 });
 
+/* ============================================================
+   🔹 (NOVO) ENDPOINTS DE CONTAGEM COMPATÍVEIS COM O PAINEL
+   ============================================================ */
+/**
+ * GET /emitidas/contagem
+ * GET /contagem
+ * Ambos aceitam filtros opcionais:
+ *   - status=pendente,deferido,arquivado
+ *   - from=YYYY-MM-DD
+ *   - to=YYYY-MM-DD
+ * Retorno: { total: <number> }
+ */
+async function contarNotificacoes(req, res) {
+  try {
+    const filtro = { ...filtroInstituicaoDoUsuario(req.usuario) };
+
+    // status (lista separada por vírgulas)
+    if (req.query.status) {
+      const sts = String(req.query.status)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+      if (sts.length) filtro.status = { $in: sts };
+    }
+
+    // intervalo de datas por createdAt
+    const from = req.query.from ? new Date(req.query.from) : null;
+    const to   = req.query.to   ? new Date(req.query.to)   : null;
+    if ((from && !isNaN(from)) || (to && !isNaN(to))) {
+      const ini = from && !isNaN(from) ? from : new Date('1970-01-01');
+      const fim = to && !isNaN(to) ? new Date(to) : new Date();
+      if (!isNaN(fim)) fim.setHours(23,59,59,999);
+      filtro.createdAt = { $gte: ini, $lte: fim };
+    }
+
+    // Por padrão, "emitidas" = todas as notificações da instituição (qualquer status)
+    const total = await Notificacao.countDocuments(filtro);
+    return res.json({ total });
+  } catch (e) {
+    console.error('[CTRL-NOTIF] contagem falhou:', e);
+    return res.status(500).json({ erro: 'Erro ao contar notificações' });
+  }
+}
+
+router.get('/emitidas/contagem', autenticar, contarNotificacoes);
+router.get('/contagem', autenticar, contarNotificacoes);
+/* ============================================================ */
+
 module.exports = router;

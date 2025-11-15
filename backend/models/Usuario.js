@@ -38,7 +38,7 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
-    // 🔗 Referência para a instituição
+    // 🔗 Referência para a instituição (ObjectId)
     instituicao: {
       type: Schema.Types.ObjectId,
       ref: 'Instituicao',

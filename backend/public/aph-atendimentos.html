@@ -19,6 +19,9 @@
   --muted:#b9c8e0;
   --line:rgba(170,200,240,.36);
 
+  /* para compatibilizar com o body global */
+  --text-main:#ffffff;
+
   /* fundos */
   --bg-0:#17416e;      /* topo */
   --bg-1:#0f2f53;      /* base */
@@ -53,20 +56,15 @@
 
 *{box-sizing:border-box}
 html,body{height:100%}
+
+/* ====== BODY COM MESMO FUNDO DO PAINEL ====== */
 body{
-  margin:0; color:var(--ink);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-  background:
-    var(--glow-1),
-    var(--glow-2),
-    var(--glow-3),
-    var(--bokeh-1),
-    var(--bokeh-2),
-    var(--bokeh-3),
-    var(--bokeh-4),
-    linear-gradient(180deg, var(--bg-0), var(--bg-1));
-  background-blend-mode: screen, screen, screen, normal;
-  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  margin:0;
+  font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color:var(--text-main);
+  background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+  color-scheme:dark;
+  -webkit-font-smoothing:antialiased;
 }
 
 /* ===== Top bar ===== */

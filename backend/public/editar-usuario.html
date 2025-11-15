@@ -4,43 +4,240 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Editar Usuário - Sistema Escolar</title>
-  <meta name="theme-color" content="#8B0000" />
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
   <style>
-    :root{ --rubi-1:#8B0000; --rubi-2:#B22222; }
+    :root{
+      /* Paleta + glass azul (mesmo conceito do painel) */
+      --navy-1:#020617;
+      --navy-2:#020617;
+      --accent-1:#1d4ed8;
+      --accent-2:#38bdf8;
+
+      --glass-bg: rgba(15,23,42,.88);
+      --glass-border: rgba(148,163,184,.55);
+      --glass-shadow: 0 22px 60px rgba(15,23,42,.95);
+
+      --text:#e5f0ff;
+      --text-soft:#9ca3af;
+      --line:#4b5563;
+    }
+
+    *{
+      box-sizing:border-box;
+    }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
+    }
+
     body{
       font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
-      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
-      margin:0; min-height:100vh; display:grid; place-items:center; color:#222;
+      display:grid;
+      place-items:center;
+      color:var(--text);
+      background:#020617;
     }
+
+    /* Fundo com luzes azuis, mesmo mood do painel */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      background:
+        radial-gradient(1200px 700px at -10% -10%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(1200px 900px at 110% 110%, rgba(37,99,235,.22), transparent 65%),
+        radial-gradient(900px 900px at 50% 120%, rgba(15,23,42,.96), transparent 70%),
+        linear-gradient(135deg, #020617 0%, #020617 40%, #020617 100%);
+      filter:saturate(115%);
+    }
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:
+        linear-gradient(135deg, rgba(148,163,184,.12) 0%, transparent 35%, transparent 65%, rgba(56,189,248,.12) 100%),
+        radial-gradient(650px 650px at 10% 30%, rgba(15,23,42,.9), transparent 70%),
+        radial-gradient(650px 650px at 90% 20%, rgba(15,23,42,.9), transparent 70%);
+      mix-blend-mode:soft-light;
+    }
+
     .container{
-      width:min(420px,92vw); background:#fff; border-radius:14px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25); padding:28px 24px; animation:fade .35s ease-out both;
+      position:relative;
+      z-index:1;
+      width:min(460px,92vw);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56,189,248,.12), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(37,99,235,.16), transparent 55%),
+        var(--glass-bg);
+      border-radius:22px;
+      border:1px solid var(--glass-border);
+      box-shadow:var(--glass-shadow);
+      padding:26px 22px 22px;
+      backdrop-filter:blur(18px) saturate(150%);
+      animation:fade .35s ease-out both;
     }
-    h2{ margin:0 0 16px 0; text-align:center; color:var(--rubi-1); }
-    label{ display:block; font-size:.9rem; margin:10px 0 6px; color:#444; }
-    input, select, datalist{
-      width:100%; padding:12px; border-radius:8px; border:1px solid #cfcfcf; font-size:15px; outline:none;
+
+    h2{
+      margin:0 0 18px 0;
+      text-align:center;
+      color:#f9fbff;
+      letter-spacing:.04em;
+      text-shadow:0 2px 10px rgba(15,23,42,.9);
+      font-size:1.25rem;
     }
-    input:focus,select:focus{ border-color:var(--rubi-2); box-shadow:0 0 0 3px rgba(178,34,34,.12); }
-    .muted{ font-size:12px; color:#777; margin-top:4px; }
+
+    label{
+      display:block;
+      font-size:.82rem;
+      margin:10px 0 6px;
+      color:var(--text-soft);
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+
+    input,
+    select{
+      width:100%;
+      padding:10px 11px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      font-size:.95rem;
+      outline:none;
+      background:rgba(15,23,42,.9);
+      color:var(--text);
+      box-shadow:inset 0 0 0 1px rgba(15,23,42,1);
+    }
+
+    input::placeholder{
+      color:rgba(148,163,184,.8);
+    }
+
+    input:disabled{
+      opacity:.8;
+      cursor:not-allowed;
+      background:rgba(15,23,42,.7);
+    }
+
+    input:focus,
+    select:focus{
+      border-color:rgba(56,189,248,.85);
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,.7),
+        0 0 0 6px rgba(56,189,248,.22);
+    }
+
+    .muted{
+      font-size:12px;
+      color:var(--text-soft);
+      margin-top:4px;
+    }
+
     button{
-      width:100%; padding:12px; margin-top:14px; border:none; border-radius:10px;
-      background:var(--rubi-2); color:#fff; font-weight:700; cursor:pointer;
+      width:100%;
+      padding:11px 12px;
+      margin-top:16px;
+      border:none;
+      border-radius:999px;
+      background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+      color:#f9fbff;
+      font-weight:700;
+      cursor:pointer;
+      letter-spacing:.03em;
+      box-shadow:0 14px 32px rgba(37,99,235,.7);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
     }
-    button:hover{ background:var(--rubi-1); }
-    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .links{ margin-top:10px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+
+    button:hover{
+      transform:translateY(-1px);
+      box-shadow:0 18px 40px rgba(37,99,235,.8);
+      filter:brightness(1.05);
+    }
+
+    button:active{
+      transform:translateY(0);
+      box-shadow:0 10px 26px rgba(15,23,42,.9);
+      filter:brightness(.97);
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    @media (max-width:480px){
+      .row{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .links{
+      margin-top:14px;
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
     .links a{
-      display:inline-block; padding:10px 12px; border-radius:10px; text-decoration:none;
-      background:#f4f4f4; color:var(--rubi-2); border:2px solid var(--rubi-2); font-weight:700;
+      flex:1;
+      text-align:center;
+      padding:9px 10px;
+      border-radius:999px;
+      text-decoration:none;
+      background:rgba(15,23,42,.85);
+      color:#e5f0ff;
+      border:1px solid rgba(148,163,184,.6);
+      font-weight:600;
+      font-size:.9rem;
+      box-shadow:0 10px 24px rgba(15,23,42,.9);
+      white-space:nowrap;
     }
-    .links a:hover{ background:var(--rubi-2); color:#fff; }
-    .msg{ min-height:18px; margin-top:8px; font-size:14px; }
-    .ok{ color:#0a8f3c; } .err{ color:#b00020; }
-    @keyframes fade{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+
+    .links a:hover{
+      border-color:rgba(56,189,248,.9);
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow:0 14px 32px rgba(37,99,235,.75);
+    }
+
+    .msg{
+      min-height:18px;
+      margin-top:8px;
+      font-size:14px;
+    }
+
+    .ok{
+      color:#4ade80;
+    }
+
+    .err{
+      color:#fb7185;
+    }
+
+    @keyframes fade{
+      from{
+        opacity:0;
+        transform:translateY(10px);
+      }
+      to{
+        opacity:1;
+        transform:none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -53,7 +250,9 @@
 
       <label for="email">E-mail (não editável)</label>
       <input type="email" id="email" placeholder="E-mail" required disabled />
-      <div class="muted">O e-mail é único por instituição e não pode ser alterado aqui.</div>
+      <div class="muted">
+        O e-mail é único por instituição e não pode ser alterado aqui.
+      </div>
 
       <div class="row">
         <div>
@@ -66,15 +265,27 @@
         </div>
         <div>
           <label for="novaSenha">Nova senha (opcional)</label>
-          <input type="password" id="novaSenha" placeholder="Deixe em branco para manter" />
+          <input
+            type="password"
+            id="novaSenha"
+            placeholder="Deixe em branco para manter"
+            autocomplete="new-password"
+          />
           <div class="muted">Mínimo de 6 caracteres, se preencher.</div>
         </div>
       </div>
 
       <label for="instituicao">Instituição</label>
-      <input list="lista-instituicoes" id="instituicao" placeholder="Nome da instituição ou ObjectId" required />
+      <input
+        list="lista-instituicoes"
+        id="instituicao"
+        placeholder="Nome da instituição ou ObjectId"
+        required
+      />
       <datalist id="lista-instituicoes"></datalist>
-      <div class="muted">Pode digitar o <b>nome</b> (sugerido) ou colar o <b>ObjectId</b>. O servidor resolve automaticamente.</div>
+      <div class="muted">
+        Pode digitar o <b>nome</b> (sugerido) ou colar o <b>ObjectId</b>. O servidor resolve automaticamente.
+      </div>
 
       <button type="submit">Salvar alterações</button>
       <div class="msg" id="msg"></div>
@@ -125,7 +336,10 @@
     // 📚 Preenche o datalist de instituições (opcional)
     async function carregarInstituicoes() {
       try {
-        const r = await fetch(API('/instituicoes?limite=500'), { credentials:'include', cache:'no-store' });
+        const r = await fetch(API('/instituicoes?limite=500'), {
+          credentials:'include',
+          cache:'no-store'
+        });
         const data = await r.json();
         const itens = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
         const dl = $('lista-instituicoes');
@@ -137,19 +351,23 @@
           dl.appendChild(opt);
         });
       } catch (e) {
-        console.warn('Falha ao carregar instituições:', e.message);
+        console.warn('Falha ao carregar instituições:', e?.message || e);
       }
     }
 
     // 🔄 Carrega dados do usuário
     async function carregarUsuario() {
       try {
-        const r = await fetch(API(`/usuarios/${userId}`), { credentials:'include', cache:'no-store' });
+        const r = await fetch(API(`/usuarios/${userId}`), {
+          credentials:'include',
+          cache:'no-store'
+        });
         if (!r.ok) throw new Error('Erro ao buscar usuário');
         const u = await r.json();
-        $('nome').value = u.nome || '';
+        $('nome').value  = u.nome  || '';
         $('email').value = u.email || '';
-        $('tipo').value = u.tipo || 'monitor';
+        $('tipo').value  = u.tipo  || 'monitor';
+
         const instValue = typeof u.instituicao === 'object'
           ? (u.instituicao?.nome || u.instituicao?._id || '')
           : (u.instituicao || '');
@@ -164,28 +382,34 @@
     $('form-editar').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const msg = $('msg');
-      msg.className = 'msg'; msg.textContent = '';
+      msg.className = 'msg';
+      msg.textContent = '';
 
       const payload = {
         nome: $('nome').value.trim(),
         tipo: $('tipo').value,
         instituicao: $('instituicao').value.trim()
       };
+
       const novaSenha = $('novaSenha').value.trim();
       if (novaSenha) {
         if (novaSenha.length < 6) {
-          msg.classList.add('err'); msg.textContent = 'A nova senha deve ter pelo menos 6 caracteres.';
+          msg.classList.add('err');
+          msg.textContent = 'A nova senha deve ter pelo menos 6 caracteres.';
           return;
         }
         payload.senha = novaSenha;
       }
 
       if (!['admin','monitor','professor'].includes(payload.tipo)) {
-        msg.classList.add('err'); msg.textContent = 'Tipo inválido.';
+        msg.classList.add('err');
+        msg.textContent = 'Tipo inválido.';
         return;
       }
+
       if (!payload.nome || !payload.instituicao) {
-        msg.classList.add('err'); msg.textContent = 'Preencha todos os campos obrigatórios.';
+        msg.classList.add('err');
+        msg.textContent = 'Preencha todos os campos obrigatórios.';
         return;
       }
 
@@ -197,22 +421,30 @@
           cache: 'no-store',
           body: JSON.stringify(payload)
         });
+
         const data = await r.json().catch(() => ({}));
 
         if (r.ok) {
-          msg.classList.add('ok'); msg.textContent = '✅ Usuário atualizado com sucesso.';
+          msg.classList.add('ok');
+          msg.textContent = '✅ Usuário atualizado com sucesso.';
           setTimeout(() => location.href = 'usuarios.html', 700);
         } else {
-          msg.classList.add('err'); msg.textContent = data?.mensagem || 'Erro ao atualizar usuário.';
+          msg.classList.add('err');
+          msg.textContent = data?.mensagem || 'Erro ao atualizar usuário.';
         }
       } catch (e) {
-        msg.classList.add('err'); msg.textContent = 'Erro de conexão com o servidor.';
+        msg.classList.add('err');
+        msg.textContent = 'Erro de conexão com o servidor.';
         console.error(e);
       }
     });
 
     (async function boot(){
-      if (!userId) { alert('ID do usuário não informado.'); location.href='usuarios.html'; return; }
+      if (!userId) {
+        alert('ID do usuário não informado.');
+        location.href='usuarios.html';
+        return;
+      }
       await garantirAdmin();
       await carregarInstituicoes();
       await carregarUsuario();

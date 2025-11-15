@@ -1,10 +1,13 @@
 // backend/routes/api/notificacoes.js
+'use strict';
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
 const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
+const Counter = require('../../models/Counter'); // ✅ CONTADOR ATÔMICO
 
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const enviarWhatsapp = require('../../utils/twilio');
@@ -52,7 +55,7 @@ function formatDataHoraBr(dt) {
   const d = new Date(dt);
   const hh = String(d.getHours()).padStart(2,'0');
   const mi = String(d.getMinutes()).padStart(2,'0');
-  return `${formatDataBr(d)} ${hh}:${mi}`;
+  return `${formatDataBr(d)} ${hh}:${mi}`; // usa formatDataBr
 }
 
 /** Monta assunto/corpo do comunicado de DEFERIMENTO */
@@ -251,6 +254,49 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
   }
 }
 
+/* ========= NOVO: contador atômico p/ numeroSequencial (com pad dinâmico) ========= */
+async function getNextNumeroSequencialAtomic(session, instituicao, dataRef = new Date()) {
+  const ano = (dataRef instanceof Date) ? dataRef.getFullYear() : new Date().getFullYear();
+  const chave = `notificacao:${String(instituicao)}:${ano}`;
+
+  // Detecta pad (largura) do último nº usado
+  const ult = await Notificacao.find({
+    instituicao: instituicao,
+    data: { $gte: new Date(ano, 0, 1), $lt: new Date(ano + 1, 0, 1) }
+  }).select('numeroSequencial').sort({ createdAt: -1 }).limit(1).session(session).lean();
+
+  let startSeq = 0;
+  let pad = 4;
+  if (ult?.length && ult[0]?.numeroSequencial) {
+    const m = String(ult[0].numeroSequencial).match(/^(\d{1,})\//);
+    if (m) {
+      startSeq = parseInt(m[1], 10) || 0;
+      pad = Math.max(m[1].length, 4);
+    }
+  }
+
+  // Garante documento de counter (sementeia se necessário)
+  await Counter.findOneAndUpdate(
+    { chave },
+    { $setOnInsert: { seq: startSeq, atualizadoEm: new Date() } },
+    { upsert: true, new: true, session }
+  );
+
+  // Incrementa atômico
+  const updated = await Counter.findOneAndUpdate(
+    { chave },
+    { $inc: { seq: 1 }, $set: { atualizadoEm: new Date() } },
+    { new: true, session }
+  );
+
+  const seq = updated.seq;
+  return {
+    ano,
+    seq,
+    numeroSequencial: `${String(seq).padStart(pad, '0')}/${ano}`
+  };
+}
+
 /* ========= NOVO HELPER: recalcular campos nota da própria notificação ========= */
 async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
   try {
@@ -315,7 +361,14 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
   }
 }
 
-/* ================= ROTAS ================= */
+/* ========= Helper local: valida ObjectId para rotas /:id ========= */
+function isObjectId(v) {
+  return /^[0-9a-fA-F]{24}$/.test(String(v));
+}
+
+/* ================= ROTAS (ORDEM IMPORTA!) ================= */
+
+/* ---------------- ROTAS ESTÁTICAS / COLEÇÕES --------------- */
 
 // GET "/novas" (placeholder)
 router.get('/novas', autenticar, attachActor, async (_req, res) => {
@@ -341,8 +394,8 @@ router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req
   }
 });
 
-// GET "/pendencias/devolucao"
-router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) => {
+/* ——— Handler compartilhado para pendências de devolução ——— */
+async function handlerPendenciasDevolucao(req, res) {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
@@ -367,6 +420,37 @@ router.get('/pendencias/devolucao', autenticar, attachActor, async (req, res) =>
   } catch (err) {
     console.error('Erro pendências:', err);
     res.status(500).json({ error: 'Erro ao buscar pendências de devolução.' });
+  }
+}
+
+// GET "/pendencias/devolucao" (rota original)
+router.get('/pendencias/devolucao', autenticar, attachActor, handlerPendenciasDevolucao);
+
+// ✅ Alias chamado pelo painel antigo: "/pendentes-devolucao"
+router.get('/pendentes-devolucao', autenticar, attachActor, handlerPendenciasDevolucao);
+
+// ✅ Alias para listagem de pendentes (usado no painel em alguns pontos)
+router.get('/pendentes', autenticar, attachActor, async (req, res) => {
+  try {
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '50', 10), 1), 200);
+
+    const itens = await Notificacao.find({
+      ...instMatch,
+      status: 'pendente'
+    })
+      .sort({ data: -1, createdAt: -1 })
+      .limit(limit)
+      .select('aluno numeroSequencial tipo tipoMedida data status natureza')
+      .populate({ path: 'aluno', select: 'nome turma instituicao', match: alunoMatch })
+      .lean();
+
+    const filtrados = (itens || []).filter(i => i.aluno);
+    res.json({ total: filtrados.length, itens: filtrados });
+  } catch (err) {
+    console.error('Erro listar pendentes:', err);
+    res.status(500).json({ error: 'Erro ao buscar notificações pendentes.' });
   }
 });
 
@@ -434,12 +518,174 @@ router.get('/', autenticar, attachActor, async (req, res) => {
   }
 });
 
+/* -------------------- POST "/" (CRIAR) — COM TRANSAÇÃO -------------------- */
+router.post('/', autenticar, attachActor, async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    const inst = req.usuario?.instituicao;
+    if (!inst) { session.endSession(); return res.status(401).json({ message: 'Não autenticado.' }); }
+
+    const {
+      aluno, natureza, tipo, tipoMedida, tipoElogio,
+      motivo, quantidadeDias, valorNumerico, observacao, data,
+      artigo, paragrafo, inciso, classificacaoRegulamento,
+      comentarioMonitor
+    } = req.body || {};
+
+    if (!aluno || !mongoose.isValidObjectId(aluno)) {
+      session.endSession();
+      return res.status(400).json({ message: 'Aluno inválido/ausente.' });
+    }
+
+    // Confirma aluno pertence à instituição
+    const alunoDoc = await Aluno.findOne({ _id: aluno, ...buildAlunoMatch(inst) }).select('nome turma instituicao').lean();
+    if (!alunoDoc) { session.endSession(); return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' }); }
+
+    // Normaliza natureza/medida/valor
+    const ehElogio = (natureza === 'elogio');
+    let tituloMedida = ehElogio ? 'Elogio' : (tipoMedida || tipo || '').trim();
+    let dias = 1;
+    if (!ehElogio && PRECISA_DIAS.has(tituloMedida)) {
+      const d = parseInt(quantidadeDias, 10);
+      dias = Number.isInteger(d) && d > 0 ? d : 1;
+    }
+
+    let valor = 0;
+    if (ehElogio) {
+      const m = MAPA_ELOGIOS[tipoElogio] ?? undefined;
+      valor = typeof valorNumerico === 'number' ? valorNumerico : (typeof m === 'number' ? m : 0);
+    } else {
+      const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
+      valor = typeof valorNumerico === 'number' ? valorNumerico : Number((base * dias).toFixed(2));
+    }
+
+    // DATA
+    const dataRef = data ? parseDateOnlyLocal(data) : new Date();
+
+    // 🔒 TRANSAÇÃO: gera numeroSequencial e cria a notificação
+    await session.startTransaction();
+
+    // numeroSequencial atômico
+    let ns = await getNextNumeroSequencialAtomic(session, inst, dataRef);
+    let numeroSequencial = ns.numeroSequencial;
+
+    let novo;
+    try {
+      novo = await Notificacao.create([{
+        instituicao: inst,
+        aluno,
+        natureza: ehElogio ? 'elogio' : 'indisciplina',
+        tipo: tituloMedida || (ehElogio ? 'Elogio' : ''),
+        tipoMedida: tituloMedida || (ehElogio ? 'Elogio' : ''),
+        tipoElogio: ehElogio ? (tipoElogio || null) : null,
+        motivo: ehElogio
+          ? ({
+              elogioVerbal: 'Elogio verbal',
+              boletimInternoIndividual: 'Boletim Interno Individual',
+              boletimInternoColetivo: 'Boletim Interno Coletivo',
+              mediaAlta: 'Média ≥ 8,5'
+            }[tipoElogio] || 'Elogio')
+          : (typeof motivo === 'string' ? motivo : '').trim(),
+        quantidadeDias: ehElogio ? 1 : (PRECISA_DIAS.has(tituloMedida) ? dias : 1),
+        valorNumerico: Number(valor || 0),
+        observacao: (observacao || '').trim(),
+        data: dataRef,
+        comentarioMonitor: (comentarioMonitor || '').trim(),
+        artigo: ehElogio ? null : (artigo || null),
+        paragrafo: ehElogio ? null : (paragrafo || null),
+        inciso: ehElogio ? null : (inciso || null),
+        classificacaoRegulamento: ehElogio ? null : (classificacaoRegulamento || null),
+        status: 'pendente',
+        numeroSequencial
+      }], { session });
+
+    } catch (e) {
+      // Em caso MUITO raro de colisão, tenta novamente outro número (na mesma transação)
+      if (String(e?.code) === '11000' && /numeroSequencial/.test(String(e?.message || ''))) {
+        ns = await getNextNumeroSequencialAtomic(session, inst, dataRef);
+        numeroSequencial = ns.numeroSequencial;
+        novo = await Notificacao.create([{
+          instituicao: inst,
+          aluno,
+          natureza: ehElogio ? 'elogio' : 'indisciplina',
+          tipo: tituloMedida || (ehElogio ? 'Elogio' : ''),
+          tipoMedida: tituloMedida || (ehElogio ? 'Elogio' : ''),
+          tipoElogio: ehElogio ? (tipoElogio || null) : null,
+          motivo: ehElogio
+            ? ({
+                elogioVerbal: 'Elogio verbal',
+                boletimInternoIndividual: 'Boletim Interno Individual',
+                boletimInternoColetivo: 'Boletim Interno Coletivo',
+                mediaAlta: 'Média ≥ 8,5'
+              }[tipoElogio] || 'Elogio')
+            : (typeof motivo === 'string' ? motivo : '').trim(),
+          quantidadeDias: ehElogio ? 1 : (PRECISA_DIAS.has(tituloMedida) ? dias : 1),
+          valorNumerico: Number(valor || 0),
+          observacao: (observacao || '').trim(),
+          data: dataRef,
+          comentarioMonitor: (comentarioMonitor || '').trim(),
+          artigo: ehElogio ? null : (artigo || null),
+          paragrafo: ehElogio ? null : (paragrafo || null),
+          inciso: ehElogio ? null : (inciso || null),
+          classificacaoRegulamento: ehElogio ? null : (classificacaoRegulamento || null),
+          status: 'pendente',
+          numeroSequencial
+        }], { session });
+      } else {
+        throw e;
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const created = Array.isArray(novo) ? novo[0] : novo;
+
+    // Mantém campos de nota consistentes e analytics
+    await recomputarCamposNotaDaNotificacao(created, inst);
+    const alunoApósCreate = await recomputarNotaAlunoAteAgora(aluno, inst);
+    await verificarEnvioNP(alunoApósCreate, inst);
+
+    const { alunoNome, alunoTurma } = await getAlunoInfo(aluno, inst);
+    await logAction({
+      req,
+      acao: 'NOTIFICACAO_CRIADA',
+      entidade: 'Notificacao',
+      entidadeId: created._id,
+      extra: {
+        alunoId: String(aluno),
+        alunoNome, alunoTurma,
+        tipo: created.tipo,
+        tipoMedida: created.tipoMedida,
+        numeroSequencial: created.numeroSequencial,
+        natureza: created.natureza,
+        data: created.data
+      }
+    });
+
+    res.status(201).json({ ok: true, notificacao: created });
+  } catch (err) {
+    try { await session.abortTransaction(); } catch {}
+    session.endSession();
+    console.error('❌ Erro ao criar notificação:', err);
+    const msg = (String(err?.code) === '11000' && /numeroSequencial/.test(String(err?.message || '')))
+      ? 'Número sequencial duplicado — tente novamente.'
+      : 'Erro ao criar notificação.';
+    res.status(500).json({ message: msg });
+  }
+});
+
+/* ---------------- ROTAS POR ID (depois das estáticas) --------------- */
+
 // GET "/:id" (detalhes)
 router.get('/:id', autenticar, attachActor, async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
+
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
-      _id: req.params.id,
+      _id: id,
       ...instMatch
     }).populate({ path: 'aluno', select: 'nome turma instituicao' });
 
@@ -467,227 +713,155 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// POST "/" (criar notificação) + ENVIO TELEGRAM/WHATSAPP
-router.post('/', autenticar, attachActor, async (req, res) => {
-  const {
-    aluno, motivo, tipo, tipoMedida, observacao, data,
-    quantidadeDias, valorNumerico,
-    natureza = 'indisciplina',
-    tipoElogio
-  } = req.body;
-
+// POST "/:id/entregar"  + AVISO TELEGRAM
+router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   try {
-    const alunoRelacionado = await Aluno.findOne({
-      _id: aluno,
-      ...buildAlunoMatch(req.usuario.instituicao)
-    });
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    if (!alunoRelacionado) {
-      return res.status(404).json({ error: 'Aluno não encontrado ou pertence a outra instituição' });
-    }
-
-    const dt = data ? parseDateOnlyLocal(data) : new Date();
-
-    // Valor numérico e rótulos
-    let valor = 0;
-    let payload = {
-      aluno,
-      instituicao: mongoose.isValidObjectId(req.usuario.instituicao)
-        ? new mongoose.Types.ObjectId(req.usuario.instituicao)
-        : String(req.usuario.instituicao),
-      observacao: observacao || null,
-      data: dt,
-      natureza
-    };
-
-    if (natureza === 'elogio') {
-      const vMap = (typeof valorNumerico === 'number') ? valorNumerico : MAPA_ELOGIOS[tipoElogio];
-      valor = Number(vMap || 0);
-
-      payload = {
-        ...payload,
-        tipo: 'Elogio',
-        tipoMedida: 'Elogio',
-        tipoElogio: tipoElogio || null,
-        motivo: ({
-          elogioVerbal: 'Elogio verbal',
-          boletimInternoIndividual: 'Boletim Interno Individual',
-          boletimInternoColetivo: 'Boletim Interno Coletivo',
-          mediaAlta: 'Média ≥ 8,5',
-        }[tipoElogio]) || (motivo || 'Elogio'),
-        valorNumerico: valor,
-        artigo: null, paragrafo: null, inciso: null,
-        classificacaoRegulamento: null,
-        quantidadeDias: null
-      };
-    } else {
-      // ===== INDISCIPLINA =====
-      const tituloMedida = (tipoMedida || tipo || '').trim();
-      const precisaDias = PRECISA_DIAS.has(tituloMedida);
-      const dias = precisaDias ? Math.max(1, parseInt(quantidadeDias || 1, 10)) : 1;
-
-      if (typeof valorNumerico === 'number') {
-        valor = Number(valorNumerico);
-      } else {
-        const base = (MAPA_NEGATIVOS[tituloMedida] || 0);
-        valor = Number((base * dias).toFixed(2));
-      }
-
-      const dadosRegulamento = obterDadosDoRegulamento(motivo || '');
-      payload = {
-        ...payload,
-        tipo: tituloMedida || 'Medida',
-        tipoMedida: tituloMedida || 'Medida',
-        motivo,
-        valorNumerico: valor,
-        quantidadeDias: precisaDias ? dias : 1,
-        artigo: dadosRegulamento.artigo,
-        paragrafo: dadosRegulamento.paragrafo,
-        inciso: dadosRegulamento.inciso,
-        classificacaoRegulamento: dadosRegulamento.classificacao
-      };
-    }
-
-    // ===== cálculo preciso (notaAnterior / notaNoDia) =====
-    const dayStart = toDayStart(dt);
-    const dayEnd   = toDayEnd(dt);
-
-    const endOntem = new Date(dayStart.getTime() - 1);
     const instMatch = buildInstMatch(req.usuario.instituicao);
+    const notif = await Notificacao.findOne({ _id: id, ...instMatch }).populate('aluno', 'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada');
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
-    const notificacoesAntes = await Notificacao.find({
-      aluno, ...instMatch, data: { $lt: dayStart }
-    }).select('data valorNumerico createdAt quantidadeDias tipoMedida natureza').sort({ data: 1, createdAt: 1 });
+    if (notif.status !== 'deferido') {
+      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
+    }
+    if (notif.entregue === true) {
+      return res.status(200).json({ message: 'Já estava marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
+    }
 
-    const notaAnterior = calcularNotaTSMD(alunoRelacionado.dataEntrada, endOntem, notificacoesAntes);
+    const agora = new Date();
+    const prazo = addBusinessDays(agora, 2, { tz: 'America/Rio_Branco' });
 
-    const notificacoesAteDia = await Notificacao.find({
-      aluno, ...instMatch, data: { $lt: dayEnd }
-    }).select('data valorNumerico createdAt quantidadeDias tipoMedida natureza').sort({ data: 1, createdAt: 1 });
+    notif.entregue = true;
+    notif.entregueEm = agora;
+    notif.prazoDevolucao = prazo;
+    notif.alertaAtivo = false;
+    await notif.save();
 
-    const paraCalculoDia = [
-      ...notificacoesAteDia.map(n => ({
-        data: n.data,
-        createdAt: n.createdAt,
-        valorNumerico: n.valorNumerico,
-        quantidadeDias: n.quantidadeDias,
-        tipoMedida: n.tipoMedida,
-        natureza: n.natureza
-      })),
-      {
-        data: dt,
-        createdAt: dt,
-        valorNumerico: Number(payload.valorNumerico || 0),
-        quantidadeDias: payload.quantidadeDias ?? 1,
-        tipoMedida: payload.tipoMedida,
-        natureza: payload.natureza
-      }
-    ];
-    const notaNoDia = calcularNotaTSMD(alunoRelacionado.dataEntrada, dayEnd, paraCalculoDia);
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
-    // numeração sequencial por ano (instituição)
-    const anoAtual = dt.getFullYear();
-    const notificacoesAno = await Notificacao.find({
-      numeroSequencial: { $regex: new RegExp(`\\/${anoAtual}$`) },
-      ...instMatch
-    }).select('numeroSequencial');
-
-    let maiorNumero = 0;
-    notificacoesAno.forEach(n => {
-      const [num] = (n.numeroSequencial || '').split('/');
-      const parsed = parseInt(num, 10);
-      if (!isNaN(parsed) && parsed > maiorNumero) maiorNumero = parsed;
-    });
-    const proximoNumero = maiorNumero + 1;
-    const numeroSequencial = `${String(proximoNumero).padStart(2, '0')}/${anoAtual}`;
-
-    const novaNotificacao = new Notificacao({
-      ...payload,
-      notaAnterior,
-      notaAtual: notaNoDia,
-      numeroSequencial,
-      status: 'pendente'
-    });
-
-    await novaNotificacao.save();
-
-    // 🔎 LOG
     await logAction({
       req,
-      acao: 'NOTIFICACAO_CRIADA',
+      acao: 'NOTIFICACAO_ENTREGUE',
       entidade: 'Notificacao',
-      entidadeId: novaNotificacao._id,
-      entidadeNome: alunoRelacionado?.nome,
+      entidadeId: notif._id,
       extra: {
-        alunoId: String(alunoRelacionado?._id || aluno),
-        alunoNome: alunoRelacionado?.nome || '—',
-        alunoTurma: alunoRelacionado?.turma || '—',
-        tipo: novaNotificacao.tipo,
-        tipoMedida: novaNotificacao.tipoMedida,
-        numeroSequencial: novaNotificacao.numeroSequencial,
-        natureza: payload.natureza,
-        motivo: payload.motivo,
-        valorNumerico: payload.valorNumerico,
-        quantidadeDias: payload.quantidadeDias,
-        data: dt
+        alunoId: String(notif.aluno._id || notif.aluno),
+        alunoNome, alunoTurma,
+        tipo: notif.tipo,
+        tipoMedida: notif.tipoMedida,
+        numeroSequencial: notif.numeroSequencial,
+        entregueEm: agora,
+        prazoDevolucao: prazo
       }
     });
 
-    // (C) Recalcular nota atual do aluno até “agora”
-    const alunoAtualizado = await recomputarNotaAlunoAteAgora(aluno, req.usuario.instituicao);
+    const msgEntrega = [
+      '📩 CMDPII/CZS — Confirmação de ENTREGA de notificação',
+      `Aluno(a): ${alunoNome} (${alunoTurma})`,
+      `Nº: ${notif.numeroSequencial}`,
+      `Entregue em: ${formatDataHoraBr(agora)}`,
+      `Prazo de devolução: ${formatDataBr(prazo)}`
+    ].join('\n');
 
-    // ===================== ENVIO MENSAGENS (criação) =====================
-
-    // WhatsApp (mantido)
-    if (alunoRelacionado.telefone) {
-      const mensagemWA = `Olá, responsável pelo aluno ${alunoRelacionado.nome}.
-      
-Foi registrada uma ${payload.natureza === 'elogio' ? 'menção de elogio' : 'notificação disciplinar'}:
-🔸 Motivo: ${payload.motivo}
-🔸 Medida: ${payload.tipoMedida}${payload.quantidadeDias > 1 ? ` (${payload.quantidadeDias} dias)` : ''}
-
-Nota de comportamento (no dia do evento): ${Number(notaNoDia).toFixed(2)}
-Nº: ${numeroSequencial}`;
-      try { await enviarWhatsapp(alunoRelacionado.telefone, mensagemWA); } catch {}
+    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
+    for (const cid of chatIds) {
+      try { await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgEntrega); } catch {}
     }
 
-    // Telegram (mantido)
-    const chatIds = getChatIdsFromAlunoDoc(alunoRelacionado);
-    if (chatIds.length) {
-      const titulo = payload.natureza === 'elogio' ? 'ELOGIO' : 'NOTIFICAÇÃO DISCIPLINAR';
-      const mensagemTG = [
-        `🏫 CMDPII/CZS — ${titulo}`,
-        `Aluno(a): ${alunoRelacionado.nome} (${alunoRelacionado.turma})`,
-        `Data: ${formatDataBr(dt)}`,
-        payload.natureza === 'elogio'
-          ? `Elogio: ${payload.motivo}`
-          : `Motivo: ${payload.motivo}`,
-        payload.tipoMedida ? `Medida: ${payload.tipoMedida}${payload.quantidadeDias > 1 ? ` (${payload.quantidadeDias} dias)` : ''}` : null,
-        `Nota de comportamento (no dia): ${Number(notaNoDia).toFixed(2)}`,
-        `Nº: ${numeroSequencial}`
-      ].filter(Boolean).join('\n');
-
-      for (const cid of chatIds) {
-        try { await enviarTelegram({ nome: alunoRelacionado.nome, turma: alunoRelacionado.turma }, 'Notificação', cid, mensagemTG); } catch {}
-      }
+    if (notif.aluno?.telefone) {
+      try { await enviarWhatsapp(notif.aluno.telefone, msgEntrega); } catch {}
     }
 
-    // 💡 NP (faixa 5.00–6.99)
-    await verificarEnvioNP(alunoAtualizado, req.usuario.instituicao);
+    const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
+    await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
 
-    res.status(201).json(novaNotificacao);
+    res.json({ message: 'Marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
   } catch (err) {
-    console.error('Erro ao criar notificação:', err);
-    res.status(500).json({ error: 'Erro ao criar notificação: ' + err.message });
+    console.error('Erro ao marcar ENTREGUE:', err);
+    res.status(500).json({ error: 'Erro ao marcar ENTREGUE.' });
+  }
+});
+
+// POST "/:id/devolver"  + AVISO TELEGRAM
+router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const notif = await Notificacao.findOne({ _id: id, ...instMatch }).populate('aluno', 'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId');
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
+
+    if (notif.status !== 'deferido') {
+      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
+    }
+    if (!notif.entregue) {
+      return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
+    }
+    if (notif.devolvidoPeloAluno === true) {
+      return res.status(200).json({ message: 'Já estava marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
+    }
+
+    const agora = new Date();
+    notif.devolvidoPeloAluno = true;
+    notif.devolvidaEm = agora;
+    notif.alertaAtivo = false;
+    await notif.save();
+
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno._id || notif.aluno, req.usuario.instituicao);
+
+    await logAction({
+      req,
+      acao: 'NOTIFICACAO_DEVOLVIDA',
+      entidade: 'Notificacao',
+      entidadeId: notif._id,
+      extra: {
+        alunoId: String(notif.aluno._id || notif.aluno),
+        alunoNome, alunoTurma,
+        tipo: notif.tipo,
+        tipoMedida: notif.tipoMedida,
+        numeroSequencial: notif.numeroSequencial,
+        devolvidaEm: agora
+      }
+    });
+
+    const msgDev = [
+      '✅ CMDPII/CZS — Notificação DEVOLVIDA',
+      `Aluno(a): ${alunoNome} (${alunoTurma})`,
+      `Nº: ${notif.numeroSequencial}`,
+      `Devolvida em: ${formatDataHoraBr(agora)}`
+    ].join('\n');
+
+    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
+    for (const cid of chatIds) {
+      try { await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgDev); } catch {}
+    }
+
+    if (notif.aluno?.telefone) {
+      try { await enviarWhatsapp(notif.aluno.telefone, msgDev); } catch {}
+    }
+
+    const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
+    await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
+
+    res.json({ message: 'Marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
+  } catch (err) {
+    console.error('Erro ao marcar DEVOLVIDA:', err);
+    res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
   }
 });
 
 // PUT "/:id" (atualizar notificação) — inclui disparo quando virar DEFERIDO
 router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
+
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notif = await Notificacao.findOne({
-      _id: req.params.id,
+      _id: id,
       ...instMatch
     });
     if (!notif) return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
@@ -817,9 +991,12 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
 // PUT "/:id/reenviar" (voltar para pendente)
 router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
+
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
-      _id: req.params.id,
+      _id: id,
       ...instMatch
     });
 
@@ -855,146 +1032,15 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// POST "/:id/entregar"  + AVISO TELEGRAM
-router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
-  try {
-    const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch }).populate('aluno', 'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada');
-    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
-
-    if (notif.status !== 'deferido') {
-      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
-    }
-    if (notif.entregue === true) {
-      return res.status(200).json({ message: 'Já estava marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
-    }
-
-    const agora = new Date();
-    const prazo = addBusinessDays(agora, 2, { tz: 'America/Rio_Branco' });
-
-    notif.entregue = true;
-    notif.entregueEm = agora;
-    notif.prazoDevolucao = prazo;
-    notif.alertaAtivo = false;
-    await notif.save();
-
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
-
-    await logAction({
-      req,
-      acao: 'NOTIFICACAO_ENTREGUE',
-      entidade: 'Notificacao',
-      entidadeId: notif._id,
-      extra: {
-        alunoId: String(notif.aluno._id || notif.aluno),
-        alunoNome, alunoTurma,
-        tipo: notif.tipo,
-        tipoMedida: notif.tipoMedida,
-        numeroSequencial: notif.numeroSequencial,
-        entregueEm: agora,
-        prazoDevolucao: prazo
-      }
-    });
-
-    const msgEntrega = [
-      '📩 CMDPII/CZS — Confirmação de ENTREGA de notificação',
-      `Aluno(a): ${alunoNome} (${alunoTurma})`,
-      `Nº: ${notif.numeroSequencial}`,
-      `Entregue em: ${formatDataHoraBr(agora)}`,
-      `Prazo de devolução: ${formatDataBr(prazo)}`
-    ].join('\n');
-
-    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
-    for (const cid of chatIds) {
-      try { await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgEntrega); } catch {}
-    }
-
-    if (notif.aluno?.telefone) {
-      try { await enviarWhatsapp(notif.aluno.telefone, msgEntrega); } catch {}
-    }
-
-    const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
-    await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
-
-    res.json({ message: 'Marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
-  } catch (err) {
-    console.error('Erro ao marcar ENTREGUE:', err);
-    res.status(500).json({ error: 'Erro ao marcar ENTREGUE.' });
-  }
-});
-
-// POST "/:id/devolver"  + AVISO TELEGRAM
-router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
-  try {
-    const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({ _id: req.params.id, ...instMatch }).populate('aluno', 'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId');
-    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
-
-    if (notif.status !== 'deferido') {
-      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
-    }
-    if (!notif.entregue) {
-      return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
-    }
-    if (notif.devolvidoPeloAluno === true) {
-      return res.status(200).json({ message: 'Já estava marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
-    }
-
-    const agora = new Date();
-    notif.devolvidoPeloAluno = true;
-    notif.devolvidaEm = agora;
-    notif.alertaAtivo = false;
-    await notif.save();
-
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno._id || notif.aluno, req.usuario.instituicao);
-
-    await logAction({
-      req,
-      acao: 'NOTIFICACAO_DEVOLVIDA',
-      entidade: 'Notificacao',
-      entidadeId: notif._id,
-      extra: {
-        alunoId: String(notif.aluno._id || notif.aluno),
-        alunoNome, alunoTurma,
-        tipo: notif.tipo,
-        tipoMedida: notif.tipoMedida,
-        numeroSequencial: notif.numeroSequencial,
-        devolvidaEm: agora
-      }
-    });
-
-    const msgDev = [
-      '✅ CMDPII/CZS — Notificação DEVOLVIDA',
-      `Aluno(a): ${alunoNome} (${alunoTurma})`,
-      `Nº: ${notif.numeroSequencial}`,
-      `Devolvida em: ${formatDataHoraBr(agora)}`
-    ].join('\n');
-
-    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
-    for (const cid of chatIds) {
-      try { await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgDev); } catch {}
-    }
-
-    if (notif.aluno?.telefone) {
-      try { await enviarWhatsapp(notif.aluno.telefone, msgDev); } catch {}
-    }
-
-    const alunoDoc = await Aluno.findOne({ _id: notif.aluno._id || notif.aluno, ...buildAlunoMatch(req.usuario.instituicao) });
-    await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
-
-    res.json({ message: 'Marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
-  } catch (err) {
-    console.error('Erro ao marcar DEVOLVIDA:', err);
-    res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
-  }
-});
-
 // 💥 PUT "/:id/deferir"
 router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
+
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notif = await Notificacao.findOne({
-      _id: req.params.id,
+      _id: id,
       ...instMatch
     });
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
@@ -1039,9 +1085,12 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
 // DELETE "/:id"
 router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
+    const { id } = req.params;
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
+
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
-      _id: req.params.id,
+      _id: id,
       ...instMatch
     });
     if (!notificacao) {

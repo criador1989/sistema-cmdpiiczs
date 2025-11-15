@@ -4,25 +4,193 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login - Colégio Militar Dom Pedro II</title>
-  <meta name="theme-color" content="#941a1d" />
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to right, #941a1d, #d82327);
-      display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-    .container { background:white; padding:40px 30px; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.2);
-      width:320px; max-width:90vw; text-align:center; animation:fadeIn .6s ease-in-out; }
-    .logo { width:100px; height:100px; object-fit:contain; margin-bottom:10px; }
-    h2 { margin-bottom:20px; color:#333; }
-    input { width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; font-size:15px; }
-    button { width:100%; padding:12px; background-color:#d82327; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
-    button:hover { background-color:#941a1d; }
-    .erro { color:red; font-size:14px; margin-bottom:10px; min-height:18px; }
-    .link-cadastro { margin-top:15px; font-size:14px; }
-    .link-cadastro a { color:#d82327; text-decoration:none; }
-    .link-cadastro a:hover { text-decoration:underline; }
-    @keyframes fadeIn { from{ opacity:0; transform:translateY(20px);} to{ opacity:1; transform:translateY(0);} }
+    :root{
+      --bg-0:#14375f;
+      --bg-1:#0f2f53;
+      --glass:#0f1f36cc;
+      --ink:#ecf2ff;
+      --muted:#b8c7e0;
+      --line:rgba(170,200,240,.36);
+      --card:#102544bf;
+      --rubi:#d82327;
+      --rubi-2:#8B0000;
+      --radius:18px;
+      --shadow:
+        0 22px 60px rgba(0,0,0,.60),
+        inset 0 1px 0 rgba(255,255,255,.05);
+      --glow-1: radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.30), transparent 60%);
+      --glow-2: radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.18), transparent 60%);
+      --glow-3: radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.20), transparent 60%);
+    }
+
+    *{box-sizing:border-box}
+
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+    }
+
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        var(--glow-1),
+        var(--glow-2),
+        var(--glow-3),
+        radial-gradient(12px 12px at 24% 18%, rgba(255,255,255,.12), transparent 60%),
+        radial-gradient(12px 12px at 68% 24%, rgba(255,255,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1));
+      background-blend-mode: screen, screen, screen, normal;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container{
+      background: linear-gradient(180deg,
+        rgba(21,40,76,.92),
+        rgba(13,28,54,.96)
+      );
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 30px 26px 26px;
+      width: 340px;
+      max-width: 92vw;
+      text-align: center;
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      animation: fadeIn .5s ease-out;
+    }
+
+    .logo{
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      margin-bottom: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #4db8ff, #0b1e3a);
+      box-shadow:
+        0 10px 26px rgba(0,0,0,.6),
+        0 0 22px rgba(120,200,255,.6);
+      border:1px solid rgba(190,220,255,.5);
+    }
+
+    h2{
+      margin: 6px 0 20px;
+      color: #ffffff;
+      font-size: 1.35rem;
+      letter-spacing:.3px;
+      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+    }
+
+    form{
+      margin:0;
+    }
+
+    input{
+      width:100%;
+      padding:11px 12px;
+      margin-bottom:12px;
+      border-radius:10px;
+      border:1px solid rgba(170,200,240,.45);
+      font-size:15px;
+      background: linear-gradient(180deg,
+        rgba(19,38,72,.95),
+        rgba(11,26,50,.98)
+      );
+      color: var(--ink);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.10),
+        0 8px 18px rgba(0,0,0,.55);
+    }
+
+    input::placeholder{
+      color: var(--muted);
+    }
+
+    input:focus{
+      outline:none;
+      border-color: rgba(190,220,255,.9);
+      box-shadow:
+        0 0 0 2px rgba(120,190,255,.55),
+        0 10px 28px rgba(0,0,0,.75);
+    }
+
+    button{
+      width:100%;
+      padding:11px 12px;
+      margin-top:4px;
+      border:none;
+      border-radius:10px;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+      color:#fffdf7;
+      background:linear-gradient(135deg, var(--rubi), var(--rubi-2));
+      box-shadow:
+        0 14px 30px rgba(216,35,39,.55),
+        inset 0 1px 0 rgba(255,255,255,.12);
+      transition:.18s transform,.18s filter,.18s box-shadow;
+    }
+
+    button:hover{
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+      box-shadow:
+        0 18px 40px rgba(216,35,39,.65),
+        inset 0 1px 0 rgba(255,255,255,.14);
+    }
+
+    .erro{
+      color:#ffb3b8;
+      font-size:14px;
+      margin-bottom:10px;
+      min-height:18px;
+      text-align:left;
+    }
+
+    .link-cadastro{
+      margin-top:16px;
+      font-size:14px;
+      color: var(--muted);
+    }
+
+    .link-cadastro a{
+      color:#ffe29a;
+      text-decoration:none;
+      font-weight:600;
+    }
+
+    .link-cadastro a:hover{
+      text-decoration:underline;
+      color:#fff5c8;
+    }
+
+    @keyframes fadeIn{
+      from{ opacity:0; transform:translateY(14px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    /* Responsivo leve */
+    @media (max-width:480px){
+      .container{
+        padding:26px 18px 22px;
+        width: 92vw;
+      }
+      h2{
+        font-size:1.2rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -92,8 +260,8 @@
           return;
         }
 
-        const destino = data.redirecionar || '/painel.html';
-        window.location.href = destino;
+        const next = data.redirecionar || '/painel.html';
+window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}`;
       } catch (err) {
         console.error(err);
         // Alguns navegadores (ex. Brave) bloqueiam requisições cross-origin inseguras;

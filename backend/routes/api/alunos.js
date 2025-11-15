@@ -478,19 +478,56 @@ router.get(['/contagem', '/count'], autenticar, async (req, res) => {
 // GET /api/alunos
 router.get('/', autenticar, async (req, res) => {
   try {
-    const semNota = ['1','true'].includes(String(req.query.semNota || '').toLowerCase());
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    const semNota = ['1', 'true'].includes(
+      String(req.query.semNota || '').toLowerCase()
+    );
+    const painel = ['1', 'true'].includes(
+      String(req.query.painel || '').toLowerCase()
+    );
+
+    if (!req.usuario?.instituicao)
+      return res.status(401).json({ message: 'Não autenticado.' });
 
     const filtro = { instituicao: req.usuario.instituicao };
     const turma = req.query.turma;
     if (turma) filtro.turma = normalizaTurma(turma);
 
+    // 🔹 MODO SEM NOTA – já existia, continua igual
     if (semNota) {
-      const alunos = await Aluno.find(filtro).select(BASE_SELECT_LISTA).lean();
+      const alunos = await Aluno.find(filtro)
+        .select(BASE_SELECT_LISTA)
+        .lean();
       return res.json(alunos.map(anexarThumbNaPlain));
     }
 
-    const alunos = await Aluno.find(filtro).select('nome turma foto instituicao').lean();
+    // 🔹 MODO LEVE PARA O PAINEL: NÃO recalcula TSMD, usa campo salvo
+    if (painel) {
+      const alunos = await Aluno.find(filtro)
+        .select('nome turma foto instituicao comportamento notaComportamento')
+        .lean();
+
+      const alunosComNota = alunos.map((aluno) => {
+        let nota = null;
+        if (typeof aluno.comportamento === 'number') {
+          nota = aluno.comportamento;
+        } else if (typeof aluno.notaComportamento === 'number') {
+          nota = aluno.notaComportamento;
+        }
+
+        return {
+          ...anexarThumb(aluno),
+          comportamento: Number.isFinite(nota) ? nota : 0,
+        };
+      });
+
+      return res.json(alunosComNota);
+    }
+
+    // 🔹 MODO COMPLETO (antigo) – para telas que PRECISAM da nota recalculada
+    const alunos = await Aluno.find(filtro)
+      .select('nome turma foto instituicao')
+      .lean();
+
     const alunosComNota = await Promise.all(
       alunos.map(async (aluno) => {
         let nota = 8.0;

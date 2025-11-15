@@ -2,168 +2,142 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <title>Painel do Professor - CMDPII</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel do Professor - Lista de Alunos</title>
-  <link rel="stylesheet" href="estilo.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#941a1d" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f2f2f2;
+      background: #f9f9f9;
       margin: 0;
       padding: 0;
     }
+
     header {
-      background: #941a1d;
+      background-color: #941a1d;
       color: white;
       padding: 1rem;
       text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
     }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      padding: 2rem;
+
+    #busca {
+      margin: 1rem auto;
+      display: block;
+      padding: 0.5rem;
+      width: 90%;
+      max-width: 400px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
-    .busca {
-      margin-bottom: 1rem;
-    }
-    .aluno-card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      padding: 1rem;
-      margin-bottom: 1rem;
+
+    #listaAlunos {
       display: flex;
-      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 1rem;
       gap: 1rem;
     }
-    .aluno-foto img {
-      width: 60px;
-      height: 60px;
-      object-fit: cover;
-      border-radius: 50%;
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      width: 160px;
+      text-align: center;
+      padding: 1rem;
+      transition: transform 0.2s ease;
+      animation: fadeInUp 0.4s ease;
     }
-    .aluno-info {
-      flex: 1;
+
+    .card:hover {
+      transform: scale(1.05);
     }
-    .aluno-nome {
-      font-weight: bold;
-      font-size: 1.2rem;
-    }
-    .aluno-acao button {
-      padding: 6px 12px;
-      border: none;
-      background: #941a1d;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .aluno-acao button:hover {
-      background: #b91c1f;
-    }
-    input[type="text"] {
+
+    .card img {
       width: 100%;
-      padding: 8px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        transform: translateY(15px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Painel do Professor</h1>
-    <p id="nome-professor"></p>
-  </header>
-
-  <div class="container">
-    <div class="busca">
-      <input type="text" id="filtro" placeholder="Buscar aluno por nome..." />
-    </div>
-
-    <div id="lista-alunos"></div>
-  </div>
+  <header>Painel do Professor</header>
+  <input type="text" id="busca" placeholder="🔍 Buscar aluno por nome..." />
+  <div id="listaAlunos"></div>
 
   <script>
-    let alunos = [];
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
 
-    function obterTokenDaURL() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('token');
-    }
+    const lista = document.getElementById('listaAlunos');
+    const campoBusca = document.getElementById('busca');
 
-    async function carregarAlunosComToken() {
-      const token = obterTokenDaURL();
-      if (!token) {
-        alert('Acesso inválido. Token ausente.');
-        return;
-      }
-
+    async function carregarAlunos() {
       try {
-        const res = await fetch(`/api/usuarios/acesso/${token}`);
-        if (!res.ok) {
-          const erro = await res.json();
-          throw new Error(erro.mensagem || 'Erro ao acessar dados do professor.');
+        const resposta = await fetch(`/api/usuarios/acesso/${token}`);
+        const dados = await resposta.json();
+
+        if (!dados.professor) {
+          lista.innerHTML = '<p style="color:red;">Token inválido ou professor não encontrado.</p>';
+          return;
         }
 
-        const dados = await res.json();
-        alunos = dados.alunos;
-
-        document.getElementById('nome-professor').textContent = `Professor: ${dados.professor} | Instituição: ${dados.instituicao}`;
+        const alunos = dados.alunos || [];
         exibirAlunos(alunos);
-      } catch (err) {
-        console.error(err);
-        alert(err.message || 'Erro ao carregar alunos.');
+
+        campoBusca.addEventListener('input', () => {
+          const termo = campoBusca.value.toLowerCase();
+          const filtrados = alunos.filter(a => a.nome.toLowerCase().includes(termo));
+          exibirAlunos(filtrados);
+        });
+      } catch (erro) {
+        console.error('Erro ao carregar alunos:', erro);
+        lista.innerHTML = '<p style="color:red;">Erro ao carregar dados.</p>';
       }
     }
 
-    function exibirAlunos(lista) {
-      const container = document.getElementById('lista-alunos');
-      container.innerHTML = '';
-
-      lista.forEach(aluno => {
-        const card = document.createElement('div');
-        card.className = 'aluno-card';
-
-        const fotoDiv = document.createElement('div');
-        fotoDiv.className = 'aluno-foto';
-
-        const foto = document.createElement('img');
-        foto.src = aluno.foto
-          ? `data:image/jpeg;base64,${aluno.foto}`
-          : '/img/avatar.png';
-        fotoDiv.appendChild(foto);
-
-        const info = document.createElement('div');
-        info.className = 'aluno-info';
-        info.innerHTML = `
-          <div class="aluno-nome">${aluno.nome}</div>
-          <div>Turma: ${aluno.turma}</div>
-          <div>Comportamento: ${aluno.comportamento?.toFixed(2) ?? '8.00'}</div>
+    function exibirAlunos(alunos) {
+      lista.innerHTML = '';
+      alunos.forEach(aluno => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <img src="${aluno.foto || '/icons/icon-192x192.png'}" alt="Foto do aluno">
+          <h3>${aluno.nome}</h3>
         `;
-
-        const acoes = document.createElement('div');
-        acoes.className = 'aluno-acao';
-        const btnFicha = document.createElement('button');
-        btnFicha.innerText = 'Ver Ficha';
-        btnFicha.onclick = () => window.location.href = `/ficha-aluno.html?id=${aluno._id}`;
-        acoes.appendChild(btnFicha);
-
-        card.appendChild(fotoDiv);
-        card.appendChild(info);
-        card.appendChild(acoes);
-
-        container.appendChild(card);
+        div.onclick = () => {
+          window.location.href = `/ficha-aluno-professor.html?id=${aluno._id}&token=${token}`;
+        };
+        lista.appendChild(div);
       });
     }
 
-    document.getElementById('filtro').addEventListener('input', e => {
-      const termo = e.target.value.toLowerCase();
-      const filtrados = alunos.filter(aluno =>
-        aluno.nome.toLowerCase().includes(termo)
-      );
-      exibirAlunos(filtrados);
-    });
-
-    carregarAlunosComToken();
+    carregarAlunos();
   </script>
 </body>
 </html>

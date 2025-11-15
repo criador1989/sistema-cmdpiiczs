@@ -7,11 +7,12 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#0A1322" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
+  <style>
   /* =========================
      TEMA GLASS AZUL CLARO + LUZ NATURAL + SPARKLES
      ========================= */
@@ -39,9 +40,11 @@
   html,body{height:100%}
 
   body{
-    margin:0; color:var(--ink);
+    margin:0;
+    color:var(--ink);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:
+      url("img/bg-painel-smart.png") center/cover fixed no-repeat,
       var(--glow-1),
       var(--glow-2),
       var(--glow-3),
@@ -50,7 +53,9 @@
       radial-gradient(12px 12px at 68% 20%, rgba(255,255,255,.10), transparent 60%),
       linear-gradient(180deg, var(--bg-0), var(--bg-1));
     background-blend-mode: screen, screen, screen, normal;
-    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    color-scheme: dark;
   }
 
   /* Topbar */
@@ -283,7 +288,7 @@
     .head{ flex-direction:column; align-items:flex-start; gap:12px }
     .avatar{ width:88px; height:88px; flex:0 0 88px; }
   }
-</style>
+  </style>
 
   <script>
     // Em dev, evita SW/cache antigo atrapalhando JS novo
@@ -305,7 +310,7 @@
 
       <!-- Voltar inteligente -->
       <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
-      <!-- NOVO: Voltar ao Painel (entre Voltar e Imprimir) -->
+      <!-- Voltar ao Painel -->
       <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
 
       <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
@@ -550,10 +555,10 @@
       const n = Number(nota);
       if (isNaN(n)) return {texto:'—', cor:'#9aa3b2'};
       if (n >= 9.01) return {texto:'Excepcional', cor:'#76ffb3'};
-      if (n >= 8.01) return {texto:'Ótimo', cor:'#a1ffcf'};
-      if (n >= 7.00) return {texto:'Bom', cor:'#e7c873'};
-      if (n >= 5.00) return {texto:'Regular', cor:'#ffcf9a'};
-      if (n >= 3.00) return {texto:'Insuficiente', cor:'#ff9aa1'};
+      if (n >= 8.01) return {texto:'Ótimo',       cor:'#a1ffcf'};
+      if (n >= 7.00) return {texto:'Bom',         cor:'#e7c873'};
+      if (n >= 5.00) return {texto:'Regular',     cor:'#ffcf9a'};
+      if (n >= 3.00) return {texto:'Insuficiente',cor:'#ff9aa1'};
       return {texto:'Incompatível', cor:'#e7e9ee'};
     }
 
@@ -589,8 +594,8 @@
     // ===== Fallback seguro para buscar a ficha (apenas JSON) =====
     async function fetchFichaComFallback(id){
       const endpoints = [
-        `/fichaAluno/${id}`,                 // seu endpoint principal
-        `/alunos/${id}/ficha`,               // variações comuns
+        `/fichaAluno/${id}`,
+        `/alunos/${id}/ficha`,
         `/aluno/${id}/ficha`,
         `/alunos/${id}`,
         `/aluno/${id}`,
@@ -604,14 +609,12 @@
       let lastErr;
       for (const ep of endpoints){
         try{
-          // fetch "manual" para validar content-type JSON
           const resp = await fetch(`/api${ep}`, { credentials:'include', cache:'no-store' });
           const ct = (resp.headers.get('content-type')||'').toLowerCase();
           if (!ct.includes('application/json')) { lastErr = new Error('NAO_JSON'); continue; }
           if (!resp.ok){ lastErr = new Error(`HTTP ${resp.status}`); continue; }
           const data = await resp.json();
 
-          // normaliza payload para { aluno, observacoes, notificacoes }
           if (data && (data.aluno || data._id || data.id)) {
             const aluno = data.aluno || data;
             return {
@@ -624,7 +627,6 @@
             const a = data.result.aluno || data.result;
             return { aluno:a, observacoes: data.result.observacoes||[], notificacoes: data.result.notificacoes||[] };
           }
-          // se chegou aqui, formato inesperado — tenta próximo
           lastErr = new Error('Formato inesperado');
         }catch(e){ lastErr = e; }
       }
@@ -731,15 +733,12 @@
 
       let payload;
       try{
-        // tenta principal; se falhar, cai para fallback
         try{
           payload = await api(`/fichaAluno/${alunoId}`, { method:'GET' });
           if (!payload || (!payload.aluno && !payload._id)) {
-            // se vier formato estranho, usa fallback
             throw new Error('Formato inesperado');
           }
           if (payload && payload._id) {
-            // caso a rota retorne o aluno "cru"
             payload = { aluno: payload, observacoes: [], notificacoes: [] };
           }
         }catch(_){
@@ -764,7 +763,7 @@
       byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
       byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
 
-      // botões topo
+      // PDF topo
       byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
@@ -788,7 +787,7 @@
         ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="96" height="96" style="object-fit:cover">`
         : 'Sem foto';
 
-      // Última atualização (robusto)
+      // Última atualização
       const ultDate = getDateFrom(
         aluno,
         'updatedAt','atualizadoEm','ultimaAtualizacao',
@@ -802,7 +801,7 @@
       const obsEl = byId('observacoes');
       obsEl.innerHTML = '';
       if(!observacoes.length){
-        obsEl.innerHTML = '<div class="empty">Nenhuma observação registrada.</div>';
+        obsEl.innerHTML = '<div class="empty">Nenhuma observação registrado.</div>';
       }else{
         obsEl.innerHTML = observacoes.map(o=>{
           const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
@@ -869,7 +868,7 @@
       try { await mostrarQRCode(true); } catch {}
       try { await fetchAphCount(); } catch {}
 
-      // Render chart
+      // Gráfico
       try {
         const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
         renderComportChart(hist);
@@ -1136,7 +1135,6 @@
       byId('btnCopiarTg').addEventListener('click', copiarLinkTelegram);
       byId('btnVoltarLista').addEventListener('click', voltarLista);
 
-      // Voltar ao Painel
       const btnPainel = byId('btnVoltarPainel');
       if (btnPainel) btnPainel.addEventListener('click', ()=> { location.href = '/painel.html'; });
 

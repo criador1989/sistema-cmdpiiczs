@@ -62,8 +62,9 @@ const alunoSchema = new Schema({
   // Campo recomendado: vários responsáveis (pai/mãe/guardião)
   chatIdsResponsaveis:  { type: [String], default: [] },
 
-  // 🔐 multi-tenant
-  instituicao:    { type: Schema.Types.ObjectId, ref: 'Instituicao', required: true }
+  // 🔐 multi-tenant (ObjectId da Instituicao)
+  instituicao: { type: Schema.Types.ObjectId, ref: 'Instituicao', required: true, index: true },
+
 }, { timestamps: true });
 
 /** ============================

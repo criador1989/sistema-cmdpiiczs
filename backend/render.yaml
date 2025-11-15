@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: sistema-cmdpiiczs
+    env: node
+    buildCommand: npm install
+    startCommand: node backend/index.js
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+    build:
+      preBuildCommand: pip install -r backend/pdf/requirements.txt

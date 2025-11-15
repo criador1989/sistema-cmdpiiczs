@@ -1,271 +1,646 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-store" />
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>APH - Atendimento</title>
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/icons/icon-192x192.png">
-<meta name="theme-color" content="#0A1322">
-<style>
-/* =====================================================
-   TEMA GLASS AZUL-CLARO + BOKEH FIXO
-   ===================================================== */
-:root{
-  --txt:#eaf1ff;
-  --muted:#b7c4d8;
-  --line:rgba(255,255,255,.25);
-  --glass:rgba(255,255,255,.10);
-  --glass-strong:rgba(255,255,255,.16);
-  --accent:#5daeff;
-  --radius:18px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{
-  color:var(--txt);
-  font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
-  background:
-    radial-gradient(900px 480px at -10% -10%, rgba(255,255,255,.18), transparent 60%),
-    radial-gradient(900px 480px at 120% -10%, rgba(255,255,255,.14), transparent 60%),
-    radial-gradient(800px 380px at 50% 90%, rgba(255,255,255,.10), transparent 70%),
-    linear-gradient(180deg,#3c5878 0%,#203247 80%,#17283b 100%);
-  background-attachment: fixed;
-  background-blend-mode: screen, screen, normal;
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>APH - Atendimento</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <meta name="theme-color" content="#0A1322">
+
+  <style>
+  /* =========================
+     TEMA GLASS (BASE GERAL)
+  ========================== */
+  :root{
+    /* fundo / vidro */
+    --bg-main: radial-gradient(circle at top left, #111827 0, #020617 45%, #000000 100%);
+    --glass-bg: rgba(15,23,42,0.92);
+    --glass-border: rgba(148,163,184,0.55);
+    --glass-highlight: rgba(255,255,255,0.80);
+
+    --glass-radius: 22px;
+    --glass-blur: 18px;
+    --glass-shadow:
+      0 2px 6px rgba(0,0,0,0.25),
+      0 14px 42px rgba(0,0,0,0.55);
+
+    /* textos / cores */
+    --text-main: #f9fafb;
+    --text-soft: rgba(249,250,251,0.86);
+    --text-muted: rgba(148,163,184,0.9);
+
+    --border-subtle: rgba(148,163,184,0.45);
+
+    --accent-1: #38bdf8; /* azul neon */
+    --accent-2: #f97316; /* laranja */
+    --accent-danger: #f43f5e;
+    --accent-success: #22c55e;
+  }
+
+  *{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+  }
+
+  html,body{
+    height:100%;
+  }
+
+  body{
+  font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color:var(--text-main);
+  background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+  color-scheme:dark;
   -webkit-font-smoothing:antialiased;
 }
 
-/* Topbar ------------------------------------------------- */
-.topbar{
-  position:sticky;top:0;z-index:10;
-  background:rgba(28,42,65,.45);
-  border-bottom:1px solid var(--line);
-  backdrop-filter:blur(16px) saturate(150%);
-  -webkit-backdrop-filter:blur(16px) saturate(150%);
-}
-.topbar .in{max-width:1080px;margin:0 auto;padding:14px 16px;display:flex;gap:10px;align-items:center}
-.h1{margin-right:auto;font-weight:800;font-size:1.2rem;color:#f7fbff}
-.btn{
-  appearance:none;border:1px solid rgba(255,255,255,.28);
-  background:var(--glass);color:#f3f7ff;
-  padding:9px 14px;border-radius:12px;font-weight:700;
-  display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;
-  transition:.22s filter,.22s transform;
-}
-.btn:hover{filter:brightness(1.1)}
-.btn:disabled{opacity:.6;cursor:not-allowed}
-.btn.primary{
-  background:linear-gradient(135deg, rgba(80,140,230,.35), rgba(70,130,210,.28));
-  border-color:rgba(255,255,255,.36);
-  box-shadow:0 8px 28px rgba(100,160,240,.28);
-}
+  /* LAYOUT GERAL */
+  .app-shell{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
 
-/* Page ---------------------------------------------------- */
-.page{max-width:1080px;margin:22px auto;padding:0 16px;animation:fadeIn .35s ease-out both}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .app-header{
+    padding:12px 18px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    border-bottom:1px solid rgba(15,23,42,0.9);
+    background: linear-gradient(
+      135deg,
+      rgba(15,23,42,0.98),
+      rgba(15,23,42,0.82),
+      rgba(15,23,42,0.98)
+    );
+    backdrop-filter: blur(18px);
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
 
-/* Seções -------------------------------------------------- */
-.section{
-  margin-top:16px;background:var(--glass);
-  border:1px solid var(--line);border-radius:var(--radius);
-  backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
-  box-shadow:0 10px 40px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.1);
-  padding:18px;
-}
-.legend{font-weight:800;color:#ffffff;margin-bottom:10px;letter-spacing:.3px}
+  .app-header-logo{
+    width:40px;
+    height:40px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,0.70);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    font-weight:600;
+    letter-spacing:0.06em;
+  }
 
-/* Grades -------------------------------------------------- */
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:980px){.grid-3{grid-template-columns:1fr 1fr}}
-@media (max-width:680px){.grid-3,.grid-2{grid-template-columns:1fr}}
+  .app-header-titles{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
 
-label{font-weight:700;font-size:.95rem}
-.input,select,textarea{
-  width:100%;background:rgba(255,255,255,.06);
-  color:#f2f6ff;border:1px solid rgba(255,255,255,.22);
-  border-radius:12px;padding:10px;backdrop-filter:blur(8px);
-}
-textarea{resize:vertical;min-height:90px}
-select option{background-color:rgba(25,40,60,.95);color:#f3f7ff}
+  .app-main{
+    flex:1;
+    padding:18px;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+  }
 
-/* Badges / row -------------------------------------------- */
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.badge{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.28);
-  background:var(--glass);font-weight:700
-}
-.muted{color:var(--muted)}
-.right{margin-left:auto}
+  .app-main-center{
+    width:100%;
+    max-width:1080px;
+    margin:0 auto;
+  }
 
-/* Cards de escolha ---------------------------------------- */
-.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:980px){.cards{grid-template-columns:1fr}}
+  .app-footer{
+    padding:10px 16px;
+    font-size:11px;
+    color:var(--text-muted);
+    text-align:right;
+    border-top:1px solid rgba(15,23,42,0.7);
+    background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(2,6,23,0.96));
+  }
 
-.cardChoice{
-  position:relative;display:flex;align-items:flex-start;gap:12px;
-  padding:12px;border-radius:14px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.20);
-  transition:.2s border-color,.2s background,.2s filter;
-  cursor:pointer;
-}
-.cardChoice:hover{filter:brightness(1.06)}
-.cardChoice:has(input:checked){
-  background:var(--glass-strong);
-  border-color:rgba(255,255,255,.38);
-  box-shadow:0 8px 28px rgba(100,160,240,.18) inset;
-}
-.cardChoice input[type="checkbox"]{
-  position:absolute;opacity:0;inset:0;cursor:pointer;
-}
-.check{
-  width:20px;height:20px;border-radius:6px;
-  border:2px solid rgba(255,255,255,.35);
-  background:rgba(255,255,255,.03);
-  margin-top:2px;flex:0 0 20px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-}
-.cardChoice:has(input:checked) .check{
-  border-color:var(--accent);
-  background:linear-gradient(180deg, rgba(120,200,255,.85), rgba(90,160,235,.85));
-  box-shadow:0 0 0 3px rgba(93,174,255,.25);
-}
-.icon{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);flex:0 0 28px}
-.ctitle{font-weight:700;color:#f4f7ff}
-.cdesc{color:var(--muted);font-size:.92rem;margin-top:2px}
+  /* BOTÕES */
+  .btn{
+    border:none;
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:500;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    background: rgba(15,23,42,0.96);
+    color:var(--text-soft);
+    border:1px solid rgba(148,163,184,0.65);
+    transition: background .18s, transform .12s, box-shadow .18s, border-color .18s;
+    text-decoration:none;
+  }
 
-/* Ações ---------------------------------------------------- */
-.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
-.small{font-size:.88rem;color:var(--muted)}
-.switch{display:inline-flex;align-items:center;gap:8px;user-select:none;cursor:pointer}
-.switch input{width:18px;height:18px;accent-color:var(--accent)}
+  .btn:hover{
+    background: rgba(15,23,42,1);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(15,23,42,0.85);
+  }
 
-/* Toast ---------------------------------------------------- */
-.toast{
-  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
-  background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.30);
-  color:#ffffff;padding:10px 14px;border-radius:12px;
-  box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:9999;display:none;
-  backdrop-filter:blur(10px);
-}
-.toast.ok{border-color:#4bd7b1}
-.toast.err{border-color:#d14d4d}
+  .btn:active{
+    transform: translateY(0);
+    box-shadow:none;
+  }
 
-/* Print ---------------------------------------------------- */
-@media print{
-  .topbar,.btn{display:none!important}
-  body{background:#fff;color:#000}
-  .section{background:#fff;color:#000;border-color:#999}
-}
-</style>
+  .btn-primary{
+    background: radial-gradient(circle at 0 0, rgba(56,189,248,0.28), rgba(15,23,42,0.96));
+    border-color: rgba(56,189,248,0.8);
+    color:#e0f2fe;
+  }
+
+  .btn-primary:hover{
+    background: radial-gradient(circle at 0 0, rgba(56,189,248,0.38), rgba(15,23,42,1));
+  }
+
+  .btn-secondary{
+    border-color: rgba(148,163,184,0.8);
+  }
+
+  .app-header-actions{
+    margin-left:auto;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .page-title{
+    font-size:16px;
+    font-weight:600;
+    letter-spacing:0.04em;
+  }
+
+  .page-subtitle{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  /* CARDS GLASS */
+  .glass-card{
+    position:relative;
+    background: linear-gradient(
+      135deg,
+      rgba(15,23,42,0.96),
+      rgba(15,23,42,0.82),
+      rgba(15,23,42,0.98)
+    );
+    border-radius: var(--glass-radius);
+    border:1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    padding:18px 20px;
+    backdrop-filter: blur(var(--glass-blur));
+    overflow:hidden;
+  }
+
+  .glass-card::before{
+    content:"";
+    position:absolute;
+    inset:-1px;
+    border-radius: inherit;
+    border:1px solid transparent;
+    background:
+      linear-gradient(120deg, rgba(56,189,248,0.45), rgba(249,115,22,0.25))
+      border-box;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events:none;
+    opacity:.85;
+  }
+
+  .glass-card::after{
+    content:"";
+    position:absolute;
+    inset:-40%;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(56,189,248,0.14) 0, transparent 55%),
+      radial-gradient(circle at 90% 100%, rgba(249,115,22,0.12) 0, transparent 52%),
+      linear-gradient(115deg, rgba(148,163,184,0.18) 0, transparent 60%);
+    opacity:0.9;
+    pointer-events:none;
+  }
+
+  .glass-card > *{
+    position:relative;
+    z-index:1;
+  }
+
+  .page{
+    animation:fadeIn .35s ease-out both;
+  }
+
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(10px)}
+    to{opacity:1;transform:none}
+  }
+
+  .section{
+    margin-top:16px;
+  }
+
+  .legend{
+    font-weight:700;
+    color:var(--text-soft);
+    margin-bottom:10px;
+    letter-spacing:.3px;
+    font-size:14px;
+    text-transform:uppercase;
+  }
+
+  /* FORM / GRID */
+  .grid-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+  }
+
+  .grid-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  @media (max-width:980px){
+    .grid-3{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width:680px){
+    .grid-3,
+    .grid-2{grid-template-columns:1fr;}
+    .app-main{padding:12px;}
+    .glass-card{padding:16px;}
+  }
+
+  label{
+    font-weight:600;
+    font-size:13px;
+    color:var(--text-soft);
+    display:block;
+    margin-bottom:4px;
+  }
+
+  .input,
+  select,
+  textarea{
+    width:100%;
+    padding:9px 11px;
+    border-radius:12px;
+    border:1px solid var(--border-subtle);
+    background:rgba(15,23,42,0.96);
+    color:var(--text-main);
+    font-size:13px;
+    outline:none;
+    transition:border-color .18s, box-shadow .18s, background .18s;
+  }
+
+  .input:focus,
+  select:focus,
+  textarea:focus{
+    border-color:var(--accent-1);
+    box-shadow:0 0 0 1px rgba(56,189,248,0.40);
+    background:rgba(15,23,42,0.9);
+  }
+
+  textarea{
+    resize:vertical;
+    min-height:90px;
+  }
+
+  select option{
+    background-color:#020617;
+    color:var(--text-main);
+  }
+
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--border-subtle);
+    background:rgba(15,23,42,0.96);
+    font-size:12px;
+    color:var(--text-soft);
+  }
+
+  .muted{
+    color:var(--text-muted);
+    font-size:12px;
+  }
+
+  .right{
+    margin-left:auto;
+  }
+
+  .cards{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  @media (max-width:980px){
+    .cards{grid-template-columns:1fr;}
+  }
+
+  .cardChoice{
+    position:relative;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:12px;
+    border-radius:14px;
+    background:rgba(15,23,42,0.96);
+    border:1px solid var(--border-subtle);
+    transition:.2s border-color,.2s background,.2s filter;
+    cursor:pointer;
+  }
+
+  .cardChoice:hover{
+    filter:brightness(1.06);
+  }
+
+  .cardChoice input[type="checkbox"]{
+    position:absolute;
+    opacity:0;
+    inset:0;
+    cursor:pointer;
+  }
+
+  .cardChoice:has(input:checked){
+    background:linear-gradient(135deg, rgba(56,189,248,0.20), rgba(15,23,42,1));
+    border-color:rgba(56,189,248,0.7);
+    box-shadow:0 8px 28px rgba(15,23,42,0.9) inset;
+  }
+
+  .check{
+    width:20px;
+    height:20px;
+    border-radius:6px;
+    border:2px solid rgba(148,163,184,0.8);
+    background:rgba(15,23,42,0.9);
+    margin-top:2px;
+    flex:0 0 20px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .cardChoice:has(input:checked) .check{
+    border-color:var(--accent-1);
+    background:linear-gradient(180deg, rgba(56,189,248,.9), rgba(37,99,235,.9));
+    box-shadow:0 0 0 3px rgba(56,189,248,.35);
+  }
+
+  .icon{
+    width:28px;
+    height:28px;
+    display:grid;
+    place-items:center;
+    border-radius:8px;
+    background:rgba(15,23,42,0.96);
+    border:1px solid var(--border-subtle);
+    flex:0 0 28px;
+    font-size:16px;
+  }
+
+  .ctitle{
+    font-weight:600;
+    color:var(--text-main);
+    font-size:13px;
+  }
+
+  .cdesc{
+    color:var(--text-muted);
+    font-size:12px;
+    margin-top:2px;
+  }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    margin-top:16px;
+  }
+
+  .small{
+    font-size:.88rem;
+    color:var(--text-muted);
+  }
+
+  .switch{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    user-select:none;
+    cursor:pointer;
+    font-size:13px;
+    color:var(--text-soft);
+  }
+
+  .switch input{
+    width:18px;
+    height:18px;
+    accent-color:var(--accent-1);
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%);
+    background:rgba(15,23,42,0.96);
+    border:1px solid rgba(148,163,184,0.8);
+    color:var(--text-main);
+    padding:10px 14px;
+    border-radius:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.55);
+    z-index:9999;
+    display:none;
+    backdrop-filter:blur(10px);
+    font-size:13px;
+  }
+
+  .toast.ok{
+    border-color:#22c55e;
+  }
+
+  .toast.err{
+    border-color:#ef4444;
+  }
+
+  .glass-card.section{
+    padding:18px;
+  }
+
+  @media print{
+    body{
+      background:#ffffff !important;
+      color:#000000 !important;
+    }
+    .app-header,
+    .app-footer,
+    .btn{
+      display:none !important;
+    }
+    .glass-card{
+      box-shadow:none !important;
+      border:1px solid #999 !important;
+      background:#ffffff !important;
+    }
+    .badge{
+      background:#f3f4f6 !important;
+      border-color:#d1d5db !important;
+      color:#111827 !important;
+    }
+    .toast{
+      display:none !important;
+    }
+  }
+  </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="in">
-      <div class="h1" id="title">APH - Atendimento</div>
-      <button class="btn" id="btnVoltar">← Ficha do Aluno</button>
-      <a class="btn" href="/painel.html">🏠 Painel</a>
-      <div class="right"></div>
-      <button class="btn" id="btnLimpar">Limpar</button>
-      <button class="btn primary" id="btnSalvar">Salvar</button>
-      <button class="btn primary" id="btnEditar" style="display:none">✏️ Editar</button>
-    </div>
+  <div class="app-shell">
+
+    <!-- CABEÇALHO -->
+    <header class="app-header">
+      <div class="app-header-logo">APH</div>
+      <div class="app-header-titles">
+        <span id="title" class="page-title">APH - Atendimento</span>
+        <span class="page-subtitle">Registro de Atendimento Pré-Hospitalar</span>
+      </div>
+
+      <div class="app-header-actions">
+        <button class="btn btn-secondary" id="btnVoltar">← Ficha do Aluno</button>
+        <a class="btn btn-secondary" href="/painel.html">🏠 Painel</a>
+        <button class="btn btn-secondary" id="btnLimpar">Limpar</button>
+        <button class="btn btn-primary" id="btnSalvar">Salvar</button>
+        <button class="btn btn-primary" id="btnEditar" style="display:none">✏️ Editar</button>
+      </div>
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main class="app-main">
+      <div class="app-main-center">
+        <div class="page">
+
+          <!-- Identificação & Contexto -->
+          <section class="glass-card section">
+            <div class="legend">Identificação & Contexto</div>
+            <div class="grid-3">
+              <div>
+                <label>Responsável pelo registro</label>
+                <input id="inpResp" class="input" placeholder="Nome do monitor/professor/bombeiro">
+              </div>
+              <div>
+                <label>Local do ocorrido</label>
+                <select id="inpLocal" class="input">
+                  <option value="">Selecione...</option>
+                  <option>Sala</option><option>Pátio</option><option>Quadra</option>
+                  <option>Corredor</option><option>Refeitório</option><option>Banheiro</option>
+                  <option>Entrada/Saída</option><option>Área externa</option><option>Outro</option>
+                </select>
+              </div>
+              <div>
+                <label>Horário aproximado</label>
+                <input id="inpHora" type="time" class="input">
+              </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <span class="badge">Aluno: <b id="alunoNome" style="margin-left:6px">—</b></span>
+              <span class="badge">Turma: <b id="alunoTurma" style="margin-left:6px">—</b></span>
+              <span class="right small">
+                <input id="inpData" type="date" class="input" style="width:auto">
+              </span>
+            </div>
+          </section>
+
+          <!-- Tipo de Ocorrência -->
+          <section class="glass-card section">
+            <div class="legend">Tipo de Ocorrência</div>
+            <div id="tiposBox" class="cards"></div>
+          </section>
+
+          <!-- Materiais & Procedimentos -->
+          <section class="glass-card section">
+            <div class="legend">Materiais & Procedimentos</div>
+            <div id="materiaisBox" class="cards"></div>
+            <div style="margin-top:12px">
+              <label>Observações</label>
+              <textarea id="inpObs" class="input" placeholder="Breve descrição e evolução imediata..."></textarea>
+            </div>
+          </section>
+
+          <!-- Encaminhamento -->
+          <section class="glass-card section">
+            <div class="legend">Encaminhamento</div>
+            <div class="row" style="margin-bottom:10px">
+              <label class="switch">
+                <input type="checkbox" id="chkEncaminhamento">
+                <span>Houve encaminhamento</span>
+              </label>
+              <span class="muted">Marque se o aluno foi encaminhado (posto de saúde, hospital, etc.).</span>
+            </div>
+            <div>
+              <label>Para onde / como foi encaminhado</label>
+              <textarea id="txtEncaminhamento" class="input" placeholder="Ex.: Responsáveis acionados; aluno conduzido ao UPA; ..."></textarea>
+            </div>
+          </section>
+
+          <!-- Comunicação -->
+          <section class="glass-card section">
+            <div class="legend">Comunicação</div>
+            <div class="grid-2">
+              <div>
+                <label>Responsáveis informados?</label>
+                <select id="selRespInf" class="input">
+                  <option value="Não">Não</option>
+                  <option value="Sim">Sim</option>
+                </select>
+              </div>
+              <div>
+                <label>Meio</label>
+                <select id="selMeio" class="input">
+                  <option value="">—</option>
+                  <option value="Email">E-mail</option>
+                  <option value="Telegram">Telegram</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Telefone">Telefone</option>
+                  <option value="Agenda">Agenda</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" id="btnLimpar2">Limpar</button>
+              <button class="btn btn-primary" id="btnSalvar2">Salvar</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="app-footer">
+      CMDPII/CZS — APH Atendimento
+    </footer>
   </div>
-
-  <main class="page">
-    <!-- Identificação & Contexto -->
-    <section class="section">
-      <div class="legend">Identificação & Contexto</div>
-      <div class="grid-3">
-        <div>
-          <label>Responsável pelo registro</label>
-          <input id="inpResp" class="input" placeholder="Nome do monitor/professor/bombeiro">
-        </div>
-        <div>
-          <label>Local do ocorrido</label>
-          <select id="inpLocal" class="input">
-            <option value="">Selecione...</option>
-            <option>Sala</option><option>Pátio</option><option>Quadra</option>
-            <option>Corredor</option><option>Refeitório</option><option>Banheiro</option>
-            <option>Entrada/Saída</option><option>Área externa</option><option>Outro</option>
-          </select>
-        </div>
-        <div>
-          <label>Horário aproximado</label>
-          <input id="inpHora" type="time" class="input">
-        </div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <span class="badge">Aluno: <b id="alunoNome" style="margin-left:6px">—</b></span>
-        <span class="badge">Turma: <b id="alunoTurma" style="margin-left:6px">—</b></span>
-        <span class="right small"><input id="inpData" type="date" class="input" style="width:auto"></span>
-      </div>
-    </section>
-
-    <!-- Tipo de Ocorrência -->
-    <section class="section">
-      <div class="legend">Tipo de Ocorrência</div>
-      <div id="tiposBox" class="cards"></div>
-    </section>
-
-    <!-- Materiais & Procedimentos -->
-    <section class="section">
-      <div class="legend">Materiais & Procedimentos</div>
-      <div id="materiaisBox" class="cards"></div>
-      <div style="margin-top:12px">
-        <label>Observações</label>
-        <textarea id="inpObs" class="input" placeholder="Breve descrição e evolução imediata..."></textarea>
-      </div>
-    </section>
-
-    <!-- Encaminhamento -->
-    <section class="section">
-      <div class="legend">Encaminhamento</div>
-      <div class="row" style="margin-bottom:10px">
-        <label class="switch">
-          <input type="checkbox" id="chkEncaminhamento">
-          <span>Houve encaminhamento</span>
-        </label>
-        <span class="muted">Marque se o aluno foi encaminhado (posto de saúde, hospital, etc.).</span>
-      </div>
-      <div>
-        <label>Para onde / como foi encaminhado</label>
-        <textarea id="txtEncaminhamento" class="input" placeholder="Ex.: Responsáveis acionados; aluno conduzido ao UPA; ..."></textarea>
-      </div>
-    </section>
-
-    <!-- Comunicação -->
-    <section class="section">
-      <div class="legend">Comunicação</div>
-      <div class="grid-2">
-        <div>
-          <label>Responsáveis informados?</label>
-          <select id="selRespInf" class="input">
-            <option value="Não">Não</option>
-            <option value="Sim">Sim</option>
-          </select>
-        </div>
-        <div>
-          <label>Meio</label>
-          <select id="selMeio" class="input">
-            <option value="">—</option>
-            <option value="Email">E-mail</option>
-            <option value="Telegram">Telegram</option>
-            <option value="WhatsApp">WhatsApp</option>
-            <option value="Telefone">Telefone</option>
-            <option value="Agenda">Agenda</option>
-          </select>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn" id="btnLimpar2">Limpar</button>
-        <button class="btn primary" id="btnSalvar2">Salvar</button>
-      </div>
-    </section>
-  </main>
 
   <div id="toast" class="toast"></div>
 
@@ -365,29 +740,23 @@ function applyMode(){
   const isNew  = (mode === 'new');
   const isEdit = (mode === 'edit');
 
-  // título e botões
   $('#title').textContent =
     isNew  ? 'APH - Novo Atendimento' :
     isEdit ? 'APH - Editar Atendimento' :
              'APH - Visualização do Atendimento';
 
-  // Mostrar/ocultar botões
   $('#btnSalvar').style.display  = (isNew || isEdit) ? '' : 'none';
   $('#btnSalvar2').style.display = (isNew || isEdit) ? '' : 'none';
   $('#btnLimpar').style.display  = isNew ? '' : 'none';
   $('#btnLimpar2').style.display = isNew ? '' : 'none';
   $('#btnEditar').style.display  = isView ? '' : 'none';
 
-  // Travar/destravar campos
   const disable = isView;
   document.querySelectorAll('input, select, textarea').forEach(el=>{
-    // exceto botão-voltar e afins (já não são inputs)
-    if (el.id !== 'btnVoltar') el.disabled = disable && el.id !== 'inpData'; // inpData também trava abaixo
+    if (el.id !== 'btnVoltar') el.disabled = disable && el.id !== 'inpData';
   });
-  // garantir que o date também trave no modo view
   $('#inpData').disabled = disable;
 
-  // aparência do encaminhamento
   toggleEncaminhamento();
 }
 
@@ -404,19 +773,15 @@ async function carregarAtendimento(){
   if (!atendimentoId) return;
 
   const at = await api(`/aph/atendimentos/${atendimentoId}`);
-  // Pode vir alunoId do documento; se não tínhamos na URL, fixa aqui
   if (!alunoId && at?.alunoId) alunoId = String(at.alunoId);
 
-  // Preenche campos
   $('#inpResp').value  = at.responsavel || '';
   $('#inpLocal').value = at.local || '';
   $('#inpHora').value  = (at.hora || '').slice(0,5);
 
-  // data -> YYYY-MM-DD
   const d = at.data ? new Date(at.data) : null;
   $('#inpData').value = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
 
-  // checkboxes
   setSelected($('#tiposBox'), at.tipos || []);
   setSelected($('#materiaisBox'), at.materiais || []);
 
@@ -428,7 +793,6 @@ async function carregarAtendimento(){
 
   toggleEncaminhamento();
 
-  // Carrega identificações do aluno
   await carregarAluno().catch(()=>{});
 }
 
@@ -454,11 +818,16 @@ let saving=false;
 function setSavingState(on){
   saving=on;
   ['#btnSalvar','#btnSalvar2','#btnLimpar','#btnLimpar2','#btnVoltar','#btnEditar'].forEach(sel=>{
-    const b=$(sel); if(b) b.disabled=on;
+    const b=$(sel); if(b) b && (b.disabled=on);
   });
   const b1=$('#btnSalvar'), b2=$('#btnSalvar2');
-  if(on){ if(b1) b1.textContent=(mode==='edit'?'Atualizando...':'Salvando...'); if(b2) b2.textContent=b1.textContent; }
-  else { if(b1) b1.textContent=(mode==='edit'?'Atualizar':'Salvar'); if(b2) b2.textContent=b1.textContent; }
+  if(on){
+    if(b1) b1.textContent=(mode==='edit'?'Atualizando...':'Salvando...');
+    if(b2) b2.textContent=b1.textContent;
+  } else {
+    if(b1) b1.textContent=(mode==='edit'?'Atualizar':'Salvar');
+    if(b2) b2.textContent=b1.textContent;
+  }
 }
 
 function payloadFromUI(){
@@ -488,7 +857,6 @@ async function salvar(){
     const body = JSON.stringify(payloadFromUI());
 
     if (mode === 'edit' && atendimentoId){
-      // PUT (atualizar)
       const resp = await api(`/aph/atendimentos/${atendimentoId}`, { method:'PUT', body, timeoutMs:12000 });
       if (resp?.ok){
         toast('Atendimento atualizado.', 'ok');
@@ -501,7 +869,6 @@ async function salvar(){
       return;
     }
 
-    // POST (novo)
     const resp = await api('/aph/atendimentos', { method:'POST', body, timeoutMs:12000 });
     if (resp?.ok) {
       toast('Atendimento salvo com sucesso!', 'ok');
@@ -524,7 +891,6 @@ function voltar(){
 function goEdit(){
   const qp = new URLSearchParams(location.search);
   qp.set('mode','edit');
-  // garante que alunoId continue na URL
   if (alunoId) qp.set('alunoId', alunoId);
   location.search = `?${qp.toString()}`;
 }
@@ -534,25 +900,21 @@ async function init(){
   cardList($('#tiposBox'), TIPOS);
   cardList($('#materiaisBox'), MATERIAIS);
 
-  // default de data/hora quando novo
   if (mode === 'new'){
     const now=new Date();
     $('#inpData').value=now.toISOString().slice(0,10);
     $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   }
 
-  // carregar doc se for view/edit
   if (atendimentoId){
     try { await carregarAtendimento(); }
     catch(e){ console.error(e); toast(e.message || 'Erro ao carregar atendimento.','error'); }
   } else {
-    // novo → carrega aluno se já temos alunoId
     if (alunoId) await carregarAluno().catch(()=>{});
   }
 
   applyMode();
 
-  // binds
   $('#btnSalvar').addEventListener('click', salvar);
   $('#btnSalvar2').addEventListener('click', salvar);
   $('#btnLimpar').addEventListener('click', limpar);

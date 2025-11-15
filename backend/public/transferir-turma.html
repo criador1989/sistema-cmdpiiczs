@@ -4,99 +4,254 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Transferência de Turma</title>
-  <meta name="theme-color" content="#941a1d" />
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
   <style>
+    :root{
+      --navy:#0b0f19;
+      --panel:#12151d;
+      --line:#262a31;
+
+      --txt:#eaecef;
+      --muted:#9aa3ad;
+
+      --accent1:#1d4ed8;
+      --accent2:#38bdf8;
+
+      --rubi1:#8B0000;
+      --rubi2:#B22222;
+
+      --radius:18px;
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      height:100%;
+    }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
       margin: 0;
-      padding: 40px 20px;
-      color: #333;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--txt);
+      background:
+        url("img/bg-painel-smart.png") center/cover fixed no-repeat,
+        radial-gradient(circle at top, #111827 0, #020617 55%, #020617 100%);
+      color-scheme: dark;
+      -webkit-font-smoothing: antialiased;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:32px 16px;
     }
+
     .container {
-      max-width: 850px;
-      margin: auto;
-      background: white;
-      padding: 30px 25px;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-      animation: fadeInUp 0.9s ease-out;
+      width:100%;
+      max-width: 900px;
+      margin:0 auto;
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.12), rgba(15,18,25,0.98));
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,0.15);
+      box-shadow:
+        0 18px 40px rgba(0,0,0,0.85),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      padding: 26px 22px 26px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: fadeInUp 0.7s ease-out both;
     }
+
     h2 {
       text-align: center;
-      color: #941a1d;
-      margin-bottom: 25px;
+      color: #ffffff;
+      margin: 0 0 22px;
+      font-size: 1.5rem;
+      letter-spacing: .02em;
+      text-shadow: 0 3px 10px rgba(0,0,0,.8);
     }
+
+    h2::after{
+      content:'';
+      display:block;
+      width:72px;
+      height:3px;
+      margin:10px auto 0;
+      border-radius:999px;
+      background:linear-gradient(90deg, var(--rubi1), var(--rubi2));
+      box-shadow:0 0 12px rgba(248,113,113,.7);
+    }
+
     label {
       display: block;
       margin-top: 18px;
-      font-weight: bold;
-      color: #333;
+      font-weight: 600;
+      color: var(--txt);
+      font-size: .95rem;
     }
-    select, input[type=text] {
+
+    select,
+    input[type=text] {
       width: 100%;
-      padding: 12px;
+      padding: 11px 12px;
       margin-top: 8px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.55);
+      background: rgba(15,23,42,0.95);
+      color: var(--txt);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
     }
+
+    select:focus,
+    input[type=text]:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.35);
+      background: rgba(15,23,42,1);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 25px;
+      margin-top: 22px;
+      border-radius: 14px;
+      overflow:hidden;
+      border:1px solid rgba(15,23,42,0.9);
+      background:rgba(15,23,42,0.95);
     }
+
     th, td {
-      border: 1px solid #ccc;
-      padding: 12px;
+      padding: 10px 12px;
       text-align: left;
+      font-size: 0.93rem;
+      border-bottom:1px solid rgba(30,41,59,0.9);
     }
+
     th {
-      background-color: #B22222;
-      color: white;
-      font-weight: bold;
+      background: linear-gradient(90deg, var(--rubi2), var(--rubi1));
+      color: #ffffff;
+      font-weight: 600;
+      border-bottom:1px solid rgba(15,15,15,0.8);
     }
-    tr:nth-child(even) {
-      background-color: #f8f8f8;
+
+    tr:nth-child(even) td {
+      background-color: rgba(15,23,42,0.96);
     }
+
+    tr:nth-child(odd) td {
+      background-color: rgba(15,23,42,0.88);
+    }
+
+    tr:hover td {
+      background-color: rgba(30,64,175,0.45);
+    }
+
+    td:first-child{
+      width:70px;
+      text-align:center;
+    }
+
+    td input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      accent-color: var(--accent2);
+      cursor:pointer;
+    }
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top: 26px;
+      justify-content:flex-end;
+    }
+
     button {
-      padding: 12px 24px;
-      font-size: 16px;
+      padding: 11px 22px;
+      font-size: 0.95rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 999px;
       cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
-      margin-top: 30px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:600;
+      letter-spacing:.01em;
     }
+
     #transferirBtn {
-      background-color: #28a745;
+      background: linear-gradient(180deg, #22c55e, #15803d);
       color: white;
+      box-shadow:0 10px 24px rgba(22,163,74,0.70);
     }
-    #transferirBtn:hover {
-      background-color: #218838;
-      transform: scale(1.04);
+
+    #transferirBtn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow:0 14px 32px rgba(34,197,94,0.85);
     }
+
+    #transferirBtn:disabled{
+      cursor:not-allowed;
+      opacity:.6;
+      box-shadow:none;
+    }
+
     .voltar-btn {
-      background-color: #6c757d;
-      color: white;
-      margin-left: 10px;
+      background: #111827;
+      color: #e5e7eb;
+      border:1px solid rgba(148,163,184,0.65);
+      box-shadow:0 8px 22px rgba(15,23,42,0.9);
     }
+
     .voltar-btn:hover {
-      background-color: #5a6268;
-      transform: scale(1.04);
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow:0 12px 28px rgba(15,23,42,1);
     }
+
+    .hint{
+      margin-top:10px;
+      font-size:.85rem;
+      color:var(--muted);
+    }
+
     @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(40px); }
+      from { opacity: 0; transform: translateY(26px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @media (max-width: 600px) {
-      .container { padding: 20px 15px; }
-      table, th, td { font-size: 13px; }
+
+    @media (max-width: 768px) {
+      body{
+        padding:18px 10px;
+        align-items:stretch;
+      }
+      .container{
+        padding: 20px 14px 20px;
+        border-radius:16px;
+      }
+      h2{
+        font-size:1.25rem;
+      }
+      table, th, td { font-size: 0.8rem; }
+      .actions{
+        flex-direction:column-reverse;
+        align-items:stretch;
+      }
+      .actions button{
+        width:100%;
+        justify-content:center;
+      }
     }
+
+    @media (max-width:480px){
+      td:first-child{ width:58px; }
+    }
+
   </style>
 </head>
 <body>
@@ -121,8 +276,14 @@
       <tbody id="tabelaAlunos"></tbody>
     </table>
 
-    <button id="transferirBtn" disabled>Transferir Selecionados</button>
-    <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+    <div class="hint">
+      Selecione a turma atual, marque os alunos desejados e escolha a nova turma para concluir a transferência.
+    </div>
+
+    <div class="actions">
+      <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
+      <button id="transferirBtn" disabled>⇄ Transferir Selecionados</button>
+    </div>
   </div>
 
   <!-- Script externo (com cache-buster + defer) -->
@@ -138,5 +299,6 @@
       });
     }
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

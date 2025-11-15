@@ -9,49 +9,199 @@
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+    /* =========================
+       VARIÁVEIS – TEMA GLASS
+    ========================== */
+    :root{
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.40);
+      --glass-highlight: rgba(255,255,255,0.7);
+
+      --glass-radius: 22px;
+      --glass-blur: 18px;
+      --glass-shadow:
+        0 2px 6px rgba(0,0,0,0.15),
+        0 8px 22px rgba(0,0,0,0.20);
+
+      --text-main: #ffffff;
+      --text-soft: rgba(255,255,255,0.78);
+
+      --rubi-1:#941a1d;
+      --rubi-2:#d82327;
     }
-    .container {
-      background: white;
-      padding: 40px 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      width: 340px;
-      text-align: center;
-      animation: fadeIn .6s ease-in-out;
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
     }
-    .logo { width: 100px; margin-bottom: 10px; }
-    h2 { margin-bottom: 20px; color: #333; }
-    input, select {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
+
+    /* =========================
+       FUNDO – MESMO DO PAINEL
+    ========================== */
+    body{
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text-main);
+      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      color-scheme:dark;
+      -webkit-font-smoothing:antialiased;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
+
+    /* =========================
+       CARD PRINCIPAL GLASS
+    ========================== */
+    .container{
+      background:rgba(10,10,12,0.88);
+      border-radius:var(--glass-radius);
+      border:1px solid rgba(255,255,255,0.25);
+      box-shadow:var(--glass-shadow);
+      backdrop-filter:blur(var(--glass-blur));
+      -webkit-backdrop-filter:blur(var(--glass-blur));
+      padding:28px 24px 30px;
+      width:100%;
+      max-width:380px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      animation:fadeIn .6s ease-in-out;
     }
-    button:hover { background-color: #941a1d; }
-    .mensagem { font-size: 14px; margin-top: 10px; min-height: 18px; }
-    .voltar { margin-top: 15px; display: block; font-size: 14px; color: #d82327; text-decoration: none; }
-    .voltar:hover { text-decoration: underline; }
-    @keyframes fadeIn { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+
+    .container::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.22) 0%,
+        rgba(255,255,255,0.06) 20%,
+        transparent 45%
+      );
+      pointer-events:none;
+    }
+
+    .container > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .logo{
+      width:90px;
+      margin-bottom:10px;
+      filter:drop-shadow(0 10px 26px rgba(0,0,0,0.85));
+    }
+
+    h2{
+      margin-bottom:18px;
+      color:#fff;
+      font-weight:800;
+      font-size:1.35rem;
+      text-shadow:0 10px 26px rgba(0,0,0,0.9);
+    }
+
+    /* =========================
+       FORM / CAMPOS
+    ========================== */
+    form{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      margin:0;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.28);
+      font-size:0.95rem;
+      background:rgba(0,0,0,0.45);
+      color:#ffffff;
+      outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    input::placeholder{
+      color:var(--text-soft);
+    }
+
+    input:focus, select:focus{
+      border-color:rgba(255,255,255,0.80);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.36),
+        0 10px 26px rgba(0,0,0,0.9);
+    }
+
+    /* =========================
+       BOTÃO – RUBI GLASS
+    ========================== */
+    button{
+      width:100%;
+      padding:12px;
+      margin-top:6px;
+      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
+      color:white;
+      border:none;
+      border-radius:999px;
+      font-size:1rem;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 10px 26px rgba(0,0,0,0.85);
+      transition:
+        background .18s ease,
+        transform .18s ease,
+        box-shadow .18s ease,
+        filter .18s ease;
+    }
+
+    button:hover{
+      filter:brightness(1.06);
+      transform:translateY(-2px);
+      box-shadow:0 14px 32px rgba(0,0,0,0.95);
+    }
+
+    button:active{
+      transform:translateY(0);
+      box-shadow:0 8px 22px rgba(0,0,0,0.85);
+    }
+
+    .mensagem{
+      font-size:0.9rem;
+      margin-top:10px;
+      min-height:18px;
+    }
+
+    .voltar{
+      margin-top:15px;
+      display:block;
+      font-size:0.9rem;
+      color:#ffffff;
+      text-decoration:none;
+      opacity:.85;
+    }
+
+    .voltar:hover{
+      text-decoration:underline;
+      opacity:1;
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0; transform:translateY(20px);}
+      to{opacity:1; transform:translateY(0);}
+    }
+
+    @media (max-width:480px){
+      .container{
+        padding:22px 18px 26px;
+        border-radius:18px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -134,7 +284,7 @@
         });
         const data = await r.json().catch(() => ({}));
         if (r.ok) {
-          msg.style.color = 'green';
+          msg.style.color = 'lightgreen';
           msg.textContent = '✅ Usuário cadastrado com sucesso!';
           e.target.reset();
           setTimeout(() => (msg.textContent = ''), 5000);

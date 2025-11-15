@@ -4,69 +4,318 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Editar Notificação</title>
-  <meta name="theme-color" content="#8B0000"/>
+  <meta name="theme-color" content="#0A1322"/>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" href="/icons/icon-192x192.png"/>
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
   <style>
     :root{
-      --rubi-1:#8B0000; --rubi-2:#B22222;
-      --glass-bg: rgba(255,255,255,.07);
-      --glass-border: rgba(255,255,255,.38);
-      --glass-inner: rgba(255,255,255,.40);
-      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
-      --radius: 22px; --text:#f2f4f8; --text-soft:#cfd6de; --line: rgba(255,255,255,.18);
+      /* Paleta glass azul (mesma família do painel) */
+      --navy-1:#020617;
+      --navy-2:#020617;
+      --accent-1:#1d4ed8;
+      --accent-2:#38bdf8;
+
+      --glass-bg: rgba(15,23,42,.85);
+      --glass-border: rgba(148,163,184,.45);
+      --glass-inner: rgba(148,163,184,.20);
+      --glass-shadow: 0 18px 40px rgba(15,23,42,.85);
+      --radius: 22px;
+
+      --text:#e5f0ff;
+      --text-soft:#9ca3af;
+      --line: rgba(148,163,184,.55);
     }
+
     *{box-sizing:border-box}
-    body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:#1e0506;min-height:100vh}
-    body::before{content:"";position:fixed;inset:0;z-index:0;background:
-      linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
-      linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
-      linear-gradient(0deg, #2a0607, #3c0a0d);filter:saturate(125%)}
-    body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:
-      radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
-      radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
-      radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
-      radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%)}
 
-    .wrap{position:relative;z-index:1;width:min(980px,100%);margin:24px auto;padding:0 16px}
-    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:24px;backdrop-filter:blur(8px);
-      box-shadow:0 10px 28px rgba(0,0,0,.35);padding:22px}
-    h2{margin:0 0 12px;text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.25)}
-    .toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:10px}
-    .toolbar .left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .btn{appearance:none;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer}
-    .btn.primary{background:var(--rubi-1);border-color:var(--rubi-1)}
-    .btn:hover{filter:saturate(1.05)}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .field{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
-    .field label{display:block;font-weight:700;color:var(--text-soft);font-size:.9rem;margin-bottom:6px}
-    .field input,.field select,.field textarea{
-      width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.12);color:#fff}
-    .field textarea{min-height:84px}
+    body{
+      margin:0;
+      font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      background:#020617;
+    }
 
-    .alunoBox{display:flex;gap:12px;align-items:center}
-    .alunoBox img{width:72px;height:72px;border-radius:12px;border:1px solid rgba(255,255,255,.18);object-fit:cover;background:#111}
+    /* Fundo com textura + luzes azuis (como painel) */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      background:
+        radial-gradient(1200px 800px at -10% -10%, rgba(56,189,248,.12), transparent 60%),
+        radial-gradient(1200px 900px at 110% 110%, rgba(37,99,235,.18), transparent 65%),
+        radial-gradient(900px 900px at 50% 120%, rgba(15,23,42,.95), transparent 70%),
+        linear-gradient(135deg, #020617 0%, #020617 40%, #020617 100%);
+      filter:saturate(120%);
+    }
 
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.2);font-size:.85rem}
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:
+        linear-gradient(135deg, rgba(148,163,184,.12) 0%, transparent 35%, transparent 65%, rgba(56,189,248,.10) 100%),
+        radial-gradient(700px 700px at 10% 40%, rgba(15,23,42,.9), transparent 70%),
+        radial-gradient(700px 700px at 90% 20%, rgba(15,23,42,.9), transparent 70%);
+      mix-blend-mode:soft-light;
+    }
 
-    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+    .wrap{
+      position:relative;
+      z-index:1;
+      width:min(980px,100%);
+      margin:32px auto;
+      padding:0 16px 40px;
+    }
+
+    .card{
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56,189,248,.10), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(37,99,235,.12), transparent 55%),
+        var(--glass-bg);
+      border:1px solid var(--glass-border);
+      border-radius:24px;
+      backdrop-filter:blur(18px) saturate(140%);
+      box-shadow:var(--glass-shadow);
+      padding:22px 22px 24px;
+    }
+
+    h2{
+      margin:0 0 12px;
+      text-align:center;
+      color:#f9fbff;
+      text-shadow:0 2px 10px rgba(15,23,42,.8);
+      letter-spacing:.03em;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
+    .toolbar .left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(148,163,184,.6);
+      background:linear-gradient(135deg, rgba(15,23,42,.9), rgba(15,23,42,.9));
+      color:#e5f0ff;
+      padding:9px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:.92rem;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      box-shadow:0 10px 24px rgba(15,23,42,.9);
+      transition:background .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      white-space:nowrap;
+    }
+
+    .btn.primary{
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      border-color:rgba(56,189,248,.8);
+      box-shadow:0 12px 28px rgba(37,99,235,.55);
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 16px 34px rgba(15,23,42,.95);
+      border-color:rgba(148,163,184,.9);
+    }
+
+    .btn.primary:hover{
+      box-shadow:0 18px 40px rgba(37,99,235,.75);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    @media (max-width:780px){
+      .grid, .grid-3{
+        grid-template-columns:1fr;
+      }
+      .toolbar{
+        align-items:flex-start;
+      }
+    }
+
+    .field{
+      background:radial-gradient(circle at 0% 0%, rgba(56,189,248,.12), transparent 60%),
+                 rgba(15,23,42,.88);
+      border:1px solid rgba(148,163,184,.4);
+      border-radius:16px;
+      padding:10px 11px 12px;
+      box-shadow:0 8px 20px rgba(15,23,42,.9);
+    }
+
+    .field label{
+      display:block;
+      font-weight:600;
+      color:var(--text-soft);
+      font-size:.85rem;
+      margin-bottom:6px;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid rgba(51,65,85,.85);
+      background:rgba(15,23,42,.85);
+      color:#e5f0ff;
+      font-size:.92rem;
+      outline:none;
+      box-shadow:inset 0 0 0 1px rgba(15,23,42,.9);
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus{
+      border-color:rgba(56,189,248,.88);
+      box-shadow:0 0 0 1px rgba(56,189,248,.55), 0 0 0 6px rgba(56,189,248,.18);
+    }
+
+    .field textarea{min-height:84px;resize:vertical}
+
+    .alunoBox{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .alunoBox img{
+      width:72px;
+      height:72px;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.55);
+      object-fit:cover;
+      background:#020617;
+      box-shadow:0 10px 22px rgba(15,23,42,.9);
+    }
+
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .chip{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:radial-gradient(circle at 0% 0%, rgba(56,189,248,.18), transparent 60%),
+                 rgba(15,23,42,.95);
+      font-size:.8rem;
+      color:#e5f0ff;
+      box-shadow:0 8px 18px rgba(15,23,42,.9);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+
     .muted{color:var(--text-soft)}
-    .skeleton{height:14px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16),rgba(255,255,255,.08));
-      background-size:200% 100%;animation:sk 1.1s linear infinite;border-radius:8px}
+
+    .skeleton{
+      height:14px;
+      background:linear-gradient(90deg,rgba(51,65,85,.5),rgba(148,163,184,.7),rgba(51,65,85,.5));
+      background-size:200% 100%;
+      animation:sk 1.1s linear infinite;
+      border-radius:16px;
+    }
+
     @keyframes sk{to{background-position:-200% 0}}
 
-    /* Modal simples para trocar aluno */
-    .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.5);z-index:50}
-    .modal .box{width:min(680px,92%);background:#1b0a0b;border:1px solid rgba(255,255,255,.18);border-radius:16px;box-shadow:var(--glass-shadow);padding:14px}
-    .list-Alunos{max-height:360px;overflow:auto;margin-top:8px;border-top:1px dashed rgba(255,255,255,.18)}
-    .itemAluno{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px dashed rgba(255,255,255,.12)}
-    .itemAluno button{padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:#fff;cursor:pointer}
+    /* Modal troca aluno - adaptado para azul */
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background:rgba(15,23,42,.78);
+      z-index:50;
+    }
 
-    .note{margin-top:8px;font-size:.9rem;color:#e5e5e5}
-    .ok{color:#22c55e}.err{color:#ff8a8a}
+    .modal .box{
+      width:min(680px,92%);
+      background:radial-gradient(circle at 0% 0%, rgba(56,189,248,.14), transparent 55%),
+                 rgba(15,23,42,.98);
+      border:1px solid rgba(148,163,184,.55);
+      border-radius:18px;
+      box-shadow:0 20px 50px rgba(15,23,42,.95);
+      padding:16px 14px 14px;
+    }
+
+    .list-Alunos{
+      max-height:360px;
+      overflow:auto;
+      margin-top:8px;
+      border-top:1px dashed rgba(148,163,184,.45);
+    }
+
+    .itemAluno{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 4px;
+      border-bottom:1px dashed rgba(51,65,85,.7);
+    }
+
+    .itemAluno button{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:rgba(15,23,42,.9);
+      color:#e5f0ff;
+      cursor:pointer;
+      font-size:.85rem;
+    }
+
+    .itemAluno button:hover{
+      border-color:rgba(56,189,248,.9);
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow:0 10px 24px rgba(37,99,235,.7);
+    }
+
+    .note{
+      margin-top:10px;
+      font-size:.9rem;
+      color:#e5f0ff;
+    }
+    .ok{color:#4ade80}
+    .err{color:#fb7185}
   </style>
 </head>
 <body>
@@ -88,7 +337,7 @@
       <h2>Editar Notificação</h2>
 
       <!-- SKELETON inicial -->
-      <div id="sk" class="skeleton" style="height:120px;border-radius:12px;margin-bottom:12px"></div>
+      <div id="sk" class="skeleton" style="height:120px;margin-bottom:12px"></div>
 
       <form id="formEdicao" style="display:none">
         <!-- Aluno -->
@@ -107,7 +356,7 @@
           <input type="hidden" id="aluno" name="aluno" />
         </div>
 
-        <!-- Natureza / Status / Data -->
+        <!-- Natureza / Status -->
         <div class="grid" style="margin-top:10px">
           <div class="field">
             <label>Natureza</label>
@@ -127,6 +376,7 @@
           </div>
         </div>
 
+        <!-- Datas / Tipo de elogio -->
         <div class="grid" style="margin-top:10px">
           <div class="field">
             <label>Data</label>
@@ -199,15 +449,15 @@
   <div id="modalAlunos" class="modal" aria-hidden="true">
     <div class="box">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Trocar aluno</h3>
-        <button class="btn" onclick="fecharModal()">✖</button>
+        <h3 style="margin:0;color:#e5f0ff">Trocar aluno</h3>
+        <button class="btn" type="button" onclick="fecharModal()">✖</button>
       </div>
       <div class="field" style="margin-top:8px">
         <label>Pesquisar</label>
         <input id="buscaAluno" type="text" placeholder="Digite nome ou turma…"/>
       </div>
       <div class="list-Alunos" id="listaAlunos">
-        <div class="skeleton" style="height:50px"></div>
+        <div class="skeleton" style="height:50px;margin-top:6px"></div>
         <div class="skeleton" style="height:50px;margin-top:6px"></div>
       </div>
     </div>
@@ -218,7 +468,14 @@
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
-    const fmtISO = (d)=> { if(!d) return ''; const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const dd=String(x.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; };
+    const fmtISO = (d)=> {
+      if(!d) return '';
+      const x=new Date(d);
+      const y=x.getFullYear();
+      const m=String(x.getMonth()+1).padStart(2,'0');
+      const dd=String(x.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    };
 
     function showMsg(text, ok=true){
       const el = document.getElementById('mensagem');
@@ -229,14 +486,14 @@
     function setChips(n){
       document.getElementById('chipStatus').textContent = 'Status: ' + (n.status || '—');
       document.getElementById('chipNumero').textContent = 'Nº: ' + (n.numeroSequencial || '—');
-      document.getElementById('chipData').textContent = 'Data: ' + (n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—');
+      document.getElementById('chipData').textContent = 'Data: ' +
+        (n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—');
     }
 
     function toggleCamposPorNatureza(){
       const nat = document.getElementById('natureza').value;
       const elogio = nat === 'elogio';
       document.getElementById('tipoElogio').disabled = !elogio;
-      // se elogio e tipo vazio, sugere "Elogio"
       const t = document.getElementById('tipoMedida');
       if (elogio && !t.value) t.value = 'Elogio';
     }
@@ -247,9 +504,22 @@
       document.getElementById('boxDias').style.display = precisa ? '' : 'none';
     }
 
-    // Fatores client-side iguais ao backend (só para ajudar o usuário)
-    const MAPA_NEG = { 'ADVERTÊNCIA ESCRITA': -0.30, 'REPREENSÃO': -0.50, 'A.E.C.D.E': -0.70, 'A.E.C.D.E.': -0.70, 'AECDE': -0.70, 'A.I.A': -1.20, 'A.I.A.': -1.20, 'AIA': -1.20 };
-    const MAPA_ELOG = { 'elogioVerbal': 0.15, 'boletimInternoIndividual': 0.60, 'boletimInternoColetivo': 0.20, 'mediaAlta': 0.40 };
+    const MAPA_NEG = {
+      'ADVERTÊNCIA ESCRITA': -0.30,
+      'REPREENSÃO': -0.50,
+      'A.E.C.D.E': -0.70,
+      'A.E.C.D.E.': -0.70,
+      'AECDE': -0.70,
+      'A.I.A': -1.20,
+      'A.I.A.': -1.20,
+      'AIA': -1.20
+    };
+    const MAPA_ELOG = {
+      'elogioVerbal': 0.15,
+      'boletimInternoIndividual': 0.60,
+      'boletimInternoColetivo': 0.20,
+      'mediaAlta': 0.40
+    };
 
     function ajustarValorAutomatico(){
       const nat = document.getElementById('natureza').value;
@@ -274,45 +544,60 @@
       }
     }
 
-    // ===== Carregar notificação (rápido) =====
+    // ===== Carregar notificação =====
     async function carregar(){
-      if(!id){ showMsg('Parâmetro id ausente.', false); return; }
+      if(!id){
+        showMsg('Parâmetro id ausente.', false);
+        return;
+      }
       try{
-        const r = await fetch(API(`/notificacoes/${id}`), { credentials:'include', cache:'no-store' });
+        const r = await fetch(API(`/notificacoes/${id}`), {
+          credentials:'include',
+          cache:'no-store'
+        });
         if (!r.ok) throw new Error('Falha ao carregar dados');
         const n = await r.json();
 
-        // Chips topo
         setChips(n);
 
-        // Botões externos
         document.getElementById('btnPDF').onclick = async ()=>{
           try{
-            const rp = await fetch(API(`/pdf/${n._id}`), { method:'POST', credentials:'include', cache:'no-store' });
+            const rp = await fetch(API(`/pdf/${n._id}`), {
+              method:'POST',
+              credentials:'include',
+              cache:'no-store'
+            });
             if(!rp.ok) throw new Error('Erro ao gerar PDF');
-            const blob = await rp.blob(); const url = URL.createObjectURL(blob); window.open(url, '_blank');
-          }catch{ showMsg('Erro ao gerar PDF.', false); }
+            const blob = await rp.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+          }catch{
+            showMsg('Erro ao gerar PDF.', false);
+          }
         };
         document.getElementById('btnVerNotificacao').href = `notificacao.html?id=${n._id}`;
 
-        // Preencher aluno (sem listar todos!)
         const a = n.aluno || {};
         document.getElementById('aluno').value = a._id || '';
         document.getElementById('alunoId').textContent = a._id || '—';
         document.getElementById('alunoNome').textContent = a.nome || '—';
         document.getElementById('alunoTurma').textContent = a.turma || '—';
-        document.getElementById('fotoAluno').src = a._id ? `/api/imagens/thumb/${a._id}?w=320` : '/img/sem-foto.png';
+        document.getElementById('fotoAluno').src =
+          a._id ? `/api/imagens/thumb/${a._id}?w=320` : '/img/sem-foto.png';
 
-        // Demais campos
         document.getElementById('natureza').value = n.natureza || 'indisciplina';
         document.getElementById('status').value = n.status || 'pendente';
         document.getElementById('data').value = fmtISO(n.data || n.createdAt);
         document.getElementById('tipoElogio').value = n.tipoElogio || '';
         document.getElementById('tipoMedida').value = n.tipoMedida || n.tipo || '';
         document.getElementById('motivo').value = n.motivo || '';
-        document.getElementById('valorNumerico').value = (typeof n.valorNumerico==='number') ? n.valorNumerico.toFixed(2) : (n.valorNumerico||'');
+        document.getElementById('valorNumerico').value =
+          (typeof n.valorNumerico==='number')
+            ? n.valorNumerico.toFixed(2)
+            : (n.valorNumerico||'');
         document.getElementById('quantidadeDias').value = n.quantidadeDias || '';
-        document.getElementById('classificacaoRegulamento').value = n.classificacaoRegulamento || '';
+        document.getElementById('classificacaoRegulamento').value =
+          n.classificacaoRegulamento || '';
         document.getElementById('artigo').value = n.artigo || '';
         document.getElementById('paragrafo').value = n.paragrafo || '';
         document.getElementById('inciso').value = n.inciso || '';
@@ -321,7 +606,6 @@
         toggleCamposPorNatureza();
         toggleDiasPorMedida();
 
-        // exibe form, esconde skeleton
         document.getElementById('sk').style.display = 'none';
         document.getElementById('formEdicao').style.display = 'block';
       }catch(e){
@@ -335,7 +619,6 @@
       e.preventDefault();
       const dados = Object.fromEntries(new FormData(e.currentTarget).entries());
 
-      // normalizações
       if (dados.valorNumerico === '') delete dados.valorNumerico;
       if (dados.quantidadeDias === '') delete dados.quantidadeDias;
       if (!dados.tipoElogio) delete dados.tipoElogio;
@@ -351,7 +634,6 @@
         const j = await r.json().catch(()=> ({}));
         if (!r.ok) throw new Error(j.message || j.mensagem || 'Erro ao atualizar.');
         showMsg('✅ Notificação atualizada com sucesso!', true);
-        // atualiza chips e campos-chave sem recarregar
         setTimeout(()=>location.href='notificacoes.html', 1000);
       }catch(err){
         showMsg('❌ ' + err.message, false);
@@ -371,9 +653,12 @@
     document.getElementById('quantidadeDias').addEventListener('input', ajustarValorAutomatico);
     document.getElementById('valorNumerico').addEventListener('input', function(){ this._auto = false; });
 
-    // ===== Modal troca aluno (sob demanda, mais rápido) =====
+    // ===== Modal troca aluno =====
     const modal = document.getElementById('modalAlunos');
-    function abrirModal(){ modal.style.display = 'grid'; carregarListaAlunos(''); }
+    function abrirModal(){
+      modal.style.display = 'grid';
+      carregarListaAlunos('');
+    }
     function fecharModal(){ modal.style.display = 'none'; }
     document.getElementById('btnTrocarAluno').addEventListener('click', abrirModal);
     window.fecharModal = fecharModal;
@@ -383,15 +668,22 @@
     const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); } };
 
     async function carregarListaAlunos(q){
-      // Tenta usar filtros do backend se disponíveis (?q=)
       const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-      listaAlunos.innerHTML = `<div class="skeleton" style="height:50px"></div><div class="skeleton" style="height:50px;margin-top:6px"></div>`;
+      listaAlunos.innerHTML =
+        `<div class="skeleton" style="height:50px;margin-top:6px"></div>
+         <div class="skeleton" style="height:50px;margin-top:6px"></div>`;
       try{
-        // Se sua rota /api/alunos aceitar paginação, adapte aqui (ex.: &limit=50)
-        const r = await fetch(API(`/alunos${qs}`), { credentials:'include', cache:'no-store' });
+        const r = await fetch(API(`/alunos${qs}`), {
+          credentials:'include',
+          cache:'no-store'
+        });
         const arr = await r.json();
         const alunos = Array.isArray(arr) ? arr : (arr.data || arr.alunos || []);
-        if (!alunos.length){ listaAlunos.innerHTML = `<div class="muted" style="padding:8px">Sem resultados</div>`; return; }
+        if (!alunos.length){
+          listaAlunos.innerHTML =
+            `<div class="muted" style="padding:8px">Sem resultados</div>`;
+          return;
+        }
 
         const frag = document.createDocumentFragment();
         alunos.slice(0,80).forEach(a=>{
@@ -399,7 +691,7 @@
           div.className = 'itemAluno';
           div.innerHTML = `
             <div>
-              <div style="font-weight:700">${a.nome||'—'}</div>
+              <div style="font-weight:700;color:#e5f0ff">${a.nome||'—'}</div>
               <div class="muted">${a.turma||'—'} • ${a._id||a.id}</div>
             </div>
             <button type="button">Selecionar</button>
@@ -409,7 +701,8 @@
             document.getElementById('alunoId').textContent = a._id || a.id || '—';
             document.getElementById('alunoNome').textContent = a.nome || '—';
             document.getElementById('alunoTurma').textContent = a.turma || '—';
-            document.getElementById('fotoAluno').src = a._id ? `/api/imagens/thumb/${a._id}?w=320` : '/img/sem-foto.png';
+            document.getElementById('fotoAluno').src =
+              a._id ? `/api/imagens/thumb/${a._id}?w=320` : '/img/sem-foto.png';
             fecharModal();
           };
           frag.appendChild(div);
@@ -418,18 +711,26 @@
         listaAlunos.appendChild(frag);
       }catch(e){
         console.warn(e);
-        listaAlunos.innerHTML = `<div class="muted" style="padding:8px">Erro ao buscar alunos.</div>`;
+        listaAlunos.innerHTML =
+          `<div class="muted" style="padding:8px">Erro ao buscar alunos.</div>`;
       }
     }
-    buscaAluno.addEventListener('input', debounce(()=>carregarListaAlunos(buscaAluno.value.trim()), 300));
+
+    buscaAluno.addEventListener(
+      'input',
+      debounce(()=>carregarListaAlunos(buscaAluno.value.trim()), 300)
+    );
 
     // ===== Boot =====
     carregar();
 
     // PWA
     if('serviceWorker' in navigator){
-      window.addEventListener('load', ()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+      window.addEventListener('load', ()=>
+        navigator.serviceWorker.register('/service-worker.js').catch(()=>{})
+      );
     }
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

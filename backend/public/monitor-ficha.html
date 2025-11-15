@@ -10,42 +10,193 @@
 <meta name="theme-color" content="#0A1322">
 <style>
   :root{
-    --bg-0:#0f2f53; --bg-1:#0c2745; --glass:rgba(255,255,255,0.06);
-    --stroke:rgba(255,255,255,.15); --txt:#eaf1ff; --muted:#bcd0ea;
-    --acc:#6ec1ff; --ok:#44d07a; --warn:#ffd166; --err:#ff6b6b;
+    --bg-0:#0f2f53;
+    --bg-1:#0c2745;
+    --glass:rgba(255,255,255,0.06);
+    --stroke:rgba(255,255,255,.18);
+    --txt:#eaf1ff;
+    --muted:#bcd0ea;
+    --acc:#6ec1ff;
+    --ok:#44d07a;
+    --warn:#ffd166;
+    --err:#ff6b6b;
   }
   *{box-sizing:border-box}
+
+  /* ===== FUNDO IGUAL AO GERENCIAR-USUARIOS ===== */
   body{
-    margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+    margin:0;
+    font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
     color:var(--txt);
-    background:linear-gradient(180deg, #0b213a 0%, #08192c 100%);
+    background:#020617 url("img/bg-painel-smart.png") center/cover no-repeat fixed;
     min-height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
-  header{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; position:sticky; top:0; border-bottom:1px solid var(--stroke); backdrop-filter:blur(10px); background:linear-gradient(0deg, transparent, rgba(0,0,0,.25));}
+
+  /* leve véu escuro pra dar contraste nas cards */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    background:radial-gradient(circle at 10% 0%, rgba(15,23,42,.75), transparent 55%),
+               radial-gradient(circle at 90% 100%, rgba(15,23,42,.85), transparent 55%);
+  }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 20px;
+    position:sticky;
+    top:0;
+    border-bottom:1px solid var(--stroke);
+    backdrop-filter:blur(12px);
+    background:linear-gradient(0deg, rgba(3,7,18,.90), rgba(3,7,18,.30));
+    z-index:10;
+  }
+  #titulo{
+    font-weight:700;
+    letter-spacing:.03em;
+  }
   .actions{display:flex; gap:10px; flex-wrap:wrap}
   button{
-    border:1px solid var(--stroke); background:var(--glass); color:var(--txt);
-    padding:10px 12px; border-radius:12px; cursor:pointer; transition:.2s;
-    box-shadow:0 8px 24px rgba(0,0,0,.2) inset, 0 2px 8px rgba(0,0,0,.15);
+    border:1px solid var(--stroke);
+    background:var(--glass);
+    color:var(--txt);
+    padding:10px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:.2s;
+    box-shadow:0 8px 24px rgba(0,0,0,.2) inset, 0 2px 8px rgba(0,0,0,.25);
+    font-weight:600;
   }
-  button:hover{transform:translateY(-1px); background:rgba(255,255,255,.08)}
-  main{padding:16px; display:grid; grid-template-columns: 1.1fr .9fr; gap:16px}
-  .card{background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border:1px solid var(--stroke); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.06) inset;}
-  h3{margin:0 0 10px 0; font-size:16px}
-  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-  input, select, textarea{width:100%; border-radius:12px; border:1px solid var(--stroke); background:rgba(255,255,255,.05); color:var(--txt); padding:10px 12px; outline:none;}
-  table{width:100%; border-collapse:collapse; font-size:14px}
-  thead th{text-align:left; font-weight:600; color:#dfeaff; border-bottom:1px solid var(--stroke); padding:10px 6px;}
-  tbody td{padding:10px 6px; border-bottom:1px dashed var(--stroke)}
-  .tag{padding:2px 8px; border-radius:999px; border:1px solid var(--stroke); font-size:12px}
-  .ok{background:rgba(68,208,122,.12); border-color:rgba(68,208,122,.35)}
-  .warn{background:rgba(255,209,102,.12); border-color:rgba(255,209,102,.35)}
-  .err{background:rgba(255,107,107,.12); border-color:rgba(255,107,107,.35)}
+  button:hover{
+    transform:translateY(-1px);
+    background:rgba(255,255,255,.09);
+    box-shadow:0 12px 30px rgba(0,0,0,.55);
+  }
+
+  main{
+    padding:16px 16px 24px;
+    display:grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap:16px;
+    max-width:1200px;
+    margin:0 auto;
+  }
+
+  .card{
+    background:linear-gradient(180deg, rgba(15,23,42,.92), rgba(8,15,30,.96));
+    border:1px solid var(--stroke);
+    border-radius:18px;
+    padding:14px;
+    box-shadow:
+      0 18px 40px rgba(0,0,0,.70),
+      0 1px 0 rgba(255,255,255,.06) inset;
+    backdrop-filter:blur(16px);
+  }
+
+  h3{
+    margin:0 0 10px 0;
+    font-size:16px;
+    letter-spacing:.02em;
+  }
+
+  .grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  input, select, textarea{
+    width:100%;
+    border-radius:12px;
+    border:1px solid var(--stroke);
+    background:rgba(15,23,42,.92);
+    color:var(--txt);
+    padding:10px 12px;
+    outline:none;
+    font:inherit;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.04),
+      0 6px 16px rgba(0,0,0,.40);
+  }
+
+  input::placeholder,
+  textarea::placeholder{
+    color:var(--muted);
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus{
+    border-color:var(--acc);
+    box-shadow:
+      0 0 0 2px rgba(110,193,255,.45),
+      0 10px 26px rgba(0,0,0,.65);
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  thead th{
+    text-align:left;
+    font-weight:600;
+    color:#dfeaff;
+    border-bottom:1px solid var(--stroke);
+    padding:10px 6px;
+    background:rgba(15,23,42,.96);
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+  tbody td{
+    padding:10px 6px;
+    border-bottom:1px dashed var(--stroke);
+  }
+
+  .tag{
+    padding:2px 8px;
+    border-radius:999px;
+    border:1px solid var(--stroke);
+    font-size:12px;
+  }
+  .ok{
+    background:rgba(68,208,122,.12);
+    border-color:rgba(68,208,122,.45);
+  }
+  .warn{
+    background:rgba(255,209,102,.12);
+    border-color:rgba(255,209,102,.45);
+  }
+  .err{
+    background:rgba(255,107,107,.12);
+    border-color:rgba(255,107,107,.45);
+  }
+
   @media print{
     header,.actions{display:none!important}
     main{grid-template-columns:1fr}
     body{background:white; color:black}
-    .card{box-shadow:none; border-color:#ccc}
+    .card{
+      box-shadow:none;
+      border-color:#ccc;
+      background:white;
+    }
+    input,select,textarea{
+      box-shadow:none;
+      background:white;
+      color:black;
+    }
+  }
+
+  @media (max-width:900px){
+    main{
+      grid-template-columns:1fr;
+    }
   }
 </style>
 </head>

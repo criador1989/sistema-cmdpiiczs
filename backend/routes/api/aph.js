@@ -73,6 +73,27 @@ function montarMensagemAPH({ aluno, at }) {
   return { titulo: `Comunicado de APH — ${nome}`, texto: linhas.join('\n') };
 }
 
+/* -------------------- parse de data robusto -------------------- */
+function parseDateOnlyLocal(v) {
+  if (!v) return new Date();
+  if (typeof v === 'string') {
+    const iso = /^\d{4}-\d{2}-\d{2}/.test(v);
+    const br  = /^\d{2}\/\d{2}\/\d{4}$/.test(v);
+    if (iso)   return new Date(v + (v.length === 10 ? 'T00:00:00' : ''));
+    if (br) {
+      const [dd, mm, yyyy] = v.split('/').map(Number);
+      return new Date(yyyy, (mm || 1) - 1, dd || 1, 0, 0, 0, 0);
+    }
+  }
+  const t = Date.parse(v);
+  return Number.isNaN(t) ? new Date() : new Date(t);
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+router.get('/status', (_req, res) => res.json({ ok: true, service: 'aph' }));
+
 /* =========================================================
    LISTAS / DETALHES
    ========================================================= */
@@ -145,6 +166,19 @@ router.get('/atendimentos', autenticar, async (req, res) => {
 // Alias de listagem por aluno
 router.get('/atendimentos/aluno/:alunoId', autenticar, (req, res, next) => {
   req.url = `/atendimentos?alunoId=${encodeURIComponent(req.params.alunoId)}`;
+  next();
+});
+
+// 🔁 Alias compatível com front antigo: /api/aph/listar
+router.get('/listar', autenticar, (req, res, next) => {
+  const q = [];
+  if (req.query.alunoId) q.push(`alunoId=${encodeURIComponent(req.query.alunoId)}`);
+  if (req.query.page)    q.push(`page=${encodeURIComponent(req.query.page)}`);
+  if (req.query.limit)   q.push(`limit=${encodeURIComponent(req.query.limit)}`);
+  if (req.query.dtIni)   q.push(`dtIni=${encodeURIComponent(req.query.dtIni)}`);
+  if (req.query.dtFim)   q.push(`dtFim=${encodeURIComponent(req.query.dtFim)}`);
+  if (req.query.q)       q.push(`q=${encodeURIComponent(req.query.q)}`);
+  req.url = `/atendimentos${q.length ? '?' + q.join('&') : ''}`;
   next();
 });
 
@@ -228,7 +262,7 @@ router.post('/atendimentos', autenticar, async (req, res) => {
       responsavel: (responsavel || '').trim(),
       local: (local || '').trim(),
       hora: (hora || '').trim(),
-      data: data ? new Date(data) : new Date(),
+      data: parseDateOnlyLocal(data),
       tipos: Array.isArray(tipos) ? tipos : [],
       materiais: Array.isArray(materiais) ? materiais : [],
       sinaisESintomas,
@@ -302,6 +336,7 @@ router.put('/atendimentos/:id', autenticar, async (req, res) => {
       sinaisESintomas: (req.body?.sinaisESintomas || '').trim(),
       procedimentos: (req.body?.procedimentos || '').trim(),
       houveEncaminhamento: Boolean(req.body?.houveEncaminhamento),
+      ...(req.body?.data ? { data: parseDateOnlyLocal(req.body.data) } : {}),
     };
 
     const upd = await AphAtendimento.findOneAndUpdate(
