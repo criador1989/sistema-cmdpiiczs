@@ -42,16 +42,32 @@ html,body{
 body{
   font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color:var(--text-main);
-  background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+  /* fundo base; o papel de parede real vem no #bg-wallpaper */
+  background:#020617;
   color-scheme:dark;
 }
 
-/* overlay neutro (mantido, mas agora com z-index 0) */
+/* camada do papel de parede (imagens) */
+#bg-wallpaper{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+  filter:brightness(0.98) saturate(1.08);
+  opacity:1;
+  transition:opacity .6s ease;
+}
+
+/* overlay neutro (mantido, mas agora acima do wallpaper) */
 body::before{
   content:"";
   position:fixed;
   inset:0;
-  z-index:0;
+  z-index:1;
   pointer-events:none;
   background:transparent;
 }
@@ -76,7 +92,7 @@ h1, h2, h3, h4, h5, h6,
 #intro-hex-overlay{
   position:fixed;
   inset:0;
-  z-index:1;          /* abaixo dos cards, acima do papel de parede */
+  z-index:2;          /* acima do papel de parede e overlay neutro, abaixo dos cards */
   pointer-events:none;
   background:
     radial-gradient(circle at 20% 0%, rgba(59,130,246,0.35), transparent 60%),
@@ -123,7 +139,7 @@ h1, h2, h3, h4, h5, h6,
 /* layout geral */
 .page{
   position:relative;
-  z-index:3;  /* acima do overlay animado */
+  z-index:3;  /* acima do overlay animado e do papel de parede */
   width:100%;
   display:grid;
   grid-template-columns:280px 1fr;
@@ -323,6 +339,53 @@ h1, h2, h3, h4, h5, h6,
 
 .sub{
   color:var(--text-soft);
+}
+
+/* botão para trocar papel de parede */
+.btn-wallpaper{
+  margin-top:6px;
+  border:none;
+  border-radius:999px;
+  padding:.45rem .9rem;
+  font-size:.85rem;
+  cursor:pointer;
+  background:rgba(15,23,42,.85);
+  color:#e5e7eb !important;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  box-shadow:
+    0 0 0 1px rgba(148,163,184,.35),
+    0 10px 25px rgba(15,23,42,.6);
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease,
+    opacity .18s ease;
+}
+
+.btn-wallpaper:hover{
+  transform:translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(129,140,248,.7),
+    0 16px 40px rgba(15,23,42,.9);
+  background:rgba(30,64,175,.95);
+}
+
+.btn-wallpaper:active{
+  transform:translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(129,140,248,.7),
+    0 4px 12px rgba(15,23,42,.9);
+}
+
+@media(max-width:480px){
+  .btn-wallpaper{
+    width:100%;
+    justify-content:center;
+  }
 }
 
 /* =========================
@@ -885,6 +948,9 @@ canvas{
 </style>
 </head>
 <body>
+  <!-- LAYER DO PAPEL DE PAREDE -->
+  <div id="bg-wallpaper"></div>
+
   <!-- OVERLAY DE ANIMAÇÃO INICIAL (entre o fundo e os cards) -->
   <div id="intro-hex-overlay"></div>
 
@@ -923,6 +989,11 @@ canvas{
           </div>
           <div class="titulo">Bem-vindo ao Sistema Escolar</div>
           <div class="sub">Olá, <span id="nomeUsuario">Usuário</span></div>
+
+          <!-- Botão para alternar papel de parede -->
+          <button id="btn-wallpaper" class="btn-wallpaper" type="button">
+            🎨 Papel de parede
+          </button>
         </div>
 
         <section class="painel">
@@ -1143,6 +1214,62 @@ canvas{
   </nav>
 
   <script>
+  /* ===== PAPEL DE PAREDE DINÂMICO ===== */
+  (function(){
+    // Caminhos das imagens de fundo (coloque essas imagens em backend/public/img)
+    const wallpapers = [
+      'url("img/bg-painel-smart.png")',
+      'url("img/bg-painel-smart-2.png")',
+      'url("img/bg-painel-smart-3.png")'
+    ];
+    const STORAGE_KEY = 'painelWallpaperIndex';
+
+    let current = 0;
+    try{
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const idx = parseInt(saved,10);
+      if(!Number.isNaN(idx) && idx >= 0 && idx < wallpapers.length){
+        current = idx;
+      }
+    }catch(e){
+      console.warn('Não foi possível ler o wallpaper salvo:', e);
+    }
+
+    function applyWallpaper(idx, fade){
+      const layer = document.getElementById('bg-wallpaper');
+      if(!layer) return;
+      const safeIdx = (idx >= 0 && idx < wallpapers.length) ? idx : 0;
+
+      if(fade){
+        layer.style.opacity = '0';
+        setTimeout(()=>{
+          layer.style.backgroundImage = wallpapers[safeIdx];
+          layer.style.opacity = '1';
+        }, 220);
+      }else{
+        layer.style.backgroundImage = wallpapers[safeIdx];
+        layer.style.opacity = '1';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyWallpaper(current, false);
+
+      const btn = document.getElementById('btn-wallpaper');
+      if(!btn) return;
+
+      btn.addEventListener('click', ()=>{
+        current = (current + 1) % wallpapers.length;
+        applyWallpaper(current, true);
+        try{
+          localStorage.setItem(STORAGE_KEY, String(current));
+        }catch(e){
+          console.warn('Não foi possível salvar o wallpaper:', e);
+        }
+      });
+    });
+  })();
+
   /* ===== OVERLAY: CRIAR COLMEIA SVG + REMOVER APÓS ANIMAÇÃO ===== */
   (function(){
     const overlay = document.getElementById('intro-hex-overlay');
@@ -1436,6 +1563,7 @@ canvas{
         const { regular=[], insuficiente=[] } = await getJSON(API('/alertas/comportamento'), { timeoutMs: 12000 });
 
         REG_DATA = regular.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+
                           .sort((x,y)=> x.n - y.n);
         INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) } ))
                                .sort((x,y)=> x.n - y.n);
