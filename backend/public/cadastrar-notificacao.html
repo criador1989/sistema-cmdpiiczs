@@ -15,7 +15,9 @@
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
       }
-      if (window.caches) { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
     }
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -64,13 +66,18 @@
     }
     .sub{ text-align:center; color:var(--muted); margin-bottom:18px; }
 
-    label{display:block; margin:14px 0 6px; color:#dcdfe4; font-weight:600; font-size:14px}
+    label{
+      display:block; margin:14px 0 6px;
+      color:#dcdfe4; font-weight:600; font-size:14px
+    }
     select,input,textarea{
       width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--line);
       background:#0f1114; color:#e9ecf1; outline:none; font-size:15px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
-    select:focus,input:focus,textarea:focus{border-color:#b94d4f; box-shadow:0 0 0 3px rgba(216,35,39,.25)}
+    select:focus,input:focus,textarea:focus{
+      border-color:#b94d4f; box-shadow:0 0 0 3px rgba(216,35,39,.25)
+    }
     textarea{min-height:90px; resize:vertical}
 
     .row{display:grid; grid-template-columns:1fr 1fr; gap:14px}
@@ -78,7 +85,8 @@
 
     .pill{
       display:inline-block; padding:8px 12px; border-radius:999px;
-      background:#0f1114; border:1px solid var(--line); margin-bottom:10px; font-weight:600; color:#e9ecf1;
+      background:#0f1114; border:1px solid var(--line); margin-bottom:10px;
+      font-weight:600; color:#e9ecf1;
     }
 
     .btns{display:flex; gap:12px; margin-top:22px; flex-wrap:wrap}
@@ -230,7 +238,10 @@
     }
 
     // utils
-    function toNum(v, fallback = 0){ const n = Number((v+'').replace(',', '.')); return Number.isFinite(n) ? n : fallback; }
+    function toNum(v, fallback = 0){
+      const n = Number((v+'').replace(',', '.'));
+      return Number.isFinite(n) ? n : fallback;
+    }
     function round2(n){ return Number(toNum(n).toFixed(2)); }
 
     const medidasNegativas = {
@@ -435,55 +446,99 @@
     }
     tipoElogio.addEventListener('change', aplicarValorElogio);
 
+    // ===== SUBMIT AJUSTADO =====
     document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
       e.preventDefault();
+
+      const tipoRegistroValor = document.getElementById('tipoRegistro').value;
 
       const dadosBasicos = {
         aluno: document.getElementById('aluno').value,
         observacao: document.getElementById('observacao').value || '',
         data: document.getElementById('data').value,
+        tipoRegistro: tipoRegistroValor
       };
 
       let body;
 
-      if (document.getElementById('tipoRegistro').value === 'elogio') {
-        if (!tipoElogio.value) { alert('Selecione o tipo de elogio.'); return; }
+      if (tipoRegistroValor === 'elogio') {
+        // --- ELOGIO ---
+        if (!tipoElogio.value) {
+          alert('Selecione o tipo de elogio.');
+          return;
+        }
+
         const valor = elogiosMapa[tipoElogio.value] ?? 0;
+
+        const textoMotivoElogio = {
+          elogioVerbal: 'Elogio verbal',
+          boletimInternoIndividual: 'Boletim Interno Individual',
+          boletimInternoColetivo: 'Boletim Interno Coletivo',
+          mediaAlta: 'Média ≥ 8,5',
+        }[tipoElogio.value] || 'Elogio';
+
         body = {
           ...dadosBasicos,
           natureza: 'elogio',
+          gravidade: 'Elogio',
           tipo: 'Elogio',
           tipoMedida: 'Elogio',
           tipoElogio: tipoElogio.value,
-          motivo: {
-            elogioVerbal: 'Elogio verbal',
-            boletimInternoIndividual: 'Boletim Interno Individual',
-            boletimInternoColetivo: 'Boletim Interno Coletivo',
-            mediaAlta: 'Média ≥ 8,5',
-          }[tipoElogio.value] || 'Elogio',
+          motivo: textoMotivoElogio,
+          quantidadeDias: 1,
           valorNumerico: round2(valor),
-          artigo: null, inciso: null, classificacaoRegulamento: null
+          artigo: '',
+          paragrafo: '',
+          inciso: '',
+          classificacaoRegulamento: '',
+          comentarioMonitor: ''
         };
+
       } else {
-        const base = medidasNegativas[tipoMedida.value] || 0;
-        const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tipoMedida.value);
+        // --- INDISCIPLINA ---
+        const gravidadeSelecionada = tipo.value || '';
+        const motivoSelecionado    = motivo.value || '';
+        const tipoMedidaSelecionada = tipoMedida.value || '';
+
+        if (!gravidadeSelecionada) {
+          alert('Selecione a gravidade do ato.');
+          return;
+        }
+        if (!motivoSelecionado) {
+          alert('Selecione o motivo do ato de indisciplina.');
+          return;
+        }
+        if (!tipoMedidaSelecionada) {
+          alert('Selecione o tipo de medida aplicada.');
+          return;
+        }
+
+        const base = medidasNegativas[tipoMedidaSelecionada] || 0;
+        const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tipoMedidaSelecionada);
+
         let dias = precisaDias ? parseInt(document.getElementById('quantidadeDias').value, 10) : 1;
         if (!Number.isInteger(dias) || dias < 1) dias = 1;
 
         const valor = round2(base * dias);
+
         body = {
           ...dadosBasicos,
           natureza: 'indisciplina',
-          gravidade: tipo.value || null,
-          motivo: motivo.value || null,
-          tipoMedida: tipoMedida.value || null,
+          gravidade: gravidadeSelecionada,
+          motivo: motivoSelecionado,
+          tipo: tipoMedidaSelecionada,
+          tipoMedida: tipoMedidaSelecionada,
           quantidadeDias: dias,
           valorNumerico: valor,
-          artigo: document.getElementById('artigo').value || null,
-          inciso: document.getElementById('inciso').value || null,
-          classificacaoRegulamento: document.getElementById('classificacaoRegulamento').value || null
+          artigo: document.getElementById('artigo').value || '',
+          paragrafo: '',
+          inciso: document.getElementById('inciso').value || '',
+          classificacaoRegulamento: document.getElementById('classificacaoRegulamento').value || '',
+          comentarioMonitor: ''
         };
       }
+
+      console.log('Body enviado para /api/notificacoes:', body);
 
       try {
         const r = await fetch(API('/notificacoes'), {
@@ -494,11 +549,16 @@
         });
         const resultado = await r.json().catch(() => ({}));
 
-        if (r.status === 401) { window.location.href = '/login.html'; return; }
+        if (r.status === 401) {
+          window.location.href = '/login.html';
+          return;
+        }
 
         if (r.ok) {
-          document.getElementById('mensagem').textContent = '✅ Registro salvo com sucesso!';
-          document.getElementById('mensagem').className = 'msg ok';
+          const msg = document.getElementById('mensagem');
+          msg.textContent = '✅ Registro salvo com sucesso!';
+          msg.className = 'msg ok';
+
           this.reset();
           document.getElementById('detalhesMotivo').classList.add('hidden');
           toggleGrupos();
@@ -512,12 +572,16 @@
             select.value = alunoQS;
           }
         } else {
-          document.getElementById('mensagem').textContent = resultado?.mensagem || resultado?.error || '❌ Erro ao cadastrar.';
-          document.getElementById('mensagem').className = 'msg err';
+          const msg = document.getElementById('mensagem');
+          msg.textContent = resultado?.mensagem || resultado?.message || resultado?.error || '❌ Erro ao cadastrar.';
+          msg.className = 'msg err';
+          console.error('Erro ao cadastrar notificação:', resultado);
         }
       } catch (err) {
-        document.getElementById('mensagem').textContent = '❌ Erro de conexão com o servidor.';
-        document.getElementById('mensagem').className = 'msg err';
+        console.error('Erro de conexão ao cadastrar notificação:', err);
+        const msg = document.getElementById('mensagem');
+        msg.textContent = '❌ Erro de conexão com o servidor.';
+        msg.className = 'msg err';
       }
     });
 
