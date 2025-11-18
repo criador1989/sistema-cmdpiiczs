@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 
 const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
-const Counter = require('../../models/Counter'); // ✅ CONTADOR ATÔMICO
+const Counter = require('../../models/Counter'); // pode ficar aqui, mesmo sem uso direto
 
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const enviarWhatsapp = require('../../utils/twilio');
@@ -39,7 +39,7 @@ function getChatIdsFromAlunoDoc(alunoDoc) {
       alunoDoc.chatIdResponsavel || '',
       alunoDoc?.contatos?.telegramChatId || ''
     ]
-      .map(s => String(s || '').trim())
+      .map((s) => String(s || '').trim())
       .filter(Boolean)
   );
   return Array.from(set);
@@ -59,7 +59,7 @@ function formatDataHoraBr(dt) {
   const d = new Date(dt);
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${formatDataBr(d)} ${hh}:${mi}`;
+  return `${formatDataBr(d)} ${hh}:${mi}`; // usa formatDataBr
 }
 
 /** Monta assunto/corpo do comunicado de DEFERIMENTO */
@@ -208,8 +208,9 @@ function buildAlunoMatch(inst) {
   const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
   if (inst) {
     ors.push({ instituicao: String(inst) });
-    if (mongoose.isValidObjectId(inst))
+    if (mongoose.isValidObjectId(inst)) {
       ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+    }
   }
   return { $or: ors };
 }
@@ -248,10 +249,7 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
 }
 async function getAlunoInfo(alunoId, instituicao) {
   if (!alunoId) return { alunoNome: '—', alunoTurma: '—' };
-  const a = await Aluno.findOne({
-    _id: alunoId,
-    ...buildAlunoMatch(instituicao)
-  })
+  const a = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) })
     .select('nome turma')
     .lean();
   return { alunoNome: a?.nome || '—', alunoTurma: a?.turma || '—' };
@@ -290,76 +288,61 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
   }
 }
 
-/* ========= NOVO: contador atômico p/ numeroSequencial SEM transações ========= */
-async function getNextNumeroSequencialAtomic(instituicao, dataRef = new Date()) {
-  const ano =
-    dataRef instanceof Date ? dataRef.getFullYear() : new Date().getFullYear();
-  const chave = `notificacao:${String(instituicao)}:${ano}`;
+/* ========= NOVO: gerador simples de numeroSequencial por ano ========= */
 
-  // 1) Descobre o MAIOR numeroSequencial já usado nesse ano/instituição
-  const ult = await Notificacao.find({
-    instituicao: instituicao,
-    data: { $gte: new Date(ano, 0, 1), $lt: new Date(ano + 1, 0, 1) }
-  })
-    .select('numeroSequencial')
-    .sort({ numeroSequencial: -1 }) // pega o maior, pois é zero-padded
-    .limit(1)
-    .lean();
-
-  let startSeq = 0;
-  let pad = 4;
-
-  if (ult?.length && ult[0]?.numeroSequencial) {
-    const m = String(ult[0].numeroSequencial).match(/^(\d{1,})\//);
-    if (m) {
-      startSeq = parseInt(m[1], 10) || 0;
-      pad = Math.max(m[1].length, 4);
-    }
-  }
-
-  // 2) Busca/cria documento do contador
-  let counter = await Counter.findOne({ chave });
-
-  if (!counter) {
-    try {
-      counter = await Counter.create({
-        chave,
-        seq: startSeq,
-        ano,
-        atualizadoEm: new Date()
-      });
-    } catch (e) {
-      // Em corrida, alguém criou antes: busca de novo
-      if (e.code === 11000) {
-        counter = await Counter.findOne({ chave });
-      } else {
-        throw e;
+/**
+ * Busca o maior número de sequência (parte antes da barra) já usado para o ano informado,
+ * olhando QUALQUER notificação cujo numeroSequencial termina com "/ANO".
+ */
+async function getMaxSequenceForYear(ano) {
+  const result = await Notificacao.aggregate([
+    {
+      $match: {
+        numeroSequencial: {
+          $regex: `/${ano}$`
+        }
+      }
+    },
+    {
+      $project: {
+        seq: {
+          $convert: {
+            input: { $arrayElemAt: [{ $split: ['$numeroSequencial', '/'] }, 0] },
+            to: 'int',
+            onError: 0,
+            onNull: 0
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        maxSeq: { $max: '$seq' }
       }
     }
-  }
+  ]);
 
-  // 3) Se por algum motivo o seq do contador estiver ABAIXO do máximo já usado,
-  //    ajusta pra não repetir números.
-  if (counter.seq < startSeq) {
-    counter = await Counter.findOneAndUpdate(
-      { chave },
-      { $set: { seq: startSeq, atualizadoEm: new Date(), ano } },
-      { new: true }
-    );
-  }
+  return result && result.length ? result[0].maxSeq || 0 : 0;
+}
 
-  // 4) Incrementa seq de forma atômica
-  counter = await Counter.findOneAndUpdate(
-    { chave },
-    { $inc: { seq: 1 }, $set: { atualizadoEm: new Date(), ano } },
-    { new: true }
-  );
+/**
+ * Gera o próximo numeroSequencial APENAS com base no que já existe na coleção Notificacao.
+ * Não usa mais a coleção Counter para isso, evitando desencontros.
+ */
+async function getNextNumeroSequencialAtomic(_instituicao, dataRef = new Date()) {
+  const ano =
+    dataRef instanceof Date ? dataRef.getFullYear() : new Date().getFullYear();
 
-  const seq = counter.seq;
+  // pega o maior número já usado no formato XXXX/ANO
+  const maxSeq = await getMaxSequenceForYear(ano);
+  const nextSeq = (maxSeq || 0) + 1;
+
+  const pad = 4; // 0001/2025 etc.
   return {
     ano,
-    seq,
-    numeroSequencial: `${String(seq).padStart(pad, '0')}/${ano}`
+    seq: nextSeq,
+    numeroSequencial: `${String(nextSeq).padStart(pad, '0')}/${ano}`
   };
 }
 
@@ -390,11 +373,7 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
       .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
       .sort({ data: 1, createdAt: 1 });
 
-    const notaAnterior = calcularNotaTSMD(
-      alunoDoc.dataEntrada,
-      endOntem,
-      notificacoesAntes
-    );
+    const notaAnterior = calcularNotaTSMD(alunoDoc.dataEntrada, endOntem, notificacoesAntes);
 
     // Notas até o fim do dia (para notaAtual / nota no dia)
     const notificacoesAteDia = await Notificacao.find({
@@ -406,7 +385,7 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
       .sort({ data: 1, createdAt: 1 });
 
     const listaDia = [
-      ...notificacoesAteDia.map(n => ({
+      ...notificacoesAteDia.map((n) => ({
         data: n.data,
         createdAt: n.createdAt,
         valorNumerico: n.valorNumerico,
@@ -414,6 +393,7 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
         tipoMedida: n.tipoMedida,
         natureza: n.natureza
       })),
+      // garante inclusão dos valores atuais desta própria notificação
       {
         data: dt,
         createdAt: notif.createdAt || dt,
@@ -424,11 +404,7 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
       }
     ];
 
-    const notaNoDia = calcularNotaTSMD(
-      alunoDoc.dataEntrada,
-      dayEnd,
-      listaDia
-    );
+    const notaNoDia = calcularNotaTSMD(alunoDoc.dataEntrada, dayEnd, listaDia);
 
     await Notificacao.findByIdAndUpdate(notif._id, {
       $set: {
@@ -456,40 +432,30 @@ router.get('/novas', autenticar, attachActor, async (_req, res) => {
 });
 
 // GET "/pendencias/devolucao/contador"
-router.get(
-  '/pendencias/devolucao/contador',
-  autenticar,
-  attachActor,
-  async (req, res) => {
-    try {
-      const instMatch = buildInstMatch(req.usuario.instituicao);
-      const agora = new Date();
-      const total = await Notificacao.countDocuments({
-        ...instMatch,
-        status: 'deferido',
-        entregue: true,
-        devolvidoPeloAluno: { $ne: true },
-        prazoDevolucao: { $ne: null, $lt: agora }
-      });
-      res.json({ total });
-    } catch (err) {
-      console.error('Erro contador pendências:', err);
-      res
-        .status(500)
-        .json({ error: 'Erro ao calcular contador de pendências.' });
-    }
+router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req, res) => {
+  try {
+    const instMatch = buildInstMatch(req.usuario.instituicao);
+    const agora = new Date();
+    const total = await Notificacao.countDocuments({
+      ...instMatch,
+      status: 'deferido',
+      entregue: true,
+      devolvidoPeloAluno: { $ne: true },
+      prazoDevolucao: { $ne: null, $lt: agora }
+    });
+    res.json({ total });
+  } catch (err) {
+    console.error('Erro contador pendências:', err);
+    res.status(500).json({ error: 'Erro ao calcular contador de pendências.' });
   }
-);
+});
 
 /* ——— Handler compartilhado para pendências de devolução ——— */
 async function handlerPendenciasDevolucao(req, res) {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit || '50', 10), 1),
-      200
-    );
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '50', 10), 1), 200);
     const agora = new Date();
 
     const itens = await Notificacao.find({
@@ -504,48 +470,29 @@ async function handlerPendenciasDevolucao(req, res) {
       .select(
         'aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data'
       )
-      .populate({
-        path: 'aluno',
-        select: 'nome turma instituicao',
-        match: alunoMatch
-      })
+      .populate({ path: 'aluno', select: 'nome turma instituicao', match: alunoMatch })
       .lean();
 
-    const filtrados = (itens || []).filter(i => i.aluno);
+    const filtrados = (itens || []).filter((i) => i.aluno);
     res.json({ total: filtrados.length, itens: filtrados });
   } catch (err) {
     console.error('Erro pendências:', err);
-    res
-      .status(500)
-      .json({ error: 'Erro ao buscar pendências de devolução.' });
+    res.status(500).json({ error: 'Erro ao buscar pendências de devolução.' });
   }
 }
 
 // GET "/pendencias/devolucao" (rota original)
-router.get(
-  '/pendencias/devolucao',
-  autenticar,
-  attachActor,
-  handlerPendenciasDevolucao
-);
+router.get('/pendencias/devolucao', autenticar, attachActor, handlerPendenciasDevolucao);
 
 // ✅ Alias chamado pelo painel antigo: "/pendentes-devolucao"
-router.get(
-  '/pendentes-devolucao',
-  autenticar,
-  attachActor,
-  handlerPendenciasDevolucao
-);
+router.get('/pendentes-devolucao', autenticar, attachActor, handlerPendenciasDevolucao);
 
-// ✅ Alias para listagem de pendentes
+// ✅ Alias para listagem de pendentes (usado no painel em alguns pontos)
 router.get('/pendentes', autenticar, attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit || '50', 10), 1),
-      200
-    );
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '50', 10), 1), 200);
 
     const itens = await Notificacao.find({
       ...instMatch,
@@ -553,23 +500,15 @@ router.get('/pendentes', autenticar, attachActor, async (req, res) => {
     })
       .sort({ data: -1, createdAt: -1 })
       .limit(limit)
-      .select(
-        'aluno numeroSequencial tipo tipoMedida data status natureza'
-      )
-      .populate({
-        path: 'aluno',
-        select: 'nome turma instituicao',
-        match: alunoMatch
-      })
+      .select('aluno numeroSequencial tipo tipoMedida data status natureza')
+      .populate({ path: 'aluno', select: 'nome turma instituicao', match: alunoMatch })
       .lean();
 
-    const filtrados = (itens || []).filter(i => i.aluno);
+    const filtrados = (itens || []).filter((i) => i.aluno);
     res.json({ total: filtrados.length, itens: filtrados });
   } catch (err) {
     console.error('Erro listar pendentes:', err);
-    res
-      .status(500)
-      .json({ error: 'Erro ao buscar notificações pendentes.' });
+    res.status(500).json({ error: 'Erro ao buscar notificações pendentes.' });
   }
 });
 
@@ -598,14 +537,9 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       if (turma) alunoFiltro.turma = turma;
 
       const alunos = await Aluno.find(alunoFiltro).select('_id').lean();
-      const ids = alunos.map(a => a._id);
+      const ids = alunos.map((a) => a._id);
       if (ids.length === 0) {
-        return res.json({
-          total: 0,
-          page,
-          totalPages: 0,
-          data: []
-        });
+        return res.json({ total: 0, page, totalPages: 0, data: [] });
       }
       filtroBase.aluno = { $in: ids };
     }
@@ -627,13 +561,11 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       })
       .lean();
 
-    const dataRaw = (notificacoes || []).filter(n => n.aluno);
+    const dataRaw = (notificacoes || []).filter((n) => n.aluno);
 
-    const data = dataRaw.map(n => {
+    const data = dataRaw.map((n) => {
       const precisaDias = PRECISA_DIAS.has(n.tipoMedida);
-      const dias = precisaDias
-        ? Math.max(1, parseInt(n.quantidadeDias || 1, 10))
-        : 1;
+      const dias = precisaDias ? Math.max(1, parseInt(n.quantidadeDias || 1, 10)) : 1;
       const valorTotal = Number(n.valorNumerico || 0);
       const valorUnitario = precisaDias
         ? Number((valorTotal / dias).toFixed(2))
@@ -644,13 +576,11 @@ router.get('/', autenticar, attachActor, async (req, res) => {
     res.json({ total, page, totalPages, data });
   } catch (err) {
     console.error('Erro ao buscar notificações:', err);
-    res
-      .status(500)
-      .json({ error: 'Erro ao buscar notificações.' });
+    res.status(500).json({ error: 'Erro ao buscar notificações.' });
   }
 });
 
-/* -------------------- POST "/" (CRIAR) — SEM TRANSAÇÃO -------------------- */
+/* -------------------- POST "/" (CRIAR) — GERADOR SIMPLES DE NÚMERO -------------------- */
 router.post('/', autenticar, attachActor, async (req, res) => {
   try {
     const inst = req.usuario?.instituicao;
@@ -677,9 +607,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     } = req.body || {};
 
     if (!aluno || !mongoose.isValidObjectId(aluno)) {
-      return res
-        .status(400)
-        .json({ message: 'Aluno inválido/ausente.' });
+      return res.status(400).json({ message: 'Aluno inválido/ausente.' });
     }
 
     // Confirma aluno pertence à instituição
@@ -724,44 +652,72 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     // DATA
     const dataRef = data ? parseDateOnlyLocal(data) : new Date();
 
-    // numeroSequencial atômico (sem transação)
-    const ns = await getNextNumeroSequencialAtomic(inst, dataRef);
-    const numeroSequencial = ns.numeroSequencial;
+    // --------- Geração de numeroSequencial com pequena tolerância a colisão ---------
+    let created = null;
+    let ultimaMensagemErro = null;
 
-    // Cria notificação
-    const created = await Notificacao.create({
-      instituicao: inst,
-      aluno,
-      natureza: ehElogio ? 'elogio' : 'indisciplina',
-      tipo: tituloMedida || (ehElogio ? 'Elogio' : ''),
-      tipoMedida: tituloMedida || (ehElogio ? 'Elogio' : ''),
-      tipoElogio: ehElogio ? tipoElogio || null : null,
-      motivo: ehElogio
-        ? {
-            elogioVerbal: 'Elogio verbal',
-            boletimInternoIndividual: 'Boletim Interno Individual',
-            boletimInternoColetivo: 'Boletim Interno Coletivo',
-            mediaAlta: 'Média ≥ 8,5'
-          }[tipoElogio] || 'Elogio'
-        : (typeof motivo === 'string' ? motivo : '').trim(),
-      quantidadeDias: ehElogio
-        ? 1
-        : PRECISA_DIAS.has(tituloMedida)
-        ? dias
-        : 1,
-      valorNumerico: Number(valor || 0),
-      observacao: (observacao || '').trim(),
-      data: dataRef,
-      comentarioMonitor: (comentarioMonitor || '').trim(),
-      artigo: ehElogio ? null : artigo || null,
-      paragrafo: ehElogio ? null : paragrafo || null,
-      inciso: ehElogio ? null : inciso || null,
-      classificacaoRegulamento: ehElogio
-        ? null
-        : classificacaoRegulamento || null,
-      status: 'pendente',
-      numeroSequencial
-    });
+    for (let tentativa = 0; tentativa < 5 && !created; tentativa++) {
+      const ns = await getNextNumeroSequencialAtomic(inst, dataRef);
+      const numeroSequencial = ns.numeroSequencial;
+
+      try {
+        created = await Notificacao.create({
+          instituicao: inst,
+          aluno,
+          natureza: ehElogio ? 'elogio' : 'indisciplina',
+          tipo: tituloMedida || (ehElogio ? 'Elogio' : ''),
+          tipoMedida: tituloMedida || (ehElogio ? 'Elogio' : ''),
+          tipoElogio: ehElogio ? tipoElogio || null : null,
+          motivo: ehElogio
+            ? {
+                elogioVerbal: 'Elogio verbal',
+                boletimInternoIndividual: 'Boletim Interno Individual',
+                boletimInternoColetivo: 'Boletim Interno Coletivo',
+                mediaAlta: 'Média ≥ 8,5'
+              }[tipoElogio] || 'Elogio'
+            : (typeof motivo === 'string' ? motivo : '').trim(),
+          quantidadeDias: ehElogio
+            ? 1
+            : PRECISA_DIAS.has(tituloMedida)
+            ? dias
+            : 1,
+          valorNumerico: Number(valor || 0),
+          observacao: (observacao || '').trim(),
+          data: dataRef,
+          comentarioMonitor: (comentarioMonitor || '').trim(),
+          artigo: ehElogio ? null : artigo || null,
+          paragrafo: ehElogio ? null : paragrafo || null,
+          inciso: ehElogio ? null : inciso || null,
+          classificacaoRegulamento: ehElogio ? null : classificacaoRegulamento || null,
+          status: 'pendente',
+          numeroSequencial
+        });
+      } catch (errCreate) {
+        ultimaMensagemErro = errCreate;
+        if (
+          errCreate?.code === 11000 &&
+          /numeroSequencial/.test(String(errCreate?.message || ''))
+        ) {
+          console.warn(
+            '[notificacoes] numeroSequencial duplicado, recalculando e tentando novamente...'
+          );
+          // volta pro loop, que vai recalcular maxSeq olhando TODAS as notificações já criadas
+          continue;
+        }
+        // outro erro qualquer: lança
+        throw errCreate;
+      }
+    }
+
+    if (!created) {
+      console.error(
+        '❌ Falha ao criar notificação após múltiplas tentativas de numeroSequencial.',
+        ultimaMensagemErro
+      );
+      return res.status(500).json({
+        message: 'Não foi possível gerar número sequencial único. Tente novamente.'
+      });
+    }
 
     // Mantém campos de nota consistentes e analytics
     await recomputarCamposNotaDaNotificacao(created, inst);
@@ -789,12 +745,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     res.status(201).json({ ok: true, notificacao: created });
   } catch (err) {
     console.error('❌ Erro ao criar notificação:', err);
-    const msg =
-      String(err?.code) === '11000' &&
-      /numeroSequencial/.test(String(err?.message || ''))
-        ? 'Número sequencial duplicado — tente novamente.'
-        : 'Erro ao criar notificação.';
-    res.status(500).json({ message: msg });
+    res.status(500).json({ message: 'Erro ao criar notificação.' });
   }
 });
 
@@ -804,8 +755,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 router.get('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isObjectId(id))
-      return res.status(400).json({ message: 'ID inválido' });
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
@@ -813,20 +763,16 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
       ...instMatch
     }).populate({ path: 'aluno', select: 'nome turma instituicao' });
 
-    if (!notificacao)
-      return res
-        .status(404)
-        .json({ message: 'Notificação não encontrada' });
+    if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada' });
 
     const precisaDias = PRECISA_DIAS.has(notificacao.tipoMedida);
-    const dias = precisaDias
-      ? Math.max(1, parseInt(notificacao.quantidadeDias || 1, 10))
-      : 1;
+    const dias = precisaDias ? Math.max(1, parseInt(notificacao.quantidadeDias || 1, 10)) : 1;
     const valorTotal = Number(notificacao.valorNumerico || 0);
     const valorUnitario = precisaDias
       ? Number((valorTotal / dias).toFixed(2))
       : valorTotal;
 
+    // campo auxiliar útil caso o front/docx consuma esta rota
     const notaPublicavel =
       typeof notificacao.notaAtual === 'number'
         ? Number(notificacao.notaAtual).toFixed(2)
@@ -842,13 +788,11 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
     });
   } catch (err) {
     console.error('Erro ao carregar notificação:', err);
-    res
-      .status(500)
-      .json({ message: 'Erro ao carregar notificação.' });
+    res.status(500).json({ message: 'Erro ao carregar notificação.' });
   }
 });
 
-// POST "/:id/entregar"
+// POST "/:id/entregar"  + AVISO TELEGRAM
 router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
@@ -862,15 +806,12 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
       'aluno',
       'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada'
     );
-    if (!notif)
-      return res
-        .status(404)
-        .json({ error: 'Notificação não encontrada.' });
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
-      return res.status(400).json({
-        error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.'
-      });
+      return res
+        .status(400)
+        .json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
     }
     if (notif.entregue === true) {
       return res.status(200).json({
@@ -922,12 +863,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
     const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
     for (const cid of chatIds) {
       try {
-        await enviarTelegram(
-          { nome: alunoNome, turma: alunoTurma },
-          'Notificação',
-          cid,
-          msgEntrega
-        );
+        await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgEntrega);
       } catch {}
     }
 
@@ -954,7 +890,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// POST "/:id/devolver"
+// POST "/:id/devolver"  + AVISO TELEGRAM
 router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
@@ -968,20 +904,15 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
       'aluno',
       'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId'
     );
-    if (!notif)
-      return res
-        .status(404)
-        .json({ error: 'Notificação não encontrada.' });
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
-      return res.status(400).json({
-        error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.'
-      });
+      return res
+        .status(400)
+        .json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
     }
     if (!notif.entregue) {
-      return res.status(400).json({
-        error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.'
-      });
+      return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
     }
     if (notif.devolvidoPeloAluno === true) {
       return res.status(200).json({
@@ -1027,12 +958,7 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
     const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
     for (const cid of chatIds) {
       try {
-        await enviarTelegram(
-          { nome: alunoNome, turma: alunoTurma },
-          'Notificação',
-          cid,
-          msgDev
-        );
+        await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgDev);
       } catch {}
     }
 
@@ -1058,12 +984,11 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// PUT "/:id" (atualizar notificação)
+// PUT "/:id" (atualizar notificação) — inclui disparo quando virar DEFERIDO
 router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isObjectId(id))
-      return res.status(400).json({ message: 'ID inválido' });
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notif = await Notificacao.findOne({
@@ -1071,9 +996,9 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       ...instMatch
     });
     if (!notif)
-      return res.status(404).json({
-        message: 'Notificação não encontrada ou não pertence à instituição.'
-      });
+      return res
+        .status(404)
+        .json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
 
     const camposEditaveis = [
       'aluno',
@@ -1107,6 +1032,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       numeroSequencial: notif.numeroSequencial
     };
 
+    // aplicar mudanças
     for (const campo of camposEditaveis) {
       if (req.body[campo] !== undefined) {
         if (campo === 'data' && typeof req.body[campo] === 'string') {
@@ -1117,29 +1043,20 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     }
 
+    // regras de cálculo
     if (notif.natureza === 'elogio') {
       if (req.body.valorNumerico === undefined && req.body.tipoElogio) {
-        notif.valorNumerico =
-          MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
+        notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
         notif.tipo = 'Elogio';
         notif.tipoMedida = 'Elogio';
-        notif.artigo =
-          notif.paragrafo =
-          notif.inciso =
-          notif.classificacaoRegulamento =
-            null;
+        notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
       }
     } else {
       const tipoMudou =
-        typeof req.body.tipoMedida !== 'undefined' ||
-        typeof req.body.tipo !== 'undefined';
-      const diasMudou =
-        typeof req.body.quantidadeDias !== 'undefined';
+        typeof req.body.tipoMedida !== 'undefined' || typeof req.body.tipo !== 'undefined';
+      const diasMudou = typeof req.body.quantidadeDias !== 'undefined';
 
-      if (
-        req.body.valorNumerico === undefined &&
-        (tipoMudou || diasMudou)
-      ) {
+      if (req.body.valorNumerico === undefined && (tipoMudou || diasMudou)) {
         const tituloMedida = (
           req.body.tipoMedida ??
           notif.tipoMedida ??
@@ -1148,11 +1065,8 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
           ''
         ).trim();
         const precisaDias = PRECISA_DIAS.has(tituloMedida);
-        const diasBrutos =
-          req.body.quantidadeDias ?? notif.quantidadeDias ?? 1;
-        const dias = precisaDias
-          ? Math.max(1, parseInt(diasBrutos, 10) || 1)
-          : 1;
+        const diasBrutos = req.body.quantidadeDias ?? notif.quantidadeDias ?? 1;
+        const dias = precisaDias ? Math.max(1, parseInt(diasBrutos, 10) || 1) : 1;
 
         const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
         notif.valorNumerico = Number((base * dias).toFixed(2));
@@ -1165,9 +1079,7 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
           !notif.classificacaoRegulamento &&
           (req.body.motivo || notif.motivo)
         ) {
-          const dadosReg = obterDadosDoRegulamento(
-            req.body.motivo || notif.motivo || ''
-          );
+          const dadosReg = obterDadosDoRegulamento(req.body.motivo || notif.motivo || '');
           notif.artigo = dadosReg.artigo ?? notif.artigo;
           notif.paragrafo = dadosReg.paragrafo ?? notif.paragrafo;
           notif.inciso = dadosReg.inciso ?? notif.inciso;
@@ -1177,15 +1089,13 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     }
 
-    const virouDeferido =
-      antes.status !== 'deferido' && notif.status === 'deferido';
+    // detectar transição para DEFERIDO
+    const virouDeferido = antes.status !== 'deferido' && notif.status === 'deferido';
 
     await notif.save();
 
-    await recomputarCamposNotaDaNotificacao(
-      notif,
-      req.usuario.instituicao
-    );
+    // 🔁 NOVO: mantemos notaAnterior/notaAtual sempre consistentes após edições
+    await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
 
     const { alunoNome, alunoTurma } = await getAlunoInfo(
       notif.aluno,
@@ -1224,14 +1134,14 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       notif.aluno,
       req.usuario.instituicao
     );
+
+    // 💡 NP (faixa 5.00–6.99)
     await verificarEnvioNP(alunoApósUpdate, req.usuario.instituicao);
 
+    // 🚀 se virou DEFERIDO, dispara comunicado (idempotente)
     if (virouDeferido) {
       try {
-        await enviarAvisoDeferidoIfNeeded({
-          req,
-          notifId: notif._id
-        });
+        await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
       } catch (e) {
         console.warn('[deferido/update] falha disparo:', e.message);
       }
@@ -1240,18 +1150,15 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
     res.json({ message: 'Notificação atualizada com sucesso.' });
   } catch (err) {
     console.error('Erro ao atualizar notificação:', err);
-    res
-      .status(500)
-      .json({ message: 'Erro ao atualizar notificação.' });
+    res.status(500).json({ message: 'Erro ao atualizar notificação.' });
   }
 });
 
-// PUT "/:id/reenviar"
+// PUT "/:id/reenviar" (voltar para pendente)
 router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isObjectId(id))
-      return res.status(400).json({ message: 'ID inválido' });
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
@@ -1259,10 +1166,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
       ...instMatch
     });
 
-    if (!notificacao)
-      return res
-        .status(404)
-        .json({ message: 'Notificação não encontrada.' });
+    if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada.' });
 
     notificacao.status = 'pendente';
     await notificacao.save();
@@ -1297,44 +1201,33 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
     res.json({ message: 'Notificação reenviada com sucesso.' });
   } catch (err) {
     console.error('Erro ao reenviar notificação:', err);
-    res
-      .status(500)
-      .json({ message: 'Erro ao reenviar notificação.' });
+    res.status(500).json({ message: 'Erro ao reenviar notificação.' });
   }
 });
 
-// PUT "/:id/deferir"
+// 💥 PUT "/:id/deferir"
 router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isObjectId(id))
-      return res.status(400).json({ error: 'ID inválido' });
+    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notif = await Notificacao.findOne({
       _id: id,
       ...instMatch
     });
-    if (!notif)
-      return res
-        .status(404)
-        .json({ error: 'Notificação não encontrada.' });
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
       notif.status = 'deferido';
       notif.deferidoEm = new Date();
       await notif.save();
-      await recomputarCamposNotaDaNotificacao(
-        notif,
-        req.usuario.instituicao
-      );
+      // mantém notas consistentes no registro
+      await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
     }
 
     try {
-      await enviarAvisoDeferidoIfNeeded({
-        req,
-        notifId: notif._id
-      });
+      await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
     } catch (e) {
       console.warn('[deferido/endpoint] falha disparo:', e.message);
     }
@@ -1360,15 +1253,12 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
     });
 
     res.json({
-      message:
-        'Notificação deferida e comunicado disparado (quando aplicável).',
+      message: 'Notificação deferida e comunicado disparado (quando aplicável).',
       notificacao: notif
     });
   } catch (err) {
     console.error('Erro ao deferir notificação:', err);
-    res
-      .status(500)
-      .json({ error: 'Erro ao deferir notificação.' });
+    res.status(500).json({ error: 'Erro ao deferir notificação.' });
   }
 });
 
@@ -1376,8 +1266,7 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
 router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isObjectId(id))
-      return res.status(400).json({ message: 'ID inválido' });
+    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const notificacao = await Notificacao.findOne({
@@ -1385,10 +1274,9 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
       ...instMatch
     });
     if (!notificacao) {
-      return res.status(404).json({
-        message:
-          'Notificação não encontrada ou não pertence à instituição.'
-      });
+      return res
+        .status(404)
+        .json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
     }
 
     const { alunoNome, alunoTurma } = await getAlunoInfo(
@@ -1425,15 +1313,10 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     );
     await verificarEnvioNP(alunoAtual, req.usuario.instituicao);
 
-    res.json({
-      message:
-        'Notificação excluída e nota recalculada com sucesso.'
-    });
+    res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
   } catch (err) {
     console.error('Erro ao excluir notificação:', err);
-    res
-      .status(500)
-      .json({ message: 'Erro ao excluir notificação.' });
+    res.status(500).json({ message: 'Erro ao excluir notificação.' });
   }
 });
 
