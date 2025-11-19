@@ -292,9 +292,96 @@
   <!-- =========================
        JS ORIGINAL (INALTERADO)
   ========================== -->
+    <!-- =========================
+       JS PARA CADASTRAR ALUNO
+  ========================== -->
   <script>
-    /* o JS está exatamente igual ao que você enviou */
-    /* ... */
+    (async function () {
+      const form       = document.getElementById('form-aluno');
+      const msgEl      = document.getElementById('mensagem');
+      const instInput  = document.getElementById('instituicao');
+
+      // 1) Buscar usuário logado para pegar a instituição
+      try {
+        const res = await fetch('/api/usuario', {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!res.ok) {
+          throw new Error('Falha ao carregar usuário (' + res.status + ')');
+        }
+
+        const data = await res.json();
+        console.log('Dados do usuário logado:', data);
+
+        if (!data.instituicao) {
+          msgEl.textContent = '⚠ Não foi possível identificar a instituição do usuário logado.';
+          msgEl.style.color = '#ffb4b4';
+        } else {
+          instInput.value = data.instituicao;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar /api/usuario:', err);
+        msgEl.textContent = 'Erro ao carregar dados do usuário. Tente sair e entrar novamente no sistema.';
+        msgEl.style.color = '#ffb4b4';
+      }
+
+      // 2) Submit do formulário
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        msgEl.style.color = '#ffffff';
+        msgEl.textContent = 'Salvando cadastro...';
+
+        const payload = {
+          nome:        form.nome.value.trim(),
+          turma:       form.turma.value,
+          dataEntrada: form.dataEntrada.value,
+          telefone:    form.telefone.value.trim(),
+          instituicao: instInput.value || null
+          // se quiser depois, pode incluir mais campos aqui (nomePai, nomeMae etc.)
+        };
+
+        console.log('Enviando para /api/alunos:', payload);
+
+        try {
+          const res = await fetch('/api/alunos', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+          });
+
+          let body = {};
+          try {
+            body = await res.json();
+          } catch (_) {}
+
+          console.log('Resposta de /api/alunos:', res.status, body);
+
+          if (!res.ok || body.ok === false) {
+            const msgErro = body.error || body.message || 'Erro ao salvar aluno (verifique os campos).';
+            msgEl.textContent = '❌ ' + msgErro;
+            msgEl.style.color = '#ffb4b4';
+            return;
+          }
+
+          // Sucesso
+          msgEl.textContent = '✅ Aluno cadastrado com sucesso!';
+          msgEl.style.color = '#9effb4';
+
+          // limpa os campos principais (mantém instituição)
+          form.reset();
+          form.turma.value = '6ºA'; // volta pra primeira turma, se quiser
+        } catch (err) {
+          console.error('Erro de rede ao cadastrar aluno:', err);
+          msgEl.textContent = '❌ Erro de comunicação com o servidor. Tente novamente.';
+          msgEl.style.color = '#ffb4b4';
+        }
+      });
+    })();
   </script>
 
   <script src="notify.js"></script>
