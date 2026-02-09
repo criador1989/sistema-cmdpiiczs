@@ -9,7 +9,6 @@ const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
 const { autenticar } = require('../../middleware/autenticacao');
 
-// tenta carregar util de cálculo de comportamento, se existir
 let calcularNotaTSMD;
 try {
   calcularNotaTSMD = require('../../utils/calculoNota');
@@ -17,26 +16,20 @@ try {
   calcularNotaTSMD = null;
 }
 
-// Normaliza caminho de imagem para URL pública sob /uploads
 function toPublicUrl(p) {
   if (!p) return null;
   let s = String(p).trim().replace(/\\/g, '/');
-  // já é URL absoluta ou data URI?
   if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s)) return s;
-  // garante prefixo /uploads
   if (!/^\/?uploads\//i.test(s)) s = 'uploads/' + s.replace(/^\/+/, '');
   return '/' + s.replace(/^\/+/, '');
 }
 
-// Projeções enxutas para performance
-const PROJ_ALUNO = 'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento';
-const PROJ_NOTIF = 'data tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
-const PROJ_OBS   = 'texto autor criadoEm';
+const PROJ_ALUNO =
+  'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento';
+const PROJ_NOTIF =
+  'data tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
+const PROJ_OBS = 'texto autor criadoEm';
 
-/* ======================================================
-   GET /api/fichaAluno/:id
-   Retorna os dados completos da ficha do aluno
-   ====================================================== */
 router.get('/:id', autenticar, async (req, res) => {
   try {
     const { id } = req.params;
@@ -45,31 +38,26 @@ router.get('/:id', autenticar, async (req, res) => {
       return res.status(401).json({ erro: 'Não autenticado.' });
     }
 
-    // busca aluno vinculado à instituição do usuário logado
     const aluno = await Aluno.findOne({ _id: id, instituicao }).select(PROJ_ALUNO).lean();
     if (!aluno) {
       return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
     }
 
-    // busca notificações do aluno (ordenadas por índice-friendly: data, createdAt)
     const notificacoes = await Notificacao.find({ aluno: aluno._id, instituicao })
       .sort({ data: 1, createdAt: 1 })
       .select(PROJ_NOTIF)
       .lean();
 
-    // observações manuais (⚠ seu schema usa `criadoEm` e `instituicao` como String)
     const instStr = String(instituicao);
     const observacoes = await Observacao.find({ aluno: aluno._id, instituicao: instStr })
       .sort({ criadoEm: -1 })
       .select(PROJ_OBS)
       .lean();
 
-    // calcula nota de comportamento
     let notaComportamento =
       typeof aluno.comportamento === 'number' ? aluno.comportamento : 8.0;
 
     if (calcularNotaTSMD) {
-      // montar eventos com data (prioriza `data`, cai para `createdAt`)
       const eventos = (notificacoes || []).map(n => ({
         data: n.data || n.createdAt,
         valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
@@ -83,8 +71,9 @@ router.get('/:id', autenticar, async (req, res) => {
       }
     }
 
-    // monta URLs de imagem
     const fotoUrl = toPublicUrl(aluno.foto || aluno.fotoThumb || null);
+
+    const isProfessor = req.usuario?.tipo === 'professor';
 
     res.set('Cache-Control', 'private, max-age=15');
     res.json({
@@ -98,9 +87,8 @@ router.get('/:id', autenticar, async (req, res) => {
         nomeMae: aluno.nomeMae || null,
         telefone: aluno.telefone || null,
         endereco: aluno.endereco || null,
-        codigoAcesso: aluno.codigoAcesso || null,
+        codigoAcesso: isProfessor ? null : (aluno.codigoAcesso || null),
         comportamento: Number((+notaComportamento || 0).toFixed(2)),
-        // imagens
         foto: aluno.foto || null,
         fotoThumb: aluno.fotoThumb || null,
         fotoUrl
@@ -114,10 +102,6 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-/* ======================================================
-   POST /api/fichaAluno/salvar/:id
-   Adiciona uma observação manual na ficha do aluno
-   ====================================================== */
 router.post('/salvar/:id', autenticar, async (req, res) => {
   try {
     const { id } = req.params;
@@ -133,7 +117,6 @@ router.post('/salvar/:id', autenticar, async (req, res) => {
       return res.status(400).json({ erro: 'Texto da observação é obrigatório.' });
     }
 
-    // valida aluno na mesma instituição
     const exists = await Aluno.exists({ _id: id, instituicao });
     if (!exists) {
       return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
@@ -141,9 +124,9 @@ router.post('/salvar/:id', autenticar, async (req, res) => {
 
     const novaObs = await Observacao.create({
       aluno: id,
-      instituicao: String(instituicao), // ⚠ seu schema espera String
+      instituicao: String(instituicao),
       texto: String(texto).trim(),
-      autor, // `criadoEm` é setado pelo default do schema
+      autor,
     });
 
     res.json({

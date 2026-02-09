@@ -33,7 +33,6 @@
       align-items:center;
       padding:28px 14px 60px;
 
-      /* 🔵 FUNDO PADRÃO DO PAINEL */
       background:
         url("/bg-painel-smart.png") center/cover no-repeat fixed,
         linear-gradient(145deg, #020617cc, #0b1120cc);
@@ -52,7 +51,6 @@
       z-index:3;
     }
 
-    /* 🔵 CARD GLASS */
     .wrap{
       position:relative;
       z-index:3;
@@ -65,11 +63,10 @@
       box-shadow:
         0 18px 45px rgba(0,0,0,0.85),
         0 0 0 1px rgba(15,23,42,0.9);
-      padding:22px 22px 30px;
+      padding:22px 22px 22px;
       overflow:hidden;
     }
 
-    /* brilho interno */
     .wrap::before{
       content:"";
       position:absolute;
@@ -85,14 +82,13 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      margin-bottom:16px;
+      margin-bottom:12px;
       flex-wrap:wrap;
       gap:10px 14px;
       position:relative;
       z-index:5;
     }
 
-    /* BOTÕES */
     .btn{
       border:0;
       border-radius:999px;
@@ -118,6 +114,21 @@
         0 0 0 1px rgba(56,189,248,0.7);
     }
 
+    .btn-secondary{
+      background:rgba(15,23,42,0.92);
+      border:1px solid rgba(148,163,184,0.6);
+      box-shadow:0 10px 24px rgba(15,23,42,0.9);
+    }
+    .btn-secondary:hover{
+      border-color:rgba(56,189,248,0.75);
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+      filter:none;
+    }
+
     input[type="search"]{
       padding:10px 13px;
       border-radius:999px;
@@ -138,6 +149,19 @@
         0 10px 24px rgba(15,23,42,1);
     }
 
+    .meta{
+      position:relative;
+      z-index:5;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:8px 0 10px;
+      color:var(--text-soft);
+      font-size:.85rem;
+    }
+
     table{
       width:100%;
       border-collapse:collapse;
@@ -150,6 +174,7 @@
     th,td{
       padding:12px 14px;
       border-bottom:1px solid rgba(148,163,184,0.20);
+      vertical-align:top;
     }
 
     th{
@@ -165,15 +190,9 @@
       border-bottom:1px solid rgba(56,189,248,0.6);
     }
 
-    tbody tr:nth-child(even){
-      background:rgba(15,23,42,0.78);
-    }
-    tbody tr:nth-child(odd){
-      background:rgba(15,23,42,0.72);
-    }
-    tbody tr:hover{
-      background:rgba(30,64,175,0.55);
-    }
+    tbody tr:nth-child(even){ background:rgba(15,23,42,0.78); }
+    tbody tr:nth-child(odd){  background:rgba(15,23,42,0.72); }
+    tbody tr:hover{ background:rgba(30,64,175,0.55); }
 
     .pill{
       background:rgba(56,189,248,0.18);
@@ -183,12 +202,16 @@
       font-size:.78rem;
       display:inline-block;
       letter-spacing:.05em;
+      margin-right:6px;
+      margin-bottom:6px;
+      white-space:nowrap;
     }
 
     .muted{
       color:var(--text-soft);
       font-size:.78rem;
       margin-top:2px;
+      word-break:break-word;
     }
 
     .empty{
@@ -203,13 +226,16 @@
       min-height:18px;
       margin-bottom:8px;
       text-align:center;
+      position:relative;
+      z-index:6;
     }
 
     .paginacao{
-      margin-top:20px;
+      margin-top:18px;
       display:flex;
       gap:8px;
       justify-content:center;
+      align-items:center;
       flex-wrap:wrap;
       position:relative;
       z-index:4;
@@ -224,6 +250,7 @@
       cursor:pointer;
       font-size:.85rem;
       box-shadow:0 6px 16px rgba(15,23,42,0.9);
+      min-width:40px;
     }
 
     .paginacao button.ativo{
@@ -232,21 +259,171 @@
       color:#fff;
     }
 
-    @media (max-width:600px){
-      input[type="search"]{
-        width:100%;
-        min-width:0;
-      }
-      .topbar{
-        flex-direction:column;
-        align-items:flex-start;
-      }
-      .btn{
-        width:100%;
-        justify-content:center;
-      }
+    .paginacao .dots{
+      color:rgba(229,240,255,0.8);
+      padding:0 6px;
+      user-select:none;
     }
 
+    .idbox{ display:flex; flex-direction:column; gap:4px; }
+    .idrow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+    .copy-btn{
+      border:1px solid rgba(148,163,184,0.6);
+      background:rgba(15,23,42,0.85);
+      color:#e5f0ff;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:.78rem;
+      cursor:pointer;
+    }
+    .copy-btn:hover{ border-color:rgba(56,189,248,0.75); }
+
+    /* ===== AÇÕES (ícones) ===== */
+    .act{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+    }
+    .icon-btn{
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,.55);
+      background:rgba(15,23,42,.85);
+      color:#e5f0ff;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 8px 18px rgba(15,23,42,.9);
+      transition:.16s;
+      user-select:none;
+    }
+    .icon-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(56,189,248,.85);
+      box-shadow:0 14px 26px rgba(15,23,42,1);
+    }
+    .icon-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    /* ===== MODAL PREVIEW ===== */
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background:rgba(2,6,23,.75);
+      z-index:9999;
+      padding:14px;
+    }
+    .modal.open{display:grid;}
+
+    .modal-box{
+      width:min(980px, 100%);
+      max-height:86vh;
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.45);
+      background:
+        radial-gradient(circle at 0 0, rgba(56,189,248,.10), transparent 55%),
+        rgba(15,23,42,.96);
+      box-shadow:0 24px 60px rgba(0,0,0,.75);
+      backdrop-filter: blur(14px) saturate(140%);
+    }
+    .modal-head{
+      position:sticky;
+      top:0;
+      z-index:2;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:14px 14px;
+      border-bottom:1px solid rgba(148,163,184,.25);
+      background:rgba(2,6,23,.55);
+      backdrop-filter: blur(10px);
+    }
+    .modal-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:800;
+      letter-spacing:.02em;
+    }
+    .modal-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.45);
+      background:rgba(15,23,42,.55);
+      color:#e5f0ff;
+      font-size:.85rem;
+      box-shadow:0 10px 24px rgba(15,23,42,.8);
+    }
+    .sub{
+      display:block;
+      margin-top:6px;
+      color:rgba(229,240,255,.7);
+      font-size:.85rem;
+    }
+    .modal-body{
+      padding:14px 14px 18px;
+    }
+
+    /* ===== Card flutuante (pré-visualização) ===== */
+    .preview-card{
+      margin-top:12px;
+      border-radius:16px;
+      border:1px solid rgba(148,163,184,0.35);
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,.12), transparent 55%),
+                  rgba(2,6,23,0.55);
+      padding:14px;
+    }
+    .preview-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 760px){
+      .preview-grid{ grid-template-columns:1fr; }
+    }
+    .pkv{
+      border:1px solid rgba(148,163,184,0.20);
+      background: rgba(15,23,42,0.45);
+      border-radius:12px;
+      padding:10px;
+    }
+    .pkv b{
+      display:block;
+      color: rgba(229,240,255,0.8);
+      font-size: .78rem;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      margin-bottom:4px;
+    }
+    .pbig{
+      font-size:1.05rem;
+      font-weight:900;
+    }
+    .pmuted{ color: rgba(229,240,255,0.72); }
+
+    @media (max-width:600px){
+      input[type="search"]{ width:100%; min-width:0; }
+      .topbar{ flex-direction:column; align-items:flex-start; }
+      .btn{ width:100%; justify-content:center; }
+    }
   </style>
 </head>
 
@@ -258,108 +435,725 @@
       <button class="btn" onclick="window.location.href='painel.html'">⬅ Voltar ao Painel</button>
 
       <div class="right" style="display:flex; gap:10px; flex-wrap:wrap;">
-        <input id="busca" type="search" placeholder="Filtrar por usuário, ação ou aluno…" />
+        <input id="busca" type="search" placeholder="Filtrar por usuário, ação, aluno, entidade…" />
         <button id="btnAtualizar" class="btn">🔄 Atualizar</button>
+        <button id="btnMaisAntigos" class="btn btn-secondary" type="button" title="Tenta puxar registros mais antigos, se a API suportar cursor">
+          ⏳ Carregar mais antigos
+        </button>
       </div>
     </div>
 
     <div id="erro"></div>
 
+    <div class="meta">
+      <div>
+        <span id="metaTotal">—</span>
+        <span class="muted" id="metaModo" style="margin:0"></span>
+      </div>
+      <div class="muted" id="metaPagina" style="margin:0">—</div>
+    </div>
+
     <table>
       <thead>
         <tr>
-          <th style="width:22%">Usuário</th>
-          <th style="width:18%">Ação</th>
-          <th style="width:28%">Aluno / Entidade</th>
-          <th style="width:18%">ID da Entidade</th>
-          <th style="width:14%">Data e Hora</th>
+          <th style="width:18%">Usuário</th>
+          <th style="width:16%">Ação</th>
+          <th style="width:26%">Aluno / Entidade</th>
+          <th style="width:18%">Referência</th>
+          <th style="width:12%">Data e Hora</th>
+          <th style="width:10%">Ações</th>
         </tr>
       </thead>
 
       <tbody id="tbody">
-        <tr><td class="empty" colspan="5">Carregando…</td></tr>
+        <tr><td class="empty" colspan="6">Carregando…</td></tr>
       </tbody>
     </table>
 
     <div class="paginacao" id="paginacao"></div>
   </div>
 
-  <!-- 🔵 JS ORIGINAL INALTERADO -->
+  <!-- Modal de pré-visualização -->
+  <div class="modal" id="modalPreview" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">👁 Pré-visualização (notificação/log)</div>
+          <div class="sub" id="modalSub">—</div>
+        </div>
+        <div class="modal-actions">
+          <button class="chip" id="btnModalAbrir" type="button" title="Abrir a notificação (editar)">↗ Abrir</button>
+          <button class="chip" id="btnModalFechar" type="button">✖ Fechar</button>
+        </div>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <div class="empty">Carregando…</div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
-    let paginaAtual = 1, totalPaginas = 1;
 
-    async function getJSON(url){
-      const r = await fetch(API(url), { credentials:'include', cache:'no-store' });
-      if(!r.ok) throw new Error(r.status);
-      return r.json();
+    // ✅ 15 por página
+    const PAGE_SIZE = 15;
+
+    // Estado
+    let paginaAtual = 1;
+    let totalPaginas = 1;
+    let totalItens = 0;
+
+    // Modo
+    let modo = 'local';
+
+    // Dados
+    let ALL = [];
+    let FILTERED = [];
+    let lastBefore = null;
+
+    const tbody = document.getElementById('tbody');
+    const erro = document.getElementById('erro');
+    const busca = document.getElementById('busca');
+    const paginacao = document.getElementById('paginacao');
+    const metaTotal = document.getElementById('metaTotal');
+    const metaModo = document.getElementById('metaModo');
+    const metaPagina = document.getElementById('metaPagina');
+    const btnMaisAntigos = document.getElementById('btnMaisAntigos');
+
+    // Modal
+    const modal = document.getElementById('modalPreview');
+    const modalBody = document.getElementById('modalBody');
+    const modalSub = document.getElementById('modalSub');
+    const btnModalFechar = document.getElementById('btnModalFechar');
+    const btnModalAbrir = document.getElementById('btnModalAbrir');
+
+    let _modalOpenUrl = null;
+
+    function openModal(){
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+    function closeModal(){
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      modalBody.innerHTML = '<div class="empty">—</div>';
+      modalSub.textContent = '—';
+      _modalOpenUrl = null;
     }
 
-    const tbody=document.getElementById('tbody');
-    const erro=document.getElementById('erro');
-    const busca=document.getElementById('busca');
-    const paginacao=document.getElementById('paginacao');
+    btnModalFechar.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{
+      if(e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+    });
+
+    btnModalAbrir.addEventListener('click', ()=>{
+      if(_modalOpenUrl) window.open(_modalOpenUrl, '_blank', 'noopener');
+    });
 
     function fmtDt(v){
       try{
-        const d=new Date(v);
-        return d.toLocaleString('pt-BR');
-      }catch{return '—';}
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
+      }catch{ return '—'; }
     }
 
-    function s(s){
-      return (s??'').toString().replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    function s(v){
+      return (v ?? '').toString().replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+    }
+
+    function getDateValue(l){
+      return l?.data || l?.createdAt || l?.updatedAt || null;
+    }
+
+    function getEntityLabel(l){
+      const tipoRaw =
+        l?.entidade ||
+        l?.entityType ||
+        l?.tipoEntidade ||
+        l?.targetType ||
+        (l?.alunoId ? 'Aluno' : '') ||
+        'Entidade';
+
+      const tipo = String(tipoRaw || 'Entidade');
+
+      const id =
+        l?.entidadeId ||
+        l?.entityId ||
+        l?.idEntidade ||
+        l?.alunoId ||
+        l?.targetId ||
+        l?.notificacaoId ||
+        l?.notificacao?._id ||
+        '';
+
+      const seq =
+        l?.numeroSequencial ||
+        l?.numeroSequencia ||
+        l?.numeroNotificacao ||
+        l?.notificacaoNumero ||
+        l?.numero ||
+        l?.dados?.numeroSequencial ||
+        l?.dados?.numero ||
+        l?.payload?.numeroSequencial ||
+        l?.payload?.numero ||
+        l?.notificacao?.numeroSequencial ||
+        l?.notificacao?.numero ||
+        l?.notificacao?.numeroNotificacao ||
+        l?.entidadeNumero ||
+        l?.entidadeCodigo ||
+        '';
+
+      const tipoLower = tipo.toLowerCase();
+      const pareceNotificacao =
+        tipoLower.includes('notifica') ||
+        tipoLower.includes('advert') ||
+        tipoLower.includes('ocorr') ||
+        tipoLower.includes('registro');
+
+      if (pareceNotificacao && seq) {
+        return { tipo: 'Notificação', id: String(id||''), display: `Nº ${String(seq)}` };
+      }
+
+      // Se tiver um id e campos típicos, também trata como notificação
+      if (id && (l?.motivo || l?.tipoMedida || l?.status || l?.natureza)) {
+        return { tipo: 'Notificação', id: String(id||''), display: seq ? `Nº ${String(seq)}` : '' };
+      }
+
+      return { tipo, id: String(id||''), display: '' };
+    }
+
+    function buildSearchText(l){
+      const usuario = (l?.usuarioNome || '') + ' ' + (l?.usuarioTipo || '');
+      const acao = (l?.acao || '');
+      const aluno = (l?.alunoNome || l?.entidadeNome || '');
+      const ent = (l?.entidade || '');
+      const entId = (l?.entidadeId || '');
+      const seq =
+        l?.numeroSequencial ||
+        l?.numeroNotificacao ||
+        l?.notificacaoNumero ||
+        l?.notificacao?.numeroSequencial ||
+        l?.notificacao?.numero ||
+        '';
+      return (usuario + ' ' + acao + ' ' + aluno + ' ' + ent + ' ' + entId + ' ' + seq).toLowerCase();
+    }
+
+    function applyFilter(){
+      const q = (busca.value || '').trim().toLowerCase();
+      FILTERED = !q ? ALL.slice() : ALL.filter(l => buildSearchText(l).includes(q));
+      totalItens = FILTERED.length;
+      totalPaginas = Math.max(1, Math.ceil(totalItens / PAGE_SIZE));
+      paginaAtual = Math.min(Math.max(1, paginaAtual), totalPaginas);
+    }
+
+    function slicePage(arr){
+      const start = (paginaAtual - 1) * PAGE_SIZE;
+      return arr.slice(start, start + PAGE_SIZE);
+    }
+
+    function copyText(txt){
+      const t = String(txt || '').trim();
+      if(!t) return;
+      navigator.clipboard?.writeText(t).catch(()=>{
+        try{
+          const ta = document.createElement('textarea');
+          ta.value = t;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }catch{}
+      });
+    }
+
+    // ===== Links/Ações =====
+    function extractIdsFromLog(l){
+      // tenta descobrir o id da notificação no log
+      const label = getEntityLabel(l);
+      const entidadeId = label?.id || l?.entidadeId || l?.entityId || l?.notificacaoId || l?.notificacao?._id || '';
+      const conversationId = l?.conversationId || l?.chatId || l?.conversaId || '';
+      const logId = l?._id || l?.id || '';
+      return { entidadeId, conversationId, logId, tipo: label?.tipo || '' };
+    }
+
+    function buildOpenUrl({conversationId, entidadeId, logId}){
+      // ✅ padrão: abrir edição da notificação
+      if(entidadeId) return `editar-notificacao.html?id=${encodeURIComponent(entidadeId)}`;
+
+      // se existir conversa/whats etc
+      if(conversationId) return `conversa.html?id=${encodeURIComponent(conversationId)}`;
+
+      // fallback
+      if(logId) return `log-detalhe.html?id=${encodeURIComponent(logId)}`;
+      return null;
+    }
+
+    // ===== Preview: buscar e renderizar card =====
+    async function getJSON(url){
+      const r = await fetch(API(url), { credentials:'include', cache:'no-store' });
+      if(!r.ok) throw new Error(String(r.status));
+      return r.json();
+    }
+
+    async function tryFetchPreview(l){
+      const { entidadeId, logId } = extractIdsFromLog(l);
+
+      // Prioridade: se tiver id de notificação, tenta /notificacoes/:id
+      if(entidadeId){
+        const url = `/notificacoes/${encodeURIComponent(entidadeId)}`;
+        const data = await getJSON(url);
+        return { url, data, entidadeId };
+      }
+
+      // fallback: tenta um endpoint de log-detalhe (se existir)
+      if(logId){
+        const url = `/logs/${encodeURIComponent(logId)}`;
+        const data = await getJSON(url);
+        return { url, data, entidadeId:null };
+      }
+
+      throw new Error('Sem referência para pré-visualizar.');
+    }
+
+    function renderPreviewNotificacao(n){
+      const aluno = n?.aluno || {};
+      const dataTxt = n?.data ? new Date(n.data).toLocaleString('pt-BR') : '—';
+
+      const valorTxt = (n?.valorNumerico ?? n?.valorTotal ?? '—');
+      const diasTxt = (n?.quantidadeDias ?? '—');
+
+      return `
+        <div class="preview-card">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+              <div class="pbig">${s(aluno.nome || '—')}</div>
+              <div class="pmuted">Turma: ${s(aluno.turma || '—')} • Nº: ${s(n?.numeroSequencial || '—')}</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+              <span class="chip">Status: ${s(n?.status || '—')}</span>
+              <span class="chip">${s(n?.natureza || '—')}</span>
+              <span class="chip">${s(n?.tipoMedida || n?.tipo || '—')}</span>
+            </div>
+          </div>
+
+          <div class="preview-grid">
+            <div class="pkv"><b>Motivo</b>${s(n?.motivo || '—')}</div>
+            <div class="pkv"><b>Data</b>${s(dataTxt)}</div>
+
+            <div class="pkv"><b>Valor</b>${s(valorTxt)}</div>
+            <div class="pkv"><b>Dias</b>${s(diasTxt)}</div>
+
+            <div class="pkv"><b>Artigo</b>${s(n?.artigo || '—')}</div>
+            <div class="pkv"><b>Inciso</b>${s(n?.inciso || '—')}</div>
+
+            <div class="pkv"><b>Classificação</b>${s(n?.classificacaoRegulamento || '—')}</div>
+            <div class="pkv"><b>Entregue</b>${n?.entregue ? 'Sim ✅' : 'Não ❌'}</div>
+
+            <div class="pkv" style="grid-column:1/-1">
+              <b>Observação</b>
+              <div class="pmuted">${s(n?.observacao || '—')}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function openPreviewForLog(l){
+      erro.textContent = '';
+      modalBody.innerHTML = '<div class="empty">Carregando…</div>';
+      modalSub.textContent = '—';
+      btnModalAbrir.disabled = true;
+      _modalOpenUrl = null;
+
+      openModal();
+
+      try{
+        const r = await tryFetchPreview(l);
+        modalSub.textContent = `Fonte: ${r.url}`;
+
+        // Define URL do botão "Abrir"
+        const openUrl = buildOpenUrl({ entidadeId: r.entidadeId, conversationId: null, logId: l?._id || l?.id });
+        _modalOpenUrl = openUrl;
+        btnModalAbrir.disabled = !openUrl;
+
+        // Se veio notificação, renderiza card
+        modalBody.innerHTML = `
+          <div>
+            <span class="chip">Fonte: ${s(r.url)}</span>
+            <span class="sub">Pré-visualização em card (sem abrir outra página).</span>
+          </div>
+          ${renderPreviewNotificacao(r.data)}
+        `;
+      }catch(e){
+        modalBody.innerHTML = `<div class="empty">⚠️ Não foi possível pré-visualizar.</div>`;
+      }
     }
 
     function renderRows(logs){
-      if(!Array.isArray(logs)||!logs.length){
-        tbody.innerHTML='<tr><td class="empty" colspan="5">Nenhum log encontrado.</td></tr>';
+      if(!Array.isArray(logs) || !logs.length){
+        tbody.innerHTML = '<tr><td class="empty" colspan="6">Nenhum log encontrado.</td></tr>';
         return;
       }
-      const q=(busca.value||'').toLowerCase();
-      tbody.innerHTML=logs.filter(l=>{
-        const all=(l.usuarioNome+l.acao+l.alunoNome+l.entidade+l.entidadeId).toLowerCase();
-        return all.includes(q);
-      }).map(l=>`
-        <tr>
-          <td>${s(l.usuarioNome||'—')}<div class="muted">${s(l.usuarioTipo||'')}</div></td>
-          <td><span class="pill">${s(l.acao||'—')}</span></td>
-          <td>${s(l.alunoNome||l.entidadeNome||'—')}<div class="muted">${s(l.entidade||'')}</div></td>
-          <td class="muted">${s(l.entidadeId||'—')}</td>
-          <td>${fmtDt(l.data||l.createdAt)}</td>
-        </tr>`).join('');
+
+      tbody.innerHTML = logs.map(l=>{
+        const lLabel = getEntityLabel(l);
+        const tipo = lLabel.tipo;
+        const id = lLabel.id;
+        const disp = lLabel.display || '';
+
+        const usuarioNome = l?.usuarioNome || '—';
+        const usuarioTipo = l?.usuarioTipo || '';
+
+        const acao = l?.acao || '—';
+
+        const nomeEnt = (l?.alunoNome || l?.entidadeNome || '—');
+        const tipoEnt = (l?.entidade || l?.entityType || '');
+
+        const dt = fmtDt(getDateValue(l));
+
+        const idDisplay = id ? s(id) : '—';
+        const tipoDisplay = tipo ? s(tipo) : 'Entidade';
+        const dispHtml = disp ? `<span class="pill" title="Número sequencial">${s(disp)}</span>` : '';
+
+        // ações: preview + abrir
+        const { entidadeId, conversationId, logId } = extractIdsFromLog(l);
+        const openUrl = buildOpenUrl({ conversationId, entidadeId, logId });
+
+        return `
+          <tr data-logid="${s(logId||'')}" data-entidadeid="${s(entidadeId||'')}" data-convid="${s(conversationId||'')}">
+            <td>${s(usuarioNome)}<div class="muted">${s(usuarioTipo)}</div></td>
+            <td><span class="pill">${s(acao)}</span></td>
+            <td>${s(nomeEnt)}<div class="muted">${s(tipoEnt)}</div></td>
+            <td>
+              <div class="idbox">
+                <div class="idrow">
+                  <span class="pill">${tipoDisplay}</span>
+                  ${dispHtml}
+                </div>
+                <div class="idrow">
+                  <span class="muted" style="margin:0">${idDisplay}</span>
+                  ${id ? `<button class="copy-btn" data-copy="${s(id)}" type="button" title="Copiar ID">📋 Copiar</button>` : ''}
+                </div>
+              </div>
+            </td>
+            <td>${dt}</td>
+            <td>
+              <div class="act">
+                <button class="icon-btn" type="button" title="Pré-visualizar" data-preview="1">👁</button>
+                <button class="icon-btn" type="button" title="Abrir" data-open="${openUrl ? s(openUrl) : ''}" ${openUrl ? '' : 'disabled'}>↗</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
+    // ✅ Correção do bug: paginação sempre recriada e SEM dependência de listener externo
     function renderPagination(){
-      paginacao.innerHTML='';
-      if(totalPaginas<=1)return;
-      for(let i=1;i<=totalPaginas;i++){
-        const btn=document.createElement('button');
-        btn.textContent=i;
-        if(i===paginaAtual)btn.classList.add('ativo');
-        btn.onclick=()=>{paginaAtual=i;carregarLogs();};
-        paginacao.appendChild(btn);
+      paginacao.innerHTML = '';
+      if(totalPaginas <= 1) return;
+
+      const mkBtn = (label, page, { active=false, disabled=false } = {}) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        if(active) b.classList.add('ativo');
+        if(disabled) b.disabled = true;
+
+        b.addEventListener('click', async ()=>{
+          if(b.disabled) return;
+          paginaAtual = page;
+
+          // ✅ no modo servidor, busca a página no backend
+          if(modo === 'server'){
+            await carregarPaginaServidor(paginaAtual);
+          }else{
+            render();
+          }
+        });
+
+        return b;
+      };
+
+      const windowSize = 2;
+      const start = Math.max(1, paginaAtual - windowSize);
+      const end   = Math.min(totalPaginas, paginaAtual + windowSize);
+
+      const addDots = () => {
+        const d = document.createElement('span');
+        d.className = 'dots';
+        d.textContent = '…';
+        paginacao.appendChild(d);
+      };
+
+      // Prev
+      paginacao.appendChild(mkBtn('◀', Math.max(1, paginaAtual-1), { disabled: paginaAtual<=1 }));
+
+      // Primeiro
+      paginacao.appendChild(mkBtn('1', 1, { active: paginaAtual===1 }));
+
+      if(start > 2) addDots();
+
+      for(let p = start; p <= end; p++){
+        if(p === 1 || p === totalPaginas) continue;
+        paginacao.appendChild(mkBtn(String(p), p, { active: paginaAtual===p }));
       }
+
+      if(end < totalPaginas - 1) addDots();
+
+      if(totalPaginas > 1){
+        paginacao.appendChild(mkBtn(String(totalPaginas), totalPaginas, { active: paginaAtual===totalPaginas }));
+      }
+
+      // Next
+      paginacao.appendChild(mkBtn('▶', Math.min(totalPaginas, paginaAtual+1), { disabled: paginaAtual>=totalPaginas }));
     }
 
-    async function carregarLogs(){
-      erro.textContent='';
-      tbody.innerHTML='<tr><td class="empty" colspan="5">Carregando…</td></tr>';
+    function renderMeta(){
+      const start = (paginaAtual - 1) * PAGE_SIZE;
+      const shown = Math.max(0, Math.min(PAGE_SIZE, totalItens - start));
+      metaTotal.textContent = `Total: ${totalItens.toLocaleString('pt-BR')} • exibindo ${shown} nesta página`;
+      metaModo.textContent  = (modo === 'server')
+        ? '• modo: servidor (paginado)'
+        : '• modo: local (paginado no navegador)';
+      metaPagina.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
+    }
+
+    function render(){
+      applyFilter();
+      const pageSlice = slicePage(FILTERED);
+      renderRows(pageSlice);
+      renderPagination();
+      renderMeta();
+    }
+
+    // ===== Modo servidor (page + skip) =====
+    async function carregarPaginaServidor(page){
+      const safePage = Math.max(1, Number(page||1));
+      const skip = (safePage - 1) * PAGE_SIZE;
+
+      erro.textContent = '';
+      tbody.innerHTML = '<tr><td class="empty" colspan="6">Carregando…</td></tr>';
+
+      const url = `/logs?limit=${PAGE_SIZE}&page=${safePage}&skip=${skip}&sort=-createdAt&order=desc`;
+      const res = await getJSON(url);
+
+      const data = Array.isArray(res) ? res
+                 : Array.isArray(res?.data) ? res.data
+                 : Array.isArray(res?.logs) ? res.logs
+                 : [];
+
+      const total = Number(res?.total ?? res?.count ?? totalItens ?? data.length ?? 0);
+      const serverTotalPages = Number(res?.totalPages ?? res?.pages ?? 0);
+
+      totalItens = total || totalItens || data.length;
+      totalPaginas = Math.max(1, serverTotalPages || Math.ceil(totalItens / PAGE_SIZE));
+      paginaAtual = safePage;
+
+      // No modo servidor, mantemos ALL como "página atual"
+      ALL = data.slice();
+
+      // busca local só na página atual (pra não mentir contagem)
+      const q = (busca.value || '').trim().toLowerCase();
+      const view = !q ? ALL : ALL.filter(l => buildSearchText(l).includes(q));
+
+      renderRows(view);
+      renderPagination();
+      renderMeta();
+    }
+
+    // ===== Modo local: carregar lote =====
+    async function carregarLoteInicial(){
+      // 1000 é seguro pra não pesar; se total>1000 e API indicar total, muda pra server
+      const url = `/logs?limit=1000&page=1&skip=0&sort=-createdAt&order=desc`;
+      const res = await getJSON(url);
+
+      const data = Array.isArray(res) ? res
+                 : Array.isArray(res?.data) ? res.data
+                 : Array.isArray(res?.logs) ? res.logs
+                 : [];
+
+      const total = Number(res?.total ?? res?.count ?? data.length ?? 0);
+      const serverTotalPages = Number(res?.totalPages ?? res?.pages ?? 0);
+
+      // Se a API está claramente paginando e tem mais do que retornou, troca para server
+      if (total > data.length && (serverTotalPages || total > 1000)) {
+        modo = 'server';
+        totalItens = total;
+        totalPaginas = Math.max(1, serverTotalPages || Math.ceil(totalItens / PAGE_SIZE));
+        paginaAtual = 1;
+        await carregarPaginaServidor(1);
+        return;
+      }
+
+      modo = 'local';
+      ALL = data.slice();
+
+      // cursor data mais antiga (para "mais antigos")
+      lastBefore = getOldestDateISO(ALL);
+
+      paginaAtual = 1;
+      render();
+    }
+
+    function getOldestDateISO(arr){
+      const dates = arr
+        .map(getDateValue)
+        .map(v => new Date(v))
+        .filter(d => !isNaN(d.getTime()))
+        .sort((a,b)=> a - b);
+      if(!dates.length) return null;
+      const d = new Date(dates[0].getTime() - 1);
+      return d.toISOString();
+    }
+
+    async function carregarMaisAntigos(){
+      if(modo !== 'local'){
+        erro.textContent = 'ℹ️ “Mais antigos” está disponível no modo local. Atualize e tente novamente.';
+        return;
+      }
+      if(!lastBefore){
+        erro.textContent = 'ℹ️ Não consegui determinar a data do registro mais antigo.';
+        return;
+      }
+
+      btnMaisAntigos.disabled = true;
+      erro.textContent = '';
+
       try{
-        const res=await getJSON(`/logs?page=${paginaAtual}&limit=20`);
-        const data=Array.isArray(res)?res:(res.data||[]);
-        totalPaginas=Math.ceil((res.total||data.length)/20)||1;
-        renderRows(data);
-        renderPagination();
+        const url = `/logs?limit=1000&before=${encodeURIComponent(lastBefore)}&sort=-createdAt&order=desc`;
+        const res = await getJSON(url);
+
+        const data = Array.isArray(res) ? res
+                   : Array.isArray(res?.data) ? res.data
+                   : Array.isArray(res?.logs) ? res.logs
+                   : [];
+
+        if(!data.length){
+          erro.textContent = 'ℹ️ Nenhum registro mais antigo retornado (ou a API não suporta “before”).';
+          return;
+        }
+
+        const seen = new Set(ALL.map(x => String(x?._id || x?.id || x?.entidadeId || JSON.stringify(x))));
+        const novos = data.filter(x=>{
+          const k = String(x?._id || x?.id || x?.entidadeId || JSON.stringify(x));
+          if(seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+
+        if(!novos.length){
+          erro.textContent = 'ℹ️ Os registros retornados eram duplicados. (A API pode estar repetindo o mesmo lote.)';
+          return;
+        }
+
+        ALL = ALL.concat(novos);
+        lastBefore = getOldestDateISO(ALL);
+
+        // mantém a página atual, só recalcula
+        render();
       }catch(e){
-        erro.textContent='⚠️ Sessão expirada ou erro ao carregar.';
-        tbody.innerHTML='<tr><td class="empty" colspan="5">Erro ao carregar logs.</td></tr>';
+        erro.textContent = '⚠️ Não foi possível carregar mais antigos (API não suporta cursor ou sessão expirou).';
+      }finally{
+        btnMaisAntigos.disabled = false;
       }
     }
 
-    document.getElementById('btnAtualizar').onclick=carregarLogs;
-    busca.oninput=()=>carregarLogs();
-    carregarLogs();
+    async function carregarTudo(){
+      erro.textContent = '';
+      tbody.innerHTML = '<tr><td class="empty" colspan="6">Carregando…</td></tr>';
+      try{
+        await carregarLoteInicial();
+      }catch(e){
+        erro.textContent = '⚠️ Sessão expirada ou erro ao carregar.';
+        tbody.innerHTML = '<tr><td class="empty" colspan="6">Erro ao carregar logs.</td></tr>';
+      }
+    }
+
+    // Botões
+    document.getElementById('btnAtualizar').onclick = async ()=>{
+      busca.value = '';
+      paginaAtual = 1;
+      totalPaginas = 1;
+      totalItens = 0;
+      ALL = [];
+      FILTERED = [];
+      lastBefore = null;
+      await carregarTudo();
+    };
+
+    // Busca local (debounce)
+    let _t = null;
+    busca.addEventListener('input', ()=>{
+      clearTimeout(_t);
+      _t = setTimeout(()=>{
+        // não reseta pagina, só ajusta se precisar
+        if(modo === 'server'){
+          // filtra apenas a página atual
+          const q = (busca.value || '').trim().toLowerCase();
+          const view = !q ? ALL : ALL.filter(l => buildSearchText(l).includes(q));
+          renderRows(view);
+          renderMeta();
+          // paginação permanece igual
+        }else{
+          render();
+        }
+      }, 120);
+    });
+
+    btnMaisAntigos.addEventListener('click', carregarMaisAntigos);
+
+    // Copiar
+    document.addEventListener('click', (ev)=>{
+      const b = ev.target.closest('button[data-copy]');
+      if(!b) return;
+      copyText(b.dataset.copy);
+      b.textContent = '✅ Copiado';
+      setTimeout(()=> b.textContent = '📋 Copiar', 900);
+    });
+
+    // Ações (preview / abrir)
+    document.addEventListener('click', async (ev)=>{
+      const btnPreview = ev.target.closest('button[data-preview]');
+      if(btnPreview){
+        const tr = btnPreview.closest('tr');
+        if(!tr) return;
+        // encontra o log correspondente no array atual da página (mais seguro)
+        const logid = tr.getAttribute('data-logid');
+        const entid = tr.getAttribute('data-entidadeid');
+
+        // tenta achar em ALL/FILTERED/visível
+        const candidates = (modo === 'server') ? ALL : FILTERED;
+        let l = candidates.find(x => String(x?._id || x?.id || '') === String(logid));
+        if(!l && entid) l = candidates.find(x => String(x?.entidadeId || x?.entityId || x?.notificacaoId || x?.notificacao?._id || '') === String(entid));
+        if(!l){
+          // fallback: pega pelo índice na tabela
+          const idx = Array.from(tbody.querySelectorAll('tr')).indexOf(tr);
+          const view = (modo === 'server')
+            ? (()=>{
+                const q = (busca.value || '').trim().toLowerCase();
+                return !q ? ALL : ALL.filter(x => buildSearchText(x).includes(q));
+              })()
+            : slicePage(FILTERED);
+          l = view[idx];
+        }
+        if(l) await openPreviewForLog(l);
+        return;
+      }
+
+      const btnOpen = ev.target.closest('button[data-open]');
+      if(btnOpen){
+        const url = btnOpen.getAttribute('data-open');
+        if(url) window.open(url, '_blank', 'noopener');
+        return;
+      }
+    });
+
+    // Boot
+    carregarTudo();
   </script>
 
   <script src="notify.js"></script>

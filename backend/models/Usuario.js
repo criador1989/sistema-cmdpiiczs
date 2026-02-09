@@ -22,6 +22,8 @@ const usuarioSchema = new Schema(
         validator: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '')),
         message: 'E-mail inválido.',
       },
+      // ⚠️ NÃO coloque unique aqui se você quer permitir o mesmo e-mail em instituições diferentes
+      // unique: true
     },
 
     senha: {
@@ -54,6 +56,32 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
+    // ✅ CONFIRMAÇÃO DE E-MAIL
+    // default: true para NÃO quebrar usuários antigos já existentes no banco
+    emailVerificado: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    emailVerificadoEm: {
+      type: Date,
+      default: null,
+    },
+
+    // armazena HASH (sha256) do token de confirmação (nunca salvar token cru)
+    tokenVerificacaoHash: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    tokenVerificacaoExpiraEm: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
     ativo: {
       type: Boolean,
       default: true,
@@ -64,12 +92,16 @@ const usuarioSchema = new Schema(
 );
 
 /* ===========================================================
- *  ÍNDICES E VALIDAÇÕES
+ *  ÍNDICES
  * ===========================================================
  */
 
-// Garantir e-mail único dentro da mesma instituição
+// ✅ E-mail único DENTRO da mesma instituição
+// (Permite mesmo e-mail em instituições diferentes)
 usuarioSchema.index({ instituicao: 1, email: 1 }, { unique: true });
+
+// (opcional) ajuda a procurar tokens válidos/expirados
+usuarioSchema.index({ tokenVerificacaoHash: 1, tokenVerificacaoExpiraEm: 1 });
 
 /* ===========================================================
  *  FUNÇÕES AUXILIARES
@@ -93,10 +125,17 @@ function gerarTokenProfessor() {
 // Antes de salvar
 usuarioSchema.pre('save', async function (next) {
   try {
+    // normaliza email sempre
+    if (this.isModified('email') && this.email) {
+      this.email = String(this.email).trim().toLowerCase();
+    }
+
+    // hash senha se alterada
     if (this.isModified('senha')) {
       this.senha = await gerarHash(this.senha);
     }
 
+    // gera token professor (se necessário)
     if (this.tipo === 'professor' && !this.tokenAcesso) {
       this.tokenAcesso = gerarTokenProfessor();
     }
@@ -161,9 +200,14 @@ usuarioSchema.methods.regenerarTokenProfessor = function () {
  *  FORMATADORES (toJSON / toObject)
  * ===========================================================
  */
-function ocultarCampos(doc, ret) {
+function ocultarCampos(_doc, ret) {
   delete ret.senha;
   delete ret.__v;
+
+  // por segurança, nunca expor campos de confirmação
+  delete ret.tokenVerificacaoHash;
+  delete ret.tokenVerificacaoExpiraEm;
+
   return ret;
 }
 

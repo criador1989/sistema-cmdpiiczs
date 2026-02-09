@@ -1,32 +1,49 @@
+<!-- public/login.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Colégio Militar Dom Pedro II</title>
+  <title>Login - SmartClass</title>
   <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
+  <!-- Tipografia SmartClass -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root{
       --bg-0:#14375f;
       --bg-1:#0f2f53;
-      --glass:#0f1f36cc;
       --ink:#ecf2ff;
       --muted:#b8c7e0;
       --line:rgba(170,200,240,.36);
-      --card:#102544bf;
-      --rubi:#d82327;
-      --rubi-2:#8B0000;
       --radius:18px;
       --shadow:
         0 22px 60px rgba(0,0,0,.60),
         inset 0 1px 0 rgba(255,255,255,.05);
+
       --glow-1: radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.30), transparent 60%);
       --glow-2: radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.18), transparent 60%);
       --glow-3: radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.20), transparent 60%);
+
+      /* SmartClass */
+      --sc-primary:#00D1FF;
+      --sc-secondary:#7A5CFF;
+      --sc-accent:#FFE29A;
+      --sc-focus: rgba(0, 209, 255, .55);
+
+      --warn-bg: rgba(255,226,154,.10);
+      --warn-bd: rgba(255,226,154,.25);
+      --warn-tx: #ffecc1;
+
+      --danger-bg: rgba(255, 70, 90, .10);
+      --danger-bd: rgba(255, 70, 90, .22);
+      --danger-tx: #ffb3b8;
     }
 
     *{box-sizing:border-box}
@@ -38,7 +55,7 @@
     }
 
     body{
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-family: "Rajdhani", system-ui, -apple-system, "Segoe UI", sans-serif;
       color: var(--ink);
       display:flex;
       align-items:center;
@@ -56,217 +73,722 @@
     }
 
     .container{
-      background: linear-gradient(180deg,
-        rgba(21,40,76,.92),
-        rgba(13,28,54,.96)
-      );
+      position: relative;
+      background: linear-gradient(180deg, rgba(21,40,76,.92), rgba(13,28,54,.96));
       border-radius: var(--radius);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
-      padding: 30px 26px 26px;
-      width: 340px;
+      padding: 26px 26px 22px;
+      width: 360px;
       max-width: 92vw;
       text-align: center;
       backdrop-filter: blur(18px) saturate(150%);
       -webkit-backdrop-filter: blur(18px) saturate(150%);
       animation: fadeIn .5s ease-out;
+      overflow: hidden;
+    }
+
+    .container::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(800px 260px at 40% -20%, rgba(0,209,255,.25), transparent 65%),
+        radial-gradient(700px 240px at 110% 10%, rgba(122,92,255,.18), transparent 60%);
+      pointer-events:none;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(170,200,240,.30);
+      background: rgba(10,19,34,.35);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+      box-shadow: 0 0 12px rgba(0,209,255,.6);
+      flex: 0 0 auto;
+    }
+
+    .logo-wrap{
+      display:flex;
+      justify-content:center;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
     }
 
     .logo{
-      width: 96px;
-      height: 96px;
+      width: 92px;
+      height: 92px;
       object-fit: contain;
-      margin-bottom: 6px;
       border-radius: 999px;
       background: radial-gradient(circle at 30% 0, #4db8ff, #0b1e3a);
       box-shadow:
         0 10px 26px rgba(0,0,0,.6),
         0 0 22px rgba(120,200,255,.6);
       border:1px solid rgba(190,220,255,.5);
+      padding: 10px;
     }
 
-    h2{
-      margin: 6px 0 20px;
-      color: #ffffff;
+    .brand{
+      font-family: "Orbitron", system-ui, sans-serif;
       font-size: 1.35rem;
-      letter-spacing:.3px;
-      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+      letter-spacing: .9px;
+      margin: 4px 0 0;
+      text-shadow: 0 2px 10px rgba(0,0,0,.65);
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand span{
+      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle{
+      margin: 6px 0 18px;
+      font-size: .98rem;
+      color: var(--muted);
+      position: relative;
+      z-index: 1;
+      line-height: 1.25;
+    }
+
+    .subtitle strong{
+      color: rgba(236,242,255,.95);
+      font-weight: 700;
     }
 
     form{
       margin:0;
+      text-align:left;
+      position: relative;
+      z-index: 1;
+    }
+
+    .erro{
+      color: var(--danger-tx);
+      font-size:14px;
+      margin-bottom:10px;
+      min-height:18px;
+      text-align:left;
+      white-space: pre-line;
+    }
+
+    .notice-ok{
+      display:none;
+      margin:-6px 0 10px;
+      padding:10px;
+      border-radius:12px;
+      background: rgba(0,255,140,.12);
+      border: 1px solid rgba(0,255,140,.25);
+      color:#d6ffe9;
+      font-size:14px;
+      text-align:left;
+    }
+
+    .verify-box{
+      display:none;
+      margin:0 0 10px;
+      padding:10px;
+      border-radius:12px;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-bd);
+      color: var(--warn-tx);
+      font-size:14px;
+      text-align:left;
+    }
+
+    .verify-box .title{
+      font-weight:900;
+      margin-bottom:6px;
+    }
+
+    .verify-box .desc{
+      color: rgba(255,236,193,.92);
+      margin-bottom:10px;
+      line-height: 1.25;
+    }
+
+    .tenant-box{
+      display:none;
+      margin:0 0 10px;
+      padding:10px;
+      border-radius:12px;
+      background: rgba(0,209,255,.08);
+      border: 1px solid rgba(0,209,255,.20);
+      color: rgba(236,242,255,.92);
+      font-size:14px;
+      text-align:left;
+    }
+
+    .tenant-box .title{
+      font-weight:900;
+      margin-bottom:6px;
+    }
+
+    .tenant-box .desc{
+      color: rgba(236,242,255,.80);
+      margin-bottom:10px;
+      line-height: 1.25;
+    }
+
+    .tenant-list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:8px;
+    }
+
+    .tenant-btn{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(170,200,240,.28);
+      background: rgba(10,19,34,.28);
+      color: rgba(236,242,255,.92);
+      font-family: "Rajdhani", system-ui, sans-serif;
+      font-weight: 900;
+      cursor:pointer;
+      text-align:left;
+    }
+
+    .tenant-btn:hover{
+      filter: brightness(1.06);
+      background: rgba(10,19,34,.38);
+    }
+
+    .tenant-meta{
+      font-weight: 700;
+      color: rgba(236,242,255,.70);
+      font-size: 12px;
+    }
+
+    .btn-ghost{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(170,200,240,.28);
+      background: rgba(10,19,34,.28);
+      color: rgba(236,242,255,.92);
+      font-family: "Rajdhani", system-ui, sans-serif;
+      font-weight: 900;
+      cursor:pointer;
+    }
+
+    .btn-ghost:disabled{
+      opacity:.75;
+      cursor:not-allowed;
+    }
+
+    .field{
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .label{
+      display:block;
+      font-size: 13px;
+      color: rgba(210,225,250,.85);
+      margin: 0 0 6px;
+      letter-spacing:.2px;
     }
 
     input{
       width:100%;
       padding:11px 12px;
-      margin-bottom:12px;
       border-radius:10px;
       border:1px solid rgba(170,200,240,.45);
       font-size:15px;
-      background: linear-gradient(180deg,
-        rgba(19,38,72,.95),
-        rgba(11,26,50,.98)
-      );
+      background: linear-gradient(180deg, rgba(19,38,72,.95), rgba(11,26,50,.98));
       color: var(--ink);
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,.10),
         0 8px 18px rgba(0,0,0,.55);
+      outline: none;
     }
 
-    input::placeholder{
-      color: var(--muted);
-    }
+    input::placeholder{ color: var(--muted); }
 
     input:focus{
-      outline:none;
       border-color: rgba(190,220,255,.9);
       box-shadow:
-        0 0 0 2px rgba(120,190,255,.55),
+        0 0 0 2px var(--sc-focus),
         0 10px 28px rgba(0,0,0,.75);
     }
 
-    button{
+    .pass-tools{
+      display:flex;
+      justify-content:flex-end;
+      margin-top: 8px;
+    }
+
+    .toggle-pass{
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(170,200,240,.28);
+      background: rgba(10,19,34,.28);
+      color: rgba(236,242,255,.92);
+      font-family: "Rajdhani", system-ui, sans-serif;
+      font-weight: 800;
+      cursor:pointer;
+      transition: .15s transform, .15s filter, .15s background;
+      user-select: none;
+      min-width: 92px;
+    }
+
+    .toggle-pass:hover{
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+      background: rgba(10,19,34,.35);
+    }
+
+    .actions{ margin-top: 6px; }
+
+    button[type="submit"]{
       width:100%;
       padding:11px 12px;
-      margin-top:4px;
       border:none;
       border-radius:10px;
       font-size:16px;
-      font-weight:700;
+      font-weight:900;
       cursor:pointer;
-      color:#fffdf7;
-      background:linear-gradient(135deg, var(--rubi), var(--rubi-2));
+      color:#071018;
+      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
       box-shadow:
-        0 14px 30px rgba(216,35,39,.55),
-        inset 0 1px 0 rgba(255,255,255,.12);
+        0 14px 30px rgba(0, 209, 255, .22),
+        0 16px 34px rgba(122, 92, 255, .18),
+        inset 0 1px 0 rgba(255,255,255,.14);
       transition:.18s transform,.18s filter,.18s box-shadow;
+      letter-spacing:.3px;
     }
 
-    button:hover{
+    button[type="submit"]:hover{
       filter: brightness(1.06);
       transform: translateY(-1px);
       box-shadow:
-        0 18px 40px rgba(216,35,39,.65),
-        inset 0 1px 0 rgba(255,255,255,.14);
+        0 18px 40px rgba(0, 209, 255, .28),
+        0 18px 44px rgba(122, 92, 255, .22),
+        inset 0 1px 0 rgba(255,255,255,.18);
     }
 
-    .erro{
-      color:#ffb3b8;
-      font-size:14px;
-      margin-bottom:10px;
-      min-height:18px;
-      text-align:left;
+    button[type="submit"]:disabled{
+      cursor:not-allowed;
+      filter: grayscale(.15) brightness(.9);
+      opacity: .9;
+      transform: none;
     }
 
-    .link-cadastro{
-      margin-top:16px;
-      font-size:14px;
+    .btn-sub{
+      margin-top:10px;
+      font-size: 13px;
       color: var(--muted);
+      text-align:center;
     }
 
-    .link-cadastro a{
-      color:#ffe29a;
+    .btn-sub a{
+      color: var(--sc-accent);
       text-decoration:none;
-      font-weight:600;
+      font-weight:800;
     }
 
-    .link-cadastro a:hover{
+    .btn-sub a:hover{
       text-decoration:underline;
       color:#fff5c8;
     }
+
+    .spinner{
+      display:inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: rgba(255,255,255,.95);
+      margin-right: 8px;
+      vertical-align: -3px;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin{ to{ transform: rotate(360deg); } }
 
     @keyframes fadeIn{
       from{ opacity:0; transform:translateY(14px); }
       to{ opacity:1; transform:translateY(0); }
     }
-
-    /* Responsivo leve */
-    @media (max-width:480px){
-      .container{
-        padding:26px 18px 22px;
-        width: 92vw;
-      }
-      h2{
-        font-size:1.2rem;
-      }
-    }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <img src="/logo-final.jpg" alt="Logo do Colégio Militar Dom Pedro II" class="logo" />
-    <h2>Login</h2>
+    <div class="badge"><span class="dot"></span> Ambiente seguro • Acesso institucional</div>
+
+    <div class="logo-wrap">
+      <img
+        src="/assets/smartclass-coruja.png"
+        alt="Logo SmartClass (Coruja)"
+        class="logo"
+        onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"
+      />
+    </div>
+
+    <div class="brand"><span>SmartClass</span></div>
+
+    <div class="subtitle">
+      <strong id="nome-colegio">Instituição</strong> • Acesso ao sistema
+    </div>
+
     <form id="login-form">
       <div class="erro" id="erro"></div>
-      <input type="email" id="email" placeholder="E-mail institucional" required />
-      <input type="password" id="senha" placeholder="Senha" required />
-      <button type="submit">Entrar</button>
+
+      <div class="notice-ok" id="ok"></div>
+
+      <!-- ✅ Escolha de instituição quando o e-mail existe em mais de uma -->
+      <div class="tenant-box" id="tenant-box">
+        <div class="title">Selecione sua instituição</div>
+        <div class="desc">
+          Seu e-mail está cadastrado em mais de uma instituição. Escolha abaixo para entrar no ambiente correto.
+        </div>
+        <div class="tenant-list" id="tenant-list"></div>
+      </div>
+
+      <div class="verify-box" id="verify-box">
+        <div class="title">Conta não confirmada</div>
+        <div class="desc">
+          Verifique sua caixa de e-mail (e o spam). Se quiser, clique abaixo para reenviar o link.
+        </div>
+        <button type="button" class="btn-ghost" id="btn-reenviar">Reenviar confirmação</button>
+      </div>
+
+      <div class="field">
+        <label class="label" for="email">E-mail institucional</label>
+        <input type="email" id="email" placeholder="Digite seu e-mail" required autocomplete="username" autofocus />
+      </div>
+
+      <div class="field">
+        <label class="label" for="senha">Senha</label>
+        <input type="password" id="senha" placeholder="Digite sua senha" required autocomplete="current-password" />
+
+        <div class="pass-tools">
+          <button type="button" class="toggle-pass" id="toggle-pass" aria-label="Mostrar/ocultar senha">Mostrar</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="btn-entrar">Entrar</button>
+      </div>
+
+      <div class="btn-sub">
+        Ainda não tem conta? <a href="/cadastro-usuario.html" id="link-cadastro">Cadastre-se</a>
+      </div>
     </form>
-    <div class="link-cadastro">
-      Ainda não tem conta? <a href="/cadastro-usuario.html">Cadastre-se</a>
-    </div>
   </div>
 
   <script>
-    // 🔧 Em dev local, limpe SW/caches (para não travar cookie HttpOnly)
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    // 🔧 Em dev local, limpe SW/caches uma vez por sessão (para não travar cookie HttpOnly)
+    if ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') && !sessionStorage.getItem('dev_sw_cleaned')) {
+      sessionStorage.setItem('dev_sw_cleaned', '1');
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
       }
       if (window.caches) {
         caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
-      console.log('[DEV] SW e caches limpos para localhost');
+      console.log('[DEV] SW e caches limpos (uma vez por sessão) para localhost');
     }
 
-    // ✅ API_BASE:
-    // - Se estiver usando Vite no :5173, chame o backend no :5000.
-    // - Em qualquer outro caso (Render/produção ou servidor express servindo o próprio HTML),
-    //   use mesma origem (string vazia) para evitar mixed content/bloqueios.
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+
+    const erroDiv = document.getElementById('erro');
+    const okBox = document.getElementById('ok');
+    const verifyBox = document.getElementById('verify-box');
+    const btnReenviar = document.getElementById('btn-reenviar');
+
+    const tenantBox = document.getElementById('tenant-box');
+    const tenantList = document.getElementById('tenant-list');
+
+    const qs = new URLSearchParams(location.search);
+
+    // ===== Tenant helpers =====
+    function getTenantFromUrl() {
+      const t = (qs.get('t') || qs.get('tenant') || '').trim();
+      return t || '';
+    }
+
+    function getTenantFromStorage() {
+      const t = (localStorage.getItem('smartclass_tenant') || '').trim();
+      return t || '';
+    }
+
+    function setTenantStorage(t) {
+      if (!t) return;
+      localStorage.setItem('smartclass_tenant', String(t).trim());
+    }
+
+    function ensureTenantInUrl() {
+      const tUrl = getTenantFromUrl();
+      const tLs = getTenantFromStorage();
+
+      // se já tem na URL, grava e pronto
+      if (tUrl) {
+        setTenantStorage(tUrl);
+        return tUrl;
+      }
+
+      // se não tem na URL mas tem no storage, injeta na URL (sem perder outros params)
+      if (tLs) {
+        const u = new URL(location.href);
+        u.searchParams.set('t', tLs);
+        location.replace(u.toString());
+        return tLs; // o replace geralmente interrompe o fluxo logo em seguida
+      }
+
+      return '';
+    }
+
+    const TENANT = ensureTenantInUrl();
+
+    // mantém o link de cadastro já com tenant
+    (function () {
+      const a = document.getElementById('link-cadastro');
+      if (!a) return;
+      if (TENANT) a.href = `/cadastro-usuario.html?t=${encodeURIComponent(TENANT)}`;
+    })();
+
+    // ✅ Nome do colégio dinâmico (multi-colégio)
+    (async () => {
+      const el = document.getElementById('nome-colegio');
+      if (!el) return;
+
+      // cache por-tenant (evita conflito)
+      const key = TENANT ? `smartclass_nome_colegio__${TENANT}` : 'smartclass_nome_colegio';
+      const cached = localStorage.getItem(key);
+      if (cached && cached.trim().length > 2) {
+        el.textContent = cached.trim();
+        return;
+      }
+
+      try {
+        const url = TENANT ? `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}` : `${API_BASE}/public/tenant`;
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) return;
+        const data = await r.json();
+        const nome = data?.nomeColegio || data?.nome_escola || data?.nome;
+        if (nome && String(nome).trim().length > 2) {
+          el.textContent = String(nome).trim();
+          localStorage.setItem(key, String(nome).trim());
+        } else {
+          el.textContent = 'Instituição';
+        }
+      } catch {
+        el.textContent = 'Instituição';
+      }
+    })();
+
+    // ✅ aviso “E-mail confirmado”
+    // aceita verified=1 (authRoutes) e confirmado=1 (fallback do index.js)
+    (function showVerifiedNotice() {
+      const verified = (qs.get('verified') === '1') || (qs.get('confirmado') === '1');
+      if (!verified) return;
+
+      okBox.textContent = 'E-mail confirmado! Você já pode entrar.';
+      okBox.style.display = 'block';
+
+      // remove o param da URL depois de mostrar (pra não ficar repetindo ao atualizar)
+      try {
+        const u = new URL(location.href);
+        u.searchParams.delete('verified');
+        u.searchParams.delete('confirmado');
+        history.replaceState({}, '', u.toString());
+      } catch {}
+    })();
+
+    // 👁️ Mostrar/ocultar senha
+    const senhaInput = document.getElementById('senha');
+    const togglePass = document.getElementById('toggle-pass');
+    togglePass.addEventListener('click', () => {
+      const isPass = senhaInput.type === 'password';
+      senhaInput.type = isPass ? 'text' : 'password';
+      togglePass.textContent = isPass ? 'Ocultar' : 'Mostrar';
+      senhaInput.focus();
+    });
+
+    // UX: loading no botão
+    const btnEntrar = document.getElementById('btn-entrar');
+    const setLoading = (on) => {
+      btnEntrar.disabled = !!on;
+      btnEntrar.innerHTML = on ? '<span class="spinner"></span>Entrando...' : 'Entrar';
+    };
+
+    function clearMessages() {
+      erroDiv.textContent = '';
+      okBox.style.display = 'none';
+      verifyBox.style.display = 'none';
+      tenantBox.style.display = 'none';
+      tenantList.innerHTML = '';
+    }
+
+    function showTenantChoices(instituicoes) {
+      tenantList.innerHTML = '';
+      (instituicoes || []).forEach(inst => {
+        const tenant = inst?.tenant || inst?.slug || inst?.id;
+        const nome = inst?.nome || 'Instituição';
+        const meta = [inst?.sigla, inst?.slug].filter(Boolean).join(' • ');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tenant-btn';
+        btn.innerHTML = `
+          <div>
+            <div>${escapeHtml(nome)}</div>
+            ${meta ? `<div class="tenant-meta">${escapeHtml(meta)}</div>` : `<div class="tenant-meta">Selecionar</div>`}
+          </div>
+          <div class="tenant-meta">→</div>
+        `;
+
+        btn.addEventListener('click', () => {
+          if (!tenant) return;
+          setTenantStorage(tenant);
+
+          const u = new URL(location.href);
+          u.searchParams.set('t', tenant);
+          location.assign(u.toString());
+        });
+
+        tenantList.appendChild(btn);
+      });
+
+      tenantBox.style.display = 'block';
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    btnReenviar.addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      clearMessages();
+
+      if (!email) {
+        erroDiv.textContent = 'Informe seu e-mail para reenviar a confirmação.';
+        return;
+      }
+
+      btnReenviar.disabled = true;
+      btnReenviar.textContent = 'Reenviando...';
+
+      try {
+        const body = { email };
+        if (TENANT) body.t = TENANT;
+
+        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao${TENANT ? `?t=${encodeURIComponent(TENANT)}` : ''}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+
+        const data = await r.json().catch(()=> ({}));
+        if (!r.ok) {
+          erroDiv.textContent = data?.mensagem || 'Não foi possível reenviar.';
+        } else {
+          okBox.textContent = data?.mensagem || 'Link reenviado! Verifique seu e-mail.';
+          okBox.style.display = 'block';
+        }
+      } catch (e) {
+        erroDiv.textContent = 'Erro de conexão ao reenviar.';
+      } finally {
+        btnReenviar.disabled = false;
+        btnReenviar.textContent = 'Reenviar confirmação';
+      }
+    });
 
     document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
 
+      clearMessages();
+
       const email = document.getElementById('email').value.trim();
       const senha = document.getElementById('senha').value.trim();
-      const erroDiv = document.getElementById('erro');
-      erroDiv.textContent = '';
+
+      setLoading(true);
 
       try {
-        const resposta = await fetch(`${API_BASE}/auth/login`, {
+        const body = { email, senha };
+        if (TENANT) body.t = TENANT;
+
+        const resposta = await fetch(`${API_BASE}/auth/login${TENANT ? `?t=${encodeURIComponent(TENANT)}` : ''}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', // precisa para gravar cookie HttpOnly
-          body: JSON.stringify({ email, senha })
+          credentials: 'include',
+          body: JSON.stringify(body)
         });
 
         let data = {};
         try { data = await resposta.json(); } catch {}
 
         if (!resposta.ok) {
+          if (data?.code === 'EMAIL_NOT_VERIFIED') {
+            verifyBox.style.display = 'block';
+            setLoading(false);
+            return;
+          }
+
+          if (data?.code === 'AMBIGUOUS_TENANT') {
+            showTenantChoices(data?.instituicoes || []);
+            erroDiv.textContent = '';
+            setLoading(false);
+            return;
+          }
+
           erroDiv.textContent = data?.mensagem || 'Erro ao fazer login.';
+          setLoading(false);
           return;
         }
 
-        // 🔐 valida sessão rapidamente
         const ping = await fetch(`${API_BASE}/auth/usuario-logado`, {
           credentials: 'include',
           cache: 'no-store'
         });
+
         if (!ping.ok) {
           erroDiv.textContent = 'Falha ao validar sessão após login.';
+          setLoading(false);
           return;
         }
 
         const next = data.redirecionar || '/painel.html';
-window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}`;
+        window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}`;
+
       } catch (err) {
         console.error(err);
-        // Alguns navegadores (ex. Brave) bloqueiam requisições cross-origin inseguras;
-        // com API_BASE = '' isso não deve acontecer.
         erroDiv.textContent = 'Erro de conexão com o servidor.';
+        setLoading(false);
       }
     });
   </script>

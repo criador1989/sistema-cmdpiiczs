@@ -1,31 +1,38 @@
 // middleware/autenticacao.js
+'use strict';
+
 const jwt = require('jsonwebtoken');
 
+// tenta carregar o model Usuario (sem quebrar se não existir)
+let Usuario = null;
+try { Usuario = require('../models/Usuario'); } catch { /* ok */ }
+
 function extrairToken(req) {
+  // 0) Querystring token (fallback para links do tipo ?token=... )
+  const queryToken = req.query?.token;
+
   // 1) Cookie "token"
   const cookieToken = req.cookies?.token;
 
   // 2) Header Authorization: Bearer <token>
-  const auth = req.headers?.authorization || '';
-  const bearerToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const auth = req.headers?.authorization || req.headers?.Authorization || '';
+  const bearerToken = String(auth).startsWith('Bearer ') ? String(auth).slice(7).trim() : null;
 
   // 3) Header x-access-token (fallback comum)
-  const headerToken = req.headers['x-access-token'];
+  const headerToken = req.headers?.['x-access-token'];
 
-  return cookieToken || bearerToken || headerToken || null;
+  return cookieToken || bearerToken || headerToken || queryToken || null;
 }
 
-function autenticar(req, res, next) {
+async function autenticar(req, res, next) {
   const token = extrairToken(req);
   if (!token) {
     return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
   }
 
   try {
-    // Verifica expiração e assinatura (não ignoramos expiração)
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Normaliza o ID para sempre existir em .id e ._id
     const id =
       payload.id ||
       payload._id ||
@@ -36,7 +43,7 @@ function autenticar(req, res, next) {
       return res.status(401).json({ mensagem: 'Sessão inválida: id ausente no token.' });
     }
 
-    const tipo = payload.tipo;
+    const tipo = payload.tipo; // 'admin' | 'monitor' | 'professor'
     const instituicao = payload.instituicao;
     const nome = payload.nome;
 
@@ -44,28 +51,32 @@ function autenticar(req, res, next) {
       return res.status(401).json({ mensagem: 'Sessão inválida: instituição ausente no token.' });
     }
 
-    // Validação leve do formato de ObjectId (24 chars hex). Não convertemos aqui.
-    const isProvavelObjectId = typeof instituicao === 'string' && /^[a-fA-F0-9]{24}$/.test(instituicao);
-    if (!isProvavelObjectId) {
-      // Não bloqueamos forçosamente, mas avisamos claramente para facilitar debug.
-      // Se a sua base armazena instituicao como ObjectId, garanta que o token contenha o _id (24 hex).
-      // Se preferir bloquear, troque por "return res.status(401)..."
-      // console.warn('[auth] Formato de instituicao no token não parece um ObjectId:', instituicao);
+    // ✅ email pode vir no token, mas se não vier a gente resolve via banco
+    let email =
+      payload.email ||
+      payload.mail ||
+      payload.userEmail ||
+      null;
+
+    // fallback no Mongo: busca email pelo id
+    if (!email && Usuario?.findById) {
+      const u = await Usuario.findById(id).select('email').lean().catch(() => null);
+      if (u?.email) email = String(u.email).toLowerCase();
     }
 
-    // Disponibiliza para rotas/controladores e views
     req.usuario = {
-      id,          // usado por várias rotas
-      _id: id,     // compatibilidade com código que espera _id
+      id,
+      _id: id,
       nome,
       tipo,
-      instituicao, // string (Mongoose fará cast para ObjectId ao consultar campos do schema)
+      instituicao,
+      email: email ? String(email).toLowerCase() : null, // ✅ agora existe
     };
+
     res.locals.usuario = req.usuario;
 
     return next();
   } catch (err) {
-    // Diferencia mensagens comuns de JWT
     if (err?.name === 'TokenExpiredError') {
       return res.status(401).json({ mensagem: 'Sessão expirada. Faça login novamente.' });
     }
@@ -82,6 +93,13 @@ function apenasProfessor(req, res, next) {
   return res.status(403).json({ mensagem: 'Acesso permitido apenas a professores.' });
 }
 
+// Leitura liberada para professor/monitor/admin
+function apenasLeitura(req, res, next) {
+  const tipo = req.usuario?.tipo;
+  if (tipo === 'professor' || tipo === 'monitor' || tipo === 'admin') return next();
+  return res.status(403).json({ mensagem: 'Acesso negado.' });
+}
+
 // Monitor ou admin
 function apenasMonitorOuAdmin(req, res, next) {
   const tipo = req.usuario?.tipo;
@@ -89,4 +107,16 @@ function apenasMonitorOuAdmin(req, res, next) {
   return res.status(403).json({ mensagem: 'Acesso permitido apenas a monitores ou administradores.' });
 }
 
-module.exports = { autenticar, apenasProfessor, apenasMonitorOuAdmin };
+// Apenas admin
+function apenasAdmin(req, res, next) {
+  if (req.usuario?.tipo === 'admin') return next();
+  return res.status(403).json({ mensagem: 'Acesso permitido apenas a administradores.' });
+}
+
+module.exports = {
+  autenticar,
+  apenasProfessor,
+  apenasLeitura,
+  apenasMonitorOuAdmin,
+  apenasAdmin
+};

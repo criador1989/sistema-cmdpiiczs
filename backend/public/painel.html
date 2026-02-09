@@ -316,6 +316,7 @@ h1, h2, h3, h4, h5, h6,
   text-align:center;
 }
 
+/* (mantido CSS .logos, mas HTML foi removido por solicitação) */
 .logos{
   display:flex;
   align-items:center;
@@ -412,7 +413,7 @@ h1, h2, h3, h4, h5, h6,
   background: rgba(255,255,255,0.015);
   border: 1px solid rgba(255,255,255,0.25);
   backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter:blur(var(--glass-blur));
   box-shadow: var(--glass-shadow);
   position:relative;
   overflow:hidden;
@@ -945,6 +946,34 @@ canvas{
   border-left:2px solid rgba(255,255,255,0.85);
   transform:translateX(-50%);
 }
+
+/* =========================
+   MASCOTE FIXO (SmartClass)
+========================= */
+#smartclass-mascote{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 78px;
+  height: auto;
+  z-index: 60;             /* acima do conteúdo, abaixo dos toasts (9999) */
+  pointer-events: none;    /* não bloqueia cliques */
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,.65));
+  animation: scFloat 3.2s ease-in-out infinite;
+  opacity: 0.95;
+}
+@keyframes scFloat{
+  0%,100%{ transform: translateY(0) rotate(-1deg); }
+  50%{ transform: translateY(-6px) rotate(1deg); }
+}
+
+/* em celular, subir um pouco por causa do bottom-nav */
+@media(max-width:1024px){
+  #smartclass-mascote{
+    bottom: 86px;
+    width: 72px;
+  }
+}
 </style>
 </head>
 <body>
@@ -953,6 +982,12 @@ canvas{
 
   <!-- OVERLAY DE ANIMAÇÃO INICIAL (entre o fundo e os cards) -->
   <div id="intro-hex-overlay"></div>
+
+  <!-- Mascote fixo -->
+  <img id="smartclass-mascote"
+       src="/assets/smartclass-coruja.png"
+       alt="Mascote SmartClass"
+       onerror="this.onerror=null; this.style.display='none';" />
 
   <div class="page">
     <aside class="sidebar" aria-label="Navegação lateral">
@@ -963,18 +998,22 @@ canvas{
           <div style="font-size:.8rem;color:var(--text-soft)">Sistema Escolar</div>
         </div>
       </div>
-      <nav class="nav">
-        <a class="active" href="#">🏠 Painel</a>
-        <a href="lista-alunos.html">👥 Alunos</a>
-        <a href="/notificacoes">🔔 Notificações</a>
-        <a href="estatisticas.html">📉 Relatórios</a>
-        <a href="mensagens.html">✉️ Mensagens</a>
+
+      <!-- ✅ IDs adicionados para controlar por perfil -->
+      <nav class="nav" id="sb-nav">
+        <a class="active" href="#" id="sbPainel">🏠 Painel</a>
+        <a href="lista-alunos.html" id="sbAlunos">👥 Alunos</a>
+
+        <a href="/notificacoes" id="sbNotificacoes">🔔 Notificações</a>
+        <a href="estatisticas.html" id="sbEstatisticas">📉 Relatórios</a>
+        <a href="mensagens.html" id="sbMensagens">✉️ Mensagens</a>
         <!-- 🔹 Controle de Monitores na barra lateral -->
-        <a href="/monitores.html">🧭 Monitores</a>
-        <a href="transferir-turma.html">🔁 Transferir Turmas</a>
-        <a href="usuarios.html">⚙️ Administração</a>
-        <a href="logs.html">🧾 Logs</a>
+        <a href="/monitores.html" id="sbMonitores">🧭 Monitores</a>
+        <a href="transferir-turma.html" id="sbTransferir">🔁 Transferir Turmas</a>
+        <a href="usuarios.html" id="sbAdmin">⚙️ Administração</a>
+        <a href="logs.html" id="sbLogs">🧾 Logs</a>
       </nav>
+
       <div class="sb-foot">
         <button class="sb-logout" onclick="logout()">🚪 Sair</button>
       </div>
@@ -983,10 +1022,6 @@ canvas{
     <main class="content">
       <div class="wrap">
         <div class="topo">
-          <div class="logos">
-            <img src="img/logo.png" alt="Logo da Instituição" />
-            <img src="img/logo-colegio-militar.png" alt="Logo Colégio Militar Dom Pedro II" />
-          </div>
           <div class="titulo">Bem-vindo ao Sistema Escolar</div>
           <div class="sub">Olá, <span id="nomeUsuario">Usuário</span></div>
 
@@ -999,14 +1034,15 @@ canvas{
         <section class="painel">
           <div class="metrics" id="metrics">
             <div class="metric"><div class="k">Alunos ativos</div><div class="v" id="mAlunos">—</div></div>
-            <div class="metric"><div class="k">Notificações pendentes</div><div class="v" id="mNotif">—</div></div>
-            <div class="metric"><div class="k">Comportamento médio</div><div class="v" id="mMedia">—</div></div>
-            <div class="metric"><div class="k">Mensagens não lidas</div><div class="v" id="mMsgs">—</div></div>
-            <div class="metric"><div class="k">Devoluções em atraso</div><div class="v" id="mPendDevol">—</div></div>
+            <div class="metric" id="metricNotif"><div class="k">Notificações pendentes</div><div class="v" id="mNotif">—</div></div>
+            <div class="metric" id="metricMedia"><div class="k">Comportamento médio</div><div class="v" id="mMedia">—</div></div>
+            <div class="metric" id="metricMsgs"><div class="k">Mensagens não lidas</div><div class="v" id="mMsgs">—</div></div>
+            <div class="metric" id="metricPendDev"><div class="k">Devoluções em atraso</div><div class="v" id="mPendDevol">—</div></div>
           </div>
 
-          <div class="menu-windows">
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'">
+          <div class="menu-windows" id="menuWindows">
+            <!-- ✅ IDs nos cards para controlar por perfil -->
+            <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">MÓDULO</div>
@@ -1014,7 +1050,8 @@ canvas{
                 </div>
               </div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'">
+
+            <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">PAINEL</div>
@@ -1022,7 +1059,8 @@ canvas{
                 </div>
               </div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'">
+
+            <div id="cardControleNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">GESTÃO</div>
@@ -1030,6 +1068,7 @@ canvas{
                 </div>
               </div>
             </div>
+
             <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='cadastro-usuario.html'">
               <div class="window-content">
                 <div class="card-copy">
@@ -1038,6 +1077,7 @@ canvas{
                 </div>
               </div>
             </div>
+
             <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='estatisticas.html'">
               <div class="window-content">
                 <div class="card-copy">
@@ -1046,7 +1086,8 @@ canvas{
                 </div>
               </div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'">
+
+            <div id="cardMensagens" class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">COMUNICAÇÃO</div>
@@ -1054,7 +1095,8 @@ canvas{
                 </div>
               </div>
             </div>
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'">
+
+            <div id="cardTransferirTurma" class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">AÇÃO</div>
@@ -1069,17 +1111,36 @@ canvas{
             <header>
               <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
               <span id="pendResumo" class="pend-chip">Carregando…</span>
-              <button onclick="location.href='/notificacoes'" style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">Ir para Notificações</button>
+
+              <button id="pend-show-hidden"
+                      class="btn"
+                      type="button"
+                      title="Mostra novamente os itens marcados como OK neste navegador">
+                Reexibir ocultos
+              </button>
+
+              <button onclick="location.href='/notificacoes'"
+                      style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">
+                Ir para Notificações
+              </button>
             </header>
+
             <div style="overflow:auto">
               <table class="pend-table" aria-describedby="pendResumo">
                 <thead>
-                  <tr><th>Aluno</th><th>Turma</th><th>Entregue em</th><th>Prazo</th><th>Atraso</th></tr>
+                  <tr><th>Aluno</th><th>Turma</th><th>Entregue em</th><th>Prazo</th><th>Atraso / OK</th></tr>
                 </thead>
                 <tbody id="pendTableBody">
                   <tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>
                 </tbody>
               </table>
+            </div>
+
+            <div class="pager" aria-label="Paginação pendências devolução">
+              <button class="btn" id="pend-prev">◀</button>
+              <span class="info">Página <span id="pend-page">1</span> de <span id="pend-pages">1</span></span>
+              <button class="btn" id="pend-next">▶</button>
+              <span class="info">10 por página</span>
             </div>
           </section>
 
@@ -1103,7 +1164,6 @@ canvas{
               </button>
             </nav>
 
-            <!-- NP (5,00–6,99) -->
             <div id="tab-regular" class="tab-panel" aria-hidden="false">
               <p class="muted">
                 <strong>Art. 51</strong> — Encaminhar ao Núcleo Psicossocial (NP) e registrar no histórico.
@@ -1123,12 +1183,11 @@ canvas{
                 <button class="btn" id="reg-prev">◀</button>
                 <span class="info">Página <span id="reg-page">1</span> de <span id="reg-pages">1</span></span>
                 <button class="btn" id="reg-next">▶</button>
-                <span class="info">por página</span>
-                <input type="number" id="reg-size" min="5" max="100" step="5" value="15" />
+                <span class="info">10 por página</span>
+                <input type="number" id="reg-size" min="10" max="10" step="10" value="10" disabled />
               </div>
             </div>
 
-            <!-- 3,00–4,99 -->
             <div id="tab-insuficiente" class="tab-panel" aria-hidden="true" style="display:none">
               <p class="muted">
                 <strong>Art. 52</strong> — Coordenador informa responsáveis sobre a situação e a possível não renovação
@@ -1148,8 +1207,8 @@ canvas{
                 <button class="btn" id="ins-prev">◀</button>
                 <span class="info">Página <span id="ins-page">1</span> de <span id="ins-pages">1</span></span>
                 <button class="btn" id="ins-next">▶</button>
-                <span class="info">por página</span>
-                <input type="number" id="ins-size" min="5" max="100" step="5" value="15" />
+                <span class="info">10 por página</span>
+                <input type="number" id="ins-size" min="10" max="10" step="10" value="10" disabled />
               </div>
             </div>
 
@@ -1172,7 +1231,7 @@ canvas{
             </div>
           </div>
 
-          <div class="qrcode-box">
+          <div class="qrcode-box" id="qrBox">
             <h3>🔐 Gerar QR Code de Acesso do Professor</h3>
             <input type="text" id="campoIdentificacao" placeholder="Digite nome ou e-mail do professor">
             <button onclick="gerarQRCode()" style="padding:10px 20px;border:none;background:#B22222;color:white;border-radius:8px;">
@@ -1190,24 +1249,25 @@ canvas{
     </main>
   </div>
 
-  <nav class="bottom-nav" aria-label="Navegação inferior">
+  <!-- ✅ IDs no bottom-nav para controlar por perfil -->
+  <nav class="bottom-nav" aria-label="Navegação inferior" id="bottomNav">
     <div class="row">
-      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})" id="bnPainel">
         🏠<span>Painel</span>
       </button>
-      <button onclick="location.href='lista-alunos.html'">
+      <button onclick="location.href='lista-alunos.html'" id="bnAlunos">
         👥<span>Alunos</span>
       </button>
-      <button onclick="location.href='/notificacoes'">
+      <button onclick="location.href='/notificacoes'" id="bnNotifs">
         🔔<span>Notifs</span>
       </button>
-      <button onclick="location.href='estatisticas.html'">
+      <button onclick="location.href='estatisticas.html'" id="bnRelatorios">
         📉<span>Relatórios</span>
       </button>
-      <button onclick="location.href='mensagens.html'">
+      <button onclick="location.href='mensagens.html'" id="bnMensagens">
         ✉️<span>Mensagens</span>
       </button>
-      <button onclick="location.href='/monitores.html'">
+      <button onclick="location.href='/monitores.html'" id="bnMonitores">
         🧭<span>Monitores</span>
       </button>
     </div>
@@ -1216,7 +1276,6 @@ canvas{
   <script>
   /* ===== PAPEL DE PAREDE DINÂMICO ===== */
   (function(){
-    // Caminhos das imagens de fundo (coloque essas imagens em backend/public/img)
     const wallpapers = [
       'url("img/bg-painel-smart.png")',
       'url("img/bg-painel-smart-2.png")',
@@ -1283,12 +1342,11 @@ canvas{
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
 
-    // tamanho adaptativo dos hexágonos
-    const r = Math.max(18, Math.min(32, w / 40)); // raio
-    const hexH = Math.sqrt(3) * r;                // altura do hex
-    const hexW = 2 * r;                           // largura do hex
-    const vert = hexH;                            // deslocamento vertical
-    const horiz = 1.5 * r;                        // deslocamento horizontal
+    const r = Math.max(18, Math.min(32, w / 40));
+    const hexH = Math.sqrt(3) * r;
+    const hexW = 2 * r;
+    const vert = hexH;
+    const horiz = 1.5 * r;
 
     const minX = -hexW;
     const maxX = w + hexW;
@@ -1301,7 +1359,6 @@ canvas{
       for (let x = offsetX; x < maxX; x += horiz) {
         const points = [];
         for (let i = 0; i < 6; i++) {
-          // hexágono "em pé", levemente rotacionado pra ficar parecido com referência
           const angle = Math.PI / 3 * i + Math.PI / 6;
           const px = x + r * Math.cos(angle);
           const py = y + r * Math.sin(angle);
@@ -1311,9 +1368,8 @@ canvas{
         poly.setAttribute('points', points.join(' '));
         poly.setAttribute('class', 'hex');
 
-        // atraso baseado na posição X (onda esquerda -> direita)
-        const nx = (x - minX) / (maxX - minX); // normalizado 0..1
-        const delay = nx * 1.3 + Math.random() * 0.15; // pequena aleatoriedade
+        const nx = (x - minX) / (maxX - minX);
+        const delay = nx * 1.3 + Math.random() * 0.15;
         poly.style.animationDelay = delay.toFixed(2) + 's';
 
         svg.appendChild(poly);
@@ -1323,7 +1379,6 @@ canvas{
 
     overlay.appendChild(svg);
 
-    // remoção suave depois que a maior parte da onda passou
     setTimeout(() => {
       overlay.style.transition = 'opacity .7s ease';
       overlay.style.opacity = '0';
@@ -1357,7 +1412,103 @@ canvas{
   const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
-  // ===== Fetch JSON com tratamento =====
+  /* ============================================================
+     ✅ CONTROLE DE ACESSO NO PAINEL (professor/admin/monitor)
+     - Admin: tudo
+     - Monitor: TUDO (voltou ao normal)
+     - Professor: escondido
+     ============================================================ */
+  async function aplicarPermissoesNoPainel(){
+    const hide = (...ids) => ids.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+
+    const SB = {
+      sbNotificacoes:'sbNotificacoes',
+      sbEstatisticas:'sbEstatisticas',
+      sbMonitores:'sbMonitores',
+      sbTransferir:'sbTransferir',
+      sbAdmin:'sbAdmin',
+      sbLogs:'sbLogs',
+    };
+
+    const CARDS = {
+      cardCadastrarAluno:'cardCadastrarAluno',
+      cardVerNotificacoes:'cardVerNotificacoes',
+      cardControleNotificacoes:'cardControleNotificacoes',
+      cardNovoUsuario:'cardNovoUsuario',
+      cardEstatisticas:'cardEstatisticas',
+      cardTransferirTurma:'cardTransferirTurma',
+      qrBox:'qrBox',
+    };
+
+    const SECOES = {
+      metricNotif:'metricNotif',
+      metricMedia:'metricMedia',
+      metricMsgs:'metricMsgs',
+      metricPendDev:'metricPendDev',
+      pendDevolucaoSection:'pendDevolucaoSection',
+      acSection:'acSection',
+    };
+
+    const BN = {
+      bnNotifs:'bnNotifs',
+      bnRelatorios:'bnRelatorios',
+      bnMonitores:'bnMonitores',
+    };
+
+    try{
+      let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) throw 0;
+
+      const u = await r.json();
+      const tipo = String(u?.tipo || '').toLowerCase();
+
+      if (tipo === 'admin') return;     // admin: tudo
+      if (tipo === 'monitor') return;   // ✅ monitor: tudo (NORMAL)
+
+      if (tipo === 'professor') {
+        hide(
+          SB.sbNotificacoes,
+          SB.sbEstatisticas,
+          SB.sbMonitores,
+          SB.sbTransferir,
+          SB.sbAdmin,
+          SB.sbLogs
+        );
+
+        hide(
+          CARDS.cardCadastrarAluno,
+          CARDS.cardVerNotificacoes,
+          CARDS.cardControleNotificacoes,
+          CARDS.cardNovoUsuario,
+          CARDS.cardEstatisticas,
+          CARDS.cardTransferirTurma,
+          CARDS.qrBox
+        );
+
+        hide(
+          SECOES.metricNotif,
+          SECOES.metricMedia,
+          SECOES.metricMsgs,
+          SECOES.metricPendDev,
+          SECOES.pendDevolucaoSection,
+          SECOES.acSection
+        );
+
+        hide(
+          BN.bnNotifs,
+          BN.bnRelatorios,
+          BN.bnMonitores
+        );
+        return;
+      }
+
+      location.href = './login.html';
+    }catch{
+      location.href = './login.html';
+    }
+  }
+
   async function getJSON(url, { timeoutMs=8000 } = {}) {
     const ctrl = new AbortController();
     const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
@@ -1425,55 +1576,150 @@ canvas{
     }
   }
 
-  // ===== Pendências de devolução =====
+  // ============================================================
+  // ✅ Pendências de devolução — correção leve (OK no Painel)
+  // ============================================================
+  const PEND_STATE = { page: 1, size: 10 };
+  let PEND_DATA = [];
+  const PEND_OK_KEY = 'painelPendDevolOkIds';
+
+  function pendGetOkSet(){
+    try{
+      const raw = localStorage.getItem(PEND_OK_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(arr) ? arr : []);
+    }catch{
+      return new Set();
+    }
+  }
+  function pendSaveOkSet(set){
+    try{
+      localStorage.setItem(PEND_OK_KEY, JSON.stringify(Array.from(set)));
+    }catch{}
+  }
+
+  function renderPendenciasPaged(){
+    const resumo = document.getElementById('pendResumo');
+    const tbody  = document.getElementById('pendTableBody');
+
+    const pageEl  = document.getElementById('pend-page');
+    const pagesEl = document.getElementById('pend-pages');
+    const prevBtn = document.getElementById('pend-prev');
+    const nextBtn = document.getElementById('pend-next');
+
+    const okSet = pendGetOkSet();
+
+    const visibleData = (Array.isArray(PEND_DATA) ? PEND_DATA : []).filter(n=>{
+      const id = String(n?.id || n?._id || '');
+      return id && !okSet.has(id);
+    });
+
+    const total = visibleData.length;
+    const pages = Math.max(1, Math.ceil(total / PEND_STATE.size));
+    PEND_STATE.page = Math.min(Math.max(1, PEND_STATE.page), pages);
+
+    if (pageEl) pageEl.textContent = String(PEND_STATE.page);
+    if (pagesEl) pagesEl.textContent = String(pages);
+
+    if (prevBtn) prevBtn.disabled = PEND_STATE.page <= 1;
+    if (nextBtn) nextBtn.disabled = PEND_STATE.page >= pages;
+
+    if (total === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Nenhuma pendência de devolução.</td></tr>`;
+      if (resumo) resumo.textContent = `Total pendente: 0`;
+      return;
+    }
+
+    const start = (PEND_STATE.page - 1) * PEND_STATE.size;
+    const slice = visibleData.slice(start, start + PEND_STATE.size);
+
+    const rows = slice.map(n => {
+      const nome  = n.aluno?.nome || '—';
+      const turma = n.aluno?.turma || '—';
+      const entr  = n.entregueEm ? new Date(n.entregueEm) : null;
+      const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
+
+      let atraso = 0;
+      if (prazo) {
+        const ms = Date.now() - prazo.getTime();
+        atraso = Math.max(0, Math.ceil(ms / (1000*60*60*24)));
+      }
+
+      const atrasoChip = atraso > 0
+        ? `<span class="pend-chip pend-atraso" title="Dias corridos">${atraso} dia(s)</span>`
+        : `<span class="pend-chip">no prazo</span>`;
+
+      const stableId = String(n?.id || n?._id || '');
+
+      const okBtn = stableId
+        ? `<button class="btn btn-primary pend-ok-btn" data-pend-ok="${stableId}" type="button" title="Oculta este item no Painel (não altera o servidor)">✅ OK</button>`
+        : `<span class="pend-chip">—</span>`;
+
+      return `<tr>
+        <td>${nome}</td>
+        <td><span class="pend-chip">${turma}</span></td>
+        <td>${entr ? entr.toLocaleString('pt-BR') : '—'}</td>
+        <td>${prazo ? prazo.toLocaleString('pt-BR') : '—'}</td>
+        <td style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${atrasoChip}${okBtn}</td>
+      </tr>`;
+    }).join('');
+
+    tbody.innerHTML = rows;
+    if (resumo) resumo.textContent = `Total pendente: ${total}`;
+  }
+
   async function carregarPendenciasDevolucao(){
     const resumo = document.getElementById('pendResumo');
     const tbody  = document.getElementById('pendTableBody');
-    resumo.textContent = 'Carregando…';
-    tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>`;
+
+    if (resumo) resumo.textContent = 'Carregando…';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>`;
+
+    PEND_STATE.page = 1;
+    PEND_DATA = [];
+
     try{
       const j = await getJSON(API('/notificacoes/pendencias/devolucao'), { timeoutMs: 12000 });
       const arr = Array.isArray(j?.itens) ? j.itens : [];
-      resumo.textContent = `Total pendente: ${j?.total ?? arr.length}`;
-
-      if (arr.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Nenhuma pendência de devolução.</td></tr>`;
-        return;
-      }
-
       arr.sort((a,b)=> new Date(a.prazoDevolucao) - new Date(b.prazoDevolucao));
-
-      const rows = arr.slice(0, 12).map(n => {
-        const nome  = n.aluno?.nome || '—';
-        const turma = n.aluno?.turma || '—';
-        const entr  = n.entregueEm ? new Date(n.entregueEm) : null;
-        const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
-
-        let atraso = 0;
-        if (prazo) {
-          const ms = Date.now() - prazo.getTime();
-          atraso = Math.max(0, Math.ceil(ms / (1000*60*60*24)));
-        }
-        const atrasoChip = atraso > 0
-          ? `<span class="pend-chip pend-atraso" title="Dias corridos">${atraso} dia(s)</span>`
-          : `<span class="pend-chip">no prazo</span>`;
-
-        return `<tr>
-          <td>${nome}</td>
-          <td><span class="pend-chip">${turma}</span></td>
-          <td>${entr ? entr.toLocaleString('pt-BR') : '—'}</td>
-          <td>${prazo ? prazo.toLocaleString('pt-BR') : '—'}</td>
-          <td>${atrasoChip}</td>
-        </tr>`;
-      }).join('');
-
-      tbody.innerHTML = rows;
+      PEND_DATA = arr;
+      renderPendenciasPaged();
     }catch(e){
       console.error(e);
-      resumo.textContent = 'Erro ao carregar';
-      tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Falha ao carregar pendências.</td></tr>`;
+      if (resumo) resumo.textContent = 'Erro ao carregar';
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Falha ao carregar pendências.</td></tr>`;
     }
   }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const prevBtn = document.getElementById('pend-prev');
+    const nextBtn = document.getElementById('pend-next');
+    if (prevBtn) prevBtn.addEventListener('click', ()=>{ PEND_STATE.page--; renderPendenciasPaged(); });
+    if (nextBtn) nextBtn.addEventListener('click', ()=>{ PEND_STATE.page++; renderPendenciasPaged(); });
+
+    const tbody = document.getElementById('pendTableBody');
+    tbody?.addEventListener('click', (ev)=>{
+      const btn = ev.target.closest('button[data-pend-ok]');
+      if(!btn) return;
+      const id = String(btn.dataset.pendOk || '');
+      if(!id) return;
+
+      const okSet = pendGetOkSet();
+      okSet.add(id);
+      pendSaveOkSet(okSet);
+
+      showOK('OK registrado no Painel. Item removido da lista.');
+      renderPendenciasPaged();
+    });
+
+    const showHiddenBtn = document.getElementById('pend-show-hidden');
+    showHiddenBtn?.addEventListener('click', ()=>{
+      if(!confirm('Deseja reexibir TODOS os itens ocultados por "OK" neste navegador?')) return;
+      try{ localStorage.removeItem(PEND_OK_KEY); }catch{}
+      showOK('Itens ocultos reexibidos.');
+      renderPendenciasPaged();
+    });
+  });
 
   // ===== Alertas de Comportamento =====
   (function(){
@@ -1487,14 +1733,12 @@ canvas{
     const lastUp   = $('#ac-last-update');
     const btnReload= $('#btn-recarregar-alertas');
 
-    // paginação (estado)
     let REG_DATA = [], INS_DATA = [];
     const state = {
-      reg: { page: 1, size: 15 },
-      ins: { page: 1, size: 15 },
+      reg: { page: 1, size: 10 },
+      ins: { page: 1, size: 10 },
     };
 
-    // elementos de paginação
     const el = {
       regPrev: $('#reg-prev'), regNext: $('#reg-next'),
       regPage: $('#reg-page'), regPages: $('#reg-pages'), regSize: $('#reg-size'),
@@ -1502,7 +1746,6 @@ canvas{
       insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
     };
 
-    // === linhas ===
     function rowReg(a){
       const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
       return `
@@ -1563,9 +1806,8 @@ canvas{
         const { regular=[], insuficiente=[] } = await getJSON(API('/alertas/comportamento'), { timeoutMs: 12000 });
 
         REG_DATA = regular.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
-
                           .sort((x,y)=> x.n - y.n);
-        INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) } ))
+        INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
                                .sort((x,y)=> x.n - y.n);
 
         cntReg.textContent = REG_DATA.length;
@@ -1573,6 +1815,9 @@ canvas{
 
         state.reg.page = 1;
         state.ins.page = 1;
+
+        if (el.regSize) el.regSize.value = '10';
+        if (el.insSize) el.insSize.value = '10';
 
         renderAll();
 
@@ -1585,7 +1830,6 @@ canvas{
       }
     }
 
-    // Abas
     document.addEventListener('click', (ev)=>{
       const tabBtn = ev.target.closest('.tab-btn'); if(!tabBtn) return;
       $$('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1598,7 +1842,6 @@ canvas{
       });
     });
 
-    // Ações
     document.addEventListener('click', async (ev)=>{
       const btn = ev.target.closest('button[data-acao]'); if(!btn) return;
       const id = btn.dataset.id; const acao = btn.dataset.acao;
@@ -1638,15 +1881,12 @@ canvas{
             } else {
               showOK('Comunicação enviada aos pais. ✅');
             }
-            console.log('Detalhes do envio:', j);
           } else {
             const msg = j?.mensagem || j?.error || 'Falha ao enviar comunicação.';
             showError(msg);
-            console.log('Resposta (negada/recusada):', j);
           }
         }catch(e){
           showError('Erro ao enviar comunicação.');
-          console.warn('Falha de rede/comunicação:', e);
         }finally{
           btn.disabled = false;
         }
@@ -1654,20 +1894,10 @@ canvas{
       }
     });
 
-    // Paginação - eventos
     el.regPrev.addEventListener('click', ()=>{ state.reg.page--; renderAll(); });
     el.regNext.addEventListener('click', ()=>{ state.reg.page++; renderAll(); });
     el.insPrev.addEventListener('click', ()=>{ state.ins.page--; renderAll(); });
     el.insNext.addEventListener('click', ()=>{ state.ins.page++; renderAll(); });
-
-    el.regSize.addEventListener('change', ()=>{
-      const v = Math.min(Math.max(parseInt(el.regSize.value||'15',10),5),100);
-      state.reg.size = v; state.reg.page = 1; renderAll();
-    });
-    el.insSize.addEventListener('change', ()=>{
-      const v = Math.min(Math.max(parseInt(el.insSize.value||'15',10),5),100);
-      state.ins.size = v; state.ins.page = 1; renderAll();
-    });
 
     btnReload?.addEventListener('click', carregarAlertasComportamento);
 
@@ -1827,12 +2057,14 @@ canvas{
   }
 
   async function boot(){
+    // ✅ aplica permissões primeiro
+    await aplicarPermissoesNoPainel();
+
     await verificarUsuario();
     await verificarAdmin();
     await carregarMetricas();
     await carregarPendenciasDevolucao();
 
-    // carregar alertas + auto refresh
     if (window._carregarAlertasComportamento) {
       await window._carregarAlertasComportamento();
       setInterval(window._carregarAlertasComportamento, 60000);
@@ -1850,6 +2082,7 @@ canvas{
     });
   }
   </script>
+
   <script src="notify.js"></script>
   <script src="/painel.js"></script>
 

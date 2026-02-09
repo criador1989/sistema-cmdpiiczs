@@ -1,0 +1,774 @@
+<!-- public/master-instituicoes.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Master • Instituições - SmartClass</title>
+  <meta name="theme-color" content="#0A1322" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192x192.png" />
+
+  <!-- Tipografia SmartClass -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-0:#0b1220;
+      --bg-1:#071018;
+      --card: rgba(255,255,255,.08);
+      --card2: rgba(255,255,255,.06);
+      --border: rgba(170,200,240,.24);
+      --text: #ecf2ff;
+      --muted: rgba(236,242,255,.72);
+      --shadow: 0 22px 60px rgba(0,0,0,.60);
+
+      --sc-primary:#00D1FF;
+      --sc-secondary:#7A5CFF;
+      --sc-accent:#FFE29A;
+
+      --ok-bg: rgba(0,255,140,.12);
+      --ok-bd: rgba(0,255,140,.25);
+      --ok-tx: #d6ffe9;
+
+      --err-bg: rgba(255,70,90,.10);
+      --err-bd: rgba(255,70,90,.22);
+      --err-tx: #ffb3b8;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; padding:0; }
+
+    body{
+      font-family: "Rajdhani", system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.22), transparent 60%),
+        radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.14), transparent 60%),
+        radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.16), transparent 60%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1));
+      background-blend-mode: screen, screen, screen, normal;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      padding: 18px;
+    }
+
+    .wrap{
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 14px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+
+    .logo{
+      width:46px;
+      height:46px;
+      border-radius: 14px;
+      object-fit: contain;
+      padding: 8px;
+      background: rgba(10,19,34,.38);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 26px rgba(0,0,0,.55);
+    }
+
+    h1{
+      margin:0;
+      font-family:"Orbitron", system-ui, sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: .6px;
+    }
+    .sub{
+      margin:2px 0 0;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .top-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(10,19,34,.36);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      user-select:none;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+      box-shadow: 0 0 12px rgba(0,209,255,.6);
+    }
+
+    .btn{
+      border: 1px solid rgba(170,200,240,.28);
+      background: rgba(10,19,34,.32);
+      color: rgba(236,242,255,.92);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 900;
+      cursor:pointer;
+      transition: .15s transform, .15s filter, .15s background;
+    }
+    .btn:hover{ filter:brightness(1.06); transform: translateY(-1px); background: rgba(10,19,34,.42); }
+    .btn:disabled{ opacity:.7; cursor:not-allowed; transform:none; filter:none; }
+
+    .btn-primary{
+      border: none;
+      color:#071018;
+      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+      box-shadow:
+        0 14px 30px rgba(0, 209, 255, .18),
+        0 16px 34px rgba(122, 92, 255, .14),
+        inset 0 1px 0 rgba(255,255,255,.16);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap: 14px;
+      align-items:start;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(21,40,76,.62), rgba(13,28,54,.74));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(800px 260px at 40% -20%, rgba(0,209,255,.20), transparent 65%),
+        radial-gradient(700px 240px at 110% 10%, rgba(122,92,255,.14), transparent 60%);
+      pointer-events:none;
+    }
+
+    .card > *{ position:relative; z-index:1; }
+
+    .card-head{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(170,200,240,.18);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .card-title{
+      margin:0;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+    .card-body{
+      padding: 14px;
+    }
+
+    label{
+      display:block;
+      margin: 0 0 6px;
+      font-size: 13px;
+      color: rgba(210,225,250,.86);
+      letter-spacing: .2px;
+      font-weight: 800;
+    }
+
+    input{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(170,200,240,.45);
+      background: linear-gradient(180deg, rgba(19,38,72,.92), rgba(11,26,50,.96));
+      color: var(--text);
+      outline: none;
+      font-size: 15px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.10),
+        0 8px 18px rgba(0,0,0,.45);
+    }
+    input::placeholder{ color: rgba(236,242,255,.55); }
+    input:focus{
+      border-color: rgba(190,220,255,.9);
+      box-shadow: 0 0 0 2px rgba(0,209,255,.35), 0 10px 28px rgba(0,0,0,.65);
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 480px){ .row{ grid-template-columns: 1fr; } }
+
+    .hint{
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+    .hint code{
+      background: rgba(10,19,34,.35);
+      border: 1px solid rgba(170,200,240,.22);
+      padding: 2px 6px;
+      border-radius: 8px;
+      color: rgba(236,242,255,.92);
+    }
+
+    .msg{
+      display:none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      white-space: pre-line;
+    }
+    .msg.ok{ display:block; background: var(--ok-bg); border:1px solid var(--ok-bd); color: var(--ok-tx); }
+    .msg.err{ display:block; background: var(--err-bg); border:1px solid var(--err-bd); color: var(--err-tx); }
+
+    /* Table */
+    .table-wrap{ padding: 0; }
+    .table-toolbar{
+      padding: 12px 14px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid rgba(170,200,240,.18);
+      flex-wrap: wrap;
+    }
+    .search{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      width: min(520px, 100%);
+    }
+    .search input{
+      box-shadow: none;
+      background: rgba(10,19,34,.28);
+      border: 1px solid rgba(170,200,240,.28);
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    th, td{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(170,200,240,.14);
+      vertical-align: top;
+    }
+    th{
+      text-align:left;
+      font-size: 13px;
+      color: rgba(210,225,250,.82);
+      letter-spacing: .25px;
+      text-transform: uppercase;
+    }
+
+    tr:hover td{ background: rgba(255,255,255,.03); }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; }
+
+    .badge-active{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.26);
+      font-weight: 900;
+      font-size: 13px;
+    }
+    .badge-active .b{
+      width:8px;height:8px;border-radius:999px;
+      background: rgba(0,255,140,.9);
+      box-shadow: 0 0 12px rgba(0,255,140,.45);
+    }
+    .badge-inactive .b{ background: rgba(255,70,90,.92); box-shadow: 0 0 12px rgba(255,70,90,.35); }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap: wrap;
+    }
+
+    .mini{
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 900;
+      background: rgba(10,19,34,.28);
+      border: 1px solid rgba(170,200,240,.22);
+      color: rgba(236,242,255,.92);
+      cursor:pointer;
+    }
+    .mini:hover{ filter:brightness(1.06); background: rgba(10,19,34,.36); }
+    .mini.danger{ border-color: rgba(255,70,90,.35); }
+    .mini.ok{ border-color: rgba(0,255,140,.35); }
+
+    .links{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    .linkrow{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .linkrow input{
+      flex: 1 1 260px;
+      box-shadow:none;
+      background: rgba(10,19,34,.28);
+      border: 1px solid rgba(170,200,240,.28);
+    }
+    .small{
+      font-size: 12px;
+      color: rgba(236,242,255,.70);
+    }
+
+    .spinner{
+      display:inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: rgba(255,255,255,.95);
+      margin-right: 8px;
+      vertical-align: -3px;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img class="logo" src="/assets/smartclass-coruja.png" alt="SmartClass" onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
+        <div>
+          <h1>Painel Master • Instituições</h1>
+          <div class="sub">Cadastro e gestão de colégios (tenants) • Apenas SuperAdmin</div>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div class="pill"><span class="dot"></span> Multi-instituição • Subdomínio/Query/Cookie</div>
+        <button class="btn" id="btnRefresh">Atualizar lista</button>
+        <button class="btn btn-primary" id="btnSair">Sair</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Criar instituição -->
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">Criar nova instituição</div>
+          <div class="small" id="apiInfo"></div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div>
+              <label for="nome">Nome (ex.: Colégio XABC)</label>
+              <input id="nome" placeholder="Nome completo da instituição" autocomplete="off" />
+            </div>
+            <div>
+              <label for="sigla">Sigla (opcional)</label>
+              <input id="sigla" placeholder="XABC" autocomplete="off" />
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
+            <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
+            <div class="hint">
+              Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
+              O link fica: <code>/login.html?t=SEU-SLUG</code>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btnCriar" style="margin-top:12px; width:100%;">Criar instituição</button>
+
+          <div class="msg" id="msgCreate"></div>
+
+          <div class="links" id="createdLinks" style="display:none; margin-top:12px;">
+            <div class="card-title" style="font-size:14px; margin-bottom:6px;">Links gerados</div>
+
+            <div class="linkrow">
+              <input id="linkLogin" readonly />
+              <button class="mini" data-copy="#linkLogin">Copiar login</button>
+            </div>
+
+            <div class="linkrow">
+              <input id="linkCadastro" readonly />
+              <button class="mini" data-copy="#linkCadastro">Copiar cadastro</button>
+            </div>
+
+            <div class="small">
+              Envie esses links para o colégio comprador. Assim, o login/cadastro já abre no ambiente correto.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lista -->
+      <section class="card table-wrap">
+        <div class="table-toolbar">
+          <div>
+            <div class="card-title">Instituições cadastradas</div>
+            <div class="small" id="countInfo">—</div>
+          </div>
+
+          <div class="search">
+            <input id="q" placeholder="Buscar por nome, sigla, slug..." />
+            <button class="btn" id="btnBuscar">Buscar</button>
+          </div>
+        </div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Sigla</th>
+                <th>Slug</th>
+                <th>Status</th>
+                <th style="width:260px;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr><td colspan="5" style="color:rgba(236,242,255,.72);">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="msg" id="msgList" style="margin: 12px 14px;"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ✅ API_BASE (mantém seu padrão)
+    const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+
+    // ✅ ENDPOINT BASE DO MASTER (bate com o router atual)
+    // router: /instituicoes
+    // mount: /api/master/instituicoes
+    // final: /api/master/instituicoes/instituicoes
+    const MASTER_BASE = `${API_BASE}/api/master/instituicoes/instituicoes`;
+
+    // UI refs
+    const tbody = document.getElementById('tbody');
+    const msgList = document.getElementById('msgList');
+    const countInfo = document.getElementById('countInfo');
+    const apiInfo = document.getElementById('apiInfo');
+
+    const inputNome = document.getElementById('nome');
+    const inputSigla = document.getElementById('sigla');
+    const inputSlug = document.getElementById('slug');
+    const btnCriar = document.getElementById('btnCriar');
+    const msgCreate = document.getElementById('msgCreate');
+
+    const createdLinks = document.getElementById('createdLinks');
+    const linkLogin = document.getElementById('linkLogin');
+    const linkCadastro = document.getElementById('linkCadastro');
+
+    const q = document.getElementById('q');
+
+    const btnRefresh = document.getElementById('btnRefresh');
+    const btnBuscar = document.getElementById('btnBuscar');
+    const btnSair = document.getElementById('btnSair');
+
+    // helpers
+    function showMsg(el, type, text){
+      el.className = 'msg ' + (type || '');
+      el.textContent = text || '';
+      el.style.display = text ? 'block' : 'none';
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function absUrl(path){
+      const base = location.origin.replace(/\/+$/, '');
+      return base + (String(path || '').startsWith('/') ? path : '/' + path);
+    }
+
+    async function copyFromSelector(sel){
+      const el = document.querySelector(sel);
+      if (!el) return;
+      el.select?.();
+      el.setSelectionRange?.(0, 999999);
+      try{
+        await navigator.clipboard.writeText(el.value);
+        return true;
+      }catch{
+        try{
+          document.execCommand('copy');
+          return true;
+        }catch{
+          return false;
+        }
+      }
+    }
+
+    // copy buttons (delegation)
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-copy]');
+      if (!btn) return;
+      const sel = btn.getAttribute('data-copy');
+      const ok = await copyFromSelector(sel);
+      btn.textContent = ok ? 'Copiado!' : 'Falhou';
+      setTimeout(() => btn.textContent = 'Copiar', 900);
+    });
+
+    // logout
+    btnSair.addEventListener('click', async () => {
+      btnSair.disabled = true;
+      try{
+        await fetch(`${API_BASE}/auth/logout`, { method:'POST', credentials:'include' });
+      }catch{}
+      location.href = '/login.html';
+    });
+
+    // create
+    btnCriar.addEventListener('click', async () => {
+      showMsg(msgCreate, '', '');
+      createdLinks.style.display = 'none';
+
+      const nome = inputNome.value.trim();
+      const sigla = inputSigla.value.trim();
+      const slug = inputSlug.value.trim();
+
+      if (!nome || nome.length < 3) {
+        showMsg(msgCreate, 'err', 'Informe um nome válido (mín. 3 caracteres).');
+        return;
+      }
+
+      btnCriar.disabled = true;
+      btnCriar.innerHTML = '<span class="spinner"></span>Criando…';
+
+      try{
+        const r = await fetch(MASTER_BASE, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify({ nome, sigla, slug })
+        });
+
+        const data = await r.json().catch(()=> ({}));
+
+        if (!r.ok) {
+          showMsg(msgCreate, 'err', data?.mensagem || 'Erro ao criar instituição.');
+          return;
+        }
+
+        showMsg(msgCreate, 'ok', data?.mensagem || 'Instituição criada!');
+
+        const slugFinal = data?.instituicao?.slug || slug;
+        linkLogin.value = absUrl(`/login.html?t=${encodeURIComponent(slugFinal)}`);
+        linkCadastro.value = absUrl(`/cadastro-usuario.html?t=${encodeURIComponent(slugFinal)}`);
+        createdLinks.style.display = 'block';
+
+        // limpa inputs
+        inputNome.value = '';
+        inputSigla.value = '';
+        inputSlug.value = '';
+
+        // atualiza lista
+        await loadList();
+
+      }catch(err){
+        showMsg(msgCreate, 'err', 'Erro de conexão com o servidor.');
+      }finally{
+        btnCriar.disabled = false;
+        btnCriar.textContent = 'Criar instituição';
+      }
+    });
+
+    btnRefresh.addEventListener('click', () => loadList());
+    btnBuscar.addEventListener('click', () => renderFiltered());
+
+    q.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); renderFiltered(); }
+    });
+
+    // state
+    let all = [];
+
+    async function loadList(){
+      showMsg(msgList, '', '');
+      tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Carregando…</td></tr>`;
+      countInfo.textContent = '—';
+      apiInfo.textContent = API_BASE ? 'DEV (API local)' : 'PROD';
+
+      try{
+        const r = await fetch(MASTER_BASE, { credentials:'include' });
+        const data = await r.json().catch(()=> ({}));
+        if (!r.ok) {
+          const msg = data?.mensagem || 'Falha ao listar.';
+          showMsg(msgList, 'err', msg + '\n(Se apareceu 403, é porque você não está logado como SuperAdmin.)');
+          tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
+          return;
+        }
+
+        all = data?.instituicoes || [];
+        countInfo.textContent = `${all.length} instituição(ões)`;
+        renderFiltered();
+
+      }catch(err){
+        showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
+        tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
+      }
+    }
+
+    function renderFiltered(){
+      const term = (q.value || '').trim().toLowerCase();
+      const list = !term ? all : all.filter(i => {
+        const hay = [
+          i?.nome, i?.sigla, i?.slug, i?._id
+        ].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(term);
+      });
+
+      countInfo.textContent = `${list.length} / ${all.length} exibidas`;
+
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Nenhuma instituição encontrada.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(inst => {
+        const id = String(inst?._id || inst?.id || '');
+        const nome = inst?.nome || '—';
+        const sigla = inst?.sigla || '—';
+        const slug = inst?.slug || '—';
+        const ativo = !!inst?.ativo;
+
+        const loginUrl = `/login.html?t=${encodeURIComponent(slug)}`;
+        const cadUrl = `/cadastro-usuario.html?t=${encodeURIComponent(slug)}`;
+
+        return `
+          <tr>
+            <td>${escapeHtml(nome)}</td>
+            <td>${escapeHtml(sigla)}</td>
+            <td class="mono">${escapeHtml(slug)}</td>
+            <td>
+              <span class="badge-active ${ativo ? '' : 'badge-inactive'}">
+                <span class="b"></span>
+                ${ativo ? 'Ativo' : 'Inativo'}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(loginUrl))}', this)">Copiar login</button>
+                <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(cadUrl))}', this)">Copiar cadastro</button>
+                <button class="mini ${ativo ? 'danger' : 'ok'}" onclick="window.__toggleAtivo('${id}', ${ativo ? 'false' : 'true'}, this)">
+                  ${ativo ? 'Desativar' : 'Ativar'}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // global helpers for inline onclick
+    window.__copyText = async (text, btn) => {
+      try{
+        await navigator.clipboard.writeText(String(text));
+        const old = btn.textContent;
+        btn.textContent = 'Copiado!';
+        setTimeout(()=> btn.textContent = old, 900);
+      }catch{
+        const ta = document.createElement('textarea');
+        ta.value = String(text);
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch {}
+        ta.remove();
+        const old = btn.textContent;
+        btn.textContent = 'Copiado!';
+        setTimeout(()=> btn.textContent = old, 900);
+      }
+    };
+
+    window.__toggleAtivo = async (id, ativo, btn) => {
+      const old = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Salvando…';
+
+      try{
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(id)}`, {
+          method:'PATCH',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify({ ativo })
+        });
+
+        const data = await r.json().catch(()=> ({}));
+        if (!r.ok) {
+          showMsg(msgList, 'err', data?.mensagem || 'Erro ao atualizar instituição.');
+          return;
+        }
+
+        showMsg(msgList, 'ok', 'Status atualizado.');
+        const idx = all.findIndex(x => String(x?._id || x?.id) === String(id));
+        if (idx >= 0) all[idx].ativo = !!ativo;
+        renderFiltered();
+
+      }catch(err){
+        showMsg(msgList, 'err', 'Erro de conexão ao atualizar.');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = old;
+        setTimeout(()=> showMsg(msgList, '', ''), 1200);
+      }
+    };
+
+    // init
+    loadList();
+  </script>
+</body>
+</html>

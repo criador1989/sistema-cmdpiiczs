@@ -3,6 +3,20 @@
 const nodemailer = require('nodemailer');
 
 /* =========================
+   FETCH SAFE (Node < 18)
+   ========================= */
+let _fetch = global.fetch;
+if (!_fetch) {
+  try {
+    // eslint-disable-next-line global-require
+    _fetch = require('node-fetch');
+  } catch {
+    // sem fetch e sem node-fetch: APIs HTTP não funcionarão
+    _fetch = null;
+  }
+}
+
+/* =========================
    ENV / CONFIG
    ========================= */
 const MAIL_ENABLED = String(process.env.MAIL_ENABLED || 'false').toLowerCase() === 'true';
@@ -29,6 +43,8 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 const SENDGRID_FROM    = process.env.SENDGRID_FROM || MAIL_FROM_ADDR || '';
 const RESEND_API_KEY   = process.env.RESEND_API_KEY || '';
 const RESEND_FROM      = process.env.RESEND_FROM || 'onboarding@resend.dev';
+
+const NODE_ENV = process.env.NODE_ENV || '';
 
 /* =========================
    ESTADO
@@ -110,6 +126,16 @@ function ensurePlainText(text, html) {
   return fromHtml || '(sem conteúdo)';
 }
 
+function debugLogMail({ to, subject, html }) {
+  if (!MAIL_DEBUG && NODE_ENV !== 'development') return;
+  try {
+    const toList = normalizeToList(to);
+    console.log('[MAIL][DEBUG] to=', toList.join(', '));
+    console.log('[MAIL][DEBUG] subject=', subject || '(sem assunto)');
+    if (html) console.log('[MAIL][DEBUG] html_preview=', String(html).slice(0, 300).replace(/\s+/g, ' ') + '...');
+  } catch {}
+}
+
 /* =========================
    SMTP helpers
    ========================= */
@@ -160,6 +186,7 @@ async function ensureTransport() {
    ========================= */
 async function sendViaSendGrid({ to, subject, html, text }) {
   if (!SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY ausente');
+  if (!_fetch) throw new Error('fetch indisponível (node-fetch não instalado e Node sem fetch)');
 
   const toList = normalizeToList(to);
   if (!toList.length) throw new Error('Destinatário ausente');
@@ -181,7 +208,7 @@ async function sendViaSendGrid({ to, subject, html, text }) {
     ...(MAIL_REPLY_TO ? { reply_to: { email: extractEmail(MAIL_REPLY_TO), name: buildFrom().name } } : {})
   };
 
-  const resp = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  const resp = await _fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
     headers: { Authorization: `Bearer ${SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -201,6 +228,7 @@ async function sendViaSendGrid({ to, subject, html, text }) {
    ========================= */
 async function sendViaResend({ to, subject, html, text }) {
   if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY ausente');
+  if (!_fetch) throw new Error('fetch indisponível (node-fetch não instalado e Node sem fetch)');
 
   const toList = normalizeToList(to);
   if (!toList.length) throw new Error('Destinatário ausente');
@@ -215,7 +243,7 @@ async function sendViaResend({ to, subject, html, text }) {
     ...(MAIL_REPLY_TO ? { reply_to: extractEmail(MAIL_REPLY_TO) } : {})
   };
 
-  const resp = await fetch('https://api.resend.com/emails', {
+  const resp = await _fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -236,6 +264,8 @@ async function sendViaResend({ to, subject, html, text }) {
    ========================= */
 async function sendMail({ to, subject, html, text }) {
   if (!MAIL_ENABLED) throw new Error('MAIL desabilitado (MAIL_ENABLED=false)');
+
+  debugLogMail({ to, subject, html });
 
   const all = normalizeToList(to);
   if (!all.length) throw new Error('Destinatário ausente');
@@ -341,7 +371,6 @@ async function sendMail({ to, subject, html, text }) {
     throw new Error(`Falha ao enviar: ${reason}`);
   }
 
-  // provider “geral” = o último usado com sucesso
   return { ok: true, provider: lastProvider, details };
 }
 
@@ -376,7 +405,6 @@ async function verifyAll() {
     'SMTP-465': null
   };
 
-  // 587
   try {
     const tx587 = await makeTransportWith({ host: MAIL_HOST, port: 587, secure: false });
     results['SMTP-587'] = { ok: true };
@@ -385,7 +413,6 @@ async function verifyAll() {
     results['SMTP-587'] = { ok: false, error: e?.message || String(e) };
   }
 
-  // 465
   try {
     const tx465 = await makeTransportWith({ host: MAIL_HOST, port: 465, secure: true });
     results['SMTP-465'] = { ok: true };
@@ -394,7 +421,6 @@ async function verifyAll() {
     results['SMTP-465'] = { ok: false, error: e?.message || String(e) };
   }
 
-  // HTTP providers
   results['SENDGRID'] = { configured: Boolean(SENDGRID_API_KEY) };
   results['RESEND']   = { configured: Boolean(RESEND_API_KEY) };
 
@@ -407,7 +433,7 @@ async function verifyAll() {
 module.exports = {
   sendMail,
   verify,
-  verifyAll, // ← usado no index.js
+  verifyAll,
   MAIL_ENABLED,
   MAIL_USER,
   MAIL_FROM: (() => {

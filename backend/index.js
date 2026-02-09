@@ -71,7 +71,7 @@ app.use(
       origin: isAllowedOrigin(req.headers.origin),
       credentials: true,
       methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-      allowedHeaders: ['Content-Type','Authorization','x-access-token'],
+      allowedHeaders: ['Content-Type','Authorization','x-access-token','x-tenant','x-tenant-slug'],
       optionsSuccessStatus: 200,
     });
   })
@@ -84,6 +84,63 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+/* =========================
+   ✅ TENANT RESOLVER (ANTES DE TUDO)
+   ========================= */
+function normalizeSlug(s) {
+  return String(s || '').trim().toLowerCase();
+}
+
+function extractSubdomainSlug(host) {
+  const h = String(host || '').toLowerCase().trim();
+  if (!h) return '';
+
+  // remove porta
+  const noPort = h.split(':')[0];
+
+  // ignora localhost / IP
+  if (noPort === 'localhost') return '';
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(noPort)) return '';
+
+  const parts = noPort.split('.').filter(Boolean);
+  if (parts.length < 3) return ''; // precisa ter subdomínio + domínio + tld
+
+  const sub = parts[0];
+  if (sub === 'www') return '';
+  return sub;
+}
+
+try {
+  const { tenantResolver } = require('./middleware/tenant');
+
+  app.use((req, res, next) => {
+    const sub = extractSubdomainSlug(req.headers.host);
+
+    if (!req.query) req.query = {};
+    if (!req.query.t && sub) req.query.t = sub;
+
+    return tenantResolver(req, res, () => {
+      const slug = normalizeSlug(req.tenantSlug);
+
+      if (slug) {
+        res.cookie('tenant', slug, {
+          httpOnly: false,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 24 * 60 * 60 * 1000, // 60 dias
+        });
+      }
+
+      return next();
+    });
+  });
+
+  console.log('🏷️  Tenant resolver ligado (query/header/cookie/subdomínio).');
+} catch (e) {
+  console.warn('⚠️  Tenant resolver não carregado:', e?.message || e);
+}
 
 /* =========================
    MODELS
@@ -193,11 +250,9 @@ const comunicacaoPaisRoutes         = require('./routes/api/comunicacaoPais');
 const comunicacaoAutoRoutes         = require('./routes/api/comunicacao');
 const monitoresApiRoutes            = require('./routes/api/monitores');
 
-// APH
-let aphCrudRoutes = null, aphEstatisticasRoutes = null, aphPdfRoutes = null;
-try { aphCrudRoutes = require('./routes/api/aph'); } catch {}
-try { aphEstatisticasRoutes = require('./routes/api/aph-estatisticas'); } catch {}
-try { aphPdfRoutes = require('./routes/api/aph-pdf'); } catch {}
+// ✅ MASTER (SuperAdmin)
+let masterInstituicoesRoutes = null;
+try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
 
 /* =========================
    AUTH
@@ -205,7 +260,227 @@ try { aphPdfRoutes = require('./routes/api/aph-pdf'); } catch {}
 const authRoutes = require('./routes/authRoutes');
 app.use('/auth', authRoutes);
 
+/* ==========================================================
+   ✅ FALLBACK: /auth/confirmar-email (se authRoutes não tiver)
+   - Resolve seu caso atual: link do e-mail cai aqui,
+     confirma no Mongo e redireciona para /login.html
+   - Não interfere se você criar a rota dentro do authRoutes.
+   ========================================================== */
+app.get('/auth/confirmar-email', async (req, res, next) => {
+  try {
+    const token = String(req.query.token || '').trim();
+    if (!token) return res.status(400).send('Token ausente.');
+
+    // Se a rota existir no authRoutes e ele FINALIZAR resposta, esse fallback nem roda.
+    // Se authRoutes não tratar, cai aqui.
+
+    const Usuario = mongoose.models.Usuario || mongoose.model('Usuario');
+
+    // Tentativa "flexível": suporta diferentes nomes de campo de token
+    const tokenFields = [
+      'emailConfirmToken',
+      'emailConfirmacaoToken',
+      'confirmEmailToken',
+      'tokenConfirmacaoEmail',
+      'tokenConfirmacao',
+      'confirmacaoEmailToken',
+      'emailToken',
+      'token'
+    ];
+
+    const or = tokenFields.map(f => ({ [f]: token }));
+
+    let usuario = await Usuario.findOne({ $or: or }).catch(() => null);
+
+    // Alguns sistemas usam token dentro de subobjeto (ex: emailConfirm.token)
+    if (!usuario) {
+      usuario = await Usuario.findOne({
+        $or: [
+          { 'emailConfirm.token': token },
+          { 'confirmacaoEmail.token': token },
+          { 'email.confirm.token': token }
+        ]
+      }).catch(() => null);
+    }
+
+    if (!usuario) {
+      return res.status(400).send('Token inválido ou usuário não encontrado.');
+    }
+
+    // Se houver campos de expiração, tenta respeitar
+    const now = new Date();
+    const expCandidates = [
+      usuario.emailConfirmExpires,
+      usuario.emailConfirmacaoExpires,
+      usuario.confirmEmailExpires,
+      usuario.tokenExpires,
+      usuario.expiraEm,
+      usuario['emailConfirm']?.expires,
+      usuario['confirmacaoEmail']?.expires
+    ].filter(Boolean);
+
+    if (expCandidates.length) {
+      const exp = expCandidates.find(d => d instanceof Date) || null;
+      if (exp && exp <= now) {
+        return res.status(400).send('Token expirado. Solicite um novo cadastro/confirmação.');
+      }
+    }
+
+    // Marca como confirmado (suporta variações)
+    if ('emailConfirmado' in usuario) usuario.emailConfirmado = true;
+    if ('emailVerificado' in usuario) usuario.emailVerificado = true;
+    if ('confirmado' in usuario) usuario.confirmado = true;
+
+    if ('status' in usuario) usuario.status = 'ATIVO';
+    if ('ativo' in usuario) usuario.ativo = true;
+
+    if ('confirmadoEm' in usuario) usuario.confirmadoEm = now;
+    if ('emailConfirmadoEm' in usuario) usuario.emailConfirmadoEm = now;
+
+    // Limpa tokens conhecidos
+    tokenFields.forEach(f => { if (f in usuario) usuario[f] = undefined; });
+    if (usuario.emailConfirm) {
+      if ('token' in usuario.emailConfirm) usuario.emailConfirm.token = undefined;
+      if ('expires' in usuario.emailConfirm) usuario.emailConfirm.expires = undefined;
+    }
+    if (usuario.confirmacaoEmail) {
+      if ('token' in usuario.confirmacaoEmail) usuario.confirmacaoEmail.token = undefined;
+      if ('expires' in usuario.confirmacaoEmail) usuario.confirmacaoEmail.expires = undefined;
+    }
+
+    await usuario.save();
+
+    // Redireciona para o login do próprio host (ou frontend separado)
+    const front = (process.env.FRONTEND_URL || process.env.CLIENT_URL || '').trim();
+    const target = front
+      ? `${front.replace(/\/+$/, '')}/login.html?confirmado=1`
+      : `/login.html?confirmado=1`;
+
+    return res.redirect(target);
+  } catch (err) {
+    // Se algo estourar aqui, não derrube o fluxo geral
+    console.error('Erro fallback /auth/confirmar-email:', err);
+    return res.status(500).send('Erro interno ao confirmar e-mail.');
+  }
+});
+
 const { autenticar } = require('./middleware/autenticacao');
+const exigirSuperAdmin = require('./middleware/exigirSuperAdmin'); // ✅ NOVO
+
+// APH
+let aphCrudRoutes = null, aphEstatisticasRoutes = null, aphPdfRoutes = null;
+try { aphCrudRoutes = require('./routes/api/aph'); } catch {}
+try { aphEstatisticasRoutes = require('./routes/api/aph-estatisticas'); } catch {}
+try { aphPdfRoutes = require('./routes/api/aph-pdf'); } catch {}
+
+/* =========================
+   HELPERS DE PERFIL
+   ========================= */
+function getRole(req) {
+  const u = req.usuario || {};
+  const raw = String(u.tipo ?? u.perfil ?? u.role ?? u.cargo ?? u.funcao ?? '').toLowerCase();
+  return raw.trim().replace(/\s+/g, ' ');
+}
+
+function send403(res, publicRoot) {
+  const p403 = path.join(publicRoot, '403.html');
+  if (fs.existsSync(p403)) return res.status(403).sendFile(p403);
+  return res.status(403).send('403 - Acesso negado');
+}
+
+/* =========================
+   ✅ BLOQUEIO REAL POR URL (ANTES DO express.static)
+   ========================= */
+function buildProfessorGuard(publicRoot) {
+  const blockedExact = new Set([
+    '/notificacoes.html',
+    '/ver-notificacoes.html',
+    '/usuarios.html',
+    '/estatisticas.html',
+    '/logs.html',
+    '/controle-notificacoes.html',
+    '/cadastro-aluno.html',
+    '/transferir-turma.html',
+    '/monitores.html',
+    '/monitor-ficha.html'
+  ]);
+
+  const blockedPrefixes = [
+    '/notificacoes',
+    '/ver-notificacoes',
+    '/usuarios',
+    '/estatisticas',
+    '/logs',
+    '/controle-notificacoes',
+    '/cadastro-aluno',
+    '/transferir-turma',
+    '/monitores',
+
+    // APIs sensíveis
+    '/api/usuarios',
+    '/api/logs',
+    '/api/estatisticas',
+    '/api/controle-notificacoes',
+  ];
+
+  const alwaysPublic = new Set([
+    '/login.html',
+    '/cadastro-usuario.html',
+    '/bem-vindo.html',
+    '/manifest.json',
+    '/service-worker.js',
+    '/icons/icon-192x192.png',
+    '/icons/icon-512x512.png',
+    '/favicon.ico',
+    '/__version',
+    '/healthz',
+    '/public/tenant',
+
+    // ✅ libera pastas comuns de estáticos
+    '/assets',
+    '/assets/',
+    '/icons',
+    '/icons/',
+    '/img',
+    '/img/',
+    '/uploads',
+    '/uploads/'
+  ]);
+
+  return function professorGuard(req, res, next) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const p = req.path;
+
+    // ✅ libera arquivos estáticos SEM autenticar
+    if (
+      p.startsWith('/assets/') ||
+      p.startsWith('/icons/')  ||
+      p.startsWith('/img/')    ||
+      p.startsWith('/uploads/')
+    ) return next();
+
+    if (alwaysPublic.has(p)) return next();
+
+    const looksLikeHtml = p.endsWith('.html');
+    const prefixHit = blockedPrefixes.some(pref => p === pref || p.startsWith(pref + '/'));
+    const shouldCheck = looksLikeHtml || prefixHit;
+    if (!shouldCheck) return next();
+
+    autenticar(req, res, () => {
+      const role = getRole(req);
+
+      const isAdmin     = role.includes('admin');
+      const isMonitor   = role.includes('monitor');
+      const isProfessor = role.includes('prof') && !isAdmin && !isMonitor;
+
+      if (isProfessor) {
+        if (blockedExact.has(p) || prefixHit) return send403(res, publicRoot);
+      }
+
+      return next();
+    });
+  };
+}
 
 /* =========================
    ENDPOINTS p/ PAINEL (whoami)
@@ -233,9 +508,11 @@ app.get('/api/usuario-logado', autenticar, (req, res) => {
 
 app.get('/api/debug/whoami-raw', (req, res) => {
   res.json({
+    tenant: req.tenantSlug || null,
     cookies: req.cookies || {},
     authHeader: req.headers['authorization'] || null,
     origin: req.headers.origin || null,
+    host: req.headers.host || null,
   });
 });
 
@@ -332,16 +609,22 @@ mountIf('/api/aph', aphEstatisticasRoutes);
 mountIf('/api/aph', aphPdfRoutes);
 
 /* =========================
+   ✅ MASTER INSTITUIÇÕES (SuperAdmin)
+   ========================= */
+mountIf('/api/master/instituicoes', masterInstituicoesRoutes, autenticar, exigirSuperAdmin);
+
+/* =========================
    ESTÁTICOS / HTML
    ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 const imgRoot    = path.join(__dirname, 'img');
+const assetsRoot = path.join(__dirname, 'assets');
 
-// garantir pastas
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
 fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
 fs.mkdirSync(imgRoot, { recursive: true });
+fs.mkdirSync(assetsRoot, { recursive: true });
 
 app.use('/uploads', express.static(uploadRoot));
 app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), {
@@ -349,12 +632,24 @@ app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), {
   immutable: true
 }));
 
-// 🔥 onde ficará o papel de parede: backend/img/bg-painel-smart.png
 app.use('/img', express.static(imgRoot, {
   maxAge: '30d',
   immutable: true
 }));
 
+app.use('/assets', express.static(assetsRoot, {
+  maxAge: '30d',
+  immutable: true
+}));
+
+/* =========================
+   ✅ GUARD ANTES DO STATIC
+   ========================= */
+app.use(buildProfessorGuard(publicRoot));
+
+/* =========================
+   STATIC (HTML)
+   ========================= */
 app.use(express.static(publicRoot, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
@@ -369,12 +664,71 @@ app.get('/service-worker.js', (_req, res) => {
 app.get('/', (_req, res) => res.redirect('/login.html'));
 
 /* =========================
+   ✅ PUBLIC TENANT
+   ========================= */
+function slugToNameRegex(slug) {
+  const safe = String(slug || '').replace(/[^a-z0-9]+/gi, ' ').trim();
+  if (!safe) return null;
+  const parts = safe
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(parts.join('\\s*'), 'i');
+}
+
+app.get('/public/tenant', async (req, res) => {
+  try {
+    const InstituicaoModel = mongoose.models.Instituicao || mongoose.model('Instituicao');
+
+    const slug = normalizeSlug(req.tenantSlug);
+
+    let inst = null;
+
+    if (slug) {
+      inst =
+        (await InstituicaoModel.findOne({ slug, ativo: true }).select('nome sigla slug ativo').lean().catch(() => null)) ||
+        (await InstituicaoModel.findOne({ slug }).select('nome sigla slug ativo').lean().catch(() => null));
+
+      if (!inst) {
+        const rx = slugToNameRegex(slug);
+        if (rx) {
+          inst =
+            (await InstituicaoModel.findOne({ nome: rx, ativo: true }).select('nome sigla ativo').lean().catch(() => null)) ||
+            (await InstituicaoModel.findOne({ nome: rx }).select('nome sigla ativo').lean().catch(() => null));
+        }
+      }
+    }
+
+    if (!inst) {
+      inst =
+        (await InstituicaoModel.findOne({ ativo: true }).select('nome sigla slug ativo').lean().catch(() => null)) ||
+        (await InstituicaoModel.findOne({}).select('nome sigla slug ativo').lean().catch(() => null));
+    }
+
+    const nome = inst?.nome || process.env.NOME_COLEGIO || 'SmartClass';
+    const sigla = inst?.sigla || null;
+
+    return res.json({
+      nomeColegio: nome,
+      sigla,
+      tenant: slug || inst?.slug || null,
+    });
+  } catch (e) {
+    return res.json({
+      nomeColegio: process.env.NOME_COLEGIO || 'SmartClass',
+      sigla: null,
+      tenant: normalizeSlug(req.tenantSlug) || null,
+    });
+  }
+});
+
+/* =========================
    AUTH / HTML PROTEGIDOS
    ========================= */
 function exigirAdmin(req, res, next) {
   const u = req.usuario || {};
   const role = String(u.perfil || u.role || u.tipo || '').toLowerCase();
-  if (!role.includes('admin')) return res.status(403).sendFile(path.join(publicRoot, '403.html'));
+  if (!role.includes('admin')) return send403(res, publicRoot);
   next();
 }
 
