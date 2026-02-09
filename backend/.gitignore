@@ -1,4 +1,6 @@
-# Logs
+# ======================================================
+# 📝 LOGS
+# ======================================================
 logs
 *.log
 npm-debug.log*
@@ -7,28 +9,60 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Diretórios
-node_modules
-dist
-dist-ssr
+# ======================================================
+# 📦 DEPENDÊNCIAS / BUILD
+# ======================================================
+node_modules/
+dist/
+dist-ssr/
+build/
 *.local
 
-# Ambiente
+# ======================================================
+# 🔐 ARQUIVOS DE AMBIENTE (NUNCA VERSIONAR)
+# ======================================================
 .env
+.env.*
+backend/.env
 
-# Editor (VSCode, etc)
+# ======================================================
+# 🗂️ UPLOADS / ARQUIVOS GERADOS PELO SISTEMA
+# ======================================================
+uploads/
+backend/uploads/
+public/uploads/
+backend/public/uploads/
+
+# PDFs gerados dinamicamente (notificações, relatórios, etc)
+backend/public/pdfs/
+public/pdfs/
+
+# Mantém apenas a pasta no Git (se existir .gitkeep)
+!public/uploads/.gitkeep
+!backend/public/uploads/.gitkeep
+
+# ======================================================
+# 🧠 CACHE / TEMP
+# ======================================================
+.cache/
+tmp/
+temp/
+
+# ======================================================
+# 💻 EDITORES / SISTEMA
+# ======================================================
 .vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-/uploads/
-
-/public/uploads/
-
-!public/uploads/.gitkeep
+# ======================================================
+# ☁️ RENDER / DEPLOY
+# ======================================================
+.render
