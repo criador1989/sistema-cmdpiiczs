@@ -24,10 +24,9 @@ const notificacaoSchema = new mongoose.Schema({
   motivo:     { type: String, required: true }, // ato de indisciplina OU descrição do elogio
   tipoMedida: { type: String, required: true }, // ex.: 'A.I.A' | 'A.E.C.D.E' | 'Elogio'
 
-  // valor usado no cálculo (negativo p/ medidas, positivo p/ elogios)
+  // valor usado no cálculo
   valorNumerico: { type: Number, required: true },
 
-  // para medidas com dias (A.E.C.D.E, A.I.A). Em elogio fica null.
   quantidadeDias: { type: Number, default: 1 },
 
   observacao: { type: String },
@@ -42,7 +41,6 @@ const notificacaoSchema = new mongoose.Schema({
   inciso: { type: String },
   classificacaoRegulamento: { type: String },
 
-  // exclusivo por instituicao + numeroSequencial (não global)
   numeroSequencial: { type: String, required: true },
 
   // ✅ ObjectId (ref Instituicao)
@@ -56,7 +54,9 @@ const notificacaoSchema = new mongoose.Schema({
   // fluxo de aprovação
   status: {
     type: String,
-    enum: ['pendente', 'deferido', 'revisao_solicitada', 'arquivado'],
+    // ✅ compatível com routes: pendente/deferido/indeferido
+    // ✅ mantém legados: revisao_solicitada/arquivado
+    enum: ['pendente', 'deferido', 'indeferido', 'revisao_solicitada', 'arquivado'],
     default: 'pendente',
     index: true,
   },
@@ -64,12 +64,11 @@ const notificacaoSchema = new mongoose.Schema({
   comentarioMonitor: { type: String },
   comentarioRevisao: { type: String },
 
-  // ✅ pontos para o disparo automático quando deferir
   deferidoEm: { type: Date, default: null },
-  mensagemEnviada: { type: Boolean, default: false, index: true }, // evita disparo duplicado
+  mensagemEnviada: { type: Boolean, default: false, index: true },
   mensagemEnviadaEm: { type: Date, default: null },
 
-  // DEVOLUÇÃO (fluxo físico)
+  // DEVOLUÇÃO
   entregue: { type: Boolean, default: false, index: true },
   entregueEm: { type: Date, default: null },
   prazoDevolucao: { type: Date, default: null, index: true },
@@ -84,9 +83,9 @@ const notificacaoSchema = new mongoose.Schema({
     default: null,
   },
 
-  // ✅ Campos usados pelos filtros do painel
+  // filtros do painel
   lida:      { type: Boolean, default: false, index: true },
-  arquivada: { type: Boolean, default: false, index: true }, // ↔ não confundir com status:'arquivado'
+  arquivada: { type: Boolean, default: false, index: true },
   ativo:     { type: Boolean, default: true, index: true },
 
 }, {
@@ -94,31 +93,22 @@ const notificacaoSchema = new mongoose.Schema({
 });
 
 // ==================== ÍNDICES ====================
-
-// históricos por aluno/data
 notificacaoSchema.index({ aluno: 1, data: 1 });
 notificacaoSchema.index({ instituicao: 1, aluno: 1, natureza: 1 });
 notificacaoSchema.index({ instituicao: 1, aluno: 1, data: 1, createdAt: 1 });
-
-// 🔹 índice extra usado nas ordenações da ficha (por aluno, data, createdAt)
 notificacaoSchema.index({ aluno: 1, data: 1, createdAt: 1 });
 
-// listas/paginação no controle
 notificacaoSchema.index({ instituicao: 1, ativo: 1, arquivada: 1, lida: 1, createdAt: -1 });
 notificacaoSchema.index({ instituicao: 1, status: 1, createdAt: -1 });
 notificacaoSchema.index({ instituicao: 1, createdAt: -1 });
 
-// busca por número (único por instituição)
+// único por instituição
 notificacaoSchema.index({ instituicao: 1, numeroSequencial: 1 }, { unique: true });
 
-// filtros de pendência de devolução (usados no painel)
 notificacaoSchema.index({ instituicao: 1, status: 1, entregue: 1, devolvidoPeloAluno: 1, prazoDevolucao: 1 });
-
-// suporte a monitoramento de deferimentos ainda não comunicados
 notificacaoSchema.index({ instituicao: 1, status: 1, mensagemEnviada: 1, deferidoEm: -1 });
 
 // ==================== REGRAS (anti dupla multiplicação) ====================
-
 const MAPA_NEGATIVOS = {
   'Advertência Escrita': -0.30,
   'Repreensão':          -0.50,

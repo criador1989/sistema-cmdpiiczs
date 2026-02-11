@@ -1,4 +1,3 @@
-// backend/routes/api/notificacoes.js
 'use strict';
 
 const express = require('express');
@@ -11,13 +10,60 @@ const Counter = require('../../models/Counter'); // pode ficar aqui, mesmo sem u
 
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const enviarWhatsapp = require('../../utils/twilio');
-const { autenticar } = require('../../middleware/autenticacao');
+const { autenticar, apenasMonitorOuAdmin } = require('../../middleware/autenticacao');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 const { addBusinessDays } = require('../../utils/businessDays');
 const { logAction, attachActor } = require('../../utils/audit');
 
 // 🚀 Serviços de mensageria (telegram + NP)
 const { enviarTelegram, enviarNPEncaminhamento } = require('../../services/mensageria');
+
+// ✅ trava tudo: só monitor/admin entra
+router.use(autenticar, apenasMonitorOuAdmin);
+
+/* =========================================================
+   ✅ TENANT/INSTITUIÇÃO HELPERS (multi-tenant seguro)
+   =========================================================
+   Por padrão: NÃO aceita docs sem instituicao.
+   Se precisar "legado": ALLOW_LEGACY_NO_TENANT=1
+   ========================================================= */
+
+const ALLOW_LEGACY_NO_TENANT = String(process.env.ALLOW_LEGACY_NO_TENANT || '').trim() === '1';
+
+function buildInstMatch(inst) {
+  const ors = [];
+  if (inst) {
+    const asStr = String(inst);
+    ors.push({ instituicao: asStr });
+    if (mongoose.isValidObjectId(inst)) {
+      ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+    }
+  }
+
+  if (ALLOW_LEGACY_NO_TENANT) {
+    ors.unshift({ instituicao: { $exists: false } }, { instituicao: null });
+  }
+
+  if (!ors.length) return { _id: { $exists: false } };
+  return { $or: ors };
+}
+
+function buildAlunoMatch(inst) {
+  const ors = [];
+  if (inst) {
+    ors.push({ instituicao: String(inst) });
+    if (mongoose.isValidObjectId(inst)) {
+      ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+    }
+  }
+
+  if (ALLOW_LEGACY_NO_TENANT) {
+    ors.unshift({ instituicao: { $exists: false } }, { instituicao: null });
+  }
+
+  if (!ors.length) return { _id: { $exists: false } };
+  return { $or: ors };
+}
 
 /* =========================================================
    ===== NOVOS HELPERS: Mensageria / E-mail Deferido =======
@@ -27,7 +73,6 @@ function getMensageria(req) {
   return req.app?.locals?.mensageria || global.mensageria || null;
 }
 
-/** Reaproveita sua coleta de chatIds já existente (para telegram) */
 function getChatIdsFromAlunoDoc(alunoDoc) {
   if (!alunoDoc) return [];
   if (typeof alunoDoc.getAllChatIds === 'function') {
@@ -45,7 +90,6 @@ function getChatIdsFromAlunoDoc(alunoDoc) {
   return Array.from(set);
 }
 
-/** pt-BR data/hora helpers (reutilizados abaixo) */
 function formatDataBr(dt) {
   if (!dt) return '';
   const d = new Date(dt);
@@ -59,10 +103,9 @@ function formatDataHoraBr(dt) {
   const d = new Date(dt);
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${formatDataBr(d)} ${hh}:${mi}`; // usa formatDataBr
+  return `${formatDataBr(d)} ${hh}:${mi}`;
 }
 
-/** Monta assunto/corpo do comunicado de DEFERIMENTO */
 function montarEmailDeferido({ aluno, notif }) {
   const nome = aluno?.nome || 'Aluno(a)';
   const turma = aluno?.turma || '—';
@@ -109,23 +152,24 @@ function montarEmailDeferido({ aluno, notif }) {
   return { subject: assunto, text, html };
 }
 
-/**
- * Dispara aviso de DEFERIDO (e-mail + telegram) de forma idempotente
- */
 async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
+  const inst = req.usuario?.instituicao;
+  const instMatch = buildInstMatch(inst);
+
   const mensageria = getMensageria(req);
-  const notif = await Notificacao.findById(notifId).lean();
+
+  const notif = await Notificacao.findOne({ _id: notifId, ...instMatch }).lean();
   if (!notif) return { skipped: true, reason: 'notificação não encontrada' };
   if (notif.status !== 'deferido') return { skipped: true, reason: 'status não é deferido' };
   if (notif.mensagemEnviada) return { skipped: true, reason: 'mensagem já enviada' };
 
-  const aluno = await Aluno.findById(notif.aluno).lean();
+  const aluno = await Aluno.findOne({ _id: notif.aluno, ...buildAlunoMatch(inst) }).lean();
   const { subject, text, html } = montarEmailDeferido({ aluno, notif });
 
   if (mensageria && typeof mensageria.enfileirarParaResponsaveis === 'function') {
     try {
       await mensageria.enfileirarParaResponsaveis({
-        alunoId: aluno._id,
+        alunoId: aluno?._id || notif.aluno,
         instituicao: notif.instituicao,
         preferenciaCanais: ['email', 'telegram'],
         titulo: subject,
@@ -135,6 +179,7 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
       });
     } catch (e) {
       console.warn('[deferido] falha no enfileirarParaResponsaveis:', e?.message || e);
+
       const chatIds = getChatIdsFromAlunoDoc(aluno);
       if (chatIds.length) {
         const msgTG = [
@@ -146,6 +191,7 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
           `Nº: ${notif?.numeroSequencial || '—'}`,
           `Data: ${notif?.data ? formatDataBr(notif.data) : formatDataBr(new Date())}`
         ].join('\n');
+
         for (const cid of chatIds) {
           try {
             await enviarTelegram(
@@ -160,19 +206,19 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
     }
   }
 
-  await Notificacao.findByIdAndUpdate(notifId, {
-    $set: {
-      mensagemEnviada: true,
-      mensagemEnviadaEm: new Date(),
-      deferidoEm: notif.deferidoEm || new Date()
+  await Notificacao.updateOne(
+    { _id: notifId, ...instMatch },
+    {
+      $set: {
+        mensagemEnviada: true,
+        mensagemEnviadaEm: new Date(),
+        deferidoEm: notif.deferidoEm || new Date()
+      }
     }
-  });
+  );
+
   return { ok: true };
 }
-
-/* =========================================================
-   ========  RESTO DO ARQUIVO (o que você já tinha)  =======
-   ========================================================= */
 
 // ------------------ Mapas de valores ------------------
 const MAPA_NEGATIVOS = {
@@ -193,27 +239,6 @@ const PRECISA_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
 const NP_AGENDAMENTO_URL = process.env.NP_AGENDAMENTO_URL || '';
 const CONTATO_ESCOLA = process.env.CONTATO_ESCOLA || '';
 
-// ------------------ Helpers já existentes ------------------
-function buildInstMatch(inst) {
-  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
-  if (!inst) return { $or: ors };
-  const asStr = String(inst);
-  ors.push({ instituicao: asStr });
-  if (mongoose.isValidObjectId(inst)) {
-    ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
-  }
-  return { $or: ors };
-}
-function buildAlunoMatch(inst) {
-  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
-  if (inst) {
-    ors.push({ instituicao: String(inst) });
-    if (mongoose.isValidObjectId(inst)) {
-      ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
-    }
-  }
-  return { $or: ors };
-}
 function parseDateOnlyLocal(yyyy_mm_dd) {
   if (!yyyy_mm_dd) return new Date();
   const [y, m, d] = String(yyyy_mm_dd).split('-').map(Number);
@@ -233,6 +258,7 @@ function estaFaixaRegular(nota) {
   const n = Number(nota);
   return isFinite(n) && n >= 5.0 && n <= 6.99;
 }
+
 async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   const instMatch = buildInstMatch(instituicao);
   const aluno = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) });
@@ -247,6 +273,7 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
   await aluno.save();
   return aluno;
 }
+
 async function getAlunoInfo(alunoId, instituicao) {
   if (!alunoId) return { alunoNome: '—', alunoTurma: '—' };
   const a = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) })
@@ -254,6 +281,7 @@ async function getAlunoInfo(alunoId, instituicao) {
     .lean();
   return { alunoNome: a?.nome || '—', alunoTurma: a?.turma || '—' };
 }
+
 async function verificarEnvioNP(alunoDoc, instituicao) {
   if (!alunoDoc) return;
   const nota = Number(alunoDoc.comportamento);
@@ -264,6 +292,7 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
     typeof alunoDoc.alertas?.npRegularUltimaNota === 'number'
       ? alunoDoc.alertas.npRegularUltimaNota
       : null;
+
   const precisaEnviar =
     !jaEnviadoEm || ultimaNota === null || Math.abs(Number(ultimaNota) - nota) >= 0.01;
 
@@ -288,19 +317,15 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
   }
 }
 
-/* ========= NOVO: gerador simples de numeroSequencial por ano ========= */
+/* ========= ✅ Sequencial por ANO e por INSTITUIÇÃO ========= */
+async function getMaxSequenceForYear(ano, instituicao) {
+  const instMatch = buildInstMatch(instituicao);
 
-/**
- * Busca o maior número de sequência (parte antes da barra) já usado para o ano informado,
- * olhando QUALQUER notificação cujo numeroSequencial termina com "/ANO".
- */
-async function getMaxSequenceForYear(ano) {
   const result = await Notificacao.aggregate([
     {
       $match: {
-        numeroSequencial: {
-          $regex: `/${ano}$`
-        }
+        ...instMatch,
+        numeroSequencial: { $regex: `/${ano}$` }
       }
     },
     {
@@ -326,19 +351,12 @@ async function getMaxSequenceForYear(ano) {
   return result && result.length ? result[0].maxSeq || 0 : 0;
 }
 
-/**
- * Gera o próximo numeroSequencial APENAS com base no que já existe na coleção Notificacao.
- * Não usa mais a coleção Counter para isso, evitando desencontros.
- */
-async function getNextNumeroSequencialAtomic(_instituicao, dataRef = new Date()) {
-  const ano =
-    dataRef instanceof Date ? dataRef.getFullYear() : new Date().getFullYear();
-
-  // pega o maior número já usado no formato XXXX/ANO
-  const maxSeq = await getMaxSequenceForYear(ano);
+async function getNextNumeroSequencialAtomic(instituicao, dataRef = new Date()) {
+  const ano = dataRef instanceof Date ? dataRef.getFullYear() : new Date().getFullYear();
+  const maxSeq = await getMaxSequenceForYear(ano, instituicao);
   const nextSeq = (maxSeq || 0) + 1;
 
-  const pad = 4; // 0001/2025 etc.
+  const pad = 4;
   return {
     ano,
     seq: nextSeq,
@@ -346,7 +364,6 @@ async function getNextNumeroSequencialAtomic(_instituicao, dataRef = new Date())
   };
 }
 
-/* ========= NOVO HELPER: recalcular campos nota da própria notificação ========= */
 async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
   try {
     const alunoDoc = await Aluno.findOne({
@@ -364,7 +381,6 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
     const endOntem = new Date(dayStart.getTime() - 1);
     const instMatch = buildInstMatch(instituicao);
 
-    // Notas antes de hoje (para notaAnterior)
     const notificacoesAntes = await Notificacao.find({
       aluno: notif.aluno,
       ...instMatch,
@@ -375,7 +391,6 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
 
     const notaAnterior = calcularNotaTSMD(alunoDoc.dataEntrada, endOntem, notificacoesAntes);
 
-    // Notas até o fim do dia (para notaAtual / nota no dia)
     const notificacoesAteDia = await Notificacao.find({
       aluno: notif.aluno,
       ...instMatch,
@@ -393,7 +408,6 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
         tipoMedida: n.tipoMedida,
         natureza: n.natureza
       })),
-      // garante inclusão dos valores atuais desta própria notificação
       {
         data: dt,
         createdAt: notif.createdAt || dt,
@@ -406,33 +420,31 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
 
     const notaNoDia = calcularNotaTSMD(alunoDoc.dataEntrada, dayEnd, listaDia);
 
-    await Notificacao.findByIdAndUpdate(notif._id, {
-      $set: {
-        notaAnterior: Number(notaAnterior.toFixed?.(2) ?? notaAnterior),
-        notaAtual: Number(notaNoDia.toFixed?.(2) ?? notaNoDia)
+    await Notificacao.updateOne(
+      { _id: notif._id, ...instMatch },
+      {
+        $set: {
+          notaAnterior: Number(notaAnterior.toFixed?.(2) ?? notaAnterior),
+          notaAtual: Number(notaNoDia.toFixed?.(2) ?? notaNoDia)
+        }
       }
-    });
+    );
   } catch (e) {
     console.warn('[recomputarCamposNotaDaNotificacao] falha:', e?.message || e);
   }
 }
 
-/* ========= Helper local: valida ObjectId para rotas /:id ========= */
 function isObjectId(v) {
   return /^[0-9a-fA-F]{24}$/.test(String(v));
 }
 
-/* ================= ROTAS (ORDEM IMPORTA!) ================= */
+/* ================= ROTAS ================= */
 
-/* ---------------- ROTAS ESTÁTICAS / COLEÇÕES --------------- */
-
-// GET "/novas" (placeholder)
-router.get('/novas', autenticar, attachActor, async (_req, res) => {
+router.get('/novas', attachActor, async (_req, res) => {
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
-// GET "/pendencias/devolucao/contador"
-router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req, res) => {
+router.get('/pendencias/devolucao/contador', attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const agora = new Date();
@@ -450,7 +462,6 @@ router.get('/pendencias/devolucao/contador', autenticar, attachActor, async (req
   }
 });
 
-/* ——— Handler compartilhado para pendências de devolução ——— */
 async function handlerPendenciasDevolucao(req, res) {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
@@ -467,9 +478,7 @@ async function handlerPendenciasDevolucao(req, res) {
     })
       .sort({ prazoDevolucao: 1 })
       .limit(limit)
-      .select(
-        'aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data'
-      )
+      .select('aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data')
       .populate({ path: 'aluno', select: 'nome turma instituicao', match: alunoMatch })
       .lean();
 
@@ -481,14 +490,10 @@ async function handlerPendenciasDevolucao(req, res) {
   }
 }
 
-// GET "/pendencias/devolucao" (rota original)
-router.get('/pendencias/devolucao', autenticar, attachActor, handlerPendenciasDevolucao);
+router.get('/pendencias/devolucao', attachActor, handlerPendenciasDevolucao);
+router.get('/pendentes-devolucao', attachActor, handlerPendenciasDevolucao);
 
-// ✅ Alias chamado pelo painel antigo: "/pendentes-devolucao"
-router.get('/pendentes-devolucao', autenticar, attachActor, handlerPendenciasDevolucao);
-
-// ✅ Alias para listagem de pendentes (usado no painel em alguns pontos)
-router.get('/pendentes', autenticar, attachActor, async (req, res) => {
+router.get('/pendentes', attachActor, async (req, res) => {
   try {
     const instMatch = buildInstMatch(req.usuario.instituicao);
     const alunoMatch = buildAlunoMatch(req.usuario.instituicao);
@@ -512,8 +517,7 @@ router.get('/pendentes', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// GET "/" (lista paginada)
-router.get('/', autenticar, attachActor, async (req, res) => {
+router.get('/', attachActor, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.max(parseInt(req.query.limit || '10', 10), 1);
@@ -528,6 +532,7 @@ router.get('/', autenticar, attachActor, async (req, res) => {
 
     if (q || turma) {
       const alunoFiltro = buildAlunoMatch(req.usuario.instituicao);
+
       if (q) {
         alunoFiltro.nome = {
           $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
@@ -567,9 +572,7 @@ router.get('/', autenticar, attachActor, async (req, res) => {
       const precisaDias = PRECISA_DIAS.has(n.tipoMedida);
       const dias = precisaDias ? Math.max(1, parseInt(n.quantidadeDias || 1, 10)) : 1;
       const valorTotal = Number(n.valorNumerico || 0);
-      const valorUnitario = precisaDias
-        ? Number((valorTotal / dias).toFixed(2))
-        : valorTotal;
+      const valorUnitario = precisaDias ? Number((valorTotal / dias).toFixed(2)) : valorTotal;
       return { ...n, valorTotal, valorUnitario };
     });
 
@@ -580,13 +583,10 @@ router.get('/', autenticar, attachActor, async (req, res) => {
   }
 });
 
-/* -------------------- POST "/" (CRIAR) — GERADOR SIMPLES DE NÚMERO -------------------- */
-router.post('/', autenticar, attachActor, async (req, res) => {
+router.post('/', attachActor, async (req, res) => {
   try {
     const inst = req.usuario?.instituicao;
-    if (!inst) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
 
     const {
       aluno,
@@ -610,22 +610,14 @@ router.post('/', autenticar, attachActor, async (req, res) => {
       return res.status(400).json({ message: 'Aluno inválido/ausente.' });
     }
 
-    // Confirma aluno pertence à instituição
-    const alunoDoc = await Aluno.findOne({
-      _id: aluno,
-      ...buildAlunoMatch(inst)
-    })
+    const alunoDoc = await Aluno.findOne({ _id: aluno, ...buildAlunoMatch(inst) })
       .select('nome turma instituicao')
       .lean();
-    if (!alunoDoc) {
-      return res
-        .status(404)
-        .json({ message: 'Aluno não encontrado nesta instituição.' });
-    }
+    if (!alunoDoc) return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' });
 
-    // Normaliza natureza/medida/valor
     const ehElogio = natureza === 'elogio';
     let tituloMedida = ehElogio ? 'Elogio' : (tipoMedida || tipo || '').trim();
+
     let dias = 1;
     if (!ehElogio && PRECISA_DIAS.has(tituloMedida)) {
       const d = parseInt(quantidadeDias, 10);
@@ -635,24 +627,14 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     let valor = 0;
     if (ehElogio) {
       const m = MAPA_ELOGIOS[tipoElogio] ?? undefined;
-      valor =
-        typeof valorNumerico === 'number'
-          ? valorNumerico
-          : typeof m === 'number'
-          ? m
-          : 0;
+      valor = typeof valorNumerico === 'number' ? valorNumerico : typeof m === 'number' ? m : 0;
     } else {
       const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
-      valor =
-        typeof valorNumerico === 'number'
-          ? valorNumerico
-          : Number((base * dias).toFixed(2));
+      valor = typeof valorNumerico === 'number' ? valorNumerico : Number((base * dias).toFixed(2));
     }
 
-    // DATA
     const dataRef = data ? parseDateOnlyLocal(data) : new Date();
 
-    // --------- Geração de numeroSequencial com pequena tolerância a colisão ---------
     let created = null;
     let ultimaMensagemErro = null;
 
@@ -676,11 +658,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
                 mediaAlta: 'Média ≥ 8,5'
               }[tipoElogio] || 'Elogio'
             : (typeof motivo === 'string' ? motivo : '').trim(),
-          quantidadeDias: ehElogio
-            ? 1
-            : PRECISA_DIAS.has(tituloMedida)
-            ? dias
-            : 1,
+          quantidadeDias: ehElogio ? 1 : PRECISA_DIAS.has(tituloMedida) ? dias : 1,
           valorNumerico: Number(valor || 0),
           observacao: (observacao || '').trim(),
           data: dataRef,
@@ -694,32 +672,19 @@ router.post('/', autenticar, attachActor, async (req, res) => {
         });
       } catch (errCreate) {
         ultimaMensagemErro = errCreate;
-        if (
-          errCreate?.code === 11000 &&
-          /numeroSequencial/.test(String(errCreate?.message || ''))
-        ) {
-          console.warn(
-            '[notificacoes] numeroSequencial duplicado, recalculando e tentando novamente...'
-          );
-          // volta pro loop, que vai recalcular maxSeq olhando TODAS as notificações já criadas
+        if (errCreate?.code === 11000 && /numeroSequencial/.test(String(errCreate?.message || ''))) {
+          console.warn('[notificacoes] numeroSequencial duplicado, tentando novamente...');
           continue;
         }
-        // outro erro qualquer: lança
         throw errCreate;
       }
     }
 
     if (!created) {
-      console.error(
-        '❌ Falha ao criar notificação após múltiplas tentativas de numeroSequencial.',
-        ultimaMensagemErro
-      );
-      return res.status(500).json({
-        message: 'Não foi possível gerar número sequencial único. Tente novamente.'
-      });
+      console.error('❌ Falha ao criar notificação após múltiplas tentativas:', ultimaMensagemErro);
+      return res.status(500).json({ message: 'Não foi possível gerar número sequencial único. Tente novamente.' });
     }
 
-    // Mantém campos de nota consistentes e analytics
     await recomputarCamposNotaDaNotificacao(created, inst);
     const alunoApósCreate = await recomputarNotaAlunoAteAgora(aluno, inst);
     await verificarEnvioNP(alunoApósCreate, inst);
@@ -749,30 +714,24 @@ router.post('/', autenticar, attachActor, async (req, res) => {
   }
 });
 
-/* ---------------- ROTAS POR ID (depois das estáticas) --------------- */
-
-// GET "/:id" (detalhes)
-router.get('/:id', autenticar, attachActor, async (req, res) => {
+router.get('/:id', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notificacao = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    }).populate({ path: 'aluno', select: 'nome turma instituicao' });
+    const notificacao = await Notificacao.findOne({ _id: id, ...instMatch }).populate({
+      path: 'aluno',
+      select: 'nome turma instituicao'
+    });
 
     if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada' });
 
     const precisaDias = PRECISA_DIAS.has(notificacao.tipoMedida);
     const dias = precisaDias ? Math.max(1, parseInt(notificacao.quantidadeDias || 1, 10)) : 1;
     const valorTotal = Number(notificacao.valorNumerico || 0);
-    const valorUnitario = precisaDias
-      ? Number((valorTotal / dias).toFixed(2))
-      : valorTotal;
+    const valorUnitario = precisaDias ? Number((valorTotal / dias).toFixed(2)) : valorTotal;
 
-    // campo auxiliar útil caso o front/docx consuma esta rota
     const notaPublicavel =
       typeof notificacao.notaAtual === 'number'
         ? Number(notificacao.notaAtual).toFixed(2)
@@ -780,38 +739,27 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
         ? Number(notificacao.notaAnterior).toFixed(2)
         : null;
 
-    res.json({
-      ...notificacao.toObject(),
-      valorTotal,
-      valorUnitario,
-      notaPublicavel
-    });
+    res.json({ ...notificacao.toObject(), valorTotal, valorUnitario, notaPublicavel });
   } catch (err) {
     console.error('Erro ao carregar notificação:', err);
     res.status(500).json({ message: 'Erro ao carregar notificação.' });
   }
 });
 
-// POST "/:id/entregar"  + AVISO TELEGRAM
-router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
+router.post('/:id/entregar', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    }).populate(
+    const notif = await Notificacao.findOne({ _id: id, ...instMatch }).populate(
       'aluno',
       'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada'
     );
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
-      return res
-        .status(400)
-        .json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
+      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
     }
     if (notif.entregue === true) {
       return res.status(200).json({
@@ -830,10 +778,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false;
     await notif.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(
-      notif.aluno,
-      req.usuario.instituicao
-    );
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
     await logAction({
       req,
@@ -879,46 +824,33 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
     });
     await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
 
-    res.json({
-      message: 'Marcada como ENTREGUE.',
-      prazoDevolucao: notif.prazoDevolucao,
-      entregueEm: notif.entregueEm
-    });
+    res.json({ message: 'Marcada como ENTREGUE.', prazoDevolucao: notif.prazoDevolucao, entregueEm: notif.entregueEm });
   } catch (err) {
     console.error('Erro ao marcar ENTREGUE:', err);
     res.status(500).json({ error: 'Erro ao marcar ENTREGUE.' });
   }
 });
 
-// POST "/:id/devolver"  + AVISO TELEGRAM
-router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
+router.post('/:id/devolver', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    }).populate(
+    const notif = await Notificacao.findOne({ _id: id, ...instMatch }).populate(
       'aluno',
       'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId'
     );
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
-      return res
-        .status(400)
-        .json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
+      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
     }
     if (!notif.entregue) {
       return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
     }
     if (notif.devolvidoPeloAluno === true) {
-      return res.status(200).json({
-        message: 'Já estava marcada como DEVOLVIDA.',
-        devolvidaEm: notif.devolvidaEm
-      });
+      return res.status(200).json({ message: 'Já estava marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
     }
 
     const agora = new Date();
@@ -927,10 +859,7 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
     notif.alertaAtivo = false;
     await notif.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(
-      notif.aluno._id || notif.aluno,
-      req.usuario.instituicao
-    );
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno._id || notif.aluno, req.usuario.instituicao);
 
     await logAction({
       req,
@@ -974,49 +903,25 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
     });
     await verificarEnvioNP(alunoDoc, req.usuario.instituicao);
 
-    res.json({
-      message: 'Marcada como DEVOLVIDA.',
-      devolvidaEm: notif.devolvidaEm
-    });
+    res.json({ message: 'Marcada como DEVOLVIDA.', devolvidaEm: notif.devolvidaEm });
   } catch (err) {
     console.error('Erro ao marcar DEVOLVIDA:', err);
     res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
   }
 });
 
-// PUT "/:id" (atualizar notificação) — inclui disparo quando virar DEFERIDO
-router.put('/:id', autenticar, attachActor, async (req, res) => {
+router.put('/:id', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
-    if (!notif)
-      return res
-        .status(404)
-        .json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
+    const notif = await Notificacao.findOne({ _id: id, ...instMatch });
+    if (!notif) return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
 
     const camposEditaveis = [
-      'aluno',
-      'tipo',
-      'motivo',
-      'tipoMedida',
-      'valorNumerico',
-      'observacao',
-      'data',
-      'quantidadeDias',
-      'comentarioMonitor',
-      'status',
-      'natureza',
-      'tipoElogio',
-      'artigo',
-      'paragrafo',
-      'inciso',
-      'classificacaoRegulamento'
+      'aluno','tipo','motivo','tipoMedida','valorNumerico','observacao','data','quantidadeDias',
+      'comentarioMonitor','status','natureza','tipoElogio','artigo','paragrafo','inciso','classificacaoRegulamento'
     ];
 
     const antes = {
@@ -1032,7 +937,6 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       numeroSequencial: notif.numeroSequencial
     };
 
-    // aplicar mudanças
     for (const campo of camposEditaveis) {
       if (req.body[campo] !== undefined) {
         if (campo === 'data' && typeof req.body[campo] === 'string') {
@@ -1043,7 +947,6 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     }
 
-    // regras de cálculo
     if (notif.natureza === 'elogio') {
       if (req.body.valorNumerico === undefined && req.body.tipoElogio) {
         notif.valorNumerico = MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico;
@@ -1052,18 +955,11 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
         notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
       }
     } else {
-      const tipoMudou =
-        typeof req.body.tipoMedida !== 'undefined' || typeof req.body.tipo !== 'undefined';
+      const tipoMudou = typeof req.body.tipoMedida !== 'undefined' || typeof req.body.tipo !== 'undefined';
       const diasMudou = typeof req.body.quantidadeDias !== 'undefined';
 
       if (req.body.valorNumerico === undefined && (tipoMudou || diasMudou)) {
-        const tituloMedida = (
-          req.body.tipoMedida ??
-          notif.tipoMedida ??
-          req.body.tipo ??
-          notif.tipo ??
-          ''
-        ).trim();
+        const tituloMedida = (req.body.tipoMedida ?? notif.tipoMedida ?? req.body.tipo ?? notif.tipo ?? '').trim();
         const precisaDias = PRECISA_DIAS.has(tituloMedida);
         const diasBrutos = req.body.quantidadeDias ?? notif.quantidadeDias ?? 1;
         const dias = precisaDias ? Math.max(1, parseInt(diasBrutos, 10) || 1) : 1;
@@ -1074,33 +970,22 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
         notif.tipoMedida = tituloMedida || notif.tipoMedida;
         notif.quantidadeDias = precisaDias ? dias : 1;
 
-        if (
-          !notif.artigo &&
-          !notif.classificacaoRegulamento &&
-          (req.body.motivo || notif.motivo)
-        ) {
+        if (!notif.artigo && !notif.classificacaoRegulamento && (req.body.motivo || notif.motivo)) {
           const dadosReg = obterDadosDoRegulamento(req.body.motivo || notif.motivo || '');
           notif.artigo = dadosReg.artigo ?? notif.artigo;
           notif.paragrafo = dadosReg.paragrafo ?? notif.paragrafo;
           notif.inciso = dadosReg.inciso ?? notif.inciso;
-          notif.classificacaoRegulamento =
-            dadosReg.classificacao ?? notif.classificacaoRegulamento;
+          notif.classificacaoRegulamento = dadosReg.classificacao ?? notif.classificacaoRegulamento;
         }
       }
     }
 
-    // detectar transição para DEFERIDO
     const virouDeferido = antes.status !== 'deferido' && notif.status === 'deferido';
 
     await notif.save();
-
-    // 🔁 NOVO: mantemos notaAnterior/notaAtual sempre consistentes após edições
     await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(
-      notif.aluno,
-      req.usuario.instituicao
-    );
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
 
     await logAction({
       req,
@@ -1130,19 +1015,11 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    const alunoApósUpdate = await recomputarNotaAlunoAteAgora(
-      notif.aluno,
-      req.usuario.instituicao
-    );
-
-    // 💡 NP (faixa 5.00–6.99)
+    const alunoApósUpdate = await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
     await verificarEnvioNP(alunoApósUpdate, req.usuario.instituicao);
 
-    // 🚀 se virou DEFERIDO, dispara comunicado (idempotente)
     if (virouDeferido) {
-      try {
-        await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
-      } catch (e) {
+      try { await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id }); } catch (e) {
         console.warn('[deferido/update] falha disparo:', e.message);
       }
     }
@@ -1154,28 +1031,19 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// PUT "/:id/reenviar" (voltar para pendente)
-router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
+router.put('/:id/reenviar', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notificacao = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
-
+    const notificacao = await Notificacao.findOne({ _id: id, ...instMatch });
     if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada.' });
 
     notificacao.status = 'pendente';
     await notificacao.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(
-      notificacao.aluno,
-      req.usuario.instituicao
-    );
-
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, req.usuario.instituicao);
     await logAction({
       req,
       acao: 'NOTIFICACAO_REENVIADA',
@@ -1192,10 +1060,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    const alunoApósReenviar = await recomputarNotaAlunoAteAgora(
-      notificacao.aluno,
-      req.usuario.instituicao
-    );
+    const alunoApósReenviar = await recomputarNotaAlunoAteAgora(notificacao.aluno, req.usuario.instituicao);
     await verificarEnvioNP(alunoApósReenviar, req.usuario.instituicao);
 
     res.json({ message: 'Notificação reenviada com sucesso.' });
@@ -1205,37 +1070,27 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// 💥 PUT "/:id/deferir"
-router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
+router.put('/:id/deferir', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notif = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
+    const notif = await Notificacao.findOne({ _id: id, ...instMatch });
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
       notif.status = 'deferido';
       notif.deferidoEm = new Date();
       await notif.save();
-      // mantém notas consistentes no registro
       await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
     }
 
-    try {
-      await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
-    } catch (e) {
+    try { await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id }); } catch (e) {
       console.warn('[deferido/endpoint] falha disparo:', e.message);
     }
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(
-      notif.aluno,
-      req.usuario.instituicao
-    );
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, req.usuario.instituicao);
     await logAction({
       req,
       acao: 'NOTIFICACAO_DEFERIDA',
@@ -1262,28 +1117,18 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
   }
 });
 
-// DELETE "/:id"
-router.delete('/:id', autenticar, attachActor, async (req, res) => {
+router.delete('/:id', attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
     const instMatch = buildInstMatch(req.usuario.instituicao);
-    const notificacao = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
+    const notificacao = await Notificacao.findOne({ _id: id, ...instMatch });
     if (!notificacao) {
-      return res
-        .status(404)
-        .json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
+      return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
     }
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(
-      notificacao.aluno,
-      req.usuario.instituicao
-    );
-
+    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, req.usuario.instituicao);
     await logAction({
       req,
       acao: 'NOTIFICACAO_EXCLUIDA',
@@ -1307,10 +1152,7 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     const alunoId = notificacao.aluno;
     await notificacao.deleteOne();
 
-    const alunoAtual = await recomputarNotaAlunoAteAgora(
-      alunoId,
-      req.usuario.instituicao
-    );
+    const alunoAtual = await recomputarNotaAlunoAteAgora(alunoId, req.usuario.instituicao);
     await verificarEnvioNP(alunoAtual, req.usuario.instituicao);
 
     res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });

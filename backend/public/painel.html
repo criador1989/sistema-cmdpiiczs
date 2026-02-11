@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -8,6 +9,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
+
 <style>
 /* =========================
    VARIÁVEIS GERAIS
@@ -976,6 +978,9 @@ canvas{
 }
 </style>
 </head>
+<!-- ===========================
+
+=========================== -->
 <body>
   <!-- LAYER DO PAPEL DE PAREDE -->
   <div id="bg-wallpaper"></div>
@@ -1218,7 +1223,8 @@ canvas{
               </small>
             </footer>
           </section>
-          <!-- ===== FIM DO BLOCO ===== -->
+          <!-- ===========================
+=========================== -->
 
           <div class="charts">
             <div class="chart-card">
@@ -1413,10 +1419,7 @@ canvas{
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
   /* ============================================================
-     ✅ CONTROLE DE ACESSO NO PAINEL (professor/admin/monitor)
-     - Admin: tudo
-     - Monitor: TUDO (voltou ao normal)
-     - Professor: escondido
+     
      ============================================================ */
   async function aplicarPermissoesNoPainel(){
     const hide = (...ids) => ids.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
@@ -1720,6 +1723,8 @@ canvas{
       renderPendenciasPaged();
     });
   });
+<!-- ===========================
+=========================== -->
 
   // ===== Alertas de Comportamento =====
   (function(){
@@ -1778,8 +1783,8 @@ canvas{
       const pages = Math.max(1, Math.ceil(total / st.size));
       st.page = Math.min(Math.max(1, st.page), pages);
 
-      pageEl.textContent  = String(st.page);
-      pagesEl.textContent = String(pages);
+      if (pageEl)  pageEl.textContent  = String(st.page);
+      if (pagesEl) pagesEl.textContent = String(pages);
 
       const start = (st.page - 1) * st.size;
       const slice = arr.slice(start, start + st.size);
@@ -1795,23 +1800,26 @@ canvas{
       const r = renderPaged(tbodyReg, REG_DATA, state.reg, el.regPage, el.regPages, rowReg);
       const i = renderPaged(tbodyIns, INS_DATA, state.ins, el.insPage, el.insPages, rowIns);
 
-      el.regPrev.disabled = state.reg.page <= 1;
-      el.regNext.disabled = state.reg.page >= r.pages;
-      el.insPrev.disabled = state.ins.page <= 1;
-      el.insNext.disabled = state.ins.page >= i.pages;
+      if (el.regPrev) el.regPrev.disabled = state.reg.page <= 1;
+      if (el.regNext) el.regNext.disabled = state.reg.page >= r.pages;
+      if (el.insPrev) el.insPrev.disabled = state.ins.page <= 1;
+      if (el.insNext) el.insNext.disabled = state.ins.page >= i.pages;
     }
 
     async function carregarAlertasComportamento(){
       try{
         const { regular=[], insuficiente=[] } = await getJSON(API('/alertas/comportamento'), { timeoutMs: 12000 });
 
-        REG_DATA = regular.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
-                          .sort((x,y)=> x.n - y.n);
-        INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
-                               .sort((x,y)=> x.n - y.n);
+        REG_DATA = regular
+          .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+          .sort((x,y)=> x.n - y.n);
 
-        cntReg.textContent = REG_DATA.length;
-        cntIns.textContent = INS_DATA.length;
+        INS_DATA = insuficiente
+          .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+          .sort((x,y)=> x.n - y.n);
+
+        if (cntReg) cntReg.textContent = REG_DATA.length;
+        if (cntIns) cntIns.textContent = INS_DATA.length;
 
         state.reg.page = 1;
         state.ins.page = 1;
@@ -1822,11 +1830,11 @@ canvas{
         renderAll();
 
         const dt = new Date();
-        lastUp.textContent = dt.toLocaleString('pt-BR');
+        if (lastUp) lastUp.textContent = dt.toLocaleString('pt-BR');
       }catch(e){
         console.error(e);
-        tbodyReg.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
-        tbodyIns.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+        if (tbodyReg) tbodyReg.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+        if (tbodyIns) tbodyIns.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
       }
     }
 
@@ -1894,10 +1902,10 @@ canvas{
       }
     });
 
-    el.regPrev.addEventListener('click', ()=>{ state.reg.page--; renderAll(); });
-    el.regNext.addEventListener('click', ()=>{ state.reg.page++; renderAll(); });
-    el.insPrev.addEventListener('click', ()=>{ state.ins.page--; renderAll(); });
-    el.insNext.addEventListener('click', ()=>{ state.ins.page++; renderAll(); });
+    if (el.regPrev) el.regPrev.addEventListener('click', ()=>{ state.reg.page--; renderAll(); });
+    if (el.regNext) el.regNext.addEventListener('click', ()=>{ state.reg.page++; renderAll(); });
+    if (el.insPrev) el.insPrev.addEventListener('click', ()=>{ state.ins.page--; renderAll(); });
+    if (el.insNext) el.insNext.addEventListener('click', ()=>{ state.ins.page++; renderAll(); });
 
     btnReload?.addEventListener('click', carregarAlertasComportamento);
 

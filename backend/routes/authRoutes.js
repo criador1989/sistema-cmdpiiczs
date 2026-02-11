@@ -60,10 +60,6 @@ function pickBackendBaseUrl(req) {
 
 /**
  * ✅ Base URL do FRONTEND (para redirecionar ao /login.html após confirmar)
- * Prioridade:
- * 1) PUBLIC_SITE_URL (quando você tiver domínio do front)
- * 2) CLIENT_URL (seu front local / Vite / etc.)
- * 3) fallback: vazio => redirect relativo (quando front está dentro do backend /public)
  */
 function pickFrontendBaseUrl(_req) {
   const site = process.env.PUBLIC_SITE_URL;
@@ -80,6 +76,14 @@ function pickTenantParam(inst) {
   if (inst.slug) return String(inst.slug);
   if (inst._id) return String(inst._id);
   if (inst.sigla) return String(inst.sigla).toLowerCase();
+  return '';
+}
+
+// ✅ tenantId “oficial” que vai no token (prioriza slug por ser estável/legível)
+function pickTenantIdForToken(inst) {
+  if (!inst) return '';
+  if (inst.slug) return String(inst.slug).trim().toLowerCase();
+  if (inst._id) return String(inst._id).trim();
   return '';
 }
 
@@ -123,6 +127,7 @@ async function getDefaultInstituicao() {
 
 function getTenantFromReq(req) {
   return (
+    req.tenantId || // ✅ se resolveTenant estiver ativo no /auth no futuro
     req.tenantSlug ||
     req.query?.t ||
     req.body?.tenant ||
@@ -182,9 +187,12 @@ async function sendEmailBestEffort({ to, subject, html, text }) {
 router.get('/me', autenticar, (req, res) => {
   return res.json({
     id: req.usuario.id,
+    userId: req.usuario.id,
     nome: req.usuario.nome,
     tipo: req.usuario.tipo,
+    role: req.usuario.tipo,
     instituicao: req.usuario.instituicao,
+    tenantId: req.usuario.tenantId || null, // ✅ novo
     email: req.usuario.email || null,
   });
 });
@@ -206,6 +214,7 @@ router.post('/login', async (req, res) => {
   try {
     const instFromTenant = await resolveInstituicaoOnlyIfTenantProvided(req);
 
+    // Se NÃO veio tenant explícito, tenta resolver pelo e-mail e pode cair no AMBIGUOUS
     if (!instFromTenant?._id) {
       const encontrados = await Usuario.find({
         email,
@@ -288,12 +297,21 @@ async function doLoginForInstituicao(req, res, { email, senha, inst }) {
     return res.status(401).json({ mensagem: 'Senha incorreta.' });
   }
 
+  // ✅ tenantId que será usado pelo requireAuth depois
+  const tenantId = pickTenantIdForToken(inst) || pickTenantIdForToken({ _id: usuario.instituicao });
+
   const payload = {
+    // compatibilidade atual
     id: String(usuario._id),
     tipo: usuario.tipo,
     nome: usuario.nome,
     instituicao: String(usuario.instituicao || ''),
     email: String(usuario.email || '').toLowerCase(),
+
+    // ✅ novos campos p/ multi-tenant + migração
+    tenantId: tenantId || null,
+    userId: String(usuario._id),
+    role: usuario.tipo,
   };
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '2h' });
@@ -308,6 +326,7 @@ async function doLoginForInstituicao(req, res, { email, senha, inst }) {
     mensagem: 'Login realizado com sucesso.',
     redirecionar,
     token,
+    tenantId: payload.tenantId, // ✅ já devolve pro front se quiser salvar
     usuario: payload,
     instituicao: inst ? { id: String(inst._id), nome: inst.nome, sigla: inst.sigla, slug: inst.slug } : undefined,
   });
@@ -326,7 +345,10 @@ router.get('/usuario-logado', autenticar, async (req, res) => {
       return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
     }
 
-    res.json(usuario);
+    return res.json({
+      ...usuario.toObject(),
+      tenantId: req.usuario.tenantId || null, // ✅ novo
+    });
   } catch (error) {
     console.error('Erro /auth/usuario-logado:', error);
     res.status(500).json({ mensagem: 'Erro ao buscar usuário logado.' });
@@ -391,7 +413,7 @@ router.post('/cadastro', async (req, res) => {
 
     await u.save();
 
-    const backendBase = pickBackendBaseUrl(req); // backend (render/local)
+    const backendBase = pickBackendBaseUrl(req);
     const tenantParam = pickTenantParam(inst);
     const tenantQs = tenantParam ? `&t=${encodeURIComponent(tenantParam)}` : '';
     const link = `${backendBase}/auth/confirmar-email?token=${encodeURIComponent(rawToken)}${tenantQs}`;
@@ -436,7 +458,7 @@ router.post('/cadastro', async (req, res) => {
  */
 router.get('/confirmar-email', async (req, res) => {
   const rawToken = String(req.query?.token || '');
-  const t = String(req.query?.t || req.tenantSlug || '').trim();
+  const t = String(req.query?.t || req.tenantSlug || req.tenantId || '').trim();
 
   if (!rawToken) return res.status(400).send('Token ausente.');
 
@@ -468,7 +490,6 @@ router.get('/confirmar-email', async (req, res) => {
 
     const qs = tenantParam ? `?t=${encodeURIComponent(tenantParam)}&verified=1` : `?verified=1`;
 
-    // ✅ FRONTEND target
     const frontBase = pickFrontendBaseUrl(req);
     const target = frontBase ? `${frontBase}/login.html${qs}` : `/login.html${qs}`;
 
@@ -485,7 +506,7 @@ router.get('/confirmar-email', async (req, res) => {
 router.post('/reenviar-confirmacao', async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   const t =
-    String(req.body?.t || req.query?.t || req.tenantSlug || req.cookies?.tenant || '').trim();
+    String(req.body?.t || req.query?.t || req.tenantSlug || req.tenantId || req.cookies?.tenant || '').trim();
 
   if (!isValidEmail(email)) return res.status(400).json({ mensagem: 'E-mail inválido.' });
 

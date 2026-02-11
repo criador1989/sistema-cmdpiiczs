@@ -22,13 +22,15 @@ const observacaoSchema = new mongoose.Schema({
     default: Date.now,
     index: true,
   },
-  // Mantém como String para compatibilidade com o restante do sistema
+
+  // ✅ AGORA PADRÃO MULTI-TENANT (ObjectId)
   instituicao: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Instituicao',
     required: true,
     index: true,
   }
-});
+}, { timestamps: true });
 
 // Índices coerentes com as consultas por aluno/instituição e ordenação por data
 observacaoSchema.index({ aluno: 1, criadoEm: -1 });

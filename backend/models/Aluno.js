@@ -1,4 +1,4 @@
-// models/Aluno.js
+// backend/models/Aluno.js
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -12,17 +12,14 @@ const publicViewSchema = new Schema({
 }, { _id: false });
 
 // 👇 Subdocumento de contatos (retrocompatível)
-// Mantido para compatibilidade com versões antigas do front/back
 const contatosSchema = new Schema({
   emailResponsavel: { type: String, trim: true, default: null },
-  whatsapp:         { type: String, trim: true, default: null }, // ex: 5599999999999 (só dígitos)
+  whatsapp:         { type: String, trim: true, default: null }, // ex: 5599999999999
   telegramChatId:   { type: String, trim: true, default: null }, // legado: será migrado para chatIdsResponsaveis
 }, { _id: false });
 
 /**
  * 👇 Subdocumento de alertas (controle de disparos)
- * - npRegularEnviadoAt: quando foi enviado o aviso de NP (faixa 5,00–6,99)
- * - npRegularUltimaNota: última nota que gerou o alerta (para evitar resends idênticos)
  */
 const alertasSchema = new Schema({
   npRegularEnviadoAt: { type: Date, default: null },
@@ -47,19 +44,17 @@ const alunoSchema = new Schema({
   fotoPublicId:   { type: String, default: null },
   fotoThumb:      { type: String, default: null },
 
-  // 🔓 link público (somente leitura) p/ responsáveis
+  // 🔓 link público (somente leitura)
   publicView:     { type: publicViewSchema, default: () => ({}) },
 
-  // 👇 Contatos (mantido por compatibilidade)
+  // 👇 Contatos (compat)
   contatos:       { type: contatosSchema, default: () => ({}) },
 
-  // 👇 NOVO: Alertas e trilhas de comunicação
+  // 👇 Alertas
   alertas:        { type: alertasSchema, default: () => ({}) },
 
-  // 👇 Integração Telegram — uso preferencial no backend
-  // Campo simples (um responsável principal) — útil para sistemas já prontos
+  // 👇 Integração Telegram
   chatIdResponsavel:    { type: String, trim: true, default: "" },
-  // Campo recomendado: vários responsáveis (pai/mãe/guardião)
   chatIdsResponsaveis:  { type: [String], default: [] },
 
   // 🔐 multi-tenant (ObjectId da Instituicao)
@@ -78,7 +73,6 @@ alunoSchema.methods.addChatId = function addChatId(chatId) {
   if (!this.chatIdsResponsaveis.includes(id)) {
     this.chatIdsResponsaveis.push(id);
   }
-  // Mantém chatIdResponsavel como o primeiro do array (convenção)
   if (!this.chatIdResponsavel) this.chatIdResponsavel = id;
 };
 
@@ -87,7 +81,6 @@ alunoSchema.methods.removeChatId = function removeChatId(chatId) {
   if (!id) return;
   this.chatIdsResponsaveis = (this.chatIdsResponsaveis || []).filter(c => c !== id);
   if (this.chatIdResponsavel === id) {
-    // Se removemos o principal, tenta promover outro
     this.chatIdResponsavel = this.chatIdsResponsaveis[0] || "";
   }
 };
@@ -95,30 +88,23 @@ alunoSchema.methods.removeChatId = function removeChatId(chatId) {
 alunoSchema.methods.getAllChatIds = function getAllChatIds() {
   const arr = new Set([...(this.chatIdsResponsaveis || [])]);
   if (this.chatIdResponsavel) arr.add(this.chatIdResponsavel);
-  // Retrocompat: incluir legado se existir
   if (this.contatos?.telegramChatId) arr.add(this.contatos.telegramChatId);
   return Array.from(arr);
 };
 
 /** ============================
  *  Pré-validate
- *  - Gera código de acesso
- *  - Migra legado contatos.telegramChatId
- *  - Deduplica e normaliza chat IDs
  *  ============================
  */
 alunoSchema.pre('validate', function (next) {
-  // Código curto se não existir
   if (!this.codigoAcesso) {
     this.codigoAcesso = crypto.randomBytes(3).toString('hex').toUpperCase();
   }
 
-  // Garante arrays
   if (!Array.isArray(this.chatIdsResponsaveis)) {
     this.chatIdsResponsaveis = (this.chatIdsResponsaveis ? [this.chatIdsResponsaveis] : []);
   }
 
-  // Migração: se houver telegramChatId legado em contatos, incorpora
   const legado = this.contatos?.telegramChatId ? String(this.contatos.telegramChatId).trim() : '';
   if (legado) {
     if (!this.chatIdsResponsaveis.includes(legado)) {
@@ -129,7 +115,6 @@ alunoSchema.pre('validate', function (next) {
     }
   }
 
-  // Se chatIdResponsavel existe e não está no array, adiciona
   if (this.chatIdResponsavel) {
     const id = String(this.chatIdResponsavel).trim();
     if (id && !this.chatIdsResponsaveis.includes(id)) {
@@ -137,7 +122,6 @@ alunoSchema.pre('validate', function (next) {
     }
   }
 
-  // Deduplica e normaliza (string trim)
   this.chatIdsResponsaveis = Array.from(
     new Set((this.chatIdsResponsaveis || []).map(s => String(s || '').trim()).filter(Boolean))
   );
@@ -152,11 +136,8 @@ alunoSchema.pre('validate', function (next) {
 alunoSchema.index({ instituicao: 1, codigoAcesso: 1 }, { unique: true, sparse: true });
 alunoSchema.index({ instituicao: 1, turma: 1, nome: 1 });
 alunoSchema.index({ 'publicView.token': 1 }, { unique: true, sparse: true });
-// Acelera buscas por instituição + chat (envios/relatórios por turma)
 alunoSchema.index({ instituicao: 1, chatIdResponsavel: 1 }, { sparse: true });
 alunoSchema.index({ instituicao: 1, chatIdsResponsaveis: 1 }, { sparse: true });
-
-// 👇 Útil para relatórios/diagnóstico de comunicação NP
 alunoSchema.index({ instituicao: 1, 'alertas.npRegularEnviadoAt': 1 }, { sparse: true });
 
 module.exports = mongoose.model('Aluno', alunoSchema);

@@ -1,5 +1,9 @@
 // backend/utils/audit.js
+'use strict';
+
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
 const Log = require('../models/Log');
 const Usuario = require('../models/Usuario');
 
@@ -10,13 +14,24 @@ function extrairToken(req) {
     req?.cookies?.token ||
     null;
 
-  const auth = req?.headers?.authorization || '';
-  const bearerToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const auth = req?.headers?.authorization || req?.headers?.Authorization || '';
+  const bearerToken = String(auth).startsWith('Bearer ') ? String(auth).slice(7).trim() : null;
 
   const headerToken = req?.headers?.['x-access-token'] || null;
   const queryToken = req?.query?.token || null;
 
   return cookieToken || bearerToken || headerToken || queryToken || null;
+}
+
+/** ==== util: ip real em proxy (Render/Nginx/etc.) ==== */
+function getClientIp(req) {
+  const xf = req?.headers?.['x-forwarded-for'];
+  if (xf) return String(xf).split(',')[0].trim();
+  return req?.ip || req?.socket?.remoteAddress || null;
+}
+
+function normalizeStr(v) {
+  return v === null || v === undefined ? null : String(v).trim();
 }
 
 /** ==== resolve o "ator" (usuário logado) ==== */
@@ -28,17 +43,19 @@ async function resolveActor(req) {
       nome: req.usuario.nome || null,
       tipo: req.usuario.tipo || null,
       instituicao: req.usuario.instituicao || null,
+      email: req.usuario.email || null,
       source: 'req.usuario',
     };
   }
 
-  // 2) Rotas com autenticação de professor
+  // 2) Rotas com autenticação de professor (legado)
   if (req?.professor?.id || req?.professor?._id) {
     return {
       id: String(req.professor.id || req.professor._id),
       nome: req.professor.nome || null,
       tipo: req.professor.tipo || 'professor',
       instituicao: req.professor.instituicao || null,
+      email: req.professor.email || null,
       source: 'req.professor',
     };
   }
@@ -60,25 +77,27 @@ async function resolveActor(req) {
           nome: payload?.nome || null,
           tipo: payload?.tipo || null,
           instituicao: payload?.instituicao || null,
+          email: payload?.email || payload?.mail || payload?.userEmail || null,
           source: 'jwt',
         };
       }
     }
   } catch {
-    // silencioso: seguimos para fallback
+    // silencioso
   }
 
   // 5) Fallback de teste: header x-actor-id
   try {
     const actorId = req?.headers?.['x-actor-id'];
     if (actorId) {
-      const u = await Usuario.findById(actorId).select('nome tipo instituicao').lean();
+      const u = await Usuario.findById(actorId).select('nome tipo instituicao email').lean();
       if (u) {
         return {
           id: String(actorId),
           nome: u.nome || null,
           tipo: u.tipo || null,
           instituicao: u.instituicao || null,
+          email: u.email || null,
           source: 'header.x-actor-id',
         };
       }
@@ -91,71 +110,101 @@ async function resolveActor(req) {
 }
 
 /** ==== middleware: anexa req.actor quando disponível ==== */
-async function attachActor(req, _res, next) {
+async function attachActor(req, res, next) {
   try {
     const actor = await resolveActor(req);
-    if (actor) req.actor = actor;
+    if (actor) {
+      req.actor = actor;
+      res.locals.actor = actor;
+    }
   } catch {
-    // não bloqueia a requisição
+    // não bloqueia
   }
   next();
 }
 
-/** rate limit simples para avisos repetidos */
-let _lastWarn = 0;
-function warnOncePerInterval(msg, intervalMs = 15000) {
+/** rate limit simples para avisos repetidos (por chave) */
+const _warnMap = new Map(); // key -> lastTs
+function warnOncePerInterval(key, msg, intervalMs = 15000) {
   const now = Date.now();
-  if (now - _lastWarn > intervalMs) {
-    _lastWarn = now;
+  const last = _warnMap.get(key) || 0;
+  if (now - last > intervalMs) {
+    _warnMap.set(key, now);
     console.warn(msg);
   }
+}
+
+function toObjectIdMaybe(id) {
+  const s = String(id || '').trim();
+  if (mongoose.isValidObjectId(s)) return new mongoose.Types.ObjectId(s);
+  return null;
 }
 
 /**
  * Grava um log de auditoria.
  * @param {Object} params
- * @param {import('express').Request} params.req - request atual
- * @param {string} params.acao - ex.: 'Cadastro de Aluno'
- * @param {string} params.entidade - ex.: 'Aluno'
- * @param {string|number} params.entidadeId - id da entidade
- * @param {string|null} [params.entidadeNome] - rótulo amigável
- * @param {Object} [params.extra] - payload adicional
+ * @param {import('express').Request} params.req
+ * @param {string} params.acao
+ * @param {string} params.entidade
+ * @param {string|number} params.entidadeId
+ * @param {string|null} [params.entidadeNome]
+ * @param {Object} [params.extra]
  */
 async function logAction({ req, acao, entidade, entidadeId, entidadeNome = null, extra = {} }) {
-  // resolve ator (robusto)
   const actor = req?.actor || (await resolveActor(req));
 
-  const instituicao = actor?.instituicao;
-  const usuarioId   = actor?.id;
-  const usuarioNome = actor?.nome || req?.usuario?.nome || req?.professor?.nome || null;
-  const usuarioTipo = actor?.tipo || req?.usuario?.tipo || req?.professor?.tipo || null;
+  const instituicao = normalizeStr(actor?.instituicao);
+  const usuarioIdRaw = normalizeStr(actor?.id);
+  const usuarioNome =
+    actor?.nome || req?.usuario?.nome || req?.professor?.nome || null;
+  const usuarioTipo =
+    actor?.tipo || req?.usuario?.tipo || req?.professor?.tipo || null;
+  const usuarioEmail =
+    actor?.email || req?.usuario?.email || req?.professor?.email || null;
 
-  if (!instituicao || !usuarioId) {
-    warnOncePerInterval('[audit] ignorado: sessão sem instituicao/usuario');
+  if (!instituicao || !usuarioIdRaw) {
+    warnOncePerInterval(
+      'audit-missing-session',
+      '[audit] ignorado: sessão sem instituicao/usuario'
+    );
+    return;
+  }
+
+  const usuarioObjId = toObjectIdMaybe(usuarioIdRaw);
+  if (!usuarioObjId) {
+    warnOncePerInterval(
+      'audit-bad-userid',
+      `[audit] ignorado: usuarioId inválido para ObjectId: ${usuarioIdRaw}`
+    );
     return;
   }
 
   try {
     const doc = await Log.create({
-      instituicao,
-      usuario: String(usuarioId),
+      instituicao: String(instituicao),
+      usuario: usuarioObjId,
       usuarioNome: usuarioNome || null,
       usuarioTipo: usuarioTipo || null,
+      usuarioEmail: usuarioEmail ? String(usuarioEmail).toLowerCase() : null,
+
       acao,
       entidade,
       entidadeId: String(entidadeId || ''),
       entidadeNome: entidadeNome || null,
+
       detalhes: extra || {},
+
+      ip: getClientIp(req),
+      userAgent: normalizeStr(req?.headers?.['user-agent']),
     });
 
-    // Log de depuração resumido
-    // (comente se quiser menos verbosidade)
+    // ✅ depuração curta (se quiser silenciar, pode comentar)
     console.log('[audit] gravado:', {
       _id: String(doc._id),
       acao,
       entidade,
       entidadeId: String(entidadeId || ''),
-      usuario: `${usuarioNome || usuarioId} (${usuarioTipo || '—'})`,
+      usuario: `${usuarioNome || usuarioIdRaw} (${usuarioTipo || '—'})`,
       instituicao: String(instituicao),
     });
   } catch (err) {

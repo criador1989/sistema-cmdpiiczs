@@ -7,6 +7,35 @@ const jwt = require('jsonwebtoken');
 let Usuario = null;
 try { Usuario = require('../models/Usuario'); } catch { /* ok */ }
 
+function normalizeTenant(v) {
+  return String(v || '').trim().toLowerCase();
+}
+
+function getTenantFromReq(req) {
+  // prioridade: o que middlewares anteriores já setaram
+  const direct = req.tenantId || req.tenantSlug;
+  if (direct) return normalizeTenant(direct);
+
+  // headers comuns
+  const h =
+    req.headers?.['x-tenant'] ||
+    req.headers?.['x-tenant-slug'] ||
+    null;
+  if (h) return normalizeTenant(h);
+
+  // cookie e query/body (fallbacks)
+  const q = req.query?.t || req.query?.tenant;
+  if (q) return normalizeTenant(q);
+
+  const b = req.body?.t || req.body?.tenant;
+  if (b) return normalizeTenant(b);
+
+  const c = req.cookies?.tenant;
+  if (c) return normalizeTenant(c);
+
+  return '';
+}
+
 function extrairToken(req) {
   // 0) Querystring token (fallback para links do tipo ?token=... )
   const queryToken = req.query?.token;
@@ -43,12 +72,24 @@ async function autenticar(req, res, next) {
       return res.status(401).json({ mensagem: 'Sessão inválida: id ausente no token.' });
     }
 
-    const tipo = payload.tipo; // 'admin' | 'monitor' | 'professor'
+    const tipo = payload.tipo || payload.role; // 'admin' | 'monitor' | 'professor'
     const instituicao = payload.instituicao;
     const nome = payload.nome;
 
     if (!instituicao) {
       return res.status(401).json({ mensagem: 'Sessão inválida: instituição ausente no token.' });
+    }
+
+    // ✅ tenantId do token (novo)
+    const tokenTenantId = normalizeTenant(payload.tenantId || payload.tenant || '');
+
+    // ✅ tenant esperado do request (se houver)
+    const reqTenant = getTenantFromReq(req);
+
+    // ✅ trava multi-tenant: se os dois existirem, precisam bater
+    // (isso impede token de uma escola acessar dados de outra)
+    if (tokenTenantId && reqTenant && tokenTenantId !== reqTenant) {
+      return res.status(403).json({ mensagem: 'Tenant inválido para esta sessão.' });
     }
 
     // ✅ email pode vir no token, mas se não vier a gente resolve via banco
@@ -64,16 +105,22 @@ async function autenticar(req, res, next) {
       if (u?.email) email = String(u.email).toLowerCase();
     }
 
+    // mantém compatibilidade: req.usuario como você já usa
     req.usuario = {
       id,
       _id: id,
       nome,
       tipo,
+      role: tipo || null,                 // alias útil
       instituicao,
-      email: email ? String(email).toLowerCase() : null, // ✅ agora existe
+      tenantId: tokenTenantId || reqTenant || null, // ✅ novo
+      email: email ? String(email).toLowerCase() : null,
     };
 
     res.locals.usuario = req.usuario;
+
+    // opcional: manter req.tenantId “setado” para rotas que vão usar isso
+    if (!req.tenantId && req.usuario.tenantId) req.tenantId = req.usuario.tenantId;
 
     return next();
   } catch (err) {

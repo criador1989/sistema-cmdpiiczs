@@ -1,81 +1,185 @@
+// routes/api/observacoes.js
+'use strict';
+
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
+
 const Observacao = require('../../models/Observacao');
 const Aluno = require('../../models/Aluno');
-const { autenticar } = require('../../middleware/autenticacao');
 
-// Criar nova observação
-router.post('/:alunoId', autenticar, async (req, res) => {
+const { autenticar, apenasLeitura, apenasMonitorOuAdmin } = require('../../middleware/autenticacao');
+
+/* =========================
+   ✅ TENANT HELPERS
+   ========================= */
+const ALLOW_LEGACY_NO_TENANT =
+  String(process.env.ALLOW_LEGACY_NO_TENANT || '').toLowerCase() === 'true';
+
+function buildInstMatch(inst) {
+  const asStr = String(inst || '').trim();
+  const ors = [];
+
+  if (ALLOW_LEGACY_NO_TENANT) {
+    ors.push({ instituicao: { $exists: false } }, { instituicao: null });
+  }
+
+  if (asStr) {
+    ors.push({ instituicao: asStr });
+    if (mongoose.isValidObjectId(asStr)) {
+      ors.push({ instituicao: new mongoose.Types.ObjectId(asStr) });
+    }
+  }
+
+  if (ors.length === 1) return ors[0];
+  return { $or: ors };
+}
+
+function isObjectId(v) {
+  return mongoose.isValidObjectId(String(v || '').trim());
+}
+
+/* =========================
+   ROTAS
+   ========================= */
+
+/**
+ * ✅ Criar nova observação (SENSÍVEL -> monitor/admin)
+ * POST /api/observacoes/:alunoId
+ */
+router.post('/:alunoId', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const { texto } = req.body;
-    const { alunoId } = req.params;
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ mensagem: 'Não autenticado.' });
 
-    if (!texto) return res.status(400).json({ mensagem: 'Texto da observação é obrigatório.' });
+    const alunoId = String(req.params.alunoId || '').trim();
+    if (!isObjectId(alunoId)) {
+      return res.status(400).json({ mensagem: 'alunoId inválido.' });
+    }
 
-    const aluno = await Aluno.findOne({ _id: alunoId, instituicao: req.usuario.instituicao });
-    if (!aluno) return res.status(404).json({ mensagem: 'Aluno não encontrado ou pertence a outra instituição.' });
+    const texto = String(req.body?.texto || '').trim();
+    if (!texto || texto.length < 2) {
+      return res.status(400).json({ mensagem: 'Texto da observação é obrigatório.' });
+    }
 
-    const novaObs = new Observacao({
+    // garante que aluno pertence ao tenant
+    const aluno = await Aluno.findOne({ _id: alunoId, ...buildInstMatch(inst) })
+      .select('_id nome turma instituicao')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({ mensagem: 'Aluno não encontrado ou pertence a outra instituição.' });
+    }
+
+    const novaObs = await Observacao.create({
       aluno: aluno._id,
       texto,
-      autor: req.usuario.nome,
-      instituicao: req.usuario.instituicao
+      autor: req.usuario.nome || '—',
+      instituicao: inst
     });
 
-    await novaObs.save();
-    res.status(201).json(novaObs);
+    return res.status(201).json(novaObs);
   } catch (erro) {
     console.error('Erro ao salvar observação:', erro);
-    res.status(500).json({ mensagem: 'Erro ao salvar observação.' });
+    return res.status(500).json({ mensagem: 'Erro ao salvar observação.' });
   }
 });
 
-// Listar observações
-router.get('/:alunoId', autenticar, async (req, res) => {
+/**
+ * ✅ Listar observações (LEITURA -> professor/monitor/admin)
+ * GET /api/observacoes/:alunoId
+ */
+router.get('/:alunoId', autenticar, apenasLeitura, async (req, res) => {
   try {
-    const aluno = await Aluno.findOne({ _id: req.params.alunoId, instituicao: req.usuario.instituicao });
-    if (!aluno) return res.status(404).json({ mensagem: 'Aluno não encontrado ou pertence a outra instituição.' });
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ mensagem: 'Não autenticado.' });
 
+    const alunoId = String(req.params.alunoId || '').trim();
+    if (!isObjectId(alunoId)) {
+      return res.status(400).json({ mensagem: 'alunoId inválido.' });
+    }
+
+    // garante aluno do tenant
+    const aluno = await Aluno.findOne({ _id: alunoId, ...buildInstMatch(inst) })
+      .select('_id')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({ mensagem: 'Aluno não encontrado ou pertence a outra instituição.' });
+    }
+
+    // ordena por criadoEm ou createdAt (fallback)
     const observacoes = await Observacao.find({
       aluno: aluno._id,
-      instituicao: req.usuario.instituicao
-    }).sort({ criadoEm: -1 });
+      ...buildInstMatch(inst)
+    })
+      .sort({ criadoEm: -1, createdAt: -1 });
 
-    res.json(observacoes);
+    return res.json(observacoes);
   } catch (erro) {
     console.error('Erro ao buscar observações:', erro);
-    res.status(500).json({ mensagem: 'Erro ao buscar observações.' });
+    return res.status(500).json({ mensagem: 'Erro ao buscar observações.' });
   }
 });
 
-// Deletar observação
-router.delete('/:id', autenticar, async (req, res) => {
+/**
+ * ✅ Deletar observação (SENSÍVEL -> monitor/admin)
+ * DELETE /api/observacoes/:id
+ */
+router.delete('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const observacao = await Observacao.findOne({ _id: req.params.id, instituicao: req.usuario.instituicao });
-    if (!observacao) return res.status(404).json({ mensagem: 'Observação não encontrada ou pertence a outra instituição.' });
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ mensagem: 'Não autenticado.' });
+
+    const id = String(req.params.id || '').trim();
+    if (!isObjectId(id)) {
+      return res.status(400).json({ mensagem: 'id inválido.' });
+    }
+
+    const observacao = await Observacao.findOne({ _id: id, ...buildInstMatch(inst) });
+    if (!observacao) {
+      return res.status(404).json({ mensagem: 'Observação não encontrada ou pertence a outra instituição.' });
+    }
 
     await observacao.deleteOne();
-    res.json({ mensagem: 'Observação excluída com sucesso.' });
+    return res.json({ mensagem: 'Observação excluída com sucesso.' });
   } catch (erro) {
     console.error('Erro ao excluir observação:', erro);
-    res.status(500).json({ mensagem: 'Erro ao excluir observação.' });
+    return res.status(500).json({ mensagem: 'Erro ao excluir observação.' });
   }
 });
 
-// Atualizar observação
-router.put('/:id', autenticar, async (req, res) => {
+/**
+ * ✅ Atualizar observação (SENSÍVEL -> monitor/admin)
+ * PUT /api/observacoes/:id
+ */
+router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const { texto } = req.body;
-    const observacao = await Observacao.findOne({ _id: req.params.id, instituicao: req.usuario.instituicao });
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ mensagem: 'Não autenticado.' });
 
-    if (!observacao) return res.status(404).json({ mensagem: 'Observação não encontrada ou pertence a outra instituição.' });
+    const id = String(req.params.id || '').trim();
+    if (!isObjectId(id)) {
+      return res.status(400).json({ mensagem: 'id inválido.' });
+    }
+
+    const texto = String(req.body?.texto || '').trim();
+    if (!texto || texto.length < 2) {
+      return res.status(400).json({ mensagem: 'Texto da observação é obrigatório.' });
+    }
+
+    const observacao = await Observacao.findOne({ _id: id, ...buildInstMatch(inst) });
+    if (!observacao) {
+      return res.status(404).json({ mensagem: 'Observação não encontrada ou pertence a outra instituição.' });
+    }
 
     observacao.texto = texto;
     await observacao.save();
-    res.json({ mensagem: 'Observação atualizada com sucesso.' });
+
+    return res.json({ mensagem: 'Observação atualizada com sucesso.' });
   } catch (erro) {
     console.error('Erro ao atualizar observação:', erro);
-    res.status(500).json({ mensagem: 'Erro ao atualizar observação.' });
+    return res.status(500).json({ mensagem: 'Erro ao atualizar observação.' });
   }
 });
 

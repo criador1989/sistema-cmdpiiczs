@@ -15,6 +15,25 @@ const os = require('os');
 const app = express();
 
 /* =========================
+   ✅ NOVO: middlewares tenant/auth (multi-tenant)
+   (pasta existente: ./middleware - singular)
+   ========================= */
+let resolveTenant = null;
+let requireAuth = null;
+
+try {
+  ({ resolveTenant } = require('./middleware/resolveTenant'));
+} catch (e) {
+  console.warn('⚠️ resolveTenant não carregado:', e?.message || e);
+}
+
+try {
+  ({ requireAuth } = require('./middleware/requireAuth'));
+} catch (e) {
+  console.warn('⚠️ requireAuth não carregado:', e?.message || e);
+}
+
+/* =========================
    DIAGNÓSTICO / SEGURANÇA
    ========================= */
 console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
@@ -86,7 +105,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 /* =========================
-   ✅ TENANT RESOLVER (ANTES DE TUDO)
+   ✅ TENANT RESOLVER LEGADO (mantido)
+   - continua populando req.tenantSlug, cookie tenant e /public/tenant
    ========================= */
 function normalizeSlug(s) {
   return String(s || '').trim().toLowerCase();
@@ -140,6 +160,24 @@ try {
   console.log('🏷️  Tenant resolver ligado (query/header/cookie/subdomínio).');
 } catch (e) {
   console.warn('⚠️  Tenant resolver não carregado:', e?.message || e);
+}
+
+/* =========================
+   ✅ NOVO: garantir req.tenantId em TODA /api
+   - não substitui o legado: só complementa
+   ========================= */
+if (resolveTenant) {
+  app.use('/api', resolveTenant);
+
+  // espelha para req.tenantSlug caso alguma rota/auth antiga use slug
+  app.use('/api', (req, _res, next) => {
+    if (!req.tenantSlug && req.tenantId) req.tenantSlug = req.tenantId;
+    next();
+  });
+
+  console.log('🧩 resolveTenant aplicado em /api (tenantId garantido).');
+} else {
+  console.warn('⚠️ resolveTenant não está ativo — /api pode ficar sem tenantId.');
 }
 
 /* =========================
@@ -262,21 +300,14 @@ app.use('/auth', authRoutes);
 
 /* ==========================================================
    ✅ FALLBACK: /auth/confirmar-email (se authRoutes não tiver)
-   - Resolve seu caso atual: link do e-mail cai aqui,
-     confirma no Mongo e redireciona para /login.html
-   - Não interfere se você criar a rota dentro do authRoutes.
    ========================================================== */
-app.get('/auth/confirmar-email', async (req, res, next) => {
+app.get('/auth/confirmar-email', async (req, res) => {
   try {
     const token = String(req.query.token || '').trim();
     if (!token) return res.status(400).send('Token ausente.');
 
-    // Se a rota existir no authRoutes e ele FINALIZAR resposta, esse fallback nem roda.
-    // Se authRoutes não tratar, cai aqui.
-
     const Usuario = mongoose.models.Usuario || mongoose.model('Usuario');
 
-    // Tentativa "flexível": suporta diferentes nomes de campo de token
     const tokenFields = [
       'emailConfirmToken',
       'emailConfirmacaoToken',
@@ -292,7 +323,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 
     let usuario = await Usuario.findOne({ $or: or }).catch(() => null);
 
-    // Alguns sistemas usam token dentro de subobjeto (ex: emailConfirm.token)
     if (!usuario) {
       usuario = await Usuario.findOne({
         $or: [
@@ -307,7 +337,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
       return res.status(400).send('Token inválido ou usuário não encontrado.');
     }
 
-    // Se houver campos de expiração, tenta respeitar
     const now = new Date();
     const expCandidates = [
       usuario.emailConfirmExpires,
@@ -326,7 +355,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
       }
     }
 
-    // Marca como confirmado (suporta variações)
     if ('emailConfirmado' in usuario) usuario.emailConfirmado = true;
     if ('emailVerificado' in usuario) usuario.emailVerificado = true;
     if ('confirmado' in usuario) usuario.confirmado = true;
@@ -337,7 +365,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
     if ('confirmadoEm' in usuario) usuario.confirmadoEm = now;
     if ('emailConfirmadoEm' in usuario) usuario.emailConfirmadoEm = now;
 
-    // Limpa tokens conhecidos
     tokenFields.forEach(f => { if (f in usuario) usuario[f] = undefined; });
     if (usuario.emailConfirm) {
       if ('token' in usuario.emailConfirm) usuario.emailConfirm.token = undefined;
@@ -350,7 +377,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 
     await usuario.save();
 
-    // Redireciona para o login do próprio host (ou frontend separado)
     const front = (process.env.FRONTEND_URL || process.env.CLIENT_URL || '').trim();
     const target = front
       ? `${front.replace(/\/+$/, '')}/login.html?confirmado=1`
@@ -358,14 +384,13 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 
     return res.redirect(target);
   } catch (err) {
-    // Se algo estourar aqui, não derrube o fluxo geral
     console.error('Erro fallback /auth/confirmar-email:', err);
     return res.status(500).send('Erro interno ao confirmar e-mail.');
   }
 });
 
 const { autenticar } = require('./middleware/autenticacao');
-const exigirSuperAdmin = require('./middleware/exigirSuperAdmin'); // ✅ NOVO
+const exigirSuperAdmin = require('./middleware/exigirSuperAdmin');
 
 // APH
 let aphCrudRoutes = null, aphEstatisticasRoutes = null, aphPdfRoutes = null;
@@ -508,7 +533,7 @@ app.get('/api/usuario-logado', autenticar, (req, res) => {
 
 app.get('/api/debug/whoami-raw', (req, res) => {
   res.json({
-    tenant: req.tenantSlug || null,
+    tenant: req.tenantSlug || req.tenantId || null,
     cookies: req.cookies || {},
     authHeader: req.headers['authorization'] || null,
     origin: req.headers.origin || null,
@@ -517,7 +542,7 @@ app.get('/api/debug/whoami-raw', (req, res) => {
 });
 
 /* =========================
-   FALLBACKS LEVES
+   FALLBACKS LEVES (⚠️ depois vamos tenantizar)
    ========================= */
 app.get('/api/dashboard/alertas', async (_req, res) => {
   try {
@@ -680,7 +705,7 @@ app.get('/public/tenant', async (req, res) => {
   try {
     const InstituicaoModel = mongoose.models.Instituicao || mongoose.model('Instituicao');
 
-    const slug = normalizeSlug(req.tenantSlug);
+    const slug = normalizeSlug(req.tenantSlug || req.tenantId);
 
     let inst = null;
 
@@ -717,7 +742,7 @@ app.get('/public/tenant', async (req, res) => {
     return res.json({
       nomeColegio: process.env.NOME_COLEGIO || 'SmartClass',
       sigla: null,
-      tenant: normalizeSlug(req.tenantSlug) || null,
+      tenant: normalizeSlug(req.tenantSlug || req.tenantId) || null,
     });
   }
 });
