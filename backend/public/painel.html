@@ -26,6 +26,10 @@
 
   --text-main: #ffffff;
   --text-soft: rgba(255,255,255,0.78);
+
+  /* Axoriin */
+  --ax-primary:#00C2FF;
+  --ax-secondary:#7A5CFF;
 }
 
 /* =========================
@@ -305,7 +309,7 @@ h1, h2, h3, h4, h5, h6,
 .content{ width:100%; }
 .wrap{
   width:min(1180px,100%);
-  margin:0 auto 80px;
+  margin:0 auto 110px; /* deixa respiro para o rodapé fixo */
 }
 
 .topo{
@@ -314,21 +318,6 @@ h1, h2, h3, h4, h5, h6,
   align-items:center;
   gap:10px;
   text-align:center;
-}
-
-/* (mantido CSS .logos, mas HTML foi removido por solicitação) */
-.logos{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:18px;
-  flex-wrap:wrap;
-}
-
-.logos img{
-  width:96px;
-  height:auto;
-  filter:drop-shadow(0 10px 26px rgba(0,0,0,0.85));
 }
 
 .titulo{
@@ -771,7 +760,7 @@ canvas{
 
 @media(max-width:1024px){
   .bottom-nav{ display:block; }
-  .wrap{ margin-bottom:80px; }
+  .wrap{ margin-bottom:120px; }
 }
 
 /* =========================
@@ -948,23 +937,74 @@ canvas{
 }
 
 /* =========================
-   MASCOTE FIXO (SmartClass)
+   MASCOTE FIXO (Axoriin) — animação estilo login
 ========================= */
 #smartclass-mascote{
   position: fixed;
   right: 18px;
   bottom: 18px;
   width: 78px;
-  height: auto;
-  z-index: 60;             /* acima do conteúdo, abaixo dos toasts (9999) */
-  pointer-events: none;    /* não bloqueia cliques */
+  height: 78px;
+  z-index: 60;
+  pointer-events: none;
   filter: drop-shadow(0 14px 28px rgba(0,0,0,.65));
-  animation: scFloat 3.2s ease-in-out infinite;
-  opacity: 0.95;
+  opacity: 0.96;
+  display:grid;
+  place-items:center;
 }
-@keyframes scFloat{
-  0%,100%{ transform: translateY(0) rotate(-1deg); }
-  50%{ transform: translateY(-6px) rotate(1deg); }
+
+#smartclass-mascote .ax-stage{
+  width: 78px;
+  height: 78px;
+  position:relative;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+}
+
+#smartclass-mascote img{
+  width: 78px;
+  height: 78px;
+  object-fit:contain;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform-origin: 50% 56%;
+  animation:
+    axOrbit 8.8s ease-in-out infinite alternate,
+    axFloat 3.2s ease-in-out infinite;
+}
+
+#smartclass-mascote .ax-core{
+  position:absolute;
+  width: 54px;
+  height: 54px;
+  border-radius:999px;
+  left:50%;
+  top:56%;
+  transform:translate(-50%,-50%);
+  background: radial-gradient(circle,
+    rgba(255,255,255,.95) 0%,
+    rgba(0,194,255,.75) 18%,
+    rgba(0,194,255,.35) 44%,
+    rgba(0,194,255,.14) 60%,
+    transparent 76%);
+  filter: blur(10px);
+  opacity:.78;
+  mix-blend-mode: screen;
+  animation: axCorePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes axFloat{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-6px); }
+}
+@keyframes axOrbit{
+  0%{ transform: rotate(-1.6deg) scale(1.00); }
+  100%{ transform: rotate(1.6deg) scale(1.02); }
+}
+@keyframes axCorePulse{
+  0%,100%{ opacity:.55; transform:translate(-50%,-50%) scale(.92); filter:blur(11px); }
+  50%{ opacity:1; transform:translate(-50%,-50%) scale(1.10); filter:blur(9px); }
 }
 
 /* em celular, subir um pouco por causa do bottom-nav */
@@ -972,10 +1012,43 @@ canvas{
   #smartclass-mascote{
     bottom: 86px;
     width: 72px;
+    height: 72px;
   }
+  #smartclass-mascote .ax-stage,
+  #smartclass-mascote img{
+    width:72px;
+    height:72px;
+  }
+  #smartclass-mascote .ax-core{
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* =========================
+   RODAPÉ FIXO (frase)
+========================= */
+#axoriin-footer-phrase{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:55;
+  padding:10px 14px;
+  text-align:center;
+  font-size:.92rem;
+  letter-spacing:.02em;
+  background: rgba(10,10,12,0.72);
+  border-top: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+@media(max-width:1024px){
+  #axoriin-footer-phrase{ bottom: 54px; }
 }
 </style>
 </head>
+
 <body>
   <!-- LAYER DO PAPEL DE PAREDE -->
   <div id="bg-wallpaper"></div>
@@ -983,11 +1056,20 @@ canvas{
   <!-- OVERLAY DE ANIMAÇÃO INICIAL (entre o fundo e os cards) -->
   <div id="intro-hex-overlay"></div>
 
-  <!-- Mascote fixo -->
-  <img id="smartclass-mascote"
-       src="/assets/smartclass-coruja.png"
-       alt="Mascote SmartClass"
-       onerror="this.onerror=null; this.style.display='none';" />
+  <!-- Mascote fixo (agora Axoriin) -->
+  <div id="smartclass-mascote" aria-hidden="true">
+    <div class="ax-stage">
+      <img
+        src="/assets/axoriin/axoriin-logo-8k.png"
+        alt="Axoriin"
+        onerror="this.onerror=null; this.style.display='none';"
+      />
+      <div class="ax-core"></div>
+    </div>
+  </div>
+
+  <!-- Rodapé fixo com frase -->
+  <div id="axoriin-footer-phrase">O eixo que organiza e ilumina a gestão educacional.</div>
 
   <div class="page">
     <aside class="sidebar" aria-label="Navegação lateral">
@@ -1231,19 +1313,8 @@ canvas{
             </div>
           </div>
 
-          <div class="qrcode-box" id="qrBox">
-            <h3>🔐 Gerar QR Code de Acesso do Professor</h3>
-            <input type="text" id="campoIdentificacao" placeholder="Digite nome ou e-mail do professor">
-            <button onclick="gerarQRCode()" style="padding:10px 20px;border:none;background:#B22222;color:white;border-radius:8px;">
-              🎟️ Gerar QR Code
-            </button>
-            <div id="qrImagem" style="margin-top:10px;"></div>
-            <button id="btnImprimirQR" class="print-btn" style="display:none;" onclick="imprimirQRCode()">
-              🖨️ Imprimir QR Code
-            </button>
-          </div>
-
-          <button class="sb-logout" style="margin-top:16px" onclick="logout()">🚪 Sair</button>
+          <!-- ✅ REMOVIDO: BLOCO QR CODE -->
+          <!-- ✅ REMOVIDO: BOTÃO SAIR DUPLICADO (fica só na sidebar) -->
         </section>
       </div>
     </main>
@@ -1436,8 +1507,8 @@ canvas{
       cardControleNotificacoes:'cardControleNotificacoes',
       cardNovoUsuario:'cardNovoUsuario',
       cardEstatisticas:'cardEstatisticas',
-      cardTransferirTurma:'cardTransferirTurma',
-      qrBox:'qrBox',
+      cardTransferirTurma:'cardTransferirTurma'
+      // ✅ qrBox removido
     };
 
     const SECOES = {
@@ -1464,7 +1535,7 @@ canvas{
       const tipo = String(u?.tipo || '').toLowerCase();
 
       if (tipo === 'admin') return;     // admin: tudo
-      if (tipo === 'monitor') return;   // ✅ monitor: tudo (NORMAL)
+      if (tipo === 'monitor') return;   // monitor: tudo
 
       if (tipo === 'professor') {
         hide(
@@ -1482,8 +1553,7 @@ canvas{
           CARDS.cardControleNotificacoes,
           CARDS.cardNovoUsuario,
           CARDS.cardEstatisticas,
-          CARDS.cardTransferirTurma,
-          CARDS.qrBox
+          CARDS.cardTransferirTurma
         );
 
         hide(
@@ -2012,52 +2082,13 @@ canvas{
     }catch{}
   }
 
-  async function gerarQRCode(){
-    const campo=document.getElementById('campoIdentificacao');
-    const destino=document.getElementById('qrImagem');
-    const btn=document.getElementById('btnImprimirQR');
-    destino.innerHTML='⏳ Gerando QR Code...'; btn.style.display='none';
-    try{
-      const r = await fetch(API('/professores/qrcode'), {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        cache:'no-store',
-        body:JSON.stringify({ identificador: campo.value })
-      });
-      const data = await r.json();
-      if(!r.ok) throw new Error(data.mensagem||'Erro desconhecido');
-      destino.innerHTML =
-        `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p>`+
-        `<img id="imgQRCode" src="${data.qrCode}" width="200" />`;
-      btn.style.display='inline-block';
-      showOK('QR Code gerado com sucesso.');
-    }catch(err){
-      showError(err.message);
-      destino.innerHTML = `<span style="color:#ff8a8a;">❌ ${err.message}</span>`;
-    }
-  }
-
-  function imprimirQRCode(){
-    const img=document.getElementById('imgQRCode');
-    const link=document.querySelector('#qrImagem a')?.href||'';
-    const win=window.open('','_blank');
-    win.document.write(
-      `<html><head><title>QR Code</title></head>`+
-      `<body style="text-align:center;padding:40px;background:#fff;color:#111;">`+
-      `<h2>QR Code de Acesso</h2>`+
-      `<img src="${img?.src||''}" /><p>${link}</p></body></html>`
-    );
-    win.document.close(); win.print();
-  }
-
   async function logout(){
     try{ await fetch(AUTH('/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{}
     location.href='./login.html';
   }
 
   async function boot(){
-    // ✅ aplica permissões primeiro
+    // aplica permissões primeiro
     await aplicarPermissoesNoPainel();
 
     await verificarUsuario();

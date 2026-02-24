@@ -1,41 +1,44 @@
-<!-- public/login.html -->
+<!-- public/login.html (Axoriin) - HERO LOGIN PREMIUM (logo domina + form compacto) SEM QUEBRAR BACKEND -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - SmartClass</title>
+  <title>Login - Axoriin</title>
   <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
-  <!-- Tipografia SmartClass -->
+  <!-- Tipografia -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --bg-0:#14375f;
-      --bg-1:#0f2f53;
+      /* HERO (mais escuro e premium) */
+      --bg-0:#0e2442;
+      --bg-1:#081629;
+
       --ink:#ecf2ff;
       --muted:#b8c7e0;
-      --line:rgba(170,200,240,.36);
-      --radius:18px;
+      --line:rgba(170,200,240,.22);
+      --radius:26px;
+
       --shadow:
-        0 22px 60px rgba(0,0,0,.60),
+        0 40px 100px rgba(0,0,0,.75),
         inset 0 1px 0 rgba(255,255,255,.05);
 
-      --glow-1: radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.30), transparent 60%);
-      --glow-2: radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.18), transparent 60%);
-      --glow-3: radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.20), transparent 60%);
+      --glow-1: radial-gradient(1000px 600px at 15% -10%, rgba(0,194,255,.25), transparent 60%);
+      --glow-2: radial-gradient(900px 520px at 110% 0%, rgba(122,92,255,.18), transparent 60%);
+      --glow-3: radial-gradient(780px 420px at -8% 92%, rgba(80,150,255,.18), transparent 60%);
 
-      /* SmartClass */
-      --sc-primary:#00D1FF;
-      --sc-secondary:#7A5CFF;
-      --sc-accent:#FFE29A;
-      --sc-focus: rgba(0, 209, 255, .55);
+      /* Axoriin */
+      --ax-primary:#00C2FF;
+      --ax-secondary:#7A5CFF;
+      --ax-accent:#FFE29A;
+      --ax-focus: rgba(0, 194, 255, .38);
 
       --warn-bg: rgba(255,226,154,.10);
       --warn-bd: rgba(255,226,154,.25);
@@ -44,6 +47,16 @@
       --danger-bg: rgba(255, 70, 90, .10);
       --danger-bd: rgba(255, 70, 90, .22);
       --danger-tx: #ffb3b8;
+
+      /* HERO: logo maior + núcleo mais presente */
+      --mark-size: 300px;  /* 👈 ajuste aqui se quiser (ex: 280px / 320px) */
+      --core-x: 50%;
+      --core-y: 55%;
+      --core-size: 130px;
+
+      /* campos mais compactos */
+      --field-radius: 14px;
+      --btn-radius: 16px;
     }
 
     *{box-sizing:border-box}
@@ -64,26 +77,32 @@
         var(--glow-1),
         var(--glow-2),
         var(--glow-3),
-        radial-gradient(12px 12px at 24% 18%, rgba(255,255,255,.12), transparent 60%),
-        radial-gradient(12px 12px at 68% 24%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(12px 12px at 24% 18%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(12px 12px at 68% 24%, rgba(255,255,255,.08), transparent 60%),
         linear-gradient(180deg, var(--bg-0), var(--bg-1));
       background-blend-mode: screen, screen, screen, normal;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      padding: 18px; /* evita encostar em telas pequenas */
     }
 
     .container{
       position: relative;
-      background: linear-gradient(180deg, rgba(21,40,76,.92), rgba(13,28,54,.96));
+      background: linear-gradient(180deg, rgba(15,32,60,.85), rgba(9,20,40,.95));
       border-radius: var(--radius);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
-      padding: 26px 26px 22px;
-      width: 360px;
+
+      /* HERO: mais largo e com respiro */
+      width: 460px;
       max-width: 92vw;
+
+      padding: 38px 40px 30px;
       text-align: center;
-      backdrop-filter: blur(18px) saturate(150%);
-      -webkit-backdrop-filter: blur(18px) saturate(150%);
+
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+
       animation: fadeIn .5s ease-out;
       overflow: hidden;
     }
@@ -93,8 +112,8 @@
       position:absolute;
       inset:-2px;
       background:
-        radial-gradient(800px 260px at 40% -20%, rgba(0,209,255,.25), transparent 65%),
-        radial-gradient(700px 240px at 110% 10%, rgba(122,92,255,.18), transparent 60%);
+        radial-gradient(900px 320px at 40% -18%, rgba(0,194,255,.22), transparent 65%),
+        radial-gradient(800px 280px at 110% 12%, rgba(122,92,255,.16), transparent 60%);
       pointer-events:none;
     }
 
@@ -104,12 +123,12 @@
       gap:8px;
       padding:6px 10px;
       border-radius:999px;
-      border:1px solid rgba(170,200,240,.30);
-      background: rgba(10,19,34,.35);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      border:1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.30);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
       font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 10px;
+      color: rgba(235,245,255,.72);
+      margin-bottom: 12px;
       position: relative;
       z-index: 1;
     }
@@ -118,44 +137,105 @@
       width:8px;
       height:8px;
       border-radius:999px;
-      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
-      box-shadow: 0 0 12px rgba(0,209,255,.6);
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
+      box-shadow: 0 0 12px rgba(0,194,255,.55);
       flex: 0 0 auto;
     }
 
+    /* ====== HERO LOGO (PNG 8K) ====== */
     .logo-wrap{
       display:flex;
       justify-content:center;
-      margin-bottom: 10px;
+      margin: 0 0 14px; /* menos espaço, mais hero */
       position: relative;
       z-index: 1;
     }
 
-    .logo{
-      width: 92px;
-      height: 92px;
-      object-fit: contain;
-      border-radius: 999px;
-      background: radial-gradient(circle at 30% 0, #4db8ff, #0b1e3a);
-      box-shadow:
-        0 10px 26px rgba(0,0,0,.6),
-        0 0 22px rgba(120,200,255,.6);
-      border:1px solid rgba(190,220,255,.5);
-      padding: 10px;
+    .mark-stage{
+      width: var(--mark-size);
+      height: var(--mark-size);
+      position: relative;
+      display: grid;
+      place-items: center;
+      pointer-events:none;
+      user-select:none;
+      filter: drop-shadow(0 26px 70px rgba(0,0,0,.70));
     }
 
+    .mark-stage img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display:block;
+      transform-origin: 50% 55%;
+      will-change: transform, filter;
+      animation: heroOrbit 12s ease-in-out infinite alternate,
+                 heroFloat 7s ease-in-out infinite;
+    }
+
+    .core-glow{
+      position:absolute;
+      width: var(--core-size);
+      height: var(--core-size);
+      border-radius: 999px;
+      left: var(--core-x);
+      top: var(--core-y);
+      transform: translate(-50%, -50%);
+      pointer-events:none;
+      mix-blend-mode: screen;
+      background: radial-gradient(circle,
+        rgba(255,255,255,1) 0%,
+        rgba(0,194,255,.90) 28%,
+        rgba(0,194,255,.32) 58%,
+        transparent 80%);
+      filter: blur(14px);
+      opacity: .70;
+      will-change: transform, opacity, filter;
+      animation: heroPulse 3.2s ease-in-out infinite;
+    }
+
+    @keyframes heroOrbit{
+      0%   { transform: rotate(-2deg) scale(1); }
+      100% { transform: rotate( 2deg) scale(1.04); }
+    }
+
+    @keyframes heroFloat{
+      0%   { transform: translateY(0px); }
+      50%  { transform: translateY(-8px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes heroPulse{
+      0%{
+        opacity:.62;
+        transform: translate(-50%,-50%) scale(.90);
+        filter: blur(15px);
+      }
+      50%{
+        opacity:1;
+        transform: translate(-50%,-50%) scale(1.15);
+        filter: blur(12px);
+      }
+      100%{
+        opacity:.62;
+        transform: translate(-50%,-50%) scale(.90);
+        filter: blur(15px);
+      }
+    }
+
+    /* ===== textos ===== */
     .brand{
       font-family: "Orbitron", system-ui, sans-serif;
-      font-size: 1.35rem;
+      font-size: 1.30rem;   /* levemente menor para ficar Tesla/Apple */
       letter-spacing: .9px;
-      margin: 4px 0 0;
+      margin: 0 0 2px;
       text-shadow: 0 2px 10px rgba(0,0,0,.65);
       position: relative;
       z-index: 1;
     }
 
     .brand span{
-      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -163,8 +243,8 @@
 
     .subtitle{
       margin: 6px 0 18px;
-      font-size: .98rem;
-      color: var(--muted);
+      font-size: .95rem;
+      color: rgba(235,245,255,.70);
       position: relative;
       z-index: 1;
       line-height: 1.25;
@@ -215,11 +295,7 @@
       text-align:left;
     }
 
-    .verify-box .title{
-      font-weight:900;
-      margin-bottom:6px;
-    }
-
+    .verify-box .title{ font-weight:900; margin-bottom:6px; }
     .verify-box .desc{
       color: rgba(255,236,193,.92);
       margin-bottom:10px;
@@ -231,18 +307,14 @@
       margin:0 0 10px;
       padding:10px;
       border-radius:12px;
-      background: rgba(0,209,255,.08);
-      border: 1px solid rgba(0,209,255,.20);
+      background: rgba(0,194,255,.08);
+      border: 1px solid rgba(0,194,255,.20);
       color: rgba(236,242,255,.92);
       font-size:14px;
       text-align:left;
     }
 
-    .tenant-box .title{
-      font-weight:900;
-      margin-bottom:6px;
-    }
-
+    .tenant-box .title{ font-weight:900; margin-bottom:6px; }
     .tenant-box .desc{
       color: rgba(236,242,255,.80);
       margin-bottom:10px;
@@ -263,9 +335,9 @@
       justify-content:space-between;
       gap:10px;
       padding:10px 12px;
-      border-radius:10px;
-      border:1px solid rgba(170,200,240,.28);
-      background: rgba(10,19,34,.28);
+      border-radius:12px;
+      border:1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.24);
       color: rgba(236,242,255,.92);
       font-family: "Rajdhani", system-ui, sans-serif;
       font-weight: 900;
@@ -275,7 +347,7 @@
 
     .tenant-btn:hover{
       filter: brightness(1.06);
-      background: rgba(10,19,34,.38);
+      background: rgba(10,19,34,.34);
     }
 
     .tenant-meta{
@@ -287,24 +359,18 @@
     .btn-ghost{
       width:100%;
       padding:10px 12px;
-      border-radius:10px;
-      border:1px solid rgba(170,200,240,.28);
-      background: rgba(10,19,34,.28);
+      border-radius:12px;
+      border:1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.24);
       color: rgba(236,242,255,.92);
       font-family: "Rajdhani", system-ui, sans-serif;
       font-weight: 900;
       cursor:pointer;
     }
 
-    .btn-ghost:disabled{
-      opacity:.75;
-      cursor:not-allowed;
-    }
+    .btn-ghost:disabled{ opacity:.75; cursor:not-allowed; }
 
-    .field{
-      position: relative;
-      margin-bottom: 12px;
-    }
+    .field{ position: relative; margin-bottom: 12px; }
 
     .label{
       display:block;
@@ -316,25 +382,26 @@
 
     input{
       width:100%;
-      padding:11px 12px;
-      border-radius:10px;
-      border:1px solid rgba(170,200,240,.45);
+      padding:12px 14px;   /* HERO: um pouco mais “gordinho” e premium */
+      border-radius: var(--field-radius);
+      border:1px solid rgba(255,255,255,.12);
       font-size:15px;
-      background: linear-gradient(180deg, rgba(19,38,72,.95), rgba(11,26,50,.98));
+      background: rgba(255,255,255,.05);
       color: var(--ink);
       box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.10),
-        0 8px 18px rgba(0,0,0,.55);
+        inset 0 1px 0 rgba(255,255,255,.06),
+        0 10px 22px rgba(0,0,0,.45);
       outline: none;
+      transition: .18s border-color, .18s box-shadow, .18s filter;
     }
 
-    input::placeholder{ color: var(--muted); }
+    input::placeholder{ color: rgba(200,215,235,.70); }
 
     input:focus{
-      border-color: rgba(190,220,255,.9);
+      border-color: rgba(0,194,255,.65);
       box-shadow:
-        0 0 0 2px var(--sc-focus),
-        0 10px 28px rgba(0,0,0,.75);
+        0 0 0 2px var(--ax-focus),
+        0 14px 28px rgba(0,0,0,.60);
     }
 
     .pass-tools{
@@ -346,9 +413,9 @@
     .toggle-pass{
       height: 34px;
       padding: 0 12px;
-      border-radius: 9px;
-      border: 1px solid rgba(170,200,240,.28);
-      background: rgba(10,19,34,.28);
+      border-radius: 12px;
+      border: 1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.24);
       color: rgba(236,242,255,.92);
       font-family: "Rajdhani", system-ui, sans-serif;
       font-weight: 800;
@@ -361,35 +428,35 @@
     .toggle-pass:hover{
       filter: brightness(1.08);
       transform: translateY(-1px);
-      background: rgba(10,19,34,.35);
+      background: rgba(10,19,34,.32);
     }
 
-    .actions{ margin-top: 6px; }
+    .actions{ margin-top: 10px; }
 
     button[type="submit"]{
       width:100%;
-      padding:11px 12px;
+      padding:13px 14px;
       border:none;
-      border-radius:10px;
+      border-radius: var(--btn-radius);
       font-size:16px;
       font-weight:900;
       cursor:pointer;
       color:#071018;
-      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
       box-shadow:
-        0 14px 30px rgba(0, 209, 255, .22),
-        0 16px 34px rgba(122, 92, 255, .18),
+        0 18px 40px rgba(0, 194, 255, .25),
+        0 22px 50px rgba(122, 92, 255, .20),
         inset 0 1px 0 rgba(255,255,255,.14);
       transition:.18s transform,.18s filter,.18s box-shadow;
       letter-spacing:.3px;
     }
 
     button[type="submit"]:hover{
-      filter: brightness(1.06);
-      transform: translateY(-1px);
+      filter: brightness(1.05);
+      transform: translateY(-2px);
       box-shadow:
-        0 18px 40px rgba(0, 209, 255, .28),
-        0 18px 44px rgba(122, 92, 255, .22),
+        0 24px 52px rgba(0, 194, 255, .28),
+        0 26px 58px rgba(122, 92, 255, .22),
         inset 0 1px 0 rgba(255,255,255,.18);
     }
 
@@ -401,14 +468,14 @@
     }
 
     .btn-sub{
-      margin-top:10px;
+      margin-top:12px;
       font-size: 13px;
-      color: var(--muted);
+      color: rgba(235,245,255,.60);
       text-align:center;
     }
 
     .btn-sub a{
-      color: var(--sc-accent);
+      color: var(--ax-accent);
       text-decoration:none;
       font-weight:800;
     }
@@ -436,6 +503,17 @@
       from{ opacity:0; transform:translateY(14px); }
       to{ opacity:1; transform:translateY(0); }
     }
+
+    @media (prefers-reduced-motion: reduce){
+      .mark-stage img{ animation: none !important; }
+      .core-glow{ animation: none !important; }
+    }
+
+    /* HERO: responsivo para telas pequenas */
+    @media (max-width: 420px){
+      :root{ --mark-size: 260px; }
+      .container{ padding: 30px 22px 22px; }
+    }
   </style>
 </head>
 
@@ -444,15 +522,16 @@
     <div class="badge"><span class="dot"></span> Ambiente seguro • Acesso institucional</div>
 
     <div class="logo-wrap">
-      <img
-        src="/assets/smartclass-coruja.png"
-        alt="Logo SmartClass (Coruja)"
-        class="logo"
-        onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"
-      />
+      <div class="mark-stage" aria-hidden="true">
+        <!-- ✅ PNG 8K (transparente) -->
+        <!-- Coloque o arquivo em: public/assets/axoriin/axoriin-logo-8k.png -->
+        <img src="/assets/axoriin/axoriin-logo-8k.png" alt="Axoriin">
+        <!-- ✅ Brilho pulsante do núcleo -->
+        <div class="core-glow" aria-hidden="true"></div>
+      </div>
     </div>
 
-    <div class="brand"><span>SmartClass</span></div>
+    <div class="brand"><span>Axoriin</span></div>
 
     <div class="subtitle">
       <strong id="nome-colegio">Instituição</strong> • Acesso ao sistema
@@ -460,10 +539,8 @@
 
     <form id="login-form">
       <div class="erro" id="erro"></div>
-
       <div class="notice-ok" id="ok"></div>
 
-      <!-- ✅ Escolha de instituição quando o e-mail existe em mais de uma -->
       <div class="tenant-box" id="tenant-box">
         <div class="title">Selecione sua instituição</div>
         <div class="desc">
@@ -488,7 +565,6 @@
       <div class="field">
         <label class="label" for="senha">Senha</label>
         <input type="password" id="senha" placeholder="Digite sua senha" required autocomplete="current-password" />
-
         <div class="pass-tools">
           <button type="button" class="toggle-pass" id="toggle-pass" aria-label="Mostrar/ocultar senha">Mostrar</button>
         </div>
@@ -536,31 +612,29 @@
     }
 
     function getTenantFromStorage() {
-      const t = (localStorage.getItem('smartclass_tenant') || '').trim();
+      const t = (localStorage.getItem('axoriin_tenant') || '').trim();
       return t || '';
     }
 
     function setTenantStorage(t) {
       if (!t) return;
-      localStorage.setItem('smartclass_tenant', String(t).trim());
+      localStorage.setItem('axoriin_tenant', String(t).trim());
     }
 
     function ensureTenantInUrl() {
       const tUrl = getTenantFromUrl();
       const tLs = getTenantFromStorage();
 
-      // se já tem na URL, grava e pronto
       if (tUrl) {
         setTenantStorage(tUrl);
         return tUrl;
       }
 
-      // se não tem na URL mas tem no storage, injeta na URL (sem perder outros params)
       if (tLs) {
         const u = new URL(location.href);
         u.searchParams.set('t', tLs);
         location.replace(u.toString());
-        return tLs; // o replace geralmente interrompe o fluxo logo em seguida
+        return tLs;
       }
 
       return '';
@@ -580,8 +654,7 @@
       const el = document.getElementById('nome-colegio');
       if (!el) return;
 
-      // cache por-tenant (evita conflito)
-      const key = TENANT ? `smartclass_nome_colegio__${TENANT}` : 'smartclass_nome_colegio';
+      const key = TENANT ? `axoriin_nome_colegio__${TENANT}` : 'axoriin_nome_colegio';
       const cached = localStorage.getItem(key);
       if (cached && cached.trim().length > 2) {
         el.textContent = cached.trim();
@@ -606,7 +679,6 @@
     })();
 
     // ✅ aviso “E-mail confirmado”
-    // aceita verified=1 (authRoutes) e confirmado=1 (fallback do index.js)
     (function showVerifiedNotice() {
       const verified = (qs.get('verified') === '1') || (qs.get('confirmado') === '1');
       if (!verified) return;
@@ -614,7 +686,6 @@
       okBox.textContent = 'E-mail confirmado! Você já pode entrar.';
       okBox.style.display = 'block';
 
-      // remove o param da URL depois de mostrar (pra não ficar repetindo ao atualizar)
       try {
         const u = new URL(location.href);
         u.searchParams.delete('verified');

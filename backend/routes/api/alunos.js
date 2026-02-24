@@ -395,69 +395,61 @@ router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
   }
 });
 
-/* ===================== COMPATIBILIDADE /professor/... ===================== */
-
-// Mantido para compatibilidade do front antigo — agora usa o mesmo JWT normal:
-router.get('/professor/turmas', autenticar, apenasLeitura, async (req, res) => {
+/* ============================================================
+   ✅ TRANSFERÊNCIA EM LOTE DE TURMA
+   PUT /api/alunos/transferir
+   body: { ids: [ObjectId...], novaTurma: "2ºC" }
+   (SENSÍVEL -> monitor/admin)
+============================================================ */
+router.put('/transferir', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-    const turmas = await Aluno.distinct('turma', { instituicao: req.usuario.instituicao });
-    turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
-    res.set('Cache-Control', 'private, max-age=120');
-    res.json({ turmas });
-  } catch (e) {
-    console.error('Erro GET /api/alunos/professor/turmas:', e);
-    res.status(500).json({ message: 'Erro ao listar turmas' });
-  }
-});
+    const inst = req.usuario?.instituicao;
+    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
 
-router.get('/professor/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
-  try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    let novaTurma = req.body?.novaTurma;
 
-    const LIMITE = 48;
-    const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
-    const termo = (req.query.q || '').trim();
-    const turma = normalizaTurma(req.params.turma);
+    novaTurma = normalizaTurma(novaTurma);
+    const idsLimpos = ids.map(String).map(s => s.trim()).filter(Boolean);
 
-    const filtro = { instituicao: req.usuario.instituicao, turma };
-    if (termo) filtro.nome = { $regex: termo, $options: 'i' };
+    if (!idsLimpos.length) {
+      return res.status(400).json({ message: 'Informe "ids" (array) com pelo menos 1 aluno.' });
+    }
+    if (!novaTurma) {
+      return res.status(400).json({ message: 'Informe "novaTurma".' });
+    }
 
-    const [items, total] = await Promise.all([
-      Aluno.find(filtro).select('_id nome turma').sort({ nome: 1 })
-        .skip((pagina - 1) * LIMITE).limit(LIMITE).lean(),
-      Aluno.countDocuments(filtro)
-    ]);
+    const result = await Aluno.updateMany(
+      { _id: { $in: idsLimpos }, instituicao: inst },
+      { $set: { turma: novaTurma } }
+    );
 
-    res.set('Cache-Control', 'private, max-age=30');
-    res.json({ items, pagina, total, paginas: Math.ceil(total / LIMITE) });
+    try {
+      for (const id of idsLimpos) {
+        detalhesCache.delete(cacheKey(inst, String(id)));
+      }
+    } catch {}
+
+    try {
+      await Log.create({
+        usuario: req.usuario.id,
+        instituicao: inst,
+        acao: 'Transferência de Turma (lote)',
+        entidade: 'Aluno',
+        entidadeId: null,
+        detalhe: `qtde=${result?.modifiedCount ?? result?.nModified ?? 0}; novaTurma=${novaTurma}`
+      });
+    } catch {}
+
+    const alterados = result?.modifiedCount ?? result?.nModified ?? 0;
+    res.json({
+      ok: true,
+      mensagem: `Transferência concluída. ${alterados} aluno(s) atualizado(s) para a turma ${novaTurma}.`,
+      alterados
+    });
   } catch (error) {
-    console.error('Erro GET /api/alunos/professor/turma:', error);
-    res.status(500).json({ message: 'Erro ao listar alunos', error });
-  }
-});
-
-router.get('/professor/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
-  try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const id = req.params.id;
-    const aluno = await Aluno.findOne({ _id: id, instituicao: req.usuario.instituicao })
-      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoCaminho instituicao')
-      .lean();
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    const notificacoes = await Notificacao.find({ aluno: id })
-      .select('data tipo valorNumerico')
-      .sort({ data: 1 })
-      .lean();
-
-    const notaAtual = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoes);
-    res.set('Cache-Control', 'private, max-age=15');
-    res.json({ aluno, notaAtual, notificacoes });
-  } catch (error) {
-    console.error('Erro GET /api/alunos/professor/:id/detalhes:', error);
-    res.status(500).json({ message: 'Erro ao obter detalhes', error });
+    console.error('Erro PUT /api/alunos/transferir:', error);
+    res.status(500).json({ message: 'Erro ao transferir alunos', error: error?.message || error });
   }
 });
 
