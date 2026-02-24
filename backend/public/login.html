@@ -30,9 +30,10 @@
         0 40px 100px rgba(0,0,0,.75),
         inset 0 1px 0 rgba(255,255,255,.05);
 
-      --glow-1: radial-gradient(1000px 600px at 15% -10%, rgba(0,194,255,.25), transparent 60%);
-      --glow-2: radial-gradient(900px 520px at 110% 0%, rgba(122,92,255,.18), transparent 60%);
-      --glow-3: radial-gradient(780px 420px at -8% 92%, rgba(80,150,255,.18), transparent 60%);
+      /* ====== FUNDO: futurista energético (sem estourar) ====== */
+      --glow-1: radial-gradient(1000px 600px at 15% -10%, rgba(0,194,255,.20), transparent 60%);
+      --glow-2: radial-gradient(900px 520px at 110% 0%, rgba(122,92,255,.14), transparent 60%);
+      --glow-3: radial-gradient(780px 420px at -8% 92%, rgba(80,150,255,.14), transparent 60%);
 
       /* Axoriin */
       --ax-primary:#00C2FF;
@@ -49,10 +50,17 @@
       --danger-tx: #ffb3b8;
 
       /* HERO: logo maior + núcleo mais presente */
-      --mark-size: 300px;  /* 👈 ajuste aqui se quiser (ex: 280px / 320px) */
+      --mark-size: 300px;  /* ajuste aqui se quiser (ex: 280px / 320px) */
       --core-x: 50%;
       --core-y: 55%;
       --core-size: 130px;
+
+      /* ====== NÚCLEO (controle de intensidade) ====== */
+      --core-opacity: .38;     /* 👈 mais opaco, sem estourar (antes .70) */
+      --core-blur: 10px;       /* 👈 antes 14px */
+      --core-w1: .65;          /* branco central */
+      --core-c1: .62;          /* azul forte */
+      --core-c2: .28;          /* halo */
 
       /* campos mais compactos */
       --field-radius: 14px;
@@ -77,8 +85,8 @@
         var(--glow-1),
         var(--glow-2),
         var(--glow-3),
-        radial-gradient(12px 12px at 24% 18%, rgba(255,255,255,.10), transparent 60%),
-        radial-gradient(12px 12px at 68% 24%, rgba(255,255,255,.08), transparent 60%),
+        radial-gradient(12px 12px at 24% 18%, rgba(255,255,255,.08), transparent 60%),
+        radial-gradient(12px 12px at 68% 24%, rgba(255,255,255,.06), transparent 60%),
         linear-gradient(180deg, var(--bg-0), var(--bg-1));
       background-blend-mode: screen, screen, screen, normal;
       -webkit-font-smoothing: antialiased;
@@ -112,8 +120,8 @@
       position:absolute;
       inset:-2px;
       background:
-        radial-gradient(900px 320px at 40% -18%, rgba(0,194,255,.22), transparent 65%),
-        radial-gradient(800px 280px at 110% 12%, rgba(122,92,255,.16), transparent 60%);
+        radial-gradient(900px 320px at 40% -18%, rgba(0,194,255,.18), transparent 65%),
+        radial-gradient(800px 280px at 110% 12%, rgba(122,92,255,.12), transparent 60%);
       pointer-events:none;
     }
 
@@ -138,7 +146,7 @@
       height:8px;
       border-radius:999px;
       background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
-      box-shadow: 0 0 12px rgba(0,194,255,.55);
+      box-shadow: 0 0 10px rgba(0,194,255,.45);
       flex: 0 0 auto;
     }
 
@@ -173,6 +181,7 @@
                  heroFloat 7s ease-in-out infinite;
     }
 
+    /* ✅ NÚCLEO: futurista energético, porém mais opaco/contido */
     .core-glow{
       position:absolute;
       width: var(--core-size);
@@ -182,16 +191,21 @@
       top: var(--core-y);
       transform: translate(-50%, -50%);
       pointer-events:none;
+
+      /* mantém “energia” sem explodir */
       mix-blend-mode: screen;
+
       background: radial-gradient(circle,
-        rgba(255,255,255,1) 0%,
-        rgba(0,194,255,.90) 28%,
-        rgba(0,194,255,.32) 58%,
+        rgba(255,255,255,var(--core-w1)) 0%,
+        rgba(0,194,255,var(--core-c1)) 24%,
+        rgba(0,194,255,var(--core-c2)) 56%,
         transparent 80%);
-      filter: blur(14px);
-      opacity: .70;
+
+      filter: blur(var(--core-blur));
+      opacity: var(--core-opacity);
+
       will-change: transform, opacity, filter;
-      animation: heroPulse 3.2s ease-in-out infinite;
+      animation: heroPulse 3.6s ease-in-out infinite;
     }
 
     @keyframes heroOrbit{
@@ -205,28 +219,29 @@
       100% { transform: translateY(0px); }
     }
 
+    /* ✅ pulso energético (sem estourar) */
     @keyframes heroPulse{
       0%{
-        opacity:.62;
-        transform: translate(-50%,-50%) scale(.90);
-        filter: blur(15px);
+        opacity: calc(var(--core-opacity) * .85);
+        transform: translate(-50%,-50%) scale(.94);
+        filter: blur(calc(var(--core-blur) + 2px));
       }
       50%{
-        opacity:1;
-        transform: translate(-50%,-50%) scale(1.15);
-        filter: blur(12px);
+        opacity: calc(var(--core-opacity) * 1.45);
+        transform: translate(-50%,-50%) scale(1.08);
+        filter: blur(calc(var(--core-blur) - 1px));
       }
       100%{
-        opacity:.62;
-        transform: translate(-50%,-50%) scale(.90);
-        filter: blur(15px);
+        opacity: calc(var(--core-opacity) * .85);
+        transform: translate(-50%,-50%) scale(.94);
+        filter: blur(calc(var(--core-blur) + 2px));
       }
     }
 
     /* ===== textos ===== */
     .brand{
       font-family: "Orbitron", system-ui, sans-serif;
-      font-size: 1.30rem;   /* levemente menor para ficar Tesla/Apple */
+      font-size: 1.30rem;
       letter-spacing: .9px;
       margin: 0 0 2px;
       text-shadow: 0 2px 10px rgba(0,0,0,.65);
@@ -382,7 +397,7 @@
 
     input{
       width:100%;
-      padding:12px 14px;   /* HERO: um pouco mais “gordinho” e premium */
+      padding:12px 14px;
       border-radius: var(--field-radius);
       border:1px solid rgba(255,255,255,.12);
       font-size:15px;
@@ -444,8 +459,8 @@
       color:#071018;
       background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
       box-shadow:
-        0 18px 40px rgba(0, 194, 255, .25),
-        0 22px 50px rgba(122, 92, 255, .20),
+        0 18px 40px rgba(0, 194, 255, .22),
+        0 22px 50px rgba(122, 92, 255, .18),
         inset 0 1px 0 rgba(255,255,255,.14);
       transition:.18s transform,.18s filter,.18s box-shadow;
       letter-spacing:.3px;
@@ -455,8 +470,8 @@
       filter: brightness(1.05);
       transform: translateY(-2px);
       box-shadow:
-        0 24px 52px rgba(0, 194, 255, .28),
-        0 26px 58px rgba(122, 92, 255, .22),
+        0 24px 52px rgba(0, 194, 255, .24),
+        0 26px 58px rgba(122, 92, 255, .20),
         inset 0 1px 0 rgba(255,255,255,.18);
     }
 
@@ -526,7 +541,7 @@
         <!-- ✅ PNG 8K (transparente) -->
         <!-- Coloque o arquivo em: public/assets/axoriin/axoriin-logo-8k.png -->
         <img src="/assets/axoriin/axoriin-logo-8k.png" alt="Axoriin">
-        <!-- ✅ Brilho pulsante do núcleo -->
+        <!-- ✅ Brilho pulsante do núcleo (ajustado para não estourar) -->
         <div class="core-glow" aria-hidden="true"></div>
       </div>
     </div>
