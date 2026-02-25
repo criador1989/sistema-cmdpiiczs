@@ -272,22 +272,38 @@
     border-radius:12px; padding:12px; border:1px solid rgba(180,210,245,.18);
   }
 
-  @media print{
-    body{ background:#fff; color:#000 }
-    .topbar{ display:none !important }
-    .page{ width:100%; margin:0; padding:0 12mm }
-    .columns{ grid-template-columns:1fr 1fr; gap:12px }
-    .list{ max-height:none; overflow:visible }
-    .obs,.notif{ break-inside:avoid }
-    .hero,.card{ box-shadow:none; border:1px solid #ccc; background:#fff; color:#000 }
-    a.btn, button.btn, .iconbtn{ display:none !important }
-    .qr-preview{ display:block !important }
+  /* ===== Toast (mensagem de sucesso/erro) ===== */
+  .toast{
+    position:fixed; right:16px; bottom:16px; z-index:9999;
+    max-width:min(520px, calc(100vw - 32px));
+    padding:12px 14px;
+    border-radius:14px;
+    border:1px solid rgba(180,210,245,.34);
+    background:linear-gradient(180deg, rgba(24,44,78,.76), rgba(18,36,66,.72));
+    color:#eef5ff;
+    box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    display:none;
   }
+  .toast strong{display:block; margin-bottom:2px}
+  .toast.ok{ border-left:6px solid rgba(118,255,179,.95) }
+  .toast.err{ border-left:6px solid rgba(255,154,161,.95) }
 
-  @media (max-width:900px){
-    .head{ flex-direction:column; align-items:flex-start; gap:12px }
-    .avatar{ width:88px; height:88px; flex:0 0 88px; }
+  /* ===== Anexos Observações ===== */
+  .attach-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  .attach-chip{
+    display:inline-flex; gap:8px; align-items:center;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(180,210,245,.34);
+    background:linear-gradient(180deg, rgba(24,44,78,.52), rgba(18,36,66,.48));
+    color:#eef5ff;
+    font-size:.82rem;
   }
+  .attach-chip a{color:#d7ebff; text-decoration:none}
+  .attach-chip a:hover{text-decoration:underline}
+  .attach-help{color:var(--muted); font-size:.85rem}
   </style>
 
   <script>
@@ -360,7 +376,8 @@
         <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
       </div>
 
-      <div class="edit-card" id="editorAluno">
+      <!-- ✅ ALTERAÇÃO: agora é FORM para salvar com Enter/submit -->
+      <form class="edit-card" id="editorAluno">
         <div class="grid-2">
           <div><label>Nome</label><input id="edNome" type="text" /></div>
           <div><label>Turma</label><input id="edTurma" type="text" /></div>
@@ -403,10 +420,12 @@
         <!-- /Contatos -->
 
         <div class="edit-actions">
-          <button class="btn ghost" id="btnCancelarEd">Cancelar</button>
-          <button class="btn primary" id="btnSalvarEd">Salvar alterações</button>
+          <!-- ✅ ALTERAÇÃO: cancelar precisa ser type="button" -->
+          <button class="btn ghost" type="button" id="btnCancelarEd">Cancelar</button>
+          <!-- ✅ ALTERAÇÃO: salvar como submit -->
+          <button class="btn primary" type="submit" id="btnSalvarEd">Salvar alterações</button>
         </div>
-      </div>
+      </form>
 
       <div class="kvs">
         <div class="kv"><b>Turma</b><span id="kvTurma">—</span></div>
@@ -443,6 +462,16 @@
       <div class="card">
         <h3 class="title">Observações</h3>
         <div id="observacoes" class="list"></div>
+
+        <!-- ✅ NOVO: anexos -->
+        <div class="attach-row">
+          <button class="btn ghost" id="btnAnexarObs" type="button">📎 Anexar arquivo</button>
+          <input id="inputObsFiles" type="file" multiple
+                 accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+                 style="display:none;">
+          <span class="attach-help" id="attachHelp">Nenhum anexo selecionado</span>
+        </div>
+
         <div class="editor">
           <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
           <button class="btn primary" id="btnSalvar">Salvar</button>
@@ -463,6 +492,9 @@
     </section>
   </main>
 
+  <!-- Toast -->
+  <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
+
   <script>
     // ===== Helpers =====
     const qs = (s)=>document.querySelector(s);
@@ -470,7 +502,19 @@
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
 
-    // —— Helpers de data robustos —— 
+    // ===== Toast =====
+    let toastTimer = null;
+    function toast(msg, type='ok', title='') {
+      const box = byId('toastBox');
+      if (!box) return alert(msg);
+      box.className = `toast ${type}`;
+      box.innerHTML = `${title ? `<strong>${title}</strong>` : ''}<div>${msg}</div>`;
+      box.style.display = 'block';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>{ box.style.display='none'; }, 3200);
+    }
+
+    // —— Helpers de data robustos ——
     function parseDateLike(d){
       if (!d && d !== 0) return null;
       if (d instanceof Date) return isNaN(+d) ? null : d;
@@ -806,6 +850,23 @@
         obsEl.innerHTML = observacoes.map(o=>{
           const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
           const dataObsStr = dataObs ? dataObs.toLocaleString('pt-BR') : '—';
+
+          // ✅ anexos (caso backend devolva algo)
+          const anexos = Array.isArray(o.anexos) ? o.anexos
+                        : Array.isArray(o.attachments) ? o.attachments
+                        : Array.isArray(o.files) ? o.files
+                        : [];
+          const anexosHtml = anexos.length ? (
+            '<div class="attach-row" style="margin-top:10px">' +
+              anexos.map(a=>{
+                const nome = (a.nome || a.filename || a.name || 'Arquivo');
+                const url  = (a.url || a.link || a.path || a.fileUrl || '');
+                if (!url) return `<span class="attach-chip">📎 ${nome}</span>`;
+                return `<span class="attach-chip">📎 <a href="${url}" target="_blank" rel="noopener">${nome}</a></span>`;
+              }).join('') +
+            '</div>'
+          ) : '';
+
           return (
             '<div class="obs">' +
               '<div class="row">' +
@@ -816,6 +877,7 @@
                 '</div>' +
               '</div>' +
               '<div style="margin-top:6px" class="texto">' + (String(o.texto||'').replace(/\n/g,'<br>')) + '</div>' +
+              anexosHtml +
             '</div>'
           );
         }).join('');
@@ -878,23 +940,92 @@
     }
 
     // ===== Observações =====
+    function updateAttachHelp(){
+      const input = byId('inputObsFiles');
+      const help = byId('attachHelp');
+      if (!input || !help) return;
+      const n = input.files ? input.files.length : 0;
+      help.textContent = n ? `${n} anexo(s) selecionado(s)` : 'Nenhum anexo selecionado';
+    }
+
     async function salvarObservacao(){
       const texto = byId('textoObservacao').value.trim();
-      if(!texto) return alert('Digite algo.');
-      const r = await fetch('/api/observacoes/' + alunoId,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body:JSON.stringify({ texto })
-      });
-      if(r.ok){ byId('textoObservacao').value=''; carregarFicha(); }
-      else{ const j = await r.json().catch(()=>({})); alert(j.mensagem || 'Erro ao salvar.'); }
+      if(!texto) return toast('Digite algo na observação.', 'err', 'Atenção');
+
+      const inputFiles = byId('inputObsFiles');
+      const files = inputFiles?.files ? Array.from(inputFiles.files) : [];
+
+      // ✅ tenta multipart (texto + anexos)
+      if (files.length) {
+        try{
+          const fd = new FormData();
+          fd.append('texto', texto);
+          files.forEach(f=>{
+            fd.append('anexos', f);
+            fd.append('arquivos', f);
+            fd.append('files', f);
+          });
+
+          const headers = {};
+          const token = localStorage.getItem('token');
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const r = await fetch('/api/observacoes/' + alunoId,{
+            method:'POST',
+            headers,
+            credentials:'include',
+            body: fd
+          });
+
+          if (r.ok){
+            byId('textoObservacao').value='';
+            if (inputFiles) inputFiles.value = '';
+            updateAttachHelp();
+            toast('Observação salva com sucesso!', 'ok', 'Tudo certo');
+            return carregarFicha();
+          }
+        }catch(e){
+          // segue para fallback JSON
+        }
+
+        toast('Seu backend ainda não está aceitando anexos por aqui. Vou salvar só o texto (sem quebrar nada).', 'err', 'Anexo não suportado (por enquanto)');
+      }
+
+      // ✅ fallback (texto apenas)
+      try{
+        const headers = {'Content-Type':'application/json'};
+        const token = localStorage.getItem('token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const r = await fetch('/api/observacoes/' + alunoId,{
+          method:'POST',
+          headers,
+          credentials:'include',
+          body:JSON.stringify({ texto })
+        });
+
+        if(r.ok){
+          byId('textoObservacao').value='';
+          if (inputFiles) inputFiles.value = '';
+          updateAttachHelp();
+          toast('Observação salva com sucesso!', 'ok', 'Tudo certo');
+          carregarFicha();
+        }else{
+          const j = await r.json().catch(()=>({}));
+          toast(j.mensagem || j.message || 'Erro ao salvar observação.', 'err', 'Falha');
+        }
+      }catch(e){
+        toast(e.message || 'Erro ao salvar observação.', 'err', 'Falha');
+      }
     }
+
     async function excluirObs(obsId){
       if(!confirm('Deseja excluir esta observação?')) return;
       const r = await fetch('/api/observacoes/' + obsId,{ method:'DELETE', credentials:'include' });
-      if(r.ok) carregarFicha(); else alert('Erro ao excluir observação.');
+      if(r.ok) { toast('Observação excluída.', 'ok'); carregarFicha(); }
+      else toast('Erro ao excluir observação.', 'err', 'Falha');
     }
+
     function editarObs(obsId, btn){
       const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
@@ -906,14 +1037,17 @@
         '</div>';
       card.querySelector('#saveEd').onclick = async function(){
         const novoTexto = card.querySelector('#editArea').value.trim();
-        if(!novoTexto) return alert('Texto inválido.');
-        const r = await fetch('/api/observacoes/' + obsId,{
-          method:'PUT',
-          headers:{'Content-Type':'application/json'},
-          credentials:'include',
-          body:JSON.stringify({ texto: novoTexto })
-        });
-        if(r.ok) carregarFicha(); else alert('Erro ao atualizar.');
+        if(!novoTexto) return toast('Texto inválido.', 'err', 'Atenção');
+        try{
+          await api('/observacoes/' + obsId,{
+            method:'PUT',
+            body: JSON.stringify({ texto: novoTexto })
+          });
+          toast('Observação atualizada com sucesso!', 'ok', 'Tudo certo');
+          carregarFicha();
+        }catch(e){
+          toast(e.message || 'Erro ao atualizar.', 'err', 'Falha');
+        }
       };
       card.querySelector('#cancelEd').onclick = function(){ carregarFicha(); };
     }
@@ -943,8 +1077,14 @@
     }
     function fecharEditor(){ byId('editorAluno').style.display = 'none'; }
 
+    // ✅ FIX: salva e mantém alunoAtual sincronizado com retorno (evita "sumir" no reload)
     async function salvarEdicao(){
       if(!alunoAtual) return;
+
+      const btn = byId('btnSalvarEd');
+      const oldText = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
       const whatsDigits = byId('edWhats').value.replace(/\D+/g,'');
 
       const payload = {
@@ -965,22 +1105,30 @@
         }
       };
 
-      const r = await fetch('/api/alunos/' + alunoAtual._id,{
-        method:'PUT',
-        headers:{ 'Content-Type':'application/json' },
-        credentials:'include',
-        body: JSON.stringify(payload)
-      });
-      const j = await r.json().catch(()=>({}));
-      if(!r.ok){
-        alert(j.message || j.mensagem || 'Erro ao salvar alterações.');
-        return;
+      try{
+        const j = await api('/alunos/' + alunoAtual._id, {
+          method:'PUT',
+          body: JSON.stringify(payload)
+        });
+
+        const alunoSalvo = j?.aluno || j?.data || j || null;
+        if (alunoSalvo && (alunoSalvo._id || alunoSalvo.id)) {
+          alunoAtual = alunoSalvo;
+        } else {
+          alunoAtual = { ...alunoAtual, ...payload };
+        }
+
+        toast('Alterações salvas com sucesso!', 'ok', 'Tudo certo');
+        fecharEditor();
+        await carregarFicha();
+      }catch(e){
+        toast(e.message || 'Erro ao salvar alterações.', 'err', 'Falha');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = oldText || 'Salvar alterações'; }
       }
-      fecharEditor();
-      await carregarFicha();
     }
 
-    // Upload foto
+    // Upload foto (mantido)
     document.addEventListener('DOMContentLoaded', ()=>{
       const btnTrocarFoto = byId('btnTrocarFoto');
       const inputFoto = byId('inputFoto');
@@ -1009,10 +1157,10 @@
             alunoAtual.fotoUrl = data.foto;
             alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
           }
-          alert('Foto atualizada com sucesso!');
+          toast('Foto atualizada com sucesso!', 'ok', 'Tudo certo');
         } catch (e) {
           console.error(e);
-          alert('Erro ao atualizar a foto.');
+          toast('Erro ao atualizar a foto.', 'err', 'Falha');
           URL.revokeObjectURL(previewURL);
           carregarFicha();
         } finally {
@@ -1114,12 +1262,12 @@
       const url = byId('tgLink').href;
       if(!url || url === '#') return;
       navigator.clipboard?.writeText(url).then(
-        ()=> alert('Link copiado!'),
+        ()=> toast('Link copiado!', 'ok'),
         ()=> {
           const ta = document.createElement('textarea');
           ta.value = url; document.body.appendChild(ta);
           ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-          alert('Link copiado!');
+          toast('Link copiado!', 'ok');
         }
       );
     }
@@ -1130,7 +1278,16 @@
       byId('btnImprimirTop').addEventListener('click', ()=> window.print());
       byId('btnEditar').addEventListener('click', abrirEditor);
       byId('btnCancelarEd').addEventListener('click', fecharEditor);
-      byId('btnSalvarEd').addEventListener('click', salvarEdicao);
+
+      // ✅ ALTERAÇÃO: submit do FORM (em vez de click no botão)
+      const formEditor = byId('editorAluno');
+      if (formEditor) {
+        formEditor.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await salvarEdicao();
+        });
+      }
+
       byId('btnGerarLinkTg').addEventListener('click', gerarLinkTelegram);
       byId('btnCopiarTg').addEventListener('click', copiarLinkTelegram);
       byId('btnVoltarLista').addEventListener('click', voltarLista);
@@ -1141,6 +1298,16 @@
       byId('btnEnableQR').addEventListener('click', habilitarLinkPublico);
       byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
       byId('btnDisableQR').addEventListener('click', desabilitarLinkPublico);
+
+      // ✅ anexos observações
+      const btnAnexar = byId('btnAnexarObs');
+      const inputFiles = byId('inputObsFiles');
+      if (btnAnexar && inputFiles){
+        btnAnexar.addEventListener('click', ()=> inputFiles.click());
+        inputFiles.addEventListener('change', updateAttachHelp);
+        updateAttachHelp();
+      }
+
       bindAphButtons();
     }
 

@@ -22,6 +22,19 @@ const observacaoSchema = new mongoose.Schema({
     default: Date.now,
     index: true,
   },
+
+  // ✅ NOVO: anexos (fotos, PDFs, docs etc.)
+  // Mantém 100% compatível com observações antigas (campo opcional)
+  anexos: [
+    {
+      nome: { type: String, default: '' },
+      url: { type: String, default: '' },       // ex: /uploads/observacoes/arquivo.pdf
+      mime: { type: String, default: '' },
+      tamanho: { type: Number, default: 0 },
+      criadoEm: { type: Date, default: Date.now }
+    }
+  ],
+
   // Mantém como String para compatibilidade com o restante do sistema
   instituicao: {
     type: String,

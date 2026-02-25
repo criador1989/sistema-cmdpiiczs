@@ -24,11 +24,15 @@ function toPublicUrl(p) {
   return '/' + s.replace(/^\/+/, '');
 }
 
+// ✅ FIX: incluir "contatos" na projeção do aluno
 const PROJ_ALUNO =
-  'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento';
+  'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
+
 const PROJ_NOTIF =
   'data tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
-const PROJ_OBS = 'texto autor criadoEm';
+
+// ✅ opcional: se futuramente observação tiver anexos, já deixo preparado (não quebra nada se não existir)
+const PROJ_OBS = 'texto autor criadoEm anexos attachments files';
 
 router.get('/:id', autenticar, async (req, res) => {
   try {
@@ -75,7 +79,12 @@ router.get('/:id', autenticar, async (req, res) => {
 
     const isProfessor = req.usuario?.tipo === 'professor';
 
-    res.set('Cache-Control', 'private, max-age=15');
+    // ✅ FIX: evitar cache que “mascara” a atualização (era private, max-age=15)
+    res.set('Cache-Control', 'no-store');
+
+    // ✅ FIX: devolver contatos dentro do aluno (sem esconder)
+    const contatos = aluno.contatos || {};
+
     res.json({
       aluno: {
         _id: aluno._id,
@@ -91,7 +100,14 @@ router.get('/:id', autenticar, async (req, res) => {
         comportamento: Number((+notaComportamento || 0).toFixed(2)),
         foto: aluno.foto || null,
         fotoThumb: aluno.fotoThumb || null,
-        fotoUrl
+        fotoUrl,
+
+        // ✅ NOVO: contatos (isso resolve seu editor voltar vazio)
+        contatos: {
+          emailResponsavel: contatos.emailResponsavel || null,
+          whatsapp: contatos.whatsapp || null,
+          telegramChatId: contatos.telegramChatId || null,
+        },
       },
       notificacoes,
       observacoes,

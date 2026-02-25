@@ -262,21 +262,14 @@ app.use('/auth', authRoutes);
 
 /* ==========================================================
    ✅ FALLBACK: /auth/confirmar-email (se authRoutes não tiver)
-   - Resolve seu caso atual: link do e-mail cai aqui,
-     confirma no Mongo e redireciona para /login.html
-   - Não interfere se você criar a rota dentro do authRoutes.
    ========================================================== */
 app.get('/auth/confirmar-email', async (req, res, next) => {
   try {
     const token = String(req.query.token || '').trim();
     if (!token) return res.status(400).send('Token ausente.');
 
-    // Se a rota existir no authRoutes e ele FINALIZAR resposta, esse fallback nem roda.
-    // Se authRoutes não tratar, cai aqui.
-
     const Usuario = mongoose.models.Usuario || mongoose.model('Usuario');
 
-    // Tentativa "flexível": suporta diferentes nomes de campo de token
     const tokenFields = [
       'emailConfirmToken',
       'emailConfirmacaoToken',
@@ -292,7 +285,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 
     let usuario = await Usuario.findOne({ $or: or }).catch(() => null);
 
-    // Alguns sistemas usam token dentro de subobjeto (ex: emailConfirm.token)
     if (!usuario) {
       usuario = await Usuario.findOne({
         $or: [
@@ -307,7 +299,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
       return res.status(400).send('Token inválido ou usuário não encontrado.');
     }
 
-    // Se houver campos de expiração, tenta respeitar
     const now = new Date();
     const expCandidates = [
       usuario.emailConfirmExpires,
@@ -326,7 +317,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
       }
     }
 
-    // Marca como confirmado (suporta variações)
     if ('emailConfirmado' in usuario) usuario.emailConfirmado = true;
     if ('emailVerificado' in usuario) usuario.emailVerificado = true;
     if ('confirmado' in usuario) usuario.confirmado = true;
@@ -337,7 +327,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
     if ('confirmadoEm' in usuario) usuario.confirmadoEm = now;
     if ('emailConfirmadoEm' in usuario) usuario.emailConfirmadoEm = now;
 
-    // Limpa tokens conhecidos
     tokenFields.forEach(f => { if (f in usuario) usuario[f] = undefined; });
     if (usuario.emailConfirm) {
       if ('token' in usuario.emailConfirm) usuario.emailConfirm.token = undefined;
@@ -350,7 +339,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 
     await usuario.save();
 
-    // Redireciona para o login do próprio host (ou frontend separado)
     const front = (process.env.FRONTEND_URL || process.env.CLIENT_URL || '').trim();
     const target = front
       ? `${front.replace(/\/+$/, '')}/login.html?confirmado=1`
@@ -358,7 +346,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 
     return res.redirect(target);
   } catch (err) {
-    // Se algo estourar aqui, não derrube o fluxo geral
     console.error('Erro fallback /auth/confirmar-email:', err);
     return res.status(500).send('Erro interno ao confirmar e-mail.');
   }
@@ -622,6 +609,7 @@ const imgRoot    = path.join(__dirname, 'img');
 const assetsRoot = path.join(__dirname, 'assets');
 
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
+fs.mkdirSync(path.join(uploadRoot, 'observacoes'), { recursive: true }); // ✅ NOVO: anexos das observações
 fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
 fs.mkdirSync(imgRoot, { recursive: true });
 fs.mkdirSync(assetsRoot, { recursive: true });
