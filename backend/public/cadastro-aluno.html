@@ -10,9 +10,6 @@
   <link rel="icon" href="/icons/icon-192x192.png" />
 
   <style>
-    /* =========================
-       VARIÁVEIS DO TEMA GLASS
-    ========================== */
     :root{
       --glass-bg: rgba(255,255,255,0.03);
       --glass-border: rgba(255,255,255,0.40);
@@ -28,6 +25,14 @@
 
       --rubi-1:#941a1d;
       --rubi-2:#d82327;
+
+      --ok:#22c55e;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+
+      --card:#0a0a0cd9;
+      --card2:#0a0a0cae;
+      --line:rgba(255,255,255,0.18);
     }
 
     *{ box-sizing:border-box; }
@@ -38,9 +43,6 @@
       min-height:100vh;
     }
 
-    /* =========================
-       FUNDO — MESMO DO PAINEL
-    ========================== */
     body{
       font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       color:var(--text-main);
@@ -52,13 +54,10 @@
       color-scheme:dark;
     }
 
-    /* =========================
-       CARD PRINCIPAL GLASS
-    ========================== */
     .container{
       width:100%;
-      max-width:420px;
-      padding:28px 24px 30px;
+      max-width:460px;
+      padding:28px 24px 22px;
       border-radius:var(--glass-radius);
       background:rgba(10,10,12,0.88);
       border:1px solid rgba(255,255,255,0.25);
@@ -92,9 +91,6 @@
       to{opacity:1; transform:translateY(0);}
     }
 
-    /* =========================
-       CABEÇALHO
-    ========================== */
     .logo{
       width:80px;
       margin-bottom:10px;
@@ -114,9 +110,6 @@
       text-shadow:0 10px 22px rgba(0,0,0,.8);
     }
 
-    /* =========================
-       FORMULÁRIO
-    ========================== */
     form{
       display:flex;
       flex-direction:column;
@@ -167,9 +160,6 @@
       border-radius:10px;
     }
 
-    /* =========================
-       BOTÃO — RUBI GLASS
-    ========================== */
     button{
       width:100%;
       padding:12px;
@@ -196,9 +186,6 @@
       box-shadow:0 8px 20px rgba(0,0,0,0.85);
     }
 
-    /* =========================
-       FEEDBACK
-    ========================== */
     #mensagem{
       margin-top:12px;
       text-align:center;
@@ -206,9 +193,6 @@
       min-height:1.3em;
     }
 
-    /* =========================
-       BOTÃO VOLTAR
-    ========================== */
     .voltar{
       display:block;
       margin-top:18px;
@@ -223,6 +207,141 @@
       text-decoration:underline;
       opacity:1;
     }
+
+    /* ===== Gerenciador de turmas (visual alinhado) ===== */
+    details.manager{
+      margin-top:14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, var(--card2), rgba(0,0,0,0.35));
+      overflow:hidden;
+      box-shadow:0 10px 26px rgba(0,0,0,0.55);
+    }
+    details.manager summary{
+      list-style:none;
+      cursor:pointer;
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:#fff;
+      font-weight:800;
+      user-select:none;
+    }
+    details.manager summary::-webkit-details-marker{ display:none; }
+    .sum-left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width:0;
+    }
+    .chip{
+      font-size:.72rem;
+      padding:.18rem .55rem;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.30);
+      color:rgba(255,255,255,.85);
+      background:rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .sum-sub{
+      font-size:.82rem;
+      color:rgba(255,255,255,.72);
+      font-weight:600;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:220px;
+    }
+    .mgr-body{
+      padding:12px 14px 14px;
+      border-top:1px solid rgba(255,255,255,.10);
+      text-align:left;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .row.one{ grid-template-columns: 1fr; }
+    .row .mini{
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.20);
+      background:rgba(0,0,0,0.38);
+      color:#fff;
+      outline:none;
+    }
+    .mgr-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    .btn2{
+      border:1px solid rgba(255,255,255,0.22);
+      background:rgba(255,255,255,0.06);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:800;
+      transition:.15s;
+      width:auto;
+      box-shadow:0 10px 22px rgba(0,0,0,.45);
+    }
+    .btn2:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+    .btn2:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+    .btn-add{ border-color: rgba(34,197,94,.45); }
+    .btn-undo{ border-color: rgba(251,191,36,.45); }
+    .btn-reset{ border-color: rgba(251,113,133,.40); }
+
+    .turmas-list{
+      margin-top:12px;
+      display:grid;
+      gap:8px;
+    }
+    .turma-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(0,0,0,0.34);
+    }
+    .turma-item strong{
+      font-size:.95rem;
+      letter-spacing:.2px;
+    }
+    .turma-item small{
+      display:block;
+      margin-top:2px;
+      color:rgba(255,255,255,.65);
+      font-weight:600;
+      font-size:.78rem;
+    }
+    .del{
+      width:auto;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(251,113,133,.45);
+      background:rgba(251,113,133,.10);
+      color:#fff;
+      cursor:pointer;
+      font-weight:900;
+    }
+    .del:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+
+    .note{
+      margin-top:10px;
+      font-size:.82rem;
+      color:rgba(255,255,255,.68);
+      line-height:1.35;
+    }
   </style>
 </head>
 
@@ -236,34 +355,47 @@
       <input type="text" id="nome" name="nome" placeholder="Nome do aluno" required />
 
       <label class="campo-label">Turma</label>
-      <select id="turma" name="turma" required>
-        <optgroup label="Fundamental II">
-          <option value="6ºA">6ºA</option>
-          <option value="6ºB">6ºB</option>
-          <option value="7ºA">7ºA</option>
-          <option value="7ºB">7ºB</option>
-          <option value="7ºC">7ºC</option>
-          <option value="7ºD">7ºD</option>
-          <option value="8ºA">8ºA</option>
-          <option value="8ºB">8ºB</option>
-          <option value="9ºA">9ºA</option>
-          <option value="9ºB">9ºB</option>
-          <option value="9ºC">9ºC</option>
-        </optgroup>
-        <optgroup label="Ensino Médio">
-          <option value="1ºA">1ºA</option>
-          <option value="1ºB">1ºB</option>
-          <option value="1ºC">1ºC</option>
-          <option value="1ºD">1ºD</option>
-          <option value="2ºA">2ºA</option>
-          <option value="2ºB">2ºB</option>
-          <option value="2ºC">2ºC</option>
-          <option value="3ºA">3ºA</option>
-          <option value="3ºB">3ºB</option>
-          <option value="3ºC">3ºC</option>
-          <option value="3ºD">3ºD</option>
-        </optgroup>
-      </select>
+      <select id="turma" name="turma" required></select>
+
+      <details class="manager" id="turmas-manager">
+        <summary>
+          <div class="sum-left">
+            <span>⚙️ Gerenciar turmas</span>
+            <span class="chip" id="chip-qtd">—</span>
+          </div>
+          <span class="sum-sub" id="sum-sub">Adicionar / excluir / desfazer</span>
+        </summary>
+
+        <div class="mgr-body">
+          <div class="row">
+            <input class="mini" id="novaTurmaCodigo" placeholder="Ex: 6ºC, 8ºD, 2ºD" />
+            <select class="mini" id="novaTurmaSegmento">
+              <option value="Fundamental II">Fundamental II</option>
+              <option value="Ensino Médio">Ensino Médio</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <select class="mini" id="novaTurmaTurno">
+              <option value="Manhã">Manhã</option>
+              <option value="Tarde">Tarde</option>
+            </select>
+            <button type="button" class="btn2 btn-add" id="btnAddTurma">➕ Adicionar turma</button>
+          </div>
+
+          <div class="mgr-actions">
+            <button type="button" class="btn2 btn-undo" id="btnUndo" disabled>↩️ Desfazer última ação</button>
+            <button type="button" class="btn2 btn-reset" id="btnReset">🧹 Restaurar padrão</button>
+          </div>
+
+          <div class="note">
+            • As turmas aqui são salvas no <b>navegador (localStorage)</b> e passam a aparecer também em <b>Transferir Turmas</b> e <b>Lista de Alunos</b>.<br>
+            • Excluir turma aqui <b>não apaga alunos</b>; apenas remove a opção dos seletores.
+          </div>
+
+          <div class="turmas-list" id="listaTurmas"></div>
+        </div>
+      </details>
 
       <label class="campo-label">
         Data de entrada no colégio
@@ -289,23 +421,324 @@
     <a href="/painel.html" class="voltar">⬅ Voltar ao Painel</a>
   </div>
 
-  <!-- =========================
-       JS ORIGINAL (INALTERADO)
-  ========================== -->
-    <!-- =========================
-       JS PARA CADASTRAR ALUNO
-  ========================== -->
   <script>
     (async function () {
       const form       = document.getElementById('form-aluno');
       const msgEl      = document.getElementById('mensagem');
       const instInput  = document.getElementById('instituicao');
+      const selTurma   = document.getElementById('turma');
+
+      // ====== TURMAS (base + custom + removed + undo) ======
+      const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
+      const LS_REMOVED = 'cmdpii_turmas_removed_v1';
+      const LS_UNDO    = 'cmdpii_turmas_last_action_v1';
+
+      // Base oficial (já com as novas solicitadas):
+      // ✅ manhã: 6ºC, 8ºC, 8ºD
+      // ✅ tarde: 2ºD
+      // Obs: turno aqui é meta (não altera value da turma)
+      const BASE = [
+        { code:'6ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'6ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'6ºC', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'7ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'7ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'7ºC', seg:'Fundamental II', turno:'Manhã' },
+        { code:'7ºD', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'8ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'8ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'8ºC', seg:'Fundamental II', turno:'Manhã' },
+        { code:'8ºD', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'9ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'9ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'9ºC', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'1ºA', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'1ºB', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'1ºC', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'1ºD', seg:'Ensino Médio', turno:'Manhã' },
+
+        { code:'2ºA', seg:'Ensino Médio', turno:'Tarde' },
+        { code:'2ºB', seg:'Ensino Médio', turno:'Tarde' },
+        { code:'2ºC', seg:'Ensino Médio', turno:'Tarde' },
+        { code:'2ºD', seg:'Ensino Médio', turno:'Tarde' },
+
+        { code:'3ºA', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'3ºB', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'3ºC', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'3ºD', seg:'Ensino Médio', turno:'Manhã' },
+      ];
+
+      const byCode = (arr) => {
+        const m = new Map();
+        for (const t of (Array.isArray(arr)?arr:[])) {
+          const code = String(t?.code || t?.turma || '').trim();
+          if (!code) continue;
+          const seg = String(t?.seg || t?.segmento || '').trim() || guessSeg(code);
+          const turno = String(t?.turno || '').trim() || guessTurno(code);
+          m.set(code, { code, seg, turno });
+        }
+        return m;
+      };
+
+      function guessSeg(code){
+        return /^\d+º/.test(code) && (code.startsWith('1º')||code.startsWith('2º')||code.startsWith('3º'))
+          ? 'Ensino Médio'
+          : 'Fundamental II';
+      }
+      function guessTurno(code){
+        // meta default, pode ajustar depois pelo gerenciador
+        if (code === '2ºD') return 'Tarde';
+        return 'Manhã';
+      }
+
+      function safeParseLS(key, fallback){
+        try{
+          const v = JSON.parse(localStorage.getItem(key) || 'null');
+          return (v ?? fallback);
+        }catch(_){
+          return fallback;
+        }
+      }
+      function saveUndoSnapshot(label){
+        const snapshot = {
+          label: label || 'Ação',
+          when: Date.now(),
+          custom: safeParseLS(LS_CUSTOM, []),
+          removed: safeParseLS(LS_REMOVED, [])
+        };
+        localStorage.setItem(LS_UNDO, JSON.stringify(snapshot));
+      }
+      function hasUndo(){
+        const x = safeParseLS(LS_UNDO, null);
+        return !!(x && x.custom && x.removed);
+      }
+
+      function getMergedTurmas(){
+        const custom = safeParseLS(LS_CUSTOM, []);
+        const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
+        const m = byCode(BASE);
+
+        // aplica custom (add/override meta)
+        for (const [code, obj] of byCode(custom).entries()){
+          m.set(code, obj);
+        }
+
+        // remove excluídas
+        for (const code of removed){
+          m.delete(code);
+        }
+
+        // ordena por segmento + série + letra
+        const list = Array.from(m.values());
+        list.sort((a,b)=>{
+          const segA = a.seg.localeCompare(b.seg,'pt-BR');
+          if (segA !== 0) return segA;
+          return a.code.localeCompare(b.code,'pt-BR', { numeric:true, sensitivity:'base' });
+        });
+
+        return list;
+      }
+
+      function renderTurmaSelect(keepValue){
+        const current = keepValue || selTurma.value || '6ºA';
+        const turmas = getMergedTurmas();
+
+        const groups = new Map(); // seg -> array
+        for (const t of turmas){
+          if (!groups.has(t.seg)) groups.set(t.seg, []);
+          groups.get(t.seg).push(t);
+        }
+
+        const frag = document.createDocumentFragment();
+
+        for (const seg of ['Fundamental II','Ensino Médio']){
+          const items = groups.get(seg) || [];
+          if (!items.length) continue;
+          const og = document.createElement('optgroup');
+          og.label = seg;
+          for (const t of items){
+            const opt = document.createElement('option');
+            opt.value = t.code;       // ✅ value puro (não quebra backend)
+            opt.textContent = t.code; // ✅ texto puro
+            og.appendChild(opt);
+          }
+          frag.appendChild(og);
+        }
+
+        selTurma.innerHTML = '';
+        selTurma.appendChild(frag);
+
+        // mantém seleção se possível
+        const exists = Array.from(selTurma.options).some(o => o.value === current);
+        selTurma.value = exists ? current : (selTurma.options[0]?.value || '');
+      }
+
+      // UI manager
+      const chipQtd = document.getElementById('chip-qtd');
+      const listaTurmasEl = document.getElementById('listaTurmas');
+      const btnAdd = document.getElementById('btnAddTurma');
+      const btnUndo = document.getElementById('btnUndo');
+      const btnReset = document.getElementById('btnReset');
+
+      const inpCode = document.getElementById('novaTurmaCodigo');
+      const selSeg  = document.getElementById('novaTurmaSegmento');
+      const selTurno= document.getElementById('novaTurmaTurno');
+
+      function normalizeCode(raw){
+        let s = String(raw || '').trim();
+        // normaliza espaços
+        s = s.replace(/\s+/g,'');
+        // troca "o" por "º" caso digitem errado: "6oA" -> "6ºA"
+        s = s.replace(/^(\d+)(o)([A-Za-z])$/i, '$1º$3');
+        // valida padrão básico: 6ºA, 10ºA etc (mas aqui usamos 6-9 e 1-3)
+        return s;
+      }
+
+      function renderManagerList(){
+        const list = getMergedTurmas();
+
+        chipQtd.textContent = `${list.length} turmas`;
+        btnUndo.disabled = !hasUndo();
+
+        // monta listagem com meta (segmento/turno) para o gestor visualizar
+        listaTurmasEl.innerHTML = '';
+        for (const t of list){
+          const row = document.createElement('div');
+          row.className = 'turma-item';
+
+          const left = document.createElement('div');
+          left.innerHTML = `<strong>${escapeHtml(t.code)}</strong><small>${escapeHtml(t.seg)} • ${escapeHtml(t.turno)}</small>`;
+
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'del';
+          del.textContent = 'Excluir';
+          del.addEventListener('click', () => excluirTurma(t.code));
+
+          row.append(left, del);
+          listaTurmasEl.appendChild(row);
+        }
+      }
+
+      function escapeHtml(s){
+        return String(s)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function addTurma(){
+        const code = normalizeCode(inpCode.value);
+        if (!code) { alert('Informe o código da turma (ex: 8ºD).'); return; }
+
+        const seg = String(selSeg.value || '').trim() || guessSeg(code);
+        const turno = String(selTurno.value || '').trim() || guessTurno(code);
+
+        const beforeSel = selTurma.value;
+
+        // snapshot para undo
+        saveUndoSnapshot(`Adicionar ${code}`);
+
+        const custom = safeParseLS(LS_CUSTOM, []);
+        const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
+
+        // remove da lista de removidos (se estava excluída)
+        removed.delete(code);
+        localStorage.setItem(LS_REMOVED, JSON.stringify(Array.from(removed)));
+
+        // upsert custom
+        const m = byCode(custom);
+        m.set(code, { code, seg, turno });
+        localStorage.setItem(LS_CUSTOM, JSON.stringify(Array.from(m.values())));
+
+        inpCode.value = '';
+
+        renderTurmaSelect(beforeSel);
+        renderManagerList();
+
+        // opcional: seleciona a recém-criada
+        const exists = Array.from(selTurma.options).some(o => o.value === code);
+        if (exists) selTurma.value = code;
+      }
+
+      function excluirTurma(code){
+        const c = String(code||'').trim();
+        if (!c) return;
+
+        if (!confirm(`Excluir a turma "${c}" dos seletores?\n\nIsso NÃO apaga alunos; apenas remove a opção.`)) return;
+
+        const beforeSel = selTurma.value;
+
+        // snapshot para undo
+        saveUndoSnapshot(`Excluir ${c}`);
+
+        // se era custom, remove do custom
+        const custom = safeParseLS(LS_CUSTOM, []);
+        const m = byCode(custom);
+        m.delete(c);
+        localStorage.setItem(LS_CUSTOM, JSON.stringify(Array.from(m.values())));
+
+        // marca como removida (inclusive base)
+        const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
+        removed.add(c);
+        localStorage.setItem(LS_REMOVED, JSON.stringify(Array.from(removed)));
+
+        renderTurmaSelect(beforeSel);
+        renderManagerList();
+      }
+
+      function undo(){
+        const snap = safeParseLS(LS_UNDO, null);
+        if (!snap) return;
+
+        localStorage.setItem(LS_CUSTOM, JSON.stringify(snap.custom || []));
+        localStorage.setItem(LS_REMOVED, JSON.stringify(snap.removed || []));
+        localStorage.removeItem(LS_UNDO);
+
+        renderTurmaSelect(selTurma.value);
+        renderManagerList();
+      }
+
+      function resetPadrao(){
+        if (!confirm('Restaurar turmas para o padrão?\n\nIsso remove suas turmas personalizadas e desfaz exclusões.')) return;
+
+        saveUndoSnapshot('Restaurar padrão');
+
+        localStorage.removeItem(LS_CUSTOM);
+        localStorage.removeItem(LS_REMOVED);
+
+        renderTurmaSelect(selTurma.value);
+        renderManagerList();
+      }
+
+      btnAdd.addEventListener('click', addTurma);
+      btnUndo.addEventListener('click', undo);
+      btnReset.addEventListener('click', resetPadrao);
+
+      // Enter no campo de código adiciona
+      inpCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addTurma();
+        }
+      });
+
+      // Render inicial do select + manager
+      renderTurmaSelect('6ºA');
+      renderManagerList();
 
       // 1) Buscar usuário logado para pegar a instituição
       try {
         const res = await fetch('/api/usuario', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          cache: 'no-store'
         });
 
         if (!res.ok) {
@@ -339,7 +772,6 @@
           dataEntrada: form.dataEntrada.value,
           telefone:    form.telefone.value.trim(),
           instituicao: instInput.value || null
-          // se quiser depois, pode incluir mais campos aqui (nomePai, nomeMae etc.)
         };
 
         console.log('Enviando para /api/alunos:', payload);
@@ -347,17 +779,14 @@
         try {
           const res = await fetch('/api/alunos', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
+            cache: 'no-store',
             body: JSON.stringify(payload)
           });
 
           let body = {};
-          try {
-            body = await res.json();
-          } catch (_) {}
+          try { body = await res.json(); } catch (_) {}
 
           console.log('Resposta de /api/alunos:', res.status, body);
 
@@ -368,13 +797,55 @@
             return;
           }
 
-          // Sucesso
+          // Sucesso (cadastro)
           msgEl.textContent = '✅ Aluno cadastrado com sucesso!';
           msgEl.style.color = '#9effb4';
 
+          // ✅ Upload de foto logo após criar (se tiver)
+          try {
+            const fileInput = document.getElementById('foto');
+            const file = fileInput?.files?.[0];
+            const alunoId = body?._id || body?.id || body?.aluno?._id || body?.aluno?.id;
+
+            if (alunoId && file && file.type?.startsWith('image/')) {
+              msgEl.textContent = '📷 Enviando foto do aluno...';
+              msgEl.style.color = '#ffffff';
+
+              const fd = new FormData();
+              fd.append('foto', file);
+
+              const headers = {};
+              const token = localStorage.getItem('token');
+              if (token) headers['Authorization'] = `Bearer ${token}`;
+
+              const up = await fetch(`/api/alunos/${encodeURIComponent(alunoId)}/foto`, {
+                method: 'PUT',
+                body: fd,
+                headers,
+                credentials: 'include',
+                cache: 'no-store'
+              });
+
+              const upBody = await up.json().catch(()=> ({}));
+              if (!up.ok || !upBody?.foto) {
+                console.warn('Falha ao enviar foto:', up.status, upBody);
+                msgEl.textContent = '✅ Aluno cadastrado! (⚠ Foto não foi enviada — tente pela ficha)';
+                msgEl.style.color = '#ffdcae';
+              } else {
+                msgEl.textContent = '✅ Aluno cadastrado com foto!';
+                msgEl.style.color = '#9effb4';
+              }
+            }
+          } catch (e) {
+            console.warn('Erro no upload pós-cadastro:', e);
+            msgEl.textContent = '✅ Aluno cadastrado! (⚠ Foto não foi enviada — tente pela ficha)';
+            msgEl.style.color = '#ffdcae';
+          }
+
           // limpa os campos principais (mantém instituição)
+          const keepTurma = form.turma.value || '6ºA';
           form.reset();
-          form.turma.value = '6ºA'; // volta pra primeira turma, se quiser
+          renderTurmaSelect(keepTurma);
         } catch (err) {
           console.error('Erro de rede ao cadastrar aluno:', err);
           msgEl.textContent = '❌ Erro de comunicação com o servidor. Tente novamente.';

@@ -304,6 +304,53 @@
   .attach-chip a{color:#d7ebff; text-decoration:none}
   .attach-chip a:hover{text-decoration:underline}
   .attach-help{color:var(--muted); font-size:.85rem}
+
+  /* =========================
+     PRINT — manter cores e aparência
+     ========================= */
+  @media print {
+    *{
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    html, body { height:auto !important; }
+
+    body{
+      margin:0 !important;
+      background:
+        url("img/bg-painel-smart.png") center/cover no-repeat fixed,
+        var(--glow-1),
+        var(--glow-2),
+        var(--glow-3),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1)) !important;
+    }
+
+    .topbar,
+    .actions,
+    .btn,
+    .iconbtn,
+    #btnTrocarFoto,
+    #btnEditar,
+    #btnImprimirTop,
+    #btnPDFTop,
+    #btnVoltarLista,
+    #btnVoltarPainel,
+    #btnEnableQR,
+    #btnShowQR,
+    #btnDisableQR,
+    #editorAluno,
+    .toast{
+      display:none !important;
+    }
+
+    .page{ max-width:100% !important; margin:0 !important; padding:0 !important; }
+    .hero, .card{ break-inside:avoid; page-break-inside:avoid; }
+    .list{ max-height:none !important; overflow:visible !important; }
+    #qrPreview{ display:block !important; }
+
+    .hero, .card, .obs, .notif{ box-shadow:none !important; }
+  }
   </style>
 
   <script>
@@ -388,7 +435,7 @@
           <div><label>Telefone</label><input id="edTel" type="text" /></div>
           <div><label>Endereço</label><input id="edEnd" type="text" /></div>
           <div><label>Código de Acesso</label><input id="edCodigo" type="text" /></div>
-          <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: alunos/123.jpg ou https://..." /></div>
+          <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: /uploads/alunos/123.jpg ou https://..." /></div>
         </div>
 
         <!-- Contatos do Responsável -->
@@ -420,9 +467,7 @@
         <!-- /Contatos -->
 
         <div class="edit-actions">
-          <!-- ✅ ALTERAÇÃO: cancelar precisa ser type="button" -->
           <button class="btn ghost" type="button" id="btnCancelarEd">Cancelar</button>
-          <!-- ✅ ALTERAÇÃO: salvar como submit -->
           <button class="btn primary" type="submit" id="btnSalvarEd">Salvar alterações</button>
         </div>
       </form>
@@ -455,7 +500,6 @@
         </div>
       </div>
       <!-- /APH -->
-
     </section>
 
     <section class="columns">
@@ -463,7 +507,7 @@
         <h3 class="title">Observações</h3>
         <div id="observacoes" class="list"></div>
 
-        <!-- ✅ NOVO: anexos -->
+        <!-- ✅ anexos -->
         <div class="attach-row">
           <button class="btn ghost" id="btnAnexarObs" type="button">📎 Anexar arquivo</button>
           <input id="inputObsFiles" type="file" multiple
@@ -851,18 +895,29 @@
           const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
           const dataObsStr = dataObs ? dataObs.toLocaleString('pt-BR') : '—';
 
-          // ✅ anexos (caso backend devolva algo)
-          const anexos = Array.isArray(o.anexos) ? o.anexos
+          // anexos: tenta ler de vários formatos, depois DEDUP
+          const anexosRaw = Array.isArray(o.anexos) ? o.anexos
                         : Array.isArray(o.attachments) ? o.attachments
                         : Array.isArray(o.files) ? o.files
                         : [];
-          const anexosHtml = anexos.length ? (
+
+          const norm = (x)=> String(x || '').trim();
+          const uniq = [];
+          const seen = new Set();
+          for (const a of anexosRaw) {
+            const nome = norm(a?.nome || a?.filename || a?.name || 'Arquivo');
+            const url  = norm(a?.url || a?.link || a?.path || a?.fileUrl || '');
+            const key = `${nome}__${url}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            uniq.push({ nome, url });
+          }
+
+          const anexosHtml = uniq.length ? (
             '<div class="attach-row" style="margin-top:10px">' +
-              anexos.map(a=>{
-                const nome = (a.nome || a.filename || a.name || 'Arquivo');
-                const url  = (a.url || a.link || a.path || a.fileUrl || '');
-                if (!url) return `<span class="attach-chip">📎 ${nome}</span>`;
-                return `<span class="attach-chip">📎 <a href="${url}" target="_blank" rel="noopener">${nome}</a></span>`;
+              uniq.map(a=>{
+                if (!a.url) return `<span class="attach-chip">📎 ${a.nome}</span>`;
+                return `<span class="attach-chip">📎 <a href="${a.url}" target="_blank" rel="noopener">${a.nome}</a></span>`;
               }).join('') +
             '</div>'
           ) : '';
@@ -960,11 +1015,9 @@
         try{
           const fd = new FormData();
           fd.append('texto', texto);
-          files.forEach(f=>{
-            fd.append('anexos', f);
-            fd.append('arquivos', f);
-            fd.append('files', f);
-          });
+
+          // ✅ NÃO duplicar: envia em um único campo
+          files.forEach(f => fd.append('anexos', f));
 
           const headers = {};
           const token = localStorage.getItem('token');
@@ -974,7 +1027,8 @@
             method:'POST',
             headers,
             credentials:'include',
-            body: fd
+            body: fd,
+            cache:'no-store'
           });
 
           if (r.ok){
@@ -1001,6 +1055,7 @@
           method:'POST',
           headers,
           credentials:'include',
+          cache:'no-store',
           body:JSON.stringify({ texto })
         });
 
@@ -1021,7 +1076,9 @@
 
     async function excluirObs(obsId){
       if(!confirm('Deseja excluir esta observação?')) return;
-      const r = await fetch('/api/observacoes/' + obsId,{ method:'DELETE', credentials:'include' });
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const r = await fetch('/api/observacoes/' + obsId,{ method:'DELETE', credentials:'include', headers, cache:'no-store' });
       if(r.ok) { toast('Observação excluída.', 'ok'); carregarFicha(); }
       else toast('Erro ao excluir observação.', 'err', 'Falha');
     }
@@ -1065,7 +1122,9 @@
       byId('edTel').value    = alunoAtual.telefone || '';
       byId('edEnd').value    = alunoAtual.endereco || '';
       byId('edCodigo').value = alunoAtual.codigoAcesso || '';
-      byId('edFoto').value   = alunoAtual.foto || '';
+
+      // ✅ usa fotoUrl OU foto
+      byId('edFoto').value   = alunoAtual.fotoUrl || alunoAtual.foto || '';
 
       const ct = alunoAtual.contatos || {};
       byId('edEmailResp').value = ct.emailResponsavel || '';
@@ -1128,7 +1187,7 @@
       }
     }
 
-    // Upload foto (mantido)
+    // Upload foto
     document.addEventListener('DOMContentLoaded', ()=>{
       const btnTrocarFoto = byId('btnTrocarFoto');
       const inputFoto = byId('inputFoto');
@@ -1146,21 +1205,39 @@
         try {
           const fd = new FormData();
           fd.append('foto', file);
-          const resp = await fetch('/api/alunos/' + alunoId + '/foto', { method: 'PUT', body: fd, credentials: 'include' });
+
+          const headers = {};
+          const token = localStorage.getItem('token');
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const resp = await fetch('/api/alunos/' + alunoId + '/foto', {
+            method: 'PUT',
+            body: fd,
+            headers,
+            credentials: 'include',
+            cache:'no-store'
+          });
+
           const data = await resp.json().catch(()=> ({}));
           if (!resp.ok || !data || !data.foto) {
             throw new Error(data?.mensagem || data?.message || 'Falha ao enviar a foto.');
           }
+
           URL.revokeObjectURL(previewURL);
+
+          // ✅ usa a URL pública retornada
           fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="96" height="96" style="object-fit:cover;">';
+
+          // ✅ mantém sincronizado (evita sumir depois)
           if (alunoAtual) {
             alunoAtual.fotoUrl = data.foto;
-            alunoAtual.foto = data.foto.replace(/^\/+/, '').replace(/^uploads\//i, '');
+            alunoAtual.foto = data.foto;
           }
+
           toast('Foto atualizada com sucesso!', 'ok', 'Tudo certo');
         } catch (e) {
           console.error(e);
-          toast('Erro ao atualizar a foto.', 'err', 'Falha');
+          toast(e.message || 'Erro ao atualizar a foto.', 'err', 'Falha');
           URL.revokeObjectURL(previewURL);
           carregarFicha();
         } finally {
@@ -1279,7 +1356,7 @@
       byId('btnEditar').addEventListener('click', abrirEditor);
       byId('btnCancelarEd').addEventListener('click', fecharEditor);
 
-      // ✅ ALTERAÇÃO: submit do FORM (em vez de click no botão)
+      // submit do FORM
       const formEditor = byId('editorAluno');
       if (formEditor) {
         formEditor.addEventListener('submit', async (e) => {
@@ -1299,7 +1376,7 @@
       byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
       byId('btnDisableQR').addEventListener('click', desabilitarLinkPublico);
 
-      // ✅ anexos observações
+      // anexos observações
       const btnAnexar = byId('btnAnexarObs');
       const inputFiles = byId('inputObsFiles');
       if (btnAnexar && inputFiles){

@@ -11,6 +11,67 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===========================
+  // TURMAS (merge backend + localStorage)
+  // ===========================
+  const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
+  const LS_REMOVED = 'cmdpii_turmas_removed_v1';
+
+  function safeParseLS(key, fallback){
+    try{
+      const v = JSON.parse(localStorage.getItem(key) || 'null');
+      return (v ?? fallback);
+    }catch(_){
+      return fallback;
+    }
+  }
+
+  function guessSeg(code){
+    return /^\d+º/.test(code) && (code.startsWith('1º')||code.startsWith('2º')||code.startsWith('3º'))
+      ? 'Ensino Médio'
+      : 'Fundamental II';
+  }
+
+  function byCode(arr){
+    const m = new Map();
+    for (const t of (Array.isArray(arr)?arr:[])) {
+      const code = String(t?.code || t?.turma || t || '').trim();
+      if (!code) continue;
+      m.set(code, { code, seg: String(t?.seg || t?.segmento || '').trim() || guessSeg(code) });
+    }
+    return m;
+  }
+
+  function getLocalTurmasCodes(){
+    const custom = safeParseLS(LS_CUSTOM, []);
+    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
+    const m = byCode(custom);
+
+    // remove excluídas
+    for (const r of removed) m.delete(r);
+
+    return Array.from(m.keys());
+  }
+
+  function mergeTurmas(backendTurmas){
+    const b = (Array.isArray(backendTurmas) ? backendTurmas : [])
+      .filter(Boolean)
+      .map(t => String(t).trim())
+      .filter(Boolean);
+
+    const local = getLocalTurmasCodes();
+
+    const set = new Set([...b, ...local]);
+
+    // aplica removidos também ao que veio do backend (se o usuário removeu no gerenciador)
+    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
+    for (const r of removed) set.delete(r);
+
+    const list = Array.from(set);
+    list.sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
+    return list;
+  }
+
+  // ===========================
   // Utils
   // ===========================
   function setBtnState() {
@@ -56,10 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeReadJSON(r);
       if (!r.ok) throw new Error(data?.mensagem || data?.message || 'Falha ao carregar turmas');
 
-      const turmas =
+      const backend =
         (data?.turmas || data?.items || data?.lista || [])
           .filter(Boolean)
           .map(String);
+
+      const turmas = mergeTurmas(backend);
 
       selTurmaAtual.innerHTML = optionList(turmas);
       selNovaTurma.innerHTML  = optionList(turmas);
@@ -141,25 +204,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 🔁 Payload compatível com vários backends
-    // (envia várias chaves equivalentes)
     const payload = {
-      // nomes comuns
       ids,
       novaTurma: turmaDestino,
-
-      // nomes esperados por muitos backends
       alunosIds: ids,
       turmaDestino,
       turmaOrigem,
-
-      // alternativas
       alunoIds: ids,
       turma: turmaDestino,
       turmaNova: turmaDestino,
       destino: turmaDestino,
-
-      // às vezes o backend espera "turmaAtual"
       turmaAtual: turmaOrigem
     };
 
@@ -179,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await safeReadJSON(r);
 
       if (!r.ok) {
-        // 🔎 Log completo para achar o campo que o backend reclama
         console.error('❌ Transferência falhou:', {
           status: r.status,
           payloadEnviado: payload,
@@ -192,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       alert(data?.mensagem || data?.message || 'Transferência realizada com sucesso.');
 
-      // Recarrega lista
       await carregarAlunosDaTurma(turmaOrigem);
       selNovaTurma.value = '';
       setBtnState();

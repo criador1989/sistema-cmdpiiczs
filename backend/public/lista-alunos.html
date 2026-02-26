@@ -596,12 +596,63 @@
   const token = (urlParams.get('token') || '').trim();
   const MODE_TOKEN = !!token;
 
-  // Se estiver em modo professor, o "Voltar" pode ir para uma página do professor (se você tiver),
-  // senão cai no painel.html mesmo.
   const btnVoltar = qs('#btnVoltar');
   if (MODE_TOKEN) {
-    // mantém o token ao voltar (ajuda no fluxo do professor)
     btnVoltar.href = `/lista-alunos.html?token=${encodeURIComponent(token)}`;
+  }
+
+  // ====== TURMAS (merge backend + localStorage) ======
+  const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
+  const LS_REMOVED = 'cmdpii_turmas_removed_v1';
+
+  function safeParseLS(key, fallback){
+    try{
+      const v = JSON.parse(localStorage.getItem(key) || 'null');
+      return (v ?? fallback);
+    }catch(_){
+      return fallback;
+    }
+  }
+
+  function guessSeg(code){
+    return /^\d+º/.test(code) && (code.startsWith('1º')||code.startsWith('2º')||code.startsWith('3º'))
+      ? 'Ensino Médio'
+      : 'Fundamental II';
+  }
+
+  function byCode(arr){
+    const m = new Map();
+    for (const t of (Array.isArray(arr)?arr:[])) {
+      const code = String(t?.code || t?.turma || t || '').trim();
+      if (!code) continue;
+      m.set(code, { code, seg: String(t?.seg || t?.segmento || '').trim() || guessSeg(code) });
+    }
+    return m;
+  }
+
+  function getLocalTurmasCodes(){
+    const custom = safeParseLS(LS_CUSTOM, []);
+    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
+    const m = byCode(custom);
+    for (const r of removed) m.delete(r);
+    return Array.from(m.keys());
+  }
+
+  function mergeTurmas(backendTurmas){
+    const b = (Array.isArray(backendTurmas) ? backendTurmas : [])
+      .filter(Boolean)
+      .map(t => String(t).trim())
+      .filter(Boolean);
+
+    const local = getLocalTurmasCodes();
+    const set = new Set([...b, ...local]);
+
+    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
+    for (const r of removed) set.delete(r);
+
+    const list = Array.from(set);
+    list.sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
+    return list;
   }
 
   // Estado
@@ -697,9 +748,7 @@
     const btn = document.createElement('button');
     btn.className = 'card'; btn.type = 'button'; btn.dataset.id = a._id;
 
-    // ✅ No modo token/professor: sem lixeira/sem delete
     if (!MODE_TOKEN) btn.append(trashButton(a._id));
-
     btn.append(avatarComFoto(a), infoBlock(a));
 
     btn.addEventListener('click', () => abrirFicha(a));
@@ -712,7 +761,7 @@
     selTurma.innerHTML = '<option value="">Selecionar turma…</option>';
 
     if (MODE_TOKEN) {
-      // ✅ Professor: não pode chamar /api/alunos/turmas (401). Pega alunos permitidos e extrai turmas.
+      // Professor: extrai turmas a partir dos alunos do token
       const res = await fetch(`/api/usuarios/acesso/${encodeURIComponent(token)}`, { cache:'no-store' });
       if (!res.ok) throw new Error('Falha ao buscar acesso do professor');
       const data = await res.json();
@@ -720,7 +769,8 @@
       if (!data.professor) throw new Error('Token inválido ou professor não encontrado');
 
       ALL_ALUNOS_TOKEN = Array.isArray(data.alunos) ? data.alunos : [];
-      const turmas = Array.from(new Set(ALL_ALUNOS_TOKEN.map(a => (a.turma||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      const turmas = Array.from(new Set(ALL_ALUNOS_TOKEN.map(a => (a.turma||'').trim()).filter(Boolean)))
+        .sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
 
       for (const t of turmas) {
         const opt = document.createElement('option');
@@ -733,11 +783,14 @@
       return;
     }
 
-    // ✅ Admin: fluxo normal com cookie
+    // Admin: rota + merge com turmas do gerenciador
     const res = await fetch('/api/alunos/turmas', { credentials: 'include', cache:'no-store' });
     if (!res.ok) throw new Error('Falha ao buscar turmas');
     const data = await res.json();
-    const turmas = data.turmas || [];
+
+    const backendTurmas = data.turmas || [];
+    const turmas = mergeTurmas(backendTurmas);
+
     for (const t of turmas) {
       const opt = document.createElement('option');
       opt.value = t; opt.textContent = t;
@@ -763,9 +816,7 @@
       .filter(a => !t || String(a.turma||'').trim() === t)
       .filter(a => !q || String(a.nome||'').toLowerCase().includes(q));
 
-    // ordena por nome (melhora UX)
     list.sort((a,b)=> String(a.nome||'').localeCompare(String(b.nome||''), 'pt-BR'));
-
     VIEW_LIST = list;
   }
 
@@ -783,7 +834,6 @@
     const end = start + PAGE_SIZE;
     const slice = VIEW_LIST.slice(start, end);
 
-    // remove placeholders
     placeholders.forEach(el => el.remove());
 
     if (slice.length) {
@@ -795,8 +845,6 @@
   }
 
   async function carregarAdminMode() {
-    // Mantém o seu infinite scroll original por API paginada
-    // (aqui continua usando /api/alunos/turma/:turma?pagina=...&q=...)
     if (carregando || !turma) return;
     carregando = true;
 
@@ -807,7 +855,6 @@
     });
 
     try {
-      // pagina/paginas aqui é incremental (mantém compatibilidade)
       if (typeof window.__PAGINA__ === 'undefined') window.__PAGINA__ = 1;
       if (typeof window.__PAGINAS__ === 'undefined') window.__PAGINAS__ = 1;
 
@@ -835,18 +882,6 @@
     }
   }
 
-  async function carregar() {
-    if (!turma) return;
-
-    if (MODE_TOKEN) {
-      applyFilterTokenMode();
-      renderNextChunkTokenMode();
-      return;
-    }
-
-    return carregarAdminMode();
-  }
-
   // ====== Eventos ======
   selTurma.addEventListener('change', () => {
     turma = selTurma.value;
@@ -864,7 +899,7 @@
     } else {
       window.__PAGINA__ = 1;
       window.__PAGINAS__ = 1;
-      if (turma) carregar();
+      if (turma) carregarAdminMode();
     }
   });
 
@@ -883,7 +918,7 @@
       } else {
         window.__PAGINA__ = 1;
         window.__PAGINAS__ = 1;
-        carregar();
+        carregarAdminMode();
       }
     }, 300);
   });
@@ -894,7 +929,6 @@
     if (!turma) return;
 
     if (MODE_TOKEN) {
-      // carrega próximo chunk local
       const total = VIEW_LIST.length;
       const nextStart = pageIndex * PAGE_SIZE;
       if (nextStart < total) renderNextChunkTokenMode();
@@ -946,7 +980,6 @@
         img.removeAttribute('src');
       }
 
-      // Detalhes (admin) ou fallback (professor)
       let a = {};
       if (!MODE_TOKEN) {
         const url = `/api/fichaAluno/${id}`;
@@ -955,7 +988,6 @@
         const data = await res.json();
         a = data.aluno || {};
       } else {
-        // no modo professor, usa o que já veio no payload do token (sem novas rotas que possam dar 401)
         a = aCard || {};
       }
 
@@ -983,7 +1015,6 @@
         notaEl.classList.remove('ok');
       }
 
-      // ✅ Ações do modal
       const btnFicha = qs('#btn-ver-ficha');
       const btnNotif = qs('#btn-notificar');
 
@@ -995,8 +1026,6 @@
           u.searchParams.set('token', token);
           location.href = u.toString();
         };
-
-        // professor não notifica por aqui (sem modificações)
         btnNotif.style.display = 'none';
       } else {
         btnFicha.textContent = 'Ver ficha completa';
@@ -1005,7 +1034,6 @@
           u.searchParams.set('id', a._id);
           location.href = u.toString();
         };
-
         btnNotif.style.display = '';
         btnNotif.onclick = () => {
           const u = new URL('/cadastrar-notificacao.html', location.origin);
