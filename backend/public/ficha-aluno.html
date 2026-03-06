@@ -309,7 +309,6 @@
   .attach-chip a:hover{text-decoration:underline}
   .attach-help{color:var(--muted); font-size:.85rem}
 
-  /* ===== NOVO: Modal de visualização ===== */
   .modal-overlay{
     position:fixed;
     inset:0;
@@ -390,6 +389,8 @@
     font-weight:600;
     word-break:break-word;
   }
+
+  .hidden{display:none !important;}
 
   @media print {
     *{
@@ -552,7 +553,7 @@
       <div class="kvs">
         <div class="kv"><b>Turma</b><span id="kvTurma">—</span></div>
         <div class="kv"><b>Data de Entrada</b><span id="kvEntrada">—</span></div>
-        <div class="kv"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
+        <div class="kv" id="kvCodigoCard"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
         <div class="kv">
           <b>Nota de Comportamento</b>
           <span class="big" id="kvNota">—</span>
@@ -582,7 +583,7 @@
         <h3 class="title">Observações</h3>
         <div id="observacoes" class="list"></div>
 
-        <div class="attach-row">
+        <div class="attach-row" id="attachRow">
           <button class="btn ghost" id="btnAnexarObs" type="button">📎 Anexar arquivo</button>
           <input id="inputObsFiles" type="file" multiple
                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
@@ -590,7 +591,7 @@
           <span class="attach-help" id="attachHelp">Nenhum anexo selecionado</span>
         </div>
 
-        <div class="editor">
+        <div class="editor" id="obsEditor">
           <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
           <button class="btn primary" id="btnSalvar">Salvar</button>
         </div>
@@ -610,7 +611,6 @@
     </section>
   </main>
 
-  <!-- NOVO: Modal de visualização de dados -->
   <div class="modal-overlay" id="dadosModal">
     <div class="modal-card">
       <div class="modal-head">
@@ -650,13 +650,13 @@
   <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
 
   <script>
-    const DEBUG_FICHA = true;
+    const DEBUG_FICHA = location.hostname === 'localhost';
 
     function dlog(...args){
       if (DEBUG_FICHA) console.log('[FICHA DEBUG]', ...args);
     }
     function derr(...args){
-      console.error('[FICHA DEBUG]', ...args);
+      if (DEBUG_FICHA) console.error('[FICHA DEBUG]', ...args);
     }
 
     const qs = (s)=>document.querySelector(s);
@@ -665,6 +665,11 @@
     const alunoId = params.get('id');
 
     let toastTimer = null;
+    let alunoAtual = null;
+    let chartInstance = null;
+    let usuarioLogado = null;
+    let isProfessorView = false;
+
     function toast(msg, type='ok', title='') {
       const box = byId('toastBox');
       if (!box) return alert(msg);
@@ -702,6 +707,19 @@
       return (v === null || v === undefined || v === '') ? '—' : String(v);
     }
 
+    function escapeHtml(v){
+      return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function nl2brSafe(v){
+      return escapeHtml(v).replace(/\n/g, '<br>');
+    }
+
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
     const BASES = {
@@ -722,9 +740,6 @@
       if (typeof base === 'number') return Number((base * dias).toFixed(2));
       return Number(n.valorNumerico ?? 0);
     }
-
-    let alunoAtual = null;
-    let chartInstance = null;
 
     const toISO = (d)=>{
       if(!d) return '';
@@ -767,6 +782,55 @@
       return {texto:'Incompatível', cor:'#e7e9ee'};
     }
 
+    function detectProfessorView(usuario, aluno){
+      const role = String(usuario?.tipo || usuario?.perfil || '').toLowerCase();
+      if (role.includes('prof')) return true;
+
+      return (
+        aluno?.codigoAcesso == null &&
+        !aluno?.foto &&
+        !aluno?.fotoUrl &&
+        !aluno?.telefone &&
+        !aluno?.endereco &&
+        !aluno?.nomePai &&
+        !aluno?.nomeMae &&
+        (!aluno?.contatos || (
+          !aluno.contatos.emailResponsavel &&
+          !aluno.contatos.whatsapp &&
+          !aluno.contatos.telegramChatId
+        ))
+      );
+    }
+
+    function toggle(el, show){
+      if (!el) return;
+      el.classList.toggle('hidden', !show);
+    }
+
+    function aplicarPermissoesUI(){
+      const hideForProfessor = [
+        'btnTrocarFoto',
+        'btnVerDados',
+        'btnEditar',
+        'btnPDFTop',
+        'badgeCodigo',
+        'badgeId',
+        'kvCodigoCard',
+        'qrWrap',
+        'editorAluno',
+        'dadosModal',
+        'attachRow',
+        'aphCard'
+      ];
+
+      hideForProfessor.forEach(id => toggle(byId(id), !isProfessorView));
+
+      if (isProfessorView) {
+        byId('btnVoltarPainel')?.classList.remove('hidden');
+        byId('fotoBox').innerHTML = 'Sem foto';
+      }
+    }
+
     async function api(path, opts = {}){
       const method = (opts.method || 'GET').toUpperCase();
       const headers = { ...(opts.headers || {}) };
@@ -781,7 +845,6 @@
       }
 
       const fullUrl = `/api${path.startsWith('/') ? path : `/${path}`}`;
-      dlog('api request', { method, url: fullUrl, headers, body: opts.body instanceof FormData ? '[FormData]' : opts.body });
 
       const r = await fetch(fullUrl, {
         credentials:'include',
@@ -795,13 +858,19 @@
         ? await r.json().catch(()=> ({}))
         : await r.text().catch(()=> '');
 
-      dlog('api response', { method, url: fullUrl, status: r.status, contentType: ct, data });
-
       if(!r.ok){
         const msg = data?.error || data?.erro || data?.mensagem || data?.message || `Erro ${r.status}`;
         throw new Error(msg);
       }
       return data;
+    }
+
+    async function carregarUsuarioLogado(){
+      try{
+        usuarioLogado = await api('/usuario-logado', { method:'GET' });
+      }catch{
+        usuarioLogado = null;
+      }
     }
 
     async function fetchFichaComFallback(id){
@@ -821,13 +890,15 @@
       let lastErr;
       for (const ep of endpoints){
         try{
-          const resp = await fetch(`/api${ep}`, { credentials:'include', cache:'no-store' });
+          const headers = {};
+          const token = localStorage.getItem('token');
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const resp = await fetch(`/api${ep}`, { credentials:'include', cache:'no-store', headers });
           const ct = (resp.headers.get('content-type')||'').toLowerCase();
           if (!ct.includes('application/json')) { lastErr = new Error('NAO_JSON'); continue; }
           if (!resp.ok){ lastErr = new Error(`HTTP ${resp.status}`); continue; }
           const data = await resp.json();
-
-          dlog('fallback endpoint ok', ep, data);
 
           if (data && (data.aluno || data._id || data.id)) {
             const aluno = data.aluno || data;
@@ -848,7 +919,7 @@
     }
 
     async function fetchAphCount(){
-      if(!alunoId) return;
+      if(!alunoId || isProfessorView) return;
       try{
         const { total = 0 } = await api(`/aph/atendimentos/count/${alunoId}`);
         byId('aphCount').textContent = String(total ?? 0);
@@ -861,17 +932,19 @@
       const ver  = byId('btnVerAtendimentos');
       const novo = byId('btnNovoAtendimento');
       if (ver) ver.addEventListener('click', ()=>{
-        if (!alunoId) return alert('ID do aluno não informado.');
+        if (!alunoId || isProfessorView) return;
         location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
       });
       if (novo) novo.addEventListener('click', ()=>{
-        if (!alunoId) return alert('ID do aluno não informado.');
+        if (!alunoId || isProfessorView) return;
         location.href = `/aph-atendimento.html?alunoId=${encodeURIComponent(alunoId)}`;
       });
     }
 
     function renderComportChart(points){
-      const ctx = document.getElementById('comportChart').getContext('2d');
+      const canvas = document.getElementById('comportChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       let labels = [], data = [];
       if (Array.isArray(points) && points.length){
         const sorted = points.slice().sort((a,b)=> new Date(a.data) - new Date(b.data));
@@ -954,7 +1027,7 @@
     }
 
     function abrirVisualizacaoDados(){
-      if (!alunoAtual) return;
+      if (!alunoAtual || isProfessorView) return;
       preencherVisualizacaoDados(alunoAtual);
       byId('dadosModal').classList.add('open');
     }
@@ -965,6 +1038,8 @@
 
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
+
+      await carregarUsuarioLogado();
 
       let payload;
       try{
@@ -988,15 +1063,17 @@
       const { aluno, notificacoes = [], observacoes = [] } = payload || {};
       alunoAtual = aluno;
 
-      dlog('aluno recebido em carregarFicha', aluno);
-      dlog('contatos recebidos em carregarFicha', aluno?.contatos);
+      isProfessorView = detectProfessorView(usuarioLogado, aluno);
+      aplicarPermissoesUI();
 
       byId('alunoNome').textContent = aluno?.nome ?? '—';
       byId('badgeTurma').textContent = `Turma ${aluno?.turma ?? '—'}`;
       byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
       byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
 
-      byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
+      if (!isProfessorView) {
+        byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
+      }
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
       byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
@@ -1012,7 +1089,7 @@
       pill.style.borderColor = '#0000';
 
       const fotoBox = byId('fotoBox');
-      const raw = aluno?.fotoUrl || aluno?.foto || '';
+      const raw = isProfessorView ? '' : (aluno?.fotoUrl || aluno?.foto || '');
       const finalUrl = raw ? toUploadsUrl(raw, 256, 256) : '';
       fotoBox.innerHTML = finalUrl
         ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="96" height="96" style="object-fit:cover">`
@@ -1021,21 +1098,25 @@
       const ultDate = getDateFrom(aluno,'updatedAt','atualizadoEm','ultimaAtualizacao','createdAt','criadoEm','lastUpdate');
       byId('ultimaAtualizacao').textContent = ultDate ? ultDate.toLocaleString('pt-BR') : '—';
 
-      preencherVisualizacaoDados(aluno);
+      if (!isProfessorView) {
+        preencherVisualizacaoDados(aluno);
+      }
 
       const obsEl = byId('observacoes');
       obsEl.innerHTML = '';
       if(!observacoes.length){
-        obsEl.innerHTML = '<div class="empty">Nenhuma observação registrado.</div>';
+        obsEl.innerHTML = '<div class="empty">Nenhuma observação registrada.</div>';
       }else{
         obsEl.innerHTML = observacoes.map(o=>{
           const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
           const dataObsStr = dataObs ? dataObs.toLocaleString('pt-BR') : '—';
 
-          const anexosRaw = Array.isArray(o.anexos) ? o.anexos
+          const anexosRaw = isProfessorView ? [] : (
+            Array.isArray(o.anexos) ? o.anexos
             : Array.isArray(o.attachments) ? o.attachments
             : Array.isArray(o.files) ? o.files
-            : [];
+            : []
+          );
 
           const norm = (x)=> String(x || '').trim();
           const uniq = [];
@@ -1052,22 +1133,26 @@
           const anexosHtml = uniq.length ? (
             '<div class="attach-row" style="margin-top:10px">' +
               uniq.map(a=>{
-                if (!a.url) return `<span class="attach-chip">📎 ${a.nome}</span>`;
-                return `<span class="attach-chip">📎 <a href="${a.url}" target="_blank" rel="noopener">${a.nome}</a></span>`;
+                if (!a.url) return `<span class="attach-chip">📎 ${escapeHtml(a.nome)}</span>`;
+                return `<span class="attach-chip">📎 <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.nome)}</a></span>`;
               }).join('') +
             '</div>'
           ) : '';
 
+          const actionsHtml = isProfessorView ? '' : (
+            '<div class="actions">' +
+              '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
+              '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
+            '</div>'
+          );
+
           return (
             '<div class="obs">' +
               '<div class="row">' +
-                '<div class="muted">' + dataObsStr + ' — ' + (o.autor || 'Autor não informado') + '</div>' +
-                '<div class="actions">' +
-                  '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
-                  '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
-                '</div>' +
+                '<div class="muted">' + escapeHtml(dataObsStr) + ' — ' + escapeHtml(o.autor || 'Autor não informado') + '</div>' +
+                actionsHtml +
               '</div>' +
-              '<div style="margin-top:6px" class="texto">' + (String(o.texto||'').replace(/\n/g,'<br>')) + '</div>' +
+              '<div style="margin-top:6px" class="texto">' + nl2brSafe(o.texto||'') + '</div>' +
               anexosHtml +
             '</div>'
           );
@@ -1087,41 +1172,47 @@
           const classificacao = n.classificacaoRegulamento || '—';
           const valorCorrigido = calcValorExibicao(n);
           const valor = fmtValor(valorCorrigido);
-          const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + n.observacoes + '</div>' : '';
+          const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + escapeHtml(n.observacoes) + '</div>' : '';
           const idN = n._id || '';
           const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
           const dataNStr = dataN ? dataN.toLocaleDateString('pt-BR') : '—';
 
+          const notifActions = isProfessorView ? '' : (
+            '<div class="actions" style="margin-top:10px">' +
+              '<a class="iconbtn" href="/notificacao.html?id=' + encodeURIComponent(idN) + '" title="Abrir notificação">Abrir</a>' +
+              '<a class="iconbtn" href="/api/pdf/' + encodeURIComponent(idN) + '" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>' +
+            '</div>'
+          );
+
           return (
             '<div class="notif">' +
               '<div class="row">' +
-                '<div><span class="chip">' + tipo + '</span></div>' +
-                '<div class="muted">' + dataNStr + '</div>' +
+                '<div><span class="chip">' + escapeHtml(tipo) + '</span></div>' +
+                '<div class="muted">' + escapeHtml(dataNStr) + '</div>' +
               '</div>' +
-              '<div style="margin-top:6px"><b>Motivo:</b> ' + motivo + '</div>' +
+              '<div style="margin-top:6px"><b>Motivo:</b> ' + escapeHtml(motivo) + '</div>' +
               '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">' +
-                '<div><b>Valor</b>: ' + valor + '</div>' +
-                '<div><b>Classificação</b>: ' + classificacao + '</div>' +
-                '<div><b>Artigo</b>: ' + artigo + '</div>' +
-                '<div><b>Inciso</b>: ' + inciso + '</div>' +
+                '<div><b>Valor</b>: ' + escapeHtml(valor) + '</div>' +
+                '<div><b>Classificação</b>: ' + escapeHtml(classificacao) + '</div>' +
+                '<div><b>Artigo</b>: ' + escapeHtml(artigo) + '</div>' +
+                '<div><b>Inciso</b>: ' + escapeHtml(inciso) + '</div>' +
               '</div>' +
               obsN +
-              '<div class="actions" style="margin-top:10px">' +
-                '<a class="iconbtn" href="/notificacao.html?id=' + idN + '" title="Abrir notificação">Abrir</a>' +
-                '<a class="iconbtn" href="/api/pdf/' + idN + '" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>' +
-              '</div>' +
+              notifActions +
             '</div>'
           );
         }).join('');
       }
 
-      try { await mostrarQRCode(true); } catch {}
-      try { await fetchAphCount(); } catch {}
+      if (!isProfessorView) {
+        try { await mostrarQRCode(true); } catch {}
+        try { await fetchAphCount(); } catch {}
+      }
 
       try {
         const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
         renderComportChart(hist);
-      } catch (e) {
+      } catch {
         renderComportChart([]);
       }
     }
@@ -1138,8 +1229,13 @@
       const texto = byId('textoObservacao').value.trim();
       if(!texto) return toast('Digite algo na observação.', 'err', 'Atenção');
 
+      if (isProfessorView) {
+        const inputFiles = byId('inputObsFiles');
+        if (inputFiles) inputFiles.value = '';
+      }
+
       const inputFiles = byId('inputObsFiles');
-      const files = inputFiles?.files ? Array.from(inputFiles.files) : [];
+      const files = (!isProfessorView && inputFiles?.files) ? Array.from(inputFiles.files) : [];
 
       if (files.length) {
         try{
@@ -1166,7 +1262,7 @@
             toast('Observação salva com sucesso!', 'ok', 'Tudo certo');
             return carregarFicha();
           }
-        }catch(e){}
+        }catch{}
 
         toast('Seu backend ainda não está aceitando anexos por aqui. Vou salvar só o texto (sem quebrar nada).', 'err', 'Anexo não suportado (por enquanto)');
       }
@@ -1200,6 +1296,7 @@
     }
 
     async function excluirObs(obsId){
+      if(isProfessorView) return;
       if(!confirm('Deseja excluir esta observação?')) return;
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1209,11 +1306,12 @@
     }
 
     function editarObs(obsId, btn){
+      if (isProfessorView) return;
       const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
       card.innerHTML =
         '<div class="editor">' +
-          '<textarea id="editArea">' + textoAtual + '</textarea>' +
+          '<textarea id="editArea">' + escapeHtml(textoAtual) + '</textarea>' +
           '<button class="btn primary" id="saveEd">Salvar</button>' +
           '<button class="btn ghost" id="cancelEd">Cancelar</button>' +
         '</div>';
@@ -1235,9 +1333,7 @@
     }
 
     function abrirEditor(){
-      if(!alunoAtual) return;
-      dlog('abrirEditor alunoAtual', alunoAtual);
-      dlog('contatos recebidos em abrirEditor', alunoAtual?.contatos);
+      if(!alunoAtual || isProfessorView) return;
 
       byId('editorAluno').style.display = 'block';
       byId('edNome').value   = alunoAtual.nome || '';
@@ -1263,7 +1359,7 @@
     function fecharEditor(){ byId('editorAluno').style.display = 'none'; }
 
     async function salvarEdicao(){
-      if(!alunoAtual) return;
+      if(!alunoAtual || isProfessorView) return;
 
       const btn = byId('btnSalvarEd');
       const oldText = btn ? btn.textContent : '';
@@ -1289,8 +1385,6 @@
         }
       };
 
-      dlog('payload PUT /alunos/:id', payload);
-
       try{
         const fullUrl = `/api/alunos/${alunoAtual._id}`;
         const token = localStorage.getItem('token');
@@ -1310,13 +1404,6 @@
         if (ct.includes('application/json')) raw = await resp.json().catch(()=> ({}));
         else raw = await resp.text().catch(()=> '');
 
-        dlog('resposta PUT /alunos/:id', {
-          url: fullUrl,
-          status: resp.status,
-          contentType: ct,
-          data: raw
-        });
-
         if (!resp.ok) {
           throw new Error(raw?.message || raw?.mensagem || raw?.error || `Erro ${resp.status}`);
         }
@@ -1327,8 +1414,6 @@
         } else {
           alunoAtual = { ...alunoAtual, ...payload };
         }
-
-        dlog('alunoAtual após salvar', alunoAtual);
 
         toast('Alterações salvas com sucesso!', 'ok', 'Tudo certo');
         fecharEditor();
@@ -1344,8 +1429,12 @@
     document.addEventListener('DOMContentLoaded', ()=>{
       const btnTrocarFoto = byId('btnTrocarFoto');
       const inputFoto = byId('inputFoto');
-      if(btnTrocarFoto) btnTrocarFoto.addEventListener('click', function(){ inputFoto.click(); });
+      if(btnTrocarFoto) btnTrocarFoto.addEventListener('click', function(){
+        if (isProfessorView) return;
+        inputFoto.click();
+      });
       if(inputFoto) inputFoto.addEventListener('change', async function(){
+        if (isProfessorView) return;
         const file = inputFoto.files && inputFoto.files[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
@@ -1398,6 +1487,7 @@
     });
 
     async function habilitarLinkPublico(){
+      if (isProfessorView) return;
       try{
         byId('qrStatus').textContent = 'Gerando link...';
         const r = await api('/alunos/' + alunoId + '/public/enable', {
@@ -1413,6 +1503,7 @@
     }
 
     async function mostrarQRCode(silent){
+      if (isProfessorView) return;
       try{
         const r = await api('/alunos/' + alunoId + '/public/qrcode', { method:'GET' });
         preencherQR(r);
@@ -1424,6 +1515,7 @@
     }
 
     async function desabilitarLinkPublico(){
+      if (isProfessorView) return;
       if(!confirm('Deseja desabilitar o link público deste aluno?')) return;
       try{
         await api('/alunos/' + alunoId + '/public/disable', { method:'POST' });
@@ -1467,6 +1559,7 @@
     }
 
     async function gerarLinkTelegram(){
+      if (isProfessorView) return;
       const linkEl = byId('tgLink');
       const copiarBtn = byId('btnCopiarTg');
       linkEl.textContent = 'Gerando...';
@@ -1486,6 +1579,7 @@
     }
 
     function copiarLinkTelegram(){
+      if (isProfessorView) return;
       const url = byId('tgLink').href;
       if(!url || url === '#') return;
       navigator.clipboard?.writeText(url).then(
@@ -1530,7 +1624,9 @@
       byId('btnVoltarLista').addEventListener('click', voltarLista);
 
       const btnPainel = byId('btnVoltarPainel');
-      if (btnPainel) btnPainel.addEventListener('click', ()=> { location.href = '/painel.html'; });
+      if (btnPainel) btnPainel.addEventListener('click', ()=>{
+        location.href = isProfessorView ? '/painel-professor.html' : '/painel.html';
+      });
 
       byId('btnEnableQR').addEventListener('click', habilitarLinkPublico);
       byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
@@ -1539,7 +1635,10 @@
       const btnAnexar = byId('btnAnexarObs');
       const inputFiles = byId('inputObsFiles');
       if (btnAnexar && inputFiles){
-        btnAnexar.addEventListener('click', ()=> inputFiles.click());
+        btnAnexar.addEventListener('click', ()=>{
+          if (isProfessorView) return;
+          inputFiles.click();
+        });
         inputFiles.addEventListener('change', updateAttachHelp);
         updateAttachHelp();
       }
