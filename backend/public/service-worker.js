@@ -6,15 +6,16 @@
  * - Cache-first para estáticos (CSS/JS/IMG/ICO/WEBP/PNG…).
  */
 
-const SW_VERSION = 'cmdpii-v1.1.0'; // 🔄 versão nova para forçar atualização
-const CACHE_NAME = `cmdpii-cache-${SW_VERSION}`;
+const SW_VERSION = 'axoriin-v2.0.0';
+const CACHE_NAME = `axoriin-cache-${SW_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
   '/login.html',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/axoriin-32x32.png',
+  '/icons/axoriin-192x192.png',
+  '/icons/axoriin-512x512.png'
 ];
 
 async function safePrecache(cache, url) {
@@ -40,7 +41,7 @@ self.addEventListener('activate', (event) => {
     const keys = await caches.keys();
     await Promise.all(
       keys
-        .filter(k => k.startsWith('cmdpii-cache-') && k !== CACHE_NAME)
+        .filter(k => (k.startsWith('cmdpii-cache-') || k.startsWith('axoriin-cache-')) && k !== CACHE_NAME)
         .map(k => caches.delete(k))
     );
     await self.clients.claim();
@@ -57,7 +58,7 @@ self.addEventListener('fetch', (event) => {
   // 🚫 APIs nunca cache
   if (url.pathname.startsWith('/api/')) return;
 
-  // 🚫 NUNCA cachear HTML ou navegação (ESSENCIAL PRA SEGURANÇA)
+  // 🚫 NUNCA cachear HTML ou navegação
   const isNavigation =
     request.mode === 'navigate' ||
     (request.headers.get('accept') || '').includes('text/html') ||

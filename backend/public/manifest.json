@@ -1,21 +1,21 @@
 {
-  "name": "Sistema Disciplinar Colégio Militar Dom Pedro II - CZS",
-  "short_name": "CMDPII-CZS",
-  "description": "Aplicativo de gestão disciplinar escolar para o Colégio Militar Dom Pedro II - CZS.",
+  "name": "Axoriin",
+  "short_name": "Axoriin",
+  "description": "Plataforma inteligente de gestão educacional e disciplinar.",
   "start_url": "/login.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#990000",
+  "background_color": "#0A1322",
+  "theme_color": "#0A1322",
   "orientation": "portrait",
   "scope": "/",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/axoriin-192x192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/axoriin-512x512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

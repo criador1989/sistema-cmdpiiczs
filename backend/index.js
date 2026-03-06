@@ -418,6 +418,9 @@ function buildProfessorGuard(publicRoot) {
     '/service-worker.js',
     '/icons/icon-192x192.png',
     '/icons/icon-512x512.png',
+    '/icons/axoriin-32x32.png',
+    '/icons/axoriin-192x192.png',
+    '/icons/axoriin-512x512.png',
     '/favicon.ico',
     '/__version',
     '/healthz',
@@ -606,7 +609,7 @@ mountIf('/api/master/instituicoes', masterInstituicoesRoutes, autenticar, exigir
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 const imgRoot    = path.join(__dirname, 'img');
-const assetsRoot = path.join(__dirname, 'assets');
+const assetsRoot = path.join(publicRoot, 'assets');
 
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
 fs.mkdirSync(path.join(uploadRoot, 'observacoes'), { recursive: true }); // ✅ NOVO: anexos das observações
