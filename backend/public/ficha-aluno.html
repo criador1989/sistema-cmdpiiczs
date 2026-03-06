@@ -9,13 +9,9 @@
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-  /* =========================
-     TEMA GLASS AZUL CLARO + LUZ NATURAL + SPARKLES
-     ========================= */
   :root{
     --bg-0:#14375f;
     --bg-1:#0f2f53;
@@ -58,7 +54,6 @@
     color-scheme: dark;
   }
 
-  /* Topbar */
   .topbar{
     position:sticky; top:0; z-index:10;
     background:linear-gradient(180deg, rgba(23,45,82,.72), rgba(20,40,73,.58));
@@ -247,11 +242,22 @@
     color:#eef3ff
   }
 
-  .edit-card{ background:linear-gradient(180deg, rgba(20,40,73,.66), rgba(18,36,66,.62)); border:1px solid rgba(180,210,245,.34); border-radius:14px; box-shadow:var(--shadow); padding:16px; margin-top:14px; display:none }
+  .edit-card{
+    background:linear-gradient(180deg, rgba(20,40,73,.66), rgba(18,36,66,.62));
+    border:1px solid rgba(180,210,245,.34);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:16px;
+    margin-top:14px;
+    display:none
+  }
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
   .edit-card label{font-weight:600;font-size:.9rem;color:#e6f0ff}
-  .edit-card input,.edit-card textarea{ width:100%;padding:10px;border:1px solid rgba(180,210,245,.36); border-radius:10px;background:linear-gradient(180deg, rgba(26,46,82,.58), rgba(18,36,66,.54)); color:#eef3ff }
+  .edit-card input,.edit-card textarea{
+    width:100%;padding:10px;border:1px solid rgba(180,210,245,.36);
+    border-radius:10px;background:linear-gradient(180deg, rgba(26,46,82,.58), rgba(18,36,66,.54)); color:#eef3ff
+  }
   .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
   .aph-card{
@@ -272,7 +278,6 @@
     border-radius:12px; padding:12px; border:1px solid rgba(180,210,245,.18);
   }
 
-  /* ===== Toast (mensagem de sucesso/erro) ===== */
   .toast{
     position:fixed; right:16px; bottom:16px; z-index:9999;
     max-width:min(520px, calc(100vw - 32px));
@@ -290,7 +295,6 @@
   .toast.ok{ border-left:6px solid rgba(118,255,179,.95) }
   .toast.err{ border-left:6px solid rgba(255,154,161,.95) }
 
-  /* ===== Anexos Observações ===== */
   .attach-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
   .attach-chip{
     display:inline-flex; gap:8px; align-items:center;
@@ -305,9 +309,88 @@
   .attach-chip a:hover{text-decoration:underline}
   .attach-help{color:var(--muted); font-size:.85rem}
 
-  /* =========================
-     PRINT — manter cores e aparência
-     ========================= */
+  /* ===== NOVO: Modal de visualização ===== */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(2,10,24,.68);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9998;
+  }
+  .modal-overlay.open{ display:flex; }
+
+  .modal-card{
+    width:min(980px, 100%);
+    max-height:90vh;
+    overflow:auto;
+    background:linear-gradient(180deg, rgba(20,40,73,.92), rgba(18,36,66,.90));
+    border:1px solid rgba(180,210,245,.34);
+    border-radius:18px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    padding:18px;
+  }
+  .modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+    padding-bottom:12px;
+    border-bottom:1px dashed rgba(170,200,240,.30);
+  }
+  .modal-title{
+    margin:0;
+    font-size:1.1rem;
+    color:#f0f6ff;
+  }
+  .modal-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+  }
+  @media (max-width:800px){
+    .modal-grid{ grid-template-columns:1fr; }
+  }
+  .info-block{
+    background:linear-gradient(180deg, rgba(24,44,78,.56), rgba(18,36,66,.52));
+    border:1px solid rgba(180,210,245,.28);
+    border-radius:14px;
+    padding:14px;
+  }
+  .info-block h4{
+    margin:0 0 10px;
+    font-size:.98rem;
+    color:#eef5ff;
+  }
+  .info-list{
+    display:grid;
+    gap:10px;
+  }
+  .info-item{
+    border:1px solid rgba(180,210,245,.20);
+    border-radius:10px;
+    padding:10px;
+    background:linear-gradient(180deg, rgba(28,50,92,.36), rgba(18,36,66,.32));
+  }
+  .info-label{
+    display:block;
+    font-size:.78rem;
+    color:#b8c7e0;
+    margin-bottom:3px;
+  }
+  .info-value{
+    color:#ffffff;
+    font-weight:600;
+    word-break:break-word;
+  }
+
   @media print {
     *{
       -webkit-print-color-adjust: exact !important;
@@ -332,6 +415,7 @@
     .iconbtn,
     #btnTrocarFoto,
     #btnEditar,
+    #btnVerDados,
     #btnImprimirTop,
     #btnPDFTop,
     #btnVoltarLista,
@@ -340,7 +424,8 @@
     #btnShowQR,
     #btnDisableQR,
     #editorAluno,
-    .toast{
+    .toast,
+    .modal-overlay{
       display:none !important;
     }
 
@@ -354,7 +439,6 @@
   </style>
 
   <script>
-    // Em dev, evita SW/cache antigo atrapalhando JS novo
     if (location.hostname === 'localhost') {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
@@ -370,12 +454,8 @@
     <div class="inner">
       <div class="brand"><span class="dot"></span> Ficha do Aluno</div>
       <div class="spacer"></div>
-
-      <!-- Voltar inteligente -->
       <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
-      <!-- Voltar ao Painel -->
       <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
-
       <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
       <a id="btnPDFTop" class="btn primary" href="#" target="_blank" rel="noopener">Exportar PDF</a>
     </div>
@@ -393,7 +473,6 @@
             <span class="badge" id="badgeId">ID —</span>
           </div>
 
-          <!-- QR público para responsáveis -->
           <div class="qr-wrap" id="qrWrap">
             <button class="btn primary" id="btnEnableQR">🔗 Habilitar link público</button>
             <button class="btn btn-ghost-light" id="btnShowQR">🧾 Ver/Atualizar QR</button>
@@ -411,11 +490,12 @@
               </div>
             </div>
           </div>
-          <!-- /QR -->
         </div>
+
         <div style="display:flex; gap:8px; flex-direction:column; align-items:flex-end">
-          <div style="display:flex; gap:8px">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
             <button class="btn primary" id="btnTrocarFoto">Trocar foto</button>
+            <button class="btn ghost" id="btnVerDados">Visualizar dados pessoais</button>
             <button class="btn ghost" id="btnEditar">Editar</button>
           </div>
           <small class="muted" style="margin-top:8px">Última atualização: <span id="ultimaAtualizacao">—</span></small>
@@ -423,7 +503,6 @@
         <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
       </div>
 
-      <!-- ✅ ALTERAÇÃO: agora é FORM para salvar com Enter/submit -->
       <form class="edit-card" id="editorAluno">
         <div class="grid-2">
           <div><label>Nome</label><input id="edNome" type="text" /></div>
@@ -438,7 +517,6 @@
           <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: /uploads/alunos/123.jpg ou https://..." /></div>
         </div>
 
-        <!-- Contatos do Responsável -->
         <div class="card" style="margin-top:12px;">
           <h4 style="margin:0 0 10px;">Contatos do Responsável</h4>
           <div class="grid-2">
@@ -464,7 +542,6 @@
             </div>
           </div>
         </div>
-        <!-- /Contatos -->
 
         <div class="edit-actions">
           <button class="btn ghost" type="button" id="btnCancelarEd">Cancelar</button>
@@ -483,7 +560,6 @@
         </div>
       </div>
 
-      <!-- APH -->
       <div class="aph-card" id="aphCard" style="margin-top:14px">
         <div class="row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
           <div style="display:flex;flex-direction:column;gap:6px">
@@ -499,7 +575,6 @@
           </div>
         </div>
       </div>
-      <!-- /APH -->
     </section>
 
     <section class="columns">
@@ -507,7 +582,6 @@
         <h3 class="title">Observações</h3>
         <div id="observacoes" class="list"></div>
 
-        <!-- ✅ anexos -->
         <div class="attach-row">
           <button class="btn ghost" id="btnAnexarObs" type="button">📎 Anexar arquivo</button>
           <input id="inputObsFiles" type="file" multiple
@@ -536,17 +610,60 @@
     </section>
   </main>
 
-  <!-- Toast -->
+  <!-- NOVO: Modal de visualização de dados -->
+  <div class="modal-overlay" id="dadosModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 class="modal-title">Dados pessoais do aluno</h3>
+        <button class="btn ghost" type="button" id="btnFecharDados">Fechar</button>
+      </div>
+
+      <div class="modal-grid">
+        <div class="info-block">
+          <h4>Dados do aluno</h4>
+          <div class="info-list">
+            <div class="info-item"><span class="info-label">Nome</span><span class="info-value" id="vdNome">—</span></div>
+            <div class="info-item"><span class="info-label">Turma</span><span class="info-value" id="vdTurma">—</span></div>
+            <div class="info-item"><span class="info-label">Data de entrada</span><span class="info-value" id="vdEntrada">—</span></div>
+            <div class="info-item"><span class="info-label">Data de nascimento</span><span class="info-value" id="vdNasc">—</span></div>
+            <div class="info-item"><span class="info-label">Código de acesso</span><span class="info-value" id="vdCodigo">—</span></div>
+            <div class="info-item"><span class="info-label">Telefone</span><span class="info-value" id="vdTelefone">—</span></div>
+            <div class="info-item"><span class="info-label">Endereço</span><span class="info-value" id="vdEndereco">—</span></div>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <h4>Família e responsável</h4>
+          <div class="info-list">
+            <div class="info-item"><span class="info-label">Nome do pai</span><span class="info-value" id="vdPai">—</span></div>
+            <div class="info-item"><span class="info-label">Nome da mãe</span><span class="info-value" id="vdMae">—</span></div>
+            <div class="info-item"><span class="info-label">E-mail do responsável</span><span class="info-value" id="vdEmailResp">—</span></div>
+            <div class="info-item"><span class="info-label">WhatsApp do responsável</span><span class="info-value" id="vdWhats">—</span></div>
+            <div class="info-item"><span class="info-label">Telegram Chat ID</span><span class="info-value" id="vdTelegram">—</span></div>
+            <div class="info-item"><span class="info-label">Status da foto</span><span class="info-value" id="vdFoto">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
 
   <script>
-    // ===== Helpers =====
+    const DEBUG_FICHA = true;
+
+    function dlog(...args){
+      if (DEBUG_FICHA) console.log('[FICHA DEBUG]', ...args);
+    }
+    function derr(...args){
+      console.error('[FICHA DEBUG]', ...args);
+    }
+
     const qs = (s)=>document.querySelector(s);
     const byId = (id)=>document.getElementById(id);
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
 
-    // ===== Toast =====
     let toastTimer = null;
     function toast(msg, type='ok', title='') {
       const box = byId('toastBox');
@@ -558,7 +675,6 @@
       toastTimer = setTimeout(()=>{ box.style.display='none'; }, 3200);
     }
 
-    // —— Helpers de data robustos ——
     function parseDateLike(d){
       if (!d && d !== 0) return null;
       if (d instanceof Date) return isNaN(+d) ? null : d;
@@ -571,8 +687,7 @@
       const dt = new Date(s);
       return isNaN(+dt) ? null : dt;
     }
-    const fmtData     = (d)=>{ const x = parseDateLike(d); return x ? x.toLocaleDateString('pt-BR')   : '—'; };
-    const fmtDataHora = (d)=>{ const x = parseDateLike(d); return x ? x.toLocaleString('pt-BR')       : '—'; };
+    const fmtData = (d)=>{ const x = parseDateLike(d); return x ? x.toLocaleDateString('pt-BR') : '—'; };
 
     function getDateFrom(obj, ...keys){
       for (const k of keys){
@@ -581,6 +696,10 @@
         if (dt) return dt;
       }
       return null;
+    }
+
+    function safeText(v){
+      return (v === null || v === undefined || v === '') ? '—' : String(v);
     }
 
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
@@ -628,14 +747,12 @@
     }
     function toUploadsUrl(pathOrUrl, w=256, h=256){
       if (!pathOrUrl) return '';
-      if (isExternalOrDataUrl(pathOrUrl)) {
-        return cloudinaryThumb(pathOrUrl, w, h);
-      }
+      if (isExternalOrDataUrl(pathOrUrl)) return cloudinaryThumb(pathOrUrl, w, h);
       let s = String(pathOrUrl).trim().replace(/^\/+/, '');
       s = s.replace(/\\/g, '/');
       const low = s.toLowerCase();
       if (low.startsWith('uploads/')) return '/' + s;
-      if (low.startsWith('alunos/'))   return '/uploads/' + s;
+      if (low.startsWith('alunos/')) return '/uploads/' + s;
       return '/uploads/' + s;
     }
 
@@ -643,14 +760,13 @@
       const n = Number(nota);
       if (isNaN(n)) return {texto:'—', cor:'#9aa3b2'};
       if (n >= 9.01) return {texto:'Excepcional', cor:'#76ffb3'};
-      if (n >= 8.01) return {texto:'Ótimo',       cor:'#a1ffcf'};
-      if (n >= 7.00) return {texto:'Bom',         cor:'#e7c873'};
-      if (n >= 5.00) return {texto:'Regular',     cor:'#ffcf9a'};
-      if (n >= 3.00) return {texto:'Insuficiente',cor:'#ff9aa1'};
+      if (n >= 8.01) return {texto:'Ótimo', cor:'#a1ffcf'};
+      if (n >= 7.00) return {texto:'Bom', cor:'#e7c873'};
+      if (n >= 5.00) return {texto:'Regular', cor:'#ffcf9a'};
+      if (n >= 3.00) return {texto:'Insuficiente', cor:'#ff9aa1'};
       return {texto:'Incompatível', cor:'#e7e9ee'};
     }
 
-    // ✅ Helper API: inclui Authorization se existir
     async function api(path, opts = {}){
       const method = (opts.method || 'GET').toUpperCase();
       const headers = { ...(opts.headers || {}) };
@@ -664,22 +780,30 @@
         headers['Content-Type'] = 'application/json';
       }
 
-      const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
+      const fullUrl = `/api${path.startsWith('/') ? path : `/${path}`}`;
+      dlog('api request', { method, url: fullUrl, headers, body: opts.body instanceof FormData ? '[FormData]' : opts.body });
+
+      const r = await fetch(fullUrl, {
         credentials:'include',
         cache:'no-store',
         headers,
         ...opts
       });
-      const ct = r.headers.get('content-type')||'';
-      const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+
+      const ct = r.headers.get('content-type') || '';
+      const data = ct.includes('application/json')
+        ? await r.json().catch(()=> ({}))
+        : await r.text().catch(()=> '');
+
+      dlog('api response', { method, url: fullUrl, status: r.status, contentType: ct, data });
+
       if(!r.ok){
-        const msg = data.error || data.mensagem || data.message || `Erro ${r.status}`;
+        const msg = data?.error || data?.erro || data?.mensagem || data?.message || `Erro ${r.status}`;
         throw new Error(msg);
       }
       return data;
     }
 
-    // ===== Fallback seguro para buscar a ficha (apenas JSON) =====
     async function fetchFichaComFallback(id){
       const endpoints = [
         `/fichaAluno/${id}`,
@@ -703,6 +827,8 @@
           if (!resp.ok){ lastErr = new Error(`HTTP ${resp.status}`); continue; }
           const data = await resp.json();
 
+          dlog('fallback endpoint ok', ep, data);
+
           if (data && (data.aluno || data._id || data.id)) {
             const aluno = data.aluno || data;
             return {
@@ -721,7 +847,6 @@
       throw lastErr || new Error('Nenhum endpoint JSON retornou ficha.');
     }
 
-    // ===== APH: contador + navegação =====
     async function fetchAphCount(){
       if(!alunoId) return;
       try{
@@ -731,10 +856,11 @@
         byId('aphCount').textContent = '0';
       }
     }
+
     function bindAphButtons(){
       const ver  = byId('btnVerAtendimentos');
       const novo = byId('btnNovoAtendimento');
-      if (ver)  ver.addEventListener('click', ()=>{
+      if (ver) ver.addEventListener('click', ()=>{
         if (!alunoId) return alert('ID do aluno não informado.');
         location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
       });
@@ -744,7 +870,6 @@
       });
     }
 
-    // ===== Chart rendering =====
     function renderComportChart(points){
       const ctx = document.getElementById('comportChart').getContext('2d');
       let labels = [], data = [];
@@ -796,11 +921,7 @@
         options: {
           maintainAspectRatio: false,
           scales: {
-            y: {
-              suggestedMin: 0,
-              suggestedMax: 10,
-              ticks: { stepSize: 1 }
-            },
+            y: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 1 } },
             x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
           },
           plugins: {
@@ -815,7 +936,33 @@
       });
     }
 
-    // ===== Carregar ficha =====
+    function preencherVisualizacaoDados(aluno){
+      const ct = aluno?.contatos || {};
+      byId('vdNome').textContent = safeText(aluno?.nome);
+      byId('vdTurma').textContent = safeText(aluno?.turma);
+      byId('vdEntrada').textContent = fmtData(aluno?.dataEntrada);
+      byId('vdNasc').textContent = fmtData(aluno?.nascimento);
+      byId('vdCodigo').textContent = safeText(aluno?.codigoAcesso);
+      byId('vdTelefone').textContent = safeText(aluno?.telefone);
+      byId('vdEndereco').textContent = safeText(aluno?.endereco);
+      byId('vdPai').textContent = safeText(aluno?.nomePai);
+      byId('vdMae').textContent = safeText(aluno?.nomeMae);
+      byId('vdEmailResp').textContent = safeText(ct.emailResponsavel);
+      byId('vdWhats').textContent = safeText(ct.whatsapp);
+      byId('vdTelegram').textContent = safeText(ct.telegramChatId);
+      byId('vdFoto').textContent = aluno?.foto || aluno?.fotoUrl ? 'Foto cadastrada' : 'Sem foto';
+    }
+
+    function abrirVisualizacaoDados(){
+      if (!alunoAtual) return;
+      preencherVisualizacaoDados(alunoAtual);
+      byId('dadosModal').classList.add('open');
+    }
+
+    function fecharVisualizacaoDados(){
+      byId('dadosModal').classList.remove('open');
+    }
+
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
 
@@ -823,35 +970,32 @@
       try{
         try{
           payload = await api(`/fichaAluno/${alunoId}`, { method:'GET' });
-          if (!payload || (!payload.aluno && !payload._id)) {
-            throw new Error('Formato inesperado');
-          }
-          if (payload && payload._id) {
-            payload = { aluno: payload, observacoes: [], notificacoes: [] };
-          }
+          if (!payload || (!payload.aluno && !payload._id)) throw new Error('Formato inesperado');
+          if (payload && payload._id) payload = { aluno: payload, observacoes: [], notificacoes: [] };
         }catch(_){
           payload = await fetchFichaComFallback(alunoId);
         }
       }catch(e){
+        derr('Falha ao buscar ficha:', e);
         if (String(e.message).includes('401') || /não autorizado|token/i.test(String(e.message))) {
           alert('Sessão expirada. Faça login novamente.');
           return (window.location.href = '/login.html');
         }
-        console.error('Falha ao buscar ficha:', e);
         alert('Falha ao carregar ficha.');
         return;
       }
 
-      const { aluno, notificacoes=[], observacoes=[] } = payload || {};
+      const { aluno, notificacoes = [], observacoes = [] } = payload || {};
       alunoAtual = aluno;
 
-      // Cabeçalho
+      dlog('aluno recebido em carregarFicha', aluno);
+      dlog('contatos recebidos em carregarFicha', aluno?.contatos);
+
       byId('alunoNome').textContent = aluno?.nome ?? '—';
       byId('badgeTurma').textContent = `Turma ${aluno?.turma ?? '—'}`;
       byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
       byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
 
-      // PDF topo
       byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
@@ -867,7 +1011,6 @@
       pill.style.background = cls.cor;
       pill.style.borderColor = '#0000';
 
-      // Foto
       const fotoBox = byId('fotoBox');
       const raw = aluno?.fotoUrl || aluno?.foto || '';
       const finalUrl = raw ? toUploadsUrl(raw, 256, 256) : '';
@@ -875,17 +1018,11 @@
         ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="96" height="96" style="object-fit:cover">`
         : 'Sem foto';
 
-      // Última atualização
-      const ultDate = getDateFrom(
-        aluno,
-        'updatedAt','atualizadoEm','ultimaAtualizacao',
-        'createdAt','criadoEm','lastUpdate'
-      );
-      byId('ultimaAtualizacao').textContent = ultDate
-        ? ultDate.toLocaleString('pt-BR')
-        : '—';
+      const ultDate = getDateFrom(aluno,'updatedAt','atualizadoEm','ultimaAtualizacao','createdAt','criadoEm','lastUpdate');
+      byId('ultimaAtualizacao').textContent = ultDate ? ultDate.toLocaleString('pt-BR') : '—';
 
-      // Observações
+      preencherVisualizacaoDados(aluno);
+
       const obsEl = byId('observacoes');
       obsEl.innerHTML = '';
       if(!observacoes.length){
@@ -895,11 +1032,10 @@
           const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
           const dataObsStr = dataObs ? dataObs.toLocaleString('pt-BR') : '—';
 
-          // anexos: tenta ler de vários formatos, depois DEDUP
           const anexosRaw = Array.isArray(o.anexos) ? o.anexos
-                        : Array.isArray(o.attachments) ? o.attachments
-                        : Array.isArray(o.files) ? o.files
-                        : [];
+            : Array.isArray(o.attachments) ? o.attachments
+            : Array.isArray(o.files) ? o.files
+            : [];
 
           const norm = (x)=> String(x || '').trim();
           const uniq = [];
@@ -938,7 +1074,6 @@
         }).join('');
       }
 
-      // Notificações
       const notiEl = byId('notificacoes');
       notiEl.innerHTML = '';
       if(!notificacoes.length){
@@ -954,7 +1089,6 @@
           const valor = fmtValor(valorCorrigido);
           const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + n.observacoes + '</div>' : '';
           const idN = n._id || '';
-
           const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
           const dataNStr = dataN ? dataN.toLocaleDateString('pt-BR') : '—';
 
@@ -981,11 +1115,9 @@
         }).join('');
       }
 
-      // QR + contador APH
       try { await mostrarQRCode(true); } catch {}
       try { await fetchAphCount(); } catch {}
 
-      // Gráfico
       try {
         const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
         renderComportChart(hist);
@@ -994,7 +1126,6 @@
       }
     }
 
-    // ===== Observações =====
     function updateAttachHelp(){
       const input = byId('inputObsFiles');
       const help = byId('attachHelp');
@@ -1010,13 +1141,10 @@
       const inputFiles = byId('inputObsFiles');
       const files = inputFiles?.files ? Array.from(inputFiles.files) : [];
 
-      // ✅ tenta multipart (texto + anexos)
       if (files.length) {
         try{
           const fd = new FormData();
           fd.append('texto', texto);
-
-          // ✅ NÃO duplicar: envia em um único campo
           files.forEach(f => fd.append('anexos', f));
 
           const headers = {};
@@ -1038,14 +1166,11 @@
             toast('Observação salva com sucesso!', 'ok', 'Tudo certo');
             return carregarFicha();
           }
-        }catch(e){
-          // segue para fallback JSON
-        }
+        }catch(e){}
 
         toast('Seu backend ainda não está aceitando anexos por aqui. Vou salvar só o texto (sem quebrar nada).', 'err', 'Anexo não suportado (por enquanto)');
       }
 
-      // ✅ fallback (texto apenas)
       try{
         const headers = {'Content-Type':'application/json'};
         const token = localStorage.getItem('token');
@@ -1109,9 +1234,11 @@
       card.querySelector('#cancelEd').onclick = function(){ carregarFicha(); };
     }
 
-    // ===== Editor do aluno =====
     function abrirEditor(){
       if(!alunoAtual) return;
+      dlog('abrirEditor alunoAtual', alunoAtual);
+      dlog('contatos recebidos em abrirEditor', alunoAtual?.contatos);
+
       byId('editorAluno').style.display = 'block';
       byId('edNome').value   = alunoAtual.nome || '';
       byId('edTurma').value  = alunoAtual.turma || '';
@@ -1122,8 +1249,6 @@
       byId('edTel').value    = alunoAtual.telefone || '';
       byId('edEnd').value    = alunoAtual.endereco || '';
       byId('edCodigo').value = alunoAtual.codigoAcesso || '';
-
-      // ✅ usa fotoUrl OU foto
       byId('edFoto').value   = alunoAtual.fotoUrl || alunoAtual.foto || '';
 
       const ct = alunoAtual.contatos || {};
@@ -1134,9 +1259,9 @@
       byId('tgLink').href = '#';
       byId('btnCopiarTg').style.display = 'none';
     }
+
     function fecharEditor(){ byId('editorAluno').style.display = 'none'; }
 
-    // ✅ FIX: salva e mantém alunoAtual sincronizado com retorno (evita "sumir" no reload)
     async function salvarEdicao(){
       if(!alunoAtual) return;
 
@@ -1164,30 +1289,58 @@
         }
       };
 
+      dlog('payload PUT /alunos/:id', payload);
+
       try{
-        const j = await api('/alunos/' + alunoAtual._id, {
+        const fullUrl = `/api/alunos/${alunoAtual._id}`;
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const resp = await fetch(fullUrl, {
           method:'PUT',
+          credentials:'include',
+          cache:'no-store',
+          headers,
           body: JSON.stringify(payload)
         });
 
-        const alunoSalvo = j?.aluno || j?.data || j || null;
+        let raw;
+        const ct = resp.headers.get('content-type') || '';
+        if (ct.includes('application/json')) raw = await resp.json().catch(()=> ({}));
+        else raw = await resp.text().catch(()=> '');
+
+        dlog('resposta PUT /alunos/:id', {
+          url: fullUrl,
+          status: resp.status,
+          contentType: ct,
+          data: raw
+        });
+
+        if (!resp.ok) {
+          throw new Error(raw?.message || raw?.mensagem || raw?.error || `Erro ${resp.status}`);
+        }
+
+        const alunoSalvo = raw?.aluno || raw?.data || raw || null;
         if (alunoSalvo && (alunoSalvo._id || alunoSalvo.id)) {
           alunoAtual = alunoSalvo;
         } else {
           alunoAtual = { ...alunoAtual, ...payload };
         }
 
+        dlog('alunoAtual após salvar', alunoAtual);
+
         toast('Alterações salvas com sucesso!', 'ok', 'Tudo certo');
         fecharEditor();
         await carregarFicha();
       }catch(e){
+        derr('erro em salvarEdicao', e);
         toast(e.message || 'Erro ao salvar alterações.', 'err', 'Falha');
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = oldText || 'Salvar alterações'; }
       }
     }
 
-    // Upload foto
     document.addEventListener('DOMContentLoaded', ()=>{
       const btnTrocarFoto = byId('btnTrocarFoto');
       const inputFoto = byId('inputFoto');
@@ -1224,19 +1377,17 @@
           }
 
           URL.revokeObjectURL(previewURL);
-
-          // ✅ usa a URL pública retornada
           fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="96" height="96" style="object-fit:cover;">';
 
-          // ✅ mantém sincronizado (evita sumir depois)
           if (alunoAtual) {
             alunoAtual.fotoUrl = data.foto;
             alunoAtual.foto = data.foto;
+            preencherVisualizacaoDados(alunoAtual);
           }
 
           toast('Foto atualizada com sucesso!', 'ok', 'Tudo certo');
         } catch (e) {
-          console.error(e);
+          derr(e);
           toast(e.message || 'Erro ao atualizar a foto.', 'err', 'Falha');
           URL.revokeObjectURL(previewURL);
           carregarFicha();
@@ -1246,7 +1397,6 @@
       });
     });
 
-    // ===== QR público =====
     async function habilitarLinkPublico(){
       try{
         byId('qrStatus').textContent = 'Gerando link...';
@@ -1261,6 +1411,7 @@
         alert(e.message);
       }
     }
+
     async function mostrarQRCode(silent){
       try{
         const r = await api('/alunos/' + alunoId + '/public/qrcode', { method:'GET' });
@@ -1271,6 +1422,7 @@
         if(!silent) alert(e.message);
       }
     }
+
     async function desabilitarLinkPublico(){
       if(!confirm('Deseja desabilitar o link público deste aluno?')) return;
       try{
@@ -1281,6 +1433,7 @@
         alert(e.message);
       }
     }
+
     function preencherQR(r){
       const prev = byId('qrPreview');
       byId('qrImg').src = r.qrCode;
@@ -1290,7 +1443,6 @@
       prev.style.display = 'block';
     }
 
-    // ===== Voltar inteligente (histórico -> turma -> lista) =====
     function voltarLista() {
       try {
         const ref = document.referrer || '';
@@ -1314,7 +1466,6 @@
       location.href = '/lista-alunos.html';
     }
 
-    // ===== Telegram: gerar/copiar link =====
     async function gerarLinkTelegram(){
       const linkEl = byId('tgLink');
       const copiarBtn = byId('btnCopiarTg');
@@ -1323,9 +1474,7 @@
       copiarBtn.style.display = 'none';
       try{
         const j = await api(`/telegram/start-link/${alunoId}`, { method:'GET' });
-        if(!j || !j.ok || !j.url){
-          throw new Error(j?.msg || 'Falha ao gerar link do Telegram');
-        }
+        if(!j || !j.ok || !j.url) throw new Error(j?.msg || 'Falha ao gerar link do Telegram');
         linkEl.textContent = j.url;
         linkEl.href = j.url;
         copiarBtn.style.display = 'inline-block';
@@ -1335,6 +1484,7 @@
         alert(e.message);
       }
     }
+
     function copiarLinkTelegram(){
       const url = byId('tgLink').href;
       if(!url || url === '#') return;
@@ -1349,14 +1499,24 @@
       );
     }
 
-    // ===== Binds =====
     function bindAll(){
       byId('btnSalvar').addEventListener('click', salvarObservacao);
       byId('btnImprimirTop').addEventListener('click', ()=> window.print());
       byId('btnEditar').addEventListener('click', abrirEditor);
+      byId('btnVerDados').addEventListener('click', abrirVisualizacaoDados);
+      byId('btnFecharDados').addEventListener('click', fecharVisualizacaoDados);
       byId('btnCancelarEd').addEventListener('click', fecharEditor);
 
-      // submit do FORM
+      byId('dadosModal').addEventListener('click', (e)=>{
+        if (e.target.id === 'dadosModal') fecharVisualizacaoDados();
+      });
+
+      document.addEventListener('keydown', (e)=>{
+        if (e.key === 'Escape') {
+          fecharVisualizacaoDados();
+        }
+      });
+
       const formEditor = byId('editorAluno');
       if (formEditor) {
         formEditor.addEventListener('submit', async (e) => {
@@ -1376,7 +1536,6 @@
       byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
       byId('btnDisableQR').addEventListener('click', desabilitarLinkPublico);
 
-      // anexos observações
       const btnAnexar = byId('btnAnexarObs');
       const inputFiles = byId('inputObsFiles');
       if (btnAnexar && inputFiles){
@@ -1388,7 +1547,6 @@
       bindAphButtons();
     }
 
-    // ===== Boot =====
     (function init(){
       const btnPDF = byId('btnPDFTop'); if (btnPDF) btnPDF.rel = 'noopener';
       bindAll();

@@ -1,4 +1,3 @@
-// routes/api/alunos.js
 const express = require('express');
 const router = express.Router();
 
@@ -89,6 +88,15 @@ function sanitizeUpdate(payload = {}) {
 function normalizeChatId(id) {
   if (id === null || id === undefined) return '';
   return String(id).trim();
+}
+
+function limpaString(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).trim();
+}
+
+function limpaSomenteDigitos(v) {
+  return limpaString(v).replace(/\D+/g, '');
 }
 
 /* ===================== CACHE LEVE PARA /:id/detalhes ===================== */
@@ -692,11 +700,25 @@ router.get('/:id', autenticar, apenasLeitura, async (req, res) => {
 // PUT /api/alunos/:id  (SENSÍVEL -> monitor/admin)
 router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    if (!req.usuario?.instituicao) {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
+
+    const instituicao = req.usuario.instituicao;
+    const alunoId = req.params.id;
+
+    const alunoAntes = await Aluno.findOne({
+      _id: alunoId,
+      instituicao
+    });
+
+    if (!alunoAntes) {
+      return res.status(404).json({ message: 'Aluno não encontrado' });
+    }
 
     const dadosAtualizados = sanitizeUpdate(req.body);
 
-    if (dadosAtualizados.turma) {
+    if (dadosAtualizados.turma !== undefined) {
       dadosAtualizados.turma = normalizaTurma(dadosAtualizados.turma);
     }
 
@@ -707,20 +729,40 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
       dadosAtualizados.nascimento = parsePtBrDateToDate(dadosAtualizados.nascimento);
     }
 
-    const alunoAntes = await Aluno.findOne({
-      _id: req.params.id,
-      instituicao: req.usuario.instituicao
-    }).select('_id dataEntrada').lean();
+    // ✅ BLINDAGEM dos contatos
+    const contatosPayload = dadosAtualizados.contatos && typeof dadosAtualizados.contatos === 'object'
+      ? dadosAtualizados.contatos
+      : {};
 
-    if (!alunoAntes) return res.status(404).json({ message: 'Aluno não encontrado' });
+    const emailResponsavel = limpaString(contatosPayload.emailResponsavel);
+    const whatsapp = limpaSomenteDigitos(contatosPayload.whatsapp);
+    const telegramChatId = limpaString(contatosPayload.telegramChatId);
 
-    const mudouDataEntrada = dadosAtualizados.dataEntrada !== undefined &&
-      String(new Date(dadosAtualizados.dataEntrada).getTime()) !== String(new Date(alunoAntes.dataEntrada).getTime());
+    // evita update genérico ambíguo do subdocumento
+    delete dadosAtualizados.contatos;
+
+    const updateDoc = {
+      ...dadosAtualizados,
+      'contatos.emailResponsavel': emailResponsavel || null,
+      'contatos.whatsapp': whatsapp || null,
+      'contatos.telegramChatId': telegramChatId || null
+    };
+
+    const antesEntradaMs = alunoAntes.dataEntrada ? new Date(alunoAntes.dataEntrada).getTime() : null;
+    const depoisEntradaMs = updateDoc.dataEntrada !== undefined && updateDoc.dataEntrada !== null
+      ? new Date(updateDoc.dataEntrada).getTime()
+      : antesEntradaMs;
+
+    const mudouDataEntrada = updateDoc.dataEntrada !== undefined &&
+      String(depoisEntradaMs) !== String(antesEntradaMs);
 
     const alunoAtualizado = await Aluno.findOneAndUpdate(
-      { _id: req.params.id, instituicao: req.usuario.instituicao },
-      dadosAtualizados,
-      { new: true }
+      { _id: alunoId, instituicao },
+      { $set: updateDoc },
+      {
+        new: true,
+        runValidators: true
+      }
     );
 
     const force = String(req.query.recalcular || '').toLowerCase();
@@ -739,18 +781,18 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
 
     await Log.create({
       usuario: req.usuario.id,
-      instituicao: req.usuario.instituicao,
+      instituicao,
       acao: 'Edição de Aluno',
       entidade: 'Aluno',
       entidadeId: alunoAtualizado._id
     });
 
-    try { detalhesCache.delete(cacheKey(req.usuario.instituicao, String(alunoAtualizado._id))); } catch {}
+    try { detalhesCache.delete(cacheKey(instituicao, String(alunoAtualizado._id))); } catch {}
 
     res.json(anexarThumb(alunoAtualizado));
   } catch (error) {
     console.error('Erro PUT /api/alunos/:id:', error);
-    res.status(400).json({ message: 'Erro ao atualizar aluno', error });
+    res.status(400).json({ message: 'Erro ao atualizar aluno', error: error?.message || error });
   }
 });
 
