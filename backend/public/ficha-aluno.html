@@ -1366,6 +1366,7 @@
       if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
       const whatsDigits = byId('edWhats').value.replace(/\D+/g,'');
+      const fotoDigitada = byId('edFoto').value.trim();
 
       const payload = {
         nome:         byId('edNome').value.trim(),
@@ -1377,13 +1378,18 @@
         telefone:     byId('edTel').value.trim(),
         endereco:     byId('edEnd').value.trim(),
         codigoAcesso: byId('edCodigo').value.trim(),
-        foto:         byId('edFoto').value.trim(),
         contatos: {
           emailResponsavel: byId('edEmailResp').value.trim() || undefined,
           whatsapp:         whatsDigits || undefined,
           telegramChatId:   byId('edTelegramId').value.trim() || undefined,
         }
       };
+
+      // Só envia "foto" se houver valor.
+      // Isso evita zerar a foto do aluno sem querer.
+      if (fotoDigitada) {
+        payload.foto = fotoDigitada;
+      }
 
       try{
         const fullUrl = `/api/alunos/${alunoAtual._id}`;

@@ -208,7 +208,6 @@
       opacity:1;
     }
 
-    /* ===== Gerenciador de turmas (visual alinhado) ===== */
     details.manager{
       margin-top:14px;
       border-radius:16px;
@@ -433,10 +432,6 @@
       const LS_REMOVED = 'cmdpii_turmas_removed_v1';
       const LS_UNDO    = 'cmdpii_turmas_last_action_v1';
 
-      // Base oficial (já com as novas solicitadas):
-      // ✅ manhã: 6ºC, 8ºC, 8ºD
-      // ✅ tarde: 2ºD
-      // Obs: turno aqui é meta (não altera value da turma)
       const BASE = [
         { code:'6ºA', seg:'Fundamental II', turno:'Manhã' },
         { code:'6ºB', seg:'Fundamental II', turno:'Manhã' },
@@ -490,7 +485,6 @@
           : 'Fundamental II';
       }
       function guessTurno(code){
-        // meta default, pode ajustar depois pelo gerenciador
         if (code === '2ºD') return 'Tarde';
         return 'Manhã';
       }
@@ -522,17 +516,14 @@
         const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
         const m = byCode(BASE);
 
-        // aplica custom (add/override meta)
         for (const [code, obj] of byCode(custom).entries()){
           m.set(code, obj);
         }
 
-        // remove excluídas
         for (const code of removed){
           m.delete(code);
         }
 
-        // ordena por segmento + série + letra
         const list = Array.from(m.values());
         list.sort((a,b)=>{
           const segA = a.seg.localeCompare(b.seg,'pt-BR');
@@ -547,7 +538,7 @@
         const current = keepValue || selTurma.value || '6ºA';
         const turmas = getMergedTurmas();
 
-        const groups = new Map(); // seg -> array
+        const groups = new Map();
         for (const t of turmas){
           if (!groups.has(t.seg)) groups.set(t.seg, []);
           groups.get(t.seg).push(t);
@@ -562,8 +553,8 @@
           og.label = seg;
           for (const t of items){
             const opt = document.createElement('option');
-            opt.value = t.code;       // ✅ value puro (não quebra backend)
-            opt.textContent = t.code; // ✅ texto puro
+            opt.value = t.code;
+            opt.textContent = t.code;
             og.appendChild(opt);
           }
           frag.appendChild(og);
@@ -572,12 +563,10 @@
         selTurma.innerHTML = '';
         selTurma.appendChild(frag);
 
-        // mantém seleção se possível
         const exists = Array.from(selTurma.options).some(o => o.value === current);
         selTurma.value = exists ? current : (selTurma.options[0]?.value || '');
       }
 
-      // UI manager
       const chipQtd = document.getElementById('chip-qtd');
       const listaTurmasEl = document.getElementById('listaTurmas');
       const btnAdd = document.getElementById('btnAddTurma');
@@ -590,11 +579,8 @@
 
       function normalizeCode(raw){
         let s = String(raw || '').trim();
-        // normaliza espaços
         s = s.replace(/\s+/g,'');
-        // troca "o" por "º" caso digitem errado: "6oA" -> "6ºA"
         s = s.replace(/^(\d+)(o)([A-Za-z])$/i, '$1º$3');
-        // valida padrão básico: 6ºA, 10ºA etc (mas aqui usamos 6-9 e 1-3)
         return s;
       }
 
@@ -604,7 +590,6 @@
         chipQtd.textContent = `${list.length} turmas`;
         btnUndo.disabled = !hasUndo();
 
-        // monta listagem com meta (segmento/turno) para o gestor visualizar
         listaTurmasEl.innerHTML = '';
         for (const t of list){
           const row = document.createElement('div');
@@ -642,17 +627,14 @@
 
         const beforeSel = selTurma.value;
 
-        // snapshot para undo
         saveUndoSnapshot(`Adicionar ${code}`);
 
         const custom = safeParseLS(LS_CUSTOM, []);
         const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
 
-        // remove da lista de removidos (se estava excluída)
         removed.delete(code);
         localStorage.setItem(LS_REMOVED, JSON.stringify(Array.from(removed)));
 
-        // upsert custom
         const m = byCode(custom);
         m.set(code, { code, seg, turno });
         localStorage.setItem(LS_CUSTOM, JSON.stringify(Array.from(m.values())));
@@ -662,7 +644,6 @@
         renderTurmaSelect(beforeSel);
         renderManagerList();
 
-        // opcional: seleciona a recém-criada
         const exists = Array.from(selTurma.options).some(o => o.value === code);
         if (exists) selTurma.value = code;
       }
@@ -675,16 +656,13 @@
 
         const beforeSel = selTurma.value;
 
-        // snapshot para undo
         saveUndoSnapshot(`Excluir ${c}`);
 
-        // se era custom, remove do custom
         const custom = safeParseLS(LS_CUSTOM, []);
         const m = byCode(custom);
         m.delete(c);
         localStorage.setItem(LS_CUSTOM, JSON.stringify(Array.from(m.values())));
 
-        // marca como removida (inclusive base)
         const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
         removed.add(c);
         localStorage.setItem(LS_REMOVED, JSON.stringify(Array.from(removed)));
@@ -721,7 +699,6 @@
       btnUndo.addEventListener('click', undo);
       btnReset.addEventListener('click', resetPadrao);
 
-      // Enter no campo de código adiciona
       inpCode.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -729,11 +706,9 @@
         }
       });
 
-      // Render inicial do select + manager
       renderTurmaSelect('6ºA');
       renderManagerList();
 
-      // 1) Buscar usuário logado para pegar a instituição
       try {
         const res = await fetch('/api/usuario', {
           method: 'GET',
@@ -760,7 +735,6 @@
         msgEl.style.color = '#ffb4b4';
       }
 
-      // 2) Submit do formulário
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         msgEl.style.color = '#ffffff';
@@ -797,55 +771,79 @@
             return;
           }
 
-          // Sucesso (cadastro)
           msgEl.textContent = '✅ Aluno cadastrado com sucesso!';
           msgEl.style.color = '#9effb4';
 
-          // ✅ Upload de foto logo após criar (se tiver)
+          let fotoEnviadaComSucesso = false;
+
           try {
             const fileInput = document.getElementById('foto');
             const file = fileInput?.files?.[0];
             const alunoId = body?._id || body?.id || body?.aluno?._id || body?.aluno?.id;
 
-            if (alunoId && file && file.type?.startsWith('image/')) {
-              msgEl.textContent = '📷 Enviando foto do aluno...';
-              msgEl.style.color = '#ffffff';
-
-              const fd = new FormData();
-              fd.append('foto', file);
-
-              const headers = {};
-              const token = localStorage.getItem('token');
-              if (token) headers['Authorization'] = `Bearer ${token}`;
-
-              const up = await fetch(`/api/alunos/${encodeURIComponent(alunoId)}/foto`, {
-                method: 'PUT',
-                body: fd,
-                headers,
-                credentials: 'include',
-                cache: 'no-store'
-              });
-
-              const upBody = await up.json().catch(()=> ({}));
-              if (!up.ok || !upBody?.foto) {
-                console.warn('Falha ao enviar foto:', up.status, upBody);
-                msgEl.textContent = '✅ Aluno cadastrado! (⚠ Foto não foi enviada — tente pela ficha)';
+            if (alunoId && file) {
+              if (!file.type?.startsWith('image/')) {
+                msgEl.textContent = '⚠️ Aluno cadastrado, mas o arquivo selecionado não é uma imagem válida.';
                 msgEl.style.color = '#ffdcae';
               } else {
-                msgEl.textContent = '✅ Aluno cadastrado com foto!';
-                msgEl.style.color = '#9effb4';
+                msgEl.textContent = '📷 Enviando foto do aluno...';
+                msgEl.style.color = '#ffffff';
+
+                const fd = new FormData();
+                fd.append('foto', file);
+
+                const headers = {};
+                const token = localStorage.getItem('token');
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const up = await fetch(`/api/alunos/${encodeURIComponent(alunoId)}/foto`, {
+                  method: 'PUT',
+                  body: fd,
+                  headers,
+                  credentials: 'include',
+                  cache: 'no-store'
+                });
+
+                const upBody = await up.json().catch(() => ({}));
+
+                if (!up.ok || !upBody?.foto) {
+                  console.error('❌ Falha ao enviar foto do aluno:', {
+                    status: up.status,
+                    resposta: upBody,
+                    alunoId
+                  });
+
+                  msgEl.textContent = '⚠️ Aluno cadastrado, mas a foto NÃO foi salva. Abra a ficha do aluno e envie novamente.';
+                  msgEl.style.color = '#ffdcae';
+                } else {
+                  fotoEnviadaComSucesso = true;
+                  console.log('✅ Foto enviada com sucesso:', upBody.foto);
+                  msgEl.textContent = '✅ Aluno cadastrado com foto!';
+                  msgEl.style.color = '#9effb4';
+                }
               }
+            } else if (alunoId && !file) {
+              console.log('ℹ️ Aluno cadastrado sem foto selecionada.');
+              msgEl.textContent = '✅ Aluno cadastrado sem foto.';
+              msgEl.style.color = '#9effb4';
+            } else {
+              console.error('❌ Não foi possível identificar o ID do aluno recém-cadastrado.', body);
+              msgEl.textContent = '⚠️ Aluno cadastrado, mas não foi possível associar a foto automaticamente.';
+              msgEl.style.color = '#ffdcae';
             }
           } catch (e) {
-            console.warn('Erro no upload pós-cadastro:', e);
-            msgEl.textContent = '✅ Aluno cadastrado! (⚠ Foto não foi enviada — tente pela ficha)';
+            console.error('❌ Erro no upload pós-cadastro:', e);
+            msgEl.textContent = '⚠️ Aluno cadastrado, mas houve erro ao enviar a foto. Envie novamente pela ficha.';
             msgEl.style.color = '#ffdcae';
           }
 
-          // limpa os campos principais (mantém instituição)
           const keepTurma = form.turma.value || '6ºA';
           form.reset();
           renderTurmaSelect(keepTurma);
+
+          const fotoInput = document.getElementById('foto');
+          if (fotoInput) fotoInput.value = '';
+
         } catch (err) {
           console.error('Erro de rede ao cadastrar aluno:', err);
           msgEl.textContent = '❌ Erro de comunicação com o servidor. Tente novamente.';

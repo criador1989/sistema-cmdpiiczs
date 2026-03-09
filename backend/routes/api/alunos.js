@@ -5,6 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const sharp = require('sharp');
+const crypto = require('crypto');
+
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
@@ -15,25 +19,42 @@ const { autenticar, apenasLeitura, apenasMonitorOuAdmin } = require('../../middl
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const { enviarTelegram } = require('../../services/mensageria');
 
-// ---------- Upload de foto (multer) ----------
-const pastaAlunos = path.join(__dirname, '../../uploads/alunos');
-fs.mkdirSync(pastaAlunos, { recursive: true });
+// ======================================================
+// ☁️ AWS S3
+// ======================================================
+const AWS_REGION = process.env.AWS_REGION || 'sa-east-1';
+const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+const AWS_S3_BASE_URL =
+  process.env.AWS_S3_BASE_URL ||
+  (AWS_BUCKET_NAME ? `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com` : '');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, pastaAlunos),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || '') || '.jpg';
-    cb(null, `${req.params.id || 'aluno'}-${Date.now()}${ext}`);
-  }
-});
+const s3Enabled =
+  !!process.env.AWS_ACCESS_KEY_ID &&
+  !!process.env.AWS_SECRET_ACCESS_KEY &&
+  !!AWS_BUCKET_NAME;
+
+const s3Client = s3Enabled
+  ? new S3Client({
+      region: AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+      }
+    })
+  : null;
+
+// ======================================================
+// 📤 Upload de foto (multer em memória)
+// ======================================================
 const fileFilter = (req, file, cb) => {
   if (!file?.mimetype?.startsWith('image/')) {
     return cb(new Error('Envie um arquivo de imagem.'), false);
   }
   cb(null, true);
 };
+
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 8 * 1024 * 1024 } // 8MB
 });
@@ -97,6 +118,68 @@ function limpaString(v) {
 
 function limpaSomenteDigitos(v) {
   return limpaString(v).replace(/\D+/g, '');
+}
+
+function extrairS3KeyDaUrl(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return decodeURIComponent(u.pathname.replace(/^\/+/, ''));
+  } catch {
+    return null;
+  }
+}
+
+function isS3Url(url) {
+  return typeof url === 'string' &&
+    /^https?:\/\/.+\.amazonaws\.com\//i.test(url);
+}
+
+async function apagarFotoAntigaSeForS3(url) {
+  if (!s3Enabled || !url || !isS3Url(url)) return;
+  const key = extrairS3KeyDaUrl(url);
+  if (!key) return;
+
+  try {
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: AWS_BUCKET_NAME,
+      Key: key
+    }));
+  } catch (err) {
+    console.warn('Falha ao apagar foto antiga do S3:', err?.message || err);
+  }
+}
+
+async function otimizarImagemBuffer(buffer) {
+  return sharp(buffer)
+    .rotate()
+    .resize({ width: 1800, height: 1800, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 82 })
+    .toBuffer();
+}
+
+async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
+  if (!s3Enabled) {
+    throw new Error('AWS S3 não configurado no ambiente.');
+  }
+
+  const optimizedBuffer = await otimizarImagemBuffer(fileBuffer);
+  const rand = crypto.randomBytes(6).toString('hex');
+  const key = `alunos/${alunoId}-${Date.now()}-${rand}.jpg`;
+
+  const upload = new Upload({
+    client: s3Client,
+    params: {
+      Bucket: AWS_BUCKET_NAME,
+      Key: key,
+      Body: optimizedBuffer,
+      ContentType: 'image/jpeg'
+    }
+  });
+
+  await upload.done();
+
+  return `${AWS_S3_BASE_URL}/${key}`;
 }
 
 /* ===================== CACHE LEVE PARA /:id/detalhes ===================== */
@@ -405,9 +488,6 @@ router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
 
 /* ============================================================
    ✅ TRANSFERÊNCIA EM LOTE DE TURMA
-   PUT /api/alunos/transferir
-   body: { ids: [ObjectId...], novaTurma: "2ºC" }
-   (SENSÍVEL -> monitor/admin)
 ============================================================ */
 router.put('/transferir', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   try {
@@ -631,50 +711,41 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
     const { id } = req.params;
 
-    if (!req.file) return res.status(400).json({ message: 'Envie a imagem no campo "foto".' });
+    if (!req.file) {
+      return res.status(400).json({ message: 'Envie a imagem no campo "foto".' });
+    }
+
+    if (!s3Enabled) {
+      return res.status(500).json({
+        message: 'AWS S3 não está configurado no ambiente. Verifique AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION e AWS_BUCKET_NAME.'
+      });
+    }
 
     const aluno = await Aluno.findOne({ _id: id, instituicao: req.usuario.instituicao });
     if (!aluno) {
-      try { if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch {}
       return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
 
-    if (aluno.foto) {
-      const caminhoAntigo = path.join(__dirname, '../../', aluno.foto.replace(/^\//, ''));
-      try { if (fs.existsSync(caminhoAntigo)) fs.unlinkSync(caminhoAntigo); } catch {}
-    }
+    const fotoAntiga = aluno.foto || null;
+    const fotoUrl = await enviarFotoAlunoParaS3({
+      alunoId: id,
+      fileBuffer: req.file.buffer
+    });
 
-    const origPath = req.file.path;
-    const outExt = '.jpg';
-    const outName = `${id}-${Date.now()}${outExt}`;
-    const outAbs = path.join(path.dirname(origPath), outName);
-
-    try {
-      await sharp(origPath)
-        .rotate()
-        .resize({ width: 1800, height: 1800, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 82 })
-        .toFile(outAbs);
-      try { fs.unlinkSync(origPath); } catch {}
-    } catch (err) {
-      console.warn('Falha ao otimizar imagem, usando original:', err?.message || err);
-      fs.renameSync(origPath, outAbs);
-    }
-
-    const publicPath = `/uploads/alunos/${path.basename(outAbs)}`;
-    aluno.foto = publicPath;
+    aluno.foto = fotoUrl;
     await aluno.save();
 
-    const cacheDir = path.join(__dirname, '../../public/uploads/alunos', String(aluno._id));
-    try {
-      if (fs.existsSync(cacheDir)) {
-        for (const f of fs.readdirSync(cacheDir)) {
-          try { fs.unlinkSync(path.join(cacheDir, f)); } catch {}
-        }
-      }
-    } catch {}
+    if (fotoAntiga && fotoAntiga !== fotoUrl) {
+      await apagarFotoAntigaSeForS3(fotoAntiga);
+    }
 
-    return res.json({ ok: true, message: 'Foto atualizada com sucesso.', foto: publicPath });
+    try { detalhesCache.delete(cacheKey(req.usuario.instituicao, String(aluno._id))); } catch {}
+
+    return res.json({
+      ok: true,
+      message: 'Foto atualizada com sucesso.',
+      foto: fotoUrl
+    });
   } catch (err) {
     console.error('Erro ao atualizar foto:', err);
     return res.status(500).json({ message: 'Erro ao atualizar a foto do aluno' });
@@ -718,6 +789,17 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
 
     const dadosAtualizados = sanitizeUpdate(req.body);
 
+    // ✅ BLINDAGEM DA FOTO:
+    // se a ficha mandar foto vazia, não apaga o vínculo atual
+    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'foto')) {
+      const fotoLimpa = String(dadosAtualizados.foto || '').trim();
+      if (!fotoLimpa) {
+        delete dadosAtualizados.foto;
+      } else {
+        dadosAtualizados.foto = fotoLimpa;
+      }
+    }
+
     if (dadosAtualizados.turma !== undefined) {
       dadosAtualizados.turma = normalizaTurma(dadosAtualizados.turma);
     }
@@ -729,7 +811,6 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
       dadosAtualizados.nascimento = parsePtBrDateToDate(dadosAtualizados.nascimento);
     }
 
-    // ✅ BLINDAGEM dos contatos
     const contatosPayload = dadosAtualizados.contatos && typeof dadosAtualizados.contatos === 'object'
       ? dadosAtualizados.contatos
       : {};
@@ -738,7 +819,6 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     const whatsapp = limpaSomenteDigitos(contatosPayload.whatsapp);
     const telegramChatId = limpaString(contatosPayload.telegramChatId);
 
-    // evita update genérico ambíguo do subdocumento
     delete dadosAtualizados.contatos;
 
     const updateDoc = {
@@ -808,8 +888,7 @@ router.delete('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
 
     if (aluno.foto) {
-      const caminho = path.join(__dirname, '../../', aluno.foto.replace(/^\//, ''));
-      try { if (fs.existsSync(caminho)) fs.unlinkSync(caminho); } catch {}
+      await apagarFotoAntigaSeForS3(aluno.foto);
     }
 
     await Promise.all([
