@@ -29,6 +29,24 @@ const alertasSchema = new Schema({
   npRegularUltimaNota:{ type: Number, default: null },
 }, { _id: false });
 
+/**
+ * 👇 Metadados da foto
+ * Preparado para a nova estratégia com WebP + thumbnails automáticos
+ * sem quebrar compatibilidade com o fluxo atual.
+ */
+const fotoMetaSchema = new Schema({
+  formato:       { type: String, trim: true, default: 'webp' },   // ex: webp, jpg, png
+  storage:       { type: String, trim: true, default: 's3' },     // ex: s3, cloudinary, local
+  originalName:  { type: String, trim: true, default: null },
+  mimeType:      { type: String, trim: true, default: null },
+  sizeBytes:     { type: Number, default: null },
+  width:         { type: Number, default: null },
+  height:        { type: Number, default: null },
+  thumbWidth:    { type: Number, default: 150 },
+  thumbHeight:   { type: Number, default: 150 },
+  uploadedAt:    { type: Date, default: null },
+}, { _id: false });
+
 const alunoSchema = new Schema({
   nome:           { type: String, required: true, trim: true },
   turma:          { type: String, required: true, trim: true },
@@ -43,9 +61,38 @@ const alunoSchema = new Schema({
 
   codigoAcesso:   { type: String, required: true, trim: true },
 
+  /**
+   * ==========================================================
+   * FOTO DO ALUNO
+   * ==========================================================
+   * CAMPOS LEGADOS / ATUAIS (mantidos para não quebrar nada):
+   * - foto: continua sendo a principal para telas antigas
+   * - fotoThumb: miniatura
+   * - fotoPublicId: identificador legado (ex.: Cloudinary)
+   *
+   * NOVOS CAMPOS:
+   * - fotoOriginal: URL da imagem original otimizada
+   * - fotoMedium: versão intermediária, se quiser usar depois
+   * - fotoMeta: metadados da imagem
+   */
+
+  // Campo principal legado — manteremos apontando para a foto “original”
   foto:           { type: String, default: null },
+
+  // Legado / compatibilidade (ex.: Cloudinary public_id)
   fotoPublicId:   { type: String, default: null },
+
+  // Thumbnail usada em listagens/cards
   fotoThumb:      { type: String, default: null },
+
+  // NOVO: original explícita
+  fotoOriginal:   { type: String, default: null },
+
+  // NOVO: tamanho intermediário opcional
+  fotoMedium:     { type: String, default: null },
+
+  // NOVO: metadados da foto
+  fotoMeta:       { type: fotoMetaSchema, default: () => ({}) },
 
   // 🔓 link público (somente leitura) p/ responsáveis
   publicView:     { type: publicViewSchema, default: () => ({}) },
@@ -59,6 +106,7 @@ const alunoSchema = new Schema({
   // 👇 Integração Telegram — uso preferencial no backend
   // Campo simples (um responsável principal) — útil para sistemas já prontos
   chatIdResponsavel:    { type: String, trim: true, default: "" },
+
   // Campo recomendado: vários responsáveis (pai/mãe/guardião)
   chatIdsResponsaveis:  { type: [String], default: [] },
 
@@ -100,11 +148,64 @@ alunoSchema.methods.getAllChatIds = function getAllChatIds() {
   return Array.from(arr);
 };
 
+/**
+ * Helper opcional para o novo fluxo de foto
+ * Mantém retrocompatibilidade automaticamente:
+ * - foto => original principal
+ * - fotoThumb => thumbnail
+ */
+alunoSchema.methods.setFotoUrls = function setFotoUrls({
+  original = null,
+  thumb = null,
+  medium = null,
+  publicId = null,
+  meta = null,
+} = {}) {
+  if (original) {
+    this.foto = original;          // legado continua funcionando
+    this.fotoOriginal = original;  // novo campo explícito
+  }
+
+  if (thumb) {
+    this.fotoThumb = thumb;
+  }
+
+  if (medium) {
+    this.fotoMedium = medium;
+  }
+
+  if (publicId !== undefined) {
+    this.fotoPublicId = publicId;
+  }
+
+  if (meta && typeof meta === 'object') {
+    this.fotoMeta = {
+      ...(this.fotoMeta?.toObject ? this.fotoMeta.toObject() : this.fotoMeta || {}),
+      ...meta,
+    };
+  }
+};
+
+/**
+ * Helper para obter a melhor URL disponível
+ */
+alunoSchema.methods.getFotoPrincipal = function getFotoPrincipal() {
+  return this.fotoOriginal || this.foto || null;
+};
+
+/**
+ * Helper para obter a thumb
+ */
+alunoSchema.methods.getFotoThumb = function getFotoThumb() {
+  return this.fotoThumb || this.fotoOriginal || this.foto || null;
+};
+
 /** ============================
  *  Pré-validate
  *  - Gera código de acesso
  *  - Migra legado contatos.telegramChatId
  *  - Deduplica e normaliza chat IDs
+ *  - Mantém consistência dos campos de foto
  *  ============================
  */
 alunoSchema.pre('validate', function (next) {
@@ -142,6 +243,27 @@ alunoSchema.pre('validate', function (next) {
     new Set((this.chatIdsResponsaveis || []).map(s => String(s || '').trim()).filter(Boolean))
   );
 
+  /**
+   * ==========================================================
+   * CONSISTÊNCIA DOS CAMPOS DE FOTO
+   * ==========================================================
+   * Regras:
+   * - se fotoOriginal existe e foto não existe, copia para foto
+   * - se foto existe e fotoOriginal não existe, copia para fotoOriginal
+   * - mantém retrocompatibilidade sem quebrar telas antigas
+   */
+  if (this.fotoOriginal && !this.foto) {
+    this.foto = this.fotoOriginal;
+  }
+
+  if (this.foto && !this.fotoOriginal) {
+    this.fotoOriginal = this.foto;
+  }
+
+  if (!this.fotoMeta) {
+    this.fotoMeta = {};
+  }
+
   next();
 });
 
@@ -152,6 +274,7 @@ alunoSchema.pre('validate', function (next) {
 alunoSchema.index({ instituicao: 1, codigoAcesso: 1 }, { unique: true, sparse: true });
 alunoSchema.index({ instituicao: 1, turma: 1, nome: 1 });
 alunoSchema.index({ 'publicView.token': 1 }, { unique: true, sparse: true });
+
 // Acelera buscas por instituição + chat (envios/relatórios por turma)
 alunoSchema.index({ instituicao: 1, chatIdResponsavel: 1 }, { sparse: true });
 alunoSchema.index({ instituicao: 1, chatIdsResponsaveis: 1 }, { sparse: true });

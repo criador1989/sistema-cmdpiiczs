@@ -82,7 +82,7 @@ const upload = multer({
 });
 
 // ---------- Helpers ----------
-const BASE_SELECT_LISTA = 'nome turma foto';
+const BASE_SELECT_LISTA = 'nome turma foto fotoThumb fotoOriginal';
 
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
@@ -218,14 +218,19 @@ function normalizarFotoParaPersistencia(valorFoto) {
 }
 
 function anexarThumbNaPlain(a) {
-  const fotoStorage = a?.foto || null;
+  const fotoStorage = a?.fotoOriginal || a?.foto || null;
+  const fotoThumbStorage = a?.fotoThumb || null;
+
   const fotoUrl = montarFotoUrlPublica(fotoStorage);
+  const fotoThumbUrlPublica = montarFotoUrlPublica(fotoThumbStorage);
 
   return {
     ...a,
     foto: fotoStorage,
     fotoUrl,
-    fotoThumbUrl: `/api/imagens/thumb/${a._id}`
+    fotoOriginal: fotoStorage,
+    fotoThumb: fotoThumbStorage,
+    fotoThumbUrl: fotoThumbUrlPublica || `/api/imagens/thumb/${a._id}`
   };
 }
 
@@ -250,30 +255,82 @@ async function apagarFotoAntigaSeForS3(url) {
   }
 }
 
-async function otimizarImagemBuffer(buffer) {
-  return sharp(buffer)
-    .rotate()
-    .resize({ width: 1800, height: 1800, fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 82 })
-    .toBuffer();
+async function apagarFotosAntigasDoAluno(aluno) {
+  if (!aluno) return;
+
+  const urls = [
+    aluno.foto,
+    aluno.fotoOriginal,
+    aluno.fotoMedium,
+    aluno.fotoThumb
+  ].filter(Boolean);
+
+  const unicas = Array.from(new Set(urls));
+
+  for (const url of unicas) {
+    await apagarFotoAntigaSeForS3(url);
+  }
 }
 
-async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
-  if (!s3Enabled) {
-    throw new Error('AWS S3 não configurado no ambiente.');
-  }
+async function obterMetadadosImagem(buffer) {
+  const meta = await sharp(buffer).metadata();
+  return {
+    width: meta?.width || null,
+    height: meta?.height || null,
+    format: meta?.format || null
+  };
+}
 
-  const optimizedBuffer = await otimizarImagemBuffer(fileBuffer);
-  const rand = crypto.randomBytes(6).toString('hex');
-  const key = `alunos/${alunoId}-${Date.now()}-${rand}.jpg`;
+async function processarFotoAlunoBuffers(bufferOriginal) {
+  const originalMeta = await obterMetadadosImagem(bufferOriginal);
 
+  const originalBuffer = await sharp(bufferOriginal)
+    .rotate()
+    .resize({
+      width: 1400,
+      height: 1400,
+      fit: 'inside',
+      withoutEnlargement: true
+    })
+    .webp({ quality: 84 })
+    .toBuffer();
+
+  const mediumBuffer = await sharp(bufferOriginal)
+    .rotate()
+    .resize({
+      width: 700,
+      height: 700,
+      fit: 'inside',
+      withoutEnlargement: true
+    })
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  const thumbBuffer = await sharp(bufferOriginal)
+    .rotate()
+    .resize(150, 150, {
+      fit: 'cover',
+      position: 'centre'
+    })
+    .webp({ quality: 80 })
+    .toBuffer();
+
+  return {
+    originalBuffer,
+    mediumBuffer,
+    thumbBuffer,
+    originalMeta
+  };
+}
+
+async function enviarBufferParaS3({ key, buffer, contentType }) {
   const up = new Upload({
     client: s3Client,
     params: {
       Bucket: AWS_BUCKET_NAME,
       Key: key,
-      Body: optimizedBuffer,
-      ContentType: 'image/jpeg'
+      Body: buffer,
+      ContentType: contentType
     }
   });
 
@@ -285,6 +342,59 @@ async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
   }
 
   return urlStorage;
+}
+
+async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
+  if (!s3Enabled) {
+    throw new Error('AWS S3 não configurado no ambiente.');
+  }
+
+  const { originalBuffer, mediumBuffer, thumbBuffer, originalMeta } =
+    await processarFotoAlunoBuffers(fileBuffer);
+
+  const rand = crypto.randomBytes(6).toString('hex');
+  const baseKey = `alunos/${alunoId}-${Date.now()}-${rand}`;
+
+  const originalKey = `${baseKey}-original.webp`;
+  const mediumKey = `${baseKey}-medium.webp`;
+  const thumbKey = `${baseKey}-thumb.webp`;
+
+  const [fotoOriginal, fotoMedium, fotoThumb] = await Promise.all([
+    enviarBufferParaS3({
+      key: originalKey,
+      buffer: originalBuffer,
+      contentType: 'image/webp'
+    }),
+    enviarBufferParaS3({
+      key: mediumKey,
+      buffer: mediumBuffer,
+      contentType: 'image/webp'
+    }),
+    enviarBufferParaS3({
+      key: thumbKey,
+      buffer: thumbBuffer,
+      contentType: 'image/webp'
+    })
+  ]);
+
+  return {
+    foto: fotoOriginal,
+    fotoOriginal,
+    fotoMedium,
+    fotoThumb,
+    fotoMeta: {
+      formato: 'webp',
+      storage: 's3',
+      originalName: null,
+      mimeType: 'image/webp',
+      sizeBytes: Buffer.byteLength(originalBuffer),
+      width: originalMeta?.width || null,
+      height: originalMeta?.height || null,
+      thumbWidth: 150,
+      thumbHeight: 150,
+      uploadedAt: new Date()
+    }
+  };
 }
 
 /* ===================== CACHE LEVE PARA /:id/detalhes ===================== */
@@ -585,7 +695,7 @@ router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
     if (termo) filtro.nome = { $regex: termo, $options: 'i' };
 
     const [items, total] = await Promise.all([
-      Aluno.find(filtro).select('_id nome turma foto').sort({ nome: 1 })
+      Aluno.find(filtro).select('_id nome turma foto fotoThumb fotoOriginal').sort({ nome: 1 })
         .skip((pagina - 1) * LIMITE).limit(LIMITE).lean(),
       Aluno.countDocuments(filtro)
     ]);
@@ -701,7 +811,7 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
 
     if (painel) {
       const alunos = await Aluno.find(filtro)
-        .select('nome turma foto instituicao comportamento notaComportamento')
+        .select('nome turma foto fotoThumb fotoOriginal instituicao comportamento notaComportamento')
         .lean();
 
       const alunosComNota = alunos.map((aluno) => {
@@ -719,7 +829,7 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
     }
 
     const alunos = await Aluno.find(filtro)
-      .select('nome turma foto instituicao')
+      .select('nome turma foto fotoThumb fotoOriginal instituicao')
       .lean();
 
     const alunosComNota = await Promise.all(
@@ -801,7 +911,7 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
     }
 
     const alunoRaw = await Aluno.findOne({ _id: id, instituicao: inst })
-      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto instituicao updatedAt createdAt codigoAcesso')
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao updatedAt createdAt codigoAcesso')
       .lean();
 
     if (!alunoRaw) {
@@ -831,7 +941,10 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
 // ===== Upload de foto do aluno (SENSÍVEL -> monitor/admin) =====
 router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'), async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    if (!req.usuario?.instituicao) {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
+
     const { id } = req.params;
 
     if (!req.file) {
@@ -849,27 +962,77 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
       return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
 
-    const fotoAntiga = aluno.foto || null;
-    const fotoStorage = await enviarFotoAlunoParaS3({
+    const fotosAntigas = {
+      foto: aluno.foto || null,
+      fotoOriginal: aluno.fotoOriginal || null,
+      fotoMedium: aluno.fotoMedium || null,
+      fotoThumb: aluno.fotoThumb || null
+    };
+
+    const payloadFoto = await enviarFotoAlunoParaS3({
       alunoId: id,
       fileBuffer: req.file.buffer
     });
 
-    aluno.foto = fotoStorage;
-    await aluno.save();
+    payloadFoto.fotoMeta = {
+      ...payloadFoto.fotoMeta,
+      originalName: req.file.originalname || null
+    };
 
-    if (fotoAntiga && fotoAntiga !== fotoStorage) {
-      await apagarFotoAntigaSeForS3(fotoAntiga);
+    if (typeof aluno.setFotoUrls === 'function') {
+      aluno.setFotoUrls({
+        original: payloadFoto.fotoOriginal,
+        thumb: payloadFoto.fotoThumb,
+        medium: payloadFoto.fotoMedium,
+        publicId: null,
+        meta: payloadFoto.fotoMeta
+      });
+    } else {
+      aluno.foto = payloadFoto.foto;
+      aluno.fotoOriginal = payloadFoto.fotoOriginal;
+      aluno.fotoMedium = payloadFoto.fotoMedium;
+      aluno.fotoThumb = payloadFoto.fotoThumb;
+      aluno.fotoMeta = payloadFoto.fotoMeta;
+      aluno.fotoPublicId = null;
     }
 
-    try { detalhesCache.delete(cacheKey(req.usuario.instituicao, String(aluno._id))); } catch {}
+    await aluno.save();
+
+    const urlsAntigas = Array.from(new Set([
+      fotosAntigas.foto,
+      fotosAntigas.fotoOriginal,
+      fotosAntigas.fotoMedium,
+      fotosAntigas.fotoThumb
+    ].filter(Boolean)));
+
+    const urlsNovas = new Set([
+      aluno.foto,
+      aluno.fotoOriginal,
+      aluno.fotoMedium,
+      aluno.fotoThumb
+    ].filter(Boolean));
+
+    for (const antiga of urlsAntigas) {
+      if (!urlsNovas.has(antiga)) {
+        await apagarFotoAntigaSeForS3(antiga);
+      }
+    }
+
+    try {
+      detalhesCache.delete(cacheKey(req.usuario.instituicao, String(aluno._id)));
+    } catch {}
 
     return res.json({
       ok: true,
       message: 'Foto atualizada com sucesso.',
-      foto: montarFotoUrlPublica(fotoStorage),
-      fotoUrl: montarFotoUrlPublica(fotoStorage),
-      fotoStorage
+      foto: montarFotoUrlPublica(aluno.foto),
+      fotoUrl: montarFotoUrlPublica(aluno.foto),
+      fotoOriginal: montarFotoUrlPublica(aluno.fotoOriginal),
+      fotoMedium: montarFotoUrlPublica(aluno.fotoMedium),
+      fotoThumb: montarFotoUrlPublica(aluno.fotoThumb),
+      fotoThumbUrl: montarFotoUrlPublica(aluno.fotoThumb),
+      fotoStorage: aluno.foto,
+      fotoMeta: aluno.fotoMeta || null
     });
   } catch (err) {
     console.error('Erro ao atualizar foto:', err);
@@ -924,6 +1087,33 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
         delete dadosAtualizados.foto;
       } else {
         dadosAtualizados.foto = fotoPersistente;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoOriginal')) {
+      const fotoOriginalPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoOriginal);
+      if (!fotoOriginalPersistente) {
+        delete dadosAtualizados.fotoOriginal;
+      } else {
+        dadosAtualizados.fotoOriginal = fotoOriginalPersistente;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoThumb')) {
+      const fotoThumbPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoThumb);
+      if (!fotoThumbPersistente) {
+        delete dadosAtualizados.fotoThumb;
+      } else {
+        dadosAtualizados.fotoThumb = fotoThumbPersistente;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoMedium')) {
+      const fotoMediumPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoMedium);
+      if (!fotoMediumPersistente) {
+        delete dadosAtualizados.fotoMedium;
+      } else {
+        dadosAtualizados.fotoMedium = fotoMediumPersistente;
       }
     }
 
@@ -1013,9 +1203,7 @@ router.delete('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
 
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
 
-    if (aluno.foto) {
-      await apagarFotoAntigaSeForS3(aluno.foto);
-    }
+    await apagarFotosAntigasDoAluno(aluno);
 
     await Promise.all([
       Notificacao.deleteMany({ aluno: aluno._id }),

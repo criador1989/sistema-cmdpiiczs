@@ -33,7 +33,7 @@ function normalizarTurma(v) {
 }
 
 const PROJ_ALUNO =
-  'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoThumb fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
+  'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
 
 const PROJ_NOTIF =
   '_id data tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
@@ -96,7 +96,8 @@ router.get('/:id', autenticar, async (req, res) => {
       }
     }
 
-    const fotoUrl = toPublicUrl(aluno.foto || aluno.fotoThumb || null);
+    const fotoUrl = toPublicUrl(aluno.fotoOriginal || aluno.foto || aluno.fotoThumb || null);
+    const fotoThumbUrl = toPublicUrl(aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || null);
     const contatos = aluno.contatos || {};
 
     res.set('Cache-Control', 'no-store');
@@ -119,8 +120,12 @@ router.get('/:id', autenticar, async (req, res) => {
           endereco: null,
           codigoAcesso: null,
           foto: null,
+          fotoOriginal: null,
+          fotoMedium: null,
           fotoThumb: null,
           fotoUrl: null,
+          fotoThumbUrl: null,
+          fotoMeta: null,
           contatos: {
             emailResponsavel: null,
             whatsapp: null,
@@ -171,8 +176,12 @@ router.get('/:id', autenticar, async (req, res) => {
         codigoAcesso: aluno.codigoAcesso || null,
         comportamento: Number((+notaComportamento || 0).toFixed(2)),
         foto: aluno.foto || null,
+        fotoOriginal: aluno.fotoOriginal || aluno.foto || null,
+        fotoMedium: aluno.fotoMedium || null,
         fotoThumb: aluno.fotoThumb || null,
         fotoUrl,
+        fotoThumbUrl,
+        fotoMeta: aluno.fotoMeta || null,
         contatos: {
           emailResponsavel: contatos.emailResponsavel || null,
           whatsapp: contatos.whatsapp || null,

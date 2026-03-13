@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Álbum de Fotos dos Alunos | Axoriin</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --bg-soft: #121b2e;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #f4f7fb;
+      --muted: #aebcd3;
+      --primary: #4da3ff;
+      --primary-2: #79b8ff;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(77, 163, 255, 0.20), transparent 20%),
+        radial-gradient(circle at top left, rgba(121, 184, 255, 0.10), transparent 25%),
+        linear-gradient(180deg, #0b1220 0%, #0d1727 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .title-wrap h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+
+    .title-wrap p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .actions-top {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #08111f;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #34d399, #22c55e);
+      color: #07130c;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #f87171, #ef4444);
+      color: #220707;
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .toolbar {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 22px;
+      backdrop-filter: blur(10px);
+    }
+
+    .toolbar-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr auto auto;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f8fbff;
+      padding: 12px 14px;
+      outline: none;
+      font-weight: 600;
+    }
+
+    .field input::placeholder {
+      color: #b7c8df;
+    }
+
+    .field select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #dceaff 50%),
+        linear-gradient(135deg, #dceaff 50%, transparent 50%);
+      background-position:
+        calc(100% - 20px) calc(50% - 3px),
+        calc(100% - 14px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 38px;
+    }
+
+    .field select option {
+      background: #152238;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .toolbar .mini {
+      display: flex;
+      align-items: end;
+    }
+
+    .status-row {
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #eef6ff;
+      font-weight: 600;
+    }
+
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 16px;
+    }
+
+    .aluno-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .aluno-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(121, 184, 255, 0.45);
+    }
+
+    .foto-wrap {
+      aspect-ratio: 1 / 1;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .foto-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sem-foto {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #d7e6ff;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      background:
+        linear-gradient(135deg, rgba(77, 163, 255, 0.18), rgba(121, 184, 255, 0.08));
+    }
+
+    .card-body {
+      padding: 12px;
+    }
+
+    .card-body h3 {
+      margin: 0 0 6px;
+      font-size: 0.98rem;
+      line-height: 1.3;
+      color: #ffffff;
+    }
+
+    .meta {
+      font-size: 0.88rem;
+      color: #c6d6eb;
+      font-weight: 600;
+    }
+
+    .empty-state,
+    .loading-state,
+    .error-state {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-content {
+      width: min(760px, 100%);
+      background: #10192b;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .modal-close {
+      border: 0;
+      background: rgba(255, 255, 255, 0.10);
+      color: white;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    .modal-body {
+      padding: 18px;
+    }
+
+    .modal-photo {
+      width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .modal-info {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+    }
+
+    .modal-actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .upload-status {
+      margin-top: 12px;
+      min-height: 22px;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .upload-status.ok {
+      color: #86efac;
+    }
+
+    .upload-status.err {
+      color: #fca5a5;
+    }
+
+    .upload-status.info {
+      color: #bfdbfe;
+    }
+
+    @media (max-width: 1100px) {
+      .toolbar-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .toolbar-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        width: min(100% - 20px, 100%);
+      }
+
+      .toolbar-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .album-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+
+      .modal-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>Álbum de Fotos dos Alunos</h1>
+        <p>Acesso rápido para conferência visual dos estudantes por turma.</p>
+      </div>
+
+      <div class="actions-top">
+        <a class="btn btn-secondary" href="painel.html">← Voltar ao painel</a>
+        <button class="btn btn-primary" id="btnAtualizar">Atualizar</button>
+      </div>
+    </div>
+
+    <section class="toolbar">
+      <div class="toolbar-grid">
+        <div class="field">
+          <label for="buscaNome">Buscar aluno</label>
+          <input type="text" id="buscaNome" placeholder="Digite o nome do aluno..." />
+        </div>
+
+        <div class="field">
+          <label for="filtroTurma">Turma</label>
+          <select id="filtroTurma">
+            <option value="">Todas as turmas</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="filtroFoto">Situação da foto</label>
+          <select id="filtroFoto">
+            <option value="">Todos</option>
+            <option value="com-foto">Com foto</option>
+            <option value="sem-foto">Sem foto</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="ordenacao">Ordenar por</label>
+          <select id="ordenacao">
+            <option value="nome-asc">Nome (A–Z)</option>
+            <option value="nome-desc">Nome (Z–A)</option>
+            <option value="turma">Turma</option>
+          </select>
+        </div>
+
+        <div class="mini">
+          <button class="btn btn-primary" id="btnFiltrar">Filtrar</button>
+        </div>
+
+        <div class="mini">
+          <button class="btn btn-secondary" id="btnLimpar">Limpar</button>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <div id="contadorResultado" class="status-badge">0 aluno(s) encontrado(s)</div>
+        <div id="statusTurma" class="status-badge">Visualizando todas as turmas</div>
+      </div>
+    </section>
+
+    <div id="loadingState" class="loading-state">Carregando fotos dos alunos...</div>
+    <div id="errorState" class="error-state hidden">Não foi possível carregar o álbum agora.</div>
+    <div id="emptyState" class="empty-state hidden">Nenhum aluno encontrado para esse filtro.</div>
+
+    <section id="albumGrid" class="album-grid hidden"></section>
+  </div>
+
+  <div id="fotoModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalNome">Foto do aluno</h2>
+        <button class="modal-close" id="btnFecharModal">×</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalImagem" class="modal-photo" src="" alt="Foto ampliada do aluno" />
+
+        <div class="modal-info">
+          <div><strong>Turma:</strong> <span id="modalTurma">—</span></div>
+          <div><strong>ID:</strong> <span id="modalId">—</span></div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-success" id="btnAtualizarFoto" type="button">Atualizar foto</button>
+          <button class="btn btn-secondary" id="btnFecharModalSecundario" type="button">Fechar</button>
+        </div>
+
+        <div id="uploadStatus" class="upload-status"></div>
+
+        <input type="file" id="inputAtualizarFoto" accept="image/*" class="hidden" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const albumGrid = document.getElementById('albumGrid');
+    const loadingState = document.getElementById('loadingState');
+    const errorState = document.getElementById('errorState');
+    const emptyState = document.getElementById('emptyState');
+
+    const buscaNome = document.getElementById('buscaNome');
+    const filtroTurma = document.getElementById('filtroTurma');
+    const filtroFoto = document.getElementById('filtroFoto');
+    const ordenacao = document.getElementById('ordenacao');
+
+    const contadorResultado = document.getElementById('contadorResultado');
+    const statusTurma = document.getElementById('statusTurma');
+
+    const btnFiltrar = document.getElementById('btnFiltrar');
+    const btnLimpar = document.getElementById('btnLimpar');
+    const btnAtualizar = document.getElementById('btnAtualizar');
+
+    const fotoModal = document.getElementById('fotoModal');
+    const modalNome = document.getElementById('modalNome');
+    const modalImagem = document.getElementById('modalImagem');
+    const modalTurma = document.getElementById('modalTurma');
+    const modalId = document.getElementById('modalId');
+    const btnFecharModal = document.getElementById('btnFecharModal');
+    const btnFecharModalSecundario = document.getElementById('btnFecharModalSecundario');
+
+    const btnAtualizarFoto = document.getElementById('btnAtualizarFoto');
+    const inputAtualizarFoto = document.getElementById('inputAtualizarFoto');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    let alunosCache = [];
+    let alunosFiltrados = [];
+    let alunoSelecionado = null;
+
+    function getAuthHeaders(json = true) {
+      const token =
+        localStorage.getItem('token') ||
+        sessionStorage.getItem('token') ||
+        localStorage.getItem('authToken') ||
+        sessionStorage.getItem('authToken');
+
+      const headers = {};
+
+      if (json) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      return headers;
+    }
+
+    function escapeHtml(texto) {
+      return String(texto || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function getIniciais(nome) {
+      const partes = String(nome || '').trim().split(/\s+/).filter(Boolean);
+      if (!partes.length) return 'Sem foto';
+      if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+      return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+    }
+
+    function alunoTemFoto(aluno) {
+      return !!(
+        aluno?.fotoThumb ||
+        aluno?.fotoThumbUrl ||
+        aluno?.fotoUrl ||
+        aluno?.fotoOriginal ||
+        aluno?.foto
+      );
+    }
+
+    function setUploadStatus(texto = '', tipo = '') {
+      uploadStatus.textContent = texto;
+      uploadStatus.className = 'upload-status';
+      if (tipo) {
+        uploadStatus.classList.add(tipo);
+      }
+    }
+
+    async function carregarTurmas() {
+      const res = await fetch('/api/alunos/turmas', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao carregar turmas');
+      }
+
+      const data = await res.json();
+      const turmas = Array.isArray(data.turmas) ? data.turmas : [];
+
+      filtroTurma.innerHTML = '<option value="">Todas as turmas</option>';
+
+      for (const turma of turmas) {
+        const option = document.createElement('option');
+        option.value = turma;
+        option.textContent = turma;
+        filtroTurma.appendChild(option);
+      }
+    }
+
+    async function carregarAlunos() {
+      loadingState.classList.remove('hidden');
+      errorState.classList.add('hidden');
+      emptyState.classList.add('hidden');
+      albumGrid.classList.add('hidden');
+
+      const res = await fetch('/api/alunos?semNota=1', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao carregar alunos');
+      }
+
+      const data = await res.json();
+      alunosCache = Array.isArray(data) ? data : [];
+      aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+      const termo = buscaNome.value.trim().toLowerCase();
+      const turmaSelecionada = filtroTurma.value.trim();
+      const situacaoFoto = filtroFoto.value;
+      const tipoOrdenacao = ordenacao.value;
+
+      alunosFiltrados = alunosCache.filter((aluno) => {
+        const nomeOk = !termo || String(aluno.nome || '').toLowerCase().includes(termo);
+        const turmaOk = !turmaSelecionada || String(aluno.turma || '') === turmaSelecionada;
+
+        let fotoOk = true;
+        if (situacaoFoto === 'com-foto') {
+          fotoOk = alunoTemFoto(aluno);
+        } else if (situacaoFoto === 'sem-foto') {
+          fotoOk = !alunoTemFoto(aluno);
+        }
+
+        return nomeOk && turmaOk && fotoOk;
+      });
+
+      alunosFiltrados.sort((a, b) => {
+        const nomeA = String(a.nome || '');
+        const nomeB = String(b.nome || '');
+        const turmaA = String(a.turma || '');
+        const turmaB = String(b.turma || '');
+
+        if (tipoOrdenacao === 'nome-desc') {
+          return nomeB.localeCompare(nomeA, 'pt-BR', { sensitivity: 'base' });
+        }
+
+        if (tipoOrdenacao === 'turma') {
+          const cmpTurma = turmaA.localeCompare(turmaB, 'pt-BR', { numeric: true, sensitivity: 'base' });
+          if (cmpTurma !== 0) return cmpTurma;
+          return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
+        }
+
+        return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
+      });
+
+      renderizarAlbum();
+    }
+
+    function obterFotoThumb(aluno) {
+      return aluno?.fotoThumb || aluno?.fotoThumbUrl || aluno?.fotoUrl || aluno?.fotoOriginal || aluno?.foto || '';
+    }
+
+    function obterFotoGrande(aluno) {
+      return aluno?.fotoOriginal || aluno?.fotoUrl || aluno?.foto || aluno?.fotoThumb || aluno?.fotoThumbUrl || '';
+    }
+
+    function renderizarAlbum() {
+      loadingState.classList.add('hidden');
+      errorState.classList.add('hidden');
+      albumGrid.innerHTML = '';
+
+      contadorResultado.textContent = `${alunosFiltrados.length} aluno(s) encontrado(s)`;
+      statusTurma.textContent = filtroTurma.value
+        ? `Visualizando a turma ${filtroTurma.value}`
+        : 'Visualizando todas as turmas';
+
+      if (!alunosFiltrados.length) {
+        emptyState.classList.remove('hidden');
+        albumGrid.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      albumGrid.classList.remove('hidden');
+
+      for (const aluno of alunosFiltrados) {
+        const fotoThumb = obterFotoThumb(aluno);
+        const fotoGrande = obterFotoGrande(aluno);
+        const nome = aluno.nome || 'Sem nome';
+        const turma = aluno.turma || 'Sem turma';
+
+        const card = document.createElement('article');
+        card.className = 'aluno-card';
+
+        card.innerHTML = `
+          <div class="foto-wrap">
+            ${
+              fotoThumb
+                ? `<img src="${escapeHtml(fotoThumb)}" alt="Foto de ${escapeHtml(nome)}" loading="lazy" onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div class=&quot;sem-foto&quot;>${escapeHtml(getIniciais(nome))}</div>';" />`
+                : `<div class="sem-foto">${escapeHtml(getIniciais(nome))}</div>`
+            }
+          </div>
+          <div class="card-body">
+            <h3>${escapeHtml(nome)}</h3>
+            <div class="meta">${escapeHtml(turma)}</div>
+          </div>
+        `;
+
+        card.addEventListener('click', () => abrirModal({
+          aluno
+        }));
+
+        albumGrid.appendChild(card);
+      }
+    }
+
+    function abrirModal({ aluno }) {
+      alunoSelecionado = aluno;
+
+      modalNome.textContent = aluno?.nome || 'Foto do aluno';
+      modalTurma.textContent = aluno?.turma || '—';
+      modalId.textContent = aluno?._id || '—';
+
+      const foto = obterFotoGrande(aluno);
+
+      if (foto) {
+        modalImagem.src = foto;
+        modalImagem.style.display = 'block';
+      } else {
+        modalImagem.removeAttribute('src');
+        modalImagem.style.display = 'none';
+      }
+
+      setUploadStatus('', '');
+      fotoModal.classList.remove('hidden');
+    }
+
+    function fecharModal() {
+      fotoModal.classList.add('hidden');
+      inputAtualizarFoto.value = '';
+      setUploadStatus('', '');
+    }
+
+    function atualizarAlunoNoCache(alunoId, payload) {
+      alunosCache = alunosCache.map((aluno) => {
+        if (String(aluno._id) !== String(alunoId)) return aluno;
+
+        return {
+          ...aluno,
+          foto: payload?.fotoStorage || payload?.fotoOriginal || aluno.foto || '',
+          fotoUrl: payload?.fotoUrl || payload?.fotoOriginal || aluno.fotoUrl || '',
+          fotoOriginal: payload?.fotoOriginal || payload?.fotoUrl || aluno.fotoOriginal || '',
+          fotoMedium: payload?.fotoMedium || aluno.fotoMedium || '',
+          fotoThumb: payload?.fotoThumb || payload?.fotoThumbUrl || aluno.fotoThumb || '',
+          fotoThumbUrl: payload?.fotoThumbUrl || payload?.fotoThumb || aluno.fotoThumbUrl || '',
+          fotoMeta: payload?.fotoMeta || aluno.fotoMeta || null
+        };
+      });
+
+      const alunoAtualizado = alunosCache.find((a) => String(a._id) === String(alunoId));
+      if (alunoAtualizado) {
+        alunoSelecionado = alunoAtualizado;
+      }
+
+      aplicarFiltros();
+    }
+
+    async function enviarNovaFoto(arquivo) {
+      if (!alunoSelecionado?._id) {
+        setUploadStatus('Aluno não identificado para atualização.', 'err');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('foto', arquivo);
+
+      btnAtualizarFoto.disabled = true;
+      setUploadStatus('Enviando e processando a foto...', 'info');
+
+      try {
+        const res = await fetch(`/api/alunos/${encodeURIComponent(alunoSelecionado._id)}/foto`, {
+          method: 'PUT',
+          headers: getAuthHeaders(false),
+          credentials: 'include',
+          body: formData
+        });
+
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {}
+
+        if (!res.ok) {
+          throw new Error(data?.message || 'Falha ao atualizar a foto.');
+        }
+
+        atualizarAlunoNoCache(alunoSelecionado._id, data);
+
+        const novaFoto = data?.fotoOriginal || data?.fotoUrl || data?.foto || '';
+        if (novaFoto) {
+          modalImagem.src = novaFoto;
+          modalImagem.style.display = 'block';
+        }
+
+        setUploadStatus('Foto atualizada com sucesso.', 'ok');
+      } catch (err) {
+        console.error('Erro ao atualizar foto:', err);
+        setUploadStatus(err?.message || 'Erro ao atualizar a foto.', 'err');
+      } finally {
+        btnAtualizarFoto.disabled = false;
+        inputAtualizarFoto.value = '';
+      }
+    }
+
+    async function iniciar() {
+      try {
+        await carregarTurmas();
+        await carregarAlunos();
+      } catch (err) {
+        console.error('Erro ao iniciar álbum:', err);
+        loadingState.classList.add('hidden');
+        albumGrid.classList.add('hidden');
+        emptyState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+      }
+    }
+
+    btnFiltrar.addEventListener('click', aplicarFiltros);
+
+    btnLimpar.addEventListener('click', () => {
+      buscaNome.value = '';
+      filtroTurma.value = '';
+      filtroFoto.value = '';
+      ordenacao.value = 'nome-asc';
+      aplicarFiltros();
+    });
+
+    btnAtualizar.addEventListener('click', iniciar);
+
+    buscaNome.addEventListener('input', aplicarFiltros);
+    filtroTurma.addEventListener('change', aplicarFiltros);
+    filtroFoto.addEventListener('change', aplicarFiltros);
+    ordenacao.addEventListener('change', aplicarFiltros);
+
+    btnFecharModal.addEventListener('click', fecharModal);
+    btnFecharModalSecundario.addEventListener('click', fecharModal);
+
+    btnAtualizarFoto.addEventListener('click', () => {
+      inputAtualizarFoto.click();
+    });
+
+    inputAtualizarFoto.addEventListener('change', (e) => {
+      const arquivo = e.target.files?.[0];
+      if (!arquivo) return;
+      enviarNovaFoto(arquivo);
+    });
+
+    fotoModal.addEventListener('click', (e) => {
+      if (e.target === fotoModal) {
+        fecharModal();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !fotoModal.classList.contains('hidden')) {
+        fecharModal();
+      }
+    });
+
+    iniciar();
+  </script>
+</body>
+</html>

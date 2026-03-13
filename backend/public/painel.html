@@ -46,7 +46,6 @@ html,body{
 body{
   font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color:var(--text-main);
-  /* fundo base; o papel de parede real vem no #bg-wallpaper */
   background:#020617;
   color-scheme:dark;
 }
@@ -66,7 +65,7 @@ body{
   transition:opacity .6s ease;
 }
 
-/* overlay neutro (mantido, mas agora acima do wallpaper) */
+/* overlay neutro */
 body::before{
   content:"";
   position:fixed;
@@ -90,13 +89,12 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* =====================================================
-   OVERLAY DE BOAS-VINDAS — MALHA HEX NEON AZUL (UMA VEZ)
-   ENTRE FUNDO E CARDS
+   OVERLAY DE BOAS-VINDAS — MALHA HEX NEON AZUL
    ===================================================== */
 #intro-hex-overlay{
   position:fixed;
   inset:0;
-  z-index:2;          /* acima do papel de parede e overlay neutro, abaixo dos cards */
+  z-index:2;
   pointer-events:none;
   background:
     radial-gradient(circle at 20% 0%, rgba(59,130,246,0.35), transparent 60%),
@@ -143,7 +141,7 @@ h1, h2, h3, h4, h5, h6,
 /* layout geral */
 .page{
   position:relative;
-  z-index:3;  /* acima do overlay animado e do papel de parede */
+  z-index:3;
   width:100%;
   display:grid;
   grid-template-columns:280px 1fr;
@@ -256,7 +254,7 @@ h1, h2, h3, h4, h5, h6,
   background: rgba(255,255,255,0.04);
   padding: 10px 0;
   cursor: pointer;
-  font-size: 0;              /* esconde o texto "Sair" */
+  font-size: 0;
   box-shadow: 0 10px 28px rgba(0,0,0,0.7);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -282,7 +280,6 @@ h1, h2, h3, h4, h5, h6,
   pointer-events:none;
 }
 
-/* ícone power central */
 .sb-logout::after{
   content:"⏻";
   position:relative;
@@ -309,7 +306,7 @@ h1, h2, h3, h4, h5, h6,
 .content{ width:100%; }
 .wrap{
   width:min(1180px,100%);
-  margin:0 auto 110px; /* deixa respiro para o rodapé fixo */
+  margin:0 auto 110px;
 }
 
 .topo{
@@ -903,7 +900,6 @@ canvas{
   box-shadow:0 8px 20px rgba(0,0,0,0.7);
 }
 
-/* versão redonda (ex: botão Recarregar) */
 .btn-glass-circle{
   width:46px;
   height:46px;
@@ -911,13 +907,11 @@ canvas{
   border-radius:999px;
 }
 
-/* ícone de recarregar (usa um caractere simples) */
 .icon-reload{
   font-size:1.1rem;
   line-height:1;
 }
 
-/* exemplo de ícone de power reutilizável (se quiser em outros lugares) */
 .icon-power{
   position:relative;
   width:20px;
@@ -937,7 +931,7 @@ canvas{
 }
 
 /* =========================
-   MASCOTE FIXO (Axoriin) — animação estilo login
+   MASCOTE FIXO (Axoriin)
 ========================= */
 #smartclass-mascote{
   position: fixed;
@@ -1007,7 +1001,6 @@ canvas{
   50%{ opacity:1; transform:translate(-50%,-50%) scale(1.10); filter:blur(9px); }
 }
 
-/* em celular, subir um pouco por causa do bottom-nav */
 @media(max-width:1024px){
   #smartclass-mascote{
     bottom: 86px;
@@ -1050,13 +1043,9 @@ canvas{
 </head>
 
 <body>
-  <!-- LAYER DO PAPEL DE PAREDE -->
   <div id="bg-wallpaper"></div>
-
-  <!-- OVERLAY DE ANIMAÇÃO INICIAL (entre o fundo e os cards) -->
   <div id="intro-hex-overlay"></div>
 
-  <!-- Mascote fixo (agora Axoriin) -->
   <div id="smartclass-mascote" aria-hidden="true">
     <div class="ax-stage">
       <img
@@ -1068,7 +1057,6 @@ canvas{
     </div>
   </div>
 
-  <!-- Rodapé fixo com frase -->
   <div id="axoriin-footer-phrase">O eixo que organiza e ilumina a gestão educacional.</div>
 
   <div class="page">
@@ -1081,15 +1069,13 @@ canvas{
         </div>
       </div>
 
-      <!-- ✅ IDs adicionados para controlar por perfil -->
       <nav class="nav" id="sb-nav">
         <a class="active" href="#" id="sbPainel">🏠 Painel</a>
         <a href="lista-alunos.html" id="sbAlunos">👥 Alunos</a>
-
+        <a href="ranking-alunos.html" id="sbRanking">🏆 Ranking de Alunos</a>
         <a href="/notificacoes" id="sbNotificacoes">🔔 Notificações</a>
         <a href="estatisticas.html" id="sbEstatisticas">📉 Relatórios</a>
         <a href="mensagens.html" id="sbMensagens">✉️ Mensagens</a>
-        <!-- 🔹 Controle de Monitores na barra lateral -->
         <a href="/monitores.html" id="sbMonitores">🧭 Monitores</a>
         <a href="transferir-turma.html" id="sbTransferir">🔁 Transferir Turmas</a>
         <a href="usuarios.html" id="sbAdmin">⚙️ Administração</a>
@@ -1107,7 +1093,6 @@ canvas{
           <div class="titulo">Bem-vindo ao Sistema Escolar</div>
           <div class="sub">Olá, <span id="nomeUsuario">Usuário</span></div>
 
-          <!-- Botão para alternar papel de parede -->
           <button id="btn-wallpaper" class="btn-wallpaper" type="button">
             🎨 Papel de parede
           </button>
@@ -1123,7 +1108,6 @@ canvas{
           </div>
 
           <div class="menu-windows" id="menuWindows">
-            <!-- ✅ IDs nos cards para controlar por perfil -->
             <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'">
               <div class="window-content">
                 <div class="card-copy">
@@ -1147,6 +1131,15 @@ canvas{
                 <div class="card-copy">
                   <div class="kicker">GESTÃO</div>
                   <h3>Controle de Notificações</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href='ranking-alunos.html'">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">CLASSIFICAÇÃO</div>
+                  <h3>Ranking de Alunos</h3>
                 </div>
               </div>
             </div>
@@ -1186,9 +1179,17 @@ canvas{
                 </div>
               </div>
             </div>
+
+            <div id="cardAlbumFotos" class="window-card" role="link" tabindex="0" onclick="location.href='album-fotos.html'">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">ACESSO RÁPIDO</div>
+                  <h3>Álbum de Fotos</h3>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Pendências -->
           <section class="pend-card" id="pendDevolucaoSection" aria-live="polite">
             <header>
               <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
@@ -1226,7 +1227,6 @@ canvas{
             </div>
           </section>
 
-          <!-- ===== BLOCO: Ações obrigatórias por comportamento ===== -->
           <section class="alertas-comportamento" id="acSection">
             <header class="ac-head">
               <h3 style="margin:0">✅ Comportamento — Ações Obrigatórias</h3>
@@ -1300,7 +1300,6 @@ canvas{
               </small>
             </footer>
           </section>
-          <!-- ===== FIM DO BLOCO ===== -->
 
           <div class="charts">
             <div class="chart-card">
@@ -1312,15 +1311,11 @@ canvas{
               <canvas id="donutChart" width="640" height="280" aria-label="Gráfico de rosca"></canvas>
             </div>
           </div>
-
-          <!-- ✅ REMOVIDO: BLOCO QR CODE -->
-          <!-- ✅ REMOVIDO: BOTÃO SAIR DUPLICADO (fica só na sidebar) -->
         </section>
       </div>
     </main>
   </div>
 
-  <!-- ✅ IDs no bottom-nav para controlar por perfil -->
   <nav class="bottom-nav" aria-label="Navegação inferior" id="bottomNav">
     <div class="row">
       <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})" id="bnPainel">
@@ -1328,6 +1323,9 @@ canvas{
       </button>
       <button onclick="location.href='lista-alunos.html'" id="bnAlunos">
         👥<span>Alunos</span>
+      </button>
+      <button onclick="location.href='ranking-alunos.html'" id="bnRanking">
+        🏆<span>Ranking</span>
       </button>
       <button onclick="location.href='/notificacoes'" id="bnNotifs">
         🔔<span>Notifs</span>
@@ -1471,7 +1469,6 @@ canvas{
   function showOK(msg){ createToastEl('ok', msg || 'Feito.'); }
   function showError(msg){ createToastEl('err', msg || 'Ocorreu um erro.'); }
 
-  // ===== DEV: limpar SW/caches em localhost =====
   if (['localhost','127.0.0.1'].includes(location.hostname)) {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
@@ -1483,16 +1480,11 @@ canvas{
   const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
-  /* ============================================================
-     ✅ CONTROLE DE ACESSO NO PAINEL (professor/admin/monitor)
-     - Admin: tudo
-     - Monitor: TUDO (voltou ao normal)
-     - Professor: escondido
-     ============================================================ */
   async function aplicarPermissoesNoPainel(){
     const hide = (...ids) => ids.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
 
     const SB = {
+      sbRanking:'sbRanking',
       sbNotificacoes:'sbNotificacoes',
       sbEstatisticas:'sbEstatisticas',
       sbMonitores:'sbMonitores',
@@ -1505,10 +1497,11 @@ canvas{
       cardCadastrarAluno:'cardCadastrarAluno',
       cardVerNotificacoes:'cardVerNotificacoes',
       cardControleNotificacoes:'cardControleNotificacoes',
+      cardRankingAlunos:'cardRankingAlunos',
       cardNovoUsuario:'cardNovoUsuario',
       cardEstatisticas:'cardEstatisticas',
-      cardTransferirTurma:'cardTransferirTurma'
-      // ✅ qrBox removido
+      cardTransferirTurma:'cardTransferirTurma',
+      cardAlbumFotos:'cardAlbumFotos'
     };
 
     const SECOES = {
@@ -1521,6 +1514,7 @@ canvas{
     };
 
     const BN = {
+      bnRanking:'bnRanking',
       bnNotifs:'bnNotifs',
       bnRelatorios:'bnRelatorios',
       bnMonitores:'bnMonitores',
@@ -1534,11 +1528,12 @@ canvas{
       const u = await r.json();
       const tipo = String(u?.tipo || '').toLowerCase();
 
-      if (tipo === 'admin') return;     // admin: tudo
-      if (tipo === 'monitor') return;   // monitor: tudo
+      if (tipo === 'admin') return;
+      if (tipo === 'monitor') return;
 
       if (tipo === 'professor') {
         hide(
+          SB.sbRanking,
           SB.sbNotificacoes,
           SB.sbEstatisticas,
           SB.sbMonitores,
@@ -1551,9 +1546,11 @@ canvas{
           CARDS.cardCadastrarAluno,
           CARDS.cardVerNotificacoes,
           CARDS.cardControleNotificacoes,
+          CARDS.cardRankingAlunos,
           CARDS.cardNovoUsuario,
           CARDS.cardEstatisticas,
-          CARDS.cardTransferirTurma
+          CARDS.cardTransferirTurma,
+          CARDS.cardAlbumFotos
         );
 
         hide(
@@ -1566,6 +1563,7 @@ canvas{
         );
 
         hide(
+          BN.bnRanking,
           BN.bnNotifs,
           BN.bnRelatorios,
           BN.bnMonitores
@@ -1604,7 +1602,6 @@ canvas{
     }
   }
 
-  // ===== Métricas =====
   async function carregarMetricas(){
     try{
       const { alunosCount=0, notifPend=0, msgs=0 } = await getJSON(API('/metrics/overview'), { timeoutMs: 8000 });
@@ -1646,9 +1643,6 @@ canvas{
     }
   }
 
-  // ============================================================
-  // ✅ Pendências de devolução — correção leve (OK no Painel)
-  // ============================================================
   const PEND_STATE = { page: 1, size: 10 };
   let PEND_DATA = [];
   const PEND_OK_KEY = 'painelPendDevolOkIds';
@@ -1791,7 +1785,6 @@ canvas{
     });
   });
 
-  // ===== Alertas de Comportamento =====
   (function(){
     const $ = (sel, ctx=document)=>ctx.querySelector(sel);
     const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
@@ -1974,7 +1967,6 @@ canvas{
     window._carregarAlertasComportamento = carregarAlertasComportamento;
   })();
 
-  // ===== Gráficos (canvas puro, sem libs) =====
   function drawBarChart(data){
     const c = document.getElementById('barChart'); if(!c) return;
     const ctx = c.getContext('2d');
@@ -2055,7 +2047,6 @@ canvas{
     });
   }
 
-  // ===== Sessão & ações =====
   async function verificarUsuario(){
     try{
       let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
@@ -2088,9 +2079,7 @@ canvas{
   }
 
   async function boot(){
-    // aplica permissões primeiro
     await aplicarPermissoesNoPainel();
-
     await verificarUsuario();
     await verificarAdmin();
     await carregarMetricas();
@@ -2103,7 +2092,6 @@ canvas{
   }
   boot();
 
-  // ===== Registro seguro do SW (caminho absoluto) =====
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
       const swUrl = `${location.origin}/service-worker.js`;
@@ -2116,6 +2104,5 @@ canvas{
 
   <script src="notify.js"></script>
   <script src="/painel.js"></script>
-
 </body>
 </html>
