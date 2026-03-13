@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-const fs = require('fs');
-const path = require('path');
 const multer = require('multer');
 const sharp = require('sharp');
 const crypto = require('crypto');
 
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
+const { getSignedUrl } = require('@aws-sdk/cloudfront-signer');
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
@@ -20,18 +19,41 @@ const calcularNotaTSMD = require('../../utils/calculoNota');
 const { enviarTelegram } = require('../../services/mensageria');
 
 // ======================================================
-// ☁️ AWS S3
+// ☁️ AWS S3 / CloudFront
 // ======================================================
 const AWS_REGION = process.env.AWS_REGION || 'sa-east-1';
 const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME;
-const AWS_S3_BASE_URL =
-  process.env.AWS_S3_BASE_URL ||
-  (AWS_BUCKET_NAME ? `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com` : '');
+
+const AWS_CDN_URL = String(process.env.AWS_CDN_URL || '').trim().replace(/\/+$/, '');
+const AWS_S3_BASE_URL_ENV = String(process.env.AWS_S3_BASE_URL || '').trim().replace(/\/+$/, '');
+const AWS_S3_DIRECT_BASE_URL = AWS_BUCKET_NAME
+  ? `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com`
+  : '';
+
+const AWS_STORAGE_BASE_URL =
+  AWS_S3_BASE_URL_ENV ||
+  AWS_S3_DIRECT_BASE_URL ||
+  '';
+
+const CLOUDFRONT_KEY_PAIR_ID = String(process.env.AWS_CLOUDFRONT_KEY_PAIR_ID || '').trim();
+const CLOUDFRONT_PRIVATE_KEY = String(process.env.AWS_CLOUDFRONT_PRIVATE_KEY || '')
+  .replace(/\\n/g, '\n')
+  .trim();
+
+const CLOUDFRONT_SIGNED_URL_TTL_SEC = Math.max(
+  parseInt(process.env.AWS_CLOUDFRONT_SIGNED_URL_TTL_SEC || '300', 10) || 300,
+  60
+);
 
 const s3Enabled =
   !!process.env.AWS_ACCESS_KEY_ID &&
   !!process.env.AWS_SECRET_ACCESS_KEY &&
   !!AWS_BUCKET_NAME;
+
+const cloudFrontSignedEnabled =
+  !!AWS_CDN_URL &&
+  !!CLOUDFRONT_KEY_PAIR_ID &&
+  !!CLOUDFRONT_PRIVATE_KEY;
 
 const s3Client = s3Enabled
   ? new S3Client({
@@ -62,14 +84,6 @@ const upload = multer({
 // ---------- Helpers ----------
 const BASE_SELECT_LISTA = 'nome turma foto';
 
-function anexarThumbNaPlain(a) {
-  return { ...a, fotoThumbUrl: `/api/imagens/thumb/${a._id}` };
-}
-function anexarThumb(alunoDoc) {
-  const obj = alunoDoc?.toObject ? alunoDoc.toObject() : alunoDoc;
-  return anexarThumbNaPlain(obj);
-}
-
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
     const [dd, mm, yyyy] = d.trim().split('/');
@@ -85,6 +99,7 @@ async function calcularNotaComportamento(alunoId) {
     .select('data valorNumerico createdAt')
     .sort({ data: 1, createdAt: 1 })
     .lean();
+
   return calcularNotaTSMD(aluno?.dataEntrada, new Date(), notificacoes);
 }
 
@@ -120,24 +135,109 @@ function limpaSomenteDigitos(v) {
   return limpaString(v).replace(/\D+/g, '');
 }
 
-function extrairS3KeyDaUrl(url) {
+function stripQueryHash(url) {
+  return String(url || '').split('#')[0].split('?')[0];
+}
+
+function extrairAssetKey(url) {
   if (!url) return null;
+
+  const clean = stripQueryHash(String(url).trim());
+
+  const bases = [
+    AWS_CDN_URL,
+    AWS_STORAGE_BASE_URL,
+    AWS_S3_DIRECT_BASE_URL
+  ].filter(Boolean);
+
+  for (const base of bases) {
+    if (clean.startsWith(base + '/')) {
+      return decodeURIComponent(clean.slice(base.length + 1).replace(/^\/+/, ''));
+    }
+  }
+
   try {
-    const u = new URL(url);
+    const u = new URL(clean);
     return decodeURIComponent(u.pathname.replace(/^\/+/, ''));
   } catch {
     return null;
   }
 }
 
-function isS3Url(url) {
-  return typeof url === 'string' &&
-    /^https?:\/\/.+\.amazonaws\.com\//i.test(url);
+function isManagedAssetUrl(url) {
+  return !!extrairAssetKey(url);
+}
+
+function montarStorageUrlPorKey(key) {
+  if (!key) return null;
+  if (!AWS_STORAGE_BASE_URL) return null;
+  return `${AWS_STORAGE_BASE_URL}/${key}`;
+}
+
+function montarAssinadaCloudFrontPorKey(key) {
+  if (!key || !cloudFrontSignedEnabled) return null;
+
+  const url = `${AWS_CDN_URL}/${key}`;
+  const dateLessThan = new Date(Date.now() + (CLOUDFRONT_SIGNED_URL_TTL_SEC * 1000)).toISOString();
+
+  return getSignedUrl({
+    url,
+    keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+    dateLessThan,
+    privateKey: CLOUDFRONT_PRIVATE_KEY
+  });
+}
+
+function montarFotoUrlPublica(urlArmazenada) {
+  if (!urlArmazenada) return null;
+
+  const key = extrairAssetKey(urlArmazenada);
+  if (!key) return urlArmazenada;
+
+  if (cloudFrontSignedEnabled) {
+    return montarAssinadaCloudFrontPorKey(key);
+  }
+
+  if (AWS_CDN_URL) {
+    return `${AWS_CDN_URL}/${key}`;
+  }
+
+  return montarStorageUrlPorKey(key) || urlArmazenada;
+}
+
+function normalizarFotoParaPersistencia(valorFoto) {
+  const fotoLimpa = String(valorFoto || '').trim();
+  if (!fotoLimpa) return '';
+
+  const key = extrairAssetKey(fotoLimpa);
+  if (key && AWS_STORAGE_BASE_URL) {
+    return montarStorageUrlPorKey(key);
+  }
+
+  return fotoLimpa;
+}
+
+function anexarThumbNaPlain(a) {
+  const fotoStorage = a?.foto || null;
+  const fotoUrl = montarFotoUrlPublica(fotoStorage);
+
+  return {
+    ...a,
+    foto: fotoStorage,
+    fotoUrl,
+    fotoThumbUrl: `/api/imagens/thumb/${a._id}`
+  };
+}
+
+function anexarThumb(alunoDoc) {
+  const obj = alunoDoc?.toObject ? alunoDoc.toObject() : alunoDoc;
+  return anexarThumbNaPlain(obj);
 }
 
 async function apagarFotoAntigaSeForS3(url) {
-  if (!s3Enabled || !url || !isS3Url(url)) return;
-  const key = extrairS3KeyDaUrl(url);
+  if (!s3Enabled || !url || !isManagedAssetUrl(url)) return;
+
+  const key = extrairAssetKey(url);
   if (!key) return;
 
   try {
@@ -167,7 +267,7 @@ async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
   const rand = crypto.randomBytes(6).toString('hex');
   const key = `alunos/${alunoId}-${Date.now()}-${rand}.jpg`;
 
-  const upload = new Upload({
+  const up = new Upload({
     client: s3Client,
     params: {
       Bucket: AWS_BUCKET_NAME,
@@ -177,9 +277,14 @@ async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
     }
   });
 
-  await upload.done();
+  await up.done();
 
-  return `${AWS_S3_BASE_URL}/${key}`;
+  const urlStorage = montarStorageUrlPorKey(key);
+  if (!urlStorage) {
+    throw new Error('Não foi possível montar a URL persistente do S3.');
+  }
+
+  return urlStorage;
 }
 
 /* ===================== CACHE LEVE PARA /:id/detalhes ===================== */
@@ -187,6 +292,7 @@ const detalhesCache = new Map(); // key: inst|id  -> { exp, payload }
 const DETALHES_TTL_MS = 30 * 1000; // 30s
 
 function cacheKey(inst, id) { return `${inst}|${id}`; }
+
 function getCached(inst, id) {
   const k = cacheKey(inst, id);
   const item = detalhesCache.get(k);
@@ -194,6 +300,7 @@ function getCached(inst, id) {
   detalhesCache.delete(k);
   return null;
 }
+
 function setCached(inst, id, payload) {
   const k = cacheKey(inst, id);
   detalhesCache.set(k, { exp: Date.now() + DETALHES_TTL_MS, payload });
@@ -257,6 +364,7 @@ router.get('/:id/telegram', autenticar, apenasLeitura, async (req, res) => {
     const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst })
       .select('nome turma chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId')
       .lean();
+
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     const set = new Set([
@@ -356,6 +464,7 @@ router.post('/:id/telegram/optout', autenticar, apenasMonitorOuAdmin, async (req
         aluno.removeChatId(aluno.chatIdResponsavel);
       }
     }
+
     await aluno.save();
 
     await Log.create({
@@ -420,6 +529,7 @@ router.post('/:id/telegram/teste', autenticar, apenasMonitorOuAdmin, async (req,
           cid,
           texto
         );
+
         if (ok?.ok) enviados.push(cid);
         else falhas.push({ cid, motivo: ok?.motivo || ok?.erro || 'desconhecido' });
       } catch (err) {
@@ -449,8 +559,10 @@ router.post('/:id/telegram/teste', autenticar, apenasMonitorOuAdmin, async (req,
 router.get('/turmas', autenticar, apenasLeitura, async (req, res) => {
   try {
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const turmas = await Aluno.distinct('turma', { instituicao: req.usuario.instituicao });
     turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
+
     res.set('Cache-Control', 'private, max-age=120');
     res.json({ turmas });
   } catch (e) {
@@ -473,13 +585,18 @@ router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
     if (termo) filtro.nome = { $regex: termo, $options: 'i' };
 
     const [items, total] = await Promise.all([
-      Aluno.find(filtro).select('_id nome turma').sort({ nome: 1 })
+      Aluno.find(filtro).select('_id nome turma foto').sort({ nome: 1 })
         .skip((pagina - 1) * LIMITE).limit(LIMITE).lean(),
       Aluno.countDocuments(filtro)
     ]);
 
     res.set('Cache-Control', 'private, max-age=30');
-    res.json({ items, pagina, total, paginas: Math.ceil(total / LIMITE) });
+    res.json({
+      items: items.map(anexarThumbNaPlain),
+      pagina,
+      total,
+      paginas: Math.ceil(total / LIMITE)
+    });
   } catch (error) {
     console.error('Erro GET /api/alunos/turma:', error);
     res.status(500).json({ message: 'Erro ao listar alunos', error });
@@ -549,10 +666,12 @@ router.get(['/contagem', '/count'], autenticar, apenasLeitura, async (req, res) 
     if (!req.usuario?.instituicao) {
       return res.status(401).json({ message: 'Não autenticado.' });
     }
+
     const filtro = { instituicao: req.usuario.instituicao };
     if (req.query.turma) {
       filtro.turma = normalizaTurma(req.query.turma);
     }
+
     const count = await Aluno.countDocuments(filtro);
     res.json({ count, total: count });
   } catch (e) {
@@ -567,8 +686,9 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
     const semNota = ['1', 'true'].includes(String(req.query.semNota || '').toLowerCase());
     const painel = ['1', 'true'].includes(String(req.query.painel || '').toLowerCase());
 
-    if (!req.usuario?.instituicao)
+    if (!req.usuario?.instituicao) {
       return res.status(401).json({ message: 'Não autenticado.' });
+    }
 
     const filtro = { instituicao: req.usuario.instituicao };
     const turma = req.query.turma;
@@ -586,14 +706,11 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
 
       const alunosComNota = alunos.map((aluno) => {
         let nota = null;
-        if (typeof aluno.comportamento === 'number') {
-          nota = aluno.comportamento;
-        } else if (typeof aluno.notaComportamento === 'number') {
-          nota = aluno.notaComportamento;
-        }
+        if (typeof aluno.comportamento === 'number') nota = aluno.comportamento;
+        else if (typeof aluno.notaComportamento === 'number') nota = aluno.notaComportamento;
 
         return {
-          ...anexarThumb(aluno),
+          ...anexarThumbNaPlain(aluno),
           comportamento: Number.isFinite(nota) ? nota : 0,
         };
       });
@@ -608,10 +725,14 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
     const alunosComNota = await Promise.all(
       alunos.map(async (aluno) => {
         let nota = 8.0;
-        try { nota = await calcularNotaComportamento(aluno._id); } catch (e) {}
-        return { ...anexarThumb(aluno), comportamento: nota };
+        try { nota = await calcularNotaComportamento(aluno._id); } catch {}
+        return {
+          ...anexarThumbNaPlain(aluno),
+          comportamento: nota
+        };
       })
     );
+
     res.json(alunosComNota);
   } catch (error) {
     console.error('Erro GET /api/alunos:', error);
@@ -672,27 +793,29 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
     if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
 
     const id = String(req.params.id);
-
     const hit = getCached(inst, id);
+
     if (hit) {
       res.set('Cache-Control', 'private, max-age=15');
       return res.json(hit);
     }
 
-    const aluno = await Aluno.findOne({ _id: id, instituicao: inst })
-      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoCaminho instituicao updatedAt createdAt codigoAcesso')
+    const alunoRaw = await Aluno.findOne({ _id: id, instituicao: inst })
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto instituicao updatedAt createdAt codigoAcesso')
       .lean();
 
-    if (!aluno) {
+    if (!alunoRaw) {
       return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
+
+    const aluno = anexarThumbNaPlain(alunoRaw);
 
     const notificacoes = await Notificacao.find({ aluno: id })
       .select('data tipo tipoMedida motivo valorNumerico valorTotal artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt')
       .sort({ data: 1, createdAt: 1 })
       .lean();
 
-    const notaAtual = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoes);
+    const notaAtual = calcularNotaTSMD(alunoRaw.dataEntrada, new Date(), notificacoes);
 
     const payload = { aluno, notaAtual, notificacoes };
     setCached(inst, id, payload);
@@ -727,15 +850,15 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
     }
 
     const fotoAntiga = aluno.foto || null;
-    const fotoUrl = await enviarFotoAlunoParaS3({
+    const fotoStorage = await enviarFotoAlunoParaS3({
       alunoId: id,
       fileBuffer: req.file.buffer
     });
 
-    aluno.foto = fotoUrl;
+    aluno.foto = fotoStorage;
     await aluno.save();
 
-    if (fotoAntiga && fotoAntiga !== fotoUrl) {
+    if (fotoAntiga && fotoAntiga !== fotoStorage) {
       await apagarFotoAntigaSeForS3(fotoAntiga);
     }
 
@@ -744,7 +867,9 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
     return res.json({
       ok: true,
       message: 'Foto atualizada com sucesso.',
-      foto: fotoUrl
+      foto: montarFotoUrlPublica(fotoStorage),
+      fotoUrl: montarFotoUrlPublica(fotoStorage),
+      fotoStorage
     });
   } catch (err) {
     console.error('Erro ao atualizar foto:', err);
@@ -756,11 +881,14 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
 router.get('/:id', autenticar, apenasLeitura, async (req, res) => {
   try {
     if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+
     const aluno = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
     });
+
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
+
     res.json(anexarThumb(aluno));
   } catch (error) {
     console.error('Erro GET /api/alunos/:id:', error);
@@ -789,14 +917,13 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
 
     const dadosAtualizados = sanitizeUpdate(req.body);
 
-    // ✅ BLINDAGEM DA FOTO:
-    // se a ficha mandar foto vazia, não apaga o vínculo atual
+    // ✅ BLINDAGEM DA FOTO
     if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'foto')) {
-      const fotoLimpa = String(dadosAtualizados.foto || '').trim();
-      if (!fotoLimpa) {
+      const fotoPersistente = normalizarFotoParaPersistencia(dadosAtualizados.foto);
+      if (!fotoPersistente) {
         delete dadosAtualizados.foto;
       } else {
-        dadosAtualizados.foto = fotoLimpa;
+        dadosAtualizados.foto = fotoPersistente;
       }
     }
 
@@ -807,6 +934,7 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     if (dadosAtualizados.dataEntrada !== undefined) {
       dadosAtualizados.dataEntrada = parsePtBrDateToDate(dadosAtualizados.dataEntrada);
     }
+
     if (dadosAtualizados.nascimento !== undefined) {
       dadosAtualizados.nascimento = parsePtBrDateToDate(dadosAtualizados.nascimento);
     }
@@ -839,10 +967,7 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     const alunoAtualizado = await Aluno.findOneAndUpdate(
       { _id: alunoId, instituicao },
       { $set: updateDoc },
-      {
-        new: true,
-        runValidators: true
-      }
+      { new: true, runValidators: true }
     );
 
     const force = String(req.query.recalcular || '').toLowerCase();
@@ -885,6 +1010,7 @@ router.delete('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
       _id: req.params.id,
       instituicao: req.usuario.instituicao
     });
+
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
 
     if (aluno.foto) {
