@@ -249,6 +249,7 @@ const telegramBotRoutes             = require('./routes/api/telegramBot');
 const comunicacaoPaisRoutes         = require('./routes/api/comunicacaoPais');
 const comunicacaoAutoRoutes         = require('./routes/api/comunicacao');
 const monitoresApiRoutes            = require('./routes/api/monitores');
+const rankingAlunosRouter           = require('./routes/api/rankingAlunos');
 
 // ✅ MASTER (SuperAdmin)
 let masterInstituicoesRoutes = null;
@@ -389,7 +390,8 @@ function buildProfessorGuard(publicRoot) {
     '/cadastro-aluno.html',
     '/transferir-turma.html',
     '/monitores.html',
-    '/monitor-ficha.html'
+    '/monitor-ficha.html',
+    '/ranking-alunos.html'
   ]);
 
   const blockedPrefixes = [
@@ -402,6 +404,7 @@ function buildProfessorGuard(publicRoot) {
     '/cadastro-aluno',
     '/transferir-turma',
     '/monitores',
+    '/api/ranking-alunos',
 
     // APIs sensíveis
     '/api/usuarios',
@@ -587,6 +590,7 @@ mountIf('/api/metrics',        metricsRoutes);
 mountIf('/api',                publicAlunoRoutes);
 mountIf('/api/instituicoes',   instituicoesRoutes);
 mountIf('/api/alertas',        alertasRoutes);
+mountIf('/api/ranking-alunos', rankingAlunosRouter, autenticar);
 
 mountIf('/api/telegram',       telegramBotRoutes);
 mountIf('/api/comunicacao',    comunicacaoPaisRoutes);
@@ -723,10 +727,11 @@ function exigirAdmin(req, res, next) {
   next();
 }
 
-app.get('/ficha-aluno.html',  autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
-app.get('/lista-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
-app.get('/monitores.html',    autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
-app.get('/monitor-ficha.html',autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
+app.get('/ficha-aluno.html',   autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
+app.get('/lista-alunos.html',  autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
+app.get('/ranking-alunos.html',autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
+app.get('/monitores.html',     autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
+app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
 
 /* =========================
    DIAGNÓSTICOS / ERRORS

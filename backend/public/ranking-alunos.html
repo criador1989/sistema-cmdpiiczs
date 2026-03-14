@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Ranking de Alunos - Sistema Escolar</title>
+  <meta name="theme-color" content="#8B0000" />
+  <style>
+    :root{
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.28);
+      --glass-radius: 22px;
+      --glass-blur: 18px;
+      --glass-shadow:
+        0 2px 6px rgba(0,0,0,0.15),
+        0 8px 22px rgba(0,0,0,0.20);
+
+      --text-main: #ffffff;
+      --text-soft: rgba(255,255,255,0.78);
+
+      --ax-primary:#00C2FF;
+      --ax-secondary:#7A5CFF;
+
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --danger-dark:#991b1b;
+      --info:#3b82f6;
+      --chip-bg: rgba(0,0,0,0.42);
+    }
+
+    *{ box-sizing:border-box; }
+
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
+    }
+
+    body{
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text-main);
+      background:#020617;
+      color-scheme:dark;
+      overflow-x:hidden;
+    }
+
+    #bg-wallpaper{
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(2,6,23,.58), rgba(2,6,23,.74)),
+        url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      filter:brightness(0.98) saturate(1.06);
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at top left, rgba(0,194,255,.14), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(122,92,255,.10), transparent 26%);
+    }
+
+    .page{
+      position:relative;
+      z-index:2;
+      width:min(1380px, calc(100% - 28px));
+      margin:20px auto 120px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+
+    .title-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .title{
+      margin:0;
+      font-size:clamp(24px, 3vw, 38px);
+      font-weight:800;
+      letter-spacing:.2px;
+      text-shadow:0 12px 32px rgba(0,0,0,0.95);
+    }
+
+    .subtitle{
+      color:var(--text-soft);
+      font-size:.96rem;
+    }
+
+    .actions-top{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .glass-card{
+      border-radius: var(--glass-radius);
+      background: rgba(255,255,255,0.018);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      box-shadow: var(--glass-shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .glass-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.22) 0%,
+        rgba(255,255,255,0.07) 14%,
+        transparent 34%
+      );
+      pointer-events:none;
+    }
+
+    .btn{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px 16px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.45);
+      background:rgba(255,255,255,0.05);
+      color:#fff;
+      font-size:.9rem;
+      font-weight:600;
+      text-decoration:none;
+      cursor:pointer;
+      box-shadow:0 10px 24px rgba(0,0,0,0.55);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        background .18s ease,
+        border-color .18s ease,
+        opacity .18s ease;
+    }
+
+    .btn:hover{
+      background:rgba(255,255,255,0.10);
+      border-color:rgba(255,255,255,0.82);
+      box-shadow:0 14px 30px rgba(0,0,0,0.82);
+      transform:translateY(-1px);
+    }
+
+    .btn:active{ transform:translateY(0); }
+
+    .btn[disabled]{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .btn-primary{
+      background:rgba(255,255,255,0.18);
+    }
+
+    .btn-danger{
+      background:rgba(127,29,29,.55);
+      border-color:rgba(254,202,202,.45);
+    }
+
+    .grid-top{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .metric{
+      grid-column: span 3;
+      padding:16px 18px;
+    }
+
+    .metric > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .metric .k{
+      font-size:.78rem;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:var(--text-soft);
+      margin-bottom:8px;
+    }
+
+    .metric .v{
+      font-size:1.85rem;
+      font-weight:800;
+    }
+
+    .metric .s{
+      margin-top:6px;
+      font-size:.84rem;
+      color:var(--text-soft);
+    }
+
+    @media(max-width:1100px){
+      .metric{ grid-column: span 6; }
+    }
+
+    @media(max-width:640px){
+      .metric{ grid-column: span 12; }
+    }
+
+    .filters-card{
+      padding:18px;
+      margin-bottom:18px;
+    }
+
+    .filters-card > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .section-title{
+      margin:0 0 14px 0;
+      font-size:1.08rem;
+      font-weight:800;
+    }
+
+    .filters-grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:14px;
+    }
+
+    .field{
+      grid-column: span 3;
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
+
+    .field.wide{ grid-column: span 6; }
+    .field.full{ grid-column: span 12; }
+
+    .field label{
+      font-size:.83rem;
+      color:var(--text-soft);
+      font-weight:600;
+    }
+
+    .input,
+    .select{
+      width:100%;
+      min-height:44px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.28);
+      background:rgba(0,0,0,.42);
+      color:#fff;
+      outline:none;
+      font-size:.92rem;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .input:focus,
+    .select:focus{
+      border-color:rgba(255,255,255,.62);
+      box-shadow:0 0 0 3px rgba(255,255,255,.08);
+      background:rgba(0,0,0,.52);
+    }
+
+    .checks{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      min-height:44px;
+      align-items:center;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(0,0,0,.34);
+    }
+
+    .check{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:.9rem;
+      color:#fff;
+      white-space:nowrap;
+    }
+
+    .check input{
+      accent-color:#fff;
+      transform:translateY(1px);
+    }
+
+    .filters-actions{
+      margin-top:16px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    @media(max-width:1100px){
+      .field,
+      .field.wide{ grid-column: span 6; }
+    }
+
+    @media(max-width:700px){
+      .field,
+      .field.wide,
+      .field.full{ grid-column: span 12; }
+    }
+
+    .table-card{
+      padding:18px;
+    }
+
+    .table-card > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .table-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .head-info{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--text-soft);
+      font-size:.9rem;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:var(--chip-bg);
+      border:1px solid rgba(255,255,255,.22);
+      font-size:.78rem;
+      white-space:nowrap;
+    }
+
+    .chip.ok{ border-color:rgba(34,197,94,.45); }
+    .chip.warn{ border-color:rgba(245,158,11,.45); }
+    .chip.danger{ border-color:rgba(239,68,68,.45); }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.16);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1200px;
+      font-size:.9rem;
+    }
+
+    thead th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      background:rgba(9,9,11,.88);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      text-align:left;
+      padding:12px 10px;
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:rgba(255,255,255,.84);
+      border-bottom:1px solid rgba(255,255,255,.12);
+      white-space:nowrap;
+    }
+
+    tbody td{
+      padding:12px 10px;
+      border-top:1px dashed rgba(255,255,255,.12);
+      vertical-align:middle;
+    }
+
+    tbody tr{
+      transition:background .16s ease;
+    }
+
+    tbody tr:hover{
+      background:rgba(255,255,255,.04);
+    }
+
+    tbody tr.negativo{
+      background:rgba(127,29,29,.14);
+    }
+
+    tbody tr.negativo:hover{
+      background:rgba(127,29,29,.22);
+    }
+
+    .pos{
+      font-weight:800;
+      font-size:1rem;
+    }
+
+    .student{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:220px;
+    }
+
+    .avatar{
+      width:42px;
+      height:42px;
+      border-radius:999px;
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.08);
+      flex:0 0 42px;
+    }
+
+    .avatar-fallback{
+      width:42px;
+      height:42px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.22);
+      font-size:.9rem;
+      font-weight:800;
+      flex:0 0 42px;
+    }
+
+    .student-meta{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+
+    .student-name{
+      font-weight:700;
+      line-height:1.2;
+    }
+
+    .student-sub{
+      font-size:.8rem;
+      color:var(--text-soft);
+    }
+
+    .score{
+      font-weight:800;
+      font-size:1rem;
+    }
+
+    .badge-faixa{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:5px 9px;
+      border-radius:999px;
+      font-size:.76rem;
+      font-weight:700;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.36);
+      white-space:nowrap;
+    }
+
+    .faixa-excepcional{ color:#bbf7d0; border-color:rgba(34,197,94,.40); }
+    .faixa-otimo{ color:#bfdbfe; border-color:rgba(59,130,246,.40); }
+    .faixa-bom{ color:#fde68a; border-color:rgba(245,158,11,.40); }
+    .faixa-regular{ color:#fecaca; border-color:rgba(239,68,68,.34); }
+    .faixa-insuficiente{ color:#fca5a5; border-color:rgba(220,38,38,.40); }
+    .faixa-incompativel{ color:#fda4af; border-color:rgba(127,29,29,.55); }
+
+    .cell-center{
+      text-align:center;
+    }
+
+    .muted{
+      color:var(--text-soft);
+    }
+
+    .empty{
+      padding:30px 16px;
+      text-align:center;
+      color:var(--text-soft);
+    }
+
+    .pager{
+      margin-top:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .pager-info{
+      color:var(--text-soft);
+      font-size:.88rem;
+    }
+
+    .pager-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .footer-legend{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:28px;
+      transform:translateX(-50%) translateY(18px);
+      opacity:0;
+      transition:all .35s ease;
+      z-index:9999;
+      padding:12px 18px;
+      border-radius:12px;
+      min-width:240px;
+      max-width:min(92vw, 500px);
+      text-align:center;
+      color:#fff;
+      box-shadow:0 10px 24px rgba(0,0,0,.88);
+      font-size:.92rem;
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+    .toast.ok{
+      background:#166534;
+      border:1px solid rgba(187,247,208,.95);
+    }
+
+    .toast.err{
+      background:#7f1d1d;
+      border:1px solid rgba(254,202,202,.95);
+    }
+
+    @media(max-width:640px){
+      .page{
+        width:min(100%, calc(100% - 16px));
+        margin:14px auto 110px;
+      }
+
+      .topbar{
+        align-items:flex-start;
+      }
+
+      .actions-top{
+        width:100%;
+      }
+
+      .actions-top .btn{
+        flex:1 1 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-wallpaper"></div>
+
+  <div class="page">
+    <header class="topbar">
+      <div class="title-wrap">
+        <h1 class="title">Ranking de Alunos</h1>
+        <div class="subtitle">
+          Classificação comportamental com filtros combináveis, ordenação inteligente e exportação em CSV.
+        </div>
+      </div>
+
+      <div class="actions-top">
+        <a class="btn" href="index.html">← Voltar ao Painel</a>
+        <button class="btn" id="btnRecarregar" type="button">⟳ Recarregar</button>
+        <button class="btn btn-primary" id="btnExportarCsv" type="button">⬇ Baixar CSV</button>
+      </div>
+    </header>
+
+    <section class="grid-top">
+      <div class="glass-card metric">
+        <div class="k">Alunos listados</div>
+        <div class="v" id="metricTotal">0</div>
+        <div class="s">Após filtros aplicados</div>
+      </div>
+
+      <div class="glass-card metric">
+        <div class="k">Nota média</div>
+        <div class="v" id="metricMedia">0,0</div>
+        <div class="s">Somente da lista visível</div>
+      </div>
+
+      <div class="glass-card metric">
+        <div class="k">Com elogios</div>
+        <div class="v" id="metricElogios">0</div>
+        <div class="s">Alunos com pelo menos 1 elogio</div>
+      </div>
+
+      <div class="glass-card metric">
+        <div class="k">Com negativas</div>
+        <div class="v" id="metricNegativas">0</div>
+        <div class="s">Alunos com notificações negativas</div>
+      </div>
+    </section>
+
+    <section class="glass-card filters-card">
+      <h2 class="section-title">Filtros e classificação</h2>
+
+      <div class="filters-grid">
+        <div class="field wide">
+          <label for="fBusca">Buscar por nome</label>
+          <input class="input" id="fBusca" type="text" placeholder="Digite o nome do aluno..." />
+        </div>
+
+        <div class="field">
+          <label for="fSerie">Série</label>
+          <select class="select" id="fSerie">
+            <option value="">Todas</option>
+            <option value="6º Ano">6º Ano</option>
+            <option value="7º Ano">7º Ano</option>
+            <option value="8º Ano">8º Ano</option>
+            <option value="9º Ano">9º Ano</option>
+            <option value="1ª Série">1ª Série</option>
+            <option value="2ª Série">2ª Série</option>
+            <option value="3ª Série">3ª Série</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="fTurma">Turma</label>
+          <input class="input" id="fTurma" type="text" placeholder="Ex.: A" />
+        </div>
+
+        <div class="field">
+          <label for="fNotaMin">Nota mínima</label>
+          <input class="input" id="fNotaMin" type="number" min="0" max="10" step="0.01" placeholder="0,00" />
+        </div>
+
+        <div class="field">
+          <label for="fNotaMax">Nota máxima</label>
+          <input class="input" id="fNotaMax" type="number" min="0" max="10" step="0.01" placeholder="10,00" />
+        </div>
+
+        <div class="field">
+          <label for="fFaixa">Faixa comportamental</label>
+          <select class="select" id="fFaixa">
+            <option value="">Todas</option>
+            <option value="Excepcional">Excepcional</option>
+            <option value="Ótimo">Ótimo</option>
+            <option value="Bom">Bom</option>
+            <option value="Regular">Regular</option>
+            <option value="Insuficiente">Insuficiente</option>
+            <option value="Incompatível">Incompatível</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="fOrdenar">Ordenar por</label>
+          <select class="select" id="fOrdenar">
+            <option value="scoreFinal">Classificação final</option>
+            <option value="notaComportamental">Nota comportamental</option>
+            <option value="elogios">Mais elogios</option>
+            <option value="notificacoesNegativas">Mais negativas</option>
+            <option value="atosIndisciplina">Mais atos de indisciplina</option>
+            <option value="nome">Nome</option>
+            <option value="seriePrioridade">Série prioritária</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="fDirecao">Direção</label>
+          <select class="select" id="fDirecao">
+            <option value="desc">Decrescente</option>
+            <option value="asc">Crescente</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>Filtros combináveis</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" id="fComElogios" /> Somente com elogios</label>
+            <label class="check"><input type="checkbox" id="fComAtos" /> Somente com atos de indisciplina</label>
+            <label class="check"><input type="checkbox" id="fComNegativas" /> Somente com notificações negativas</label>
+            <label class="check"><input type="checkbox" id="fSemNegativas" /> Somente sem negativas</label>
+            <label class="check"><input type="checkbox" id="fPriorizarSerie" checked /> Priorizar séries mais antigas</label>
+            <label class="check"><input type="checkbox" id="fRebaixarNegativas" checked /> Rebaixar quem tem negativas</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="filters-actions">
+        <button class="btn btn-primary" id="btnAplicar" type="button">Aplicar filtros</button>
+        <button class="btn btn-danger" id="btnLimpar" type="button">Limpar filtros</button>
+      </div>
+    </section>
+
+    <section class="glass-card table-card">
+      <div class="table-head">
+        <h2 class="section-title" style="margin:0">Lista classificada</h2>
+        <div class="head-info">
+          <span class="chip ok">🏆 Score final</span>
+          <span class="chip warn">⭐ Elogios</span>
+          <span class="chip danger">⚠ Negativas mais para baixo</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Aluno</th>
+              <th>Série</th>
+              <th>Turma</th>
+              <th>Nota</th>
+              <th>Faixa</th>
+              <th>Elogios</th>
+              <th>Atos indisciplina</th>
+              <th>Notif. negativas</th>
+              <th>Prioridade série</th>
+              <th>Score final</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyRanking">
+            <tr>
+              <td colspan="11" class="empty">Carregando dados...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <div class="pager-info" id="pagerInfo">Mostrando 0 de 0</div>
+        <div class="pager-actions">
+          <button class="btn" id="btnPrev" type="button">◀ Anterior</button>
+          <button class="btn" id="btnNext" type="button">Próxima ▶</button>
+        </div>
+      </div>
+
+      <div class="footer-legend">
+        <span class="chip ok">Excepcional / Ótimo / Bom = destaque positivo</span>
+        <span class="chip danger">Regular / Insuficiente / Incompatível = atenção</span>
+        <span class="chip">3ª série > 2ª > 1ª > 9º > 8º > 7º > 6º</span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/') ? p : '/' + p)}`;
+
+    const state = {
+      raw: [],
+      filtered: [],
+      page: 1,
+      pageSize: 25
+    };
+
+    const seriePesoMap = {
+      '3ª Série': 7,
+      '2ª Série': 6,
+      '1ª Série': 5,
+      '9º Ano': 4,
+      '8º Ano': 3,
+      '7º Ano': 2,
+      '6º Ano': 1
+    };
+
+    function toast(type, msg){
+      const d = document.createElement('div');
+      d.className = `toast ${type === 'ok' ? 'ok' : 'err'}`;
+      d.textContent = msg;
+      document.body.appendChild(d);
+      requestAnimationFrame(() => d.classList.add('show'));
+      setTimeout(() => {
+        d.classList.remove('show');
+        setTimeout(() => d.remove(), 350);
+      }, type === 'ok' ? 3500 : 5500);
+    }
+
+    function showOK(msg){ toast('ok', msg || 'Feito.'); }
+    function showError(msg){ toast('err', msg || 'Ocorreu um erro.'); }
+
+    function normalizeText(v){
+      return String(v || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+    }
+
+    function toNumber(v, fallback = 0){
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function initials(name){
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      return parts.slice(0,2).map(p => p[0]?.toUpperCase() || '').join('') || 'AL';
+    }
+
+    function getSeriePrioridade(serie){
+      return seriePesoMap[String(serie || '').trim()] || 0;
+    }
+
+    function faixaPorNota(nota){
+      const n = toNumber(nota, 0);
+      if (n >= 9.0) return 'Excepcional';
+      if (n >= 8.0) return 'Ótimo';
+      if (n >= 7.0) return 'Bom';
+      if (n >= 5.0) return 'Regular';
+      if (n >= 3.0) return 'Insuficiente';
+      return 'Incompatível';
+    }
+
+    function faixaClassName(faixa){
+      const f = normalizeText(faixa);
+      if (f === 'excepcional') return 'faixa-excepcional';
+      if (f === 'otimo') return 'faixa-otimo';
+      if (f === 'bom') return 'faixa-bom';
+      if (f === 'regular') return 'faixa-regular';
+      if (f === 'insuficiente') return 'faixa-insuficiente';
+      return 'faixa-incompativel';
+    }
+
+    function computeScoreFinal(item, opts = {}){
+      const nota = toNumber(item.notaComportamental, 0);
+      const elogios = toNumber(item.elogios, 0);
+      const atos = toNumber(item.atosIndisciplina, 0);
+      const negativas = toNumber(item.notificacoesNegativas, 0);
+      const seriePrioridade = getSeriePrioridade(item.serie);
+
+      const usarSerie = opts.priorizarSerie !== false;
+      const rebaixarNeg = opts.rebaixarNegativas !== false;
+
+      let score =
+        (nota * 1000) +
+        (elogios * 20) -
+        (atos * 40);
+
+      if (usarSerie) {
+        score += (seriePrioridade * 100);
+      }
+
+      if (rebaixarNeg) {
+        score -= (negativas * 80);
+      }
+
+      return score;
+    }
+
+    function shapeAluno(raw){
+      const nota =
+        raw.notaComportamental ??
+        raw.comportamento ??
+        raw.nota ??
+        raw.mediaComportamento ??
+        0;
+
+      const elogios =
+        raw.elogios ??
+        raw.totalElogios ??
+        raw.qtdElogios ??
+        0;
+
+      const atos =
+        raw.atosIndisciplina ??
+        raw.totalAtosIndisciplina ??
+        raw.qtdAtosIndisciplina ??
+        0;
+
+      const negativas =
+        raw.notificacoesNegativas ??
+        raw.totalNotificacoesNegativas ??
+        raw.qtdNotificacoesNegativas ??
+        raw.negativas ??
+        0;
+
+      const serie =
+        raw.serie ??
+        raw.ano ??
+        raw.anoEscolar ??
+        '';
+
+      const turma =
+        raw.turma ??
+        raw.turmaNome ??
+        '';
+
+      return {
+        _id: raw._id || raw.id || '',
+        nome: raw.nome || raw.nomeCompleto || 'Aluno sem nome',
+        serie,
+        turma,
+        fotoUrl: raw.fotoUrl || raw.foto || raw.fotoPerfil || '',
+        notaComportamental: toNumber(nota, 0),
+        elogios: toNumber(elogios, 0),
+        atosIndisciplina: toNumber(atos, 0),
+        notificacoesNegativas: toNumber(negativas, 0),
+        seriePrioridade: getSeriePrioridade(serie),
+        faixa: raw.faixa || faixaPorNota(nota)
+      };
+    }
+
+    async function getJSON(url){
+      const res = await fetch(url, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
+      const ct = res.headers.get('content-type') || '';
+      const data = ct.includes('application/json') ? await res.json() : null;
+
+      if (!res.ok) {
+        const msg = data?.mensagem || data?.message || `Falha ao carregar dados (${res.status}).`;
+        throw new Error(msg);
+      }
+
+      return data;
+    }
+
+    async function carregarDados(){
+      const tbody = document.getElementById('tbodyRanking');
+      tbody.innerHTML = `<tr><td colspan="11" class="empty">Carregando dados...</td></tr>`;
+
+      try{
+        const data = await getJSON(API('/ranking-alunos'));
+
+        const arr =
+          Array.isArray(data) ? data :
+          Array.isArray(data?.alunos) ? data.alunos :
+          Array.isArray(data?.itens) ? data.itens :
+          [];
+
+        state.raw = arr.map(shapeAluno);
+        aplicarFiltros();
+        showOK('Ranking carregado com sucesso.');
+      }catch(err){
+        console.error(err);
+        state.raw = [];
+        state.filtered = [];
+        renderTabela();
+        atualizarMetricas();
+        showError(err.message || 'Não foi possível carregar o ranking.');
+      }
+    }
+
+    function getFiltros(){
+      return {
+        busca: document.getElementById('fBusca').value.trim(),
+        serie: document.getElementById('fSerie').value,
+        turma: document.getElementById('fTurma').value.trim(),
+        notaMin: document.getElementById('fNotaMin').value,
+        notaMax: document.getElementById('fNotaMax').value,
+        faixa: document.getElementById('fFaixa').value,
+        ordenar: document.getElementById('fOrdenar').value,
+        direcao: document.getElementById('fDirecao').value,
+        comElogios: document.getElementById('fComElogios').checked,
+        comAtos: document.getElementById('fComAtos').checked,
+        comNegativas: document.getElementById('fComNegativas').checked,
+        semNegativas: document.getElementById('fSemNegativas').checked,
+        priorizarSerie: document.getElementById('fPriorizarSerie').checked,
+        rebaixarNegativas: document.getElementById('fRebaixarNegativas').checked
+      };
+    }
+
+    function aplicarFiltros(){
+      const f = getFiltros();
+
+      let list = state.raw.map(item => ({
+        ...item,
+        scoreFinal: computeScoreFinal(item, {
+          priorizarSerie: f.priorizarSerie,
+          rebaixarNegativas: f.rebaixarNegativas
+        })
+      }));
+
+      if (f.busca) {
+        const q = normalizeText(f.busca);
+        list = list.filter(item => normalizeText(item.nome).includes(q));
+      }
+
+      if (f.serie) {
+        list = list.filter(item => String(item.serie) === f.serie);
+      }
+
+      if (f.turma) {
+        const turmaQ = normalizeText(f.turma);
+        list = list.filter(item => normalizeText(item.turma).includes(turmaQ));
+      }
+
+      if (f.notaMin !== '') {
+        list = list.filter(item => item.notaComportamental >= toNumber(f.notaMin, 0));
+      }
+
+      if (f.notaMax !== '') {
+        list = list.filter(item => item.notaComportamental <= toNumber(f.notaMax, 10));
+      }
+
+      if (f.faixa) {
+        list = list.filter(item => item.faixa === f.faixa);
+      }
+
+      if (f.comElogios) {
+        list = list.filter(item => item.elogios > 0);
+      }
+
+      if (f.comAtos) {
+        list = list.filter(item => item.atosIndisciplina > 0);
+      }
+
+      if (f.comNegativas) {
+        list = list.filter(item => item.notificacoesNegativas > 0);
+      }
+
+      if (f.semNegativas) {
+        list = list.filter(item => item.notificacoesNegativas === 0);
+      }
+
+      list.sort((a, b) => compareItems(a, b, f));
+
+      state.filtered = list;
+      state.page = 1;
+
+      atualizarMetricas();
+      renderTabela();
+    }
+
+    function compareItems(a, b, f){
+      const dir = f.direcao === 'asc' ? 1 : -1;
+
+      let av, bv;
+
+      switch (f.ordenar) {
+        case 'nome':
+          av = normalizeText(a.nome);
+          bv = normalizeText(b.nome);
+          if (av < bv) return -1 * dir;
+          if (av > bv) return 1 * dir;
+          break;
+
+        case 'elogios':
+          av = a.elogios; bv = b.elogios;
+          if (av !== bv) return (av - bv) * dir;
+          break;
+
+        case 'notificacoesNegativas':
+          av = a.notificacoesNegativas; bv = b.notificacoesNegativas;
+          if (av !== bv) return (av - bv) * dir;
+          break;
+
+        case 'atosIndisciplina':
+          av = a.atosIndisciplina; bv = b.atosIndisciplina;
+          if (av !== bv) return (av - bv) * dir;
+          break;
+
+        case 'seriePrioridade':
+          av = a.seriePrioridade; bv = b.seriePrioridade;
+          if (av !== bv) return (av - bv) * dir;
+          break;
+
+        case 'notaComportamental':
+          av = a.notaComportamental; bv = b.notaComportamental;
+          if (av !== bv) return (av - bv) * dir;
+          break;
+
+        case 'scoreFinal':
+        default:
+          av = a.scoreFinal; bv = b.scoreFinal;
+          if (av !== bv) return (av - bv) * dir;
+          break;
+      }
+
+      if (a.notaComportamental !== b.notaComportamental) {
+        return (a.notaComportamental - b.notaComportamental) * -1;
+      }
+
+      if (a.seriePrioridade !== b.seriePrioridade) {
+        return (a.seriePrioridade - b.seriePrioridade) * -1;
+      }
+
+      if (a.elogios !== b.elogios) {
+        return (a.elogios - b.elogios) * -1;
+      }
+
+      if (a.notificacoesNegativas !== b.notificacoesNegativas) {
+        return (a.notificacoesNegativas - b.notificacoesNegativas);
+      }
+
+      return normalizeText(a.nome).localeCompare(normalizeText(b.nome), 'pt-BR');
+    }
+
+    function atualizarMetricas(){
+      const arr = state.filtered;
+
+      document.getElementById('metricTotal').textContent = arr.length.toLocaleString('pt-BR');
+
+      const media = arr.length
+        ? arr.reduce((s, x) => s + toNumber(x.notaComportamental, 0), 0) / arr.length
+        : 0;
+
+      document.getElementById('metricMedia').textContent = media.toFixed(1).replace('.', ',');
+
+      const comElogios = arr.filter(x => x.elogios > 0).length;
+      const comNegativas = arr.filter(x => x.notificacoesNegativas > 0).length;
+
+      document.getElementById('metricElogios').textContent = comElogios.toLocaleString('pt-BR');
+      document.getElementById('metricNegativas').textContent = comNegativas.toLocaleString('pt-BR');
+    }
+
+    function renderTabela(){
+      const tbody = document.getElementById('tbodyRanking');
+      const pagerInfo = document.getElementById('pagerInfo');
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+
+      const total = state.filtered.length;
+      const pages = Math.max(1, Math.ceil(total / state.pageSize));
+
+      if (state.page > pages) state.page = pages;
+      if (state.page < 1) state.page = 1;
+
+      const start = (state.page - 1) * state.pageSize;
+      const end = start + state.pageSize;
+      const rows = state.filtered.slice(start, end);
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="11" class="empty">Nenhum aluno encontrado com os filtros informados.</td></tr>`;
+        pagerInfo.textContent = `Mostrando 0 de ${total}`;
+        btnPrev.disabled = true;
+        btnNext.disabled = true;
+        return;
+      }
+
+      tbody.innerHTML = rows.map((aluno, idx) => {
+        const pos = start + idx + 1;
+        const faixaClass = faixaClassName(aluno.faixa);
+        const hasNeg = aluno.notificacoesNegativas > 0;
+
+        const avatar = aluno.fotoUrl
+          ? `<img class="avatar" src="${escapeHtmlAttr(aluno.fotoUrl)}" alt="Foto de ${escapeHtmlAttr(aluno.nome)}" onerror="this.outerHTML='<div class=&quot;avatar-fallback&quot;>${escapeHtml(initials(aluno.nome))}</div>'">`
+          : `<div class="avatar-fallback">${escapeHtml(initials(aluno.nome))}</div>`;
+
+        return `
+          <tr class="${hasNeg ? 'negativo' : ''}">
+            <td class="pos">${pos}</td>
+            <td>
+              <div class="student">
+                ${avatar}
+                <div class="student-meta">
+                  <div class="student-name">${escapeHtml(aluno.nome)}</div>
+                  <div class="student-sub">${escapeHtml(aluno._id || '')}</div>
+                </div>
+              </div>
+            </td>
+            <td>${escapeHtml(aluno.serie || '—')}</td>
+            <td>${escapeHtml(aluno.turma || '—')}</td>
+            <td><span class="score">${aluno.notaComportamental.toFixed(2).replace('.', ',')}</span></td>
+            <td><span class="badge-faixa ${faixaClass}">${escapeHtml(aluno.faixa)}</span></td>
+            <td class="cell-center">${aluno.elogios}</td>
+            <td class="cell-center">${aluno.atosIndisciplina}</td>
+            <td class="cell-center">${aluno.notificacoesNegativas}</td>
+            <td class="cell-center">${aluno.seriePrioridade}</td>
+            <td><span class="score">${Math.round(aluno.scoreFinal).toLocaleString('pt-BR')}</span></td>
+          </tr>
+        `;
+      }).join('');
+
+      pagerInfo.textContent = `Mostrando ${start + 1}-${Math.min(end, total)} de ${total}`;
+      btnPrev.disabled = state.page <= 1;
+      btnNext.disabled = state.page >= pages;
+    }
+
+    function escapeHtml(str){
+      return String(str || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function escapeHtmlAttr(str){
+      return escapeHtml(str);
+    }
+
+    function exportarCSV(){
+      if (!state.filtered.length) {
+        showError('Não há dados para exportar.');
+        return;
+      }
+
+      const linhas = [
+        [
+          'Posição',
+          'Nome',
+          'Série',
+          'Turma',
+          'Nota Comportamental',
+          'Faixa',
+          'Elogios',
+          'Atos de Indisciplina',
+          'Notificações Negativas',
+          'Prioridade Série',
+          'Score Final'
+        ]
+      ];
+
+      state.filtered.forEach((aluno, index) => {
+        linhas.push([
+          index + 1,
+          aluno.nome,
+          aluno.serie,
+          aluno.turma,
+          aluno.notaComportamental.toFixed(2).replace('.', ','),
+          aluno.faixa,
+          aluno.elogios,
+          aluno.atosIndisciplina,
+          aluno.notificacoesNegativas,
+          aluno.seriePrioridade,
+          Math.round(aluno.scoreFinal)
+        ]);
+      });
+
+      const csv = linhas
+        .map(row => row.map(cell => `"${String(cell ?? '').replaceAll('"', '""')}"`).join(';'))
+        .join('\n');
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+
+      const agora = new Date();
+      const nomeArquivo = `ranking-alunos-${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-${String(agora.getDate()).padStart(2,'0')}.csv`;
+
+      a.href = url;
+      a.download = nomeArquivo;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      showOK('CSV gerado com sucesso.');
+    }
+
+    function limparFiltros(){
+      document.getElementById('fBusca').value = '';
+      document.getElementById('fSerie').value = '';
+      document.getElementById('fTurma').value = '';
+      document.getElementById('fNotaMin').value = '';
+      document.getElementById('fNotaMax').value = '';
+      document.getElementById('fFaixa').value = '';
+      document.getElementById('fOrdenar').value = 'scoreFinal';
+      document.getElementById('fDirecao').value = 'desc';
+      document.getElementById('fComElogios').checked = false;
+      document.getElementById('fComAtos').checked = false;
+      document.getElementById('fComNegativas').checked = false;
+      document.getElementById('fSemNegativas').checked = false;
+      document.getElementById('fPriorizarSerie').checked = true;
+      document.getElementById('fRebaixarNegativas').checked = true;
+
+      aplicarFiltros();
+    }
+
+    function bindEventos(){
+      document.getElementById('btnAplicar').addEventListener('click', aplicarFiltros);
+      document.getElementById('btnLimpar').addEventListener('click', limparFiltros);
+      document.getElementById('btnRecarregar').addEventListener('click', carregarDados);
+      document.getElementById('btnExportarCsv').addEventListener('click', exportarCSV);
+
+      document.getElementById('btnPrev').addEventListener('click', () => {
+        if (state.page > 1) {
+          state.page--;
+          renderTabela();
+        }
+      });
+
+      document.getElementById('btnNext').addEventListener('click', () => {
+        const pages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+        if (state.page < pages) {
+          state.page++;
+          renderTabela();
+        }
+      });
+
+      const autoApplyIds = [
+        'fBusca','fSerie','fTurma','fNotaMin','fNotaMax','fFaixa',
+        'fOrdenar','fDirecao','fComElogios','fComAtos','fComNegativas',
+        'fSemNegativas','fPriorizarSerie','fRebaixarNegativas'
+      ];
+
+      autoApplyIds.forEach(id => {
+        const el = document.getElementById(id);
+        const eventName = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
+        el.addEventListener(eventName, () => {
+          if (id === 'fComNegativas' && el.checked) {
+            document.getElementById('fSemNegativas').checked = false;
+          }
+          if (id === 'fSemNegativas' && el.checked) {
+            document.getElementById('fComNegativas').checked = false;
+          }
+          aplicarFiltros();
+        });
+      });
+    }
+
+    bindEventos();
+    carregarDados();
+  </script>
+</body>
+</html>
