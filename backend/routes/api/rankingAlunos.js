@@ -39,21 +39,35 @@ function escapeRegex(value) {
 
 function inferSerieFromTurma(turma = '') {
   const t = String(turma || '').trim();
+  const n = normalizeText(t);
 
-  if (!t) return '';
+  if (!n) return '';
 
-  if (/3[ªa]?\s*s[ée]rie/i.test(t)) return '3ª Série';
-  if (/2[ªa]?\s*s[ée]rie/i.test(t)) return '2ª Série';
-  if (/1[ªa]?\s*s[ée]rie/i.test(t)) return '1ª Série';
+  if (
+    /^3[ºoªa]?[a-z]\b/.test(n) ||
+    /^3[ºoªa]?\s+[a-z]\b/.test(n) ||
+    /(^|\b)3\s*(serie|ser|s)\b/.test(n) ||
+    /(^|\b)3\s*(em|ensino medio)\b/.test(n)
+  ) return '3ª Série';
 
-  if (/9[ºo]?\s*ano/i.test(t)) return '9º Ano';
-  if (/8[ºo]?\s*ano/i.test(t)) return '8º Ano';
-  if (/7[ºo]?\s*ano/i.test(t)) return '7º Ano';
-  if (/6[ºo]?\s*ano/i.test(t)) return '6º Ano';
+  if (
+    /^2[ºoªa]?[a-z]\b/.test(n) ||
+    /^2[ºoªa]?\s+[a-z]\b/.test(n) ||
+    /(^|\b)2\s*(serie|ser|s)\b/.test(n) ||
+    /(^|\b)2\s*(em|ensino medio)\b/.test(n)
+  ) return '2ª Série';
 
-  if (/^3\s*[a-z]/i.test(t)) return '3ª Série';
-  if (/^2\s*[a-z]/i.test(t)) return '2ª Série';
-  if (/^1\s*[a-z]/i.test(t)) return '1ª Série';
+  if (
+    /^1[ºoªa]?[a-z]\b/.test(n) ||
+    /^1[ºoªa]?\s+[a-z]\b/.test(n) ||
+    /(^|\b)1\s*(serie|ser|s)\b/.test(n) ||
+    /(^|\b)1\s*(em|ensino medio)\b/.test(n)
+  ) return '1ª Série';
+
+  if (/^9[ºo]?[a-z]\b/.test(n) || /^9[ºo]?\s+[a-z]\b/.test(n) || /(^|\b)9\s*ano\b/.test(n)) return '9º Ano';
+  if (/^8[ºo]?[a-z]\b/.test(n) || /^8[ºo]?\s+[a-z]\b/.test(n) || /(^|\b)8\s*ano\b/.test(n)) return '8º Ano';
+  if (/^7[ºo]?[a-z]\b/.test(n) || /^7[ºo]?\s+[a-z]\b/.test(n) || /(^|\b)7\s*ano\b/.test(n)) return '7º Ano';
+  if (/^6[ºo]?[a-z]\b/.test(n) || /^6[ºo]?\s+[a-z]\b/.test(n) || /(^|\b)6\s*ano\b/.test(n)) return '6º Ano';
 
   return '';
 }
@@ -191,9 +205,63 @@ function getInstituicaoIdFromReq(req) {
 }
 
 /* =========================================
+   GET /api/ranking-alunos/turmas
+========================================= */
+router.get('/turmas', async (req, res) => {
+  try {
+    const instituicaoId = getInstituicaoIdFromReq(req);
+
+    if (!instituicaoId) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Instituição não identificada no usuário autenticado.'
+      });
+    }
+
+    const rows = await Aluno.find({
+      instituicao: instituicaoId,
+      turma: { $exists: true, $ne: null, $ne: '' }
+    })
+      .select('turma')
+      .lean();
+
+    const unicas = Array.from(
+      new Set(
+        rows
+          .map(r => String(r.turma || '').trim())
+          .filter(Boolean)
+      )
+    );
+
+    unicas.sort((a, b) => {
+      const na = normalizeText(a);
+      const nb = normalizeText(b);
+
+      const numA = parseInt(na, 10);
+      const numB = parseInt(nb, 10);
+
+      if (!Number.isNaN(numA) && !Number.isNaN(numB) && numA !== numB) {
+        return numA - numB;
+      }
+
+      return na.localeCompare(nb, 'pt-BR');
+    });
+
+    return res.json({
+      ok: true,
+      turmas: unicas
+    });
+  } catch (error) {
+    console.error('❌ Erro ao listar turmas do ranking:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Erro ao listar turmas.'
+    });
+  }
+});
+
+/* =========================================
    GET /api/ranking-alunos
-   - paginação real no backend
-   - fotos reativadas com prioridade para thumb
 ========================================= */
 router.get('/', async (req, res) => {
   try {
@@ -208,7 +276,6 @@ router.get('/', async (req, res) => {
 
     const {
       busca = '',
-      serie = '',
       turma = '',
       notaMin = '',
       notaMax = '',
@@ -237,7 +304,7 @@ router.get('/', async (req, res) => {
     }
 
     if (turma) {
-      filtroAlunos.turma = { $regex: escapeRegex(turma), $options: 'i' };
+      filtroAlunos.turma = { $regex: `^${escapeRegex(turma)}$`, $options: 'i' };
     }
 
     const alunos = await Aluno.find(filtroAlunos)
@@ -317,34 +384,18 @@ router.get('/', async (req, res) => {
         tipoMedida.includes('a.e.c.d.e') ||
         motivo.includes('indisciplina');
 
-      if (ehElogio) {
-        item.elogios += 1;
-      }
-
-      if (ehIndisciplina) {
-        item.atosIndisciplina += 1;
-      }
-
-      if (ehIndisciplina && status !== 'arquivado') {
-        item.notificacoesNegativas += 1;
-      }
+      if (ehElogio) item.elogios += 1;
+      if (ehIndisciplina) item.atosIndisciplina += 1;
+      if (ehIndisciplina && status !== 'arquivado') item.notificacoesNegativas += 1;
     }
 
-    let resultado = Array.from(mapa.values()).map(item => {
-      const scoreFinal = computeScoreFinal(item, {
+    let resultado = Array.from(mapa.values()).map(item => ({
+      ...item,
+      scoreFinal: computeScoreFinal(item, {
         priorizarSerie: priorizarSerie === 'true',
         rebaixarNegativas: rebaixarNegativas === 'true'
-      });
-
-      return {
-        ...item,
-        scoreFinal
-      };
-    });
-
-    if (serie) {
-      resultado = resultado.filter(a => a.serie === serie);
-    }
+      })
+    }));
 
     if (notaMin !== '') {
       resultado = resultado.filter(a => a.notaComportamental >= toNumber(notaMin, 0));
@@ -381,7 +432,6 @@ router.get('/', async (req, res) => {
     const safePage = Math.min(currentPage, totalPages);
     const start = (safePage - 1) * pageSize;
     const end = start + pageSize;
-    const alunosPaginados = resultado.slice(start, end);
 
     return res.json({
       ok: true,
@@ -389,7 +439,7 @@ router.get('/', async (req, res) => {
       totalPages,
       page: safePage,
       limit: pageSize,
-      alunos: alunosPaginados
+      alunos: resultado.slice(start, end)
     });
   } catch (error) {
     console.error('❌ Erro ao gerar ranking de alunos:', error);

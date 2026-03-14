@@ -503,10 +503,6 @@
       text-align:center;
     }
 
-    .muted{
-      color:var(--text-soft);
-    }
-
     .empty{
       padding:30px 16px;
       text-align:center;
@@ -601,12 +597,12 @@
       <div class="title-wrap">
         <h1 class="title">Ranking de Alunos</h1>
         <div class="subtitle">
-          Classificação comportamental com filtros combináveis, ordenação inteligente e exportação em CSV.
+          Classificação comportamental por turma, com filtros combináveis, paginação e exportação em CSV.
         </div>
       </div>
 
       <div class="actions-top">
-        <a class="btn" href="index.html">← Voltar ao Painel</a>
+        <a class="btn" href="painel.html">← Voltar ao Painel</a>
         <button class="btn" id="btnRecarregar" type="button">⟳ Recarregar</button>
         <button class="btn btn-primary" id="btnExportarCsv" type="button">⬇ Baixar CSV</button>
       </div>
@@ -639,7 +635,7 @@
     </section>
 
     <section class="glass-card filters-card">
-      <h2 class="section-title">Filtros e classificação</h2>
+      <h2 class="section-title">Filtros do ranking</h2>
 
       <div class="filters-grid">
         <div class="field wide">
@@ -648,22 +644,10 @@
         </div>
 
         <div class="field">
-          <label for="fSerie">Série</label>
-          <select class="select" id="fSerie">
-            <option value="">Todas</option>
-            <option value="6º Ano">6º Ano</option>
-            <option value="7º Ano">7º Ano</option>
-            <option value="8º Ano">8º Ano</option>
-            <option value="9º Ano">9º Ano</option>
-            <option value="1ª Série">1ª Série</option>
-            <option value="2ª Série">2ª Série</option>
-            <option value="3ª Série">3ª Série</option>
-          </select>
-        </div>
-
-        <div class="field">
           <label for="fTurma">Turma</label>
-          <input class="input" id="fTurma" type="text" placeholder="Ex.: A" />
+          <select class="select" id="fTurma">
+            <option value="">Carregando turmas...</option>
+          </select>
         </div>
 
         <div class="field">
@@ -698,7 +682,7 @@
             <option value="notificacoesNegativas">Mais negativas</option>
             <option value="atosIndisciplina">Mais atos de indisciplina</option>
             <option value="nome">Nome</option>
-            <option value="seriePrioridade">Série prioritária</option>
+            <option value="seriePrioridade">Prioridade</option>
           </select>
         </div>
 
@@ -726,7 +710,7 @@
             <label class="check"><input type="checkbox" id="fComAtos" /> Somente com atos de indisciplina</label>
             <label class="check"><input type="checkbox" id="fComNegativas" /> Somente com notificações negativas</label>
             <label class="check"><input type="checkbox" id="fSemNegativas" /> Somente sem negativas</label>
-            <label class="check"><input type="checkbox" id="fPriorizarSerie" checked /> Priorizar séries mais antigas</label>
+            <label class="check"><input type="checkbox" id="fPriorizarSerie" checked /> Priorizar turmas mais antigas</label>
             <label class="check"><input type="checkbox" id="fRebaixarNegativas" checked /> Rebaixar quem tem negativas</label>
           </div>
         </div>
@@ -761,7 +745,7 @@
               <th>Elogios</th>
               <th>Atos indisciplina</th>
               <th>Notif. negativas</th>
-              <th>Prioridade série</th>
+              <th>Prioridade</th>
               <th>Score final</th>
             </tr>
           </thead>
@@ -784,7 +768,7 @@
       <div class="footer-legend">
         <span class="chip ok">Excepcional / Ótimo / Bom = destaque positivo</span>
         <span class="chip danger">Regular / Insuficiente / Incompatível = atenção</span>
-        <span class="chip">3ª série > 2ª > 1ª > 9º > 8º > 7º > 6º</span>
+        <span class="chip">Ranking prioriza turmas mais antigas quando ativado</span>
       </div>
     </section>
   </div>
@@ -871,18 +855,51 @@
       const data = ct.includes('application/json') ? await res.json() : null;
 
       if (!res.ok) {
-        const msg = data?.mensagem || data?.message || `Falha ao carregar dados (${res.status}).`;
+        const msg =
+          data?.message ||
+          data?.mensagem ||
+          `Falha ao carregar dados (${res.status}).`;
         throw new Error(msg);
       }
 
       return data;
     }
 
+    async function carregarTurmas(){
+      const select = document.getElementById('fTurma');
+
+      try{
+        const data = await getJSON(API('/ranking-alunos/turmas'));
+        const turmas = Array.isArray(data?.turmas) ? data.turmas : [];
+
+        select.innerHTML = '';
+
+        const optAll = document.createElement('option');
+        optAll.value = '';
+        optAll.textContent = 'Todas as turmas';
+        select.appendChild(optAll);
+
+        turmas.forEach(turma => {
+          const opt = document.createElement('option');
+          opt.value = turma;
+          opt.textContent = turma;
+          select.appendChild(opt);
+        });
+
+        if (!turmas.length) {
+          showError('Nenhuma turma encontrada para o ranking.');
+        }
+      }catch(err){
+        console.error(err);
+        select.innerHTML = '<option value="">Falha ao carregar turmas</option>';
+        showError(err.message || 'Não foi possível carregar as turmas.');
+      }
+    }
+
     function getFiltros(){
       return {
         busca: document.getElementById('fBusca').value.trim(),
-        serie: document.getElementById('fSerie').value,
-        turma: document.getElementById('fTurma').value.trim(),
+        turma: document.getElementById('fTurma').value,
         notaMin: document.getElementById('fNotaMin').value,
         notaMax: document.getElementById('fNotaMax').value,
         faixa: document.getElementById('fFaixa').value,
@@ -903,7 +920,6 @@
       const params = new URLSearchParams();
 
       if (f.busca) params.set('busca', f.busca);
-      if (f.serie) params.set('serie', f.serie);
       if (f.turma) params.set('turma', f.turma);
       if (f.notaMin !== '') params.set('notaMin', f.notaMin);
       if (f.notaMax !== '') params.set('notaMax', f.notaMax);
@@ -931,10 +947,7 @@
         const qs = buildQuery(page);
         const data = await getJSON(`${API('/ranking-alunos')}?${qs}`);
 
-        const arr =
-          Array.isArray(data) ? data :
-          Array.isArray(data?.alunos) ? data.alunos :
-          [];
+        const arr = Array.isArray(data?.alunos) ? data.alunos : [];
 
         state.raw = arr.map(shapeAluno);
         state.page = toNumber(data?.page, page);
@@ -1049,21 +1062,19 @@
         return;
       }
 
-      const linhas = [
-        [
-          'Posição',
-          'Nome',
-          'Série',
-          'Turma',
-          'Nota Comportamental',
-          'Faixa',
-          'Elogios',
-          'Atos de Indisciplina',
-          'Notificações Negativas',
-          'Prioridade Série',
-          'Score Final'
-        ]
-      ];
+      const linhas = [[
+        'Posição',
+        'Nome',
+        'Série',
+        'Turma',
+        'Nota Comportamental',
+        'Faixa',
+        'Elogios',
+        'Atos de Indisciplina',
+        'Notificações Negativas',
+        'Prioridade',
+        'Score Final'
+      ]];
 
       const start = (state.page - 1) * state.pageSize;
 
@@ -1106,7 +1117,6 @@
 
     function limparFiltros(){
       document.getElementById('fBusca').value = '';
-      document.getElementById('fSerie').value = '';
       document.getElementById('fTurma').value = '';
       document.getElementById('fNotaMin').value = '';
       document.getElementById('fNotaMax').value = '';
@@ -1138,29 +1148,31 @@
         if (state.page < state.totalPages) carregarDados(state.page + 1, true);
       });
 
-      const autoApplyIds = [
-        'fBusca','fSerie','fTurma','fNotaMin','fNotaMax','fFaixa',
-        'fOrdenar','fDirecao','fComElogios','fComAtos','fComNegativas',
-        'fSemNegativas','fPriorizarSerie','fRebaixarNegativas','fLimit'
-      ];
+      document.getElementById('fComNegativas').addEventListener('change', (e) => {
+        if (e.target.checked) document.getElementById('fSemNegativas').checked = false;
+      });
 
-      autoApplyIds.forEach(id => {
-        const el = document.getElementById(id);
-        const eventName = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
-        el.addEventListener(eventName, () => {
-          if (id === 'fComNegativas' && el.checked) {
-            document.getElementById('fSemNegativas').checked = false;
+      document.getElementById('fSemNegativas').addEventListener('change', (e) => {
+        if (e.target.checked) document.getElementById('fComNegativas').checked = false;
+      });
+
+      ['fBusca','fNotaMin','fNotaMax'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            carregarDados(1);
           }
-          if (id === 'fSemNegativas' && el.checked) {
-            document.getElementById('fComNegativas').checked = false;
-          }
-          carregarDados(1, true);
         });
       });
     }
 
-    bindEventos();
-    carregarDados();
+    async function boot(){
+      bindEventos();
+      await carregarTurmas();
+      await carregarDados();
+    }
+
+    boot();
   </script>
 </body>
 </html>
