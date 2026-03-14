@@ -192,19 +192,12 @@ function getInstituicaoIdFromReq(req) {
 
 /* =========================================
    GET /api/ranking-alunos
+   - paginação real no backend
+   - fotos reativadas com prioridade para thumb
 ========================================= */
 router.get('/', async (req, res) => {
   try {
-    console.log('➡️ /api/ranking-alunos chamado');
-    console.log('Usuário:', {
-      id: req?.usuario?._id || req?.usuario?.id || null,
-      nome: req?.usuario?.nome || null,
-      tipo: req?.usuario?.tipo || req?.usuario?.perfil || null,
-      instituicao: req?.usuario?.instituicao || req?.usuario?.instituicaoId || null
-    });
-
     const instituicaoId = getInstituicaoIdFromReq(req);
-    console.log('Instituição resolvida:', String(instituicaoId || ''));
 
     if (!instituicaoId) {
       return res.status(400).json({
@@ -227,8 +220,13 @@ router.get('/', async (req, res) => {
       comNegativas = 'false',
       semNegativas = 'false',
       priorizarSerie = 'true',
-      rebaixarNegativas = 'true'
+      rebaixarNegativas = 'true',
+      page = '1',
+      limit = '25'
     } = req.query;
+
+    const currentPage = Math.max(1, parseInt(page, 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
 
     const filtroAlunos = {
       instituicao: instituicaoId
@@ -242,18 +240,17 @@ router.get('/', async (req, res) => {
       filtroAlunos.turma = { $regex: escapeRegex(turma), $options: 'i' };
     }
 
-    console.log('Filtro alunos:', filtroAlunos);
-
     const alunos = await Aluno.find(filtroAlunos)
-      .select('nome turma comportamento dataEntrada')
+      .select('nome turma comportamento dataEntrada foto fotoThumb fotoOriginal fotoMedium')
       .lean();
-
-    console.log('Total de alunos encontrados:', alunos.length);
 
     if (!alunos.length) {
       return res.json({
         ok: true,
         total: 0,
+        totalPages: 1,
+        page: currentPage,
+        limit: pageSize,
         alunos: []
       });
     }
@@ -269,8 +266,6 @@ router.get('/', async (req, res) => {
       .select('aluno natureza tipo motivo tipoMedida valorNumerico status')
       .lean();
 
-    console.log('Total de notificações encontradas:', notificacoes.length);
-
     const mapa = new Map();
 
     for (const aluno of alunos) {
@@ -283,6 +278,7 @@ router.get('/', async (req, res) => {
         serie: serieInferida,
         turma: aluno.turma || '',
         dataEntrada: aluno.dataEntrada || null,
+        fotoUrl: aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || aluno.fotoMedium || '',
         notaComportamental: notaBase,
         elogios: 0,
         atosIndisciplina: 0,
@@ -380,17 +376,26 @@ router.get('/', async (req, res) => {
 
     resultado.sort((a, b) => compareItems(a, b, ordenar, direcao));
 
+    const total = resultado.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    const start = (safePage - 1) * pageSize;
+    const end = start + pageSize;
+    const alunosPaginados = resultado.slice(start, end);
+
     return res.json({
       ok: true,
-      total: resultado.length,
-      alunos: resultado
+      total,
+      totalPages,
+      page: safePage,
+      limit: pageSize,
+      alunos: alunosPaginados
     });
   } catch (error) {
     console.error('❌ Erro ao gerar ranking de alunos:', error);
     return res.status(500).json({
       ok: false,
-      message: error?.message || 'Erro ao gerar ranking de alunos.',
-      stack: process.env.NODE_ENV !== 'production' ? error?.stack : undefined
+      message: error?.message || 'Erro ao gerar ranking de alunos.'
     });
   }
 });

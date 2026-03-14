@@ -18,14 +18,9 @@
       --text-main: #ffffff;
       --text-soft: rgba(255,255,255,0.78);
 
-      --ax-primary:#00C2FF;
-      --ax-secondary:#7A5CFF;
-
       --ok:#22c55e;
       --warn:#f59e0b;
       --danger:#ef4444;
-      --danger-dark:#991b1b;
-      --info:#3b82f6;
       --chip-bg: rgba(0,0,0,0.42);
     }
 
@@ -439,6 +434,17 @@
       min-width:220px;
     }
 
+    .avatar{
+      width:42px;
+      height:42px;
+      border-radius:999px;
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.08);
+      flex:0 0 42px;
+      display:block;
+    }
+
     .avatar-fallback{
       width:42px;
       height:42px;
@@ -616,19 +622,19 @@
       <div class="glass-card metric">
         <div class="k">Nota média</div>
         <div class="v" id="metricMedia">0,0</div>
-        <div class="s">Somente da lista visível</div>
+        <div class="s">Somente da página atual</div>
       </div>
 
       <div class="glass-card metric">
         <div class="k">Com elogios</div>
         <div class="v" id="metricElogios">0</div>
-        <div class="s">Alunos com pelo menos 1 elogio</div>
+        <div class="s">Na página atual</div>
       </div>
 
       <div class="glass-card metric">
         <div class="k">Com negativas</div>
         <div class="v" id="metricNegativas">0</div>
-        <div class="s">Alunos com notificações negativas</div>
+        <div class="s">Na página atual</div>
       </div>
     </section>
 
@@ -701,6 +707,15 @@
           <select class="select" id="fDirecao">
             <option value="desc">Decrescente</option>
             <option value="asc">Crescente</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="fLimit">Itens por página</label>
+          <select class="select" id="fLimit">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
           </select>
         </div>
 
@@ -780,19 +795,10 @@
 
     const state = {
       raw: [],
-      filtered: [],
       page: 1,
+      total: 0,
+      totalPages: 1,
       pageSize: 25
-    };
-
-    const seriePesoMap = {
-      '3ª Série': 7,
-      '2ª Série': 6,
-      '1ª Série': 5,
-      '9º Ano': 4,
-      '8º Ano': 3,
-      '7º Ano': 2,
-      '6º Ano': 1
     };
 
     function toast(type, msg){
@@ -828,20 +834,6 @@
       return parts.slice(0,2).map(p => p[0]?.toUpperCase() || '').join('') || 'AL';
     }
 
-    function getSeriePrioridade(serie){
-      return seriePesoMap[String(serie || '').trim()] || 0;
-    }
-
-    function faixaPorNota(nota){
-      const n = toNumber(nota, 0);
-      if (n >= 9.0) return 'Excepcional';
-      if (n >= 8.0) return 'Ótimo';
-      if (n >= 7.0) return 'Bom';
-      if (n >= 5.0) return 'Regular';
-      if (n >= 3.0) return 'Insuficiente';
-      return 'Incompatível';
-    }
-
     function faixaClassName(faixa){
       const f = normalizeText(faixa);
       if (f === 'excepcional') return 'faixa-excepcional';
@@ -852,81 +844,20 @@
       return 'faixa-incompativel';
     }
 
-    function computeScoreFinal(item, opts = {}){
-      const nota = toNumber(item.notaComportamental, 0);
-      const elogios = toNumber(item.elogios, 0);
-      const atos = toNumber(item.atosIndisciplina, 0);
-      const negativas = toNumber(item.notificacoesNegativas, 0);
-      const seriePrioridade = getSeriePrioridade(item.serie);
-
-      const usarSerie = opts.priorizarSerie !== false;
-      const rebaixarNeg = opts.rebaixarNegativas !== false;
-
-      let score =
-        (nota * 1000) +
-        (elogios * 20) -
-        (atos * 40);
-
-      if (usarSerie) {
-        score += (seriePrioridade * 100);
-      }
-
-      if (rebaixarNeg) {
-        score -= (negativas * 80);
-      }
-
-      return score;
-    }
-
     function shapeAluno(raw){
-      const nota =
-        raw.notaComportamental ??
-        raw.comportamento ??
-        raw.nota ??
-        raw.mediaComportamento ??
-        0;
-
-      const elogios =
-        raw.elogios ??
-        raw.totalElogios ??
-        raw.qtdElogios ??
-        0;
-
-      const atos =
-        raw.atosIndisciplina ??
-        raw.totalAtosIndisciplina ??
-        raw.qtdAtosIndisciplina ??
-        0;
-
-      const negativas =
-        raw.notificacoesNegativas ??
-        raw.totalNotificacoesNegativas ??
-        raw.qtdNotificacoesNegativas ??
-        raw.negativas ??
-        0;
-
-      const serie =
-        raw.serie ??
-        raw.ano ??
-        raw.anoEscolar ??
-        '';
-
-      const turma =
-        raw.turma ??
-        raw.turmaNome ??
-        '';
-
       return {
         _id: raw._id || raw.id || '',
         nome: raw.nome || raw.nomeCompleto || 'Aluno sem nome',
-        serie,
-        turma,
-        notaComportamental: toNumber(nota, 0),
-        elogios: toNumber(elogios, 0),
-        atosIndisciplina: toNumber(atos, 0),
-        notificacoesNegativas: toNumber(negativas, 0),
-        seriePrioridade: getSeriePrioridade(serie),
-        faixa: raw.faixa || faixaPorNota(nota)
+        serie: raw.serie || '',
+        turma: raw.turma || '',
+        fotoUrl: raw.fotoUrl || '',
+        notaComportamental: toNumber(raw.notaComportamental, 0),
+        elogios: toNumber(raw.elogios, 0),
+        atosIndisciplina: toNumber(raw.atosIndisciplina, 0),
+        notificacoesNegativas: toNumber(raw.notificacoesNegativas, 0),
+        seriePrioridade: toNumber(raw.seriePrioridade, 0),
+        faixa: raw.faixa || '—',
+        scoreFinal: toNumber(raw.scoreFinal, 0)
       };
     }
 
@@ -947,32 +878,6 @@
       return data;
     }
 
-    async function carregarDados(){
-      const tbody = document.getElementById('tbodyRanking');
-      tbody.innerHTML = `<tr><td colspan="11" class="empty">Carregando dados...</td></tr>`;
-
-      try{
-        const data = await getJSON(API('/ranking-alunos'));
-
-        const arr =
-          Array.isArray(data) ? data :
-          Array.isArray(data?.alunos) ? data.alunos :
-          Array.isArray(data?.itens) ? data.itens :
-          [];
-
-        state.raw = arr.map(shapeAluno);
-        aplicarFiltros();
-        showOK('Ranking carregado com sucesso.');
-      }catch(err){
-        console.error(err);
-        state.raw = [];
-        state.filtered = [];
-        renderTabela();
-        atualizarMetricas();
-        showError(err.message || 'Não foi possível carregar o ranking.');
-      }
-    }
-
     function getFiltros(){
       return {
         busca: document.getElementById('fBusca').value.trim(),
@@ -988,140 +893,74 @@
         comNegativas: document.getElementById('fComNegativas').checked,
         semNegativas: document.getElementById('fSemNegativas').checked,
         priorizarSerie: document.getElementById('fPriorizarSerie').checked,
-        rebaixarNegativas: document.getElementById('fRebaixarNegativas').checked
+        rebaixarNegativas: document.getElementById('fRebaixarNegativas').checked,
+        limit: document.getElementById('fLimit').value
       };
     }
 
-    function aplicarFiltros(){
+    function buildQuery(page = 1){
       const f = getFiltros();
+      const params = new URLSearchParams();
 
-      let list = state.raw.map(item => ({
-        ...item,
-        scoreFinal: computeScoreFinal(item, {
-          priorizarSerie: f.priorizarSerie,
-          rebaixarNegativas: f.rebaixarNegativas
-        })
-      }));
+      if (f.busca) params.set('busca', f.busca);
+      if (f.serie) params.set('serie', f.serie);
+      if (f.turma) params.set('turma', f.turma);
+      if (f.notaMin !== '') params.set('notaMin', f.notaMin);
+      if (f.notaMax !== '') params.set('notaMax', f.notaMax);
+      if (f.faixa) params.set('faixa', f.faixa);
 
-      if (f.busca) {
-        const q = normalizeText(f.busca);
-        list = list.filter(item => normalizeText(item.nome).includes(q));
-      }
+      params.set('ordenar', f.ordenar);
+      params.set('direcao', f.direcao);
+      params.set('comElogios', String(f.comElogios));
+      params.set('comAtos', String(f.comAtos));
+      params.set('comNegativas', String(f.comNegativas));
+      params.set('semNegativas', String(f.semNegativas));
+      params.set('priorizarSerie', String(f.priorizarSerie));
+      params.set('rebaixarNegativas', String(f.rebaixarNegativas));
+      params.set('page', String(page));
+      params.set('limit', String(f.limit));
 
-      if (f.serie) {
-        list = list.filter(item => String(item.serie) === f.serie);
-      }
-
-      if (f.turma) {
-        const turmaQ = normalizeText(f.turma);
-        list = list.filter(item => normalizeText(item.turma).includes(turmaQ));
-      }
-
-      if (f.notaMin !== '') {
-        list = list.filter(item => item.notaComportamental >= toNumber(f.notaMin, 0));
-      }
-
-      if (f.notaMax !== '') {
-        list = list.filter(item => item.notaComportamental <= toNumber(f.notaMax, 10));
-      }
-
-      if (f.faixa) {
-        list = list.filter(item => item.faixa === f.faixa);
-      }
-
-      if (f.comElogios) {
-        list = list.filter(item => item.elogios > 0);
-      }
-
-      if (f.comAtos) {
-        list = list.filter(item => item.atosIndisciplina > 0);
-      }
-
-      if (f.comNegativas) {
-        list = list.filter(item => item.notificacoesNegativas > 0);
-      }
-
-      if (f.semNegativas) {
-        list = list.filter(item => item.notificacoesNegativas === 0);
-      }
-
-      list.sort((a, b) => compareItems(a, b, f));
-
-      state.filtered = list;
-      state.page = 1;
-
-      atualizarMetricas();
-      renderTabela();
+      return params.toString();
     }
 
-    function compareItems(a, b, f){
-      const dir = f.direcao === 'asc' ? 1 : -1;
+    async function carregarDados(page = 1, silent = false){
+      const tbody = document.getElementById('tbodyRanking');
+      tbody.innerHTML = `<tr><td colspan="11" class="empty">Carregando dados...</td></tr>`;
 
-      let av, bv;
+      try{
+        const qs = buildQuery(page);
+        const data = await getJSON(`${API('/ranking-alunos')}?${qs}`);
 
-      switch (f.ordenar) {
-        case 'nome':
-          av = normalizeText(a.nome);
-          bv = normalizeText(b.nome);
-          if (av < bv) return -1 * dir;
-          if (av > bv) return 1 * dir;
-          break;
+        const arr =
+          Array.isArray(data) ? data :
+          Array.isArray(data?.alunos) ? data.alunos :
+          [];
 
-        case 'elogios':
-          av = a.elogios; bv = b.elogios;
-          if (av !== bv) return (av - bv) * dir;
-          break;
+        state.raw = arr.map(shapeAluno);
+        state.page = toNumber(data?.page, page);
+        state.total = toNumber(data?.total, arr.length);
+        state.totalPages = toNumber(data?.totalPages, 1);
+        state.pageSize = toNumber(data?.limit, parseInt(document.getElementById('fLimit').value, 10) || 25);
 
-        case 'notificacoesNegativas':
-          av = a.notificacoesNegativas; bv = b.notificacoesNegativas;
-          if (av !== bv) return (av - bv) * dir;
-          break;
+        atualizarMetricas();
+        renderTabela();
 
-        case 'atosIndisciplina':
-          av = a.atosIndisciplina; bv = b.atosIndisciplina;
-          if (av !== bv) return (av - bv) * dir;
-          break;
-
-        case 'seriePrioridade':
-          av = a.seriePrioridade; bv = b.seriePrioridade;
-          if (av !== bv) return (av - bv) * dir;
-          break;
-
-        case 'notaComportamental':
-          av = a.notaComportamental; bv = b.notaComportamental;
-          if (av !== bv) return (av - bv) * dir;
-          break;
-
-        case 'scoreFinal':
-        default:
-          av = a.scoreFinal; bv = b.scoreFinal;
-          if (av !== bv) return (av - bv) * dir;
-          break;
+        if (!silent) showOK('Ranking carregado com sucesso.');
+      }catch(err){
+        console.error(err);
+        state.raw = [];
+        state.total = 0;
+        state.totalPages = 1;
+        renderTabela();
+        atualizarMetricas();
+        showError(err.message || 'Não foi possível carregar o ranking.');
       }
-
-      if (a.notaComportamental !== b.notaComportamental) {
-        return (a.notaComportamental - b.notaComportamental) * -1;
-      }
-
-      if (a.seriePrioridade !== b.seriePrioridade) {
-        return (a.seriePrioridade - b.seriePrioridade) * -1;
-      }
-
-      if (a.elogios !== b.elogios) {
-        return (a.elogios - b.elogios) * -1;
-      }
-
-      if (a.notificacoesNegativas !== b.notificacoesNegativas) {
-        return (a.notificacoesNegativas - b.notificacoesNegativas);
-      }
-
-      return normalizeText(a.nome).localeCompare(normalizeText(b.nome), 'pt-BR');
     }
 
     function atualizarMetricas(){
-      const arr = state.filtered;
+      const arr = state.raw;
 
-      document.getElementById('metricTotal').textContent = arr.length.toLocaleString('pt-BR');
+      document.getElementById('metricTotal').textContent = state.total.toLocaleString('pt-BR');
 
       const media = arr.length
         ? arr.reduce((s, x) => s + toNumber(x.notaComportamental, 0), 0) / arr.length
@@ -1142,30 +981,25 @@
       const btnPrev = document.getElementById('btnPrev');
       const btnNext = document.getElementById('btnNext');
 
-      const total = state.filtered.length;
-      const pages = Math.max(1, Math.ceil(total / state.pageSize));
-
-      if (state.page > pages) state.page = pages;
-      if (state.page < 1) state.page = 1;
-
-      const start = (state.page - 1) * state.pageSize;
-      const end = start + state.pageSize;
-      const rows = state.filtered.slice(start, end);
-
-      if (!rows.length) {
+      if (!state.raw.length) {
         tbody.innerHTML = `<tr><td colspan="11" class="empty">Nenhum aluno encontrado com os filtros informados.</td></tr>`;
-        pagerInfo.textContent = `Mostrando 0 de ${total}`;
+        pagerInfo.textContent = `Mostrando 0 de ${state.total}`;
         btnPrev.disabled = true;
         btnNext.disabled = true;
         return;
       }
 
-      tbody.innerHTML = rows.map((aluno, idx) => {
+      const start = (state.page - 1) * state.pageSize;
+
+      tbody.innerHTML = state.raw.map((aluno, idx) => {
         const pos = start + idx + 1;
         const faixaClass = faixaClassName(aluno.faixa);
         const hasNeg = aluno.notificacoesNegativas > 0;
 
-        const avatar = `<div class="avatar-fallback">${escapeHtml(initials(aluno.nome))}</div>`;
+        const initialsHtml = escapeHtml(initials(aluno.nome));
+        const avatar = aluno.fotoUrl
+          ? `<img class="avatar" loading="lazy" decoding="async" src="${escapeHtml(aluno.fotoUrl)}" alt="Foto de ${escapeHtml(aluno.nome)}" onerror="this.outerHTML='<div class=&quot;avatar-fallback&quot;>${initialsHtml}</div>'">`
+          : `<div class="avatar-fallback">${initialsHtml}</div>`;
 
         return `
           <tr class="${hasNeg ? 'negativo' : ''}">
@@ -1192,9 +1026,12 @@
         `;
       }).join('');
 
-      pagerInfo.textContent = `Mostrando ${start + 1}-${Math.min(end, total)} de ${total}`;
+      const showingStart = state.total === 0 ? 0 : start + 1;
+      const showingEnd = Math.min(start + state.raw.length, state.total);
+
+      pagerInfo.textContent = `Mostrando ${showingStart}-${showingEnd} de ${state.total} • Página ${state.page} de ${state.totalPages}`;
       btnPrev.disabled = state.page <= 1;
-      btnNext.disabled = state.page >= pages;
+      btnNext.disabled = state.page >= state.totalPages;
     }
 
     function escapeHtml(str){
@@ -1207,8 +1044,8 @@
     }
 
     function exportarCSV(){
-      if (!state.filtered.length) {
-        showError('Não há dados para exportar.');
+      if (!state.raw.length) {
+        showError('A exportação CSV considera a página atual. Não há dados para exportar.');
         return;
       }
 
@@ -1228,9 +1065,11 @@
         ]
       ];
 
-      state.filtered.forEach((aluno, index) => {
+      const start = (state.page - 1) * state.pageSize;
+
+      state.raw.forEach((aluno, index) => {
         linhas.push([
-          index + 1,
+          start + index + 1,
           aluno.nome,
           aluno.serie,
           aluno.turma,
@@ -1253,7 +1092,7 @@
       const a = document.createElement('a');
 
       const agora = new Date();
-      const nomeArquivo = `ranking-alunos-${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-${String(agora.getDate()).padStart(2,'0')}.csv`;
+      const nomeArquivo = `ranking-alunos-pagina-${state.page}-${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-${String(agora.getDate()).padStart(2,'0')}.csv`;
 
       a.href = url;
       a.download = nomeArquivo;
@@ -1262,7 +1101,7 @@
       a.remove();
       URL.revokeObjectURL(url);
 
-      showOK('CSV gerado com sucesso.');
+      showOK('CSV da página atual gerado com sucesso.');
     }
 
     function limparFiltros(){
@@ -1280,35 +1119,29 @@
       document.getElementById('fSemNegativas').checked = false;
       document.getElementById('fPriorizarSerie').checked = true;
       document.getElementById('fRebaixarNegativas').checked = true;
+      document.getElementById('fLimit').value = '25';
 
-      aplicarFiltros();
+      carregarDados(1, true);
     }
 
     function bindEventos(){
-      document.getElementById('btnAplicar').addEventListener('click', aplicarFiltros);
+      document.getElementById('btnAplicar').addEventListener('click', () => carregarDados(1));
       document.getElementById('btnLimpar').addEventListener('click', limparFiltros);
-      document.getElementById('btnRecarregar').addEventListener('click', carregarDados);
+      document.getElementById('btnRecarregar').addEventListener('click', () => carregarDados(state.page));
       document.getElementById('btnExportarCsv').addEventListener('click', exportarCSV);
 
       document.getElementById('btnPrev').addEventListener('click', () => {
-        if (state.page > 1) {
-          state.page--;
-          renderTabela();
-        }
+        if (state.page > 1) carregarDados(state.page - 1, true);
       });
 
       document.getElementById('btnNext').addEventListener('click', () => {
-        const pages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
-        if (state.page < pages) {
-          state.page++;
-          renderTabela();
-        }
+        if (state.page < state.totalPages) carregarDados(state.page + 1, true);
       });
 
       const autoApplyIds = [
         'fBusca','fSerie','fTurma','fNotaMin','fNotaMax','fFaixa',
         'fOrdenar','fDirecao','fComElogios','fComAtos','fComNegativas',
-        'fSemNegativas','fPriorizarSerie','fRebaixarNegativas'
+        'fSemNegativas','fPriorizarSerie','fRebaixarNegativas','fLimit'
       ];
 
       autoApplyIds.forEach(id => {
@@ -1321,7 +1154,7 @@
           if (id === 'fSemNegativas' && el.checked) {
             document.getElementById('fComNegativas').checked = false;
           }
-          aplicarFiltros();
+          carregarDados(1, true);
         });
       });
     }
