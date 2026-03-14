@@ -439,16 +439,6 @@
       min-width:220px;
     }
 
-    .avatar{
-      width:42px;
-      height:42px;
-      border-radius:999px;
-      object-fit:cover;
-      border:1px solid rgba(255,255,255,.22);
-      background:rgba(255,255,255,.08);
-      flex:0 0 42px;
-    }
-
     .avatar-fallback{
       width:42px;
       height:42px;
@@ -931,7 +921,6 @@
         nome: raw.nome || raw.nomeCompleto || 'Aluno sem nome',
         serie,
         turma,
-        fotoUrl: raw.fotoUrl || raw.foto || raw.fotoPerfil || '',
         notaComportamental: toNumber(nota, 0),
         elogios: toNumber(elogios, 0),
         atosIndisciplina: toNumber(atos, 0),
@@ -1176,9 +1165,7 @@
         const faixaClass = faixaClassName(aluno.faixa);
         const hasNeg = aluno.notificacoesNegativas > 0;
 
-        const avatar = aluno.fotoUrl
-          ? `<img class="avatar" src="${escapeHtmlAttr(aluno.fotoUrl)}" alt="Foto de ${escapeHtmlAttr(aluno.nome)}" onerror="this.outerHTML='<div class=&quot;avatar-fallback&quot;>${escapeHtml(initials(aluno.nome))}</div>'">`
-          : `<div class="avatar-fallback">${escapeHtml(initials(aluno.nome))}</div>`;
+        const avatar = `<div class="avatar-fallback">${escapeHtml(initials(aluno.nome))}</div>`;
 
         return `
           <tr class="${hasNeg ? 'negativo' : ''}">
@@ -1217,10 +1204,6 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
-    }
-
-    function escapeHtmlAttr(str){
-      return escapeHtml(str);
     }
 
     function exportarCSV(){
