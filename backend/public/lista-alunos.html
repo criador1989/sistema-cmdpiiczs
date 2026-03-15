@@ -310,7 +310,6 @@
     }
     .avatar-img.show{ opacity:1; }
 
-    /* lixeira (admin) */
     .trash{
       position:absolute;
       top:8px;
@@ -591,7 +590,6 @@
 (() => {
   const qs = (s, el=document) => el.querySelector(s);
 
-  // ======== MODO TOKEN (professor) vs normal (admin) ========
   const urlParams = new URLSearchParams(location.search);
   const token = (urlParams.get('token') || '').trim();
   const MODE_TOKEN = !!token;
@@ -601,7 +599,6 @@
     btnVoltar.href = `/lista-alunos.html?token=${encodeURIComponent(token)}`;
   }
 
-  // ====== TURMAS (merge backend + localStorage) ======
   const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
   const LS_REMOVED = 'cmdpii_turmas_removed_v1';
 
@@ -655,19 +652,18 @@
     return list;
   }
 
-  // Estado
   const params = new URLSearchParams(location.search);
   let turma = (params.get('turma') || '').trim();
   let termo = '';
   let carregando = false;
+  let reqSeq = 0;
 
-  // Paginação local (modo token) / infinito
   const PAGE_SIZE = 30;
-  let pageIndex = 0; // 0-based
-  let VIEW_LIST = []; // lista filtrada atual (modo token)
-  let ALL_ALUNOS_TOKEN = []; // todos do professor (modo token)
+  let pageIndex = 0;
+  let VIEW_LIST = [];
+  let ALL_ALUNOS_TOKEN = [];
+  let ALL_ALUNOS_ADMIN = [];
 
-  // Elementos
   const selTurma = qs('#selTurma');
   const grade = qs('#grade-alunos');
   const empty = qs('#empty');
@@ -675,6 +671,9 @@
   function buildURL(path, extraParams={}) {
     const u = new URL(path, location.origin);
     const p = new URLSearchParams(extraParams);
+    Object.entries(extraParams).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && String(v) !== '') p.set(k, v);
+    });
     u.search = p.toString();
     return u.toString();
   }
@@ -704,7 +703,7 @@
     img.decoding = 'async';
     img.referrerPolicy = 'no-referrer';
 
-    const src = a.fotoUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
+    const src = a.fotoUrl || a.fotoThumbUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
     if (src) {
       img.dataset.src = src;
       img.addEventListener('load', () => img.classList.add('show'));
@@ -756,12 +755,34 @@
     return btn;
   }
 
-  // ====== TURMAS ======
+  function renderLista(lista){
+    grade.innerHTML = '';
+
+    if (!lista.length) {
+      const div = document.createElement('div');
+      div.className = 'empty';
+      div.textContent = 'Nenhum aluno encontrado para esta turma.';
+      grade.appendChild(div);
+      return;
+    }
+
+    lista.forEach(a => grade.appendChild(cardAluno(a)));
+  }
+
+  function renderSkeletons(qtd = 8){
+    grade.innerHTML = '';
+    Array.from({length: qtd}).forEach(() => {
+      const ph = document.createElement('div');
+      ph.className = 'card skeleton';
+      ph.style.height = '88px';
+      grade.appendChild(ph);
+    });
+  }
+
   async function carregarTurmas() {
     selTurma.innerHTML = '<option value="">Selecionar turma…</option>';
 
     if (MODE_TOKEN) {
-      // Professor: extrai turmas a partir dos alunos do token
       const res = await fetch(`/api/usuarios/acesso/${encodeURIComponent(token)}`, { cache:'no-store' });
       if (!res.ok) throw new Error('Falha ao buscar acesso do professor');
       const data = await res.json();
@@ -783,7 +804,6 @@
       return;
     }
 
-    // Admin: rota + merge com turmas do gerenciador
     const res = await fetch('/api/alunos/turmas', { credentials: 'include', cache:'no-store' });
     if (!res.ok) throw new Error('Falha ao buscar turmas');
     const data = await res.json();
@@ -800,12 +820,12 @@
     empty.style.display = turma ? 'none' : 'block';
   }
 
-  // ====== LISTAGEM ======
   function resetListagem() {
     carregando = false;
     grade.innerHTML = '';
     pageIndex = 0;
     VIEW_LIST = [];
+    ALL_ALUNOS_ADMIN = [];
   }
 
   function applyFilterTokenMode() {
@@ -824,65 +844,56 @@
     if (carregando) return;
     carregando = true;
 
-    const placeholders = Array.from({length: 8}).map(() => {
-      const ph = document.createElement('div');
-      ph.className = 'card skeleton'; ph.style.height = '88px';
-      grade.appendChild(ph); return ph;
-    });
-
     const start = pageIndex * PAGE_SIZE;
     const end = start + PAGE_SIZE;
     const slice = VIEW_LIST.slice(start, end);
 
-    placeholders.forEach(el => el.remove());
+    if (pageIndex === 0) grade.innerHTML = '';
 
-    if (slice.length) {
-      slice.forEach(a => grade.appendChild(cardAluno(a)));
-      pageIndex++;
+    if (!slice.length && pageIndex === 0) {
+      renderLista([]);
+      carregando = false;
+      return;
     }
 
+    slice.forEach(a => grade.appendChild(cardAluno(a)));
+    pageIndex++;
     carregando = false;
   }
 
   async function carregarAdminMode() {
     if (carregando || !turma) return;
-    carregando = true;
 
-    const placeholders = Array.from({length: 8}).map(() => {
-      const ph = document.createElement('div');
-      ph.className = 'card skeleton'; ph.style.height = '88px';
-      grade.appendChild(ph); return ph;
-    });
+    carregando = true;
+    const myReq = ++reqSeq;
+    renderSkeletons(8);
 
     try {
-      if (typeof window.__PAGINA__ === 'undefined') window.__PAGINA__ = 1;
-      if (typeof window.__PAGINAS__ === 'undefined') window.__PAGINAS__ = 1;
-
-      if (window.__PAGINA__ > window.__PAGINAS__) {
-        placeholders.forEach(el => el.remove());
-        carregando = false;
-        return;
-      }
-
-      const url = buildURL(`/api/alunos/turma/${encodeURIComponent(turma)}`, { pagina: window.__PAGINA__, q: termo });
+      const url = buildURL(`/api/alunos/turma/${encodeURIComponent(turma)}`, { q: termo });
       const res = await fetch(url, { credentials: 'include', cache:'no-store' });
-      if (!res.ok) throw new Error('Falha ao listar');
-      const data = await res.json();
-      window.__PAGINAS__ = data.paginas || 1;
+      if (!res.ok) throw new Error('Falha ao listar alunos da turma');
 
-      placeholders.forEach(el => el.remove());
-      (data.items || []).forEach(a => grade.appendChild(cardAluno(a)));
-      window.__PAGINA__++;
+      const data = await res.json();
+
+      if (myReq !== reqSeq) return;
+
+      let lista = [];
+      if (Array.isArray(data)) lista = data;
+      else if (Array.isArray(data.items)) lista = data.items;
+      else if (Array.isArray(data.alunos)) lista = data.alunos;
+
+      ALL_ALUNOS_ADMIN = lista;
+      renderLista(ALL_ALUNOS_ADMIN);
     } catch (e) {
       console.error(e);
-      placeholders.forEach(el => el.remove());
+      if (myReq !== reqSeq) return;
+      grade.innerHTML = '';
       alert('Erro ao carregar alunos.');
     } finally {
-      carregando = false;
+      if (myReq === reqSeq) carregando = false;
     }
   }
 
-  // ====== Eventos ======
   selTurma.addEventListener('change', () => {
     turma = selTurma.value;
 
@@ -896,14 +907,11 @@
     if (MODE_TOKEN) {
       applyFilterTokenMode();
       renderNextChunkTokenMode();
-    } else {
-      window.__PAGINA__ = 1;
-      window.__PAGINAS__ = 1;
-      if (turma) carregarAdminMode();
+    } else if (turma) {
+      carregarAdminMode();
     }
   });
 
-  // Busca (debounce)
   let tmr;
   qs('#busca').addEventListener('input', (e) => {
     clearTimeout(tmr);
@@ -912,34 +920,27 @@
       resetListagem();
 
       if (!turma) return;
+
       if (MODE_TOKEN) {
         applyFilterTokenMode();
         renderNextChunkTokenMode();
       } else {
-        window.__PAGINA__ = 1;
-        window.__PAGINAS__ = 1;
         carregarAdminMode();
       }
     }, 300);
   });
 
-  // Infinite scroll
   const io = new IntersectionObserver((entries) => {
     if (!entries.some(e => e.isIntersecting)) return;
     if (!turma) return;
+    if (!MODE_TOKEN) return;
 
-    if (MODE_TOKEN) {
-      const total = VIEW_LIST.length;
-      const nextStart = pageIndex * PAGE_SIZE;
-      if (nextStart < total) renderNextChunkTokenMode();
-      return;
-    }
-
-    carregarAdminMode();
+    const total = VIEW_LIST.length;
+    const nextStart = pageIndex * PAGE_SIZE;
+    if (nextStart < total) renderNextChunkTokenMode();
   });
   io.observe(document.getElementById('sentinel'));
 
-  // Lazy thumbs
   const ioImg = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
@@ -953,7 +954,6 @@
     });
   }, { root: null, rootMargin: '200px 0px', threshold: 0 });
 
-  // ====== Modal ======
   const modal = qs('#modal-backdrop');
   const btnFechar = qs('#btn-fechar');
   function abrirModal(){ modal.classList.add('aberto'); }
@@ -972,7 +972,7 @@
     const id = aCard._id;
     try {
       const img = qs('#modal-foto');
-      const fotoLocal = aCard.fotoUrl || aCard.fotoThumb || (aCard.foto ? normalizarUploadsPath(aCard.foto) : '');
+      const fotoLocal = aCard.fotoUrl || aCard.fotoThumbUrl || aCard.fotoThumb || (aCard.foto ? normalizarUploadsPath(aCard.foto) : '');
       if (fotoLocal) {
         img.src = fotoLocal;
         img.onerror = () => { img.removeAttribute('src'); };
@@ -991,7 +991,7 @@
         a = aCard || {};
       }
 
-      const fotoFicha = a.fotoUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
+      const fotoFicha = a.fotoUrl || a.fotoThumbUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
       if (fotoFicha) {
         img.src = fotoFicha;
         img.onerror = () => { img.removeAttribute('src'); };
@@ -1049,7 +1049,6 @@
     }
   }
 
-  // ====== Start ======
   carregarTurmas().then(() => {
     empty.style.display = turma ? 'none' : 'block';
     if (turma) {
@@ -1058,8 +1057,6 @@
         applyFilterTokenMode();
         renderNextChunkTokenMode();
       } else {
-        window.__PAGINA__ = 1;
-        window.__PAGINAS__ = 1;
         carregarAdminMode();
       }
     }

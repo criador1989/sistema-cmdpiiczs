@@ -82,7 +82,7 @@ const upload = multer({
 });
 
 // ---------- Helpers ----------
-const BASE_SELECT_LISTA = 'nome turma foto fotoThumb fotoOriginal';
+const BASE_SELECT_LISTA = 'nome turma foto fotoThumb fotoOriginal comportamento';
 
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
@@ -91,16 +91,6 @@ function parsePtBrDateToDate(d) {
     if (!isNaN(dt.getTime())) return dt;
   }
   return d;
-}
-
-async function calcularNotaComportamento(alunoId) {
-  const aluno = await Aluno.findById(alunoId).select('dataEntrada').lean();
-  const notificacoes = await Notificacao.find({ aluno: alunoId })
-    .select('data valorNumerico createdAt')
-    .sort({ data: 1, createdAt: 1 })
-    .lean();
-
-  return calcularNotaTSMD(aluno?.dataEntrada, new Date(), notificacoes);
 }
 
 function normalizaTurma(t) {
@@ -684,32 +674,49 @@ router.get('/turmas', autenticar, apenasLeitura, async (req, res) => {
 // ✅ Professor/Monitor/Admin: alunos por turma
 router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
+    if (!req.usuario?.instituicao) {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
 
-    const LIMITE = 48;
-    const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
-    const termo = (req.query.q || '').trim();
-    const turma = normalizaTurma(req.params.turma);
+    const termo = String(req.query.q || '').trim();
+    const turmaRaw = String(req.params.turma || '').trim();
 
-    const filtro = { instituicao: req.usuario.instituicao, turma };
-    if (termo) filtro.nome = { $regex: termo, $options: 'i' };
+    if (!turmaRaw) {
+      return res.status(400).json({ message: 'Turma não informada.' });
+    }
 
-    const [items, total] = await Promise.all([
-      Aluno.find(filtro).select('_id nome turma foto fotoThumb fotoOriginal').sort({ nome: 1 })
-        .skip((pagina - 1) * LIMITE).limit(LIMITE).lean(),
-      Aluno.countDocuments(filtro)
-    ]);
+    const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const filtro = {
+      instituicao: req.usuario.instituicao,
+      turma: { $regex: `^${escapeRegex(turmaRaw)}$`, $options: 'i' }
+    };
+
+    if (termo) {
+      filtro.nome = { $regex: escapeRegex(termo), $options: 'i' };
+    }
+
+    const alunos = await Aluno.find(filtro)
+      .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento')
+      .sort({ nome: 1 })
+      .lean();
+
+    const lista = alunos.map((aluno) => {
+      let nota = null;
+      if (typeof aluno.comportamento === 'number') nota = aluno.comportamento;
+      else if (typeof aluno.notaComportamento === 'number') nota = aluno.notaComportamento;
+
+      return {
+        ...anexarThumbNaPlain(aluno),
+        comportamento: Number.isFinite(nota) ? nota : 8.0
+      };
+    });
 
     res.set('Cache-Control', 'private, max-age=30');
-    res.json({
-      items: items.map(anexarThumbNaPlain),
-      pagina,
-      total,
-      paginas: Math.ceil(total / LIMITE)
-    });
+    return res.json(lista);
   } catch (error) {
-    console.error('Erro GET /api/alunos/turma:', error);
-    res.status(500).json({ message: 'Erro ao listar alunos', error });
+    console.error('Erro GET /api/alunos/turma/:turma:', error);
+    return res.status(500).json({ message: 'Erro ao listar alunos da turma', error: error?.message || error });
   }
 });
 
@@ -805,7 +812,9 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
     if (turma) filtro.turma = normalizaTurma(turma);
 
     if (semNota) {
-      const alunos = await Aluno.find(filtro).select(BASE_SELECT_LISTA).lean();
+      const alunos = await Aluno.find(filtro)
+        .select('nome turma foto fotoThumb fotoOriginal')
+        .lean();
       return res.json(alunos.map(anexarThumbNaPlain));
     }
 
@@ -821,27 +830,30 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
 
         return {
           ...anexarThumbNaPlain(aluno),
-          comportamento: Number.isFinite(nota) ? nota : 0,
+          comportamento: Number.isFinite(nota) ? nota : 8.0,
         };
       });
 
       return res.json(alunosComNota);
     }
 
+    // ✅ IMPORTANTE:
+    // Nada de recalcular nota aluno por aluno aqui.
+    // A listagem deve usar a nota já persistida em "comportamento".
     const alunos = await Aluno.find(filtro)
-      .select('nome turma foto fotoThumb fotoOriginal instituicao')
+      .select('nome turma foto fotoThumb fotoOriginal instituicao comportamento notaComportamento')
       .lean();
 
-    const alunosComNota = await Promise.all(
-      alunos.map(async (aluno) => {
-        let nota = 8.0;
-        try { nota = await calcularNotaComportamento(aluno._id); } catch {}
-        return {
-          ...anexarThumbNaPlain(aluno),
-          comportamento: nota
-        };
-      })
-    );
+    const alunosComNota = alunos.map((aluno) => {
+      let nota = null;
+      if (typeof aluno.comportamento === 'number') nota = aluno.comportamento;
+      else if (typeof aluno.notaComportamento === 'number') nota = aluno.notaComportamento;
+
+      return {
+        ...anexarThumbNaPlain(aluno),
+        comportamento: Number.isFinite(nota) ? nota : 8.0
+      };
+    });
 
     res.json(alunosComNota);
   } catch (error) {
@@ -911,7 +923,7 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
     }
 
     const alunoRaw = await Aluno.findOne({ _id: id, instituicao: inst })
-      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao updatedAt createdAt codigoAcesso')
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao updatedAt createdAt codigoAcesso comportamento')
       .lean();
 
     if (!alunoRaw) {
@@ -920,8 +932,8 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
 
     const aluno = anexarThumbNaPlain(alunoRaw);
 
-    const notificacoes = await Notificacao.find({ aluno: id })
-      .select('data tipo tipoMedida motivo valorNumerico valorTotal artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt')
+    const notificacoes = await Notificacao.find({ aluno: id, instituicao: inst })
+      .select('data tipo tipoMedida motivo valorNumerico valorTotal artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt natureza')
       .sort({ data: 1, createdAt: 1 })
       .lean();
 
@@ -1164,8 +1176,8 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     const forcarRecalculo = force === '1' || force === 'true';
 
     if (mudouDataEntrada || forcarRecalculo) {
-      const notificacoes = await Notificacao.find({ aluno: alunoAtualizado._id })
-        .select('data valorNumerico createdAt')
+      const notificacoes = await Notificacao.find({ aluno: alunoAtualizado._id, instituicao })
+        .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
         .sort({ data: 1, createdAt: 1 })
         .lean();
 
@@ -1206,8 +1218,8 @@ router.delete('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     await apagarFotosAntigasDoAluno(aluno);
 
     await Promise.all([
-      Notificacao.deleteMany({ aluno: aluno._id }),
-      Observacao.deleteMany({ aluno: aluno._id }),
+      Notificacao.deleteMany({ aluno: aluno._id, instituicao: req.usuario.instituicao }),
+      Observacao.deleteMany({ aluno: aluno._id, instituicao: String(req.usuario.instituicao) }),
       Aluno.deleteOne({ _id: aluno._id })
     ]);
 

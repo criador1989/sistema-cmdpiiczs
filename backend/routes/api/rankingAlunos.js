@@ -6,6 +6,7 @@ const router = express.Router();
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
+const calcularNotaTSMD = require('../../utils/calculoNota');
 
 /* =========================================
    MAPA DE PRIORIDADE POR SÉRIE
@@ -228,7 +229,7 @@ router.get('/turmas', async (req, res) => {
     const unicas = Array.from(
       new Set(
         rows
-          .map(r => String(r.turma || '').trim())
+          .map((r) => String(r.turma || '').trim())
           .filter(Boolean)
       )
     );
@@ -322,7 +323,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const alunoIds = alunos.map(a => a._id);
+    const alunoIds = alunos.map((a) => a._id);
 
     const notificacoes = await Notificacao.find({
       instituicao: instituicaoId,
@@ -330,16 +331,51 @@ router.get('/', async (req, res) => {
       ativo: { $ne: false },
       arquivada: { $ne: true }
     })
-      .select('aluno natureza tipo motivo tipoMedida valorNumerico status')
+      .select('aluno natureza tipo motivo tipoMedida valorNumerico status data createdAt quantidadeDias')
       .lean();
+
+    const notificacoesPorAluno = new Map();
+    for (const n of notificacoes) {
+      const alunoId = String(n.aluno || '');
+      if (!notificacoesPorAluno.has(alunoId)) {
+        notificacoesPorAluno.set(alunoId, []);
+      }
+      notificacoesPorAluno.get(alunoId).push(n);
+    }
 
     const mapa = new Map();
 
     for (const aluno of alunos) {
       const serieInferida = inferSerieFromTurma(aluno.turma || '');
-      const notaBase = toNumber(aluno.comportamento, 0);
+      const alunoId = String(aluno._id);
 
-      mapa.set(String(aluno._id), {
+      const eventos = (notificacoesPorAluno.get(alunoId) || []).map((n) => ({
+        data: n.data || null,
+        createdAt: n.createdAt || null,
+        valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
+        quantidadeDias: n.quantidadeDias ?? 1,
+        tipoMedida: n.tipoMedida || n.tipo || '',
+        natureza: n.natureza || ''
+      }));
+
+      let notaBase = 8.0;
+
+      try {
+        notaBase = calcularNotaTSMD(aluno.dataEntrada || null, new Date(), eventos);
+      } catch (err) {
+        console.warn(
+          `Falha ao calcular nota TSMD do aluno ${aluno.nome || alunoId}:`,
+          err?.message || err
+        );
+        notaBase =
+          typeof aluno.comportamento === 'number'
+            ? aluno.comportamento
+            : 8.0;
+      }
+
+      notaBase = Number((+notaBase || 0).toFixed(2));
+
+      mapa.set(alunoId, {
         _id: aluno._id,
         nome: aluno.nome || 'Aluno sem nome',
         serie: serieInferida,
@@ -389,7 +425,7 @@ router.get('/', async (req, res) => {
       if (ehIndisciplina && status !== 'arquivado') item.notificacoesNegativas += 1;
     }
 
-    let resultado = Array.from(mapa.values()).map(item => ({
+    let resultado = Array.from(mapa.values()).map((item) => ({
       ...item,
       scoreFinal: computeScoreFinal(item, {
         priorizarSerie: priorizarSerie === 'true',
@@ -398,31 +434,31 @@ router.get('/', async (req, res) => {
     }));
 
     if (notaMin !== '') {
-      resultado = resultado.filter(a => a.notaComportamental >= toNumber(notaMin, 0));
+      resultado = resultado.filter((a) => a.notaComportamental >= toNumber(notaMin, 0));
     }
 
     if (notaMax !== '') {
-      resultado = resultado.filter(a => a.notaComportamental <= toNumber(notaMax, 10));
+      resultado = resultado.filter((a) => a.notaComportamental <= toNumber(notaMax, 10));
     }
 
     if (faixa) {
-      resultado = resultado.filter(a => a.faixa === faixa);
+      resultado = resultado.filter((a) => a.faixa === faixa);
     }
 
     if (comElogios === 'true') {
-      resultado = resultado.filter(a => a.elogios > 0);
+      resultado = resultado.filter((a) => a.elogios > 0);
     }
 
     if (comAtos === 'true') {
-      resultado = resultado.filter(a => a.atosIndisciplina > 0);
+      resultado = resultado.filter((a) => a.atosIndisciplina > 0);
     }
 
     if (comNegativas === 'true') {
-      resultado = resultado.filter(a => a.notificacoesNegativas > 0);
+      resultado = resultado.filter((a) => a.notificacoesNegativas > 0);
     }
 
     if (semNegativas === 'true') {
-      resultado = resultado.filter(a => a.notificacoesNegativas === 0);
+      resultado = resultado.filter((a) => a.notificacoesNegativas === 0);
     }
 
     resultado.sort((a, b) => compareItems(a, b, ordenar, direcao));

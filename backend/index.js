@@ -248,6 +248,7 @@ const comunicacaoAutoRoutes         = require('./routes/api/comunicacao');
 const monitoresApiRoutes            = require('./routes/api/monitores');
 const rankingAlunosRouter           = require('./routes/api/rankingAlunos');
 const fixInstituicaoLegacy          = require('./routes/api/fixInstituicaoLegacy');
+const fixRecalculoComportamento     = require('./routes/api/fixRecalculoComportamento');
 
 // ✅ MASTER (SuperAdmin)
 let masterInstituicoesRoutes = null;
@@ -586,6 +587,7 @@ mountIf('/api',                publicAlunoRoutes);
 mountIf('/api/instituicoes',   instituicoesRoutes);
 mountIf('/api/alertas',        alertasRoutes);
 mountIf('/api/ranking-alunos', rankingAlunosRouter, autenticar);
+mountIf('/api/fix-recalculo-comportamento', fixRecalculoComportamento, autenticar);
 
 mountIf('/api/telegram',       telegramBotRoutes);
 mountIf('/api/comunicacao',    comunicacaoPaisRoutes);

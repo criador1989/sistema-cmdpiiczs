@@ -722,23 +722,9 @@
 
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
 
-    const BASES = {
-      'Advertência Escrita': -0.30,
-      'Repreensão': -0.50,
-      'A.E.C.D.E': -0.70,
-      'A.I.A': -1.20
-    };
-    const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
-
     function calcValorExibicao(n) {
-      if (typeof n.valorTotal === 'number') return Number(n.valorTotal);
-      const titulo = String(n.tipoMedida || n.tipo || '').trim();
-      const precisaDias = REQUER_DIAS.has(titulo);
-      const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
-      if (!precisaDias) return Number(n.valorNumerico ?? 0);
-      const base = BASES[titulo];
-      if (typeof base === 'number') return Number((base * dias).toFixed(2));
-      return Number(n.valorNumerico ?? 0);
+      if (typeof n.valorNumerico === 'number') return Number(n.valorNumerico);
+      return Number(n?.valorNumerico ?? 0);
     }
 
     const toISO = (d)=>{
@@ -1079,7 +1065,11 @@
       byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
       byId('kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
 
-      const nota = (typeof aluno?.comportamento === 'number') ? aluno.comportamento : null;
+      const nota =
+        (typeof aluno?.notaComportamental === 'number')
+          ? aluno.notaComportamental
+          : ((typeof aluno?.comportamento === 'number') ? aluno.comportamento : null);
+
       byId('kvNota').textContent = (nota !== null) ? nota.toFixed(2) : 'N/A';
       const cls = classificarNota(nota ?? NaN);
       const pill = byId('kvClassificacao');
@@ -1385,8 +1375,6 @@
         }
       };
 
-      // Só envia "foto" se houver valor.
-      // Isso evita zerar a foto do aluno sem querer.
       if (fotoDigitada) {
         payload.foto = fotoDigitada;
       }

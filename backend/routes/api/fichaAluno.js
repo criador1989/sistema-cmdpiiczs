@@ -36,7 +36,7 @@ const PROJ_ALUNO =
   'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
 
 const PROJ_NOTIF =
-  '_id data tipo tipoMedida motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
+  '_id data tipo tipoMedida natureza motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
 
 const PROJ_OBS =
   '_id texto autor criadoEm createdAt anexos attachments files';
@@ -84,8 +84,12 @@ router.get('/:id', autenticar, async (req, res) => {
 
     if (calcularNotaTSMD) {
       const eventos = (notificacoes || []).map((n) => ({
-        data: n.data || n.createdAt,
+        data: n.data || null,
+        createdAt: n.createdAt || null,
         valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
+        quantidadeDias: n.quantidadeDias ?? 1,
+        tipoMedida: n.tipoMedida || n.tipo || '',
+        natureza: n.natureza || ''
       }));
 
       try {
@@ -95,6 +99,8 @@ router.get('/:id', autenticar, async (req, res) => {
         console.warn('Erro ao recalcular nota de comportamento:', e?.message || e);
       }
     }
+
+    notaComportamento = Number((+notaComportamento || 0).toFixed(2));
 
     const fotoUrl = toPublicUrl(aluno.fotoOriginal || aluno.foto || aluno.fotoThumb || null);
     const fotoThumbUrl = toPublicUrl(aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || null);
@@ -110,7 +116,8 @@ router.get('/:id', autenticar, async (req, res) => {
           nome: aluno.nome || null,
           turma: aluno.turma || null,
           dataEntrada: aluno.dataEntrada || null,
-          comportamento: Number((+notaComportamento || 0).toFixed(2)),
+          comportamento: notaComportamento,
+          notaComportamental: notaComportamento,
 
           // campos sensíveis removidos para professor
           nascimento: null,
@@ -138,6 +145,7 @@ router.get('/:id', autenticar, async (req, res) => {
           createdAt: n.createdAt || null,
           tipo: n.tipo || null,
           tipoMedida: n.tipoMedida || null,
+          natureza: n.natureza || null,
           motivo: n.motivo || null,
           valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : null,
           artigo: n.artigo || null,
@@ -174,7 +182,8 @@ router.get('/:id', autenticar, async (req, res) => {
         telefone: aluno.telefone || null,
         endereco: aluno.endereco || null,
         codigoAcesso: aluno.codigoAcesso || null,
-        comportamento: Number((+notaComportamento || 0).toFixed(2)),
+        comportamento: notaComportamento,
+        notaComportamental: notaComportamento,
         foto: aluno.foto || null,
         fotoOriginal: aluno.fotoOriginal || aluno.foto || null,
         fotoMedium: aluno.fotoMedium || null,
