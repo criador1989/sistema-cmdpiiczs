@@ -14,13 +14,20 @@ const { autenticar } = require('../middleware/autenticacao');
 
 const isProd = process.env.NODE_ENV === 'production';
 
+const TENANT_ALIASES = {
+  cmdpii: 'cmdpii',
+  'cmdpii-czs': 'cmdpii',
+};
+
+const DEFAULT_TENANT_SLUG = (process.env.DEFAULT_TENANT_SLUG || 'cmdpii').trim().toLowerCase();
+
 function setAuthCookie(res, token) {
   res.cookie('token', token, {
     httpOnly: true,
     secure: isProd,
     sameSite: 'lax',
     path: '/',
-    maxAge: 2 * 60 * 60 * 1000, // 2h
+    maxAge: 2 * 60 * 60 * 1000,
   });
 }
 
@@ -41,7 +48,7 @@ function isObjectIdLike(v) {
 }
 
 /**
- * ✅ Base URL do BACKEND (para o link /auth/confirmar-email)
+ * Base URL do BACKEND (para o link /auth/confirmar-email)
  */
 function pickBackendBaseUrl(req) {
   const env =
@@ -59,11 +66,7 @@ function pickBackendBaseUrl(req) {
 }
 
 /**
- * ✅ Base URL do FRONTEND (para redirecionar ao /login.html após confirmar)
- * Prioridade:
- * 1) PUBLIC_SITE_URL (quando você tiver domínio do front)
- * 2) CLIENT_URL (seu front local / Vite / etc.)
- * 3) fallback: vazio => redirect relativo (quando front está dentro do backend /public)
+ * Base URL do FRONTEND (para redirecionar ao /login.html após confirmar)
  */
 function pickFrontendBaseUrl(_req) {
   const site = process.env.PUBLIC_SITE_URL;
@@ -72,7 +75,7 @@ function pickFrontendBaseUrl(_req) {
   const client = process.env.CLIENT_URL;
   if (client) return String(client).replace(/\/+$/, '');
 
-  return ''; // fallback: usa /login.html relativo
+  return '';
 }
 
 function pickTenantParam(inst) {
@@ -86,31 +89,45 @@ function pickTenantParam(inst) {
 async function findInstituicaoByTenant(t) {
   if (!Instituicao || typeof Instituicao.findOne !== 'function') return null;
 
-  const tenant = String(t || '').trim();
-  if (!tenant) return null;
+  const tenantRaw = String(t || '').trim();
+  if (!tenantRaw) return null;
 
-  if (isObjectIdLike(tenant)) {
+  const tenant = tenantRaw.toLowerCase();
+  const candidates = [...new Set([
+    tenant,
+    TENANT_ALIASES[tenant],
+    tenantRaw.toUpperCase()
+  ].filter(Boolean))];
+
+  if (isObjectIdLike(tenantRaw)) {
     const byId =
-      (await Instituicao.findOne({ _id: tenant, ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
-      (await Instituicao.findOne({ _id: tenant }).select('_id nome sigla slug ativo').lean().catch(() => null));
+      (await Instituicao.findOne({ _id: tenantRaw, ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
+      (await Instituicao.findOne({ _id: tenantRaw }).select('_id nome sigla slug ativo').lean().catch(() => null));
     if (byId) return byId;
   }
 
-  const bySlug =
-    (await Instituicao.findOne({ slug: tenant.toLowerCase(), ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
-    (await Instituicao.findOne({ slug: tenant.toLowerCase() }).select('_id nome sigla slug ativo').lean().catch(() => null));
-  if (bySlug) return bySlug;
+  for (const candidate of candidates) {
+    const bySlug =
+      (await Instituicao.findOne({ slug: String(candidate).toLowerCase(), ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
+      (await Instituicao.findOne({ slug: String(candidate).toLowerCase() }).select('_id nome sigla slug ativo').lean().catch(() => null));
+    if (bySlug) return bySlug;
+  }
 
-  const bySigla =
-    (await Instituicao.findOne({ sigla: tenant.toUpperCase(), ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
-    (await Instituicao.findOne({ sigla: tenant.toUpperCase() }).select('_id nome sigla slug ativo').lean().catch(() => null));
-  if (bySigla) return bySigla;
+  for (const candidate of candidates) {
+    const bySigla =
+      (await Instituicao.findOne({ sigla: String(candidate).toUpperCase(), ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
+      (await Instituicao.findOne({ sigla: String(candidate).toUpperCase() }).select('_id nome sigla slug ativo').lean().catch(() => null));
+    if (bySigla) return bySigla;
+  }
 
   return null;
 }
 
 async function getDefaultInstituicao() {
   if (!Instituicao || typeof Instituicao.findOne !== 'function') return null;
+
+  const byDefaultSlug = await findInstituicaoByTenant(DEFAULT_TENANT_SLUG);
+  if (byDefaultSlug) return byDefaultSlug;
 
   const ativa = await Instituicao.findOne({ ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null);
   if (ativa) return ativa;
@@ -125,6 +142,8 @@ function getTenantFromReq(req) {
   return (
     req.tenantSlug ||
     req.query?.t ||
+    req.query?.tenant ||
+    req.body?.tenantSlug ||
     req.body?.tenant ||
     req.body?.t ||
     req.headers['x-tenant'] ||
@@ -134,16 +153,32 @@ function getTenantFromReq(req) {
   );
 }
 
+function getTenantFromReqOrDefault(req) {
+  const t = String(getTenantFromReq(req) || '').trim();
+  return t || DEFAULT_TENANT_SLUG;
+}
+
 async function resolveInstituicaoFromReq(req) {
-  const t = getTenantFromReq(req);
-  const inst = (await findInstituicaoByTenant(t)) || (await getDefaultInstituicao());
-  return inst;
+  const tenant = getTenantFromReqOrDefault(req);
+  const inst = await findInstituicaoByTenant(tenant);
+  if (inst) return inst;
+  return await getDefaultInstituicao();
 }
 
 async function resolveInstituicaoOnlyIfTenantProvided(req) {
-  const t = getTenantFromReq(req);
+  const t = String(getTenantFromReq(req) || '').trim();
   if (!t) return null;
   return await findInstituicaoByTenant(t);
+}
+
+async function findUsuarioByEmailAndInstituicao(email, instituicaoId) {
+  if (!email || !instituicaoId) return null;
+
+  return await Usuario.findOne({
+    email,
+    instituicao: String(instituicaoId),
+    $or: [{ ativo: true }, { ativo: { $exists: false } }],
+  });
 }
 
 // tenta usar mensageria/mailer; se não existir, não quebra
@@ -207,6 +242,24 @@ router.post('/login', async (req, res) => {
     const instFromTenant = await resolveInstituicaoOnlyIfTenantProvided(req);
 
     if (!instFromTenant?._id) {
+      const defaultInst = await findInstituicaoByTenant(DEFAULT_TENANT_SLUG);
+
+      if (defaultInst?._id) {
+        const usuarioDefault = await Usuario.findOne({
+          email,
+          instituicao: String(defaultInst._id),
+          $or: [{ ativo: true }, { ativo: { $exists: false } }],
+        }).select('_id');
+
+        if (usuarioDefault) {
+          return await doLoginForInstituicao(req, res, {
+            email,
+            senha,
+            inst: defaultInst,
+          });
+        }
+      }
+
       const encontrados = await Usuario.find({
         email,
         $or: [{ ativo: true }, { ativo: { $exists: false } }],
@@ -299,6 +352,15 @@ async function doLoginForInstituicao(req, res, { email, senha, inst }) {
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '2h' });
   setAuthCookie(res, token);
 
+  const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
+  res.cookie('tenant', tenantCookie, {
+    httpOnly: false,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+
   const redirecionar =
     usuario.tipo === 'professor'
       ? '/painel-professor.html'
@@ -310,6 +372,7 @@ async function doLoginForInstituicao(req, res, { email, senha, inst }) {
     token,
     usuario: payload,
     instituicao: inst ? { id: String(inst._id), nome: inst.nome, sigla: inst.sigla, slug: inst.slug } : undefined,
+    tenant: tenantCookie,
   });
 }
 
@@ -340,7 +403,7 @@ router.post('/cadastro', async (req, res) => {
   const nome = String(req.body?.nome || '').trim();
   const email = normalizeEmail(req.body?.email);
   const senha = String(req.body?.senha || '');
-  const tipo = String(req.body?.tipo || '').trim().toLowerCase(); // monitor|professor
+  const tipo = String(req.body?.tipo || '').trim().toLowerCase();
 
   if (!nome || nome.length < 3) {
     return res.status(400).json({ mensagem: 'Informe o nome completo.' });
@@ -356,12 +419,13 @@ router.post('/cadastro', async (req, res) => {
   }
 
   try {
-    const inst = await resolveInstituicaoFromReq(req);
+    const tenantInformado = getTenantFromReqOrDefault(req);
+    const inst = await findInstituicaoByTenant(tenantInformado);
     const instituicaoId = inst?._id ? String(inst._id) : null;
 
     if (!instituicaoId) {
       return res.status(400).json({
-        mensagem: 'Instituição não encontrada para este cadastro. Use o link correto da instituição (ex.: subdomínio ou ?t=...).'
+        mensagem: 'Instituição não encontrada para este cadastro. Use o link correto da instituição.'
       });
     }
 
@@ -391,8 +455,8 @@ router.post('/cadastro', async (req, res) => {
 
     await u.save();
 
-    const backendBase = pickBackendBaseUrl(req); // backend (render/local)
-    const tenantParam = pickTenantParam(inst);
+    const backendBase = pickBackendBaseUrl(req);
+    const tenantParam = pickTenantParam(inst) || DEFAULT_TENANT_SLUG;
     const tenantQs = tenantParam ? `&t=${encodeURIComponent(tenantParam)}` : '';
     const link = `${backendBase}/auth/confirmar-email?token=${encodeURIComponent(rawToken)}${tenantQs}`;
 
@@ -423,6 +487,13 @@ router.post('/cadastro', async (req, res) => {
 
     return res.status(201).json({
       mensagem: `Cadastro enviado. Verifique seu e-mail para confirmar o acesso (${nomeInst}).`,
+      tenant: tenantParam,
+      instituicao: {
+        id: String(inst._id),
+        nome: inst.nome,
+        sigla: inst.sigla || null,
+        slug: inst.slug || tenantParam,
+      },
     });
   } catch (error) {
     console.error('Erro /auth/cadastro:', error);
@@ -431,8 +502,7 @@ router.post('/cadastro', async (req, res) => {
 });
 
 /**
- * ✅ GET /auth/confirmar-email?token=...&t=...
- * ✅ Agora redireciona para o FRONTEND (CLIENT_URL/PUBLIC_SITE_URL)
+ * GET /auth/confirmar-email?token=...&t=...
  */
 router.get('/confirmar-email', async (req, res) => {
   const rawToken = String(req.query?.token || '');
@@ -466,9 +536,20 @@ router.get('/confirmar-email', async (req, res) => {
       tenantParam = pickTenantParam(inst);
     }
 
-    const qs = tenantParam ? `?t=${encodeURIComponent(tenantParam)}&verified=1` : `?verified=1`;
+    if (!tenantParam) {
+      tenantParam = DEFAULT_TENANT_SLUG;
+    }
 
-    // ✅ FRONTEND target
+    res.cookie('tenant', tenantParam, {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    const qs = `?t=${encodeURIComponent(tenantParam)}&verified=1`;
+
     const frontBase = pickFrontendBaseUrl(req);
     const target = frontBase ? `${frontBase}/login.html${qs}` : `/login.html${qs}`;
 
@@ -484,14 +565,21 @@ router.get('/confirmar-email', async (req, res) => {
  */
 router.post('/reenviar-confirmacao', async (req, res) => {
   const email = normalizeEmail(req.body?.email);
-  const t =
-    String(req.body?.t || req.query?.t || req.tenantSlug || req.cookies?.tenant || '').trim();
+  const tenantInformado = getTenantFromReqOrDefault(req);
 
   if (!isValidEmail(email)) return res.status(400).json({ mensagem: 'E-mail inválido.' });
 
   try {
+    const inst = await findInstituicaoByTenant(tenantInformado);
+    const instituicaoId = inst?._id ? String(inst._id) : null;
+
+    if (!instituicaoId) {
+      return res.status(400).json({ mensagem: 'Instituição não encontrada.' });
+    }
+
     const usuario = await Usuario.findOne({
       email,
+      instituicao: instituicaoId,
       $or: [{ ativo: true }, { ativo: { $exists: false } }],
     });
 
@@ -512,30 +600,17 @@ router.post('/reenviar-confirmacao', async (req, res) => {
     await usuario.save();
 
     const backendBase = pickBackendBaseUrl(req);
-
-    let tenantParam = t;
-    if (!tenantParam && Instituicao && usuario.instituicao) {
-      const inst = await Instituicao.findOne({ _id: usuario.instituicao }).select('_id sigla slug nome').lean().catch(() => null);
-      tenantParam = pickTenantParam(inst);
-    } else if (tenantParam) {
-      const inst = await findInstituicaoByTenant(tenantParam);
-      tenantParam = pickTenantParam(inst) || tenantParam;
-    }
-
+    const tenantParam = pickTenantParam(inst) || DEFAULT_TENANT_SLUG;
     const tenantQs = tenantParam ? `&t=${encodeURIComponent(tenantParam)}` : '';
     const link = `${backendBase}/auth/confirmar-email?token=${encodeURIComponent(rawToken)}${tenantQs}`;
 
-    let nomeInst = 'SmartClass';
-    if (Instituicao && usuario.instituicao) {
-      const inst = await Instituicao.findOne({ _id: usuario.instituicao }).select('nome').lean().catch(() => null);
-      if (inst?.nome) nomeInst = inst.nome;
-    }
-
+    const nomeInst = inst?.nome || 'SmartClass';
     const subject = `Seu link de confirmação — ${nomeInst}`;
     const html = `
       <div style="font-family:Arial,sans-serif;line-height:1.45">
         <h2 style="margin:0 0 10px">Confirmação de e-mail</h2>
         <p>Recebemos um pedido para reenviar seu link de confirmação.</p>
+        <p><b>Instituição:</b> ${nomeInst}</p>
         <p style="margin:16px 0">
           <a href="${link}" style="display:inline-block;padding:10px 14px;border-radius:10px;
              background:#0aa; color:#001; text-decoration:none; font-weight:700;">
@@ -548,7 +623,16 @@ router.post('/reenviar-confirmacao', async (req, res) => {
 
     await sendEmailBestEffort({ to: email, subject, html });
 
-    return res.json({ mensagem: 'Se existir cadastro pendente, enviaremos um novo link.' });
+    return res.json({
+      mensagem: 'Se existir cadastro pendente, enviaremos um novo link.',
+      tenant: tenantParam,
+      instituicao: {
+        id: String(inst._id),
+        nome: inst.nome,
+        sigla: inst.sigla || null,
+        slug: inst.slug || tenantParam,
+      },
+    });
   } catch (error) {
     console.error('Erro /auth/reenviar-confirmacao:', error);
     return res.status(500).json({ mensagem: 'Erro ao reenviar confirmação.' });
@@ -618,6 +702,14 @@ router.post('/logout', (req, res) => {
     sameSite: 'lax',
     path: '/',
   });
+
+  res.clearCookie('tenant', {
+    httpOnly: false,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+  });
+
   res.json({ mensagem: 'Logout realizado com sucesso.' });
 });
 

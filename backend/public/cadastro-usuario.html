@@ -198,14 +198,12 @@
 </head>
 <body>
   <div class="container">
-    <!-- ✅ LOGO CORUJINHA -->
     <img src="/assets/smartclass-coruja.png" alt="SmartClass" class="logo"
          onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
 
     <h2>Cadastrar Usuário</h2>
     <p class="sub">Cadastre-se como <b>Professor</b> ou <b>Monitor</b>. Você receberá um e-mail de confirmação.</p>
 
-    <!-- ✅ INSTITUIÇÃO DINÂMICA -->
     <div class="instituicao-box">
       Cadastro vinculado à instituição:<br>
       <b id="nomeInstituicao">Carregando...</b>
@@ -227,7 +225,6 @@
 
       <div class="mensagem" id="mensagem"></div>
 
-      <!-- ações pós-mensagem -->
       <div class="actions-row" id="actions-row">
         <button type="button" class="btn-ghost" id="btn-ir-login">Ir para o login</button>
         <button type="button" class="btn-ghost" id="btn-reenviar">Reenviar confirmação</button>
@@ -238,19 +235,26 @@
   </div>
 
   <script>
-    // ✅ API_BASE (mantém seu padrão)
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
 
-    // ✅ tenant (query > localStorage)
-    const qs = new URLSearchParams(location.search);
-    const TENANT =
-      (qs.get('t') || qs.get('tenant') || '').trim() ||
-      (localStorage.getItem('smartclass_tenant') || '').trim() ||
-      '';
+    function getTenantSlug() {
+      const qs = new URLSearchParams(location.search);
+      const byQuery = (qs.get('t') || qs.get('tenant') || '').trim();
+      const byStorage = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
 
-    if (TENANT) localStorage.setItem('smartclass_tenant', TENANT);
+      const finalTenant = byQuery || byStorage || DEFAULT_TENANT;
 
-    // refs
+      if (finalTenant) {
+        localStorage.setItem(TENANT_STORAGE_KEY, finalTenant);
+      }
+
+      return finalTenant;
+    }
+
+    const TENANT = getTenantSlug();
+
     const elNome = document.getElementById('nome');
     const elEmail = document.getElementById('email');
     const elSenha = document.getElementById('senha');
@@ -267,17 +271,20 @@
     const btnReenviar = document.getElementById('btn-reenviar');
     const linkVoltar = document.getElementById('link-voltar');
 
-    // ✅ ajusta links para não perder tenant
-    (function syncLinks() {
-      if (TENANT) {
-        linkVoltar.href = `/login.html?t=${encodeURIComponent(TENANT)}`;
-        btnIrLogin.addEventListener('click', () => {
-          location.href = `/login.html?t=${encodeURIComponent(TENANT)}&from=cadastro`;
-        });
-      } else {
-        btnIrLogin.addEventListener('click', () => { location.href = '/login.html'; });
-      }
-    })();
+    let instituicaoAtual = {
+      slug: TENANT,
+      nome: 'Instituição'
+    };
+
+    function syncLinks() {
+      const loginUrl = `/login.html?t=${encodeURIComponent(TENANT)}`;
+      linkVoltar.href = loginUrl;
+
+      btnIrLogin.addEventListener('click', () => {
+        location.href = `${loginUrl}&from=cadastro`;
+      });
+    }
+    syncLinks();
 
     function showBox(kind, text) {
       msg.className = `mensagem ${kind}`;
@@ -303,20 +310,37 @@
 
     async function carregarInstituicao(){
       try{
-        const url = TENANT
-          ? `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}`
-          : `${API_BASE}/public/tenant`;
+        const url = `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}`;
 
-        const r = await fetch(url, { cache: 'no-store', credentials:'include' });
+        const r = await fetch(url, {
+          cache: 'no-store',
+          credentials:'include'
+        });
+
         const data = await r.json().catch(()=> ({}));
-        nomeInstituicaoEl.textContent = data?.nomeColegio || 'Instituição';
-      }catch{
+
+        const nome =
+          data?.nomeColegio ||
+          data?.nome ||
+          data?.instituicao?.nome ||
+          'Instituição';
+
+        const slug =
+          data?.slug ||
+          data?.tenantSlug ||
+          data?.instituicao?.slug ||
+          TENANT;
+
+        instituicaoAtual = { nome, slug };
+
+        nomeInstituicaoEl.textContent = nome;
+      } catch {
+        instituicaoAtual = { nome: 'Instituição', slug: TENANT };
         nomeInstituicaoEl.textContent = 'Instituição';
       }
     }
     carregarInstituicao();
 
-    // ✅ reenviar confirmação direto daqui
     btnReenviar.addEventListener('click', async () => {
       const email = String(elEmail.value || '').trim().toLowerCase();
       clearMsg();
@@ -331,10 +355,9 @@
       btnReenviar.textContent = 'Reenviando...';
 
       try{
-        const body = { email };
-        if (TENANT) body.t = TENANT;
+        const body = { email, t: TENANT };
 
-        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao${TENANT ? `?t=${encodeURIComponent(TENANT)}` : ''}`,{
+        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao?t=${encodeURIComponent(TENANT)}`,{
           method:'POST',
           headers:{ 'Content-Type':'application/json' },
           credentials:'include',
@@ -342,10 +365,11 @@
         });
 
         const data = await r.json().catch(()=>({}));
+
         if (!r.ok) {
           showErr(data?.mensagem || 'Não foi possível reenviar. Tente novamente.');
         } else {
-          showOk(data?.mensagem || 'Link reenviado! Verifique seu e-mail.');
+          showOk(`Link reenviado para ${instituicaoAtual.nome}. Verifique seu e-mail.`);
         }
       } catch {
         showErr('Erro de conexão ao reenviar. Tente novamente.');
@@ -366,7 +390,7 @@
       const tipoVal = String(elTipo.value || '').trim().toLowerCase();
 
       if (!TENANT){
-        showErr('Link sem instituição (tenant).\nAbra o cadastro pelo link com ?t=SEU-SLUG.');
+        showErr('Link sem instituição (tenant).');
         return;
       }
       if (!nomeVal || nomeVal.length < 3){
@@ -395,8 +419,14 @@
       btn.textContent = 'Enviando...';
 
       try{
-        // ✅ manda tenant no BODY (garante) e não depende só de query
-        const body = { nome: nomeVal, email: emailVal, senha: senhaVal, tipo: tipoVal, t: TENANT };
+        const body = {
+          nome: nomeVal,
+          email: emailVal,
+          senha: senhaVal,
+          tipo: tipoVal,
+          t: TENANT,
+          tenantSlug: TENANT
+        };
 
         const r = await fetch(`${API_BASE}/auth/cadastro?t=${encodeURIComponent(TENANT)}`,{
           method:'POST',
@@ -409,22 +439,21 @@
 
         if (r.ok){
           showOk(
-            (data?.mensagem || 'Cadastro enviado!') +
-            '\n\n➡️ Agora abra seu e-mail e clique em “Confirmar meu e-mail”.\nDepois volte aqui e faça login.'
+            `Cadastro enviado. Verifique seu e-mail para confirmar o acesso (${instituicaoAtual.nome}).` +
+            `\n\n➡️ Agora abra seu e-mail e clique em “Confirmar meu e-mail”.` +
+            `\nDepois volte aqui e faça login.`
           );
-          // mantém e-mail preenchido (ajuda a reenviar se precisar)
+
           elNome.value = '';
           elSenha.value = '';
           elSenha2.value = '';
           elTipo.value = '';
-          // elEmail mantém
         } else {
-          // ✅ tratamento especial do duplicado
           if (r.status === 409) {
             showWarn(
-              (data?.mensagem || 'Este e-mail já está cadastrado nesta instituição.') +
-              '\n\nSe você já confirmou o e-mail, clique em “Ir para o login”.' +
-              '\nSe ainda não confirmou, clique em “Reenviar confirmação”.'
+              `Este e-mail já está cadastrado em ${instituicaoAtual.nome}.` +
+              `\n\nSe você já confirmou o e-mail, clique em “Ir para o login”.` +
+              `\nSe ainda não confirmou, clique em “Reenviar confirmação”.`
             );
           } else {
             showErr(data?.mensagem || 'Erro ao cadastrar.');

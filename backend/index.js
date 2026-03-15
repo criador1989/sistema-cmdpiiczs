@@ -1,4 +1,3 @@
-// backend/index.js
 'use strict';
 
 require('dotenv').config({ path: __dirname + '/.env' });
@@ -96,15 +95,13 @@ function extractSubdomainSlug(host) {
   const h = String(host || '').toLowerCase().trim();
   if (!h) return '';
 
-  // remove porta
   const noPort = h.split(':')[0];
 
-  // ignora localhost / IP
   if (noPort === 'localhost') return '';
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(noPort)) return '';
 
   const parts = noPort.split('.').filter(Boolean);
-  if (parts.length < 3) return ''; // precisa ter subdomínio + domínio + tld
+  if (parts.length < 3) return '';
 
   const sub = parts[0];
   if (sub === 'www') return '';
@@ -129,7 +126,7 @@ try {
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
           path: '/',
-          maxAge: 60 * 24 * 60 * 60 * 1000, // 60 dias
+          maxAge: 60 * 24 * 60 * 60 * 1000,
         });
       }
 
@@ -250,6 +247,7 @@ const comunicacaoPaisRoutes         = require('./routes/api/comunicacaoPais');
 const comunicacaoAutoRoutes         = require('./routes/api/comunicacao');
 const monitoresApiRoutes            = require('./routes/api/monitores');
 const rankingAlunosRouter           = require('./routes/api/rankingAlunos');
+const fixInstituicaoLegacy          = require('./routes/api/fixInstituicaoLegacy');
 
 // ✅ MASTER (SuperAdmin)
 let masterInstituicoesRoutes = null;
@@ -353,9 +351,11 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 });
 
 const { autenticar } = require('./middleware/autenticacao');
-const exigirSuperAdmin = require('./middleware/exigirSuperAdmin'); // ✅ NOVO
+const exigirSuperAdmin = require('./middleware/exigirSuperAdmin');
 
-// APH
+/* =========================
+   APH
+   ========================= */
 let aphCrudRoutes = null, aphEstatisticasRoutes = null, aphPdfRoutes = null;
 try { aphCrudRoutes = require('./routes/api/aph'); } catch {}
 try { aphEstatisticasRoutes = require('./routes/api/aph-estatisticas'); } catch {}
@@ -405,8 +405,6 @@ function buildProfessorGuard(publicRoot) {
     '/transferir-turma',
     '/monitores',
     '/api/ranking-alunos',
-
-    // APIs sensíveis
     '/api/usuarios',
     '/api/logs',
     '/api/estatisticas',
@@ -428,8 +426,6 @@ function buildProfessorGuard(publicRoot) {
     '/__version',
     '/healthz',
     '/public/tenant',
-
-    // ✅ libera pastas comuns de estáticos
     '/assets',
     '/assets/',
     '/icons',
@@ -444,7 +440,6 @@ function buildProfessorGuard(publicRoot) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
     const p = req.path;
 
-    // ✅ libera arquivos estáticos SEM autenticar
     if (
       p.startsWith('/assets/') ||
       p.startsWith('/icons/')  ||
@@ -608,6 +603,11 @@ mountIf('/api/aph', aphPdfRoutes);
 mountIf('/api/master/instituicoes', masterInstituicoesRoutes, autenticar, exigirSuperAdmin);
 
 /* =========================
+   ✅ FIX TEMPORÁRIO DE INSTITUIÇÃO LEGADA (SuperAdmin)
+   ========================= */
+mountIf('/api/fix-instituicao', fixInstituicaoLegacy, autenticar, exigirSuperAdmin);
+
+/* =========================
    ESTÁTICOS / HTML
    ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
@@ -616,7 +616,7 @@ const imgRoot    = path.join(__dirname, 'img');
 const assetsRoot = path.join(publicRoot, 'assets');
 
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
-fs.mkdirSync(path.join(uploadRoot, 'observacoes'), { recursive: true }); // ✅ NOVO: anexos das observações
+fs.mkdirSync(path.join(uploadRoot, 'observacoes'), { recursive: true });
 fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
 fs.mkdirSync(imgRoot, { recursive: true });
 fs.mkdirSync(assetsRoot, { recursive: true });
@@ -727,11 +727,11 @@ function exigirAdmin(req, res, next) {
   next();
 }
 
-app.get('/ficha-aluno.html',   autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
-app.get('/lista-alunos.html',  autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
-app.get('/ranking-alunos.html',autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
-app.get('/monitores.html',     autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
-app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
+app.get('/ficha-aluno.html',    autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
+app.get('/lista-alunos.html',   autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
+app.get('/ranking-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
+app.get('/monitores.html',      autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
+app.get('/monitor-ficha.html',  autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
 
 /* =========================
    DIAGNÓSTICOS / ERRORS

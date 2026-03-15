@@ -1,4 +1,3 @@
-<!-- public/login.html (Axoriin) - HERO LOGIN PREMIUM (logo domina + form compacto) SEM QUEBRAR BACKEND -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -7,62 +6,47 @@
   <title>Login - Axoriin</title>
   <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/axoriin-32x32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/axoriin-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/axoriin-192x192.png" />
 
-  <!-- Tipografia -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      /* HERO (mais escuro e premium) */
       --bg-0:#0e2442;
       --bg-1:#081629;
-
       --ink:#ecf2ff;
       --muted:#b8c7e0;
       --line:rgba(170,200,240,.22);
       --radius:26px;
-
       --shadow:
         0 40px 100px rgba(0,0,0,.75),
         inset 0 1px 0 rgba(255,255,255,.05);
-
-      /* ====== FUNDO: futurista energético (sem estourar) ====== */
       --glow-1: radial-gradient(1000px 600px at 15% -10%, rgba(0,194,255,.20), transparent 60%);
       --glow-2: radial-gradient(900px 520px at 110% 0%, rgba(122,92,255,.14), transparent 60%);
       --glow-3: radial-gradient(780px 420px at -8% 92%, rgba(80,150,255,.14), transparent 60%);
-
-      /* Axoriin */
       --ax-primary:#00C2FF;
       --ax-secondary:#7A5CFF;
       --ax-accent:#FFE29A;
       --ax-focus: rgba(0, 194, 255, .38);
-
       --warn-bg: rgba(255,226,154,.10);
       --warn-bd: rgba(255,226,154,.25);
       --warn-tx: #ffecc1;
-
       --danger-bg: rgba(255, 70, 90, .10);
       --danger-bd: rgba(255, 70, 90, .22);
       --danger-tx: #ffb3b8;
-
-      /* HERO: logo maior + núcleo mais presente */
-      --mark-size: 300px;  /* ajuste aqui se quiser (ex: 280px / 320px) */
+      --mark-size: 300px;
       --core-x: 50%;
       --core-y: 55%;
       --core-size: 130px;
-
-      /* ====== NÚCLEO (controle de intensidade) ====== */
-      --core-opacity: .38;     /* 👈 mais opaco, sem estourar (antes .70) */
-      --core-blur: 10px;       /* 👈 antes 14px */
-      --core-w1: .65;          /* branco central */
-      --core-c1: .62;          /* azul forte */
-      --core-c2: .28;          /* halo */
-
-      /* campos mais compactos */
+      --core-opacity: .38;
+      --core-blur: 10px;
+      --core-w1: .65;
+      --core-c1: .62;
+      --core-c2: .28;
       --field-radius: 14px;
       --btn-radius: 16px;
     }
@@ -91,7 +75,7 @@
       background-blend-mode: screen, screen, screen, normal;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      padding: 18px; /* evita encostar em telas pequenas */
+      padding: 18px;
     }
 
     .container{
@@ -100,17 +84,12 @@
       border-radius: var(--radius);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
-
-      /* HERO: mais largo e com respiro */
       width: 460px;
       max-width: 92vw;
-
       padding: 38px 40px 30px;
       text-align: center;
-
       backdrop-filter: blur(20px) saturate(160%);
       -webkit-backdrop-filter: blur(20px) saturate(160%);
-
       animation: fadeIn .5s ease-out;
       overflow: hidden;
     }
@@ -150,11 +129,10 @@
       flex: 0 0 auto;
     }
 
-    /* ====== HERO LOGO (PNG 8K) ====== */
     .logo-wrap{
       display:flex;
       justify-content:center;
-      margin: 0 0 14px; /* menos espaço, mais hero */
+      margin: 0 0 14px;
       position: relative;
       z-index: 1;
     }
@@ -181,7 +159,6 @@
                  heroFloat 7s ease-in-out infinite;
     }
 
-    /* ✅ NÚCLEO: futurista energético, porém mais opaco/contido */
     .core-glow{
       position:absolute;
       width: var(--core-size);
@@ -191,19 +168,14 @@
       top: var(--core-y);
       transform: translate(-50%, -50%);
       pointer-events:none;
-
-      /* mantém “energia” sem explodir */
       mix-blend-mode: screen;
-
       background: radial-gradient(circle,
         rgba(255,255,255,var(--core-w1)) 0%,
         rgba(0,194,255,var(--core-c1)) 24%,
         rgba(0,194,255,var(--core-c2)) 56%,
         transparent 80%);
-
       filter: blur(var(--core-blur));
       opacity: var(--core-opacity);
-
       will-change: transform, opacity, filter;
       animation: heroPulse 3.6s ease-in-out infinite;
     }
@@ -219,7 +191,6 @@
       100% { transform: translateY(0px); }
     }
 
-    /* ✅ pulso energético (sem estourar) */
     @keyframes heroPulse{
       0%{
         opacity: calc(var(--core-opacity) * .85);
@@ -238,7 +209,6 @@
       }
     }
 
-    /* ===== textos ===== */
     .brand{
       font-family: "Orbitron", system-ui, sans-serif;
       font-size: 1.30rem;
@@ -524,7 +494,6 @@
       .core-glow{ animation: none !important; }
     }
 
-    /* HERO: responsivo para telas pequenas */
     @media (max-width: 420px){
       :root{ --mark-size: 260px; }
       .container{ padding: 30px 22px 22px; }
@@ -538,10 +507,7 @@
 
     <div class="logo-wrap">
       <div class="mark-stage" aria-hidden="true">
-        <!-- ✅ PNG 8K (transparente) -->
-        <!-- Coloque o arquivo em: public/assets/axoriin/axoriin-logo-8k.png -->
         <img src="/assets/axoriin/axoriin-logo-8k.png" alt="Axoriin">
-        <!-- ✅ Brilho pulsante do núcleo (ajustado para não estourar) -->
         <div class="core-glow" aria-hidden="true"></div>
       </div>
     </div>
@@ -596,7 +562,6 @@
   </div>
 
   <script>
-    // 🔧 Em dev local, limpe SW/caches uma vez por sessão (para não travar cookie HttpOnly)
     if ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') && !sessionStorage.getItem('dev_sw_cleaned')) {
       sessionStorage.setItem('dev_sw_cleaned', '1');
       if ('serviceWorker' in navigator) {
@@ -609,91 +574,110 @@
     }
 
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
+    const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
 
     const erroDiv = document.getElementById('erro');
     const okBox = document.getElementById('ok');
     const verifyBox = document.getElementById('verify-box');
     const btnReenviar = document.getElementById('btn-reenviar');
-
     const tenantBox = document.getElementById('tenant-box');
     const tenantList = document.getElementById('tenant-list');
-
     const qs = new URLSearchParams(location.search);
 
-    // ===== Tenant helpers =====
     function getTenantFromUrl() {
-      const t = (qs.get('t') || qs.get('tenant') || '').trim();
-      return t || '';
+      return (qs.get('t') || qs.get('tenant') || '').trim();
     }
 
     function getTenantFromStorage() {
-      const t = (localStorage.getItem('axoriin_tenant') || '').trim();
-      return t || '';
-    }
+      const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+      if (current) return current;
 
-    function setTenantStorage(t) {
-      if (!t) return;
-      localStorage.setItem('axoriin_tenant', String(t).trim());
-    }
-
-    function ensureTenantInUrl() {
-      const tUrl = getTenantFromUrl();
-      const tLs = getTenantFromStorage();
-
-      if (tUrl) {
-        setTenantStorage(tUrl);
-        return tUrl;
-      }
-
-      if (tLs) {
-        const u = new URL(location.href);
-        u.searchParams.set('t', tLs);
-        location.replace(u.toString());
-        return tLs;
+      const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+      if (legacy) {
+        localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+        return legacy;
       }
 
       return '';
     }
 
+    function setTenantStorage(t) {
+      const value = String(t || '').trim();
+      if (!value) return;
+      localStorage.setItem(TENANT_STORAGE_KEY, value);
+      localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+    }
+
+    function getResolvedTenant() {
+      const tUrl = getTenantFromUrl();
+      const tLs = getTenantFromStorage();
+      const finalTenant = tUrl || tLs || DEFAULT_TENANT;
+      setTenantStorage(finalTenant);
+      return finalTenant;
+    }
+
+    function ensureTenantInUrl() {
+      const finalTenant = getResolvedTenant();
+      const tUrl = getTenantFromUrl();
+
+      if (!tUrl || tUrl !== finalTenant) {
+        const u = new URL(location.href);
+        u.searchParams.set('t', finalTenant);
+        location.replace(u.toString());
+        return finalTenant;
+      }
+
+      return finalTenant;
+    }
+
     const TENANT = ensureTenantInUrl();
 
-    // mantém o link de cadastro já com tenant
     (function () {
       const a = document.getElementById('link-cadastro');
       if (!a) return;
-      if (TENANT) a.href = `/cadastro-usuario.html?t=${encodeURIComponent(TENANT)}`;
+      a.href = `/cadastro-usuario.html?t=${encodeURIComponent(TENANT)}`;
     })();
 
-    // ✅ Nome do colégio dinâmico (multi-colégio)
     (async () => {
       const el = document.getElementById('nome-colegio');
       if (!el) return;
 
-      const key = TENANT ? `axoriin_nome_colegio__${TENANT}` : 'axoriin_nome_colegio';
+      const key = `axoriin_nome_colegio__${TENANT}`;
       const cached = localStorage.getItem(key);
       if (cached && cached.trim().length > 2) {
         el.textContent = cached.trim();
-        return;
       }
 
       try {
-        const url = TENANT ? `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}` : `${API_BASE}/public/tenant`;
-        const r = await fetch(url, { cache: 'no-store' });
-        if (!r.ok) return;
-        const data = await r.json();
-        const nome = data?.nomeColegio || data?.nome_escola || data?.nome;
+        const url = `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}`;
+        const r = await fetch(url, { cache: 'no-store', credentials: 'include' });
+        if (!r.ok) {
+          if (!cached) el.textContent = 'Instituição';
+          return;
+        }
+
+        const data = await r.json().catch(() => ({}));
+        const nome =
+          data?.nomeColegio ||
+          data?.nome_escola ||
+          data?.nome ||
+          data?.instituicao?.nome ||
+          'Instituição';
+
         if (nome && String(nome).trim().length > 2) {
-          el.textContent = String(nome).trim();
-          localStorage.setItem(key, String(nome).trim());
-        } else {
+          const nomeFinal = String(nome).trim();
+          el.textContent = nomeFinal;
+          localStorage.setItem(key, nomeFinal);
+        } else if (!cached) {
           el.textContent = 'Instituição';
         }
       } catch {
-        el.textContent = 'Instituição';
+        if (!cached) el.textContent = 'Instituição';
       }
     })();
 
-    // ✅ aviso “E-mail confirmado”
     (function showVerifiedNotice() {
       const verified = (qs.get('verified') === '1') || (qs.get('confirmado') === '1');
       if (!verified) return;
@@ -709,7 +693,6 @@
       } catch {}
     })();
 
-    // 👁️ Mostrar/ocultar senha
     const senhaInput = document.getElementById('senha');
     const togglePass = document.getElementById('toggle-pass');
     togglePass.addEventListener('click', () => {
@@ -719,7 +702,6 @@
       senhaInput.focus();
     });
 
-    // UX: loading no botão
     const btnEntrar = document.getElementById('btn-entrar');
     const setLoading = (on) => {
       btnEntrar.disabled = !!on;
@@ -736,6 +718,7 @@
 
     function showTenantChoices(instituicoes) {
       tenantList.innerHTML = '';
+
       (instituicoes || []).forEach(inst => {
         const tenant = inst?.tenant || inst?.slug || inst?.id;
         const nome = inst?.nome || 'Instituição';
@@ -789,10 +772,9 @@
       btnReenviar.textContent = 'Reenviando...';
 
       try {
-        const body = { email };
-        if (TENANT) body.t = TENANT;
+        const body = { email, t: TENANT, tenantSlug: TENANT };
 
-        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao${TENANT ? `?t=${encodeURIComponent(TENANT)}` : ''}`, {
+        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao?t=${encodeURIComponent(TENANT)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -803,7 +785,12 @@
         if (!r.ok) {
           erroDiv.textContent = data?.mensagem || 'Não foi possível reenviar.';
         } else {
-          okBox.textContent = data?.mensagem || 'Link reenviado! Verifique seu e-mail.';
+          const nomeInst =
+            data?.instituicao?.nome ||
+            data?.nomeColegio ||
+            'sua instituição';
+
+          okBox.textContent = data?.mensagem || `Link reenviado! Verifique seu e-mail (${nomeInst}).`;
           okBox.style.display = 'block';
         }
       } catch (e) {
@@ -825,10 +812,9 @@
       setLoading(true);
 
       try {
-        const body = { email, senha };
-        if (TENANT) body.t = TENANT;
+        const body = { email, senha, t: TENANT, tenantSlug: TENANT };
 
-        const resposta = await fetch(`${API_BASE}/auth/login${TENANT ? `?t=${encodeURIComponent(TENANT)}` : ''}`, {
+        const resposta = await fetch(`${API_BASE}/auth/login?t=${encodeURIComponent(TENANT)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -857,6 +843,13 @@
           return;
         }
 
+        const tenantRetornado =
+          data?.tenant ||
+          data?.instituicao?.slug ||
+          TENANT;
+
+        setTenantStorage(tenantRetornado);
+
         const ping = await fetch(`${API_BASE}/auth/usuario-logado`, {
           credentials: 'include',
           cache: 'no-store'
@@ -869,7 +862,7 @@
         }
 
         const next = data.redirecionar || '/painel.html';
-        window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}`;
+        window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}&t=${encodeURIComponent(tenantRetornado)}`;
 
       } catch (err) {
         console.error(err);

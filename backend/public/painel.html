@@ -9,11 +9,7 @@
   <link rel="icon" href="./icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
 <style>
-/* =========================
-   VARIÁVEIS GERAIS
-========================= */
 :root{
-  /* vidro neutro */
   --glass-bg: rgba(255,255,255,0.03);
   --glass-border: rgba(255,255,255,0.40);
   --glass-highlight: rgba(255,255,255,0.7);
@@ -27,14 +23,10 @@
   --text-main: #ffffff;
   --text-soft: rgba(255,255,255,0.78);
 
-  /* Axoriin */
   --ax-primary:#00C2FF;
   --ax-secondary:#7A5CFF;
 }
 
-/* =========================
-   BASE / FUNDO
-========================= */
 *{ box-sizing:border-box; }
 
 html,body{
@@ -50,7 +42,6 @@ body{
   color-scheme:dark;
 }
 
-/* camada do papel de parede (imagens) */
 #bg-wallpaper{
   position:fixed;
   inset:0;
@@ -65,7 +56,6 @@ body{
   transition:opacity .6s ease;
 }
 
-/* overlay neutro */
 body::before{
   content:"";
   position:fixed;
@@ -75,7 +65,6 @@ body::before{
   background:transparent;
 }
 
-/* ======== FORÇAR TODO O TEXTO PARA BRANCO ======== */
 body, html,
 h1, h2, h3, h4, h5, h6,
 .metric *, .window-card *, .pend-card *,
@@ -88,9 +77,6 @@ h1, h2, h3, h4, h5, h6,
   color:#ffffff !important;
 }
 
-/* =====================================================
-   OVERLAY DE BOAS-VINDAS — MALHA HEX NEON AZUL
-   ===================================================== */
 #intro-hex-overlay{
   position:fixed;
   inset:0;
@@ -109,7 +95,6 @@ h1, h2, h3, h4, h5, h6,
   display:block;
 }
 
-/* cada hexágono da colmeia */
 .hex{
   fill:none;
   stroke:rgba(59,130,246,0);
@@ -118,7 +103,6 @@ h1, h2, h3, h4, h5, h6,
   animation:hexWave 2.4s ease-out forwards;
 }
 
-/* onda de brilho neon passando pelos hexágonos */
 @keyframes hexWave{
   0%{
     stroke:rgba(37,99,235,0);
@@ -138,7 +122,6 @@ h1, h2, h3, h4, h5, h6,
   }
 }
 
-/* layout geral */
 .page{
   position:relative;
   z-index:3;
@@ -156,9 +139,6 @@ h1, h2, h3, h4, h5, h6,
   }
 }
 
-/* =========================
-   SIDEBAR – VIDRO ESCURO
-========================= */
 .sidebar{
   display:flex;
   flex-direction:column;
@@ -243,9 +223,6 @@ h1, h2, h3, h4, h5, h6,
   padding:12px 14px 16px;
 }
 
-/* =========================
-   BOTÃO SAIR – PÍLULA DE VIDRO
-========================= */
 .sb-logout{
   position: relative;
   width: 100%;
@@ -300,9 +277,6 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: 0 8px 20px rgba(0,0,0,0.7);
 }
 
-/* =========================
-   CONTEÚDO
-========================= */
 .content{ width:100%; }
 .wrap{
   width:min(1180px,100%);
@@ -328,7 +302,6 @@ h1, h2, h3, h4, h5, h6,
   color:var(--text-soft);
 }
 
-/* botão para trocar papel de parede */
 .btn-wallpaper{
   margin-top:6px;
   border:none;
@@ -375,9 +348,6 @@ h1, h2, h3, h4, h5, h6,
   }
 }
 
-/* =========================
-   PAINEL PRINCIPAL
-========================= */
 .painel{
   margin-top:22px;
   background:transparent;
@@ -386,9 +356,6 @@ h1, h2, h3, h4, h5, h6,
   position:relative;
 }
 
-/* =========================
-   GLASS CARDS GERAIS
-========================= */
 .metric,
 .window-card,
 .pend-card,
@@ -428,7 +395,6 @@ h1, h2, h3, h4, h5, h6,
   pointer-events:none;
 }
 
-/* HOVER GERAL COM ZOOM */
 .metric:hover,
 .window-card:hover,
 .pend-card:hover,
@@ -442,9 +408,6 @@ h1, h2, h3, h4, h5, h6,
     0 16px 36px rgba(0,0,0,0.25);
 }
 
-/* ============================================
-   AJUSTE: SEM ZOOM PARA PEND-CARD / ALERTAS
-============================================ */
 .pend-card:hover,
 .alertas-comportamento:hover{
   transform:none !important;
@@ -452,9 +415,6 @@ h1, h2, h3, h4, h5, h6,
   box-shadow:var(--glass-shadow) !important;
 }
 
-/* =========================
-   MÉTRICAS
-========================= */
 .metrics{
   display:grid;
   grid-template-columns:repeat(12,1fr);
@@ -496,9 +456,6 @@ h1, h2, h3, h4, h5, h6,
   .metric{ grid-column:span 12; }
 }
 
-/* =========================
-   CARDS DE ACESSO
-========================= */
 .menu-windows{
   margin-top:14px;
   display:grid;
@@ -557,9 +514,6 @@ h1, h2, h3, h4, h5, h6,
   .window-card{ grid-column:span 4; height:150px; }
 }
 
-/* =========================
-   PENDÊNCIAS / ALERTAS / QR
-========================= */
 .pend-card,
 .alertas-comportamento,
 .chart-card,
@@ -674,9 +628,6 @@ h1, h2, h3, h4, h5, h6,
   justify-content:flex-end;
 }
 
-/* =========================
-   GRÁFICOS
-========================= */
 .charts{
   margin-top:24px;
   display:grid;
@@ -699,9 +650,6 @@ canvas{
   .charts{ grid-template-columns:1fr; }
 }
 
-/* =========================
-   QR-CODE BOX INPUT
-========================= */
 .qrcode-box input[type="text"]{
   width:100%;
   max-width:320px;
@@ -713,9 +661,6 @@ canvas{
   margin-bottom:8px;
 }
 
-/* =========================
-   NAV INFERIOR (CELULAR)
-========================= */
 .bottom-nav{
   position:fixed;
   inset-inline:0;
@@ -760,9 +705,6 @@ canvas{
   .wrap{ margin-bottom:120px; }
 }
 
-/* =========================
-   TOASTS
-========================= */
 .toast{
   position:fixed;
   left:50%;
@@ -792,9 +734,6 @@ canvas{
   border:1px solid rgba(254,202,202,.9);
 }
 
-/* =========================
-   PAGER / BOTÕES GENÉRICOS
-========================= */
 .pager{
   display:flex;
   align-items:center;
@@ -840,9 +779,6 @@ canvas{
   cursor:not-allowed;
 }
 
-/* =========================
-   BOTÕES GLASS REUTILIZÁVEIS
-========================= */
 .btn-glass{
   position: relative;
   display:inline-flex;
@@ -930,9 +866,6 @@ canvas{
   transform:translateX(-50%);
 }
 
-/* =========================
-   MASCOTE FIXO (Axoriin)
-========================= */
 #smartclass-mascote{
   position: fixed;
   right: 18px;
@@ -1018,9 +951,6 @@ canvas{
   }
 }
 
-/* =========================
-   RODAPÉ FIXO (frase)
-========================= */
 #axoriin-footer-phrase{
   position:fixed;
   left:0;
@@ -1064,22 +994,22 @@ canvas{
       <div class="sb-head">
         <div class="brand"></div>
         <div>
-          <div class="sb-title">CMDPII</div>
+          <div class="sb-title" id="sbNomeInstituicao">CMDPII</div>
           <div style="font-size:.8rem;color:var(--text-soft)">Sistema Escolar</div>
         </div>
       </div>
 
       <nav class="nav" id="sb-nav">
         <a class="active" href="#" id="sbPainel">🏠 Painel</a>
-        <a href="lista-alunos.html" id="sbAlunos">👥 Alunos</a>
-        <a href="ranking-alunos.html" id="sbRanking">🏆 Ranking de Alunos</a>
-        <a href="/notificacoes" id="sbNotificacoes">🔔 Notificações</a>
-        <a href="estatisticas.html" id="sbEstatisticas">📉 Relatórios</a>
-        <a href="mensagens.html" id="sbMensagens">✉️ Mensagens</a>
-        <a href="/monitores.html" id="sbMonitores">🧭 Monitores</a>
-        <a href="transferir-turma.html" id="sbTransferir">🔁 Transferir Turmas</a>
-        <a href="usuarios.html" id="sbAdmin">⚙️ Administração</a>
-        <a href="logs.html" id="sbLogs">🧾 Logs</a>
+        <a href="#" id="sbAlunos">👥 Alunos</a>
+        <a href="#" id="sbRanking">🏆 Ranking de Alunos</a>
+        <a href="#" id="sbNotificacoes">🔔 Notificações</a>
+        <a href="#" id="sbEstatisticas">📉 Relatórios</a>
+        <a href="#" id="sbMensagens">✉️ Mensagens</a>
+        <a href="#" id="sbMonitores">🧭 Monitores</a>
+        <a href="#" id="sbTransferir">🔁 Transferir Turmas</a>
+        <a href="#" id="sbAdmin">⚙️ Administração</a>
+        <a href="#" id="sbLogs">🧾 Logs</a>
       </nav>
 
       <div class="sb-foot">
@@ -1108,7 +1038,7 @@ canvas{
           </div>
 
           <div class="menu-windows" id="menuWindows">
-            <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'">
+            <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('cadastro-aluno.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">MÓDULO</div>
@@ -1117,7 +1047,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'">
+            <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('/notificacoes')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">PAINEL</div>
@@ -1126,7 +1056,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardControleNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'">
+            <div id="cardControleNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('controle-notificacoes.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">GESTÃO</div>
@@ -1135,7 +1065,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href='ranking-alunos.html'">
+            <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('ranking-alunos.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">CLASSIFICAÇÃO</div>
@@ -1144,7 +1074,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='cadastro-usuario.html'">
+            <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('cadastro-usuario.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">ADMIN</div>
@@ -1153,7 +1083,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='estatisticas.html'">
+            <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('estatisticas.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">DASHBOARD</div>
@@ -1162,7 +1092,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardMensagens" class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'">
+            <div id="cardMensagens" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('mensagens.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">COMUNICAÇÃO</div>
@@ -1171,7 +1101,7 @@ canvas{
               </div>
             </div>
 
-            <div id="cardTransferirTurma" class="window-card" role="link" tabindex="0" onclick="location.href='transferir-turma.html'">
+            <div id="cardTransferirTurma" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('transferir-turma.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">AÇÃO</div>
@@ -1193,7 +1123,7 @@ canvas{
                 Reexibir ocultos
               </button>
 
-              <button onclick="location.href='/notificacoes'"
+              <button onclick="location.href=withTenant('/notificacoes')"
                       style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">
                 Ir para Notificações
               </button>
@@ -1301,8 +1231,7 @@ canvas{
               <div class="chart-title">Distribuição por faixa</div>
               <canvas id="donutChart" width="640" height="280" aria-label="Gráfico de rosca"></canvas>
             </div>
-          </div>
-        </section>
+          </div>        </section>
       </div>
     </main>
   </div>
@@ -1312,28 +1241,85 @@ canvas{
       <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})" id="bnPainel">
         🏠<span>Painel</span>
       </button>
-      <button onclick="location.href='lista-alunos.html'" id="bnAlunos">
+      <button onclick="location.href=withTenant('lista-alunos.html')" id="bnAlunos">
         👥<span>Alunos</span>
       </button>
-      <button onclick="location.href='ranking-alunos.html'" id="bnRanking">
+      <button onclick="location.href=withTenant('ranking-alunos.html')" id="bnRanking">
         🏆<span>Ranking</span>
       </button>
-      <button onclick="location.href='/notificacoes'" id="bnNotifs">
+      <button onclick="location.href=withTenant('/notificacoes')" id="bnNotifs">
         🔔<span>Notifs</span>
       </button>
-      <button onclick="location.href='estatisticas.html'" id="bnRelatorios">
+      <button onclick="location.href=withTenant('estatisticas.html')" id="bnRelatorios">
         📉<span>Relatórios</span>
       </button>
-      <button onclick="location.href='mensagens.html'" id="bnMensagens">
+      <button onclick="location.href=withTenant('mensagens.html')" id="bnMensagens">
         ✉️<span>Mensagens</span>
       </button>
-      <button onclick="location.href='/monitores.html'" id="bnMonitores">
+      <button onclick="location.href=withTenant('/monitores.html')" id="bnMonitores">
         🧭<span>Monitores</span>
       </button>
     </div>
   </nav>
 
   <script>
+  const DEFAULT_TENANT = 'cmdpii';
+  const TENANT_STORAGE_KEY = 'smartclass_tenant';
+  const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
+
+  function getTenantFromUrl() {
+    const qs = new URLSearchParams(location.search);
+    return (qs.get('t') || qs.get('tenant') || '').trim();
+  }
+
+  function getTenantFromStorage() {
+    const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+    if (current) return current;
+
+    const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+    if (legacy) {
+      localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+      return legacy;
+    }
+
+    return '';
+  }
+
+  function setTenantStorage(t) {
+    const value = String(t || '').trim();
+    if (!value) return;
+    localStorage.setItem(TENANT_STORAGE_KEY, value);
+    localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+  }
+
+  function getResolvedTenant() {
+    const finalTenant = getTenantFromUrl() || getTenantFromStorage() || DEFAULT_TENANT;
+    setTenantStorage(finalTenant);
+    return finalTenant;
+  }
+
+  function withTenant(url) {
+    const tenant = window.__TENANT__ || DEFAULT_TENANT;
+
+    try {
+      const isAbsolute = /^https?:\/\//i.test(url);
+      const u = isAbsolute ? new URL(url) : new URL(url, location.origin);
+      u.searchParams.set('t', tenant);
+      return isAbsolute ? u.toString() : `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      const sep = String(url).includes('?') ? '&' : '?';
+      return `${url}${sep}t=${encodeURIComponent(tenant)}`;
+    }
+  }
+
+  window.__TENANT__ = getResolvedTenant();
+
+  if (!getTenantFromUrl()) {
+    const u = new URL(location.href);
+    u.searchParams.set('t', window.__TENANT__);
+    history.replaceState({}, '', u.toString());
+  }
+
   /* ===== PAPEL DE PAREDE DINÂMICO ===== */
   (function(){
     const wallpapers = [
@@ -1471,6 +1457,55 @@ canvas{
   const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
+  (function syncPanelLinks() {
+    const map = {
+      sbAlunos: 'lista-alunos.html',
+      sbRanking: 'ranking-alunos.html',
+      sbNotificacoes: '/notificacoes',
+      sbEstatisticas: 'estatisticas.html',
+      sbMensagens: 'mensagens.html',
+      sbMonitores: '/monitores.html',
+      sbTransferir: 'transferir-turma.html',
+      sbAdmin: 'usuarios.html',
+      sbLogs: 'logs.html'
+    };
+
+    Object.entries(map).forEach(([id, url]) => {
+      const el = document.getElementById(id);
+      if (el) el.href = withTenant(url);
+    });
+
+    const sbPainel = document.getElementById('sbPainel');
+    if (sbPainel) sbPainel.href = withTenant('painel.html');
+  })();
+
+  (async function carregarNomeInstituicaoPainel() {
+    const el = document.getElementById('sbNomeInstituicao');
+    if (!el) return;
+
+    const key = `axoriin_nome_colegio__${window.__TENANT__}`;
+    const cached = localStorage.getItem(key);
+    if (cached && cached.trim()) {
+      el.textContent = cached.trim();
+    }
+
+    try {
+      const r = await fetch(`/public/tenant?t=${encodeURIComponent(window.__TENANT__)}`, {
+        cache: 'no-store',
+        credentials: 'include'
+      });
+      if (!r.ok) return;
+
+      const data = await r.json().catch(() => ({}));
+      const nome = data?.nomeColegio || data?.nome || data?.instituicao?.nome;
+      if (nome) {
+        const nomeFinal = String(nome).trim();
+        el.textContent = nomeFinal;
+        localStorage.setItem(key, nomeFinal);
+      }
+    } catch {}
+  })();
+
   async function aplicarPermissoesNoPainel(){
     const hide = (...ids) => ids.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
 
@@ -1560,9 +1595,9 @@ canvas{
         return;
       }
 
-      location.href = './login.html';
+      location.href = withTenant('./login.html');
     }catch{
-      location.href = './login.html';
+      location.href = withTenant('./login.html');
     }
   }
 
@@ -1772,9 +1807,7 @@ canvas{
       showOK('Itens ocultos reexibidos.');
       renderPendenciasPaged();
     });
-  });
-
-  (function(){
+  });  (function(){
     const $ = (sel, ctx=document)=>ctx.querySelector(sel);
     const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
 
@@ -1899,7 +1932,7 @@ canvas{
       const id = btn.dataset.id; const acao = btn.dataset.acao;
 
       if (acao === 'registrar') {
-        return location.href = `./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`;
+        return location.href = withTenant(`./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`);
       }
 
       if (acao === 'comPais') {
@@ -2044,7 +2077,7 @@ canvas{
       const j = await r.json();
       document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário';
     }catch{
-      location.href = './login.html';
+      location.href = withTenant('./login.html');
     }
   }
 
@@ -2063,8 +2096,14 @@ canvas{
   }
 
   async function logout(){
-    try{ await fetch(AUTH('/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{}
-    location.href='./login.html';
+    try{
+      await fetch(AUTH('/logout'), {
+        method:'POST',
+        credentials:'include',
+        cache:'no-store'
+      });
+    }catch{}
+    location.href = withTenant('./login.html');
   }
 
   async function boot(){

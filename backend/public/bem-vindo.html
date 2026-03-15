@@ -11,7 +11,6 @@
   <link rel="icon" href="/icons/icon-512x512.png" />
   <link rel="apple-touch-icon" href="/icons/icon-512x512.png" />
 
-  <!-- Fontes -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -23,24 +22,16 @@
     :root{
       --bg-1:#020617;
       --bg-2:#0b1120;
-
       --ax-primary:#00C2FF;
       --ax-secondary:#7A5CFF;
-
       --card-bg: rgba(15,23,42,0.92);
       --card-border: rgba(148,163,184,0.55);
-
       --txt:#f9fafb;
       --txt-muted: rgba(148,163,184,0.92);
-
       --shadow:
         0 18px 45px rgba(0,0,0,0.85),
         0 0 0 1px rgba(15,23,42,0.9);
-
-      /* tamanho do símbolo */
-      --mark-size: 250px; /* ajuste aqui sem empurrar tudo (a stage é fixa) */
-
-      /* brilho do núcleo (ajuste fino) */
+      --mark-size: 250px;
       --core-x: 50%;
       --core-y: 56%;
       --core-size: 150px;
@@ -117,7 +108,6 @@
       flex: 0 0 auto;
     }
 
-    /* ===== STAGE (fixa) para não empurrar layout ao aumentar logo ===== */
     .mascote-stage{
       width: 260px;
       height: 260px;
@@ -151,7 +141,6 @@
       pointer-events:none;
     }
 
-    /* ✅ LOGO ÚNICA (igual login) */
     .mark{
       width: var(--mark-size);
       height: var(--mark-size);
@@ -166,7 +155,6 @@
                  axFloat 5.6s ease-in-out infinite;
     }
 
-    /* brilho pulsante no núcleo (overlay) */
     .core-glow{
       position:absolute;
       width: var(--core-size);
@@ -224,7 +212,6 @@
       color: rgba(236,242,255,.96);
     }
 
-    /* ✅ FRASE (com entrada suave) */
     .tagline{
       margin-top: 8px;
       font-size: 1.02rem;
@@ -279,7 +266,6 @@
       color: var(--txt-muted);
     }
 
-    /* ✅ Final cinemático (zoom + fade) na STAGE toda */
     .cinematic-out{
       animation: cinematicOut 1200ms ease-in-out forwards;
       transform-origin: 50% 55%;
@@ -328,7 +314,6 @@
 
       <div class="badge"><span class="dot"></span> Ambiente seguro • Preparando acesso</div>
 
-      <!-- ✅ Agora usa o mesmo asset do login -->
       <div class="mascote-stage" id="axoriin-mark" aria-hidden="true">
         <img src="/assets/axoriin/axoriin-logo-8k.png" class="mark" alt="Axoriin">
         <div class="core-glow" aria-hidden="true"></div>
@@ -352,47 +337,102 @@
   </div>
 
   <script>
-    // Destino dinâmico (?next=...)
-    const params = new URLSearchParams(location.search);
-    const destino = params.get('next') || '/painel.html';
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
+    const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
 
-    // Nome do colégio dinâmico
+    const params = new URLSearchParams(location.search);
+    const card = document.getElementById('card');
+    const mark = document.getElementById('axoriin-mark');
+
+    function getTenantFromUrl() {
+      return (params.get('t') || params.get('tenant') || '').trim();
+    }
+
+    function getTenantFromStorage() {
+      const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+      if (current) return current;
+
+      const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+      if (legacy) {
+        localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+        return legacy;
+      }
+
+      return '';
+    }
+
+    function setTenantStorage(t) {
+      const value = String(t || '').trim();
+      if (!value) return;
+      localStorage.setItem(TENANT_STORAGE_KEY, value);
+      localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+    }
+
+    function getResolvedTenant() {
+      const finalTenant = getTenantFromUrl() || getTenantFromStorage() || DEFAULT_TENANT;
+      setTenantStorage(finalTenant);
+      return finalTenant;
+    }
+
+    function appendTenantToPath(path, tenant) {
+      try {
+        const isAbsolute = /^https?:\/\//i.test(path);
+        const url = isAbsolute ? new URL(path) : new URL(path, location.origin);
+        url.searchParams.set('t', tenant);
+        return isAbsolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        const sep = path.includes('?') ? '&' : '?';
+        return `${path}${sep}t=${encodeURIComponent(tenant)}`;
+      }
+    }
+
+    const TENANT = getResolvedTenant();
+
+    let destino = params.get('next') || '/painel.html';
+    destino = appendTenantToPath(destino, TENANT);
+
     (async () => {
       const el = document.getElementById('nome-colegio');
       if (!el) return;
 
-      const ls = localStorage.getItem('axoriin_nome_colegio');
-      if (ls && ls.trim().length > 2) {
-        el.textContent = ls.trim();
-        return;
+      const key = `axoriin_nome_colegio__${TENANT}`;
+      const cached = localStorage.getItem(key);
+      if (cached && cached.trim().length > 2) {
+        el.textContent = cached.trim();
       }
 
       try {
-        const r = await fetch('/public/tenant', { cache: 'no-store' });
+        const r = await fetch(`/public/tenant?t=${encodeURIComponent(TENANT)}`, {
+          cache: 'no-store',
+          credentials: 'include'
+        });
+
         if (!r.ok) return;
-        const data = await r.json();
-        const nome = data?.nomeColegio || data?.nome_escola || data?.nome;
+
+        const data = await r.json().catch(() => ({}));
+        const nome =
+          data?.nomeColegio ||
+          data?.nome_escola ||
+          data?.nome ||
+          data?.instituicao?.nome;
+
         if (nome && String(nome).trim().length > 2) {
-          el.textContent = String(nome).trim();
-          localStorage.setItem('axoriin_nome_colegio', String(nome).trim());
+          const nomeFinal = String(nome).trim();
+          el.textContent = nomeFinal;
+          localStorage.setItem(key, nomeFinal);
         }
       } catch {}
     })();
 
-    const card = document.getElementById('card');
-    const mark = document.getElementById('axoriin-mark');
-
-    // ✅ MAIS TEMPO para leitura (1~2s a mais)
-    const TEMPO_TELA_MS = 5200;   // 5.2s
+    const TEMPO_TELA_MS = 5200;
     const TEMPO_FADE_MS = 750;
     const CINEMATIC_MS = 1200;
 
-    // ✅ zoom+fade cinemático perto do final
     setTimeout(() => {
       if (mark) mark.classList.add('cinematic-out');
     }, Math.max(0, TEMPO_TELA_MS - CINEMATIC_MS - 140));
 
-    // Fade-out do card e redireciona
     setTimeout(() => {
       if (card) card.classList.add('fade-out');
       setTimeout(() => {
@@ -400,7 +440,6 @@
       }, TEMPO_FADE_MS);
     }, TEMPO_TELA_MS);
 
-    // Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/service-worker.js')
         .then(() => console.log('✅ Service Worker registrado'))
