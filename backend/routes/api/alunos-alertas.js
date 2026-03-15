@@ -1,21 +1,44 @@
 // routes/api/alunos-alertas.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Log = require('../../models/Log');
 
 const { autenticar } = require('../../middleware/autenticacao');
+const { requireTenant } = require('../../middleware/tenantScope');
 const { classificarComportamento } = require('../../utils/comportamento');
+
+function buildInstMatch(inst) {
+  if (!inst) return { _id: null };
+
+  const asStr = String(inst);
+  if (mongoose.isValidObjectId(inst)) {
+    return {
+      $or: [
+        { instituicao: asStr },
+        { instituicao: new mongoose.Types.ObjectId(inst) }
+      ]
+    };
+  }
+
+  return { instituicao: asStr };
+}
 
 // GET /api/alertas/comportamento
 // Lista grupos p/ painel: REGULAR -> NP ; INSUFICIENTE -> informar responsáveis
-router.get('/comportamento', autenticar, async (req, res) => {
+router.get('/comportamento', autenticar, requireTenant, async (req, res) => {
   try {
+    const inst = req.usuario.instituicao;
+
     const alunos = await Aluno.find(
-      { comportamento: { $ne: null } },
-      { nome: 1, turma: 1, comportamento: 1 }
+      {
+        ...buildInstMatch(inst),
+        comportamento: { $ne: null }
+      },
+      { nome: 1, turma: 1, comportamento: 1, instituicao: 1 }
     ).lean();
 
     const regular = [];
@@ -23,6 +46,7 @@ router.get('/comportamento', autenticar, async (req, res) => {
 
     for (const a of alunos) {
       const { faixa } = classificarComportamento(Number(a.comportamento));
+
       if (faixa === 'regular') {
         regular.push({
           _id: a._id,
@@ -32,6 +56,7 @@ router.get('/comportamento', autenticar, async (req, res) => {
           acao: 'Encaminhar ao NP e registrar no histórico'
         });
       }
+
       if (faixa === 'insuficiente') {
         insuficiente.push({
           _id: a._id,
@@ -52,9 +77,10 @@ router.get('/comportamento', autenticar, async (req, res) => {
 
 // POST /api/alertas/comportamento/:alunoId/atualizar
 // Body aceito: { comportamento: Number }  (ou notaComportamento, compatibilidade)
-router.post('/comportamento/:alunoId/atualizar', autenticar, async (req, res) => {
+router.post('/comportamento/:alunoId/atualizar', autenticar, requireTenant, async (req, res) => {
   try {
     const { alunoId } = req.params;
+    const inst = req.usuario.instituicao;
     const valorBody = req.body?.comportamento ?? req.body?.notaComportamento;
     const novaNota = Number(valorBody);
 
@@ -62,24 +88,29 @@ router.post('/comportamento/:alunoId/atualizar', autenticar, async (req, res) =>
       return res.status(400).json({ error: 'Informe o campo "comportamento" (Number).' });
     }
 
-    const aluno = await Aluno.findById(alunoId);
-    if (!aluno) return res.status(404).json({ error: 'Aluno não encontrado' });
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      ...buildInstMatch(inst)
+    });
 
-    // grava SEM alterar o schema: usamos o campo existente "comportamento"
+    if (!aluno) {
+      return res.status(404).json({ error: 'Aluno não encontrado nesta instituição.' });
+    }
+
     aluno.comportamento = novaNota;
 
     const { faixa, codigo } = classificarComportamento(aluno.comportamento);
-    // se quiser manter um rastro textual, adiciona este campo (não é obrigatório no seu schema):
-    aluno.ultimaClassificacaoComportamental = codigo; // ok se o schema já tiver; se não tiver, o Mongoose ignora
 
-    // histórico disciplinar — só se existir no schema; se não existir, este bloco não quebra nada
+    // se o schema não tiver esse campo, o Mongoose apenas ignora
+    aluno.ultimaClassificacaoComportamental = codigo;
+
     aluno.historicoDisciplinar = aluno.historicoDisciplinar || [];
     const agora = new Date();
 
-    // anti-duplicação mensal (opcional)
     const dupGuard = async (tipo) => {
       const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
       return await Notificacao.findOne({
+        ...buildInstMatch(inst),
         aluno: aluno._id,
         tipo,
         createdAt: { $gte: inicioMes }
@@ -98,6 +129,7 @@ router.post('/comportamento/:alunoId/atualizar', autenticar, async (req, res) =>
 
       if (!(await dupGuard('encaminhamento_np'))) {
         notificacaoCriada = await Notificacao.create({
+          instituicao: inst,
           tipo: 'encaminhamento_np',
           titulo: 'Encaminhamento ao Núcleo Psicossocial',
           mensagem: `O(a) aluno(a) ${aluno.nome} ingressou no Comportamento REGULAR (nota ${aluno.comportamento.toFixed(2)}). Encaminhar ao NP e informar responsáveis (Art. 51).`,
@@ -110,6 +142,7 @@ router.post('/comportamento/:alunoId/atualizar', autenticar, async (req, res) =>
 
       if (!(await dupGuard('tarefa_np_informar_responsaveis'))) {
         await Notificacao.create({
+          instituicao: inst,
           tipo: 'tarefa_np_informar_responsaveis',
           titulo: 'NP deve informar responsáveis',
           mensagem: `Informar pais/responsáveis sobre ingresso no Comportamento REGULAR e consequências da continuidade (aluno: ${aluno.nome}).`,
@@ -130,6 +163,7 @@ router.post('/comportamento/:alunoId/atualizar', autenticar, async (req, res) =>
 
       if (!(await dupGuard('informar_responsaveis_insuficiente'))) {
         notificacaoCriada = await Notificacao.create({
+          instituicao: inst,
           tipo: 'informar_responsaveis_insuficiente',
           titulo: 'Comunicar responsáveis — Comportamento INSUFICIENTE',
           mensagem: `O(a) aluno(a) ${aluno.nome} ingressou no Comportamento INSUFICIENTE (nota ${aluno.comportamento.toFixed(2)}). Informar responsáveis (Art. 52).`,
@@ -146,8 +180,9 @@ router.post('/comportamento/:alunoId/atualizar', autenticar, async (req, res) =>
     try {
       await Log.create({
         acao: 'ATUALIZAR_COMPORTAMENTO',
-        usuario: req.usuario?._id,
+        usuario: req.usuario?._id || req.usuario?.id || null,
         detalhes: {
+          instituicao: inst,
           aluno: aluno._id,
           nota: aluno.comportamento,
           classificacao: codigo,

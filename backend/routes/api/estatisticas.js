@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { autenticar } = require('../../middleware/autenticacao');
+const { requireTenant } = require('../../middleware/tenantScope');
 const Aluno = require('../../models/Aluno');
 
 /** ===========================
@@ -24,6 +25,7 @@ function parseQualquerDataInicio(s) {
   }
   return null;
 }
+
 function parseQualquerDataFim(s) {
   if (!s) return null;
   if (s.includes('/')) {
@@ -39,13 +41,19 @@ function parseQualquerDataFim(s) {
   return null;
 }
 
-// Aceita instituicao como ObjectId ou string (base mista)
+// Match estrito por instituição
 function buildInstMatch(inst) {
-  if (!inst) return {};
+  if (!inst) return { _id: null };
+
   if (mongoose.isValidObjectId(inst)) {
-    const oid = new mongoose.Types.ObjectId(inst);
-    return { $or: [{ instituicao: oid }, { instituicao: String(inst) }] };
+    return {
+      $or: [
+        { instituicao: new mongoose.Types.ObjectId(inst) },
+        { instituicao: String(inst) }
+      ]
+    };
   }
+
   return { instituicao: String(inst) };
 }
 
@@ -57,11 +65,31 @@ const CAMPO_DATA  = 'createdAt'; // ex.: 'createdAt' ou 'dataMatricula'
 const PROJ_NOTA = {
   nota: {
     $cond: [
-      { $and: [{ $ne: ['$comportamento', null] }, { $eq: [{ $type: '$comportamento' }, 'double'] }] },
+      {
+        $and: [
+          { $ne: ['$comportamento', null] },
+          {
+            $in: [
+              { $type: '$comportamento' },
+              ['double', 'int', 'long', 'decimal']
+            ]
+          }
+        ]
+      },
       '$comportamento',
       {
         $cond: [
-          { $and: [{ $ne: ['$notaComportamento', null] }, { $eq: [{ $type: '$notaComportamento' }, 'double'] }] },
+          {
+            $and: [
+              { $ne: ['$notaComportamento', null] },
+              {
+                $in: [
+                  { $type: '$notaComportamento' },
+                  ['double', 'int', 'long', 'decimal']
+                ]
+              }
+            ]
+          },
           '$notaComportamento',
           null
         ]
@@ -93,13 +121,16 @@ router.get('/', (req, res) => {
  *  =========================== */
 
 // Distinct de turmas por instituição, com limpeza e ordenação
-router.get('/turmas', autenticar, async (req, res) => {
+router.get('/turmas', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
-    const filtro = { ...buildInstMatch(inst), [CAMPO_TURMA]: { $ne: null } };
+    const filtro = {
+      ...buildInstMatch(inst),
+      [CAMPO_TURMA]: { $ne: null }
+    };
+
     let turmas = await Aluno.distinct(CAMPO_TURMA, filtro);
 
-    // normaliza/limpa
     turmas = Array.from(
       new Set(
         (turmas || [])
@@ -115,15 +146,14 @@ router.get('/turmas', autenticar, async (req, res) => {
   }
 });
 
-// Alunos por turma (opcionalmente filtrando por intervalo de datas e turma)
-router.get('/alunos-por-turma', autenticar, async (req, res) => {
+// Alunos por turma
+router.get('/alunos-por-turma', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
     const { inicio, fim, turma } = req.query;
 
     const filtro = { ...buildInstMatch(inst) };
 
-    // datas opcionais
     const di = parseQualquerDataInicio(inicio);
     const df = parseQualquerDataFim(fim);
     if (di || df) {
@@ -132,7 +162,6 @@ router.get('/alunos-por-turma', autenticar, async (req, res) => {
       if (df) filtro[CAMPO_DATA].$lte = df;
     }
 
-    // turma opcional (exceto "Todas")
     if (turma && turma !== 'Todas') {
       filtro[CAMPO_TURMA] = String(turma).trim();
     }
@@ -151,8 +180,8 @@ router.get('/alunos-por-turma', autenticar, async (req, res) => {
   }
 });
 
-// Média de comportamento por turma (usa comportamento OU notaComportamento)
-router.get('/comportamento-por-turma', autenticar, async (req, res) => {
+// Média de comportamento por turma
+router.get('/comportamento-por-turma', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
 
@@ -172,8 +201,8 @@ router.get('/comportamento-por-turma', autenticar, async (req, res) => {
   }
 });
 
-// Distribuição por faixas (excepcional/ótimo/bom/regular/insuficiente/incompatível)
-router.get('/distribuicao', autenticar, async (req, res) => {
+// Distribuição por faixas
+router.get('/distribuicao', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
 
@@ -202,16 +231,23 @@ router.get('/distribuicao', autenticar, async (req, res) => {
 
     const m = Object.fromEntries(rows.map(r => [r._id, r.total]));
     res.json({
-      excepcional: m.excepcional || 0,
-      otimo:       m.otimo || 0,
-      bom:         m.bom || 0,
-      regular:     m.regular || 0,
-      insuficiente:m.insuficiente || 0,
-      incompativel:m.incompativel || 0,
+      excepcional:  m.excepcional || 0,
+      otimo:        m.otimo || 0,
+      bom:          m.bom || 0,
+      regular:      m.regular || 0,
+      insuficiente: m.insuficiente || 0,
+      incompativel: m.incompativel || 0,
     });
   } catch (e) {
     console.error('distribuicao:', e);
-    res.json({ excepcional: 0, otimo: 0, bom: 0, regular: 0, insuficiente: 0, incompativel: 0 });
+    res.json({
+      excepcional: 0,
+      otimo: 0,
+      bom: 0,
+      regular: 0,
+      insuficiente: 0,
+      incompativel: 0
+    });
   }
 });
 

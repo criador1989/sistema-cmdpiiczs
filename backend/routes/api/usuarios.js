@@ -1,16 +1,22 @@
-// routes/api/usuarios.js
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 
 const Usuario = require('../../models/Usuario');
 const Aluno = require('../../models/Aluno');
-const Instituicao = require('../../models/Instituicao'); // <-- necessário
+const Instituicao = require('../../models/Instituicao');
 const { autenticar } = require('../../middleware/autenticacao');
+const {
+  requireTenant,
+  tenantFilter,
+  isMasterLike,
+  resolveInstitutionId,
+  assertSameInstitution
+} = require('../../middleware/tenantScope');
 
 /** Somente ADMIN */
 function verificarAdmin(req, res, next) {
-  if (req.usuario?.tipo !== 'admin') {
+  if (req.usuario?.tipo !== 'admin' && !isMasterLike(req)) {
     return res.status(403).json({ mensagem: 'Apenas administradores podem acessar esta funcionalidade.' });
   }
   next();
@@ -42,7 +48,6 @@ async function resolveInstituicaoId(valor) {
 /** Mapeia erros comuns do Mongo/Mongoose para respostas amigáveis */
 function mapErro(res, err, defMsg) {
   if (err?.code === 11000) {
-    // índice único: { instituicao_1_email_1: 1 }
     return res.status(409).json({ mensagem: 'E-mail já cadastrado nesta instituição.' });
   }
   if (err?.name === 'CastError') {
@@ -56,23 +61,45 @@ function mapErro(res, err, defMsg) {
  * =========================================================================*/
 
 /** POST /api/usuarios  (cria usuário) */
-router.post('/', autenticar, verificarAdmin, async (req, res) => {
+router.post('/', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
     const { nome, email, senha, tipo, instituicao } = req.body;
-    if (!nome || !email || !senha || !tipo || !instituicao) {
+
+    if (!nome || !email || !senha || !tipo) {
       return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
     }
 
-    const instId = await resolveInstituicaoId(instituicao);
-    if (!instId) return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    let instId = null;
+
+    if (isMasterLike(req) && instituicao) {
+      instId = await resolveInstituicaoId(instituicao);
+    } else {
+      instId = resolveInstitutionId(req);
+    }
+
+    if (!instId) {
+      return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    }
 
     const emailNorm = normalizaEmail(email);
 
-    // Evita duplicidade por instituição + e-mail
-    const ja = await Usuario.findOne({ email: emailNorm, instituicao: instId }).select('_id');
-    if (ja) return res.status(409).json({ mensagem: 'E-mail já cadastrado nesta instituição.' });
+    const ja = await Usuario.findOne({
+      email: emailNorm,
+      instituicao: instId
+    }).select('_id');
 
-    const novoUsuario = new Usuario({ nome, email: emailNorm, senha, tipo, instituicao: instId });
+    if (ja) {
+      return res.status(409).json({ mensagem: 'E-mail já cadastrado nesta instituição.' });
+    }
+
+    const novoUsuario = new Usuario({
+      nome,
+      email: emailNorm,
+      senha,
+      tipo,
+      instituicao: instId
+    });
+
     await novoUsuario.save();
 
     res.status(201).json({
@@ -94,18 +121,24 @@ router.post('/', autenticar, verificarAdmin, async (req, res) => {
 
 /**
  * GET /api/usuarios
- * Lista com filtros: ?instituicao=<id|nome> & ?q=texto & ?tipo=... & ?pagina=1&limite=20
+ * School admin: vê só usuários da própria instituição
+ * Master/Superadmin: pode filtrar outra instituição
  */
-router.get('/', autenticar, verificarAdmin, async (req, res) => {
+router.get('/', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
     const pagina = Math.max(parseInt(req.query.pagina || '1', 10), 1);
     const limite = Math.min(Math.max(parseInt(req.query.limite || '50', 10), 1), 200);
 
-    const filtro = {};
-    if (req.query.instituicao) {
-      const instId = await resolveInstituicaoId(req.query.instituicao);
-      if (instId) filtro.instituicao = instId;
+    let instituicaoFiltro = null;
+
+    if (isMasterLike(req) && req.query.instituicao) {
+      instituicaoFiltro = await resolveInstituicaoId(req.query.instituicao);
+    } else {
+      instituicaoFiltro = resolveInstitutionId(req);
     }
+
+    const filtro = tenantFilter(req, {}, instituicaoFiltro);
+
     if (req.query.tipo) filtro.tipo = req.query.tipo;
 
     const q = String(req.query.q || '').trim();
@@ -117,31 +150,47 @@ router.get('/', autenticar, verificarAdmin, async (req, res) => {
     const [items, total] = await Promise.all([
       Usuario.find(filtro)
         .select('-senha')
-        .populate('instituicao', 'nome sigla') // útil no front
+        .populate('instituicao', 'nome sigla slug')
         .sort({ nome: 1 })
         .skip((pagina - 1) * limite)
         .limit(limite),
+
       Usuario.countDocuments(filtro),
     ]);
 
-    res.json({ items, pagina, limite, total, paginas: Math.max(1, Math.ceil(total / limite)) });
+    res.json({
+      items,
+      pagina,
+      limite,
+      total,
+      paginas: Math.max(1, Math.ceil(total / limite))
+    });
   } catch (err) {
     console.error('Erro ao listar usuários:', err);
     return mapErro(res, err, 'Erro ao buscar usuários.');
   }
 });
 
-/** GET /api/usuarios/contatos (antes de "/:id") */
-router.get('/contatos', autenticar, async (req, res) => {
+/** GET /api/usuarios/contatos */
+router.get('/contatos', autenticar, requireTenant, async (req, res) => {
   try {
     const { q, tipo } = req.query;
-    const where = { instituicao: req.usuario.instituicao, _id: { $ne: req.usuario.id } };
+
+    const where = tenantFilter(req, {
+      _id: { $ne: req.usuario.id }
+    });
+
     if (tipo) where.tipo = tipo;
+
     if (q && String(q).trim()) {
       const rx = new RegExp(String(q).trim(), 'i');
       where.$or = [{ nome: rx }, { email: rx }];
     }
-    const contatos = await Usuario.find(where).select('_id nome tipo email').sort({ nome: 1 });
+
+    const contatos = await Usuario.find(where)
+      .select('_id nome tipo email')
+      .sort({ nome: 1 });
+
     res.json(contatos);
   } catch (err) {
     console.error('Erro ao listar contatos:', err);
@@ -150,12 +199,20 @@ router.get('/contatos', autenticar, async (req, res) => {
 });
 
 /** GET /api/usuarios/:id */
-router.get('/:id', autenticar, verificarAdmin, async (req, res) => {
+router.get('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id)
       .select('-senha')
-      .populate('instituicao', 'nome sigla');
-    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+      .populate('instituicao', 'nome sigla slug');
+
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    }
+
+    if (!assertSameInstitution(req, usuario.instituicao?._id || usuario.instituicao)) {
+      return res.status(403).json({ mensagem: 'Sem permissão para acessar usuário de outra instituição.' });
+    }
+
     res.json(usuario);
   } catch (err) {
     console.error('Erro ao buscar usuário:', err);
@@ -164,32 +221,46 @@ router.get('/:id', autenticar, verificarAdmin, async (req, res) => {
 });
 
 /** PUT /api/usuarios/:id */
-router.put('/:id', autenticar, verificarAdmin, async (req, res) => {
+router.put('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
     const { nome, tipo, instituicao, senha } = req.body;
-    if (!nome || !tipo || !instituicao) {
+
+    if (!nome || !tipo) {
       return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
     }
 
-    const instId = await resolveInstituicaoId(instituicao);
-    if (!instId) return res.status(400).json({ mensagem: 'Instituição inválida.' });
-
     const usuario = await Usuario.findById(req.params.id).select('+senha');
-    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    }
+
+    if (!assertSameInstitution(req, usuario.instituicao)) {
+      return res.status(403).json({ mensagem: 'Sem permissão para editar usuário de outra instituição.' });
+    }
+
+    let instId = String(usuario.instituicao);
+
+    if (isMasterLike(req) && instituicao) {
+      const resolved = await resolveInstituicaoId(instituicao);
+      if (!resolved) {
+        return res.status(400).json({ mensagem: 'Instituição inválida.' });
+      }
+      instId = resolved;
+    }
 
     usuario.nome = nome;
     usuario.tipo = tipo;
     usuario.instituicao = instId;
 
     if (typeof senha === 'string' && senha.trim() !== '') {
-      usuario.senha = senha; // pre('save') faz o hash
+      usuario.senha = senha;
     }
 
     await usuario.save();
 
     const usuarioLimpo = await Usuario.findById(usuario._id)
       .select('-senha')
-      .populate('instituicao', 'nome sigla');
+      .populate('instituicao', 'nome sigla slug');
 
     res.json({ mensagem: 'Usuário atualizado com sucesso.', usuario: usuarioLimpo });
   } catch (err) {
@@ -199,10 +270,20 @@ router.put('/:id', autenticar, verificarAdmin, async (req, res) => {
 });
 
 /** DELETE /api/usuarios/:id */
-router.delete('/:id', autenticar, verificarAdmin, async (req, res) => {
+router.delete('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
-    const usuario = await Usuario.findByIdAndDelete(req.params.id);
-    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    const usuario = await Usuario.findById(req.params.id).select('_id instituicao');
+
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    }
+
+    if (!assertSameInstitution(req, usuario.instituicao)) {
+      return res.status(403).json({ mensagem: 'Sem permissão para excluir usuário de outra instituição.' });
+    }
+
+    await Usuario.findByIdAndDelete(req.params.id);
+
     res.json({ mensagem: 'Usuário excluído com sucesso.' });
   } catch (err) {
     console.error('Erro ao excluir usuário:', err);
@@ -219,7 +300,11 @@ router.get('/acesso/:token', async (req, res) => {
     const token = String(req.params.token || '').trim();
     if (!token) return res.status(400).json({ mensagem: 'Token ausente.' });
 
-    const professor = await Usuario.findOne({ tokenAcesso: token, tipo: 'professor', ativo: true })
+    const professor = await Usuario.findOne({
+      tokenAcesso: token,
+      tipo: 'professor',
+      ativo: true
+    })
       .select('_id nome instituicao')
       .lean();
 
@@ -227,7 +312,9 @@ router.get('/acesso/:token', async (req, res) => {
       return res.status(404).json({ mensagem: 'Professor não encontrado ou token inválido.' });
     }
 
-    const alunos = await Aluno.find({ instituicao: professor.instituicao })
+    const alunos = await Aluno.find({
+      instituicao: professor.instituicao
+    })
       .select('nome turma comportamento foto')
       .sort({ turma: 1, nome: 1 })
       .lean();

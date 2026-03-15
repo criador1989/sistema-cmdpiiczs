@@ -9,7 +9,6 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
 
-  <!-- Tipografia SmartClass -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
@@ -36,6 +35,10 @@
       --err-bg: rgba(255,70,90,.10);
       --err-bd: rgba(255,70,90,.22);
       --err-tx: #ffb3b8;
+
+      --warn-bg: rgba(255,226,154,.10);
+      --warn-bd: rgba(255,226,154,.22);
+      --warn-tx: #ffecc1;
     }
 
     *{ box-sizing:border-box; }
@@ -56,7 +59,7 @@
     }
 
     .wrap{
-      max-width: 1100px;
+      max-width: 1260px;
       margin: 0 auto;
     }
 
@@ -66,6 +69,7 @@
       align-items:center;
       justify-content:space-between;
       margin-bottom: 14px;
+      flex-wrap: wrap;
     }
 
     .brand{
@@ -118,6 +122,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
       user-select:none;
     }
+
     .dot{
       width:8px; height:8px; border-radius:999px;
       background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
@@ -147,15 +152,20 @@
         inset 0 1px 0 rgba(255,255,255,.16);
     }
 
-    .grid{
+    .layout{
       display:grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 390px 1fr;
       gap: 14px;
       align-items:start;
     }
 
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
+    @media (max-width: 1080px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    .left-col{
+      display:grid;
+      gap:14px;
     }
 
     .card{
@@ -166,6 +176,7 @@
       overflow:hidden;
       position:relative;
     }
+
     .card::before{
       content:"";
       position:absolute;
@@ -185,13 +196,16 @@
       align-items:center;
       justify-content:space-between;
       gap: 10px;
+      flex-wrap: wrap;
     }
+
     .card-title{
       margin:0;
       font-size: 1.05rem;
       font-weight: 900;
       letter-spacing: .2px;
     }
+
     .card-body{
       padding: 14px;
     }
@@ -205,7 +219,7 @@
       font-weight: 800;
     }
 
-    input{
+    input, select{
       width:100%;
       padding: 11px 12px;
       border-radius: 12px;
@@ -218,8 +232,16 @@
         inset 0 1px 0 rgba(255,255,255,.10),
         0 8px 18px rgba(0,0,0,.45);
     }
+
+    select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+    }
+
     input::placeholder{ color: rgba(236,242,255,.55); }
-    input:focus{
+
+    input:focus, select:focus{
       border-color: rgba(190,220,255,.9);
       box-shadow: 0 0 0 2px rgba(0,209,255,.35), 0 10px 28px rgba(0,0,0,.65);
     }
@@ -229,7 +251,10 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-    @media (max-width: 480px){ .row{ grid-template-columns: 1fr; } }
+
+    @media (max-width: 560px){
+      .row{ grid-template-columns: 1fr; }
+    }
 
     .hint{
       margin-top: 8px;
@@ -237,6 +262,7 @@
       font-size: 13px;
       line-height: 1.25;
     }
+
     .hint code{
       background: rgba(10,19,34,.35);
       border: 1px solid rgba(170,200,240,.22);
@@ -252,12 +278,14 @@
       border-radius: 12px;
       font-weight: 800;
       white-space: pre-line;
+      line-height: 1.3;
     }
     .msg.ok{ display:block; background: var(--ok-bg); border:1px solid var(--ok-bd); color: var(--ok-tx); }
     .msg.err{ display:block; background: var(--err-bg); border:1px solid var(--err-bd); color: var(--err-tx); }
+    .msg.warn{ display:block; background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); }
 
-    /* Table */
     .table-wrap{ padding: 0; }
+
     .table-toolbar{
       padding: 12px 14px;
       display:flex;
@@ -267,12 +295,14 @@
       border-bottom: 1px solid rgba(170,200,240,.18);
       flex-wrap: wrap;
     }
+
     .search{
       display:flex;
       align-items:center;
       gap:10px;
       width: min(520px, 100%);
     }
+
     .search input{
       box-shadow: none;
       background: rgba(10,19,34,.28);
@@ -284,11 +314,13 @@
       border-collapse: collapse;
       font-size: 15px;
     }
+
     th, td{
       padding: 12px 14px;
       border-bottom: 1px solid rgba(170,200,240,.14);
       vertical-align: top;
     }
+
     th{
       text-align:left;
       font-size: 13px;
@@ -299,7 +331,10 @@
 
     tr:hover td{ background: rgba(255,255,255,.03); }
 
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+    }
 
     .badge-active{
       display:inline-flex;
@@ -311,13 +346,19 @@
       background: rgba(10,19,34,.26);
       font-weight: 900;
       font-size: 13px;
+      white-space: nowrap;
     }
+
     .badge-active .b{
       width:8px;height:8px;border-radius:999px;
       background: rgba(0,255,140,.9);
       box-shadow: 0 0 12px rgba(0,255,140,.45);
     }
-    .badge-inactive .b{ background: rgba(255,70,90,.92); box-shadow: 0 0 12px rgba(255,70,90,.35); }
+
+    .badge-inactive .b{
+      background: rgba(255,70,90,.92);
+      box-shadow: 0 0 12px rgba(255,70,90,.35);
+    }
 
     .actions{
       display:flex;
@@ -335,27 +376,40 @@
       color: rgba(236,242,255,.92);
       cursor:pointer;
     }
-    .mini:hover{ filter:brightness(1.06); background: rgba(10,19,34,.36); }
+
+    .mini:hover{
+      filter:brightness(1.06);
+      background: rgba(10,19,34,.36);
+    }
+
     .mini.danger{ border-color: rgba(255,70,90,.35); }
     .mini.ok{ border-color: rgba(0,255,140,.35); }
+    .mini.primary{
+      color:#071018;
+      border:none;
+      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
+    }
 
     .links{
       display:flex;
       flex-direction:column;
       gap: 8px;
     }
+
     .linkrow{
       display:flex;
       gap: 8px;
       align-items:center;
       flex-wrap: wrap;
     }
+
     .linkrow input{
       flex: 1 1 260px;
       box-shadow:none;
       background: rgba(10,19,34,.28);
       border: 1px solid rgba(170,200,240,.28);
     }
+
     .small{
       font-size: 12px;
       color: rgba(236,242,255,.70);
@@ -372,7 +426,45 @@
       vertical-align: -3px;
       animation: spin .7s linear infinite;
     }
-    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    @keyframes spin{
+      to{ transform: rotate(360deg); }
+    }
+
+    .selected-inst{
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.22);
+      color: rgba(236,242,255,.92);
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    .selected-inst .name{
+      font-size: 1rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .selected-inst .slug{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      opacity: .9;
+    }
+
+    .empty-note{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .divider{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(170,200,240,.28), transparent);
+      margin: 14px 0;
+    }
   </style>
 </head>
 
@@ -383,7 +475,7 @@
         <img class="logo" src="/assets/smartclass-coruja.png" alt="SmartClass" onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
         <div>
           <h1>Painel Master • Instituições</h1>
-          <div class="sub">Cadastro e gestão de colégios (tenants) • Apenas SuperAdmin</div>
+          <div class="sub">Cadastro e gestão de colégios (tenants) • criação de usuários por instituição</div>
         </div>
       </div>
 
@@ -394,57 +486,129 @@
       </div>
     </header>
 
-    <div class="grid">
-      <!-- Criar instituição -->
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Criar nova instituição</div>
-          <div class="small" id="apiInfo"></div>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div>
-              <label for="nome">Nome (ex.: Colégio XABC)</label>
-              <input id="nome" placeholder="Nome completo da instituição" autocomplete="off" />
-            </div>
-            <div>
-              <label for="sigla">Sigla (opcional)</label>
-              <input id="sigla" placeholder="XABC" autocomplete="off" />
-            </div>
+    <div class="layout">
+      <div class="left-col">
+        <!-- Criar instituição -->
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Criar nova instituição</div>
+            <div class="small" id="apiInfo"></div>
           </div>
 
-          <div style="margin-top:10px;">
-            <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
-            <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
+          <div class="card-body">
+            <div class="row">
+              <div>
+                <label for="nome">Nome (ex.: Colégio XABC)</label>
+                <input id="nome" placeholder="Nome completo da instituição" autocomplete="off" />
+              </div>
+
+              <div>
+                <label for="sigla">Sigla (opcional)</label>
+                <input id="sigla" placeholder="XABC" autocomplete="off" />
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
+              <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
+              <div class="hint">
+                Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
+                O link fica: <code>/login.html?t=SEU-SLUG</code>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="btnCriar" style="margin-top:12px; width:100%;">Criar instituição</button>
+
+            <div class="msg" id="msgCreate"></div>
+
+            <div class="links" id="createdLinks" style="display:none; margin-top:12px;">
+              <div class="card-title" style="font-size:14px; margin-bottom:6px;">Links gerados</div>
+
+              <div class="linkrow">
+                <input id="linkLogin" readonly />
+                <button class="mini" data-copy="#linkLogin">Copiar login</button>
+              </div>
+
+              <div class="linkrow">
+                <input id="linkCadastro" readonly />
+                <button class="mini" data-copy="#linkCadastro">Copiar cadastro</button>
+              </div>
+
+              <div class="small">
+                Envie esses links para o colégio comprador. Assim, o login/cadastro já abre no ambiente correto.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Criar usuário na instituição -->
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Criar usuário na instituição</div>
+            <div class="small">Admin / Monitor / Professor</div>
+          </div>
+
+          <div class="card-body">
+            <div class="selected-inst" id="selectedInstBox">
+              <div class="empty-note">
+                Selecione uma instituição na tabela ao lado clicando em <b>“Novo usuário”</b>.
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="uNome">Nome completo</label>
+                <input id="uNome" placeholder="Nome do usuário" autocomplete="off" />
+              </div>
+              <div>
+                <label for="uEmail">E-mail</label>
+                <input id="uEmail" type="email" placeholder="email@exemplo.com" autocomplete="off" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label for="uSenha">Senha</label>
+                <input id="uSenha" type="password" placeholder="Mínimo 6 caracteres" />
+              </div>
+              <div>
+                <label for="uTipo">Tipo</label>
+                <select id="uTipo">
+                  <option value="">Selecione</option>
+                  <option value="admin">Admin</option>
+                  <option value="monitor">Monitor</option>
+                  <option value="professor">Professor</option>
+                </select>
+              </div>
+            </div>
+
             <div class="hint">
-              Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
-              O link fica: <code>/login.html?t=SEU-SLUG</code>
+              Este cadastro já cria o usuário diretamente na instituição escolhida, sem precisar passar pelo painel principal.
+            </div>
+
+            <button class="btn btn-primary" id="btnCriarUsuario" style="margin-top:12px; width:100%;">
+              Criar usuário nesta instituição
+            </button>
+
+            <div class="msg" id="msgUser"></div>
+
+            <div class="divider"></div>
+
+            <div class="links" id="userLinks" style="display:none;">
+              <div class="card-title" style="font-size:14px; margin-bottom:6px;">Acesso gerado</div>
+
+              <div class="linkrow">
+                <input id="userLoginLink" readonly />
+                <button class="mini" data-copy="#userLoginLink">Copiar login</button>
+              </div>
+
+              <div class="small">
+                Você pode enviar esse link para o usuário já entrar no ambiente correto da instituição.
+              </div>
             </div>
           </div>
-
-          <button class="btn btn-primary" id="btnCriar" style="margin-top:12px; width:100%;">Criar instituição</button>
-
-          <div class="msg" id="msgCreate"></div>
-
-          <div class="links" id="createdLinks" style="display:none; margin-top:12px;">
-            <div class="card-title" style="font-size:14px; margin-bottom:6px;">Links gerados</div>
-
-            <div class="linkrow">
-              <input id="linkLogin" readonly />
-              <button class="mini" data-copy="#linkLogin">Copiar login</button>
-            </div>
-
-            <div class="linkrow">
-              <input id="linkCadastro" readonly />
-              <button class="mini" data-copy="#linkCadastro">Copiar cadastro</button>
-            </div>
-
-            <div class="small">
-              Envie esses links para o colégio comprador. Assim, o login/cadastro já abre no ambiente correto.
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <!-- Lista -->
       <section class="card table-wrap">
@@ -468,7 +632,7 @@
                 <th>Sigla</th>
                 <th>Slug</th>
                 <th>Status</th>
-                <th style="width:260px;">Ações</th>
+                <th style="width:320px;">Ações</th>
               </tr>
             </thead>
             <tbody id="tbody">
@@ -483,16 +647,9 @@
   </div>
 
   <script>
-    // ✅ API_BASE (mantém seu padrão)
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
-
-    // ✅ ENDPOINT BASE DO MASTER (bate com o router atual)
-    // router: /instituicoes
-    // mount: /api/master/instituicoes
-    // final: /api/master/instituicoes/instituicoes
     const MASTER_BASE = `${API_BASE}/api/master/instituicoes/instituicoes`;
 
-    // UI refs
     const tbody = document.getElementById('tbody');
     const msgList = document.getElementById('msgList');
     const countInfo = document.getElementById('countInfo');
@@ -509,12 +666,23 @@
     const linkCadastro = document.getElementById('linkCadastro');
 
     const q = document.getElementById('q');
-
     const btnRefresh = document.getElementById('btnRefresh');
     const btnBuscar = document.getElementById('btnBuscar');
     const btnSair = document.getElementById('btnSair');
 
-    // helpers
+    const selectedInstBox = document.getElementById('selectedInstBox');
+    const uNome = document.getElementById('uNome');
+    const uEmail = document.getElementById('uEmail');
+    const uSenha = document.getElementById('uSenha');
+    const uTipo = document.getElementById('uTipo');
+    const btnCriarUsuario = document.getElementById('btnCriarUsuario');
+    const msgUser = document.getElementById('msgUser');
+    const userLinks = document.getElementById('userLinks');
+    const userLoginLink = document.getElementById('userLoginLink');
+
+    let all = [];
+    let selectedInst = null;
+
     function showMsg(el, type, text){
       el.className = 'msg ' + (type || '');
       el.textContent = text || '';
@@ -537,9 +705,10 @@
 
     async function copyFromSelector(sel){
       const el = document.querySelector(sel);
-      if (!el) return;
+      if (!el) return false;
       el.select?.();
       el.setSelectionRange?.(0, 999999);
+
       try{
         await navigator.clipboard.writeText(el.value);
         return true;
@@ -553,26 +722,60 @@
       }
     }
 
-    // copy buttons (delegation)
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-copy]');
       if (!btn) return;
+
       const sel = btn.getAttribute('data-copy');
+      const old = btn.textContent;
       const ok = await copyFromSelector(sel);
+
       btn.textContent = ok ? 'Copiado!' : 'Falhou';
-      setTimeout(() => btn.textContent = 'Copiar', 900);
+      setTimeout(() => btn.textContent = old, 900);
     });
 
-    // logout
     btnSair.addEventListener('click', async () => {
       btnSair.disabled = true;
       try{
-        await fetch(`${API_BASE}/auth/logout`, { method:'POST', credentials:'include' });
+        await fetch(`${API_BASE}/auth/logout`, {
+          method:'POST',
+          credentials:'include'
+        });
       }catch{}
       location.href = '/login.html';
     });
 
-    // create
+    function renderSelectedInst(){
+      if (!selectedInst) {
+        selectedInstBox.innerHTML = `
+          <div class="empty-note">
+            Selecione uma instituição na tabela ao lado clicando em <b>“Novo usuário”</b>.
+          </div>
+        `;
+        return;
+      }
+
+      selectedInstBox.innerHTML = `
+        <div class="name">${escapeHtml(selectedInst.nome || 'Instituição')}</div>
+        <div>${escapeHtml(selectedInst.sigla || 'Sem sigla')}</div>
+        <div class="slug">slug: ${escapeHtml(selectedInst.slug || '—')}</div>
+      `;
+    }
+
+    function clearUserForm(keepInstitution = true){
+      uNome.value = '';
+      uEmail.value = '';
+      uSenha.value = '';
+      uTipo.value = '';
+      showMsg(msgUser, '', '');
+      userLinks.style.display = 'none';
+
+      if (!keepInstitution) {
+        selectedInst = null;
+        renderSelectedInst();
+      }
+    }
+
     btnCriar.addEventListener('click', async () => {
       showMsg(msgCreate, '', '');
       createdLinks.style.display = 'none';
@@ -611,12 +814,10 @@
         linkCadastro.value = absUrl(`/cadastro-usuario.html?t=${encodeURIComponent(slugFinal)}`);
         createdLinks.style.display = 'block';
 
-        // limpa inputs
         inputNome.value = '';
         inputSigla.value = '';
         inputSlug.value = '';
 
-        // atualiza lista
         await loadList();
 
       }catch(err){
@@ -627,44 +828,97 @@
       }
     });
 
+    btnCriarUsuario.addEventListener('click', async () => {
+      showMsg(msgUser, '', '');
+      userLinks.style.display = 'none';
+
+      if (!selectedInst?.id) {
+        showMsg(msgUser, 'warn', 'Selecione primeiro uma instituição na tabela.');
+        return;
+      }
+
+      const nome = String(uNome.value || '').trim();
+      const email = String(uEmail.value || '').trim().toLowerCase();
+      const senha = String(uSenha.value || '');
+      const tipo = String(uTipo.value || '').trim().toLowerCase();
+
+      if (!nome || nome.length < 3) {
+        showMsg(msgUser, 'err', 'Informe um nome válido.');
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showMsg(msgUser, 'err', 'Informe um e-mail válido.');
+        return;
+      }
+
+      if (!senha || senha.length < 6) {
+        showMsg(msgUser, 'err', 'A senha deve ter pelo menos 6 caracteres.');
+        return;
+      }
+
+      if (!['admin', 'monitor', 'professor'].includes(tipo)) {
+        showMsg(msgUser, 'err', 'Selecione o tipo do usuário.');
+        return;
+      }
+
+      btnCriarUsuario.disabled = true;
+      btnCriarUsuario.innerHTML = '<span class="spinner"></span>Criando usuário…';
+
+      try{
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedInst.id)}/usuarios`, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify({ nome, email, senha, tipo })
+        });
+
+        const data = await r.json().catch(()=> ({}));
+
+        if (!r.ok) {
+          showMsg(msgUser, 'err', data?.mensagem || 'Erro ao criar usuário.');
+          return;
+        }
+
+        showMsg(
+          msgUser,
+          'ok',
+          `Usuário criado com sucesso em ${selectedInst.nome}.\nTipo: ${tipo}\nE-mail: ${email}`
+        );
+
+        const slug = selectedInst.slug || '';
+        userLoginLink.value = absUrl(`/login.html?t=${encodeURIComponent(slug)}`);
+        userLinks.style.display = 'block';
+
+        clearUserForm(true);
+
+        showMsg(
+          msgUser,
+          'ok',
+          `Usuário criado com sucesso em ${selectedInst.nome}.\nTipo: ${tipo}\nE-mail: ${email}`
+        );
+
+      }catch(err){
+        showMsg(msgUser, 'err', 'Erro de conexão com o servidor.');
+      }finally{
+        btnCriarUsuario.disabled = false;
+        btnCriarUsuario.textContent = 'Criar usuário nesta instituição';
+      }
+    });
+
     btnRefresh.addEventListener('click', () => loadList());
     btnBuscar.addEventListener('click', () => renderFiltered());
 
     q.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); renderFiltered(); }
-    });
-
-    // state
-    let all = [];
-
-    async function loadList(){
-      showMsg(msgList, '', '');
-      tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Carregando…</td></tr>`;
-      countInfo.textContent = '—';
-      apiInfo.textContent = API_BASE ? 'DEV (API local)' : 'PROD';
-
-      try{
-        const r = await fetch(MASTER_BASE, { credentials:'include' });
-        const data = await r.json().catch(()=> ({}));
-        if (!r.ok) {
-          const msg = data?.mensagem || 'Falha ao listar.';
-          showMsg(msgList, 'err', msg + '\n(Se apareceu 403, é porque você não está logado como SuperAdmin.)');
-          tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
-          return;
-        }
-
-        all = data?.instituicoes || [];
-        countInfo.textContent = `${all.length} instituição(ões)`;
+      if (e.key === 'Enter') {
+        e.preventDefault();
         renderFiltered();
-
-      }catch(err){
-        showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
-        tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
       }
-    }
+    });
 
     function renderFiltered(){
       const term = (q.value || '').trim().toLowerCase();
+
       const list = !term ? all : all.filter(i => {
         const hay = [
           i?.nome, i?.sigla, i?.slug, i?._id
@@ -702,9 +956,27 @@
             </td>
             <td>
               <div class="actions">
-                <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(loginUrl))}', this)">Copiar login</button>
-                <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(cadUrl))}', this)">Copiar cadastro</button>
-                <button class="mini ${ativo ? 'danger' : 'ok'}" onclick="window.__toggleAtivo('${id}', ${ativo ? 'false' : 'true'}, this)">
+                <button
+                  class="mini primary"
+                  onclick="window.__selectInst('${escapeHtml(id)}')">
+                  Novo usuário
+                </button>
+
+                <button
+                  class="mini"
+                  onclick="window.__copyText('${escapeHtml(absUrl(loginUrl))}', this)">
+                  Copiar login
+                </button>
+
+                <button
+                  class="mini"
+                  onclick="window.__copyText('${escapeHtml(absUrl(cadUrl))}', this)">
+                  Copiar cadastro
+                </button>
+
+                <button
+                  class="mini ${ativo ? 'danger' : 'ok'}"
+                  onclick="window.__toggleAtivo('${id}', ${ativo ? 'false' : 'true'}, this)">
                   ${ativo ? 'Desativar' : 'Ativar'}
                 </button>
               </div>
@@ -714,7 +986,33 @@
       }).join('');
     }
 
-    // global helpers for inline onclick
+    async function loadList(){
+      showMsg(msgList, '', '');
+      tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Carregando…</td></tr>`;
+      countInfo.textContent = '—';
+      apiInfo.textContent = API_BASE ? 'DEV (API local)' : 'PROD';
+
+      try{
+        const r = await fetch(MASTER_BASE, { credentials:'include' });
+        const data = await r.json().catch(()=> ({}));
+
+        if (!r.ok) {
+          const msg = data?.mensagem || 'Falha ao listar.';
+          showMsg(msgList, 'err', msg + '\n(Se apareceu 403, é porque você não está logado como Master/SuperAdmin.)');
+          tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
+          return;
+        }
+
+        all = data?.instituicoes || [];
+        countInfo.textContent = `${all.length} instituição(ões)`;
+        renderFiltered();
+
+      }catch(err){
+        showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
+        tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
+      }
+    }
+
     window.__copyText = async (text, btn) => {
       try{
         await navigator.clipboard.writeText(String(text));
@@ -728,10 +1026,31 @@
         ta.select();
         try { document.execCommand('copy'); } catch {}
         ta.remove();
+
         const old = btn.textContent;
         btn.textContent = 'Copiado!';
         setTimeout(()=> btn.textContent = old, 900);
       }
+    };
+
+    window.__selectInst = (id) => {
+      const inst = all.find(x => String(x?._id || x?.id) === String(id));
+      if (!inst) return;
+
+      selectedInst = {
+        id: String(inst._id || inst.id || ''),
+        nome: String(inst.nome || ''),
+        sigla: String(inst.sigla || ''),
+        slug: String(inst.slug || '')
+      };
+
+      renderSelectedInst();
+      showMsg(msgUser, '', '');
+      userLinks.style.display = 'none';
+
+      setTimeout(() => {
+        uNome.focus();
+      }, 80);
     };
 
     window.__toggleAtivo = async (id, ativo, btn) => {
@@ -748,14 +1067,17 @@
         });
 
         const data = await r.json().catch(()=> ({}));
+
         if (!r.ok) {
           showMsg(msgList, 'err', data?.mensagem || 'Erro ao atualizar instituição.');
           return;
         }
 
         showMsg(msgList, 'ok', 'Status atualizado.');
+
         const idx = all.findIndex(x => String(x?._id || x?.id) === String(id));
         if (idx >= 0) all[idx].ativo = !!ativo;
+
         renderFiltered();
 
       }catch(err){
@@ -767,7 +1089,7 @@
       }
     };
 
-    // init
+    renderSelectedInst();
     loadList();
   </script>
 </body>

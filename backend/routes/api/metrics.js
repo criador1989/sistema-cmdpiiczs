@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { autenticar } = require('../../middleware/autenticacao');
+const { requireTenant } = require('../../middleware/tenantScope');
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
@@ -11,44 +12,79 @@ const Notificacao = require('../../models/Notificacao');
 let Mensagem = null;
 try { Mensagem = require('../../models/Mensagem'); } catch { /* ok sem mensagens */ }
 
-/** Match amplo para campo instituicao (aceita ObjectId, string, ausente e null) */
+/** Match estrito por instituição (SEM misturar registros sem instituição) */
 function buildInstMatch(inst) {
-  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
-  if (!inst) return { $or: ors };
-  ors.push({ instituicao: String(inst) });
+  if (!inst) return { _id: null };
+
   if (mongoose.isValidObjectId(inst)) {
-    ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+    return {
+      $or: [
+        { instituicao: String(inst) },
+        { instituicao: new mongoose.Types.ObjectId(inst) }
+      ]
+    };
   }
-  return { $or: ors };
+
+  return { instituicao: String(inst) };
 }
 
-/** Match para Aluno por instituicao (string OU ObjectId) */
+/** Match estrito para Aluno por instituição */
 function buildAlunoMatch(inst) {
-  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
-  if (inst) {
-    ors.push({ instituicao: String(inst) });
-    if (mongoose.isValidObjectId(inst)) ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+  if (!inst) return { _id: null };
+
+  if (mongoose.isValidObjectId(inst)) {
+    return {
+      $or: [
+        { instituicao: String(inst) },
+        { instituicao: new mongoose.Types.ObjectId(inst) }
+      ]
+    };
   }
-  return { $or: ors };
+
+  return { instituicao: String(inst) };
 }
 
 // GET /api/metrics/overview
 // -> usado em painel.html (mAlunos, mNotif, mMsgs)
-router.get('/overview', autenticar, async (req, res) => {
+router.get('/overview', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
 
+    const filtroAlunos = {
+      $and: [
+        buildAlunoMatch(inst),
+        {
+          $or: [
+            { ativo: true },
+            { ativo: { $exists: false } }
+          ]
+        }
+      ]
+    };
+
+    const filtroNotifPend = {
+      $and: [
+        buildInstMatch(inst),
+        {
+          status: { $in: ['pendente', 'revisao_solicitada'] }
+        }
+      ]
+    };
+
+    const filtroMsgs = {
+      $and: [
+        buildInstMatch(inst),
+        { lida: false }
+      ]
+    };
+
     const [alunosCount, notifPend, msgs] = await Promise.all([
-      // alunos ativos da instituição (tolerando bases antigas sem "ativo")
-      Aluno.countDocuments({ ...buildAlunoMatch(inst), $or: [{ ativo: true }, { ativo: { $exists: false } }] }),
+      Aluno.countDocuments(filtroAlunos),
 
-      // ✔️ pendências como no Controle de Notificações:
-      // status em "pendente" OU "revisao_solicitada"
-      Notificacao.countDocuments({ ...buildInstMatch(inst), status: { $in: ['pendente', 'revisao_solicitada'] } }),
+      Notificacao.countDocuments(filtroNotifPend),
 
-      // mensagens não lidas (se existir o model)
       Mensagem && Mensagem.countDocuments
-        ? Mensagem.countDocuments({ ...buildInstMatch(inst), lida: false })
+        ? Mensagem.countDocuments(filtroMsgs)
         : 0
     ]);
 

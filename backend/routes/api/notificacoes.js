@@ -195,26 +195,36 @@ const CONTATO_ESCOLA = process.env.CONTATO_ESCOLA || '';
 
 // ------------------ Helpers já existentes ------------------
 function buildInstMatch(inst) {
-  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
-  if (!inst) return { $or: ors };
+  if (!inst) return { _id: null };
+
   const asStr = String(inst);
-  ors.push({ instituicao: asStr });
   if (mongoose.isValidObjectId(inst)) {
-    ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
+    return {
+      $or: [
+        { instituicao: asStr },
+        { instituicao: new mongoose.Types.ObjectId(inst) }
+      ]
+    };
   }
-  return { $or: ors };
+
+  return { instituicao: asStr };
 }
+
 function buildAlunoMatch(inst) {
-  const ors = [{ instituicao: { $exists: false } }, { instituicao: null }];
-  if (inst) {
-    ors.push({ instituicao: String(inst) });
-    if (mongoose.isValidObjectId(inst)) {
-      ors.push({ instituicao: new mongoose.Types.ObjectId(inst) });
-    }
+  if (!inst) return { _id: null };
+
+  const asStr = String(inst);
+  if (mongoose.isValidObjectId(inst)) {
+    return {
+      $or: [
+        { instituicao: asStr },
+        { instituicao: new mongoose.Types.ObjectId(inst) }
+      ]
+    };
   }
-  return { $or: ors };
-}
-function parseDateOnlyLocal(yyyy_mm_dd) {
+
+  return { instituicao: asStr };
+}function parseDateOnlyLocal(yyyy_mm_dd) {
   if (!yyyy_mm_dd) return new Date();
   const [y, m, d] = String(yyyy_mm_dd).split('-').map(Number);
   return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);

@@ -152,6 +152,7 @@ h1, h2, h3, h4, h5, h6,
   backdrop-filter:blur(var(--glass-blur));
   -webkit-backdrop-filter:blur(var(--glass-blur));
   box-shadow:0 10px 40px rgba(0,0,0,0.65);
+  z-index:120;
 }
 
 @media(max-width:1024px){
@@ -184,6 +185,8 @@ h1, h2, h3, h4, h5, h6,
   display:flex;
   flex-direction:column;
   gap:8px;
+  position:relative;
+  z-index:1;
 }
 
 .nav a{
@@ -221,21 +224,24 @@ h1, h2, h3, h4, h5, h6,
 .sb-foot{
   margin-top:auto;
   padding:12px 14px 16px;
+  position:relative;
+  z-index:130;
 }
 
 .sb-logout{
-  position: relative;
-  width: 100%;
-  border: 1px solid rgba(255,255,255,0.5);
-  border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  padding: 10px 0;
-  cursor: pointer;
-  font-size: 0;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.7);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  overflow: hidden;
+  position:relative;
+  z-index:131;
+  width:100%;
+  border:1px solid rgba(255,255,255,0.5);
+  border-radius:999px;
+  background:rgba(255,255,255,0.04);
+  padding:10px 0;
+  cursor:pointer;
+  font-size:0;
+  box-shadow:0 10px 28px rgba(0,0,0,0.7);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  overflow:hidden;
   transition:
     transform .20s ease,
     box-shadow .20s ease,
@@ -267,20 +273,24 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .sb-logout:hover{
-  background: rgba(255,255,255,0.10);
-  border-color: rgba(255,255,255,0.7);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.9);
-  transform: translateY(-2px);
+  background:rgba(255,255,255,0.10);
+  border-color:rgba(255,255,255,0.7);
+  box-shadow:0 14px 34px rgba(0,0,0,0.9);
+  transform:translateY(-2px);
 }
+
 .sb-logout:active{
-  transform: translateY(0);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+  transform:translateY(0);
+  box-shadow:0 8px 20px rgba(0,0,0,0.7);
 }
 
 .content{ width:100%; }
+
 .wrap{
   width:min(1180px,100%);
-  margin:0 auto 110px;
+  margin:0 auto 150px;
+  position:relative;
+  z-index:5;
 }
 
 .topo{
@@ -354,6 +364,7 @@ h1, h2, h3, h4, h5, h6,
   border-radius:28px;
   padding:22px 20px 26px;
   position:relative;
+  z-index:5;
 }
 
 .metric,
@@ -362,12 +373,12 @@ h1, h2, h3, h4, h5, h6,
 .alertas-comportamento,
 .chart-card,
 .qrcode-box{
-  border-radius: var(--glass-radius);
-  background: rgba(255,255,255,0.015);
-  border: 1px solid rgba(255,255,255,0.25);
-  backdrop-filter: blur(var(--glass-blur));
+  border-radius:var(--glass-radius);
+  background:rgba(255,255,255,0.015);
+  border:1px solid rgba(255,255,255,0.25);
+  backdrop-filter:blur(var(--glass-blur));
   -webkit-backdrop-filter:blur(var(--glass-blur));
-  box-shadow: var(--glass-shadow);
+  box-shadow:var(--glass-shadow);
   position:relative;
   overflow:hidden;
   transition:
@@ -386,7 +397,7 @@ h1, h2, h3, h4, h5, h6,
   position:absolute;
   inset:0;
   border-radius:inherit;
-  background: linear-gradient(
+  background:linear-gradient(
     to bottom,
     rgba(255,255,255,0.25) 0%,
     rgba(255,255,255,0.08) 12%,
@@ -401,8 +412,8 @@ h1, h2, h3, h4, h5, h6,
 .alertas-comportamento:hover,
 .chart-card:hover,
 .qrcode-box:hover{
-  transform: translateY(-2px) scale(1.012);
-  background: rgba(255,255,255,0.05);
+  transform:translateY(-2px) scale(1.012);
+  background:rgba(255,255,255,0.05);
   box-shadow:
     0 4px 12px rgba(0,0,0,0.18),
     0 16px 36px rgba(0,0,0,0.25);
@@ -701,34 +712,39 @@ canvas{
 }
 
 @media(max-width:1024px){
-  .bottom-nav{ display:block; }
-  .wrap{ margin-bottom:120px; }
+  .bottom-nav{ display:block; z-index:70; }
+  .wrap{ margin-bottom:140px; }
 }
 
 .toast{
   position:fixed;
   left:50%;
-  bottom:30px;
+  bottom:110px;
   transform:translateX(-50%) translateY(20px);
   opacity:0;
   transition:all .6s ease;
-  z-index:9999;
+  z-index:100;
   padding:12px 18px;
   border-radius:10px;
   font:14px/1.3 system-ui;
   color:#fff;
   box-shadow:0 8px 22px rgba(0,0,0,1);
   min-width:240px;
+  max-width:min(92vw, 560px);
   text-align:center;
+  pointer-events:none;
 }
+
 .toast.show{
   opacity:1;
   transform:translateX(-50%) translateY(0);
 }
+
 .toast.ok{
   background:#166534;
   border:1px solid rgba(187,247,208,.9);
 }
+
 .toast.err{
   background:#7f1d1d;
   border:1px solid rgba(254,202,202,.9);
@@ -765,22 +781,25 @@ canvas{
   cursor:pointer;
   transition:background .18s ease, box-shadow .18s ease, transform .18s ease;
 }
+
 .btn:hover{
   background:rgba(30,30,36,.96);
   box-shadow:0 8px 20px rgba(0,0,0,.8);
   transform:translateY(-1px);
 }
+
 .btn-primary{
   background:rgba(255,255,255,0.22);
   border-color:rgba(255,255,255,0.45);
 }
+
 .btn[disabled]{
   opacity:.55;
   cursor:not-allowed;
 }
 
 .btn-glass{
-  position: relative;
+  position:relative;
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -855,6 +874,7 @@ canvas{
   border-radius:50%;
   border:2px solid rgba(255,255,255,0.85);
 }
+
 .icon-power::before{
   content:"";
   position:absolute;
@@ -867,22 +887,22 @@ canvas{
 }
 
 #smartclass-mascote{
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: 78px;
-  height: 78px;
-  z-index: 60;
-  pointer-events: none;
-  filter: drop-shadow(0 14px 28px rgba(0,0,0,.65));
-  opacity: 0.96;
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  width:78px;
+  height:78px;
+  z-index:60;
+  pointer-events:none;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.65));
+  opacity:0.96;
   display:grid;
   place-items:center;
 }
 
 #smartclass-mascote .ax-stage{
-  width: 78px;
-  height: 78px;
+  width:78px;
+  height:78px;
   position:relative;
   display:grid;
   place-items:center;
@@ -890,12 +910,12 @@ canvas{
 }
 
 #smartclass-mascote img{
-  width: 78px;
-  height: 78px;
+  width:78px;
+  height:78px;
   object-fit:contain;
   user-select:none;
   -webkit-user-drag:none;
-  transform-origin: 50% 56%;
+  transform-origin:50% 56%;
   animation:
     axOrbit 8.8s ease-in-out infinite alternate,
     axFloat 3.2s ease-in-out infinite;
@@ -903,32 +923,34 @@ canvas{
 
 #smartclass-mascote .ax-core{
   position:absolute;
-  width: 54px;
-  height: 54px;
+  width:54px;
+  height:54px;
   border-radius:999px;
   left:50%;
   top:56%;
   transform:translate(-50%,-50%);
-  background: radial-gradient(circle,
+  background:radial-gradient(circle,
     rgba(255,255,255,.95) 0%,
     rgba(0,194,255,.75) 18%,
     rgba(0,194,255,.35) 44%,
     rgba(0,194,255,.14) 60%,
     transparent 76%);
-  filter: blur(10px);
+  filter:blur(10px);
   opacity:.78;
-  mix-blend-mode: screen;
-  animation: axCorePulse 2.4s ease-in-out infinite;
+  mix-blend-mode:screen;
+  animation:axCorePulse 2.4s ease-in-out infinite;
 }
 
 @keyframes axFloat{
-  0%,100%{ transform: translateY(0); }
-  50%{ transform: translateY(-6px); }
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-6px); }
 }
+
 @keyframes axOrbit{
-  0%{ transform: rotate(-1.6deg) scale(1.00); }
-  100%{ transform: rotate(1.6deg) scale(1.02); }
+  0%{ transform:rotate(-1.6deg) scale(1.00); }
+  100%{ transform:rotate(1.6deg) scale(1.02); }
 }
+
 @keyframes axCorePulse{
   0%,100%{ opacity:.55; transform:translate(-50%,-50%) scale(.92); filter:blur(11px); }
   50%{ opacity:1; transform:translate(-50%,-50%) scale(1.10); filter:blur(9px); }
@@ -936,9 +958,9 @@ canvas{
 
 @media(max-width:1024px){
   #smartclass-mascote{
-    bottom: 86px;
-    width: 72px;
-    height: 72px;
+    bottom:86px;
+    width:72px;
+    height:72px;
   }
   #smartclass-mascote .ax-stage,
   #smartclass-mascote img{
@@ -946,8 +968,8 @@ canvas{
     height:72px;
   }
   #smartclass-mascote .ax-core{
-    width: 48px;
-    height: 48px;
+    width:48px;
+    height:48px;
   }
 }
 
@@ -961,18 +983,18 @@ canvas{
   text-align:center;
   font-size:.92rem;
   letter-spacing:.02em;
-  background: rgba(10,10,12,0.72);
-  border-top: 1px solid rgba(255,255,255,0.14);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background:rgba(10,10,12,0.72);
+  border-top:1px solid rgba(255,255,255,0.14);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  pointer-events:none;
 }
+
 @media(max-width:1024px){
-  #axoriin-footer-phrase{ bottom: 54px; }
+  #axoriin-footer-phrase{ bottom:54px; }
 }
 </style>
-</head>
-
-<body>
+</head><body>
   <div id="bg-wallpaper"></div>
   <div id="intro-hex-overlay"></div>
 
@@ -1013,7 +1035,7 @@ canvas{
       </nav>
 
       <div class="sb-foot">
-        <button class="sb-logout" onclick="logout()">🚪 Sair</button>
+        <button class="sb-logout" onclick="logout()" title="Sair do sistema" aria-label="Sair do sistema">🚪 Sair</button>
       </div>
     </aside>
 
@@ -1070,15 +1092,6 @@ canvas{
                 <div class="card-copy">
                   <div class="kicker">CLASSIFICAÇÃO</div>
                   <h3>Ranking de Alunos</h3>
-                </div>
-              </div>
-            </div>
-
-            <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('cadastro-usuario.html')">
-              <div class="window-content">
-                <div class="card-copy">
-                  <div class="kicker">ADMIN</div>
-                  <h3>Novo Usuário</h3>
                 </div>
               </div>
             </div>
@@ -1231,7 +1244,8 @@ canvas{
               <div class="chart-title">Distribuição por faixa</div>
               <canvas id="donutChart" width="640" height="280" aria-label="Gráfico de rosca"></canvas>
             </div>
-          </div>        </section>
+          </div>
+        </section>
       </div>
     </main>
   </div>
@@ -1260,9 +1274,7 @@ canvas{
         🧭<span>Monitores</span>
       </button>
     </div>
-  </nav>
-
-  <script>
+  </nav>  <script>
   const DEFAULT_TENANT = 'cmdpii';
   const TENANT_STORAGE_KEY = 'smartclass_tenant';
   const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
@@ -1440,7 +1452,10 @@ canvas{
     document.body.appendChild(d);
     requestAnimationFrame(()=> d.classList.add('show'));
     const ttl = (type === 'ok') ? 4500 : 8000;
-    d._t = setTimeout(()=> { d.classList.remove('show'); setTimeout(()=>d.remove(), 600); }, ttl);
+    d._t = setTimeout(()=> {
+      d.classList.remove('show');
+      setTimeout(()=>d.remove(), 600);
+    }, ttl);
     return d;
   }
   function showOK(msg){ createToastEl('ok', msg || 'Feito.'); }
@@ -1450,12 +1465,14 @@ canvas{
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
     }
-    if (window.caches) { caches.keys().then(keys => keys.forEach(k => caches.delete(k))); }
+    if (window.caches) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
   }
 
   const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
-  const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
-  const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
+  const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/') ? p : '/' + p)}`;
+  const AUTH = (p)=> `${BASE}${p.startsWith('/auth') ? p : '/auth' + (p.startsWith('/') ? p : '/' + p)}`;
 
   (function syncPanelLinks() {
     const map = {
@@ -1507,7 +1524,10 @@ canvas{
   })();
 
   async function aplicarPermissoesNoPainel(){
-    const hide = (...ids) => ids.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    const hide = (...ids) => ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
 
     const SB = {
       sbRanking:'sbRanking',
@@ -1524,7 +1544,6 @@ canvas{
       cardVerNotificacoes:'cardVerNotificacoes',
       cardControleNotificacoes:'cardControleNotificacoes',
       cardRankingAlunos:'cardRankingAlunos',
-      cardNovoUsuario:'cardNovoUsuario',
       cardEstatisticas:'cardEstatisticas',
       cardTransferirTurma:'cardTransferirTurma'
     };
@@ -1572,7 +1591,6 @@ canvas{
           CARDS.cardVerNotificacoes,
           CARDS.cardControleNotificacoes,
           CARDS.cardRankingAlunos,
-          CARDS.cardNovoUsuario,
           CARDS.cardEstatisticas,
           CARDS.cardTransferirTurma
         );
@@ -1604,10 +1622,17 @@ canvas{
   async function getJSON(url, { timeoutMs=8000 } = {}) {
     const ctrl = new AbortController();
     const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+
     try {
-      const r = await fetch(url, { credentials:'include', cache:'no-store', signal: ctrl.signal });
-      const ct = r.headers.get('content-type')||'';
+      const r = await fetch(url, {
+        credentials:'include',
+        cache:'no-store',
+        signal: ctrl.signal
+      });
+
+      const ct = r.headers.get('content-type') || '';
       const data = ct.includes('application/json') ? await r.json() : {};
+
       if (!r.ok || data.ok === false) {
         const faixa = data?.faixa ? ` • faixa: ${data.faixa}` : '';
         const nota  = (typeof data?.nota === 'number') ? ` • nota: ${data.nota.toFixed(2)}` : '';
@@ -1616,6 +1641,7 @@ canvas{
         console.log('Resposta lógica:', data);
         return {};
       }
+
       return data;
     } catch (e) {
       showError('Falha ao comunicar com o servidor.');
@@ -1632,7 +1658,9 @@ canvas{
       document.getElementById('mAlunos').textContent = alunosCount.toLocaleString('pt-BR');
       document.getElementById('mNotif').textContent  = notifPend.toLocaleString('pt-BR');
       document.getElementById('mMsgs').textContent   = msgs.toLocaleString('pt-BR');
-    }catch(e){ console.log('overview falhou:', e?.message); }
+    }catch(e){
+      console.log('overview falhou:', e?.message);
+    }
 
     try{
       const porTurma = await getJSON(API('/estatisticas/comportamento-por-turma'), { timeoutMs: 9000 });
@@ -1680,6 +1708,7 @@ canvas{
       return new Set();
     }
   }
+
   function pendSaveOkSet(set){
     try{
       localStorage.setItem(PEND_OK_KEY, JSON.stringify(Array.from(set)));
@@ -1782,13 +1811,22 @@ canvas{
   document.addEventListener('DOMContentLoaded', ()=>{
     const prevBtn = document.getElementById('pend-prev');
     const nextBtn = document.getElementById('pend-next');
-    if (prevBtn) prevBtn.addEventListener('click', ()=>{ PEND_STATE.page--; renderPendenciasPaged(); });
-    if (nextBtn) nextBtn.addEventListener('click', ()=>{ PEND_STATE.page++; renderPendenciasPaged(); });
+
+    if (prevBtn) prevBtn.addEventListener('click', ()=>{
+      PEND_STATE.page--;
+      renderPendenciasPaged();
+    });
+
+    if (nextBtn) nextBtn.addEventListener('click', ()=>{
+      PEND_STATE.page++;
+      renderPendenciasPaged();
+    });
 
     const tbody = document.getElementById('pendTableBody');
     tbody?.addEventListener('click', (ev)=>{
       const btn = ev.target.closest('button[data-pend-ok]');
       if(!btn) return;
+
       const id = String(btn.dataset.pendOk || '');
       if(!id) return;
 
@@ -1807,7 +1845,9 @@ canvas{
       showOK('Itens ocultos reexibidos.');
       renderPendenciasPaged();
     });
-  });  (function(){
+  });
+
+  (function(){
     const $ = (sel, ctx=document)=>ctx.querySelector(sel);
     const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
 
@@ -1844,6 +1884,7 @@ canvas{
           </td>
         </tr>`;
     }
+
     function rowIns(a){
       const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
       return `
@@ -1892,6 +1933,7 @@ canvas{
 
         REG_DATA = regular.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
                           .sort((x,y)=> x.n - y.n);
+
         INS_DATA = insuficiente.map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
                                .sort((x,y)=> x.n - y.n);
 
@@ -1916,9 +1958,12 @@ canvas{
     }
 
     document.addEventListener('click', (ev)=>{
-      const tabBtn = ev.target.closest('.tab-btn'); if(!tabBtn) return;
+      const tabBtn = ev.target.closest('.tab-btn');
+      if(!tabBtn) return;
+
       $$('.tab-btn').forEach(b=>b.classList.remove('active'));
       tabBtn.classList.add('active');
+
       $$('.tab-panel').forEach(p=>{
         const target = tabBtn.dataset.tab;
         const show = p.id === target;
@@ -1928,11 +1973,15 @@ canvas{
     });
 
     document.addEventListener('click', async (ev)=>{
-      const btn = ev.target.closest('button[data-acao]'); if(!btn) return;
-      const id = btn.dataset.id; const acao = btn.dataset.acao;
+      const btn = ev.target.closest('button[data-acao]');
+      if(!btn) return;
+
+      const id = btn.dataset.id;
+      const acao = btn.dataset.acao;
 
       if (acao === 'registrar') {
-        return location.href = withTenant(`./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`);
+        location.href = withTenant(`./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`);
+        return;
       }
 
       if (acao === 'comPais') {
@@ -1940,6 +1989,7 @@ canvas{
         const faixa = btn.dataset.faixa || '';
 
         if (!confirm('Deseja enviar aviso aos pais sobre a nota comportamental deste aluno?')) return;
+
         btn.disabled = true;
         try{
           const r = await fetch(API(`/comunicacao/nota-comportamental/${id}`), {
@@ -1948,6 +1998,7 @@ canvas{
             headers:{ 'Content-Type':'application/json' },
             body: JSON.stringify({ nota, faixa })
           });
+
           const j = await r.json().catch(()=>({}));
 
           const temResultado =
@@ -1975,14 +2026,25 @@ canvas{
         }finally{
           btn.disabled = false;
         }
-        return;
       }
     });
 
-    el.regPrev.addEventListener('click', ()=>{ state.reg.page--; renderAll(); });
-    el.regNext.addEventListener('click', ()=>{ state.reg.page++; renderAll(); });
-    el.insPrev.addEventListener('click', ()=>{ state.ins.page--; renderAll(); });
-    el.insNext.addEventListener('click', ()=>{ state.ins.page++; renderAll(); });
+    el.regPrev.addEventListener('click', ()=>{
+      state.reg.page--;
+      renderAll();
+    });
+    el.regNext.addEventListener('click', ()=>{
+      state.reg.page++;
+      renderAll();
+    });
+    el.insPrev.addEventListener('click', ()=>{
+      state.ins.page--;
+      renderAll();
+    });
+    el.insNext.addEventListener('click', ()=>{
+      state.ins.page++;
+      renderAll();
+    });
 
     btnReload?.addEventListener('click', carregarAlertasComportamento);
 
@@ -1990,45 +2052,68 @@ canvas{
   })();
 
   function drawBarChart(data){
-    const c = document.getElementById('barChart'); if(!c) return;
+    const c = document.getElementById('barChart');
+    if(!c) return;
+
     const ctx = c.getContext('2d');
-    const W=c.width, H=c.height;
+    const W = c.width;
+    const H = c.height;
+
     ctx.clearRect(0,0,W,H);
+
     if(!Array.isArray(data) || data.length===0){
       ctx.fillStyle='rgba(255,255,255,.7)';
       ctx.font='14px Segoe UI';
       ctx.fillText('Sem dados', 20, 28);
       return;
     }
-    const padding=40,max=10,gw=W-padding*2,gh=H-padding*2;
-    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1;
+
+    const padding = 40;
+    const max = 10;
+    const gw = W - padding * 2;
+    const gh = H - padding * 2;
+
+    ctx.strokeStyle='rgba(255,255,255,.35)';
+    ctx.lineWidth=1;
     ctx.beginPath();
     ctx.moveTo(padding,padding);
     ctx.lineTo(padding,H-padding);
     ctx.lineTo(W-padding,H-padding);
     ctx.stroke();
+
     const barW = gw/(data.length*1.6);
+
     data.forEach((d,i)=>{
       const h=(Math.min(Number(d.media)||0,10)/max)*gh;
       const x=padding+i*(barW*1.6)+barW*0.3;
       const y=H-padding-h;
+
       const grad=ctx.createLinearGradient(0,y,0,y+h);
       grad.addColorStop(0,'#d64545');
       grad.addColorStop(1,'#8B0000');
+
       ctx.fillStyle=grad;
       ctx.fillRect(x,y,barW,h);
+
       ctx.fillStyle='rgba(255,255,255,.85)';
-      ctx.font='12px Segoe UI'; ctx.textAlign='center';
+      ctx.font='12px Segoe UI';
+      ctx.textAlign='center';
       ctx.fillText(String(d.turma||''), x+barW/2, H-padding+16);
       ctx.fillText(((Number(d.media)||0).toFixed(1)), x+barW/2, y-6);
     });
   }
 
   function drawDonutChart(dist){
-    const c = document.getElementById('donutChart'); if(!c) return;
-    const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+    const c = document.getElementById('donutChart');
+    if(!c) return;
+
+    const ctx = c.getContext('2d');
+    const W = c.width;
+    const H = c.height;
+
     ctx.clearRect(0,0,W,H);
-    const items=[
+
+    const items = [
       {name:'Excepcional', value:dist.exc||0, color:'#22c55e'},
       {name:'Ótimo',       value:dist.oti||0, color:'#3b82f6'},
       {name:'Bom',         value:dist.bom||0, color:'#f59e0b'},
@@ -2036,30 +2121,41 @@ canvas{
       {name:'Insuficiente',value:dist.ins||0, color:'#dc2626'},
       {name:'Incompatível',value:dist.inc||0, color:'#7f1d1d'},
     ].filter(i=>i.value>0);
+
     if(items.length===0){
       ctx.fillStyle='rgba(255,255,255,.7)';
       ctx.font='14px Segoe UI';
       ctx.fillText('Sem dados', 20, 28);
       return;
     }
+
     const total = items.reduce((s,i)=>s+i.value,0) || 1;
     const cx=W/2, cy=H/2, r=Math.min(W,H)/3, ir=r*0.6;
     let start=-Math.PI/2;
+
     items.forEach(d=>{
       const ang=(d.value/total)*Math.PI*2;
       const end=start+ang;
+
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       ctx.arc(cx,cy,r,start,end);
       ctx.closePath();
       ctx.fillStyle=d.color;
       ctx.fill();
+
       start=end;
     });
+
     ctx.globalCompositeOperation='destination-out';
-    ctx.beginPath(); ctx.arc(cx,cy,ir,0,Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx,cy,ir,0,Math.PI*2);
+    ctx.fill();
     ctx.globalCompositeOperation='source-over';
-    ctx.font='12px Segoe UI'; ctx.fillStyle='rgba(255,255,255,.9)';
+
+    ctx.font='12px Segoe UI';
+    ctx.fillStyle='rgba(255,255,255,.9)';
+
     items.forEach((d,i)=>{
       const y=20+i*18;
       ctx.fillStyle=d.color;
@@ -2074,6 +2170,7 @@ canvas{
       let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
       if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
       if (!r.ok) throw 0;
+
       const j = await r.json();
       document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário';
     }catch{
@@ -2086,10 +2183,12 @@ canvas{
       let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
       if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
       if (!r.ok) return;
+
       const j = await r.json();
-      if(j.tipo==='admin'){
-        ['cardNovoUsuario','cardEstatisticas'].forEach(id=>{
-          const el=document.getElementById(id); if(el) el.style.display='';
+      if(j.tipo === 'admin'){
+        ['cardEstatisticas'].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.style.display='';
         });
       }
     }catch{}
@@ -2103,6 +2202,7 @@ canvas{
         cache:'no-store'
       });
     }catch{}
+
     location.href = withTenant('./login.html');
   }
 
@@ -2118,6 +2218,7 @@ canvas{
       setInterval(window._carregarAlertasComportamento, 60000);
     }
   }
+
   boot();
 
   if('serviceWorker' in navigator){

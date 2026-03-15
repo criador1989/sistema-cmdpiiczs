@@ -1,23 +1,52 @@
-// backend/routes/api/masterInstituicoes.js
 'use strict';
 
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
+const { autenticar } = require('../../middleware/autenticacao');
+const Usuario = require('../../models/Usuario');
+
+function verificarMaster(req, res, next) {
+  const tipo = String(req.usuario?.tipo || '').trim().toLowerCase();
+
+  if (['admin', 'superadmin', 'master'].includes(tipo)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    mensagem: 'Acesso restrito ao painel master.'
+  });
+}
+
 function normSlug(s) {
   return String(s || '')
     .trim()
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 }
 
-router.get('/instituicoes', async (_req, res) => {
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+/* =========================================================================
+ * INSTITUIÇÕES
+ * ========================================================================= */
+
+router.get('/instituicoes', autenticar, verificarMaster, async (_req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
+
     const list = await Instituicao.find({})
       .select('_id nome sigla slug ativo')
       .sort({ nome: 1 })
@@ -25,11 +54,14 @@ router.get('/instituicoes', async (_req, res) => {
 
     res.json({ instituicoes: list || [] });
   } catch (e) {
-    res.status(500).json({ mensagem: 'Erro ao listar instituições.', erro: String(e.message || e) });
+    res.status(500).json({
+      mensagem: 'Erro ao listar instituições.',
+      erro: String(e.message || e)
+    });
   }
 });
 
-router.post('/instituicoes', async (req, res) => {
+router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
 
@@ -37,12 +69,24 @@ router.post('/instituicoes', async (req, res) => {
     const sigla = String(req.body?.sigla || '').trim();
     const slug = normSlug(req.body?.slug || sigla || nome);
 
-    if (!nome || nome.length < 3) return res.status(400).json({ mensagem: 'Informe um nome válido.' });
-    if (!slug || slug.length < 3) return res.status(400).json({ mensagem: 'Slug inválido.' });
+    if (!nome || nome.length < 3) {
+      return res.status(400).json({ mensagem: 'Informe um nome válido.' });
+    }
 
-    // evita duplicidade
-    const exists = await Instituicao.findOne({ slug }).select('_id').lean().catch(() => null);
-    if (exists) return res.status(409).json({ mensagem: 'Já existe uma instituição com esse slug.' });
+    if (!slug || slug.length < 3) {
+      return res.status(400).json({ mensagem: 'Slug inválido.' });
+    }
+
+    const exists = await Instituicao.findOne({ slug })
+      .select('_id')
+      .lean()
+      .catch(() => null);
+
+    if (exists) {
+      return res.status(409).json({
+        mensagem: 'Já existe uma instituição com esse slug.'
+      });
+    }
 
     const inst = await Instituicao.create({
       nome,
@@ -53,32 +97,152 @@ router.post('/instituicoes', async (req, res) => {
 
     return res.status(201).json({
       mensagem: 'Instituição criada.',
-      instituicao: { id: String(inst._id), nome: inst.nome, sigla: inst.sigla, slug: inst.slug, ativo: inst.ativo },
+      instituicao: {
+        id: String(inst._id),
+        nome: inst.nome,
+        sigla: inst.sigla,
+        slug: inst.slug,
+        ativo: inst.ativo
+      },
       links: {
         login: `/login.html?t=${encodeURIComponent(slug)}`,
         cadastro: `/cadastro-usuario.html?t=${encodeURIComponent(slug)}`
       }
     });
   } catch (e) {
-    res.status(500).json({ mensagem: 'Erro ao criar instituição.', erro: String(e.message || e) });
+    res.status(500).json({
+      mensagem: 'Erro ao criar instituição.',
+      erro: String(e.message || e)
+    });
   }
 });
 
-router.patch('/instituicoes/:id', async (req, res) => {
+router.patch('/instituicoes/:id', autenticar, verificarMaster, async (req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
     const id = String(req.params.id || '').trim();
     const ativo = !!req.body?.ativo;
 
-    const up = await Instituicao.findByIdAndUpdate(id, { $set: { ativo } }, { new: true })
+    const up = await Instituicao.findByIdAndUpdate(
+      id,
+      { $set: { ativo } },
+      { new: true }
+    )
       .select('_id nome sigla slug ativo')
       .lean();
 
-    if (!up) return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+    if (!up) {
+      return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+    }
 
     res.json({ mensagem: 'Atualizado.', instituicao: up });
   } catch (e) {
-    res.status(500).json({ mensagem: 'Erro ao atualizar.', erro: String(e.message || e) });
+    res.status(500).json({
+      mensagem: 'Erro ao atualizar.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+/* =========================================================================
+ * USUÁRIOS DA INSTITUIÇÃO (NOVO)
+ * ========================================================================= */
+
+router.post('/instituicoes/:id/usuarios', autenticar, verificarMaster, async (req, res) => {
+  try {
+    const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
+
+    const instituicaoId = String(req.params.id || '').trim();
+    const nome = String(req.body?.nome || '').trim();
+    const email = normalizeEmail(req.body?.email);
+    const senha = String(req.body?.senha || '');
+    const tipo = String(req.body?.tipo || '').trim().toLowerCase();
+
+    if (!mongoose.isValidObjectId(instituicaoId)) {
+      return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    }
+
+    const instituicao = await Instituicao.findById(instituicaoId)
+      .select('_id nome sigla slug ativo')
+      .lean();
+
+    if (!instituicao) {
+      return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+    }
+
+    if (!nome || nome.length < 3) {
+      return res.status(400).json({ mensagem: 'Informe um nome válido.' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ mensagem: 'Informe um e-mail válido.' });
+    }
+
+    if (!senha || senha.length < 6) {
+      return res.status(400).json({ mensagem: 'A senha deve ter pelo menos 6 caracteres.' });
+    }
+
+    if (!['admin', 'monitor', 'professor'].includes(tipo)) {
+      return res.status(400).json({
+        mensagem: 'Tipo inválido. Use admin, monitor ou professor.'
+      });
+    }
+
+    const existente = await Usuario.findOne({
+      email,
+      instituicao: instituicaoId
+    }).select('_id');
+
+    if (existente) {
+      return res.status(409).json({
+        mensagem: 'E-mail já cadastrado nesta instituição.'
+      });
+    }
+
+    const novoUsuario = new Usuario({
+      nome,
+      email,
+      senha,
+      tipo,
+      instituicao: instituicaoId,
+      ativo: true,
+      emailVerificado: true,
+      emailVerificadoEm: new Date(),
+      tokenVerificacaoHash: null,
+      tokenVerificacaoExpiraEm: null,
+    });
+
+    await novoUsuario.save();
+
+    return res.status(201).json({
+      mensagem: 'Usuário criado com sucesso.',
+      usuario: {
+        id: String(novoUsuario._id),
+        nome: novoUsuario.nome,
+        email: novoUsuario.email,
+        tipo: novoUsuario.tipo,
+        instituicao: {
+          id: String(instituicao._id),
+          nome: instituicao.nome,
+          sigla: instituicao.sigla || null,
+          slug: instituicao.slug || null,
+        }
+      },
+      links: {
+        login: `/login.html?t=${encodeURIComponent(instituicao.slug || '')}`
+      }
+    });
+  } catch (e) {
+    if (e?.code === 11000) {
+      return res.status(409).json({
+        mensagem: 'E-mail já cadastrado nesta instituição.'
+      });
+    }
+
+    res.status(500).json({
+      mensagem: 'Erro ao criar usuário.',
+      erro: String(e.message || e)
+    });
   }
 });
 

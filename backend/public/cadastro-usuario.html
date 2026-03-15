@@ -34,6 +34,10 @@
       --warn-bg: rgba(255,226,154,.10);
       --warn-bd: rgba(255,226,154,.25);
       --warn-tx: #ffecc1;
+
+      --info-bg: rgba(0,209,255,.10);
+      --info-bd: rgba(0,209,255,.25);
+      --info-tx: #dff8ff;
     }
 
     *{ box-sizing:border-box; }
@@ -58,7 +62,7 @@
       backdrop-filter:blur(var(--glass-blur));
       padding:28px 24px 30px;
       width:100%;
-      max-width:400px;
+      max-width:430px;
       text-align:center;
     }
 
@@ -77,17 +81,30 @@
       margin:0 0 10px;
       font-size:.95rem;
       color:var(--text-soft);
-      line-height:1.3;
+      line-height:1.35;
+    }
+
+    .info-box,
+    .instituicao-box{
+      margin:0 0 14px;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:0.92rem;
+      line-height:1.35;
+      text-align:left;
+    }
+
+    .info-box{
+      background:var(--info-bg);
+      border:1px solid var(--info-bd);
+      color:var(--info-tx);
     }
 
     .instituicao-box{
-      margin:0 0 18px;
-      padding:10px 12px;
-      border-radius:12px;
       background:rgba(0,209,255,.10);
       border:1px solid rgba(0,209,255,.25);
-      font-size:0.9rem;
       color:#e8faff;
+      text-align:center;
     }
 
     form{
@@ -183,7 +200,9 @@
       cursor: pointer;
     }
 
-    .btn-ghost:hover{ filter: brightness(1.05); }
+    .btn-ghost:hover{
+      filter: brightness(1.05);
+    }
 
     .voltar{
       margin-top:15px;
@@ -193,7 +212,11 @@
       text-decoration:none;
       opacity:.85;
     }
-    .voltar:hover{ opacity:1; text-decoration: underline; }
+
+    .voltar:hover{
+      opacity:1;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -202,7 +225,15 @@
          onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
 
     <h2>Cadastrar Usuário</h2>
-    <p class="sub">Cadastre-se como <b>Professor</b> ou <b>Monitor</b>. Você receberá um e-mail de confirmação.</p>
+    <p class="sub">
+      Cadastre-se como <b>Professor</b> ou <b>Monitor</b>.
+      Você receberá um e-mail de confirmação para liberar seu acesso.
+    </p>
+
+    <div class="info-box">
+      <b>Importante:</b> este formulário é destinado ao cadastro público de <b>Professor</b> e <b>Monitor</b>.
+      Cadastros administrativos internos são realizados no painel master da instituição.
+    </div>
 
     <div class="instituicao-box">
       Cadastro vinculado à instituição:<br>
@@ -332,7 +363,6 @@
           TENANT;
 
         instituicaoAtual = { nome, slug };
-
         nomeInstituicaoEl.textContent = nome;
       } catch {
         instituicaoAtual = { nome: 'Instituição', slug: TENANT };
@@ -393,22 +423,27 @@
         showErr('Link sem instituição (tenant).');
         return;
       }
+
       if (!nomeVal || nomeVal.length < 3){
         showErr('Informe um nome válido (mín. 3 caracteres).');
         return;
       }
+
       if (!isValidEmail(emailVal)){
         showErr('Informe um e-mail válido.');
         return;
       }
+
       if (!senhaVal || senhaVal.length < 6){
         showErr('A senha deve ter pelo menos 6 caracteres.');
         return;
       }
+
       if (senhaVal !== senha2Val){
         showErr('As senhas não conferem.');
         return;
       }
+
       if (!['monitor','professor'].includes(tipoVal)){
         showErr('Selecione Monitor ou Professor.');
         return;
