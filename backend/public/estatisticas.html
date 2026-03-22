@@ -4,62 +4,70 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Relatórios • Sistema Escolar</title>
-  <meta name="theme-color" content="#0A1322" />
+  <meta name="theme-color" content="#08111f" />
   <link rel="icon" href="./icons/icon-192x192.png" />
+
   <style>
     :root{
-      /* Paleta glass azul */
-      --rubi-1:#1d4ed8;      /* reaproveitando variáveis para botões */
-      --rubi-2:#38bdf8;
+      --bg-deep:#030a14;
+      --bg-mid:#081321;
+      --bg-soft:#0b1830;
 
-      --glass-bg: rgba(15,23,42,.70);
-      --glass-border: rgba(148,163,184,.45);
-      --glass-inner: rgba(255,255,255,.10);
-      --glass-shadow: 0 18px 40px rgba(15,23,42,.70);
+      --glass-bg:rgba(7,15,28,.72);
+      --glass-border:rgba(126,180,255,.24);
+      --glass-shadow:0 18px 42px rgba(0,0,0,.45);
 
-      --radius: 22px;
-      --text:#e5f0ff;
-      --text-soft:#a8b3c5;
+      --text:#eef7ff;
+      --text-soft:#b9c7db;
+      --text-faint:#87a1bf;
+
+      --primary:#2f88ff;
+      --primary-2:#55c2ff;
+
+      --neon-cyan:#7ef9ff;
+      --neon-cyan-2:#35ecff;
+      --neon-cyan-soft:rgba(126,249,255,.18);
+
+      --neon-orange:#ff9f6b;
+      --neon-orange-2:#ff6f4d;
+      --neon-orange-soft:rgba(255,111,77,.18);
+
+      --gold:#ffe38f;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+
+      --radius:22px;
     }
 
-    *{box-sizing:border-box}
-    html,body{height:auto}
+    *{ box-sizing:border-box; }
+    html,body{ min-height:100%; }
 
-    /* ===== BODY COM WALLPAPER DO PAINEL ===== */
     body{
       margin:0;
       font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
       color:var(--text);
-      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
-      color-scheme:dark;
-      display:block;
-      min-height:100vh;
+      background:
+        radial-gradient(1000px 700px at 12% -5%, rgba(53,236,255,.08), transparent 60%),
+        radial-gradient(1000px 800px at 100% 100%, rgba(255,111,77,.08), transparent 60%),
+        linear-gradient(180deg, rgba(1,7,14,.92), rgba(4,11,22,.96)),
+        url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      background-blend-mode:screen,screen,normal,normal;
+      padding:24px 12px 40px;
       overflow-y:auto;
-      padding:24px 12px 32px;
+      color-scheme:dark;
       -webkit-font-smoothing:antialiased;
     }
 
-    /* camada de escurecimento + vidro por cima do wallpaper */
     body::before{
       content:"";
       position:fixed;
       inset:0;
-      z-index:0;
-      background:radial-gradient(1200px 800px at 10% -10%, rgba(56,189,248,.18), transparent 60%),
-                 radial-gradient(1200px 900px at 110% 110%, rgba(37,99,235,.18), transparent 65%),
-                 linear-gradient(180deg, rgba(2,6,23,.85), rgba(15,23,42,.92));
-      backdrop-filter:blur(12px);
-    }
-    body::after{
-      content:"";
-      position:fixed;
-      inset:0;
-      z-index:0;
       pointer-events:none;
       background:
-        radial-gradient(900px 600px at 0% 0%, rgba(15,23,42,.9), transparent 60%),
-        radial-gradient(900px 600px at 100% 40%, rgba(15,23,42,.9), transparent 60%);
-      mix-blend-mode:soft-light;
+        radial-gradient(900px 500px at 50% 0%, rgba(0,120,255,.06), transparent 60%),
+        linear-gradient(180deg, rgba(2,8,16,.26), rgba(2,8,16,.48));
+      z-index:0;
     }
 
     .page{
@@ -69,13 +77,12 @@
       display:grid;
       grid-template-columns:280px 1fr;
       gap:20px;
-      padding:0;
       min-height:100vh;
     }
+
     @media (max-width:1024px){
       .page{
         grid-template-columns:1fr;
-        padding:0;
         gap:16px;
       }
     }
@@ -88,32 +95,39 @@
       position:sticky;
       top:16px;
       border-radius:20px;
-      background:rgba(15,23,42,.88);
-      border:1px solid rgba(148,163,184,.55);
+      background:rgba(7,15,28,.82);
+      border:1px solid rgba(148,163,184,.22);
       backdrop-filter:blur(14px);
-      box-shadow:0 12px 34px rgba(15,23,42,.85);
-      animation:slideIn .6s ease both;
+      box-shadow:0 14px 34px rgba(0,0,0,.45);
+      overflow:hidden;
     }
+
     .sb-head{
       display:flex;
       align-items:center;
       gap:12px;
       padding:16px;
-      border-bottom:1px solid rgba(148,163,184,.4);
+      border-bottom:1px solid rgba(148,163,184,.14);
     }
+
     .brand{
-      width:36px;
-      height:36px;
+      width:38px;
+      height:38px;
       border-radius:12px;
-      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
-      box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,.2),
+        0 0 16px rgba(85,194,255,.18);
     }
-    .sb-title{font-weight:700;letter-spacing:.3px}
+
+    .sb-title{ font-weight:800; letter-spacing:.3px; }
+
     .nav{
       padding:10px;
       display:grid;
       gap:6px;
     }
+
     .nav a{
       text-decoration:none;
       color:var(--text);
@@ -124,136 +138,184 @@
       align-items:center;
       gap:10px;
       border:1px solid transparent;
+      transition:.18s ease;
     }
+
     .nav a:hover{
-      background:rgba(15,23,42,.95);
-      border-color:rgba(148,163,184,.7);
+      background:rgba(255,255,255,.04);
+      border-color:rgba(148,163,184,.18);
     }
+
     .nav a.active{
-      background:linear-gradient(135deg,rgba(37,99,235,.9),rgba(56,189,248,.9));
-      border-color:rgba(191,219,254,1);
-      box-shadow:0 8px 26px rgba(15,23,42,.9);
+      background:linear-gradient(135deg, rgba(47,136,255,.24), rgba(85,194,255,.18));
+      border-color:rgba(126,180,255,.42);
+      box-shadow:0 0 20px rgba(85,194,255,.06);
     }
+
     .sb-foot{
       margin-top:auto;
       padding:12px;
-      border-top:1px solid rgba(148,163,184,.4);
-    }
-    .sb-logout{
-      width:100%;
-      border:0;
-      background:rgba(15,23,42,.95);
-      color:#e5f0ff;
-      padding:10px 14px;
-      border-radius:10px;
-      cursor:pointer;
-      border:1px solid rgba(148,163,184,.7);
-      font-weight:600;
-    }
-    .sb-logout:hover{
-      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
-      color:#fff;
-      box-shadow:0 8px 22px rgba(15,23,42,.85);
-    }
-    @media (max-width:1024px){
-      .sidebar{display:none}
+      border-top:1px solid rgba(148,163,184,.14);
     }
 
-    .content{width:100%;overflow:visible}
+    .sb-logout{
+      width:100%;
+      border:1px solid rgba(148,163,184,.22);
+      background:rgba(255,255,255,.04);
+      color:#fff;
+      padding:11px 14px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      transition:.18s ease;
+    }
+
+    .sb-logout:hover{
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      border-color:transparent;
+      box-shadow:0 8px 20px rgba(47,136,255,.18);
+    }
+
+    @media (max-width:1024px){
+      .sidebar{ display:none; }
+    }
+
+    .content{ width:100%; }
     .wrap{
-      width:min(1180px,100%);
+      width:min(1180px, 100%);
       margin:0 auto 84px;
     }
 
     .title-area{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
-      gap:12px;
+      gap:14px;
       margin-bottom:14px;
+      flex-wrap:wrap;
     }
+
     .title-area h1{
       margin:0;
-      font-size:clamp(22px,3vw,28px);
-      font-weight:800;
+      font-size:clamp(24px, 3vw, 32px);
+      font-weight:900;
+      line-height:1.05;
       letter-spacing:.2px;
       color:#f9fbff;
     }
+
     .title-area .sub{
+      margin-top:6px;
       color:var(--text-soft);
+      font-size:clamp(14px,1.5vw,18px);
     }
 
     .card{
       background:var(--glass-bg);
       border:1px solid var(--glass-border);
-      border-radius:24px;
-      backdrop-filter:blur(12px);
+      border-radius:28px;
+      backdrop-filter:blur(14px);
       box-shadow:var(--glass-shadow);
-      padding:22px 20px 26px;
+      padding:22px 20px 28px;
+      overflow:hidden;
     }
 
     .filters{
       display:grid;
       grid-template-columns:repeat(12,1fr);
       gap:12px;
-      margin-bottom:16px;
+      margin-bottom:18px;
+      align-items:end;
     }
+
     .filters .field{
       grid-column:span 12;
-      background:rgba(15,23,42,.9);
-      border:1px solid rgba(148,163,184,.6);
-      border-radius:16px;
-      padding:12px;
+      background:rgba(6,14,26,.78);
+      border:1px solid rgba(180,210,255,.18);
+      border-radius:18px;
+      padding:12px 14px;
       display:flex;
       align-items:center;
       gap:10px;
-      box-shadow:0 10px 26px rgba(15,23,42,.9);
+      min-height:60px;
+      box-shadow:0 10px 24px rgba(0,0,0,.22);
     }
+
     .filters label{
       font-weight:800;
-      color:#e5f0ff;
+      color:#eef7ff;
+      min-width:max-content;
+      font-size:1rem;
     }
+
     .filters input[type="date"],
     .filters select{
       appearance:none;
-      border:1px solid rgba(148,163,184,.8);
-      padding:8px 10px;
-      border-radius:10px;
+      border:1px solid rgba(180,210,255,.22);
+      padding:10px 12px;
+      border-radius:12px;
       width:100%;
       font:inherit;
       color:#0f172a;
-      background:#f9fafb;
+      background:#f3f5f8;
       outline:none;
+      min-width:0;
     }
+
     .filters input[type="date"]:focus,
     .filters select:focus{
-      border-color:var(--rubi-2);
-      box-shadow:0 0 0 3px rgba(56,189,248,.25);
+      border-color:var(--primary-2);
+      box-shadow:0 0 0 3px rgba(85,194,255,.18);
     }
+
     .filters .btn{
       grid-column:span 12;
-      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
-      color:#fff;
+      justify-self:end;
       border:none;
-      padding:12px 16px;
-      font-weight:800;
-      letter-spacing:.2px;
-      border-radius:12px;
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      color:#fff;
+      padding:14px 18px;
+      min-width:170px;
+      border-radius:14px;
       cursor:pointer;
-      box-shadow:0 12px 30px rgba(15,23,42,.9);
+      font-weight:800;
+      font-size:1rem;
+      box-shadow:0 10px 24px rgba(47,136,255,.22);
       transition:.18s ease;
     }
+
     .filters .btn:hover{
       transform:translateY(-1px);
-      filter:brightness(1.05);
+      filter:brightness(1.04);
     }
+
     @media (min-width:680px){
-      .filters .field.sm-4{grid-column:span 4}
-      .filters .btn{
-        grid-column:span 12;
-        max-width:220px;
-        justify-self:end;
-      }
+      .filters .field.sm-4{ grid-column:span 4; }
+      .filters .btn{ grid-column:span 12; }
+    }
+
+    .section-title{
+      margin:18px 6px 10px;
+      font-weight:900;
+      font-size:clamp(18px,2vw,26px);
+      color:#f9fbff;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(180,210,255,.2);
+      color:#eef7ff;
+      font-size:.85rem;
+      font-weight:700;
     }
 
     .grid{
@@ -261,78 +323,312 @@
       grid-template-columns:1fr 1fr;
       gap:18px;
     }
-    @media (max-width:900px){
-      .grid{grid-template-columns:1fr}
-    }
 
-    .section-title{
-      margin:18px 6px 8px;
-      font-weight:800;
-      letter-spacing:.2px;
-      color:#f9fbff;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .section-title .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:4px 10px;
-      border-radius:999px;
-      background:rgba(15,23,42,.9);
-      border:1px solid rgba(148,163,184,.7);
-      color:#e5f0ff;
-      font-size:.85rem;
+    @media (max-width:900px){
+      .grid{ grid-template-columns:1fr; }
     }
 
     .chart-card{
-      background:rgba(15,23,42,.9);
-      border:1px solid rgba(148,163,184,.6);
-      border-radius:16px;
+      background:
+        radial-gradient(700px 240px at 50% 100%, rgba(53,236,255,.08), transparent 60%),
+        radial-gradient(400px 220px at 0% 0%, rgba(255,111,77,.05), transparent 50%),
+        linear-gradient(180deg, rgba(4,10,18,.96), rgba(3,8,16,.88));
+      border:1px solid rgba(85,194,255,.2);
+      border-radius:22px;
       padding:14px;
-      box-shadow:0 10px 26px rgba(15,23,42,.9);
-    }
-    .chart-title{
-      font-size:.95rem;
-      color:var(--text-soft);
-      margin:2px 4px 10px;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.02),
+        0 10px 26px rgba(0,0,0,.24),
+        0 0 26px rgba(53,236,255,.04);
+      overflow:hidden;
+      min-height:360px;
+      transition:border-color .12s ease, box-shadow .12s ease;
     }
 
-    .chart-wrap{position:relative}
+    .chart-card.is-hovered{
+      border-color:rgba(126,249,255,.34);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.02),
+        0 10px 26px rgba(0,0,0,.24),
+        0 0 28px rgba(53,236,255,.10);
+    }
+
+    .chart-title{
+      font-size:1rem;
+      color:var(--text-soft);
+      margin:2px 4px 10px;
+      font-weight:500;
+    }
+
+    .chart-note{
+      font-size:.8rem;
+      color:var(--text-faint);
+      margin:0 4px 8px;
+    }
+
+    .chart-wrap{
+      position:relative;
+      width:100%;
+      min-height:290px;
+    }
+
     canvas{
       width:100%;
       height:300px;
-      background:transparent;
       display:block;
-      border-radius:14px;
+      border-radius:18px;
+      background:
+        radial-gradient(circle at 50% 100%, rgba(53,236,255,.04), transparent 40%),
+        linear-gradient(180deg, rgba(1,8,16,.35), rgba(1,8,16,.12));
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+
+    #chartDistribuicao,
+    #aphMes,
+    #aphResp{
+      height:340px;
     }
 
     .actions{
       display:flex;
       justify-content:flex-end;
+      gap:10px;
       margin-top:18px;
+      flex-wrap:wrap;
     }
+
     .btn-secondary{
-      background:#f9fafb;
+      background:#f8fafc;
       color:#0f172a;
-      border:1px solid rgba(148,163,184,.9);
-      padding:11px 16px;
-      border-radius:12px;
+      border:1px solid rgba(148,163,184,.28);
+      padding:12px 16px;
+      border-radius:14px;
       font-weight:800;
       cursor:pointer;
       transition:.18s ease;
-      box-shadow:0 8px 18px rgba(15,23,42,.45);
-    }
-    .btn-secondary:hover{
-      background:#e5efff;
-      border-color:var(--rubi-2);
-      color:#0b1120;
+      box-shadow:0 8px 18px rgba(0,0,0,.16);
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
     }
 
-    @keyframes slideIn{
-      from{opacity:0;transform:translateX(-8px)}
-      to{opacity:1;transform:translateX(0)}
+    .btn-secondary:hover{
+      background:#e8f2ff;
+      border-color:var(--primary-2);
+    }
+
+    .btn-print{
+      background:linear-gradient(135deg, rgba(255,120,90,.96), rgba(255,164,110,.96));
+      color:#fff;
+      border:none;
+      padding:12px 16px;
+      border-radius:14px;
+      font-weight:800;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(255,111,77,.18);
+      transition:.18s ease;
+    }
+
+    .btn-print:hover{
+      filter:brightness(1.04);
+      transform:translateY(-1px);
+    }
+
+    .loading{
+      opacity:.78;
+      pointer-events:none;
+      filter:saturate(.85);
+    }
+
+    .mini-legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:0 4px 6px;
+    }
+
+    .mini-legend span{
+      font-size:.78rem;
+      color:var(--text-faint);
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(180,210,255,.12);
+      padding:4px 8px;
+      border-radius:999px;
+    }
+
+    .chart-tooltip{
+      position:fixed;
+      z-index:99999;
+      min-width:180px;
+      max-width:280px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(6,14,26,.95);
+      border:1px solid rgba(126,249,255,.28);
+      box-shadow:
+        0 12px 30px rgba(0,0,0,.35),
+        0 0 18px rgba(53,236,255,.08);
+      color:#eef7ff;
+      pointer-events:none;
+      opacity:0;
+      transform:translateY(6px);
+      transition:opacity .12s ease, transform .12s ease;
+      backdrop-filter:blur(10px);
+    }
+
+    .chart-tooltip.show{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .chart-tooltip .tt-title{
+      font-weight:800;
+      font-size:.94rem;
+      margin-bottom:4px;
+      color:#f9fdff;
+    }
+
+    .chart-tooltip .tt-sub{
+      font-size:.82rem;
+      color:#b9c7db;
+      line-height:1.35;
+    }
+
+    .print-data{
+      display:none;
+      margin-top:10px;
+      border-top:1px dashed rgba(180,210,255,.16);
+      padding-top:10px;
+    }
+
+    .print-data .print-title{
+      font-weight:800;
+      color:#eef7ff;
+      margin-bottom:8px;
+      font-size:.92rem;
+    }
+
+    .print-data table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.84rem;
+    }
+
+    .print-data th,
+    .print-data td{
+      border:1px solid rgba(180,210,255,.18);
+      padding:6px 8px;
+      text-align:left;
+      vertical-align:top;
+    }
+
+    .print-data th{
+      background:rgba(255,255,255,.04);
+      color:#eef7ff;
+    }
+
+    .print-data td{
+      color:#dbe8f7;
+      word-break:break-word;
+    }
+
+    body.pdf-mode .print-data{
+      display:block;
+    }
+
+    @media print{
+      @page{
+        size:A4 portrait;
+        margin:10mm;
+      }
+
+      html,body{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      body{
+        padding:0 !important;
+        overflow:visible !important;
+      }
+
+      body::before,
+      .sidebar,
+      .actions,
+      .title-area a,
+      #btnFiltrar{
+        display:none !important;
+      }
+
+      .page,
+      .content,
+      .wrap{
+        display:block !important;
+        width:100% !important;
+        max-width:none !important;
+        margin:0 !important;
+        padding:0 !important;
+      }
+
+      .card,
+      .chart-card{
+        background:#fff !important;
+        color:#000 !important;
+        box-shadow:none !important;
+        border:1px solid #d1d5db !important;
+        backdrop-filter:none !important;
+        break-inside:avoid;
+        page-break-inside:avoid;
+      }
+
+      .title-area h1,
+      .section-title,
+      .chart-title,
+      .title-area .sub,
+      .chart-note{
+        color:#000 !important;
+      }
+
+      canvas{
+        background:#fff !important;
+        border:1px solid #e5e7eb !important;
+      }
+
+      .filters .field{
+        background:#fff !important;
+        color:#000 !important;
+        box-shadow:none !important;
+        border:1px solid #d1d5db !important;
+      }
+
+      .filters label{
+        color:#000 !important;
+      }
+
+      .print-data{
+        display:block !important;
+        border-top:1px solid #d1d5db !important;
+        padding-top:8px !important;
+      }
+
+      .print-data .print-title,
+      .print-data th,
+      .print-data td{
+        color:#000 !important;
+      }
+
+      .print-data table,
+      .print-data th,
+      .print-data td{
+        border-color:#cbd5e1 !important;
+      }
+
+      .print-data th{
+        background:#f8fafc !important;
+      }
     }
   </style>
 </head>
@@ -346,22 +642,24 @@
           <div style="font-size:.8rem;color:var(--text-soft)">Sistema Escolar</div>
         </div>
       </div>
+
       <nav class="nav">
         <a href="painel.html">🏠 Painel</a>
         <a href="lista-alunos.html">👥 Alunos</a>
         <a href="/notificacoes">🔔 Notificações</a>
-        <a class="active" href="estatisticas.html">📉 Relatórios</a>
+        <a class="active" href="estatisticas.html">📊 Relatórios</a>
         <a href="mensagens.html">✉️ Mensagens</a>
         <a href="usuarios.html">⚙️ Administração</a>
         <a href="logs.html">🧾 Logs</a>
       </nav>
+
       <div class="sb-foot">
         <button class="sb-logout" onclick="logout()">🚪 Sair</button>
       </div>
     </aside>
 
     <main class="content">
-      <div class="wrap">
+      <div class="wrap" id="printRoot">
         <div class="title-area">
           <div>
             <h1>Relatórios e Estatísticas</h1>
@@ -370,7 +668,6 @@
           <a href="painel.html" class="btn-secondary">← Voltar</a>
         </div>
 
-        <!-- ================= SEÇÃO NOTIFICAÇÕES (existente) ================= -->
         <section class="card" aria-label="Relatórios de Notificações">
           <div class="filters">
             <div class="field sm-4">
@@ -391,101 +688,160 @@
           </div>
 
           <h2 class="section-title">🔔 Notificações <span class="chip">módulo existente</span></h2>
+
           <div class="grid">
             <div class="chart-card">
               <div class="chart-title">Alunos por turma</div>
-              <div class="chart-wrap"><canvas id="chartAlunosTurma" width="640" height="300" aria-label="Gráfico de barras - Alunos por turma"></canvas></div>
+              <div class="chart-note">Visual em perspectiva com hover/toque e dados completos para impressão/PDF</div>
+              <div class="chart-wrap">
+                <canvas id="chartAlunosTurma" aria-label="Gráfico de barras - Alunos por turma"></canvas>
+                <div class="print-data" id="data-chartAlunosTurma"></div>
+              </div>
             </div>
+
             <div class="chart-card">
               <div class="chart-title">Comportamento médio por turma</div>
-              <div class="chart-wrap"><canvas id="chartComportamento" width="640" height="300" aria-label="Gráfico de barras - Comportamento por turma"></canvas></div>
+              <div class="chart-note">Escala adaptada automaticamente com destaque do item selecionado</div>
+              <div class="chart-wrap">
+                <canvas id="chartComportamento" aria-label="Gráfico de barras - Comportamento por turma"></canvas>
+                <div class="print-data" id="data-chartComportamento"></div>
+              </div>
             </div>
           </div>
 
           <div class="grid" style="margin-top:18px">
             <div class="chart-card" style="grid-column:span 2">
               <div class="chart-title">Distribuição por faixa (comportamento)</div>
-              <div class="chart-wrap"><canvas id="chartDistribuicao" width="960" height="320" aria-label="Gráfico de rosca - Distribuição"></canvas></div>
+              <div class="mini-legend">
+                <span>Neon ciano + coral</span>
+                <span>Rosca com hover</span>
+                <span>Legenda completa no PDF</span>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chartDistribuicao" aria-label="Gráfico de rosca - Distribuição"></canvas>
+                <div class="print-data" id="data-chartDistribuicao"></div>
+              </div>
             </div>
           </div>
 
           <div class="actions">
+            <button class="btn-print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
             <button class="btn-secondary" onclick="exportarPDF()">📄 Exportar PDF</button>
           </div>
         </section>
 
-        <!-- ================= NOVA SEÇÃO: APH ================= -->
         <section class="card" aria-label="Relatórios de APH" style="margin-top:18px">
           <h2 class="section-title">🩺 APH — Atendimentos Pré-Hospitalares <span class="chip">novo</span></h2>
 
           <div class="grid">
             <div class="chart-card">
               <div class="chart-title">Ocorrências por tipo</div>
-              <div class="chart-wrap"><canvas id="aphTipo" width="640" height="300" aria-label="Gráfico APH por tipo"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphTipo" aria-label="Gráfico APH por tipo"></canvas>
+                <div class="print-data" id="data-aphTipo"></div>
+              </div>
             </div>
             <div class="chart-card">
               <div class="chart-title">Materiais utilizados</div>
-              <div class="chart-wrap"><canvas id="aphMateriais" width="640" height="300" aria-label="Gráfico APH por materiais"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphMateriais" aria-label="Gráfico APH por materiais"></canvas>
+                <div class="print-data" id="data-aphMateriais"></div>
+              </div>
             </div>
           </div>
 
           <div class="grid" style="margin-top:18px">
             <div class="chart-card">
               <div class="chart-title">Encaminhamentos</div>
-              <div class="chart-wrap"><canvas id="aphEnc" width="640" height="300" aria-label="Gráfico APH por encaminhamento"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphEnc" aria-label="Gráfico APH por encaminhamento"></canvas>
+                <div class="print-data" id="data-aphEnc"></div>
+              </div>
             </div>
             <div class="chart-card">
               <div class="chart-title">Locais</div>
-              <div class="chart-wrap"><canvas id="aphLocal" width="640" height="300" aria-label="Gráfico APH por local"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphLocal" aria-label="Gráfico APH por local"></canvas>
+                <div class="print-data" id="data-aphLocal"></div>
+              </div>
             </div>
           </div>
 
           <div class="grid" style="margin-top:18px">
             <div class="chart-card" style="grid-column:span 2">
               <div class="chart-title">Evolução mensal</div>
-              <div class="chart-wrap"><canvas id="aphMes" width="960" height="320" aria-label="Gráfico APH por mês"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphMes" aria-label="Gráfico APH por mês"></canvas>
+                <div class="print-data" id="data-aphMes"></div>
+              </div>
             </div>
           </div>
 
           <div class="grid" style="margin-top:18px">
             <div class="chart-card">
               <div class="chart-title">Por turma</div>
-              <div class="chart-wrap"><canvas id="aphTurma" width="640" height="300" aria-label="Gráfico APH por turma"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphTurma" aria-label="Gráfico APH por turma"></canvas>
+                <div class="print-data" id="data-aphTurma"></div>
+              </div>
             </div>
             <div class="chart-card">
               <div class="chart-title">Por turno</div>
-              <div class="chart-wrap"><canvas id="aphTurno" width="640" height="300" aria-label="Gráfico APH por turno"></canvas></div>
+              <div class="chart-wrap">
+                <canvas id="aphTurno" aria-label="Gráfico APH por turno"></canvas>
+                <div class="print-data" id="data-aphTurno"></div>
+              </div>
             </div>
           </div>
 
           <div class="grid" style="margin-top:18px">
             <div class="chart-card" style="grid-column:span 2">
-              <div class="chart-title">Quem atendeu (somente quem registrou atendimentos)</div>
-              <div class="chart-wrap"><canvas id="aphResp" width="960" height="320" aria-label="Gráfico APH por responsável"></canvas></div>
+              <div class="chart-title">Quem atendeu</div>
+              <div class="chart-wrap">
+                <canvas id="aphResp" aria-label="Gráfico APH por responsável"></canvas>
+                <div class="print-data" id="data-aphResp"></div>
+              </div>
             </div>
           </div>
 
-          <!-- NOVO: ação para gerar PDF consolidado do APH -->
           <div class="actions">
+            <button class="btn-print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
             <button class="btn-secondary" onclick="gerarPdfConsolidadoAPH()">📄 PDF Consolidado (APH)</button>
           </div>
         </section>
-        <!-- =============== FIM APH =============== -->
-
       </div>
     </main>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    /* ==== TODO O JS ORIGINAL MANTIDO ABAIXO (só copiado) ==== */
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    function isoToBR(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
-    function brToISO(br){
-      if(!br) return '';
-      const [d,m,y]=br.split('/').map(Number);
-      if(!d||!m||!y) return '';
-      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  <script>
+    let ultimoSnapshot = {
+      notificacoes: {
+        alunosPorTurma: [],
+        comportamento: [],
+        distribuicao: {}
+      },
+      aph: {
+        porTipo: [],
+        porMaterial: [],
+        porEncaminhamento: [],
+        porLocal: [],
+        porMes: [],
+        porTurma: [],
+        porTurno: [],
+        porResponsavel: []
+      }
+    };
+
+    const chartMeta = {};
+    let activeTooltip = null;
+
+    function isoToBR(iso){
+      if(!iso) return '';
+      const [y,m,d] = iso.split('-');
+      return `${d}/${m}/${y}`;
     }
 
     function showError(msg){
@@ -493,21 +849,49 @@
       if(!el){
         el = document.createElement('div');
         el.id = 'errBanner';
-        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
+        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:12px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.24);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
         document.body.appendChild(el);
       }
       el.textContent = `Erro: ${msg}`;
-      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
+      clearTimeout(el._t);
+      el._t = setTimeout(()=>el.remove(), 8000);
     }
 
-    async function fetchJsonSeguro(url, timeoutMs=10000){
-      const ctrl = new AbortController(); const to = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+    function setLoading(isLoading){
+      document.body.classList.toggle('loading', !!isLoading);
+      const btn = document.getElementById('btnFiltrar');
+      if(btn){
+        btn.disabled = !!isLoading;
+        btn.textContent = isLoading ? 'Carregando...' : 'Aplicar filtros';
+      }
+    }
+
+    async function fetchJsonSeguro(url, timeoutMs = 15000){
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort('timeout'), timeoutMs);
       try{
-        const r = await fetch(url, { credentials:'include', headers:{Accept:'application/json'}, cache:'no-store', signal:ctrl.signal });
-        if(!r.ok){ const t = await r.text().catch(()=> ''); throw new Error(`HTTP ${r.status} em ${url} — ${t.slice(0,120)}`); }
-        const ct = r.headers.get('content-type')||''; if(!ct.includes('application/json')){ const t=await r.text().catch(()=> ''); throw new Error(`Resposta não-JSON em ${url}: ${t.slice(0,120)}`); }
+        const r = await fetch(url, {
+          credentials:'include',
+          headers:{ Accept:'application/json' },
+          cache:'no-store',
+          signal:ctrl.signal
+        });
+
+        if(!r.ok){
+          const t = await r.text().catch(()=> '');
+          throw new Error(`HTTP ${r.status} em ${url} — ${t.slice(0,120)}`);
+        }
+
+        const ct = r.headers.get('content-type') || '';
+        if(!ct.includes('application/json')){
+          const t = await r.text().catch(()=> '');
+          throw new Error(`Resposta não-JSON em ${url}: ${t.slice(0,120)}`);
+        }
+
         return r.json();
-      } finally { clearTimeout(to); }
+      } finally {
+        clearTimeout(to);
+      }
     }
 
     async function carregarTurmas(){
@@ -515,275 +899,1213 @@
         const lista = await fetchJsonSeguro('/api/estatisticas/turmas');
         const sel = document.getElementById('filtroTurma');
         const atual = sel.value || 'Todas';
+
         sel.innerHTML = '<option value="Todas">Todas</option>';
         if(Array.isArray(lista)){
-          lista.forEach(t=>{
+          lista.forEach(t => {
             if(!t) return;
-            const opt = document.createElement('option'); opt.value=t; opt.textContent=t; sel.appendChild(opt);
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            sel.appendChild(opt);
           });
         }
+
         sel.value = atual;
-      }catch(e){ console.warn(e); showError('Falha ao carregar turmas'); }
+      }catch(e){
+        console.warn(e);
+        showError('Falha ao carregar turmas');
+      }
     }
 
-    function drawBars(canvasId, itens, labelKey, valueKey, maxY=10){
-      const c = document.getElementById(canvasId); if(!c) return;
-      const ctx = c.getContext('2d'); const W=c.width, H=c.height;
-      ctx.clearRect(0,0,W,H);
+    function getCanvasCtx(canvasId){
+      const canvas = document.getElementById(canvasId);
+      if(!canvas) return null;
 
-      if(!Array.isArray(itens) || itens.length===0){
-        ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='14px Segoe UI'; ctx.fillText('Sem dados', 18, 24);
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const cssW = Math.max(320, Math.floor(rect.width || 640));
+      const cssH = Math.max(240, Math.floor(rect.height || 320));
+
+      if(canvas.width !== Math.floor(cssW * dpr) || canvas.height !== Math.floor(cssH * dpr)){
+        canvas.width = Math.floor(cssW * dpr);
+        canvas.height = Math.floor(cssH * dpr);
+      }
+
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      return { canvas, ctx, W: cssW, H: cssH };
+    }
+
+    function roundRectPath(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function drawGlowDot(ctx, x, y, radius, color){
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function fitText(ctx, text, maxWidth, baseSize = 11, minSize = 7){
+      let size = baseSize;
+      ctx.font = `700 ${size}px "Segoe UI"`;
+      while(size > minSize && ctx.measureText(text).width > maxWidth){
+        size -= 1;
+        ctx.font = `700 ${size}px "Segoe UI"`;
+      }
+      return size;
+    }
+
+    function abbreviateLabel(text, maxLen = 10){
+      const s = String(text || '').trim();
+      if(s.length <= maxLen) return s;
+      return s.slice(0, maxLen - 1) + '…';
+    }
+
+    function abbrevPrintValue(v){
+      if(typeof v === 'number'){
+        if(Number.isInteger(v)) return String(v);
+        return v.toFixed(1).replace('.', ',');
+      }
+      return String(v ?? '');
+    }
+
+    function drawChartBackground(ctx, W, H){
+      ctx.save();
+
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, 'rgba(2,9,16,.88)');
+      bg.addColorStop(1, 'rgba(3,8,15,.58)');
+      ctx.fillStyle = bg;
+      roundRectPath(ctx, 0, 0, W, H, 18);
+      ctx.fill();
+
+      const g1 = ctx.createRadialGradient(W * 0.5, H * 0.95, 6, W * 0.5, H * 0.95, W * 0.55);
+      g1.addColorStop(0, 'rgba(53,236,255,.10)');
+      g1.addColorStop(1, 'rgba(53,236,255,0)');
+      ctx.fillStyle = g1;
+      roundRectPath(ctx, 0, 0, W, H, 18);
+      ctx.fill();
+
+      const g2 = ctx.createRadialGradient(W * 0.08, H * 0.08, 10, W * 0.08, H * 0.08, W * 0.28);
+      g2.addColorStop(0, 'rgba(255,111,77,.06)');
+      g2.addColorStop(1, 'rgba(255,111,77,0)');
+      ctx.fillStyle = g2;
+      roundRectPath(ctx, 0, 0, W, H, 18);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function ensureTooltip(){
+      let el = document.getElementById('chartTooltip');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'chartTooltip';
+        el.className = 'chart-tooltip';
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    function showTooltip(x, y, title, subtitle){
+      const el = ensureTooltip();
+      el.innerHTML = `
+        <div class="tt-title">${title || ''}</div>
+        <div class="tt-sub">${subtitle || ''}</div>
+      `;
+      el.classList.add('show');
+
+      const pad = 14;
+      const rect = el.getBoundingClientRect();
+      let left = x + 14;
+      let top = y + 14;
+
+      if(left + rect.width > window.innerWidth - pad){
+        left = x - rect.width - 14;
+      }
+      if(top + rect.height > window.innerHeight - pad){
+        top = y - rect.height - 14;
+      }
+
+      el.style.left = `${Math.max(pad, left)}px`;
+      el.style.top = `${Math.max(pad, top)}px`;
+    }
+
+    function hideTooltip(){
+      const el = document.getElementById('chartTooltip');
+      if(el) el.classList.remove('show');
+    }
+
+    function pointInRect(px, py, r){
+      return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+    }
+
+    function setChartMeta(canvasId, meta){
+      chartMeta[canvasId] = meta || {};
+    }
+
+    function getChartMeta(canvasId){
+      return chartMeta[canvasId] || null;
+    }
+
+    function fillPrintTable(containerId, title, rows, cols = ['Item', 'Valor']){
+      const el = document.getElementById(containerId);
+      if(!el) return;
+
+      if(!rows || !rows.length){
+        el.innerHTML = `
+          <div class="print-title">${title}</div>
+          <table>
+            <thead><tr><th>${cols[0]}</th><th>${cols[1]}</th></tr></thead>
+            <tbody><tr><td colspan="2">Sem dados</td></tr></tbody>
+          </table>
+        `;
         return;
       }
 
-      const padding=40, gw=W-padding*2, gh=H-padding*2;
-      ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(padding,padding); ctx.lineTo(padding,H-padding); ctx.lineTo(W-padding,H-padding); ctx.stroke();
+      const body = rows.map(r => `
+        <tr>
+          <td>${r[0] ?? ''}</td>
+          <td>${r[1] ?? ''}</td>
+        </tr>
+      `).join('');
 
-      const vals = itens.map(x => Number(x[valueKey])||0);
-      const maxVal = Math.max(maxY, ...vals);
-      const barW = gw/(itens.length*1.6);
+      el.innerHTML = `
+        <div class="print-title">${title}</div>
+        <table>
+          <thead>
+            <tr><th>${cols[0]}</th><th>${cols[1]}</th></tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      `;
+    }
 
-      itens.forEach((d,i)=>{
-        const v = Number(d[valueKey])||0;
-        const h = (v/maxVal)*gh;
-        const x = padding + i*(barW*1.6) + barW*0.3;
-        const y = H - padding - h;
+    function attachCanvasInteractivity(canvasId){
+      const canvas = document.getElementById(canvasId);
+      if(!canvas || canvas.dataset.interactiveBound === '1') return;
+      canvas.dataset.interactiveBound = '1';
 
-        const grad = ctx.createLinearGradient(0,y,0,y+h);
-        grad.addColorStop(0,'#2563eb');
-        grad.addColorStop(1,'#38bdf8');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x,y,barW,h);
+      function getLocalPos(ev){
+        const rect = canvas.getBoundingClientRect();
+        let clientX = 0, clientY = 0;
 
-        ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center';
-        ctx.font='12px Segoe UI';
-        ctx.fillText(String(d[labelKey]||''), x+barW/2, H-padding+16);
-        ctx.fillText((v % 1 === 0 ? v.toString() : v.toFixed(1)).replace('.',','), x+barW/2, y-6);
+        if(ev.touches && ev.touches[0]){
+          clientX = ev.touches[0].clientX;
+          clientY = ev.touches[0].clientY;
+        }else{
+          clientX = ev.clientX;
+          clientY = ev.clientY;
+        }
+
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top,
+          clientX,
+          clientY
+        };
+      }
+
+      function activateAt(ev){
+        const meta = getChartMeta(canvasId);
+        if(!meta || !meta.hotspots || !meta.hotspots.length) return;
+
+        const pos = getLocalPos(ev);
+        let found = -1;
+
+        for(let i = meta.hotspots.length - 1; i >= 0; i--){
+          const hs = meta.hotspots[i];
+          if(pointInRect(pos.x, pos.y, hs)){
+            found = i;
+            break;
+          }
+        }
+
+        const card = canvas.closest('.chart-card');
+        if(card) card.classList.toggle('is-hovered', found >= 0);
+
+        if(found !== meta.activeIndex){
+          meta.activeIndex = found;
+          if(typeof meta.redraw === 'function') meta.redraw();
+        }
+
+        if(found >= 0){
+          const item = meta.hotspots[found];
+          showTooltip(
+            pos.clientX,
+            pos.clientY,
+            item.fullLabel || item.label || '',
+            item.tooltip || ''
+          );
+          activeTooltip = canvasId;
+        }else{
+          if(activeTooltip === canvasId){
+            hideTooltip();
+            activeTooltip = null;
+          }
+        }
+      }
+
+      canvas.addEventListener('mousemove', activateAt);
+      canvas.addEventListener('touchstart', activateAt, { passive:true });
+      canvas.addEventListener('touchmove', activateAt, { passive:true });
+
+      canvas.addEventListener('mouseleave', () => {
+        const meta = getChartMeta(canvasId);
+        if(meta){
+          meta.activeIndex = -1;
+          if(typeof meta.redraw === 'function') meta.redraw();
+        }
+        const card = canvas.closest('.chart-card');
+        if(card) card.classList.remove('is-hovered');
+        hideTooltip();
+        activeTooltip = null;
       });
+
+      canvas.addEventListener('touchend', () => {
+        setTimeout(() => {
+          hideTooltip();
+          activeTooltip = null;
+        }, 1200);
+      });
+    }
+
+    function drawIsometricPlatform(ctx, x, y, w, skewX, skewY){
+      ctx.save();
+
+      const top = new Path2D();
+      top.moveTo(x, y);
+      top.lineTo(x + w, y);
+      top.lineTo(x + w + skewX, y - skewY);
+      top.lineTo(x + skewX, y - skewY);
+      top.closePath();
+
+      const grad = ctx.createLinearGradient(x, y, x + w + skewX, y - skewY);
+      grad.addColorStop(0, 'rgba(255,120,90,.34)');
+      grad.addColorStop(.55, 'rgba(255,126,108,.18)');
+      grad.addColorStop(1, 'rgba(255,80,160,.14)');
+
+      ctx.fillStyle = grad;
+      ctx.shadowColor = 'rgba(255,111,77,.55)';
+      ctx.shadowBlur = 18;
+      ctx.fill(top);
+
+      ctx.strokeStyle = 'rgba(255,174,126,.96)';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(255,111,77,.85)';
+      ctx.shadowBlur = 14;
+      ctx.stroke(top);
+
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,.06)';
+      ctx.lineWidth = 1;
+
+      for(let i = 1; i < 6; i++){
+        const gx = x + i * (w / 6);
+        ctx.beginPath();
+        ctx.moveTo(gx, y);
+        ctx.lineTo(gx + skewX, y - skewY);
+        ctx.stroke();
+      }
+
+      for(let i = 1; i < 4; i++){
+        const yy = y - i * (skewY / 4);
+        ctx.beginPath();
+        ctx.moveTo(x + skewX * (i / 4), yy);
+        ctx.lineTo(x + w + skewX * (i / 4), yy);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawIsometricBar(ctx, cfg){
+      const { x, baseY, width, depthX, depthY, height, colorMode='cyan', valueText='', labelText='', active=false } = cfg;
+
+      const frontTopY = baseY - height;
+      const edgeColor = colorMode === 'orange' ? 'rgba(255,225,205,.98)' : 'rgba(220,255,255,.98)';
+      const glowColor = colorMode === 'orange' ? 'rgba(255,159,107,.96)' : 'rgba(126,249,255,.98)';
+
+      const front = new Path2D();
+      front.moveTo(x, baseY);
+      front.lineTo(x + width, baseY);
+      front.lineTo(x + width, frontTopY);
+      front.lineTo(x, frontTopY);
+      front.closePath();
+
+      const side = new Path2D();
+      side.moveTo(x + width, baseY);
+      side.lineTo(x + width + depthX, baseY - depthY);
+      side.lineTo(x + width + depthX, frontTopY - depthY);
+      side.lineTo(x + width, frontTopY);
+      side.closePath();
+
+      const top = new Path2D();
+      top.moveTo(x, frontTopY);
+      top.lineTo(x + width, frontTopY);
+      top.lineTo(x + width + depthX, frontTopY - depthY);
+      top.lineTo(x + depthX, frontTopY - depthY);
+      top.closePath();
+
+      ctx.save();
+
+      const reflH = Math.max(24, height * 0.26);
+      const refl = ctx.createLinearGradient(0, baseY, 0, baseY + reflH);
+      refl.addColorStop(0, colorMode === 'orange' ? 'rgba(255,159,107,.28)' : 'rgba(126,249,255,.24)');
+      refl.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.filter = 'blur(5px)';
+      ctx.globalAlpha = .46;
+      ctx.fillStyle = refl;
+      ctx.beginPath();
+      ctx.moveTo(x + depthX * .15, baseY + 2);
+      ctx.lineTo(x + width + depthX * .15, baseY + 2);
+      ctx.lineTo(x + width + depthX * .58, baseY + reflH);
+      ctx.lineTo(x + depthX * .58, baseY + reflH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.filter = 'none';
+      ctx.globalAlpha = 1;
+
+      const frontGrad = ctx.createLinearGradient(x, frontTopY, x, baseY);
+      if(colorMode === 'orange'){
+        frontGrad.addColorStop(0, 'rgba(255,255,255,.16)');
+        frontGrad.addColorStop(.25, 'rgba(255,204,176,.14)');
+        frontGrad.addColorStop(1, 'rgba(255,159,107,.08)');
+      }else{
+        frontGrad.addColorStop(0, 'rgba(255,255,255,.16)');
+        frontGrad.addColorStop(.25, 'rgba(214,255,255,.14)');
+        frontGrad.addColorStop(1, 'rgba(126,249,255,.08)');
+      }
+
+      const sideGrad = ctx.createLinearGradient(x + width, frontTopY, x + width + depthX, baseY);
+      if(colorMode === 'orange'){
+        sideGrad.addColorStop(0, 'rgba(255,220,198,.12)');
+        sideGrad.addColorStop(1, 'rgba(255,120,90,.06)');
+      }else{
+        sideGrad.addColorStop(0, 'rgba(215,255,255,.11)');
+        sideGrad.addColorStop(1, 'rgba(100,240,255,.05)');
+      }
+
+      const topGrad = ctx.createLinearGradient(x, frontTopY, x + width + depthX, frontTopY - depthY);
+      if(colorMode === 'orange'){
+        topGrad.addColorStop(0, 'rgba(255,255,255,.26)');
+        topGrad.addColorStop(1, 'rgba(255,159,107,.12)');
+      }else{
+        topGrad.addColorStop(0, 'rgba(255,255,255,.28)');
+        topGrad.addColorStop(1, 'rgba(126,249,255,.12)');
+      }
+
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = active ? 24 : 16;
+      ctx.fillStyle = frontGrad;
+      ctx.fill(front);
+      ctx.fillStyle = sideGrad;
+      ctx.fill(side);
+      ctx.fillStyle = topGrad;
+      ctx.fill(top);
+
+      ctx.shadowBlur = active ? 18 : 10;
+      ctx.strokeStyle = edgeColor;
+      ctx.lineWidth = active ? 2 : 1.45;
+      ctx.stroke(front);
+      ctx.stroke(side);
+      ctx.stroke(top);
+
+      ctx.shadowBlur = 0;
+
+      const dotsCount = Math.max(6, Math.floor(height / 18));
+      ctx.save();
+      ctx.clip(front);
+      for(let i = 0; i < dotsCount; i++){
+        const px = x + 4 + Math.random() * Math.max(4, width - 8);
+        const py = frontTopY + 4 + Math.random() * Math.max(6, height - 8);
+        drawGlowDot(ctx, px, py, .8, colorMode === 'orange' ? 'rgba(255,228,214,.65)' : 'rgba(220,255,255,.68)');
+      }
+      ctx.restore();
+
+      if(valueText){
+        ctx.save();
+        ctx.font = '700 11px "Segoe UI"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = '#f8fdff';
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 10;
+        ctx.fillText(valueText, x + width * .5 + depthX * .24, frontTopY - 5);
+        ctx.restore();
+      }
+
+      if(labelText){
+        ctx.save();
+        const maxW = Math.max(34, width + depthX + 6);
+        const fontSize = fitText(ctx, labelText, maxW, 9, 7);
+        ctx.font = `700 ${fontSize}px "Segoe UI"`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = 'rgba(235,248,255,.82)';
+        ctx.shadowColor = 'rgba(126,249,255,.12)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(labelText, x + width * .5 + depthX * .22, baseY + 14);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawEmptyState(canvasId, msg='Sem dados'){
+      const bag = getCanvasCtx(canvasId);
+      if(!bag) return;
+      const { ctx, W, H } = bag;
+      drawChartBackground(ctx, W, H);
+      ctx.fillStyle = 'rgba(236,255,255,.86)';
+      ctx.font = '14px "Segoe UI"';
+      ctx.fillText(msg, 18, 28);
+    }
+
+    function drawBars(canvasId, itens, labelKey, valueKey, maxY = 10){
+      const bag = getCanvasCtx(canvasId);
+      if(!bag) return;
+      const { ctx, W, H } = bag;
+
+      if(!Array.isArray(itens) || itens.length === 0){
+        drawChartBackground(ctx, W, H);
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.font = '14px "Segoe UI"';
+        ctx.fillText('Sem dados', 18, 26);
+        fillPrintTable(`data-${canvasId}`, 'Dados completos', []);
+        setChartMeta(canvasId, { hotspots: [], activeIndex: -1, redraw: null });
+        attachCanvasInteractivity(canvasId);
+        return;
+      }
+
+      const isWide = W >= 760;
+      const limit = isWide ? 10 : 7;
+      const data = itens.filter(x => x && (Number(x[valueKey]) || 0) >= 0).slice(0, limit);
+
+      const left = 28;
+      const right = W - 32;
+      const bottom = H - 58;
+
+      const platformX = left + 12;
+      const platformW = Math.max(180, right - left - 62);
+      const platformY = bottom - 18;
+
+      const skewX = 34;
+      const skewY = 18;
+
+      const vals = data.map(d => Number(d[valueKey]) || 0);
+      const maxVal = Math.max(maxY, ...vals, 1);
+
+      const spacing = platformW / data.length;
+      const maxBarH = Math.max(80, H - 150);
+
+      const meta = {
+        hotspots: [],
+        activeIndex: (getChartMeta(canvasId)?.activeIndex ?? -1),
+        redraw: null
+      };
+
+      function render(){
+        ctx.clearRect(0, 0, W, H);
+        drawChartBackground(ctx, W, H);
+        drawIsometricPlatform(ctx, platformX, platformY, platformW, skewX, skewY);
+
+        meta.hotspots = [];
+
+        data.forEach((d, i) => {
+          const v = Number(d[valueKey]) || 0;
+          const ratio = maxVal > 0 ? v / maxVal : 0;
+
+          const width = Math.min(42, Math.max(22, spacing * 0.34));
+          const depthX = Math.max(10, width * 0.45);
+          const depthY = Math.max(6, width * 0.24);
+          const height = Math.max(12, ratio * maxBarH);
+
+          const x = platformX + i * spacing + spacing * 0.16;
+          const labelRaw = String(d[labelKey] ?? '');
+          const label = data.length <= 8 ? abbreviateLabel(labelRaw, 10) : abbreviateLabel(labelRaw, 6);
+          const valueTxt = data.length <= 8
+            ? (Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ','))
+            : (data.length <= 10 ? String(Math.round(v * 10) / 10).replace('.', ',') : '');
+
+          const active = meta.activeIndex === i;
+
+          drawIsometricBar(ctx, {
+            x,
+            baseY: platformY - 4,
+            width,
+            depthX,
+            depthY,
+            height,
+            colorMode: i === 0 ? 'orange' : 'cyan',
+            valueText: valueTxt,
+            labelText: label,
+            active
+          });
+
+          if(active){
+            ctx.save();
+            ctx.strokeStyle = i === 0 ? 'rgba(255,225,205,.98)' : 'rgba(220,255,255,.98)';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = i === 0 ? 'rgba(255,159,107,.95)' : 'rgba(126,249,255,.95)';
+            ctx.shadowBlur = 14;
+            roundRectPath(ctx, x - 6, platformY - 4 - height - depthY - 8, width + depthX + 16, height + depthY + 24, 8);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          meta.hotspots.push({
+            x: x - 8,
+            y: platformY - 4 - height - depthY - 8,
+            w: width + depthX + 22,
+            h: height + depthY + 28,
+            label,
+            fullLabel: labelRaw,
+            tooltip: `Valor: ${abbrevPrintValue(v)}`
+          });
+        });
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(126,249,255,.08)';
+        ctx.lineWidth = 1;
+        for(let i = 0; i < 4; i++){
+          const y = platformY - 24 - i * 40;
+          ctx.beginPath();
+          ctx.moveTo(platformX - 6, y);
+          ctx.lineTo(platformX + platformW + skewX + 12, y - skewY * .18);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        if(itens.length > data.length){
+          ctx.save();
+          ctx.font = '11px "Segoe UI"';
+          ctx.fillStyle = 'rgba(185,199,219,.82)';
+          ctx.textAlign = 'right';
+          ctx.fillText(`Mostrando ${data.length} de ${itens.length}`, W - 10, 14);
+          ctx.restore();
+        }
+      }
+
+      meta.redraw = render;
+      setChartMeta(canvasId, meta);
+      render();
+      attachCanvasInteractivity(canvasId);
+
+      fillPrintTable(
+        `data-${canvasId}`,
+        'Dados completos',
+        itens.map(d => [String(d[labelKey] ?? ''), abbrevPrintValue(Number(d[valueKey]) || 0)])
+      );
     }
 
     function drawLine(canvasId, itens, labelKey, valueKey){
-      const c = document.getElementById(canvasId); if(!c) return;
-      const ctx = c.getContext('2d'); const W=c.width, H=c.height;
-      ctx.clearRect(0,0,W,H);
+      const bag = getCanvasCtx(canvasId);
+      if(!bag) return;
+      const { ctx, W, H } = bag;
 
-      if(!Array.isArray(itens) || itens.length===0){
-        ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='14px Segoe UI'; ctx.fillText('Sem dados', 18, 24);
+      if(!Array.isArray(itens) || itens.length === 0){
+        drawChartBackground(ctx, W, H);
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.font = '14px "Segoe UI"';
+        ctx.fillText('Sem dados', 18, 26);
+        fillPrintTable(`data-${canvasId}`, 'Dados completos', []);
+        setChartMeta(canvasId, { hotspots: [], activeIndex: -1, redraw: null });
+        attachCanvasInteractivity(canvasId);
         return;
       }
 
-      const padding=40, gw=W-padding*2, gh=H-padding*2;
-      ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(padding,padding); ctx.lineTo(padding,H-padding); ctx.lineTo(W-padding,H-padding); ctx.stroke();
+      const data = itens.slice(0, 12);
+      const padding = { top: 28, right: 20, bottom: 54, left: 34 };
+      const gw = W - padding.left - padding.right;
+      const gh = H - padding.top - padding.bottom;
 
-      const vals = itens.map(x => Number(x[valueKey])||0);
+      const vals = data.map(x => Number(x[valueKey]) || 0);
       const maxVal = Math.max(1, ...vals);
-      const stepX = gw/(Math.max(1,itens.length-1));
+      const stepX = gw / Math.max(1, data.length - 1);
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#38bdf8';
-      ctx.beginPath();
-
-      itens.forEach((d,i)=>{
-        const v = Number(d[valueKey])||0;
-        const x = padding + i*stepX;
-        const y = H - ( (v/maxVal)*gh ) - padding;
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-
-        ctx.fillStyle='rgba(255,255,255,.9)'; ctx.textAlign='center';
-        ctx.font='12px Segoe UI';
-        ctx.fillText(String(d[labelKey]||''), x, H-padding+16);
+      const points = data.map((d, i) => {
+        const v = Number(d[valueKey]) || 0;
+        return {
+          x: padding.left + i * stepX,
+          y: H - padding.bottom - ((v / maxVal) * gh),
+          label: String(d[labelKey] || ''),
+          value: v
+        };
       });
 
-      ctx.stroke();
+      const meta = {
+        hotspots: [],
+        activeIndex: (getChartMeta(canvasId)?.activeIndex ?? -1),
+        redraw: null
+      };
 
-      itens.forEach((d,i)=>{
-        const v = Number(d[valueKey])||0;
-        const x = padding + i*stepX;
-        const y = H - ( (v/maxVal)*gh ) - padding;
-        ctx.fillStyle='#1d4ed8';
-        ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+      function render(){
+        ctx.clearRect(0, 0, W, H);
+        drawChartBackground(ctx, W, H);
 
-        ctx.fillStyle='rgba(255,255,255,.9)';
-        ctx.font='12px Segoe UI'; ctx.textAlign='center';
-        ctx.fillText(String(v), x, y-8);
-      });
+        ctx.save();
+        ctx.strokeStyle = 'rgba(126,249,255,.10)';
+        ctx.lineWidth = 1;
+        for(let i = 0; i < 4; i++){
+          const y = padding.top + i * (gh / 3);
+          ctx.beginPath();
+          ctx.moveTo(padding.left, y);
+          ctx.lineTo(W - padding.right, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        const areaPath = new Path2D();
+        areaPath.moveTo(points[0].x, H - padding.bottom);
+
+        points.forEach((p, i) => {
+          if(i === 0){
+            areaPath.lineTo(p.x, p.y);
+          }else{
+            const prev = points[i - 1];
+            const cp1x = prev.x + stepX * .45;
+            const cp1y = prev.y;
+            const cp2x = p.x - stepX * .45;
+            const cp2y = p.y;
+            areaPath.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p.x, p.y);
+          }
+        });
+
+        areaPath.lineTo(points[points.length - 1].x, H - padding.bottom);
+        areaPath.closePath();
+
+        const areaGrad = ctx.createLinearGradient(0, padding.top, 0, H - padding.bottom);
+        areaGrad.addColorStop(0, 'rgba(53,236,255,.20)');
+        areaGrad.addColorStop(.6, 'rgba(53,236,255,.08)');
+        areaGrad.addColorStop(1, 'rgba(53,236,255,0)');
+        ctx.fillStyle = areaGrad;
+        ctx.fill(areaPath);
+
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#7ef9ff';
+        ctx.shadowColor = 'rgba(126,249,255,.95)';
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+
+        points.forEach((p, i) => {
+          if(i === 0){
+            ctx.moveTo(p.x, p.y);
+          }else{
+            const prev = points[i - 1];
+            const cp1x = prev.x + stepX * .45;
+            const cp1y = prev.y;
+            const cp2x = p.x - stepX * .45;
+            const cp2y = p.y;
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p.x, p.y);
+          }
+        });
+
+        ctx.stroke();
+        ctx.restore();
+
+        meta.hotspots = [];
+
+        points.forEach((p, i) => {
+          const active = meta.activeIndex === i;
+
+          drawGlowDot(ctx, p.x, p.y, active ? 4.5 : 2.8, '#7ef9ff');
+
+          if(active){
+            ctx.save();
+            ctx.strokeStyle = 'rgba(220,255,255,.98)';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = 'rgba(126,249,255,.95)';
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          ctx.save();
+          ctx.font = '700 10px "Segoe UI"';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(236,255,255,.9)';
+          ctx.fillText(String(p.value), p.x, p.y - 10);
+          ctx.restore();
+
+          ctx.save();
+          const label = abbreviateLabel(p.label, 7);
+          ctx.font = '700 9px "Segoe UI"';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(236,255,255,.78)';
+          ctx.fillText(label, p.x, H - 18);
+          ctx.restore();
+
+          meta.hotspots.push({
+            x: p.x - 16,
+            y: p.y - 16,
+            w: 32,
+            h: 32,
+            label,
+            fullLabel: p.label,
+            tooltip: `Valor: ${abbrevPrintValue(p.value)}`
+          });
+        });
+      }
+
+      meta.redraw = render;
+      setChartMeta(canvasId, meta);
+      render();
+      attachCanvasInteractivity(canvasId);
+
+      fillPrintTable(
+        `data-${canvasId}`,
+        'Dados completos',
+        itens.map(d => [String(d[labelKey] ?? ''), abbrevPrintValue(Number(d[valueKey]) || 0)])
+      );
     }
 
     function drawDonut(canvasId, mapa){
-      const c = document.getElementById(canvasId); if(!c) return;
-      const ctx = c.getContext('2d'); const W=c.width, H=c.height;
-      ctx.clearRect(0,0,W,H);
+      const bag = getCanvasCtx(canvasId);
+      if(!bag) return;
+      const { ctx, W, H } = bag;
 
       const items = [
-        {name:'Excepcional', value:mapa.excepcional||mapa.exc||0, color:'#22c55e'},
-        {name:'Ótimo',       value:mapa.otimo||mapa.oti||0,       color:'#3b82f6'},
-        {name:'Bom',         value:mapa.bom||0,                   color:'#f59e0b'},
-        {name:'Regular',     value:mapa.regular||mapa.reg||0,     color:'#ef4444'},
-        {name:'Insuficiente',value:mapa.insuficiente||mapa.ins||0,color:'#dc2626'},
-        {name:'Incompatível',value:mapa.incompativel||mapa.inc||0,color:'#7f1d1d'},
-      ].filter(i=>i.value>0);
+        {name:'Excepcional', value:mapa.excepcional || mapa.exc || 0, color:'#22c55e'},
+        {name:'Ótimo',       value:mapa.otimo || mapa.oti || 0,       color:'#35ecff'},
+        {name:'Bom',         value:mapa.bom || 0,                     color:'#f59e0b'},
+        {name:'Regular',     value:mapa.regular || mapa.reg || 0,     color:'#ff6f4d'},
+        {name:'Insuficiente',value:mapa.insuficiente || mapa.ins || 0,color:'#ef4444'},
+        {name:'Incompatível',value:mapa.incompativel || mapa.inc || 0,color:'#7f1d1d'},
+      ].filter(i => i.value > 0);
 
-      if(items.length===0){
-        ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='14px Segoe UI'; ctx.fillText('Sem dados', 18, 24);
+      if(items.length === 0){
+        drawChartBackground(ctx, W, H);
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.font = '14px "Segoe UI"';
+        ctx.fillText('Sem dados', 18, 26);
+        fillPrintTable(`data-${canvasId}`, 'Dados completos', []);
+        setChartMeta(canvasId, { hotspots: [], activeIndex: -1, redraw: null });
+        attachCanvasInteractivity(canvasId);
         return;
       }
 
-      const total = items.reduce((s,i)=>s+i.value,0) || 1;
-      const cx=W/2, cy=H/2, r=Math.min(W,H)/3, ir=r*0.6;
-      let start=-Math.PI/2;
+      const total = items.reduce((s, i) => s + i.value, 0) || 1;
+      const isMobile = W < 700;
 
-      items.forEach(d=>{
-        const ang=(d.value/total)*Math.PI*2; const end=start+ang;
-        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath();
-        ctx.fillStyle=d.color; ctx.fill(); start=end;
-      });
+      const cx = isMobile ? W * .33 : W * .3;
+      const cy = H * .54;
+      const r = Math.min(W, H) * (isMobile ? .24 : .22);
+      const ir = r * .58;
 
-      ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath(); ctx.arc(cx,cy,ir,0,Math.PI*2); ctx.fill();
-      ctx.globalCompositeOperation='source-over';
+      const meta = {
+        hotspots: [],
+        activeIndex: (getChartMeta(canvasId)?.activeIndex ?? -1),
+        redraw: null
+      };
 
-      ctx.font='12px Segoe UI'; ctx.fillStyle='rgba(255,255,255,.92)';
-      items.forEach((d,i)=>{ const y=20+i*18; ctx.fillStyle=d.color; ctx.fillRect(W-170,y-10,10,10); ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillText(`${d.name}: ${d.value}`, W-154, y); });
+      function render(){
+        ctx.clearRect(0, 0, W, H);
+        drawChartBackground(ctx, W, H);
+
+        let start = -Math.PI / 2;
+        meta.hotspots = [];
+
+        items.forEach((d, i) => {
+          const ang = (d.value / total) * Math.PI * 2;
+          const end = start + ang;
+          const mid = start + ang / 2;
+          const active = meta.activeIndex === i;
+          const offset = active ? 8 : 0;
+
+          const dx = Math.cos(mid) * offset;
+          const dy = Math.sin(mid) * offset;
+
+          ctx.save();
+          ctx.translate(dx, dy);
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, start, end);
+          ctx.arc(cx, cy, ir, end, start, true);
+          ctx.closePath();
+
+          ctx.fillStyle = d.color;
+          ctx.shadowColor = d.color;
+          ctx.shadowBlur = active ? 24 : 16;
+          ctx.fill();
+
+          if(active){
+            ctx.strokeStyle = 'rgba(255,255,255,.9)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          ctx.restore();
+
+          meta.hotspots.push({
+            x: cx - r - 10 + dx,
+            y: cy - r - 10 + dy,
+            w: (r * 2) + 20,
+            h: (r * 2) + 20,
+            label: d.name,
+            fullLabel: d.name,
+            tooltip: `Quantidade: ${d.value}`
+          });
+
+          start = end;
+        });
+
+        const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, ir);
+        core.addColorStop(0, 'rgba(8,16,28,.95)');
+        core.addColorStop(1, 'rgba(8,16,28,.58)');
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ir, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(236,255,255,.92)';
+        ctx.font = '700 12px "Segoe UI"';
+        ctx.fillText('Total', cx, cy - 4);
+        ctx.font = '800 20px "Segoe UI"';
+        ctx.shadowColor = 'rgba(126,249,255,.35)';
+        ctx.shadowBlur = 8;
+        ctx.fillText(String(total), cx, cy + 18);
+        ctx.restore();
+
+        const legendX = isMobile ? W * .58 : W * .54;
+        const legendY = 44;
+
+        items.forEach((d, i) => {
+          const y = legendY + i * 24;
+          const active = meta.activeIndex === i;
+
+          ctx.save();
+          ctx.fillStyle = d.color;
+          ctx.shadowColor = d.color;
+          ctx.shadowBlur = active ? 14 : 8;
+          roundRectPath(ctx, legendX, y - 10, 12, 12, 4);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.fillStyle = active ? '#ffffff' : 'rgba(236,255,255,.92)';
+          ctx.font = active ? '700 12px "Segoe UI"' : '12px "Segoe UI"';
+          ctx.fillText(`${d.name}: ${d.value}`, legendX + 20, y);
+        });
+      }
+
+      meta.redraw = render;
+      setChartMeta(canvasId, meta);
+      render();
+      attachCanvasInteractivity(canvasId);
+
+      fillPrintTable(
+        `data-${canvasId}`,
+        'Dados completos',
+        items.map(d => [d.name, d.value])
+      );
+    }
+
+    function getFiltros(){
+      const inicioISO = document.getElementById('dataInicio').value || '';
+      const fimISO = document.getElementById('dataFim').value || '';
+      const turma = document.getElementById('filtroTurma').value || 'Todas';
+      return { inicioISO, fimISO, turma };
+    }
+
+    function montarQueryNotificacoes(){
+      const { inicioISO, fimISO, turma } = getFiltros();
+      const p = new URLSearchParams();
+      if(inicioISO) p.set('inicio', isoToBR(inicioISO));
+      if(fimISO) p.set('fim', isoToBR(fimISO));
+      if(turma && turma !== 'Todas') p.set('turma', turma);
+      return p;
+    }
+
+    function montarQueryAPH(){
+      const { inicioISO, fimISO, turma } = getFiltros();
+      const p = new URLSearchParams();
+      if(inicioISO) p.set('from', inicioISO);
+      if(fimISO) p.set('to', fimISO);
+      if(turma && turma !== 'Todas') p.set('turma', turma);
+      return p;
     }
 
     async function carregarDadosNotificacoes(){
+      const p = montarQueryNotificacoes();
+      const qs = p.toString() ? `?${p.toString()}` : '';
+
       try{
-        const inicioISO = document.getElementById('dataInicio').value;
-        const fimISO    = document.getElementById('dataFim').value;
-        const turma     = document.getElementById('filtroTurma').value || 'Todas';
+        const alunosPorTurma = await fetchJsonSeguro('/api/estatisticas/alunos-por-turma' + qs);
+        ultimoSnapshot.notificacoes.alunosPorTurma = Array.isArray(alunosPorTurma) ? alunosPorTurma : [];
+        drawBars(
+          'chartAlunosTurma',
+          ultimoSnapshot.notificacoes.alunosPorTurma,
+          'turma',
+          'total',
+          Math.max(10, ...(ultimoSnapshot.notificacoes.alunosPorTurma.map(x => x.total || 0)))
+        );
 
-        const p = new URLSearchParams();
-        if(inicioISO) p.set('inicio', isoToBR(inicioISO));
-        if(fimISO)    p.set('fim',    isoToBR(fimISO));
-        if(turma)     p.set('turma',  turma);
+        let comp;
+        try{
+          comp = await fetchJsonSeguro('/api/estatisticas/comportamento-por-turma' + qs);
+        }catch{
+          comp = await fetchJsonSeguro('/api/estatisticas/comportamento-por-turma');
+        }
 
-        const alunosPorTurma = await fetchJsonSeguro('/api/estatisticas/alunos-por-turma?' + p.toString());
-        drawBars('chartAlunosTurma', alunosPorTurma || [], 'turma', 'total', Math.max(10, ...((alunosPorTurma||[]).map(x=>x.total||0))));
+        ultimoSnapshot.notificacoes.comportamento = Array.isArray(comp) ? comp : [];
+        drawBars('chartComportamento', ultimoSnapshot.notificacoes.comportamento, 'turma', 'media', 10);
 
-        const comp = await fetchJsonSeguro('/api/estatisticas/comportamento-por-turma');
-        drawBars('chartComportamento', comp || [], 'turma', 'media', 10);
+        let dist;
+        try{
+          dist = await fetchJsonSeguro('/api/estatisticas/distribuicao' + qs);
+        }catch{
+          dist = await fetchJsonSeguro('/api/estatisticas/distribuicao');
+        }
 
-        const dist = await fetchJsonSeguro('/api/estatisticas/distribuicao');
-        drawDonut('chartDistribuicao', dist || {exc:0,oti:0,bom:0,reg:0,ins:0,inc:0});
+        ultimoSnapshot.notificacoes.distribuicao = dist || { exc:0, oti:0, bom:0, reg:0, ins:0, inc:0 };
+        drawDonut('chartDistribuicao', ultimoSnapshot.notificacoes.distribuicao);
       }catch(e){
-        console.error(e); showError(e.message);
+        console.error(e);
+        showError(e.message);
       }
     }
 
     function ordPorMesAsc(arr){
-      return [...(arr||[])].sort((a,b)=> (a._id||'').localeCompare(b._id||''));
+      return [...(arr || [])].sort((a,b) => (a._id || '').localeCompare(b._id || ''));
     }
 
     async function carregarDadosAPH(){
+      const p = montarQueryAPH();
       try{
-        const fromISO = document.getElementById('dataInicio').value || '';
-        const toISO   = document.getElementById('dataFim').value   || '';
-        const turma   = document.getElementById('filtroTurma').value;
-        const p = new URLSearchParams();
-        if(fromISO) p.set('from', fromISO);
-        if(toISO)   p.set('to',   toISO);
-        if(turma && turma !== 'Todas') p.set('turma', turma);
-
         const j = await fetchJsonSeguro('/api/aph/estatisticas' + (p.toString() ? `?${p.toString()}` : ''));
 
-        drawBars('aphTipo',      j.porTipo || [],        '_id', 'total', Math.max(5, ...((j.porTipo||[]).map(x=>x.total||0))));
-        drawBars('aphMateriais', j.porMaterial || [],    '_id', 'total', Math.max(5, ...((j.porMaterial||[]).map(x=>x.total||0))));
-        drawBars('aphEnc',       j.porEncaminhamento||[],'_id', 'total', Math.max(5, ...((j.porEncaminhamento||[]).map(x=>x.total||0))));
-        drawBars('aphLocal',     j.porLocal || [],       '_id', 'total', Math.max(5, ...((j.porLocal||[]).map(x=>x.total||0))));
-        drawBars('aphTurma',     j.porTurma || [],       '_id', 'total', Math.max(5, ...((j.porTurma||[]).map(x=>x.total||0))));
-        drawBars('aphTurno',     j.porTurno || [],       '_id', 'total', Math.max(5, ...((j.porTurno||[]).map(x=>x.total||0))));
-        drawBars('aphResp',      j.porResponsavel || [], '_id', 'total', Math.max(5, ...((j.porResponsavel||[]).map(x=>x.total||0))));
+        ultimoSnapshot.aph.porTipo = j.porTipo || [];
+        ultimoSnapshot.aph.porMaterial = j.porMaterial || [];
+        ultimoSnapshot.aph.porEncaminhamento = j.porEncaminhamento || [];
+        ultimoSnapshot.aph.porLocal = j.porLocal || [];
+        ultimoSnapshot.aph.porTurma = j.porTurma || [];
+        ultimoSnapshot.aph.porTurno = j.porTurno || [];
+        ultimoSnapshot.aph.porResponsavel = j.porResponsavel || [];
+        ultimoSnapshot.aph.porMes = ordPorMesAsc(j.porMes || []);
 
-        const mesOrd = ordPorMesAsc(j.porMes || []);
-        drawLine('aphMes', mesOrd, '_id', 'total');
-
+        drawBars('aphTipo', ultimoSnapshot.aph.porTipo, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porTipo.map(x => x.total || 0)));
+        drawBars('aphMateriais', ultimoSnapshot.aph.porMaterial, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porMaterial.map(x => x.total || 0)));
+        drawBars('aphEnc', ultimoSnapshot.aph.porEncaminhamento, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porEncaminhamento.map(x => x.total || 0)));
+        drawBars('aphLocal', ultimoSnapshot.aph.porLocal, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porLocal.map(x => x.total || 0)));
+        drawBars('aphTurma', ultimoSnapshot.aph.porTurma, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porTurma.map(x => x.total || 0)));
+        drawBars('aphTurno', ultimoSnapshot.aph.porTurno, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porTurno.map(x => x.total || 0)));
+        drawBars('aphResp', ultimoSnapshot.aph.porResponsavel, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porResponsavel.map(x => x.total || 0)));
+        drawLine('aphMes', ultimoSnapshot.aph.porMes, '_id', 'total');
       }catch(e){
-        console.error(e); showError(e.message || 'Falha ao carregar estatísticas de APH');
-        ['aphTipo','aphMateriais','aphEnc','aphLocal','aphMes','aphTurma','aphTurno','aphResp'].forEach(id=>{
-          const c=document.getElementById(id); if(c){ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }
-        });
+        console.error(e);
+        showError(e.message || 'Falha ao carregar estatísticas de APH');
+        ['aphTipo','aphMateriais','aphEnc','aphLocal','aphMes','aphTurma','aphTurno','aphResp'].forEach(id => drawEmptyState(id));
       }
     }
 
-    function exportarPDF(){
+    async function aplicarFiltros(){
+      try{
+        setLoading(true);
+        await carregarDadosNotificacoes();
+        await carregarDadosAPH();
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function exportarPDF(){
       const { jsPDF } = window.jspdf || {};
-      if(!jsPDF){ showError('Biblioteca jsPDF não encontrada.'); return; }
+      if(!jsPDF || typeof html2canvas === 'undefined'){
+        showError('Bibliotecas de PDF não encontradas.');
+        return;
+      }
 
-      const doc = new jsPDF();
-      const mapas = [
-        { id:'chartAlunosTurma',      titulo:'Alunos por turma' },
-        { id:'chartComportamento',    titulo:'Comportamento médio por turma' },
-        { id:'chartDistribuicao',     titulo:'Distribuição por faixa' },
-      ];
+      try{
+        setLoading(true);
+        document.body.classList.add('pdf-mode');
 
-      mapas.forEach((m,i)=>{
-        const cnv = document.getElementById(m.id);
-        if(!cnv) return;
-        const img = cnv.toDataURL('image/png', 1.0);
-        if(i>0) doc.addPage();
-        doc.setFontSize(16); doc.text(m.titulo, 10, 18);
-        doc.addImage(img, 'PNG', 10, 26, 180, 110);
-      });
+        const root = document.getElementById('printRoot');
+        const canvas = await html2canvas(root, {
+          scale: 2,
+          backgroundColor: '#07111d',
+          useCORS: true,
+          logging: false,
+          windowWidth: document.documentElement.scrollWidth
+        });
 
-      doc.save('relatorios.pdf');
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgW = pageW;
+        const imgH = (canvas.height * imgW) / canvas.width;
+
+        let heightLeft = imgH;
+        let position = 0;
+
+        pdf.addImage(imgData, 'JPEG', 0, position, imgW, imgH, undefined, 'FAST');
+        heightLeft -= pageH;
+
+        while(heightLeft > 0){
+          position = heightLeft - imgH;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgW, imgH, undefined, 'FAST');
+          heightLeft -= pageH;
+        }
+
+        pdf.save('relatorios.pdf');
+      }catch(e){
+        console.error(e);
+        showError('Falha ao gerar PDF visual da página.');
+      }finally{
+        document.body.classList.remove('pdf-mode');
+        setLoading(false);
+      }
+    }
+
+    function imprimirRelatorio(){
+      window.print();
+    }
+
+    async function gerarPdfConsolidadoAPH(){
+      const { jsPDF } = window.jspdf || {};
+      if(!jsPDF){
+        showError('Biblioteca jsPDF não encontrada.');
+        return;
+      }
+
+      try{
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const mapas = [
+          { id:'aphTipo', titulo:'APH • Ocorrências por tipo' },
+          { id:'aphMateriais', titulo:'APH • Materiais utilizados' },
+          { id:'aphEnc', titulo:'APH • Encaminhamentos' },
+          { id:'aphLocal', titulo:'APH • Locais' },
+          { id:'aphMes', titulo:'APH • Evolução mensal' },
+          { id:'aphTurma', titulo:'APH • Por turma' },
+          { id:'aphTurno', titulo:'APH • Por turno' },
+          { id:'aphResp', titulo:'APH • Responsáveis' },
+        ];
+
+        mapas.forEach((m, i) => {
+          const cnv = document.getElementById(m.id);
+          const tbl = document.getElementById(`data-${m.id}`);
+          if(!cnv) return;
+
+          if(i > 0) doc.addPage();
+          doc.setFillColor(8, 16, 28);
+          doc.rect(0, 0, 210, 297, 'F');
+
+          doc.setTextColor(236, 255, 255);
+          doc.setFontSize(15);
+          doc.text(m.titulo, 10, 18);
+
+          const img = cnv.toDataURL('image/png', 1.0);
+          doc.addImage(img, 'PNG', 10, 26, 190, 95);
+
+          if(tbl){
+            const rows = [...tbl.querySelectorAll('tbody tr')].slice(0, 12);
+            doc.setFontSize(9);
+            let y = 130;
+            doc.text('Dados completos:', 10, y);
+            y += 6;
+
+            rows.forEach((tr) => {
+              const tds = tr.querySelectorAll('td');
+              const col1 = (tds[0]?.innerText || '').slice(0, 52);
+              const col2 = (tds[1]?.innerText || '').slice(0, 30);
+              if(y > 285) return;
+              doc.text(`• ${col1} — ${col2}`, 12, y);
+              y += 5;
+            });
+          }
+        });
+
+        doc.save('relatorio-aph.pdf');
+      }catch(e){
+        console.error(e);
+        showError('Falha ao gerar PDF consolidado do APH.');
+      }
     }
 
     async function logout(){
-      try{ await fetch('/auth/logout',{method:'POST',credentials:'include'}); }catch{}
+      try{
+        await fetch('/auth/logout', { method:'POST', credentials:'include' });
+      }catch{}
       location.href = './login.html';
     }
 
     async function checarSessaoEPing(){
       const me = await fetch('/api/usuario', { credentials:'include', cache:'no-store' });
-      if (me.status === 401 || me.status === 403) {
+      if(me.status === 401 || me.status === 403){
         location.href = './login.html';
         return false;
       }
-      if (!me.ok) {
+
+      if(!me.ok){
         showError('Falha ao validar sessão (usuario).');
         return false;
       }
+
       const ping = await fetch('/api/estatisticas/ping', { credentials:'include', cache:'no-store' });
-      if (!ping.ok) {
+      if(!ping.ok){
         showError('Falha no endpoint de estatísticas.');
         return false;
       }
+
       return true;
     }
 
-    document.getElementById('btnFiltrar').addEventListener('click', async ()=>{
-      await carregarDadosNotificacoes();
-      await carregarDadosAPH();
-    });
-    document.getElementById('dataInicio').addEventListener('change', async ()=>{
-      await carregarDadosNotificacoes();
-      await carregarDadosAPH();
-    });
-    document.getElementById('dataFim').addEventListener('change', async ()=>{
-      await carregarDadosNotificacoes();
-      await carregarDadosAPH();
-    });
-    document.getElementById('filtroTurma').addEventListener('change', async ()=>{
-      await carregarDadosNotificacoes();
-      await carregarDadosAPH();
-    });
+    function redrawAll(){
+      drawBars('chartAlunosTurma', ultimoSnapshot.notificacoes.alunosPorTurma, 'turma', 'total', Math.max(10, ...((ultimoSnapshot.notificacoes.alunosPorTurma || []).map(x => x.total || 0)), 10));
+      drawBars('chartComportamento', ultimoSnapshot.notificacoes.comportamento, 'turma', 'media', 10);
+      drawDonut('chartDistribuicao', ultimoSnapshot.notificacoes.distribuicao || {});
 
-    (async()=>{
-      const ok = await checarSessaoEPing();
-      if (!ok) return;
-      await carregarTurmas();
-      await carregarDadosNotificacoes();
-      await carregarDadosAPH();
-    })();
-
-    // stub só pra manter compat com botão de PDF APH, se existir em outro arquivo
-    function gerarPdfConsolidadoAPH(){
-      showError('Geração de PDF consolidado do APH ainda não implementada nesta tela.');
+      drawBars('aphTipo', ultimoSnapshot.aph.porTipo, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porTipo || []).map(x => x.total || 0)), 5));
+      drawBars('aphMateriais', ultimoSnapshot.aph.porMaterial, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porMaterial || []).map(x => x.total || 0)), 5));
+      drawBars('aphEnc', ultimoSnapshot.aph.porEncaminhamento, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porEncaminhamento || []).map(x => x.total || 0)), 5));
+      drawBars('aphLocal', ultimoSnapshot.aph.porLocal, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porLocal || []).map(x => x.total || 0)), 5));
+      drawLine('aphMes', ultimoSnapshot.aph.porMes, '_id', 'total');
+      drawBars('aphTurma', ultimoSnapshot.aph.porTurma, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porTurma || []).map(x => x.total || 0)), 5));
+      drawBars('aphTurno', ultimoSnapshot.aph.porTurno, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porTurno || []).map(x => x.total || 0)), 5));
+      drawBars('aphResp', ultimoSnapshot.aph.porResponsavel, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porResponsavel || []).map(x => x.total || 0)), 5));
     }
+
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(redrawAll, 120);
+    });
+
+    document.getElementById('btnFiltrar').addEventListener('click', aplicarFiltros);
+    document.getElementById('dataInicio').addEventListener('change', aplicarFiltros);
+    document.getElementById('dataFim').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroTurma').addEventListener('change', aplicarFiltros);
+
+    (async () => {
+      const ok = await checarSessaoEPing();
+      if(!ok) return;
+      await carregarTurmas();
+      await aplicarFiltros();
+    })();
   </script>
-  <script src="relatorios.js"></script>
-  <script src="notify.js"></script>
 </body>
 </html>
