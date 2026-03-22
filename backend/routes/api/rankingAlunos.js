@@ -6,7 +6,6 @@ const router = express.Router();
 
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
-const calcularNotaTSMD = require('../../utils/calculoNota');
 
 /* =========================================
    MAPA DE PRIORIDADE POR SÉRIE
@@ -39,8 +38,7 @@ function escapeRegex(value) {
 }
 
 function inferSerieFromTurma(turma = '') {
-  const t = String(turma || '').trim();
-  const n = normalizeText(t);
+  const n = normalizeText(turma);
 
   if (!n) return '';
 
@@ -77,113 +75,6 @@ function getSeriePrioridade(serie) {
   return SERIE_PESO_MAP[String(serie || '').trim()] || 0;
 }
 
-function faixaPorNota(nota) {
-  const n = toNumber(nota, 0);
-  if (n >= 9.0) return 'Excepcional';
-  if (n >= 8.0) return 'Ótimo';
-  if (n >= 7.0) return 'Bom';
-  if (n >= 5.0) return 'Regular';
-  if (n >= 3.0) return 'Insuficiente';
-  return 'Incompatível';
-}
-
-function computeScoreFinal({
-  notaComportamental = 0,
-  elogios = 0,
-  atosIndisciplina = 0,
-  notificacoesNegativas = 0,
-  serie = ''
-}, opts = {}) {
-  const usarSerie = opts.priorizarSerie !== false;
-  const rebaixarNeg = opts.rebaixarNegativas !== false;
-
-  let score =
-    (toNumber(notaComportamental, 0) * 1000) +
-    (toNumber(elogios, 0) * 20) -
-    (toNumber(atosIndisciplina, 0) * 40);
-
-  if (usarSerie) {
-    score += getSeriePrioridade(serie) * 100;
-  }
-
-  if (rebaixarNeg) {
-    score -= toNumber(notificacoesNegativas, 0) * 80;
-  }
-
-  return score;
-}
-
-function compareItems(a, b, ordenar = 'scoreFinal', direcao = 'desc') {
-  const dir = direcao === 'asc' ? 1 : -1;
-
-  let av;
-  let bv;
-
-  switch (ordenar) {
-    case 'nome':
-      av = normalizeText(a.nome);
-      bv = normalizeText(b.nome);
-      if (av < bv) return -1 * dir;
-      if (av > bv) return 1 * dir;
-      break;
-
-    case 'elogios':
-      av = a.elogios;
-      bv = b.elogios;
-      if (av !== bv) return (av - bv) * dir;
-      break;
-
-    case 'notificacoesNegativas':
-      av = a.notificacoesNegativas;
-      bv = b.notificacoesNegativas;
-      if (av !== bv) return (av - bv) * dir;
-      break;
-
-    case 'atosIndisciplina':
-      av = a.atosIndisciplina;
-      bv = b.atosIndisciplina;
-      if (av !== bv) return (av - bv) * dir;
-      break;
-
-    case 'seriePrioridade':
-      av = a.seriePrioridade;
-      bv = b.seriePrioridade;
-      if (av !== bv) return (av - bv) * dir;
-      break;
-
-    case 'notaComportamental':
-      av = a.notaComportamental;
-      bv = b.notaComportamental;
-      if (av !== bv) return (av - bv) * dir;
-      break;
-
-    case 'scoreFinal':
-    default:
-      av = a.scoreFinal;
-      bv = b.scoreFinal;
-      if (av !== bv) return (av - bv) * dir;
-      break;
-  }
-
-  if (a.notaComportamental !== b.notaComportamental) {
-    return b.notaComportamental - a.notaComportamental;
-  }
-
-  if (a.seriePrioridade !== b.seriePrioridade) {
-    return b.seriePrioridade - a.seriePrioridade;
-  }
-
-  if (a.elogios !== b.elogios) {
-    return b.elogios - a.elogios;
-  }
-
-  if (a.notificacoesNegativas !== b.notificacoesNegativas) {
-    return a.notificacoesNegativas - b.notificacoesNegativas;
-  }
-
-  return normalizeText(a.nome).localeCompare(normalizeText(b.nome), 'pt-BR');
-}
-
 function getInstituicaoIdFromReq(req) {
   const raw =
     req?.usuario?.instituicao ||
@@ -205,6 +96,253 @@ function getInstituicaoIdFromReq(req) {
   }
 }
 
+function getFaixa(nota) {
+  const n = toNumber(nota, 0);
+
+  if (n >= 9) return 'Excepcional';
+  if (n >= 8) return 'Ótimo';
+  if (n >= 7) return 'Bom';
+  if (n >= 5) return 'Regular';
+  if (n >= 3) return 'Insuficiente';
+  return 'Incompatível';
+}
+
+function getFotoUrl(aluno) {
+  return (
+    aluno?.fotoThumb ||
+    aluno?.fotoOriginal ||
+    aluno?.foto ||
+    aluno?.fotoMedium ||
+    ''
+  );
+}
+
+function classifyNotificacao(doc = {}) {
+  const tipo = normalizeText(doc?.tipo);
+  const categoria = normalizeText(doc?.categoria);
+  const natureza = normalizeText(doc?.natureza);
+  const classificacao = normalizeText(doc?.classificacao);
+  const descricao = normalizeText(doc?.descricao);
+  const titulo = normalizeText(doc?.titulo);
+  const motivo = normalizeText(doc?.motivo);
+
+  const bag = [tipo, categoria, natureza, classificacao, descricao, titulo, motivo]
+    .filter(Boolean)
+    .join(' ');
+
+  const isElogio =
+    /\belogio\b/.test(bag) ||
+    /\bpositiv[ao]\b/.test(bag) ||
+    /\bmerito\b/.test(bag) ||
+    /\breconhecimento\b/.test(bag) ||
+    /\bparaben/.test(bag);
+
+  const isAto =
+    /\bato\b/.test(bag) && /\bindisciplin/.test(bag);
+
+  const isNegativa =
+    /\bnegativ[ao]\b/.test(bag) ||
+    /\bindisciplin/.test(bag) ||
+    /\bocorrenc/.test(bag) ||
+    /\badvertenc/.test(bag) ||
+    /\bsuspens/.test(bag) ||
+    /\bdescumpr/.test(bag) ||
+    /\bfalta\b/.test(bag);
+
+  return {
+    elogio: isElogio,
+    ato: isAto,
+    negativa: isNegativa && !isElogio
+  };
+}
+
+async function getNotificationStatsByAlunoIds(alunoIds, instituicaoId) {
+  if (!Array.isArray(alunoIds) || alunoIds.length === 0) {
+    return new Map();
+  }
+
+  const ids = alunoIds
+    .filter(Boolean)
+    .map((id) => {
+      try {
+        return id instanceof mongoose.Types.ObjectId
+          ? id
+          : new mongoose.Types.ObjectId(String(id));
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const match = {
+    $or: [
+      { aluno: { $in: ids } },
+      { alunoId: { $in: ids } }
+    ]
+  };
+
+  const instituicaoObj =
+    instituicaoId instanceof mongoose.Types.ObjectId
+      ? instituicaoId
+      : (() => {
+          try {
+            return new mongoose.Types.ObjectId(String(instituicaoId));
+          } catch {
+            return null;
+          }
+        })();
+
+  if (instituicaoObj) {
+    match.$and = [
+      {
+        $or: [
+          { instituicao: instituicaoObj },
+          { instituicaoId: instituicaoObj },
+          { instituicao: { $exists: false }, instituicaoId: { $exists: false } }
+        ]
+      }
+    ];
+  }
+
+  const notificacoes = await Notificacao.find(match)
+    .select('aluno alunoId tipo categoria natureza classificacao descricao titulo motivo')
+    .lean();
+
+  const statsMap = new Map();
+
+  for (const doc of notificacoes) {
+    const refAluno = doc?.aluno || doc?.alunoId || '';
+    const key = String(refAluno);
+    if (!key) continue;
+
+    if (!statsMap.has(key)) {
+      statsMap.set(key, {
+        elogios: 0,
+        atosIndisciplina: 0,
+        notificacoesNegativas: 0
+      });
+    }
+
+    const acc = statsMap.get(key);
+    const cls = classifyNotificacao(doc);
+
+    if (cls.elogio) acc.elogios += 1;
+    if (cls.ato) acc.atosIndisciplina += 1;
+    if (cls.negativa) acc.notificacoesNegativas += 1;
+  }
+
+  return statsMap;
+}
+
+function buildAlunoRanking(aluno, { priorizarSerie, rebaixarNegativas }) {
+  const turma = String(aluno?.turma || '').trim();
+  const serie = inferSerieFromTurma(turma);
+  const notaComportamental = Number(toNumber(aluno?.comportamento, 8).toFixed(2));
+  const elogios = toNumber(aluno?.elogios, 0);
+  const atosIndisciplina = toNumber(aluno?.atosIndisciplina, 0);
+  const notificacoesNegativas = toNumber(aluno?.notificacoesNegativas, 0);
+  const seriePrioridade = getSeriePrioridade(serie);
+  const faixa = getFaixa(notaComportamental);
+
+  const scoreFinal =
+    (notaComportamental * 1000) +
+    (elogios * 20) -
+    (atosIndisciplina * 40) +
+    (priorizarSerie ? (seriePrioridade * 100) : 0) -
+    (rebaixarNegativas ? (notificacoesNegativas * 80) : 0);
+
+  return {
+    _id: aluno._id,
+    nome: String(aluno?.nome || '').trim(),
+    nomeNormalizado: normalizeText(aluno?.nome),
+    serie,
+    turma,
+    dataEntrada: aluno?.dataEntrada || null,
+    fotoUrl: getFotoUrl(aluno),
+    notaComportamental,
+    elogios,
+    atosIndisciplina,
+    notificacoesNegativas,
+    seriePrioridade,
+    faixa,
+    scoreFinal
+  };
+}
+
+function compareAlunos(a, b, ordenar = 'scoreFinal', direcao = 'desc') {
+  const dir = direcao === 'asc' ? 1 : -1;
+
+  const cmpString = (v1, v2) =>
+    String(v1 || '').localeCompare(String(v2 || ''), 'pt-BR', { sensitivity: 'base' });
+
+  const cmpNumber = (v1, v2) => (toNumber(v1, 0) - toNumber(v2, 0));
+
+  const sorters = {
+    nome: () =>
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) * dir ||
+      cmpNumber(b.notaComportamental, a.notaComportamental) ||
+      cmpNumber(b.seriePrioridade, a.seriePrioridade) ||
+      cmpNumber(b.elogios, a.elogios) ||
+      cmpNumber(a.notificacoesNegativas, b.notificacoesNegativas) ||
+      cmpString(String(a._id), String(b._id)),
+
+    elogios: () =>
+      cmpNumber(a.elogios, b.elogios) * dir ||
+      cmpNumber(b.notaComportamental, a.notaComportamental) ||
+      cmpNumber(b.seriePrioridade, a.seriePrioridade) ||
+      cmpNumber(a.notificacoesNegativas, b.notificacoesNegativas) ||
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) ||
+      cmpString(String(a._id), String(b._id)),
+
+    notificacoesNegativas: () =>
+      cmpNumber(a.notificacoesNegativas, b.notificacoesNegativas) * dir ||
+      cmpNumber(b.notaComportamental, a.notaComportamental) ||
+      cmpNumber(b.seriePrioridade, a.seriePrioridade) ||
+      cmpNumber(b.elogios, a.elogios) ||
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) ||
+      cmpString(String(a._id), String(b._id)),
+
+    atosIndisciplina: () =>
+      cmpNumber(a.atosIndisciplina, b.atosIndisciplina) * dir ||
+      cmpNumber(b.notaComportamental, a.notaComportamental) ||
+      cmpNumber(b.seriePrioridade, a.seriePrioridade) ||
+      cmpNumber(b.elogios, a.elogios) ||
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) ||
+      cmpString(String(a._id), String(b._id)),
+
+    seriePrioridade: () =>
+      cmpNumber(a.seriePrioridade, b.seriePrioridade) * dir ||
+      cmpNumber(b.notaComportamental, a.notaComportamental) ||
+      cmpNumber(b.elogios, a.elogios) ||
+      cmpNumber(a.notificacoesNegativas, b.notificacoesNegativas) ||
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) ||
+      cmpString(String(a._id), String(b._id)),
+
+    notaComportamental: () =>
+      cmpNumber(a.notaComportamental, b.notaComportamental) * dir ||
+      cmpNumber(b.seriePrioridade, a.seriePrioridade) ||
+      cmpNumber(b.elogios, a.elogios) ||
+      cmpNumber(a.notificacoesNegativas, b.notificacoesNegativas) ||
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) ||
+      cmpString(String(a._id), String(b._id)),
+
+    scoreFinal: () =>
+      cmpNumber(a.scoreFinal, b.scoreFinal) * dir ||
+      cmpNumber(b.notaComportamental, a.notaComportamental) ||
+      cmpNumber(b.seriePrioridade, a.seriePrioridade) ||
+      cmpNumber(b.elogios, a.elogios) ||
+      cmpNumber(a.notificacoesNegativas, b.notificacoesNegativas) ||
+      cmpString(a.nomeNormalizado, b.nomeNormalizado) ||
+      cmpString(String(a._id), String(b._id))
+  };
+
+  return (sorters[ordenar] || sorters.scoreFinal)();
+}
+
 /* =========================================
    GET /api/ranking-alunos/turmas
 ========================================= */
@@ -221,7 +359,7 @@ router.get('/turmas', async (req, res) => {
 
     const rows = await Aluno.find({
       instituicao: instituicaoId,
-      turma: { $exists: true, $ne: null, $ne: '' }
+      turma: { $exists: true, $nin: [null, ''] }
     })
       .select('turma')
       .lean();
@@ -296,178 +434,100 @@ router.get('/', async (req, res) => {
     const currentPage = Math.max(1, parseInt(page, 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
 
-    const filtroAlunos = {
+    const matchBase = {
       instituicao: instituicaoId
     };
 
     if (busca) {
-      filtroAlunos.nome = { $regex: escapeRegex(busca), $options: 'i' };
+      matchBase.nome = { $regex: escapeRegex(busca), $options: 'i' };
     }
 
     if (turma) {
-      filtroAlunos.turma = { $regex: `^${escapeRegex(turma)}$`, $options: 'i' };
+      matchBase.turma = { $regex: `^${escapeRegex(turma)}$`, $options: 'i' };
     }
 
-    const alunos = await Aluno.find(filtroAlunos)
-      .select('nome turma comportamento dataEntrada foto fotoThumb fotoOriginal fotoMedium')
+    const rows = await Aluno.find(matchBase)
+      .select([
+        'nome',
+        'turma',
+        'dataEntrada',
+        'foto',
+        'fotoThumb',
+        'fotoOriginal',
+        'fotoMedium',
+        'comportamento',
+        'elogios',
+        'atosIndisciplina',
+        'notificacoesNegativas'
+      ].join(' '))
       .lean();
 
-    if (!alunos.length) {
-      return res.json({
-        ok: true,
-        total: 0,
-        totalPages: 1,
-        page: currentPage,
-        limit: pageSize,
-        alunos: []
-      });
-    }
+    const alunoIds = rows.map((r) => r._id).filter(Boolean);
+    const statsMap = await getNotificationStatsByAlunoIds(alunoIds, instituicaoId);
 
-    const alunoIds = alunos.map((a) => a._id);
-
-    const notificacoes = await Notificacao.find({
-      instituicao: instituicaoId,
-      aluno: { $in: alunoIds },
-      ativo: { $ne: false },
-      arquivada: { $ne: true }
-    })
-      .select('aluno natureza tipo motivo tipoMedida valorNumerico status data createdAt quantidadeDias')
-      .lean();
-
-    const notificacoesPorAluno = new Map();
-    for (const n of notificacoes) {
-      const alunoId = String(n.aluno || '');
-      if (!notificacoesPorAluno.has(alunoId)) {
-        notificacoesPorAluno.set(alunoId, []);
-      }
-      notificacoesPorAluno.get(alunoId).push(n);
-    }
-
-    const mapa = new Map();
-
-    for (const aluno of alunos) {
-      const serieInferida = inferSerieFromTurma(aluno.turma || '');
-      const alunoId = String(aluno._id);
-
-      const eventos = (notificacoesPorAluno.get(alunoId) || []).map((n) => ({
-        data: n.data || null,
-        createdAt: n.createdAt || null,
-        valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
-        quantidadeDias: n.quantidadeDias ?? 1,
-        tipoMedida: n.tipoMedida || n.tipo || '',
-        natureza: n.natureza || ''
-      }));
-
-      let notaBase = 8.0;
-
-      try {
-        notaBase = calcularNotaTSMD(aluno.dataEntrada || null, new Date(), eventos);
-      } catch (err) {
-        console.warn(
-          `Falha ao calcular nota TSMD do aluno ${aluno.nome || alunoId}:`,
-          err?.message || err
-        );
-        notaBase =
-          typeof aluno.comportamento === 'number'
-            ? aluno.comportamento
-            : 8.0;
-      }
-
-      notaBase = Number((+notaBase || 0).toFixed(2));
-
-      mapa.set(alunoId, {
-        _id: aluno._id,
-        nome: aluno.nome || 'Aluno sem nome',
-        serie: serieInferida,
-        turma: aluno.turma || '',
-        dataEntrada: aluno.dataEntrada || null,
-        fotoUrl: aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || aluno.fotoMedium || '',
-        notaComportamental: notaBase,
+    let alunos = rows.map((aluno) => {
+      const stats = statsMap.get(String(aluno._id)) || {
         elogios: 0,
         atosIndisciplina: 0,
-        notificacoesNegativas: 0,
-        seriePrioridade: getSeriePrioridade(serieInferida),
-        faixa: faixaPorNota(notaBase),
-        scoreFinal: 0
-      });
-    }
+        notificacoesNegativas: 0
+      };
 
-    for (const n of notificacoes) {
-      const alunoId = String(n.aluno || '');
-      const item = mapa.get(alunoId);
-      if (!item) continue;
+      const elogiosPersistidos = toNumber(aluno?.elogios, 0);
+      const atosPersistidos = toNumber(aluno?.atosIndisciplina, 0);
+      const negativasPersistidas = toNumber(aluno?.notificacoesNegativas, 0);
 
-      const natureza = normalizeText(n.natureza);
-      const tipo = normalizeText(n.tipo);
-      const tipoMedida = normalizeText(n.tipoMedida);
-      const motivo = normalizeText(n.motivo);
-      const status = normalizeText(n.status);
-      const valorNumerico = toNumber(n.valorNumerico, 0);
+      const alunoEnriquecido = {
+        ...aluno,
+        elogios: Math.max(elogiosPersistidos, stats.elogios),
+        atosIndisciplina: Math.max(atosPersistidos, stats.atosIndisciplina),
+        notificacoesNegativas: Math.max(negativasPersistidas, stats.notificacoesNegativas)
+      };
 
-      const ehElogio =
-        natureza === 'elogio' ||
-        tipo === 'elogio' ||
-        tipoMedida === 'elogio';
-
-      const ehIndisciplina =
-        natureza === 'indisciplina' ||
-        (!ehElogio && valorNumerico < 0) ||
-        tipo.includes('advertencia') ||
-        tipo.includes('advertência') ||
-        tipo.includes('repreensao') ||
-        tipo.includes('repreensão') ||
-        tipoMedida.includes('a.i.a') ||
-        tipoMedida.includes('a.e.c.d.e') ||
-        motivo.includes('indisciplina');
-
-      if (ehElogio) item.elogios += 1;
-      if (ehIndisciplina) item.atosIndisciplina += 1;
-      if (ehIndisciplina && status !== 'arquivado') item.notificacoesNegativas += 1;
-    }
-
-    let resultado = Array.from(mapa.values()).map((item) => ({
-      ...item,
-      scoreFinal: computeScoreFinal(item, {
+      return buildAlunoRanking(alunoEnriquecido, {
         priorizarSerie: priorizarSerie === 'true',
         rebaixarNegativas: rebaixarNegativas === 'true'
-      })
-    }));
+      });
+    });
 
     if (notaMin !== '') {
-      resultado = resultado.filter((a) => a.notaComportamental >= toNumber(notaMin, 0));
+      const min = toNumber(notaMin, 0);
+      alunos = alunos.filter((a) => a.notaComportamental >= min);
     }
 
     if (notaMax !== '') {
-      resultado = resultado.filter((a) => a.notaComportamental <= toNumber(notaMax, 10));
+      const max = toNumber(notaMax, 10);
+      alunos = alunos.filter((a) => a.notaComportamental <= max);
     }
 
     if (faixa) {
-      resultado = resultado.filter((a) => a.faixa === faixa);
+      alunos = alunos.filter((a) => a.faixa === faixa);
     }
 
     if (comElogios === 'true') {
-      resultado = resultado.filter((a) => a.elogios > 0);
+      alunos = alunos.filter((a) => a.elogios > 0);
     }
 
     if (comAtos === 'true') {
-      resultado = resultado.filter((a) => a.atosIndisciplina > 0);
+      alunos = alunos.filter((a) => a.atosIndisciplina > 0);
     }
 
     if (comNegativas === 'true') {
-      resultado = resultado.filter((a) => a.notificacoesNegativas > 0);
+      alunos = alunos.filter((a) => a.notificacoesNegativas > 0);
     }
 
     if (semNegativas === 'true') {
-      resultado = resultado.filter((a) => a.notificacoesNegativas === 0);
+      alunos = alunos.filter((a) => a.notificacoesNegativas === 0);
     }
 
-    resultado.sort((a, b) => compareItems(a, b, ordenar, direcao));
+    alunos.sort((a, b) => compareAlunos(a, b, ordenar, direcao));
 
-    const total = resultado.length;
+    const total = alunos.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const safePage = Math.min(currentPage, totalPages);
     const start = (safePage - 1) * pageSize;
     const end = start + pageSize;
+
+    const alunosPagina = alunos.slice(start, end);
 
     return res.json({
       ok: true,
@@ -475,7 +535,7 @@ router.get('/', async (req, res) => {
       totalPages,
       page: safePage,
       limit: pageSize,
-      alunos: resultado.slice(start, end)
+      alunos: alunosPagina
     });
   } catch (error) {
     console.error('❌ Erro ao gerar ranking de alunos:', error);

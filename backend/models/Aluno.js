@@ -63,6 +63,18 @@ const alunoSchema = new Schema({
 
   /**
    * ==========================================================
+   * CAMPOS PRONTOS PARA PERFORMANCE DE RANKING / RELATÓRIOS
+   * ==========================================================
+   * Estes campos passam a guardar contadores já consolidados,
+   * evitando recalcular tudo a cada carregamento de tela.
+   */
+  elogios:                 { type: Number, default: 0, min: 0 },
+  atosIndisciplina:        { type: Number, default: 0, min: 0 },
+  notificacoesNegativas:   { type: Number, default: 0, min: 0 },
+  ultimaAtualizacaoComportamento: { type: Date, default: null },
+
+  /**
+   * ==========================================================
    * FOTO DO ALUNO
    * ==========================================================
    * CAMPOS LEGADOS / ATUAIS (mantidos para não quebrar nada):
@@ -264,6 +276,10 @@ alunoSchema.pre('validate', function (next) {
     this.fotoMeta = {};
   }
 
+  if (typeof this.elogios !== 'number') this.elogios = 0;
+  if (typeof this.atosIndisciplina !== 'number') this.atosIndisciplina = 0;
+  if (typeof this.notificacoesNegativas !== 'number') this.notificacoesNegativas = 0;
+
   next();
 });
 
@@ -273,6 +289,12 @@ alunoSchema.pre('validate', function (next) {
  */
 alunoSchema.index({ instituicao: 1, codigoAcesso: 1 }, { unique: true, sparse: true });
 alunoSchema.index({ instituicao: 1, turma: 1, nome: 1 });
+alunoSchema.index({ instituicao: 1, nome: 1 });
+alunoSchema.index({ instituicao: 1, turma: 1, comportamento: -1 });
+alunoSchema.index({ instituicao: 1, comportamento: -1 });
+alunoSchema.index({ instituicao: 1, turma: 1, elogios: -1 });
+alunoSchema.index({ instituicao: 1, turma: 1, notificacoesNegativas: -1 });
+alunoSchema.index({ instituicao: 1, turma: 1, atosIndisciplina: -1 });
 alunoSchema.index({ 'publicView.token': 1 }, { unique: true, sparse: true });
 
 // Acelera buscas por instituição + chat (envios/relatórios por turma)

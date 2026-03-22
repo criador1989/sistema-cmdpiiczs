@@ -4,24 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Ranking de Alunos - Sistema Escolar</title>
-  <meta name="theme-color" content="#8B0000" />
+  <meta name="theme-color" content="#6b0f1a" />
   <style>
     :root{
-      --glass-bg: rgba(255,255,255,0.03);
-      --glass-border: rgba(255,255,255,0.28);
-      --glass-radius: 22px;
-      --glass-blur: 18px;
-      --glass-shadow:
-        0 2px 6px rgba(0,0,0,0.15),
-        0 8px 22px rgba(0,0,0,0.20);
-
-      --text-main: #ffffff;
-      --text-soft: rgba(255,255,255,0.78);
-
+      --bg:#05070d;
+      --bg-2:#0b1020;
+      --wine:#6b0f1a;
+      --wine-2:#8e1625;
+      --gold:#f2c14e;
+      --gold-2:#ffdf85;
+      --blue:#5cc8ff;
+      --blue-2:#9bdcff;
       --ok:#22c55e;
       --warn:#f59e0b;
       --danger:#ef4444;
-      --chip-bg: rgba(0,0,0,0.42);
+
+      --text-main:#ffffff;
+      --text-soft:rgba(255,255,255,0.76);
+      --text-faint:rgba(255,255,255,0.58);
+
+      --glass-bg:rgba(255,255,255,0.04);
+      --glass-border:rgba(255,255,255,0.16);
+      --glass-radius:24px;
+      --glass-blur:12px;
+      --glass-shadow:
+        0 8px 20px rgba(0,0,0,0.32),
+        0 14px 34px rgba(0,0,0,0.24);
+
+      --chip-bg:rgba(0,0,0,0.30);
+      --podium-1:#f2c14e;
+      --podium-2:#b9c6d4;
+      --podium-3:#d08b4f;
     }
 
     *{ box-sizing:border-box; }
@@ -32,12 +45,19 @@
       min-height:100vh;
     }
 
+    html{
+      scroll-behavior:smooth;
+    }
+
     body{
       font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background:var(--bg);
       color:var(--text-main);
-      background:#020617;
       color-scheme:dark;
       overflow-x:hidden;
+      text-rendering:optimizeLegibility;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
     }
 
     #bg-wallpaper{
@@ -46,9 +66,11 @@
       z-index:0;
       pointer-events:none;
       background:
-        linear-gradient(rgba(2,6,23,.58), rgba(2,6,23,.74)),
-        url("img/bg-painel-smart.png") center/cover no-repeat fixed;
-      filter:brightness(0.98) saturate(1.06);
+        linear-gradient(rgba(5,7,13,.72), rgba(5,7,13,.90)),
+        url("img/bg-painel-smart.png") center/cover no-repeat;
+      filter:brightness(.9) saturate(1.04);
+      transform:translateZ(0);
+      will-change:transform;
     }
 
     body::before{
@@ -58,20 +80,72 @@
       z-index:1;
       pointer-events:none;
       background:
-        radial-gradient(circle at top left, rgba(0,194,255,.14), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(122,92,255,.10), transparent 26%);
+        radial-gradient(circle at 15% 12%, rgba(242,193,78,.14), transparent 23%),
+        radial-gradient(circle at 80% 10%, rgba(92,200,255,.12), transparent 22%),
+        radial-gradient(circle at 50% 85%, rgba(142,22,37,.15), transparent 26%);
+    }
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      background:
+        linear-gradient(120deg, transparent 0%, rgba(255,255,255,.02) 48%, transparent 52%);
+      opacity:.28;
     }
 
     .page{
       position:relative;
       z-index:2;
-      width:min(1380px, calc(100% - 28px));
-      margin:20px auto 120px;
+      width:min(1450px, calc(100% - 28px));
+      margin:18px auto 120px;
+    }
+
+    .glass-card{
+      border-radius:var(--glass-radius);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02)),
+        rgba(255,255,255,0.018);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(var(--glass-blur));
+      -webkit-backdrop-filter:blur(var(--glass-blur));
+      box-shadow:var(--glass-shadow);
+      position:relative;
+      overflow:hidden;
+      content-visibility:auto;
+      contain-intrinsic-size: 1px 600px;
+    }
+
+    .glass-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(255,255,255,.14) 0%,
+          rgba(255,255,255,.04) 16%,
+          transparent 34%
+        );
+      pointer-events:none;
+    }
+
+    .glass-card::after{
+      content:"";
+      position:absolute;
+      inset:auto -20% -60% -20%;
+      height:120px;
+      background:radial-gradient(circle, rgba(242,193,78,.08), transparent 70%);
+      filter:blur(20px);
+      pointer-events:none;
     }
 
     .topbar{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:14px;
       margin-bottom:18px;
@@ -86,15 +160,24 @@
 
     .title{
       margin:0;
-      font-size:clamp(24px, 3vw, 38px);
-      font-weight:800;
+      font-size:clamp(28px, 3vw, 42px);
+      font-weight:900;
       letter-spacing:.2px;
-      text-shadow:0 12px 32px rgba(0,0,0,0.95);
+      text-shadow:
+        0 8px 22px rgba(0,0,0,.72),
+        0 0 14px rgba(242,193,78,.08);
+    }
+
+    .title .hl{
+      background:linear-gradient(90deg, #fff 0%, var(--gold-2) 52%, #fff 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
     }
 
     .subtitle{
       color:var(--text-soft);
-      font-size:.96rem;
+      font-size:.98rem;
     }
 
     .actions-top{
@@ -104,62 +187,47 @@
       flex-wrap:wrap;
     }
 
-    .glass-card{
-      border-radius: var(--glass-radius);
-      background: rgba(255,255,255,0.018);
-      border: 1px solid var(--glass-border);
-      backdrop-filter: blur(var(--glass-blur));
-      -webkit-backdrop-filter: blur(var(--glass-blur));
-      box-shadow: var(--glass-shadow);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .glass-card::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      border-radius:inherit;
-      background: linear-gradient(
-        to bottom,
-        rgba(255,255,255,0.22) 0%,
-        rgba(255,255,255,0.07) 14%,
-        transparent 34%
-      );
-      pointer-events:none;
-    }
-
     .btn{
       position:relative;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap:8px;
+      min-height:44px;
       padding:10px 16px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,0.45);
-      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.24);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)),
+        rgba(255,255,255,0.04);
       color:#fff;
       font-size:.9rem;
-      font-weight:600;
+      font-weight:700;
       text-decoration:none;
       cursor:pointer;
-      box-shadow:0 10px 24px rgba(0,0,0,0.55);
-      backdrop-filter:blur(18px);
-      -webkit-backdrop-filter:blur(18px);
+      box-shadow:
+        0 8px 18px rgba(0,0,0,.34),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
       transition:
-        transform .18s ease,
-        box-shadow .18s ease,
-        background .18s ease,
-        border-color .18s ease,
-        opacity .18s ease;
+        transform .16s ease,
+        box-shadow .16s ease,
+        border-color .16s ease,
+        background .16s ease,
+        opacity .16s ease;
+      will-change:transform;
     }
 
     .btn:hover{
-      background:rgba(255,255,255,0.10);
-      border-color:rgba(255,255,255,0.82);
-      box-shadow:0 14px 30px rgba(0,0,0,0.82);
       transform:translateY(-1px);
+      border-color:rgba(255,255,255,.44);
+      box-shadow:
+        0 12px 24px rgba(0,0,0,.42),
+        0 0 14px rgba(242,193,78,.06);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06)),
+        rgba(255,255,255,0.06);
     }
 
     .btn:active{ transform:translateY(0); }
@@ -168,15 +236,46 @@
       opacity:.55;
       cursor:not-allowed;
       transform:none;
+      box-shadow:none;
     }
 
     .btn-primary{
-      background:rgba(255,255,255,0.18);
+      border-color:rgba(242,193,78,.38);
+      background:
+        linear-gradient(180deg, rgba(242,193,78,.20), rgba(142,22,37,.24)),
+        rgba(255,255,255,.05);
     }
 
     .btn-danger{
-      background:rgba(127,29,29,.55);
-      border-color:rgba(254,202,202,.45);
+      border-color:rgba(254,202,202,.26);
+      background:
+        linear-gradient(180deg, rgba(239,68,68,.20), rgba(127,29,29,.30)),
+        rgba(255,255,255,.04);
+    }
+
+    .btn-soft{
+      border-color:rgba(92,200,255,.24);
+      background:
+        linear-gradient(180deg, rgba(92,200,255,.14), rgba(92,200,255,.04)),
+        rgba(255,255,255,.04);
+    }
+
+    .export-wrap{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .select-mini{
+      min-height:44px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(0,0,0,.40);
+      color:#fff;
+      font-size:.9rem;
+      outline:none;
     }
 
     .grid-top{
@@ -189,6 +288,7 @@
     .metric{
       grid-column: span 3;
       padding:16px 18px;
+      min-height:118px;
     }
 
     .metric > *{
@@ -205,14 +305,30 @@
     }
 
     .metric .v{
-      font-size:1.85rem;
-      font-weight:800;
+      font-size:1.95rem;
+      font-weight:900;
+      line-height:1;
     }
 
     .metric .s{
-      margin-top:6px;
-      font-size:.84rem;
+      margin-top:8px;
+      font-size:.85rem;
       color:var(--text-soft);
+    }
+
+    .metric.metric-gold .v{
+      color:var(--gold-2);
+      text-shadow:0 0 14px rgba(242,193,78,.14);
+    }
+
+    .metric.metric-blue .v{
+      color:var(--blue-2);
+      text-shadow:0 0 14px rgba(92,200,255,.12);
+    }
+
+    .metric.metric-red .v{
+      color:#ffb4b4;
+      text-shadow:0 0 14px rgba(239,68,68,.10);
     }
 
     @media(max-width:1100px){
@@ -223,6 +339,202 @@
       .metric{ grid-column: span 12; }
     }
 
+    .podium-card{
+      padding:20px;
+      margin-bottom:18px;
+    }
+
+    .podium-card > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .section-title{
+      margin:0 0 14px 0;
+      font-size:1.08rem;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+
+    .section-sub{
+      color:var(--text-soft);
+      font-size:.92rem;
+      margin-top:-4px;
+      margin-bottom:16px;
+    }
+
+    .podium-wrap{
+      display:grid;
+      grid-template-columns:1fr 1.2fr 1fr;
+      gap:18px;
+      align-items:end;
+      min-height:290px;
+    }
+
+    .podium-item{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+
+    .podium-avatar{
+      width:84px;
+      height:84px;
+      border-radius:999px;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,.24);
+      box-shadow:
+        0 12px 24px rgba(0,0,0,.36),
+        0 0 16px rgba(255,255,255,.04);
+      background:rgba(255,255,255,.08);
+    }
+
+    .podium-avatar-fallback{
+      width:84px;
+      height:84px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      font-size:1.4rem;
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border:2px solid rgba(255,255,255,.20);
+      box-shadow:0 12px 24px rgba(0,0,0,.36);
+    }
+
+    .podium-name{
+      text-align:center;
+      font-weight:800;
+      font-size:1rem;
+      max-width:210px;
+      line-height:1.2;
+    }
+
+    .podium-meta{
+      color:var(--text-soft);
+      font-size:.85rem;
+      text-align:center;
+    }
+
+    .podium-base{
+      width:100%;
+      border-radius:24px 24px 18px 18px;
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 14px 24px rgba(0,0,0,.24);
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-start;
+      align-items:center;
+      padding:16px 12px 14px;
+      transform:translateZ(0);
+    }
+
+    .podium-base::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 26%, transparent 52%);
+      pointer-events:none;
+    }
+
+    .podium-base::after{
+      content:"";
+      position:absolute;
+      left:8%;
+      right:8%;
+      bottom:-18px;
+      height:34px;
+      background:radial-gradient(circle, rgba(255,255,255,.12), transparent 68%);
+      filter:blur(8px);
+      pointer-events:none;
+    }
+
+    .place-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:78px;
+      height:78px;
+      border-radius:22px;
+      font-size:2rem;
+      font-weight:900;
+      letter-spacing:-.02em;
+      border:1px solid rgba(255,255,255,.24);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.14),
+        0 8px 16px rgba(0,0,0,.20);
+      margin-bottom:10px;
+    }
+
+    .place-label{
+      text-transform:uppercase;
+      font-size:.78rem;
+      letter-spacing:.12em;
+      color:rgba(255,255,255,.85);
+      margin-bottom:10px;
+      font-weight:800;
+    }
+
+    .place-score{
+      font-size:2rem;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .place-faixa{
+      margin-top:8px;
+      font-size:.82rem;
+      color:rgba(255,255,255,.82);
+      font-weight:700;
+      text-align:center;
+    }
+
+    .podium-1 .podium-base{
+      min-height:220px;
+      background:
+        linear-gradient(180deg, rgba(242,193,78,.38), rgba(107,15,26,.28)),
+        rgba(255,255,255,.05);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.16),
+        0 16px 28px rgba(242,193,78,.08),
+        0 14px 24px rgba(0,0,0,.24);
+    }
+
+    .podium-2 .podium-base{
+      min-height:180px;
+      background:
+        linear-gradient(180deg, rgba(185,198,212,.24), rgba(17,24,39,.20)),
+        rgba(255,255,255,.04);
+    }
+
+    .podium-3 .podium-base{
+      min-height:160px;
+      background:
+        linear-gradient(180deg, rgba(208,139,79,.28), rgba(107,15,26,.18)),
+        rgba(255,255,255,.04);
+    }
+
+    .podium-1 .place-badge{
+      color:#1a1302;
+      background:linear-gradient(180deg, #ffe39f, #f2c14e);
+    }
+
+    .podium-2 .place-badge{
+      color:#1e293b;
+      background:linear-gradient(180deg, #edf2f7, #b9c6d4);
+    }
+
+    .podium-3 .place-badge{
+      color:#241309;
+      background:linear-gradient(180deg, #efbe8e, #d08b4f);
+    }
+
     .filters-card{
       padding:18px;
       margin-bottom:18px;
@@ -231,12 +543,6 @@
     .filters-card > *{
       position:relative;
       z-index:1;
-    }
-
-    .section-title{
-      margin:0 0 14px 0;
-      font-size:1.08rem;
-      font-weight:800;
     }
 
     .filters-grid{
@@ -258,40 +564,44 @@
     .field label{
       font-size:.83rem;
       color:var(--text-soft);
-      font-weight:600;
+      font-weight:700;
     }
 
     .input,
     .select{
       width:100%;
-      min-height:44px;
+      min-height:46px;
       padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.28);
-      background:rgba(0,0,0,.42);
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.18);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+        rgba(0,0,0,.34);
       color:#fff;
       outline:none;
       font-size:.92rem;
-      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      transition:border-color .16s ease, box-shadow .16s ease, background .16s ease;
     }
 
     .input:focus,
     .select:focus{
-      border-color:rgba(255,255,255,.62);
-      box-shadow:0 0 0 3px rgba(255,255,255,.08);
-      background:rgba(0,0,0,.52);
+      border-color:rgba(242,193,78,.48);
+      box-shadow:
+        0 0 0 3px rgba(242,193,78,.06),
+        0 0 14px rgba(242,193,78,.06);
+      background:rgba(0,0,0,.46);
     }
 
     .checks{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
-      min-height:44px;
+      min-height:48px;
       align-items:center;
-      padding:8px 10px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.22);
-      background:rgba(0,0,0,.34);
+      padding:9px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.24);
     }
 
     .check{
@@ -304,7 +614,7 @@
     }
 
     .check input{
-      accent-color:#fff;
+      accent-color:var(--gold);
       transform:translateY(1px);
     }
 
@@ -318,6 +628,22 @@
     @media(max-width:1100px){
       .field,
       .field.wide{ grid-column: span 6; }
+
+      .podium-wrap{
+        grid-template-columns:1fr;
+        gap:14px;
+        min-height:auto;
+      }
+
+      .podium-item{
+        align-items:stretch;
+      }
+
+      .podium-name,
+      .podium-meta{
+        text-align:left;
+        max-width:none;
+      }
     }
 
     @media(max-width:700px){
@@ -341,7 +667,7 @@
       align-items:center;
       gap:12px;
       flex-wrap:wrap;
-      margin-bottom:10px;
+      margin-bottom:12px;
     }
 
     .head-info{
@@ -357,105 +683,144 @@
       display:inline-flex;
       align-items:center;
       gap:6px;
-      padding:6px 10px;
+      padding:7px 11px;
       border-radius:999px;
       background:var(--chip-bg);
-      border:1px solid rgba(255,255,255,.22);
+      border:1px solid rgba(255,255,255,.14);
       font-size:.78rem;
       white-space:nowrap;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
     }
 
-    .chip.ok{ border-color:rgba(34,197,94,.45); }
-    .chip.warn{ border-color:rgba(245,158,11,.45); }
-    .chip.danger{ border-color:rgba(239,68,68,.45); }
+    .chip.ok{ border-color:rgba(34,197,94,.30); }
+    .chip.warn{ border-color:rgba(245,158,11,.30); }
+    .chip.danger{ border-color:rgba(239,68,68,.30); }
+    .chip.gold{ border-color:rgba(242,193,78,.30); }
 
     .table-wrap{
       overflow:auto;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.16);
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)),
+        rgba(0,0,0,.16);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+      -webkit-overflow-scrolling:touch;
     }
 
     table{
       width:100%;
       border-collapse:collapse;
-      min-width:1200px;
-      font-size:.9rem;
+      min-width:1430px;
+      font-size:.92rem;
     }
 
     thead th{
       position:sticky;
       top:0;
       z-index:2;
-      background:rgba(9,9,11,.88);
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
+      background:
+        linear-gradient(180deg, rgba(107,15,26,.86), rgba(17,24,39,.94));
       text-align:left;
-      padding:12px 10px;
-      font-size:.8rem;
+      padding:13px 10px;
+      font-size:.79rem;
       text-transform:uppercase;
       letter-spacing:.08em;
-      color:rgba(255,255,255,.84);
-      border-bottom:1px solid rgba(255,255,255,.12);
+      color:rgba(255,255,255,.88);
+      border-bottom:1px solid rgba(255,255,255,.10);
       white-space:nowrap;
     }
 
     tbody td{
       padding:12px 10px;
-      border-top:1px dashed rgba(255,255,255,.12);
+      border-top:1px dashed rgba(255,255,255,.08);
       vertical-align:middle;
     }
 
     tbody tr{
-      transition:background .16s ease;
+      transition:background .14s ease;
     }
 
     tbody tr:hover{
-      background:rgba(255,255,255,.04);
+      background:rgba(255,255,255,.03);
     }
 
     tbody tr.negativo{
-      background:rgba(127,29,29,.14);
+      background:linear-gradient(90deg, rgba(127,29,29,.16), rgba(127,29,29,.05));
     }
 
     tbody tr.negativo:hover{
-      background:rgba(127,29,29,.22);
+      background:linear-gradient(90deg, rgba(127,29,29,.22), rgba(127,29,29,.08));
+    }
+
+    tbody tr.top-rank{
+      background:linear-gradient(90deg, rgba(242,193,78,.08), rgba(255,255,255,.02));
     }
 
     .pos{
-      font-weight:800;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:44px;
+      height:44px;
+      border-radius:14px;
+      font-weight:900;
       font-size:1rem;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .pos.gold{
+      color:#2b2104;
+      background:linear-gradient(180deg, #ffe39f, #f2c14e);
+      border-color:rgba(255,223,133,.52);
+      box-shadow:0 0 14px rgba(242,193,78,.16);
+    }
+
+    .pos.silver{
+      color:#223042;
+      background:linear-gradient(180deg, #edf2f7, #b9c6d4);
+      border-color:rgba(185,198,212,.42);
+    }
+
+    .pos.bronze{
+      color:#2d1808;
+      background:linear-gradient(180deg, #efbe8e, #d08b4f);
+      border-color:rgba(208,139,79,.38);
     }
 
     .student{
       display:flex;
       align-items:center;
       gap:10px;
-      min-width:220px;
+      min-width:240px;
     }
 
     .avatar{
-      width:42px;
-      height:42px;
+      width:44px;
+      height:44px;
       border-radius:999px;
       object-fit:cover;
-      border:1px solid rgba(255,255,255,.22);
+      border:1px solid rgba(255,255,255,.18);
       background:rgba(255,255,255,.08);
-      flex:0 0 42px;
+      flex:0 0 44px;
       display:block;
+      box-shadow:0 6px 12px rgba(0,0,0,.22);
     }
 
     .avatar-fallback{
-      width:42px;
-      height:42px;
+      width:44px;
+      height:44px;
       border-radius:999px;
       display:grid;
       place-items:center;
-      background:rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.22);
-      font-size:.9rem;
-      font-weight:800;
-      flex:0 0 42px;
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.16);
+      font-size:.92rem;
+      font-weight:900;
+      flex:0 0 44px;
+      box-shadow:0 6px 12px rgba(0,0,0,.22);
     }
 
     .student-meta{
@@ -465,46 +830,83 @@
     }
 
     .student-name{
-      font-weight:700;
+      font-weight:800;
       line-height:1.2;
     }
 
     .student-sub{
-      font-size:.8rem;
-      color:var(--text-soft);
+      font-size:.79rem;
+      color:var(--text-faint);
     }
 
     .score{
-      font-weight:800;
+      font-weight:900;
       font-size:1rem;
+    }
+
+    .score.highlight{
+      color:var(--gold-2);
+      text-shadow:0 0 10px rgba(242,193,78,.10);
     }
 
     .badge-faixa{
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding:5px 9px;
+      padding:6px 10px;
       border-radius:999px;
       font-size:.76rem;
-      font-weight:700;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(0,0,0,.36);
+      font-weight:800;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.28);
       white-space:nowrap;
     }
 
-    .faixa-excepcional{ color:#bbf7d0; border-color:rgba(34,197,94,.40); }
-    .faixa-otimo{ color:#bfdbfe; border-color:rgba(59,130,246,.40); }
-    .faixa-bom{ color:#fde68a; border-color:rgba(245,158,11,.40); }
-    .faixa-regular{ color:#fecaca; border-color:rgba(239,68,68,.34); }
-    .faixa-insuficiente{ color:#fca5a5; border-color:rgba(220,38,38,.40); }
-    .faixa-incompativel{ color:#fda4af; border-color:rgba(127,29,29,.55); }
+    .faixa-excepcional{ color:#d9ffd9; border-color:rgba(34,197,94,.34); }
+    .faixa-otimo{ color:#cde8ff; border-color:rgba(92,200,255,.32); }
+    .faixa-bom{ color:#ffe8a9; border-color:rgba(245,158,11,.30); }
+    .faixa-regular{ color:#ffd1d1; border-color:rgba(239,68,68,.28); }
+    .faixa-insuficiente{ color:#ffbcbc; border-color:rgba(220,38,38,.34); }
+    .faixa-incompativel{ color:#ffb0bd; border-color:rgba(127,29,29,.44); }
 
-    .cell-center{
-      text-align:center;
+    .cell-center{ text-align:center; }
+
+    .attention-note{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 11px;
+      border-radius:14px;
+      background:
+        linear-gradient(180deg, rgba(239,68,68,.18), rgba(127,29,29,.18)),
+        rgba(255,255,255,.03);
+      border:1px solid rgba(239,68,68,.22);
+      color:#ffe1e1;
+      font-size:.82rem;
+      font-weight:700;
+      line-height:1.35;
+      max-width:330px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .attention-note.soft{
+      background:
+        linear-gradient(180deg, rgba(245,158,11,.16), rgba(127,29,29,.10)),
+        rgba(255,255,255,.03);
+      border-color:rgba(245,158,11,.20);
+      color:#ffefc8;
+    }
+
+    .attention-note.good{
+      background:
+        linear-gradient(180deg, rgba(34,197,94,.14), rgba(10,40,20,.12)),
+        rgba(255,255,255,.03);
+      border-color:rgba(34,197,94,.18);
+      color:#dfffe7;
     }
 
     .empty{
-      padding:30px 16px;
+      padding:34px 16px;
       text-align:center;
       color:var(--text-soft);
     }
@@ -542,16 +944,19 @@
       bottom:28px;
       transform:translateX(-50%) translateY(18px);
       opacity:0;
-      transition:all .35s ease;
+      transition:all .28s ease;
       z-index:9999;
       padding:12px 18px;
-      border-radius:12px;
+      border-radius:14px;
       min-width:240px;
-      max-width:min(92vw, 500px);
+      max-width:min(92vw, 560px);
       text-align:center;
       color:#fff;
-      box-shadow:0 10px 24px rgba(0,0,0,.88);
+      box-shadow:0 16px 32px rgba(0,0,0,.52);
       font-size:.92rem;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      pointer-events:none;
     }
 
     .toast.show{
@@ -560,13 +965,13 @@
     }
 
     .toast.ok{
-      background:#166534;
-      border:1px solid rgba(187,247,208,.95);
+      background:rgba(22,101,52,.86);
+      border:1px solid rgba(187,247,208,.42);
     }
 
     .toast.err{
-      background:#7f1d1d;
-      border:1px solid rgba(254,202,202,.95);
+      background:rgba(127,29,29,.88);
+      border:1px solid rgba(254,202,202,.42);
     }
 
     @media(max-width:640px){
@@ -583,8 +988,34 @@
         width:100%;
       }
 
-      .actions-top .btn{
-        flex:1 1 auto;
+      .actions-top .btn,
+      .actions-top .export-wrap{
+        flex:1 1 100%;
+      }
+
+      .export-wrap{
+        display:grid;
+        grid-template-columns:1fr;
+      }
+
+      .select-mini{
+        width:100%;
+        border-radius:14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after{
+        animation:none !important;
+        transition:none !important;
+        scroll-behavior:auto !important;
+      }
+
+      .glass-card,
+      .btn,
+      .toast{
+        backdrop-filter:none !important;
+        -webkit-backdrop-filter:none !important;
       }
     }
   </style>
@@ -595,27 +1026,35 @@
   <div class="page">
     <header class="topbar">
       <div class="title-wrap">
-        <h1 class="title">Ranking de Alunos</h1>
+        <h1 class="title"><span class="hl">Ranking de Alunos</span></h1>
         <div class="subtitle">
-          Classificação comportamental por turma, com filtros combináveis, paginação e exportação em CSV.
+          Classificação comportamental por turma com visual de destaque, pódio, filtros combináveis e exportação inteligente.
         </div>
       </div>
 
       <div class="actions-top">
         <a class="btn" href="painel.html">← Voltar ao Painel</a>
-        <button class="btn" id="btnRecarregar" type="button">⟳ Recarregar</button>
-        <button class="btn btn-primary" id="btnExportarCsv" type="button">⬇ Baixar CSV</button>
+        <button class="btn btn-soft" id="btnRecarregar" type="button">⟳ Recarregar</button>
+
+        <div class="export-wrap">
+          <select class="select-mini" id="fExportMode" aria-label="Modo de exportação">
+            <option value="pagina">Exportar: página atual</option>
+            <option value="turma">Exportar: turma atual</option>
+            <option value="filtrado">Exportar: lista filtrada completa</option>
+          </select>
+          <button class="btn btn-primary" id="btnExportarCsv" type="button">⬇ Baixar CSV</button>
+        </div>
       </div>
     </header>
 
     <section class="grid-top">
-      <div class="glass-card metric">
+      <div class="glass-card metric metric-gold">
         <div class="k">Alunos listados</div>
         <div class="v" id="metricTotal">0</div>
         <div class="s">Após filtros aplicados</div>
       </div>
 
-      <div class="glass-card metric">
+      <div class="glass-card metric metric-blue">
         <div class="k">Nota média</div>
         <div class="v" id="metricMedia">0,0</div>
         <div class="s">Somente da página atual</div>
@@ -627,10 +1066,19 @@
         <div class="s">Na página atual</div>
       </div>
 
-      <div class="glass-card metric">
+      <div class="glass-card metric metric-red">
         <div class="k">Com negativas</div>
         <div class="v" id="metricNegativas">0</div>
         <div class="s">Na página atual</div>
+      </div>
+    </section>
+
+    <section class="glass-card podium-card">
+      <h2 class="section-title">Pódio de Destaque</h2>
+      <div class="section-sub">Os três melhores colocados considerando os filtros atuais.</div>
+
+      <div class="podium-wrap" id="podiumWrap">
+        <div class="empty" style="grid-column:1/-1">Carregando pódio...</div>
       </div>
     </section>
 
@@ -726,9 +1174,9 @@
       <div class="table-head">
         <h2 class="section-title" style="margin:0">Lista classificada</h2>
         <div class="head-info">
-          <span class="chip ok">🏆 Score final</span>
-          <span class="chip warn">⭐ Elogios</span>
-          <span class="chip danger">⚠ Negativas mais para baixo</span>
+          <span class="chip gold">🏆 Pódio em destaque</span>
+          <span class="chip ok">⭐ Elogios elevam o desempenho</span>
+          <span class="chip danger">⚠ Baixo desempenho recebe mensagem motivacional</span>
         </div>
       </div>
 
@@ -747,11 +1195,12 @@
               <th>Notif. negativas</th>
               <th>Prioridade</th>
               <th>Score final</th>
+              <th>Motivação / Observação</th>
             </tr>
           </thead>
           <tbody id="tbodyRanking">
             <tr>
-              <td colspan="11" class="empty">Carregando dados...</td>
+              <td colspan="12" class="empty">Carregando dados...</td>
             </tr>
           </tbody>
         </table>
@@ -767,22 +1216,32 @@
 
       <div class="footer-legend">
         <span class="chip ok">Excepcional / Ótimo / Bom = destaque positivo</span>
-        <span class="chip danger">Regular / Insuficiente / Incompatível = atenção</span>
-        <span class="chip">Ranking prioriza turmas mais antigas quando ativado</span>
+        <span class="chip danger">Regular / Insuficiente / Incompatível = atenção especial</span>
+        <span class="chip gold">Exportação permite página, turma ou lista filtrada completa</span>
       </div>
     </section>
   </div>
 
   <script>
     const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
-    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/') ? p : '/' + p)}`;
+    const API = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/') ? p : '/' + p)}`;
+
+    const CACHE_TTL = 12000;
+    const requestCache = new Map();
+    let currentRankingController = null;
+    let activeRequestToken = 0;
+    let searchDebounce = null;
 
     const state = {
       raw: [],
+      podium: [],
       page: 1,
       total: 0,
       totalPages: 1,
-      pageSize: 25
+      pageSize: 25,
+      lastFilterSignature: '',
+      lastPodiumSignature: '',
+      turmasCarregadas: false
     };
 
     function toast(type, msg){
@@ -793,8 +1252,8 @@
       requestAnimationFrame(() => d.classList.add('show'));
       setTimeout(() => {
         d.classList.remove('show');
-        setTimeout(() => d.remove(), 350);
-      }, type === 'ok' ? 3500 : 5500);
+        setTimeout(() => d.remove(), 280);
+      }, type === 'ok' ? 2400 : 4200);
     }
 
     function showOK(msg){ toast('ok', msg || 'Feito.'); }
@@ -845,10 +1304,24 @@
       };
     }
 
-    async function getJSON(url){
+    async function getJSON(url, opts = {}){
+      const method = opts.method || 'GET';
+      const useCache = opts.useCache !== false && method === 'GET';
+      const cacheKey = `${method}:${url}`;
+      const now = Date.now();
+
+      if (useCache && requestCache.has(cacheKey)) {
+        const cached = requestCache.get(cacheKey);
+        if ((now - cached.time) < CACHE_TTL) {
+          return cached.data;
+        }
+        requestCache.delete(cacheKey);
+      }
+
       const res = await fetch(url, {
         credentials: 'include',
-        cache: 'no-store'
+        cache: 'default',
+        signal: opts.signal
       });
 
       const ct = res.headers.get('content-type') || '';
@@ -862,29 +1335,42 @@
         throw new Error(msg);
       }
 
+      if (useCache) {
+        requestCache.set(cacheKey, { time: now, data });
+      }
+
       return data;
     }
 
-    async function carregarTurmas(){
+    function clearRequestCacheByPrefix(prefix){
+      for (const key of requestCache.keys()) {
+        if (key.includes(prefix)) requestCache.delete(key);
+      }
+    }
+
+    async function carregarTurmas(force = false){
       const select = document.getElementById('fTurma');
 
+      if (state.turmasCarregadas && !force && select.options.length > 1) {
+        return;
+      }
+
       try{
-        const data = await getJSON(API('/ranking-alunos/turmas'));
+        const data = await getJSON(API('/ranking-alunos/turmas'), { useCache: !force });
         const turmas = Array.isArray(data?.turmas) ? data.turmas : [];
+        const valorAtual = select.value;
 
-        select.innerHTML = '';
+        let html = '<option value="">Todas as turmas</option>';
+        for (const turma of turmas) {
+          html += `<option value="${escapeHtml(turma)}">${escapeHtml(turma)}</option>`;
+        }
+        select.innerHTML = html;
 
-        const optAll = document.createElement('option');
-        optAll.value = '';
-        optAll.textContent = 'Todas as turmas';
-        select.appendChild(optAll);
+        if (turmas.includes(valorAtual)) {
+          select.value = valorAtual;
+        }
 
-        turmas.forEach(turma => {
-          const opt = document.createElement('option');
-          opt.value = turma;
-          opt.textContent = turma;
-          select.appendChild(opt);
-        });
+        state.turmasCarregadas = true;
 
         if (!turmas.length) {
           showError('Nenhuma turma encontrada para o ranking.');
@@ -915,8 +1401,8 @@
       };
     }
 
-    function buildQuery(page = 1){
-      const f = getFiltros();
+    function buildQuery(page = 1, opts = {}){
+      const f = { ...getFiltros(), ...(opts.filters || {}) };
       const params = new URLSearchParams();
 
       if (f.busca) params.set('busca', f.busca);
@@ -934,18 +1420,176 @@
       params.set('priorizarSerie', String(f.priorizarSerie));
       params.set('rebaixarNegativas', String(f.rebaixarNegativas));
       params.set('page', String(page));
-      params.set('limit', String(f.limit));
+      params.set('limit', String(opts.limit ?? f.limit));
 
       return params.toString();
     }
 
-    async function carregarDados(page = 1, silent = false){
+    function getFilterSignature(customFilters = null){
+      const f = customFilters ? { ...getFiltros(), ...customFilters } : getFiltros();
+      return JSON.stringify({
+        busca: f.busca || '',
+        turma: f.turma || '',
+        notaMin: f.notaMin ?? '',
+        notaMax: f.notaMax ?? '',
+        faixa: f.faixa || '',
+        ordenar: f.ordenar || 'scoreFinal',
+        direcao: f.direcao || 'desc',
+        comElogios: !!f.comElogios,
+        comAtos: !!f.comAtos,
+        comNegativas: !!f.comNegativas,
+        semNegativas: !!f.semNegativas,
+        priorizarSerie: !!f.priorizarSerie,
+        rebaixarNegativas: !!f.rebaixarNegativas
+      });
+    }
+
+    function escapeHtml(str){
+      return String(str || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function getAvatarHtml(aluno, cls = 'avatar', fallbackCls = 'avatar-fallback'){
+      const initialsHtml = escapeHtml(initials(aluno.nome));
+      if (aluno.fotoUrl) {
+        return `<img class="${cls}" loading="lazy" decoding="async" src="${escapeHtml(aluno.fotoUrl)}" alt="Foto de ${escapeHtml(aluno.nome)}" onerror="this.onerror=null;this.outerHTML='<div class=&quot;${fallbackCls}&quot;>${initialsHtml}</div>'">`;
+      }
+      return `<div class="${fallbackCls}">${initialsHtml}</div>`;
+    }
+
+    function getMotivationalInfo(aluno){
+      const faixa = normalizeText(aluno.faixa);
+      const nota = toNumber(aluno.notaComportamental, 0);
+      const negativas = toNumber(aluno.notificacoesNegativas, 0);
+      const atos = toNumber(aluno.atosIndisciplina, 0);
+
+      if (faixa === 'incompativel' || nota < 4.5 || negativas >= 6) {
+        return {
+          text: 'Não desista. Você consegue evoluir e voltar a crescer.',
+          className: 'attention-note'
+        };
+      }
+
+      if (faixa === 'insuficiente' || nota < 6 || negativas >= 3 || atos >= 3) {
+        return {
+          text: 'Atenção: com foco e constância, seu resultado pode melhorar.',
+          className: 'attention-note soft'
+        };
+      }
+
+      if (faixa === 'regular') {
+        return {
+          text: 'Você está perto de avançar. Continue firme e busque subir no ranking.',
+          className: 'attention-note soft'
+        };
+      }
+
+      return {
+        text: 'Bom desempenho. Continue mantendo sua evolução.',
+        className: 'attention-note good'
+      };
+    }
+
+    async function carregarPodio(filterSignature, opts = {}){
+      const podiumWrap = document.getElementById('podiumWrap');
+
+      if (!opts.silent) {
+        podiumWrap.innerHTML = `<div class="empty" style="grid-column:1/-1">Carregando pódio...</div>`;
+      }
+
+      try{
+        const qs = buildQuery(1, { limit: 3, filters: opts.filters || {} });
+        const data = await getJSON(`${API('/ranking-alunos')}?${qs}`, {
+          signal: opts.signal,
+          useCache: !opts.force
+        });
+
+        state.podium = Array.isArray(data?.alunos) ? data.alunos.map(shapeAluno).slice(0, 3) : [];
+        state.lastPodiumSignature = filterSignature;
+        renderPodio();
+      }catch(err){
+        if (err.name === 'AbortError') return;
+        console.error(err);
+        state.podium = [];
+        podiumWrap.innerHTML = `<div class="empty" style="grid-column:1/-1">Não foi possível carregar o pódio.</div>`;
+      }
+    }
+
+    function renderPodio(){
+      const podiumWrap = document.getElementById('podiumWrap');
+
+      if (!state.podium.length) {
+        podiumWrap.innerHTML = `<div class="empty" style="grid-column:1/-1">Nenhum dado disponível para o pódio com os filtros atuais.</div>`;
+        return;
+      }
+
+      const byPlace = {
+        1: state.podium[0] || null,
+        2: state.podium[1] || null,
+        3: state.podium[2] || null
+      };
+
+      const order = [2, 1, 3];
+
+      podiumWrap.innerHTML = order.map(place => {
+        const aluno = byPlace[place];
+        if (!aluno) {
+          return `
+            <div class="podium-item podium-${place}">
+              <div class="podium-base">
+                <div class="place-badge">${place}º</div>
+                <div class="place-label">Sem dado</div>
+                <div class="place-score">—</div>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="podium-item podium-${place}">
+            ${getAvatarHtml(aluno, 'podium-avatar', 'podium-avatar-fallback')}
+            <div class="podium-name">${escapeHtml(aluno.nome)}</div>
+            <div class="podium-meta">${escapeHtml(aluno.serie || '—')} • ${escapeHtml(aluno.turma || '—')}</div>
+
+            <div class="podium-base">
+              <div class="place-badge">${place}º</div>
+              <div class="place-label">${place === 1 ? 'Líder do ranking' : place === 2 ? 'Vice-líder' : 'Terceiro lugar'}</div>
+              <div class="place-score">${Math.round(aluno.scoreFinal).toLocaleString('pt-BR')}</div>
+              <div class="place-faixa">${escapeHtml(aluno.faixa)} • Nota ${aluno.notaComportamental.toFixed(2).replace('.', ',')}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setLoadingTabela(){
+      document.getElementById('tbodyRanking').innerHTML = `<tr><td colspan="12" class="empty">Carregando dados...</td></tr>`;
+    }
+
+    async function carregarDados(page = 1, silent = false, force = false){
       const tbody = document.getElementById('tbodyRanking');
-      tbody.innerHTML = `<tr><td colspan="11" class="empty">Carregando dados...</td></tr>`;
+      const currentToken = ++activeRequestToken;
+      const filterSignature = getFilterSignature();
+
+      if (currentRankingController) {
+        currentRankingController.abort();
+      }
+      currentRankingController = new AbortController();
+
+      if (!silent) setLoadingTabela();
 
       try{
         const qs = buildQuery(page);
-        const data = await getJSON(`${API('/ranking-alunos')}?${qs}`);
+        const data = await getJSON(`${API('/ranking-alunos')}?${qs}`, {
+          signal: currentRankingController.signal,
+          useCache: !force
+        });
+
+        if (currentToken !== activeRequestToken) return;
 
         const arr = Array.isArray(data?.alunos) ? data.alunos : [];
 
@@ -958,15 +1602,39 @@
         atualizarMetricas();
         renderTabela();
 
+        const podiumNeedsRefresh = state.lastPodiumSignature !== filterSignature;
+
+        if (podiumNeedsRefresh) {
+          if (state.page === 1 && state.raw.length) {
+            state.podium = state.raw.slice(0, 3);
+            state.lastPodiumSignature = filterSignature;
+            renderPodio();
+          } else {
+            carregarPodio(filterSignature, {
+              signal: currentRankingController.signal,
+              force,
+              silent: false
+            });
+          }
+        }
+
+        state.lastFilterSignature = filterSignature;
+
         if (!silent) showOK('Ranking carregado com sucesso.');
       }catch(err){
+        if (err.name === 'AbortError') return;
+
         console.error(err);
         state.raw = [];
         state.total = 0;
         state.totalPages = 1;
         renderTabela();
         atualizarMetricas();
-        showError(err.message || 'Não foi possível carregar o ranking.');
+
+        if (currentToken === activeRequestToken) {
+          document.getElementById('podiumWrap').innerHTML = `<div class="empty" style="grid-column:1/-1">Não foi possível carregar o pódio.</div>`;
+          showError(err.message || 'Não foi possível carregar o ranking.');
+        }
       }
     }
 
@@ -988,6 +1656,13 @@
       document.getElementById('metricNegativas').textContent = comNegativas.toLocaleString('pt-BR');
     }
 
+    function posClass(pos){
+      if (pos === 1) return 'gold';
+      if (pos === 2) return 'silver';
+      if (pos === 3) return 'bronze';
+      return '';
+    }
+
     function renderTabela(){
       const tbody = document.getElementById('tbodyRanking');
       const pagerInfo = document.getElementById('pagerInfo');
@@ -995,7 +1670,7 @@
       const btnNext = document.getElementById('btnNext');
 
       if (!state.raw.length) {
-        tbody.innerHTML = `<tr><td colspan="11" class="empty">Nenhum aluno encontrado com os filtros informados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="empty">Nenhum aluno encontrado com os filtros informados.</td></tr>`;
         pagerInfo.textContent = `Mostrando 0 de ${state.total}`;
         btnPrev.disabled = true;
         btnNext.disabled = true;
@@ -1003,23 +1678,23 @@
       }
 
       const start = (state.page - 1) * state.pageSize;
+      const rows = new Array(state.raw.length);
 
-      tbody.innerHTML = state.raw.map((aluno, idx) => {
+      for (let idx = 0; idx < state.raw.length; idx++) {
+        const aluno = state.raw[idx];
         const pos = start + idx + 1;
         const faixaClass = faixaClassName(aluno.faixa);
         const hasNeg = aluno.notificacoesNegativas > 0;
+        const note = getMotivationalInfo(aluno);
+        const topRank = pos <= 3 ? 'top-rank' : '';
+        const posCls = posClass(pos);
 
-        const initialsHtml = escapeHtml(initials(aluno.nome));
-        const avatar = aluno.fotoUrl
-          ? `<img class="avatar" loading="lazy" decoding="async" src="${escapeHtml(aluno.fotoUrl)}" alt="Foto de ${escapeHtml(aluno.nome)}" onerror="this.outerHTML='<div class=&quot;avatar-fallback&quot;>${initialsHtml}</div>'">`
-          : `<div class="avatar-fallback">${initialsHtml}</div>`;
-
-        return `
-          <tr class="${hasNeg ? 'negativo' : ''}">
-            <td class="pos">${pos}</td>
+        rows[idx] = `
+          <tr class="${hasNeg ? 'negativo' : ''} ${topRank}">
+            <td><span class="pos ${posCls}">${pos <= 3 ? `${pos}º` : pos}</span></td>
             <td>
               <div class="student">
-                ${avatar}
+                ${getAvatarHtml(aluno)}
                 <div class="student-meta">
                   <div class="student-name">${escapeHtml(aluno.nome)}</div>
                   <div class="student-sub">${escapeHtml(aluno._id || '')}</div>
@@ -1028,16 +1703,19 @@
             </td>
             <td>${escapeHtml(aluno.serie || '—')}</td>
             <td>${escapeHtml(aluno.turma || '—')}</td>
-            <td><span class="score">${aluno.notaComportamental.toFixed(2).replace('.', ',')}</span></td>
+            <td><span class="score ${pos <= 3 ? 'highlight' : ''}">${aluno.notaComportamental.toFixed(2).replace('.', ',')}</span></td>
             <td><span class="badge-faixa ${faixaClass}">${escapeHtml(aluno.faixa)}</span></td>
             <td class="cell-center">${aluno.elogios}</td>
             <td class="cell-center">${aluno.atosIndisciplina}</td>
             <td class="cell-center">${aluno.notificacoesNegativas}</td>
             <td class="cell-center">${aluno.seriePrioridade}</td>
-            <td><span class="score">${Math.round(aluno.scoreFinal).toLocaleString('pt-BR')}</span></td>
+            <td><span class="score ${pos <= 3 ? 'highlight' : ''}">${Math.round(aluno.scoreFinal).toLocaleString('pt-BR')}</span></td>
+            <td><span class="${note.className}">${escapeHtml(note.text)}</span></td>
           </tr>
         `;
-      }).join('');
+      }
+
+      tbody.innerHTML = rows.join('');
 
       const showingStart = state.total === 0 ? 0 : start + 1;
       const showingEnd = Math.min(start + state.raw.length, state.total);
@@ -1047,21 +1725,7 @@
       btnNext.disabled = state.page >= state.totalPages;
     }
 
-    function escapeHtml(str){
-      return String(str || '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
-
-    function exportarCSV(){
-      if (!state.raw.length) {
-        showError('A exportação CSV considera a página atual. Não há dados para exportar.');
-        return;
-      }
-
+    function buildCsvRows(alunos, baseStart = 0){
       const linhas = [[
         'Posição',
         'Nome',
@@ -1073,14 +1737,15 @@
         'Atos de Indisciplina',
         'Notificações Negativas',
         'Prioridade',
-        'Score Final'
+        'Score Final',
+        'Motivação / Observação'
       ]];
 
-      const start = (state.page - 1) * state.pageSize;
-
-      state.raw.forEach((aluno, index) => {
+      for (let index = 0; index < alunos.length; index++) {
+        const aluno = alunos[index];
+        const note = getMotivationalInfo(aluno);
         linhas.push([
-          start + index + 1,
+          baseStart + index + 1,
           aluno.nome,
           aluno.serie,
           aluno.turma,
@@ -1090,10 +1755,15 @@
           aluno.atosIndisciplina,
           aluno.notificacoesNegativas,
           aluno.seriePrioridade,
-          Math.round(aluno.scoreFinal)
+          Math.round(aluno.scoreFinal),
+          note.text
         ]);
-      });
+      }
 
+      return linhas;
+    }
+
+    function downloadCsv(linhas, nomeArquivo){
       const csv = linhas
         .map(row => row.map(cell => `"${String(cell ?? '').replaceAll('"', '""')}"`).join(';'))
         .join('\n');
@@ -1102,17 +1772,116 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
 
-      const agora = new Date();
-      const nomeArquivo = `ranking-alunos-pagina-${state.page}-${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-${String(agora.getDate()).padStart(2,'0')}.csv`;
-
       a.href = url;
       a.download = nomeArquivo;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
 
-      showOK('CSV da página atual gerado com sucesso.');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function fetchAllRankingData(customFilters = {}){
+      const limitPorPagina = 200;
+
+      const primeira = await getJSON(`${API('/ranking-alunos')}?${buildQuery(1, {
+        limit: limitPorPagina,
+        filters: customFilters
+      })}`, { useCache: false });
+
+      const totalPages = toNumber(primeira?.totalPages, 1);
+      let alunos = Array.isArray(primeira?.alunos) ? primeira.alunos.map(shapeAluno) : [];
+
+      if (totalPages <= 1) return alunos;
+
+      const promises = [];
+      for (let page = 2; page <= totalPages; page++) {
+        promises.push(
+          getJSON(`${API('/ranking-alunos')}?${buildQuery(page, {
+            limit: limitPorPagina,
+            filters: customFilters
+          })}`, { useCache: false })
+        );
+      }
+
+      const pages = await Promise.all(promises);
+      for (const data of pages) {
+        const arr = Array.isArray(data?.alunos) ? data.alunos.map(shapeAluno) : [];
+        alunos = alunos.concat(arr);
+      }
+
+      return alunos;
+    }
+
+    function buildExportFileName(mode){
+      const agora = new Date();
+      const yyyy = agora.getFullYear();
+      const mm = String(agora.getMonth() + 1).padStart(2, '0');
+      const dd = String(agora.getDate()).padStart(2, '0');
+      const turma = document.getElementById('fTurma').value || 'geral';
+
+      if (mode === 'pagina') return `ranking-alunos-pagina-${state.page}-${yyyy}-${mm}-${dd}.csv`;
+      if (mode === 'turma') return `ranking-alunos-turma-${turma.replace(/\s+/g, '-').toLowerCase()}-${yyyy}-${mm}-${dd}.csv`;
+      return `ranking-alunos-filtrado-completo-${yyyy}-${mm}-${dd}.csv`;
+    }
+
+    async function exportarCSV(){
+      const mode = document.getElementById('fExportMode').value;
+      const btn = document.getElementById('btnExportarCsv');
+      const textoOriginal = btn.textContent;
+
+      try{
+        btn.disabled = true;
+        btn.textContent = 'Gerando CSV...';
+
+        if (mode === 'pagina') {
+          if (!state.raw.length) {
+            showError('Não há dados na página atual para exportar.');
+            return;
+          }
+
+          const start = (state.page - 1) * state.pageSize;
+          const linhas = buildCsvRows(state.raw, start);
+          downloadCsv(linhas, buildExportFileName('pagina'));
+          showOK('CSV da página atual gerado com sucesso.');
+          return;
+        }
+
+        if (mode === 'turma') {
+          const turmaSelecionada = document.getElementById('fTurma').value;
+          if (!turmaSelecionada) {
+            showError('Para exportar apenas uma turma, selecione uma turma no filtro.');
+            return;
+          }
+
+          const alunos = await fetchAllRankingData({ turma: turmaSelecionada });
+          if (!alunos.length) {
+            showError('Nenhum aluno encontrado para a turma selecionada.');
+            return;
+          }
+
+          const linhas = buildCsvRows(alunos, 0);
+          downloadCsv(linhas, buildExportFileName('turma'));
+          showOK(`CSV da turma ${turmaSelecionada} gerado com sucesso.`);
+          return;
+        }
+
+        const alunos = await fetchAllRankingData();
+        if (!alunos.length) {
+          showError('Nenhum dado encontrado para exportar a lista filtrada.');
+          return;
+        }
+
+        const linhas = buildCsvRows(alunos, 0);
+        downloadCsv(linhas, buildExportFileName('filtrado'));
+        showOK('CSV completo da lista filtrada gerado com sucesso.');
+      }catch(err){
+        console.error(err);
+        showError(err.message || 'Falha ao exportar o CSV.');
+      }finally{
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
+      }
     }
 
     function limparFiltros(){
@@ -1130,14 +1899,29 @@
       document.getElementById('fPriorizarSerie').checked = true;
       document.getElementById('fRebaixarNegativas').checked = true;
       document.getElementById('fLimit').value = '25';
+      document.getElementById('fExportMode').value = 'pagina';
 
-      carregarDados(1, true);
+      state.lastFilterSignature = '';
+      state.lastPodiumSignature = '';
+      clearRequestCacheByPrefix('/ranking-alunos');
+      carregarDados(1, true, true);
+    }
+
+    function aplicarBuscaComDebounce(){
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        carregarDados(1, true);
+      }, 320);
     }
 
     function bindEventos(){
       document.getElementById('btnAplicar').addEventListener('click', () => carregarDados(1));
       document.getElementById('btnLimpar').addEventListener('click', limparFiltros);
-      document.getElementById('btnRecarregar').addEventListener('click', () => carregarDados(state.page));
+      document.getElementById('btnRecarregar').addEventListener('click', async () => {
+        clearRequestCacheByPrefix('/ranking-alunos');
+        await carregarTurmas(true);
+        await carregarDados(state.page, false, true);
+      });
       document.getElementById('btnExportarCsv').addEventListener('click', exportarCSV);
 
       document.getElementById('btnPrev').addEventListener('click', () => {
@@ -1164,12 +1948,29 @@
           }
         });
       });
+
+      document.getElementById('fBusca').addEventListener('input', aplicarBuscaComDebounce);
+
+      ['fTurma','fFaixa','fOrdenar','fDirecao','fLimit'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => carregarDados(1, true));
+      });
+
+      ['fComElogios','fComAtos','fComNegativas','fSemNegativas','fPriorizarSerie','fRebaixarNegativas'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => carregarDados(1, true));
+      });
     }
 
     async function boot(){
       bindEventos();
-      await carregarTurmas();
-      await carregarDados();
+
+      try{
+        await Promise.all([
+          carregarTurmas(),
+          carregarDados(1, true)
+        ]);
+      }catch(err){
+        console.error(err);
+      }
     }
 
     boot();

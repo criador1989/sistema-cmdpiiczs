@@ -41,6 +41,53 @@ function buildAlunoMatch(inst) {
   return { instituicao: asStr };
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function classifyNotificacao(doc = {}) {
+  const bag = [
+    doc?.tipo,
+    doc?.categoria,
+    doc?.tipoMedida,
+    doc?.natureza,
+    doc?.classificacao,
+    doc?.descricao,
+    doc?.titulo,
+    doc?.motivo
+  ]
+    .map(normalizeText)
+    .filter(Boolean)
+    .join(' ');
+
+  const elogio =
+    /\belogio\b/.test(bag) ||
+    /\bpositiv[ao]\b/.test(bag) ||
+    /\bmerito\b/.test(bag) ||
+    /\breconhecimento\b/.test(bag) ||
+    /\bparaben/.test(bag);
+
+  const ato =
+    /\bato\b/.test(bag) && /\bindisciplin/.test(bag);
+
+  const negativa =
+    (
+      /\bnegativ[ao]\b/.test(bag) ||
+      /\bindisciplin/.test(bag) ||
+      /\bocorrenc/.test(bag) ||
+      /\badvertenc/.test(bag) ||
+      /\bsuspens/.test(bag) ||
+      /\bdescumpr/.test(bag) ||
+      /\bfalta\b/.test(bag)
+    ) && !elogio;
+
+  return { elogio, ato, negativa };
+}
+
 /**
  * POST /api/fix-recalculo-comportamento/recalcular
  *
@@ -50,6 +97,11 @@ function buildAlunoMatch(inst) {
  * - TSMD por dias úteis
  * - multi-dia zerando sequência
  * - desconto apenas no dia do registro
+ *
+ * Além disso, atualiza no Aluno:
+ * - elogios
+ * - atosIndisciplina
+ * - notificacoesNegativas
  */
 router.post('/recalcular', autenticar, async (req, res) => {
   try {
@@ -63,7 +115,7 @@ router.post('/recalcular', autenticar, async (req, res) => {
     }
 
     const alunos = await Aluno.find(buildAlunoMatch(instituicao))
-      .select('_id nome turma dataEntrada comportamento')
+      .select('_id nome turma dataEntrada comportamento elogios atosIndisciplina notificacoesNegativas')
       .lean();
 
     if (!alunos.length) {
@@ -83,15 +135,41 @@ router.post('/recalcular', autenticar, async (req, res) => {
       ativo: { $ne: false },
       arquivada: { $ne: true }
     })
-      .select('aluno data createdAt valorNumerico quantidadeDias tipoMedida natureza')
+      .select([
+        'aluno',
+        'data',
+        'createdAt',
+        'valorNumerico',
+        'quantidadeDias',
+        'tipoMedida',
+        'natureza',
+        'tipo',
+        'categoria',
+        'classificacao',
+        'descricao',
+        'titulo',
+        'motivo'
+      ].join(' '))
       .sort({ data: 1, createdAt: 1 })
       .lean();
 
-    const mapaNotificacoes = new Map();
+    const mapaNotificacoesTSMD = new Map();
+    const mapaContagens = new Map();
+
     for (const n of notificacoes) {
       const key = String(n.aluno);
-      if (!mapaNotificacoes.has(key)) mapaNotificacoes.set(key, []);
-      mapaNotificacoes.get(key).push({
+      if (!key) continue;
+
+      if (!mapaNotificacoesTSMD.has(key)) mapaNotificacoesTSMD.set(key, []);
+      if (!mapaContagens.has(key)) {
+        mapaContagens.set(key, {
+          elogios: 0,
+          atosIndisciplina: 0,
+          notificacoesNegativas: 0
+        });
+      }
+
+      mapaNotificacoesTSMD.get(key).push({
         data: n.data || null,
         createdAt: n.createdAt || null,
         valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
@@ -99,22 +177,39 @@ router.post('/recalcular', autenticar, async (req, res) => {
         tipoMedida: n.tipoMedida || '',
         natureza: n.natureza || ''
       });
+
+      const cls = classifyNotificacao(n);
+      const cont = mapaContagens.get(key);
+
+      if (cls.elogio) cont.elogios += 1;
+      if (cls.ato) cont.atosIndisciplina += 1;
+      if (cls.negativa) cont.notificacoesNegativas += 1;
     }
 
     const bulkOps = [];
     const detalhamento = [];
+    const agora = new Date();
 
     for (const aluno of alunos) {
-      const eventos = mapaNotificacoes.get(String(aluno._id)) || [];
-      const notaAnterior = typeof aluno.comportamento === 'number'
-        ? Number(aluno.comportamento.toFixed(2))
-        : null;
+      const alunoKey = String(aluno._id);
+      const eventos = mapaNotificacoesTSMD.get(alunoKey) || [];
+      const contagens = mapaContagens.get(alunoKey) || {
+        elogios: 0,
+        atosIndisciplina: 0,
+        notificacoesNegativas: 0
+      };
+
+      const notaAnterior =
+        typeof aluno.comportamento === 'number'
+          ? Number(aluno.comportamento.toFixed(2))
+          : null;
 
       let notaNova = 8.0;
+
       try {
         notaNova = calcularNotaTSMD(
           aluno.dataEntrada ? new Date(aluno.dataEntrada) : null,
-          new Date(),
+          agora,
           eventos
         );
       } catch (e) {
@@ -129,10 +224,29 @@ router.post('/recalcular', autenticar, async (req, res) => {
 
       notaNova = Number((+notaNova || 0).toFixed(2));
 
+      const elogiosAnteriores = Number(aluno?.elogios || 0);
+      const atosAnteriores = Number(aluno?.atosIndisciplina || 0);
+      const negativasAnteriores = Number(aluno?.notificacoesNegativas || 0);
+
+      const alterou =
+        notaAnterior === null ||
+        notaAnterior !== notaNova ||
+        elogiosAnteriores !== contagens.elogios ||
+        atosAnteriores !== contagens.atosIndisciplina ||
+        negativasAnteriores !== contagens.notificacoesNegativas;
+
       bulkOps.push({
         updateOne: {
           filter: { _id: aluno._id },
-          update: { $set: { comportamento: notaNova } }
+          update: {
+            $set: {
+              comportamento: notaNova,
+              elogios: contagens.elogios,
+              atosIndisciplina: contagens.atosIndisciplina,
+              notificacoesNegativas: contagens.notificacoesNegativas,
+              ultimaAtualizacaoComportamento: agora
+            }
+          }
         }
       });
 
@@ -142,7 +256,13 @@ router.post('/recalcular', autenticar, async (req, res) => {
         turma: aluno.turma || '—',
         notaAnterior,
         notaNova,
-        alterou: notaAnterior !== notaNova
+        elogiosAnterior: elogiosAnteriores,
+        elogiosNovo: contagens.elogios,
+        atosAnterior: atosAnteriores,
+        atosNovo: contagens.atosIndisciplina,
+        negativasAnterior: negativasAnteriores,
+        negativasNovo: contagens.notificacoesNegativas,
+        alterou
       });
     }
 

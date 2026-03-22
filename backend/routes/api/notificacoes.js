@@ -54,6 +54,7 @@ function formatDataBr(dt) {
   const yyyy = d.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 }
+
 function formatDataHoraBr(dt) {
   if (!dt) return '';
   const d = new Date(dt);
@@ -75,6 +76,7 @@ function montarEmailDeferido({ aluno, notif }) {
     notif?.quantidadeDias && notif.quantidadeDias > 1
       ? ` (${notif.quantidadeDias} dias)`
       : '';
+
   const assunto = `Nova Notificação Disciplinar DEFERIDA — ${nome} (${turma}) — Nº ${numero}`;
   const text = [
     'Prezada família,',
@@ -167,6 +169,7 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
       deferidoEm: notif.deferidoEm || new Date()
     }
   });
+
   return { ok: true };
 }
 
@@ -181,12 +184,14 @@ const MAPA_NEGATIVOS = {
   'A.E.C.D.E': -0.7,
   'A.I.A': -1.2
 };
+
 const MAPA_ELOGIOS = {
   elogioVerbal: 0.15,
   boletimInternoIndividual: 0.6,
   boletimInternoColetivo: 0.2,
   mediaAlta: 0.4
 };
+
 const PRECISA_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
 
 // ------------------ ENV (opcionais p/ mensagem NP) ------------------
@@ -244,12 +249,68 @@ function toDayEnd(d) {
   return x;
 }
 
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function toNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function ehElogioNotif(n) {
+  const natureza = normalizeText(n?.natureza);
+  const tipo = normalizeText(n?.tipo);
+  const tipoMedida = normalizeText(n?.tipoMedida);
+
+  return (
+    natureza === 'elogio' ||
+    tipo === 'elogio' ||
+    tipoMedida === 'elogio'
+  );
+}
+
+function ehIndisciplinaNotif(n) {
+  const natureza = normalizeText(n?.natureza);
+  const tipo = normalizeText(n?.tipo);
+  const tipoMedida = normalizeText(n?.tipoMedida);
+  const motivo = normalizeText(n?.motivo);
+  const valorNumerico = toNumber(n?.valorNumerico, 0);
+
+  const ehElogio = ehElogioNotif(n);
+
+  return (
+    natureza === 'indisciplina' ||
+    (!ehElogio && valorNumerico < 0) ||
+    tipo.includes('advertencia') ||
+    tipo.includes('advertência') ||
+    tipo.includes('repreensao') ||
+    tipo.includes('repreensão') ||
+    tipoMedida.includes('a.i.a') ||
+    tipoMedida.includes('a.e.c.d.e') ||
+    motivo.includes('indisciplina')
+  );
+}
+
 function estaFaixaRegular(nota) {
   const n = Number(nota);
   return isFinite(n) && n >= 5.0 && n <= 6.99;
 }
 
-async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
+/**
+ * ==========================================================
+ * RECOMPUTA RESUMO DO ALUNO
+ * - nota TSMD oficial
+ * - elogios
+ * - atosIndisciplina
+ * - notificacoesNegativas
+ * ==========================================================
+ */
+async function recomputarResumoAlunoAteAgora(alunoId, instituicao) {
   const instMatch = buildInstMatch(instituicao);
   const aluno = await Aluno.findOne({ _id: alunoId, ...buildAlunoMatch(instituicao) });
   if (!aluno) return null;
@@ -260,13 +321,38 @@ async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
     ativo: { $ne: false },
     arquivada: { $ne: true }
   })
-    .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
+    .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza tipo motivo status')
     .sort({ data: 1, createdAt: 1 });
 
   const notaFinal = calcularNotaTSMD(aluno.dataEntrada, new Date(), historico);
+
+  let elogios = 0;
+  let atosIndisciplina = 0;
+  let notificacoesNegativas = 0;
+
+  for (const n of historico) {
+    const isElogio = ehElogioNotif(n);
+    const isIndisciplina = ehIndisciplinaNotif(n);
+    const status = normalizeText(n?.status);
+
+    if (isElogio) elogios += 1;
+    if (isIndisciplina) atosIndisciplina += 1;
+    if (isIndisciplina && status !== 'arquivado') notificacoesNegativas += 1;
+  }
+
   aluno.comportamento = +Number(notaFinal).toFixed(2);
+  aluno.elogios = elogios;
+  aluno.atosIndisciplina = atosIndisciplina;
+  aluno.notificacoesNegativas = notificacoesNegativas;
+  aluno.ultimaAtualizacaoComportamento = new Date();
+
   await aluno.save();
   return aluno;
+}
+
+// Mantido por compatibilidade interna
+async function recomputarNotaAlunoAteAgora(alunoId, instituicao) {
+  return recomputarResumoAlunoAteAgora(alunoId, instituicao);
 }
 
 async function getAlunoInfo(alunoId, instituicao) {
@@ -637,6 +723,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     })
       .select('nome turma instituicao')
       .lean();
+
     if (!alunoDoc) {
       return res
         .status(404)
@@ -645,6 +732,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
 
     const ehElogio = natureza === 'elogio';
     let tituloMedida = ehElogio ? 'Elogio' : (tipoMedida || tipo || '').trim();
+
     let dias = 1;
     if (!ehElogio && PRECISA_DIAS.has(tituloMedida)) {
       const d = parseInt(quantidadeDias, 10);
@@ -662,6 +750,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
           : 0;
     } else {
       const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
+      // ⚠️ mantém valor base da medida; o TSMD usa quantidadeDias/tipoMedida
       valor =
         typeof valorNumerico === 'number'
           ? valorNumerico
@@ -715,9 +804,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
           errCreate?.code === 11000 &&
           /numeroSequencial/.test(String(errCreate?.message || ''))
         ) {
-          console.warn(
-            '[notificacoes] numeroSequencial duplicado, recalculando e tentando novamente...'
-          );
+          console.warn('[notificacoes] numeroSequencial duplicado, recalculando e tentando novamente...');
           continue;
         }
         throw errCreate;
@@ -735,7 +822,7 @@ router.post('/', autenticar, attachActor, async (req, res) => {
     }
 
     await recomputarCamposNotaDaNotificacao(created, inst);
-    const alunoApósCreate = await recomputarNotaAlunoAteAgora(aluno, inst);
+    const alunoApósCreate = await recomputarResumoAlunoAteAgora(aluno, inst);
     await verificarEnvioNP(alunoApósCreate, inst);
 
     const { alunoNome, alunoTurma } = await getAlunoInfo(aluno, inst);
@@ -815,6 +902,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
       'aluno',
       'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada'
     );
+
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -822,6 +910,7 @@ router.post('/:id/entregar', autenticar, attachActor, async (req, res) => {
         .status(400)
         .json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
     }
+
     if (notif.entregue === true) {
       return res.status(200).json({
         message: 'Já estava marcada como ENTREGUE.',
@@ -913,6 +1002,7 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
       'aluno',
       'nome turma instituicao telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId'
     );
+
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -920,9 +1010,11 @@ router.post('/:id/devolver', autenticar, attachActor, async (req, res) => {
         .status(400)
         .json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
     }
+
     if (!notif.entregue) {
       return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
     }
+
     if (notif.devolvidoPeloAluno === true) {
       return res.status(200).json({
         message: 'Já estava marcada como DEVOLVIDA.',
@@ -1004,10 +1096,14 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       _id: id,
       ...instMatch
     });
-    if (!notif)
+
+    if (!notif) {
       return res
         .status(404)
         .json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
+    }
+
+    const alunoAntesId = String(notif.aluno);
 
     const camposEditaveis = [
       'aluno',
@@ -1071,11 +1167,14 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
           notif.tipo ??
           ''
         ).trim();
+
         const precisaDias = PRECISA_DIAS.has(tituloMedida);
         const diasBrutos = req.body.quantidadeDias ?? notif.quantidadeDias ?? 1;
         const dias = precisaDias ? Math.max(1, parseInt(diasBrutos, 10) || 1) : 1;
 
         const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
+
+        // ⚠️ mantém base da medida; TSMD usa quantidadeDias/tipoMedida
         notif.valorNumerico = Number(base.toFixed(2));
         notif.tipo = tituloMedida || notif.tipo;
         notif.tipoMedida = tituloMedida || notif.tipoMedida;
@@ -1135,10 +1234,16 @@ router.put('/:id', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    const alunoApósUpdate = await recomputarNotaAlunoAteAgora(
+    // Recalcula aluno atual
+    const alunoApósUpdate = await recomputarResumoAlunoAteAgora(
       notif.aluno,
       req.usuario.instituicao
     );
+
+    // Se mudou de aluno, recalcula também o aluno antigo
+    if (String(notif.aluno) !== alunoAntesId) {
+      await recomputarResumoAlunoAteAgora(alunoAntesId, req.usuario.instituicao);
+    }
 
     await verificarEnvioNP(alunoApósUpdate, req.usuario.instituicao);
 
@@ -1195,7 +1300,7 @@ router.put('/:id/reenviar', autenticar, attachActor, async (req, res) => {
       }
     });
 
-    const alunoApósReenviar = await recomputarNotaAlunoAteAgora(
+    const alunoApósReenviar = await recomputarResumoAlunoAteAgora(
       notificacao.aluno,
       req.usuario.instituicao
     );
@@ -1219,6 +1324,7 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
       _id: id,
       ...instMatch
     });
+
     if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
 
     if (notif.status !== 'deferido') {
@@ -1226,7 +1332,7 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
       notif.deferidoEm = new Date();
       await notif.save();
       await recomputarCamposNotaDaNotificacao(notif, req.usuario.instituicao);
-      await recomputarNotaAlunoAteAgora(notif.aluno, req.usuario.instituicao);
+      await recomputarResumoAlunoAteAgora(notif.aluno, req.usuario.instituicao);
     }
 
     try {
@@ -1239,6 +1345,7 @@ router.put('/:id/deferir', autenticar, attachActor, async (req, res) => {
       notif.aluno,
       req.usuario.instituicao
     );
+
     await logAction({
       req,
       acao: 'NOTIFICACAO_DEFERIDA',
@@ -1276,6 +1383,7 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
       _id: id,
       ...instMatch
     });
+
     if (!notificacao) {
       return res
         .status(404)
@@ -1310,7 +1418,7 @@ router.delete('/:id', autenticar, attachActor, async (req, res) => {
     const alunoId = notificacao.aluno;
     await notificacao.deleteOne();
 
-    const alunoAtual = await recomputarNotaAlunoAteAgora(
+    const alunoAtual = await recomputarResumoAlunoAteAgora(
       alunoId,
       req.usuario.instituicao
     );
