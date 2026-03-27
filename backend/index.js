@@ -41,8 +41,8 @@ if (process.env.NODE_ENV === 'production') {
 /* =========================
    CORS
    ========================= */
-const CLIENT_URL   = (process.env.CLIENT_URL || 'http://localhost:5173').toLowerCase();
-const RENDER_HOST  = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
+const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:5173').toLowerCase();
+const RENDER_HOST = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
 const allowedOrigins = new Set([
   CLIENT_URL,
   'http://localhost:5173',
@@ -73,8 +73,8 @@ app.use(
     cb(null, {
       origin: isAllowedOrigin(req.headers.origin),
       credentials: true,
-      methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-      allowedHeaders: ['Content-Type','Authorization','x-access-token','x-tenant','x-tenant-slug'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'x-tenant', 'x-tenant-slug'],
       optionsSuccessStatus: 200,
     });
   })
@@ -147,8 +147,8 @@ try {
    MODELS
    ========================= */
 [
-  'Aluno','Notificacao','Usuario','Log','Instituicao','AphAtendimento','Counter',
-  'Observacao','Monitor','MonitorPresenca','MonitorNota','MonitorAtividade'
+  'Aluno', 'Notificacao', 'Usuario', 'Log', 'Instituicao', 'AphAtendimento', 'Counter',
+  'Observacao', 'Monitor', 'MonitorPresenca', 'MonitorNota', 'MonitorAtividade'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -214,47 +214,46 @@ try {
 /* =========================
    IMPORTS DE ROTAS
    ========================= */
-const alunoRoutes                   = require('./routes/api/alunos');
-const notificacoesMetricsRoutes     = require('./routes/api/notificacoes.metrics');
-const notificacoesApiRoutes         = require('./routes/api/notificacoes');
-const alertasRoutes                 = require('./routes/api/alunos-alertas');
-const dashboardFastRoutes           = require('./routes/api/dashboard-fast');
+const alunoRoutes = require('./routes/api/alunos');
+const notificacoesMetricsRoutes = require('./routes/api/notificacoes.metrics');
+const notificacoesApiRoutes = require('./routes/api/notificacoes');
+const alertasRoutes = require('./routes/api/alunos-alertas');
+const dashboardFastRoutes = require('./routes/api/dashboard-fast');
 
-const pdfRoutes                     = require('./routes/api/pdf');
-const fichaPdfRoutes                = require('./routes/api/fichapdf');
-const fichaApiRoutes                = require('./routes/api/ficha');
-const fichaAlunoRoutes              = require('./routes/api/fichaAluno');
-const fichaViewRoutes               = require('./routes/views/fichaView');
-const motivosRoutes                 = require('./routes/api/motivos');
-const controleNotificacoesRoutes    = require('./routes/api/controleNotificacoes');
-const usuariosRoutes                = require('./routes/api/usuarios');
-const logsRoutes                    = require('./routes/api/logs');
-const relatorioNotificacoesRoute    = require('./routes/api/relatorioNotificacoes');
-const estatisticasRoutes            = require('./routes/api/estatisticas');
-const mensagensRoutes               = require('./routes/api/mensagens');
-const observacoesRoutes             = require('./routes/api/observacoes');
-const diagnosticoNotaRoutes         = require('./routes/api/diagnosticoNota');
-const metricsRoutes                 = require('./routes/api/metrics');
-const publicAlunoRoutes             = require('./routes/api/publicAluno');
-const instituicoesRoutes            = require('./routes/api/instituicoes');
-const notificacoesViewRoutes        = require('./routes/views/notificacoes');
-const qrcodeProfessoresRoute        = require('./routes/api/qrcodeProfessores');
-const professoresRoute              = require('./routes/api/professores');
-const cartoesRoutes                 = require('./routes/api/cartoes');
-const cartoesProfessoresRoute       = require('./routes/api/cartoesProfessores');
-const acessoProfessorRoute          = require('./routes/api/acessoProfessor');
-const responsavelRoutes             = require('./routes/api/responsavel');
-const fichaResponsavelRoute         = require('./routes/api/fichaResponsavel');
-const fichaTesteRoute               = require('./routes/api/fichaTeste');
-const telegramBotRoutes             = require('./routes/api/telegramBot');
-const comunicacaoPaisRoutes         = require('./routes/api/comunicacaoPais');
-const comunicacaoAutoRoutes         = require('./routes/api/comunicacao');
-const monitoresApiRoutes            = require('./routes/api/monitores');
-const rankingAlunosRouter           = require('./routes/api/rankingAlunos');
-const fixInstituicaoLegacy          = require('./routes/api/fixInstituicaoLegacy');
-const fixRecalculoComportamento     = require('./routes/api/fixRecalculoComportamento');
+const pdfRoutes = require('./routes/api/pdf');
+const fichaPdfRoutes = require('./routes/api/fichapdf');
+const fichaApiRoutes = require('./routes/api/ficha');
+const fichaAlunoRoutes = require('./routes/api/fichaAluno');
+const fichaViewRoutes = require('./routes/views/fichaView');
+const motivosRoutes = require('./routes/api/motivos');
+const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
+const usuariosRoutes = require('./routes/api/usuarios');
+const logsRoutes = require('./routes/api/logs');
+const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
+const estatisticasRoutes = require('./routes/api/estatisticas');
+const mensagensRoutes = require('./routes/api/mensagens');
+const observacoesRoutes = require('./routes/api/observacoes');
+const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
+const metricsRoutes = require('./routes/api/metrics');
+const publicAlunoRoutes = require('./routes/api/publicAluno');
+const instituicoesRoutes = require('./routes/api/instituicoes');
+const notificacoesViewRoutes = require('./routes/views/notificacoes');
+const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores');
+const professoresRoute = require('./routes/api/professores');
+const cartoesRoutes = require('./routes/api/cartoes');
+const cartoesProfessoresRoute = require('./routes/api/cartoesProfessores');
+const acessoProfessorRoute = require('./routes/api/acessoProfessor');
+const responsavelRoutes = require('./routes/api/responsavel');
+const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
+const fichaTesteRoute = require('./routes/api/fichaTeste');
+const telegramBotRoutes = require('./routes/api/telegramBot');
+const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
+const comunicacaoAutoRoutes = require('./routes/api/comunicacao');
+const monitoresApiRoutes = require('./routes/api/monitores');
+const rankingAlunosRouter = require('./routes/api/rankingAlunos');
+const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
+const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
 
-// ✅ MASTER (SuperAdmin)
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
 
@@ -447,8 +446,8 @@ function buildProfessorGuard(publicRoot) {
 
     if (
       p.startsWith('/assets/') ||
-      p.startsWith('/icons/')  ||
-      p.startsWith('/img/')    ||
+      p.startsWith('/icons/') ||
+      p.startsWith('/img/') ||
       p.startsWith('/uploads/')
     ) return next();
 
@@ -462,8 +461,8 @@ function buildProfessorGuard(publicRoot) {
     autenticar(req, res, () => {
       const role = getRole(req);
 
-      const isAdmin     = role.includes('admin');
-      const isMonitor   = role.includes('monitor');
+      const isAdmin = role.includes('admin');
+      const isMonitor = role.includes('monitor');
       const isProfessor = role.includes('prof') && !isAdmin && !isMonitor;
 
       if (isProfessor) {
@@ -518,7 +517,7 @@ app.get('/api/dashboard/alertas', async (_req, res) => {
     const alunos = await Aluno.find({ ativo: true }).select('nome turma comportamento notaComportamento').lean();
     const comp = a => Number(a.comportamento ?? a.notaComportamento ?? 0);
     const regular = alunos.filter(a => { const n = comp(a); return n >= 5 && n < 7; });
-    const insuf   = alunos.filter(a => { const n = comp(a); return n >= 3 && n < 5; });
+    const insuf = alunos.filter(a => { const n = comp(a); return n >= 3 && n < 5; });
     res.json({ regular, insuficiente: insuf });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
@@ -536,7 +535,7 @@ app.get('/api/dashboard/graficos', async (_req, res) => {
       const m = g.length ? g.reduce((s, n) => s + n, 0) / g.length : 0;
       return Number(m.toFixed(2));
     });
-    const dist = { labels: ['<3','3-5','5-7','7-10'], valores: [0,0,0,0] };
+    const dist = { labels: ['<3', '3-5', '5-7', '7-10'], valores: [0, 0, 0, 0] };
     alunos.forEach(a => {
       const c = comp(a);
       if (!Number.isFinite(c) || c <= 0) return;
@@ -563,41 +562,44 @@ mountIf('/api/notificacoes', notificacoesApiRoutes);
 
 mountIf('/api/dashboard-fast', dashboardFastRoutes, autenticar);
 
-mountIf('/api/ficha',          fichaApiRoutes, autenticar);
-mountIf('/api/fichaAluno',     fichaAlunoRoutes, autenticar);
-mountIf('/ficha',              fichaViewRoutes, autenticar);
-mountIf('/api',                fichaTesteRoute);
+mountIf('/api/ficha', fichaApiRoutes, autenticar);
+mountIf('/api/fichaAluno', fichaAlunoRoutes, autenticar);
+mountIf('/ficha', fichaViewRoutes, autenticar);
+mountIf('/api', fichaTesteRoute);
 
-mountIf('/api/alunos',         alunoRoutes);
-mountIf('/api',                pdfRoutes);
-mountIf('/api',                fichaPdfRoutes);
-mountIf('/notificacoes',       notificacoesViewRoutes);
-mountIf('/api/responsavel',    responsavelRoutes);
-mountIf('/api/motivos',        motivosRoutes);
-mountIf('/api/cartoes',        cartoesRoutes);
+// 🔥 IMPORTANTE: rotas públicas do aluno precisam vir ANTES de /api/alunos
+// para /api/alunos/:id/public/qrcode, /enable e /disable não caírem no CRUD normal.
+mountIf('/api', publicAlunoRoutes);
+mountIf('/api/alunos', alunoRoutes);
+
+mountIf('/api', pdfRoutes);
+mountIf('/api', fichaPdfRoutes);
+mountIf('/notificacoes', notificacoesViewRoutes);
+mountIf('/api/responsavel', responsavelRoutes);
+mountIf('/api/motivos', motivosRoutes);
+mountIf('/api/cartoes', cartoesRoutes);
 mountIf('/api/cartoes-professores', cartoesProfessoresRoute);
-mountIf('/api/professores',    professoresRoute);
+mountIf('/api/professores', professoresRoute);
 mountIf('/api/qrcode-professores', qrcodeProfessoresRoute);
-mountIf('/api/usuarios',       usuariosRoutes);
-mountIf('/api/logs',           logsRoutes);
+mountIf('/api/usuarios', usuariosRoutes);
+mountIf('/api/logs', logsRoutes);
 mountIf('/api/controle-notificacoes', controleNotificacoesRoutes);
-mountIf('/api',                relatorioNotificacoesRoute);
-mountIf('/api/estatisticas',   estatisticasRoutes);
-mountIf('/api/mensagens',      mensagensRoutes);
-mountIf('/api/observacoes',    observacoesRoutes);
-mountIf('/api/diagnostico',    diagnosticoNotaRoutes);
-mountIf('/api/metrics',        metricsRoutes);
-mountIf('/api',                publicAlunoRoutes);
-mountIf('/api/instituicoes',   instituicoesRoutes);
-mountIf('/api/alertas',        alertasRoutes);
+mountIf('/api', relatorioNotificacoesRoute);
+mountIf('/api/estatisticas', estatisticasRoutes);
+mountIf('/api/mensagens', mensagensRoutes);
+mountIf('/api/observacoes', observacoesRoutes);
+mountIf('/api/diagnostico', diagnosticoNotaRoutes);
+mountIf('/api/metrics', metricsRoutes);
+mountIf('/api/instituicoes', instituicoesRoutes);
+mountIf('/api/alertas', alertasRoutes);
 mountIf('/api/ranking-alunos', rankingAlunosRouter, autenticar);
 mountIf('/api/fix-recalculo-comportamento', fixRecalculoComportamento, autenticar);
 
-mountIf('/api/telegram',       telegramBotRoutes);
-mountIf('/api/comunicacao',    comunicacaoPaisRoutes);
-mountIf('/api/comunicacao',    comunicacaoAutoRoutes);
+mountIf('/api/telegram', telegramBotRoutes);
+mountIf('/api/comunicacao', comunicacaoPaisRoutes);
+mountIf('/api/comunicacao', comunicacaoAutoRoutes);
 
-mountIf('/api/monitores',      monitoresApiRoutes, autenticar);
+mountIf('/api/monitores', monitoresApiRoutes, autenticar);
 
 mountIf('/api/aph', aphCrudRoutes, autenticar);
 mountIf('/api/aph', aphEstatisticasRoutes);
@@ -618,7 +620,7 @@ mountIf('/api/fix-instituicao', fixInstituicaoLegacy, autenticar, exigirSuperAdm
    ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
-const imgRoot    = path.join(__dirname, 'img');
+const imgRoot = path.join(__dirname, 'img');
 const assetsRoot = path.join(publicRoot, 'assets');
 
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
@@ -733,11 +735,11 @@ function exigirAdmin(req, res, next) {
   next();
 }
 
-app.get('/ficha-aluno.html',    autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
-app.get('/lista-alunos.html',   autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
+app.get('/ficha-aluno.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
+app.get('/lista-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
 app.get('/ranking-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
-app.get('/monitores.html',      autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
-app.get('/monitor-ficha.html',  autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
+app.get('/monitores.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
+app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
 
 /* =========================
    DIAGNÓSTICOS / ERRORS
@@ -763,7 +765,7 @@ app.use((err, _req, res, _next) => {
 /* =========================
    START HTTP + MONGO
    ========================= */
-const URI  = process.env.MONGODB_URI || process.env.MONGO_URI || '';
+const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 const PORT = process.env.PORT || 5000;
 let agendadorRecalculoIniciado = false;
 
@@ -781,16 +783,15 @@ async function connectMongo() {
   try {
     await mongoose.connect(URI, {
       serverSelectionTimeoutMS: Number(process.env.DB_SERVER_SEL_MS || 60000),
-      socketTimeoutMS:         Number(process.env.DB_SOCKET_MS || 60000),
+      socketTimeoutMS: Number(process.env.DB_SOCKET_MS || 60000),
       heartbeatFrequencyMS: 10000,
-      maxPoolSize:          Number(process.env.DB_MAX_POOL || 20),
-      minPoolSize:          Number(process.env.DB_MIN_POOL || 0),
+      maxPoolSize: Number(process.env.DB_MAX_POOL || 20),
+      minPoolSize: Number(process.env.DB_MIN_POOL || 0),
       retryWrites: true,
       family: 4,
     });
     console.log('🟢 Conectado ao MongoDB');
 
-    // ✅ RECÁLCULO INICIAL AO SUBIR
     try {
       const resultado = await recalcularTodosAlunos();
       console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
@@ -798,7 +799,6 @@ async function connectMongo() {
       console.error('[startup] erro no recálculo inicial:', err);
     }
 
-    // ✅ AGENDADOR DIÁRIO (inicia só uma vez)
     if (!agendadorRecalculoIniciado) {
       try {
         iniciarAgendadorRecalculo();

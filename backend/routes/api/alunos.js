@@ -15,6 +15,7 @@ const Observacao = require('../../models/Observacao');
 const Log = require('../../models/Log');
 
 const { autenticar, apenasLeitura, apenasMonitorOuAdmin } = require('../../middleware/autenticacao');
+const { requireTenant, tenantFilter } = require('../../middleware/tenantScope');
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const { enviarTelegram } = require('../../services/mensageria');
 
@@ -78,7 +79,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
-  limits: { fileSize: 8 * 1024 * 1024 } // 8MB
+  limits: { fileSize: 8 * 1024 * 1024 }
 });
 
 // ---------- Helpers ----------
@@ -388,8 +389,8 @@ async function enviarFotoAlunoParaS3({ alunoId, fileBuffer }) {
 }
 
 /* ===================== CACHE LEVE PARA /:id/detalhes ===================== */
-const detalhesCache = new Map(); // key: inst|id  -> { exp, payload }
-const DETALHES_TTL_MS = 30 * 1000; // 30s
+const detalhesCache = new Map();
+const DETALHES_TTL_MS = 30 * 1000;
 
 function cacheKey(inst, id) { return `${inst}|${id}`; }
 
@@ -408,12 +409,9 @@ function setCached(inst, id, payload) {
 
 /* ===================== NOVAS ROTAS TELEGRAM & ADESÃO ===================== */
 
-// GET /api/alunos/adesao/por-turma  (SENSÍVEL -> monitor/admin)
-router.get('/adesao/por-turma', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.get('/adesao/por-turma', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const inst = req.usuario.instituicao;
+    const inst = req.instituicaoId;
 
     const agreg = await Aluno.aggregate([
       { $match: { instituicao: inst } },
@@ -455,13 +453,9 @@ router.get('/adesao/por-turma', autenticar, apenasMonitorOuAdmin, async (req, re
   }
 });
 
-// GET /api/alunos/:id/telegram  (leitura -> professor/monitor/admin)
-router.get('/:id/telegram', autenticar, apenasLeitura, async (req, res) => {
+router.get('/:id/telegram', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst })
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }))
       .select('nome turma chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId')
       .lean();
 
@@ -485,16 +479,13 @@ router.get('/:id/telegram', autenticar, apenasLeitura, async (req, res) => {
   }
 });
 
-// POST /api/alunos/:id/telegram/vincular  (SENSÍVEL -> monitor/admin)
-router.post('/:id/telegram/vincular', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.post('/:id/telegram/vincular', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
+    const inst = req.instituicaoId;
     const chatId = normalizeChatId(req.body?.chatId);
     if (!chatId) return res.status(400).json({ message: 'chatId é obrigatório.' });
 
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     aluno.addChatId(chatId);
@@ -516,14 +507,11 @@ router.post('/:id/telegram/vincular', autenticar, apenasMonitorOuAdmin, async (r
   }
 });
 
-// DELETE /api/alunos/:id/telegram/:chatId  (SENSÍVEL -> monitor/admin)
-router.delete('/:id/telegram/:chatId', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.delete('/:id/telegram/:chatId', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
+    const inst = req.instituicaoId;
     const chatId = normalizeChatId(req.params.chatId);
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     aluno.removeChatId(chatId);
@@ -545,24 +533,19 @@ router.delete('/:id/telegram/:chatId', autenticar, apenasMonitorOuAdmin, async (
   }
 });
 
-// POST /api/alunos/:id/telegram/optout  (SENSÍVEL -> monitor/admin)
-router.post('/:id/telegram/optout', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.post('/:id/telegram/optout', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
+    const inst = req.instituicaoId;
     const all = String(req.body?.all || '').toLowerCase() === 'true' || req.body?.all === true;
 
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     if (all) {
       aluno.chatIdsResponsaveis = [];
       aluno.chatIdResponsavel = '';
-    } else {
-      if (aluno.chatIdResponsavel) {
-        aluno.removeChatId(aluno.chatIdResponsavel);
-      }
+    } else if (aluno.chatIdResponsavel) {
+      aluno.removeChatId(aluno.chatIdResponsavel);
     }
 
     await aluno.save();
@@ -583,13 +566,11 @@ router.post('/:id/telegram/optout', autenticar, apenasMonitorOuAdmin, async (req
   }
 });
 
-// GET /api/alunos/:id/telegram/deeplink  (SENSÍVEL -> monitor/admin)
-router.get('/:id/telegram/deeplink', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.get('/:id/telegram/deeplink', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst }).select('_id nome turma').lean();
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }))
+      .select('_id nome turma')
+      .lean();
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     const botUser = process.env.TG_BOT_USERNAME || 'cmdpiiczs_bot';
@@ -603,16 +584,13 @@ router.get('/:id/telegram/deeplink', autenticar, apenasMonitorOuAdmin, async (re
   }
 });
 
-// POST /api/alunos/:id/telegram/teste  (SENSÍVEL -> monitor/admin)
-router.post('/:id/telegram/teste', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.post('/:id/telegram/teste', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
+    const inst = req.instituicaoId;
     const texto = String(req.body?.texto || '').trim();
     if (!texto) return res.status(400).json({ message: 'Informe "texto" no corpo da requisição.' });
 
-    const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: inst });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     const chatIds = aluno.getAllChatIds();
@@ -655,12 +633,9 @@ router.post('/:id/telegram/teste', autenticar, apenasMonitorOuAdmin, async (req,
 
 /* ===================== ROTAS RÁPIDAS (LEITURA) ===================== */
 
-// ✅ Professor/Monitor/Admin: turmas
-router.get('/turmas', autenticar, apenasLeitura, async (req, res) => {
+router.get('/turmas', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const turmas = await Aluno.distinct('turma', { instituicao: req.usuario.instituicao });
+    const turmas = await Aluno.distinct('turma', tenantFilter(req));
     turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
 
     res.set('Cache-Control', 'private, max-age=120');
@@ -671,13 +646,8 @@ router.get('/turmas', autenticar, apenasLeitura, async (req, res) => {
   }
 });
 
-// ✅ Professor/Monitor/Admin: alunos por turma
-router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
+router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
-
     const termo = String(req.query.q || '').trim();
     const turmaRaw = String(req.params.turma || '').trim();
 
@@ -687,10 +657,9 @@ router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
 
     const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    const filtro = {
-      instituicao: req.usuario.instituicao,
+    const filtro = tenantFilter(req, {
       turma: { $regex: `^${escapeRegex(turmaRaw)}$`, $options: 'i' }
-    };
+    });
 
     if (termo) {
       filtro.nome = { $regex: escapeRegex(termo), $options: 'i' };
@@ -723,11 +692,9 @@ router.get('/turma/:turma', autenticar, apenasLeitura, async (req, res) => {
 /* ============================================================
    ✅ TRANSFERÊNCIA EM LOTE DE TURMA
 ============================================================ */
-router.put('/transferir', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.put('/transferir', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
+    const inst = req.instituicaoId;
     const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
     let novaTurma = req.body?.novaTurma;
 
@@ -742,7 +709,7 @@ router.put('/transferir', autenticar, apenasMonitorOuAdmin, async (req, res) => 
     }
 
     const result = await Aluno.updateMany(
-      { _id: { $in: idsLimpos }, instituicao: inst },
+      tenantFilter(req, { _id: { $in: idsLimpos } }),
       { $set: { turma: novaTurma } }
     );
 
@@ -777,14 +744,9 @@ router.put('/transferir', autenticar, apenasMonitorOuAdmin, async (req, res) => 
 
 /* ===================== ROTAS ORIGINAIS ===================== */
 
-// GET /api/alunos/contagem  (leitura)
-router.get(['/contagem', '/count'], autenticar, apenasLeitura, async (req, res) => {
+router.get(['/contagem', '/count'], autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
-
-    const filtro = { instituicao: req.usuario.instituicao };
+    const filtro = tenantFilter(req);
     if (req.query.turma) {
       filtro.turma = normalizaTurma(req.query.turma);
     }
@@ -797,17 +759,12 @@ router.get(['/contagem', '/count'], autenticar, apenasLeitura, async (req, res) 
   }
 });
 
-// GET /api/alunos  (leitura)
-router.get('/', autenticar, apenasLeitura, async (req, res) => {
+router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const semNota = ['1', 'true'].includes(String(req.query.semNota || '').toLowerCase());
     const painel = ['1', 'true'].includes(String(req.query.painel || '').toLowerCase());
 
-    if (!req.usuario?.instituicao) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
-
-    const filtro = { instituicao: req.usuario.instituicao };
+    const filtro = tenantFilter(req);
     const turma = req.query.turma;
     if (turma) filtro.turma = normalizaTurma(turma);
 
@@ -837,9 +794,6 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
       return res.json(alunosComNota);
     }
 
-    // ✅ IMPORTANTE:
-    // Nada de recalcular nota aluno por aluno aqui.
-    // A listagem deve usar a nota já persistida em "comportamento".
     const alunos = await Aluno.find(filtro)
       .select('nome turma foto fotoThumb fotoOriginal instituicao comportamento notaComportamento')
       .lean();
@@ -862,13 +816,8 @@ router.get('/', autenticar, apenasLeitura, async (req, res) => {
   }
 });
 
-/* === CRIAÇÃO DE NOVO ALUNO === (SENSÍVEL -> monitor/admin) */
-router.post('/', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.post('/', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
-
     let { nome, turma, dataEntrada, telefone } = req.body;
     nome = String(nome || '').trim();
     turma = normalizaTurma(turma);
@@ -889,13 +838,13 @@ router.post('/', autenticar, apenasMonitorOuAdmin, async (req, res) => {
       turma,
       dataEntrada: dtEntrada,
       telefone: String(telefone || '').trim(),
-      instituicao: req.usuario.instituicao,
+      instituicao: req.instituicaoId,
       ativo: true
     });
 
     await Log.create({
       usuario: req.usuario.id,
-      instituicao: req.usuario.instituicao,
+      instituicao: req.instituicaoId,
       acao: 'Criação de Aluno',
       entidade: 'Aluno',
       entidadeId: novoAluno._id
@@ -908,12 +857,9 @@ router.post('/', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   }
 });
 
-/* === DETALHES OTIMIZADO COM CACHE === (leitura) */
-router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
+router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
-
+    const inst = req.instituicaoId;
     const id = String(req.params.id);
     const hit = getCached(inst, id);
 
@@ -922,7 +868,7 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
       return res.json(hit);
     }
 
-    const alunoRaw = await Aluno.findOne({ _id: id, instituicao: inst })
+    const alunoRaw = await Aluno.findOne(tenantFilter(req, { _id: id }))
       .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao updatedAt createdAt codigoAcesso comportamento')
       .lean();
 
@@ -932,7 +878,7 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
 
     const aluno = anexarThumbNaPlain(alunoRaw);
 
-    const notificacoes = await Notificacao.find({ aluno: id, instituicao: inst })
+    const notificacoes = await Notificacao.find(tenantFilter(req, { aluno: id }))
       .select('data tipo tipoMedida motivo valorNumerico valorTotal artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt natureza')
       .sort({ data: 1, createdAt: 1 })
       .lean();
@@ -950,13 +896,8 @@ router.get('/:id/detalhes', autenticar, apenasLeitura, async (req, res) => {
   }
 });
 
-// ===== Upload de foto do aluno (SENSÍVEL -> monitor/admin) =====
-router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'), async (req, res) => {
+router.put('/:id/foto', autenticar, requireTenant, apenasMonitorOuAdmin, upload.single('foto'), async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
-
     const { id } = req.params;
 
     if (!req.file) {
@@ -969,7 +910,7 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
       });
     }
 
-    const aluno = await Aluno.findOne({ _id: id, instituicao: req.usuario.instituicao });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: id }));
     if (!aluno) {
       return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
@@ -1031,7 +972,7 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
     }
 
     try {
-      detalhesCache.delete(cacheKey(req.usuario.instituicao, String(aluno._id)));
+      detalhesCache.delete(cacheKey(req.instituicaoId, String(aluno._id)));
     } catch {}
 
     return res.json({
@@ -1052,15 +993,9 @@ router.put('/:id/foto', autenticar, apenasMonitorOuAdmin, upload.single('foto'),
   }
 });
 
-// GET /api/alunos/:id  (leitura)
-router.get('/:id', autenticar, apenasLeitura, async (req, res) => {
+router.get('/:id', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const aluno = await Aluno.findOne({
-      _id: req.params.id,
-      instituicao: req.usuario.instituicao
-    });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
 
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
 
@@ -1071,20 +1006,12 @@ router.get('/:id', autenticar, apenasLeitura, async (req, res) => {
   }
 });
 
-// PUT /api/alunos/:id  (SENSÍVEL -> monitor/admin)
-router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) {
-      return res.status(401).json({ message: 'Não autenticado.' });
-    }
-
-    const instituicao = req.usuario.instituicao;
+    const instituicao = req.instituicaoId;
     const alunoId = req.params.id;
 
-    const alunoAntes = await Aluno.findOne({
-      _id: alunoId,
-      instituicao
-    });
+    const alunoAntes = await Aluno.findOne(tenantFilter(req, { _id: alunoId }));
 
     if (!alunoAntes) {
       return res.status(404).json({ message: 'Aluno não encontrado' });
@@ -1092,41 +1019,28 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
 
     const dadosAtualizados = sanitizeUpdate(req.body);
 
-    // ✅ BLINDAGEM DA FOTO
     if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'foto')) {
       const fotoPersistente = normalizarFotoParaPersistencia(dadosAtualizados.foto);
-      if (!fotoPersistente) {
-        delete dadosAtualizados.foto;
-      } else {
-        dadosAtualizados.foto = fotoPersistente;
-      }
+      if (!fotoPersistente) delete dadosAtualizados.foto;
+      else dadosAtualizados.foto = fotoPersistente;
     }
 
     if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoOriginal')) {
       const fotoOriginalPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoOriginal);
-      if (!fotoOriginalPersistente) {
-        delete dadosAtualizados.fotoOriginal;
-      } else {
-        dadosAtualizados.fotoOriginal = fotoOriginalPersistente;
-      }
+      if (!fotoOriginalPersistente) delete dadosAtualizados.fotoOriginal;
+      else dadosAtualizados.fotoOriginal = fotoOriginalPersistente;
     }
 
     if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoThumb')) {
       const fotoThumbPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoThumb);
-      if (!fotoThumbPersistente) {
-        delete dadosAtualizados.fotoThumb;
-      } else {
-        dadosAtualizados.fotoThumb = fotoThumbPersistente;
-      }
+      if (!fotoThumbPersistente) delete dadosAtualizados.fotoThumb;
+      else dadosAtualizados.fotoThumb = fotoThumbPersistente;
     }
 
     if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoMedium')) {
       const fotoMediumPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoMedium);
-      if (!fotoMediumPersistente) {
-        delete dadosAtualizados.fotoMedium;
-      } else {
-        dadosAtualizados.fotoMedium = fotoMediumPersistente;
-      }
+      if (!fotoMediumPersistente) delete dadosAtualizados.fotoMedium;
+      else dadosAtualizados.fotoMedium = fotoMediumPersistente;
     }
 
     if (dadosAtualizados.turma !== undefined) {
@@ -1167,7 +1081,7 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
       String(depoisEntradaMs) !== String(antesEntradaMs);
 
     const alunoAtualizado = await Aluno.findOneAndUpdate(
-      { _id: alunoId, instituicao },
+      tenantFilter(req, { _id: alunoId }),
       { $set: updateDoc },
       { new: true, runValidators: true }
     );
@@ -1176,7 +1090,7 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
     const forcarRecalculo = force === '1' || force === 'true';
 
     if (mudouDataEntrada || forcarRecalculo) {
-      const notificacoes = await Notificacao.find({ aluno: alunoAtualizado._id, instituicao })
+      const notificacoes = await Notificacao.find(tenantFilter(req, { aluno: alunoAtualizado._id }))
         .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
         .sort({ data: 1, createdAt: 1 })
         .lean();
@@ -1203,35 +1117,29 @@ router.put('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/alunos/:id  (SENSÍVEL -> monitor/admin)
-router.delete('/:id', autenticar, apenasMonitorOuAdmin, async (req, res) => {
+router.delete('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    if (!req.usuario?.instituicao) return res.status(401).json({ message: 'Não autenticado.' });
-
-    const aluno = await Aluno.findOne({
-      _id: req.params.id,
-      instituicao: req.usuario.instituicao
-    });
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
 
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
 
     await apagarFotosAntigasDoAluno(aluno);
 
     await Promise.all([
-      Notificacao.deleteMany({ aluno: aluno._id, instituicao: req.usuario.instituicao }),
-      Observacao.deleteMany({ aluno: aluno._id, instituicao: String(req.usuario.instituicao) }),
-      Aluno.deleteOne({ _id: aluno._id })
+      Notificacao.deleteMany(tenantFilter(req, { aluno: aluno._id })),
+      Observacao.deleteMany(tenantFilter(req, { aluno: aluno._id })),
+      Aluno.deleteOne(tenantFilter(req, { _id: aluno._id }))
     ]);
 
     await Log.create({
       usuario: req.usuario.id,
-      instituicao: req.usuario.instituicao,
+      instituicao: req.instituicaoId,
       acao: 'Exclusão de Aluno',
       entidade: 'Aluno',
       entidadeId: aluno._id
     });
 
-    try { detalhesCache.delete(cacheKey(req.usuario.instituicao, String(aluno._id))); } catch {}
+    try { detalhesCache.delete(cacheKey(req.instituicaoId, String(aluno._id))); } catch {}
 
     res.json({ message: 'Aluno e dados relacionados deletados com sucesso' });
   } catch (error) {

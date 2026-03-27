@@ -65,6 +65,24 @@ function assertSameInstitution(req, resourceInstitutionId) {
   return current === target;
 }
 
+// 🔒 Middleware forte para garantir isolamento total
+function enforceSameInstitution(req, res, next) {
+  const current = getUserInstitutionId(req);
+
+  if (!current) {
+    return res.status(401).json({ mensagem: 'Instituição não definida na sessão.' });
+  }
+
+  // tenta pegar instituição do resource carregado previamente
+  const resourceInstitution = req.resource?.instituicao;
+
+  if (resourceInstitution && !assertSameInstitution(req, resourceInstitution)) {
+    return res.status(403).json({ mensagem: 'Acesso negado para outra instituição.' });
+  }
+
+  return next();
+}
+
 module.exports = {
   getUserInstitutionId,
   getUserType,
@@ -73,5 +91,6 @@ module.exports = {
   resolveInstitutionId,
   requireTenant,
   tenantFilter,
-  assertSameInstitution
+  assertSameInstitution,
+  enforceSameInstitution
 };
