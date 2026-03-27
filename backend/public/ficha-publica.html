@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ficha do Aluno</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0A1322;
+      color: #fff;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: #111c33;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .muted {
+      color: #aaa;
+    }
+
+    .notif {
+      text-align: left;
+      border-left: 4px solid #ff6b6b;
+      padding: 10px;
+      margin: 10px 0;
+      background: #0f1a2f;
+      border-radius: 8px;
+    }
+
+    .empty {
+      color: #888;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Ficha do Aluno</h1>
+
+  <div class="card">
+    <h2 id="nome">Carregando...</h2>
+    <p id="turma" class="muted"></p>
+    <p><strong>Nota de comportamento:</strong> <span id="nota">—</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Notificações</h3>
+    <div id="notificacoes"></div>
+  </div>
+</div>
+
+<script>
+async function carregarFicha() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (!token) {
+      throw new Error('Token não informado.');
+    }
+
+    const res = await fetch(`/api/public/alunos/${encodeURIComponent(token)}`, {
+      method: 'GET',
+      cache: 'no-store'
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Erro ao carregar ficha.');
+    }
+
+    document.getElementById('nome').textContent = data.aluno.nome || '—';
+    document.getElementById('turma').textContent = `Turma: ${data.aluno.turma || '—'}`;
+    document.getElementById('nota').textContent =
+      typeof data.aluno.comportamento === 'number'
+        ? data.aluno.comportamento.toFixed(2)
+        : '—';
+
+    const lista = document.getElementById('notificacoes');
+    lista.innerHTML = '';
+
+    if (!data.notificacoes || data.notificacoes.length === 0) {
+      lista.innerHTML = '<div class="empty">Nenhuma notificação encontrada</div>';
+      return;
+    }
+
+    data.notificacoes.forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'notif';
+
+      div.innerHTML = `
+        <strong>${n.tipo || '—'}</strong><br>
+        <span class="muted">${n.motivo || ''}</span><br>
+        <small>${n.data ? new Date(n.data).toLocaleDateString('pt-BR') : ''}</small>
+      `;
+
+      lista.appendChild(div);
+    });
+
+  } catch (err) {
+    document.body.innerHTML = `
+      <div style="padding:40px">
+        <h2>Erro ao carregar ficha</h2>
+        <p>${err.message}</p>
+      </div>
+    `;
+  }
+}
+
+window.onload = carregarFicha;
+</script>
+
+</body>
+</html>
