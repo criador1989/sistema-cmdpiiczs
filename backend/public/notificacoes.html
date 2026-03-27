@@ -680,31 +680,43 @@
       const BASES = {'Advertência Escrita':-0.30,'Repreensão':-0.50,'A.E.C.D.E':-0.70,'A.I.A':-1.20};
       const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
       const clampNota = (n)=> (n>10?10:n<0?0:Number((+n).toFixed(2)));
+      function classificarComportamento(nota){
+        const n = Number(nota || 0);
+        if (n >= 9.5) return 'Excepcional';
+        if (n >= 8.5) return 'Ótimo';
+        if (n >= 7.0) return 'Bom';
+        if (n >= 5.0) return 'Regular';
+        if (n >= 3.0) return 'Insuficiente';
+        return 'Incompatível';
+      }
+      function badgeNatureza(n){
+        const nat = String(n?.natureza || '').toLowerCase();
+        if (nat === 'elogio') return `<span class="badge">🌟 Elogio</span>`;
+        if (nat === 'indisciplina') return `<span class="badge">⚠️ Disciplinar</span>`;
+        return `<span class="badge">—</span>`;
+      }
       function derivarValorTotal(n){
         if (typeof n.valorTotal === 'number') return n.valorTotal;
+        const bruto = Number(n.valorNumerico ?? 0);
+        if (Number.isFinite(bruto)) return bruto;
         const titulo = String(n.tipoMedida || n.tipo || '').trim();
-        if (!REQUER_DIAS.has(titulo)) return Number(n.valorNumerico ?? 0);
+        if (!REQUER_DIAS.has(titulo)) return 0;
         const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
         const base = BASES[titulo];
-        return typeof base === 'number' ? Number((base * dias).toFixed(2)) : Number(n.valorNumerico ?? 0);
+        return typeof base === 'number' ? Number((base * dias).toFixed(2)) : 0;
       }
       function faixaNotaPrevista(n){
-        const total = derivarValorTotal(n);
-        const temPar = (typeof n.notaAnterior === 'number') && (typeof n.notaAtual === 'number');
+        const antes = Number(n?.notaAnterior);
+        const depois = Number(n?.notaAtual);
+        const temPar = Number.isFinite(antes) && Number.isFinite(depois);
         if (temPar) {
-          const diffSrv = Number((n.notaAtual - n.notaAnterior).toFixed(2));
-          if (diffSrv.toFixed(2) !== total.toFixed(2)) {
-            const prevAntes = n.notaAnterior;
-            const prevDepois = clampNota(prevAntes + total);
-            return { antes: prevAntes, depois: prevDepois, corrigido: true };
-          }
-          return { antes: n.notaAnterior, depois: n.notaAtual, corrigido: false };
+          return { antes, depois, corrigido: false };
         }
-        const antes = 8.00;
-        const depois = clampNota(antes + total);
-        return { antes, depois, corrigido: true };
+        const total = derivarValorTotal(n);
+        const base = 8.00;
+        return { antes: base, depois: clampNota(base + total), corrigido: true };
       }
-      const fmtValor = (n)=> (isFinite(n) ? n.toFixed(2) : '—');
+      const fmtValor = (n)=> (isFinite(n) ? Number(n).toFixed(2) : '—');
 
       const spinnerHTML = `<span class="spinner"></span>Carregando…`;
 
@@ -813,6 +825,7 @@
 
         const vTotal = derivarValorTotal(n);
         const faixa = faixaNotaPrevista(n);
+        const classificacaoAtual = n.classificacaoAtual || classificarComportamento(faixa.depois);
 
         let entregueBox = '';
         if (String(n.status||'').toLowerCase() === 'deferido') {
@@ -832,16 +845,16 @@
           `;
         }
         const devolv = n.devolvidoPeloAluno ? `<span class="badge" title="Assinada e devolvida">📥 Devolvida</span>` : '';
-        const flagCorr = faixa.corrigido ? ' title="corrigido na exibição"' : '';
         return `
           <div>
             <div class="n-title">${nome}</div>
             <div class="n-sub">${turma} • ${medida} • ${dataTxt}</div>
           </div>
-          <div>${statusPill(n.status)}</div>
+          <div>${statusPill(n.status)} ${badgeNatureza(n)}</div>
           <div>
             <span class="badge">Valor: ${fmtValor(vTotal)}</span>
-            <span class="badge"${flagCorr}>Nota: ${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</span>
+            <span class="badge">Nota: ${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</span>
+            <span class="badge">Faixa: ${classificacaoAtual}</span>
             ${devolv}
             ${entregueBox}
           </div>
@@ -881,6 +894,8 @@
 
               const vTotal = (typeof det.valorTotal === 'number') ? det.valorTotal : derivarValorTotal(det);
               const faixa = faixaNotaPrevista(det);
+              const classificacaoAnterior = det.classificacaoAnterior || classificarComportamento(faixa.antes);
+              const classificacaoAtual = det.classificacaoAtual || classificarComportamento(faixa.depois);
               const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g,'');
               const deferida = String(det.status||'').toLowerCase()==='deferido';
               const showCom = deferida && (med==='AIA' || med==='AECDE');
@@ -907,11 +922,13 @@
                 <div class="n-row">
                   <div class="n-kv"><b>Motivo</b>${det.motivo || '—'}</div>
                   <div class="n-kv"><b>Observação</b>${det.observacao || '—'}</div>
+                  <div class="n-kv"><b>Natureza</b>${String(det.natureza||'').toLowerCase()==='elogio' ? 'Elogio' : 'Notificação disciplinar'}</div>
                   <div class="n-kv"><b>Valor</b>${fmtValor(vTotal)}</div>
                   <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
                   <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
                   <div class="n-kv"><b>Inciso</b>${det.inciso || '—'}</div>
-                  <div class="n-kv"><b>Nota (no dia)</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}${faixa.corrigido ? ' <span class="hint">(corrig.)</span>' : ''}</div>
+                  <div class="n-kv"><b>Nota (no dia)</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</div>
+                  <div class="n-kv"><b>Classificação</b>${classificacaoAnterior} → ${classificacaoAtual}</div>
                   ${entregueDetalhe}
                 </div>
                 <div class="actions">

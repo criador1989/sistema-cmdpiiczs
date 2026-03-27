@@ -99,8 +99,8 @@ function getInstituicaoIdFromReq(req) {
 function getFaixa(nota) {
   const n = toNumber(nota, 0);
 
-  if (n >= 9) return 'Excepcional';
-  if (n >= 8) return 'Ótimo';
+  if (n >= 9.5) return 'Excepcional';
+  if (n >= 8.5) return 'Ótimo';
   if (n >= 7) return 'Bom';
   if (n >= 5) return 'Regular';
   if (n >= 3) return 'Insuficiente';

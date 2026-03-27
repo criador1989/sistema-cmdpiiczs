@@ -1,4 +1,3 @@
-// backend/models/Notificacao.js
 'use strict';
 const mongoose = require('mongoose');
 
@@ -36,6 +35,8 @@ const notificacaoSchema = new mongoose.Schema({
 
   notaAnterior: { type: Number },
   notaAtual:    { type: Number },
+  classificacaoAnterior: { type: String, default: null },
+  classificacaoAtual:    { type: String, default: null },
 
   artigo: { type: String },
   paragrafo: { type: String },
@@ -147,6 +148,8 @@ notificacaoSchema.pre('validate', function () {
   this.paragrafo  = trimStr(this.paragrafo);
   this.inciso     = trimStr(this.inciso);
   this.classificacaoRegulamento = trimStr(this.classificacaoRegulamento);
+  this.classificacaoAnterior = trimStr(this.classificacaoAnterior);
+  this.classificacaoAtual = trimStr(this.classificacaoAtual);
 
   if (!this.tipo && this.tipoMedida) this.tipo = this.tipoMedida;
 
@@ -158,7 +161,7 @@ notificacaoSchema.pre('validate', function () {
       const v = MAPA_ELOGIOS[this.tipoElogio || ''] ?? 0;
       this.valorNumerico = fix2(v);
     } else {
-      this.valorNumerico = fix2(Number(this.valorNumerico));
+      this.valorNumerico = fix2(Math.abs(Number(this.valorNumerico)));
     }
 
     this.tipo = this.tipo || 'Elogio';
@@ -183,15 +186,17 @@ notificacaoSchema.pre('validate', function () {
 
   if (!valorFoiFornecido) {
     const base = MAPA_NEGATIVOS[titulo] ?? 0;
-    const mult = precisaDias ? this.quantidadeDias : 1;
-    this.valorNumerico = fix2(base * mult);
+    this.valorNumerico = fix2(base);
   } else {
-    this.valorNumerico = fix2(Number(this.valorNumerico));
+    this.valorNumerico = fix2(-Math.abs(Number(this.valorNumerico)));
   }
 });
 
 notificacaoSchema.pre('save', function () {
-  if (this.natureza === 'elogio') return;
+  if (this.natureza === 'elogio') {
+    this.valorNumerico = fix2(Math.abs(Number(this.valorNumerico || 0)));
+    return;
+  }
 
   const titulo = (this.tipoMedida || this.tipo || '').trim();
   const precisaDias = REQUER_DIAS.has(titulo);
@@ -208,10 +213,9 @@ notificacaoSchema.pre('save', function () {
 
   if (!valorFoiFornecido && camposDiasMudaram) {
     const base = MAPA_NEGATIVOS[titulo] ?? 0;
-    const mult = precisaDias ? this.quantidadeDias : 1;
-    this.valorNumerico = fix2(base * mult);
+    this.valorNumerico = fix2(base);
   } else if (valorFoiFornecido) {
-    this.valorNumerico = fix2(Number(this.valorNumerico));
+    this.valorNumerico = fix2(-Math.abs(Number(this.valorNumerico)));
   }
 });
 

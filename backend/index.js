@@ -11,6 +11,10 @@ const compression = require('compression');
 const cors = require('cors');
 const os = require('os');
 
+// ✅ NOVOS HELPERS DE RECÁLCULO AUTOMÁTICO
+const { iniciarAgendadorRecalculo } = require('./services/agendadorRecalculoComportamento');
+const { recalcularTodosAlunos } = require('./utils/recalculoComportamento');
+
 const app = express();
 
 /* =========================
@@ -761,6 +765,7 @@ app.use((err, _req, res, _next) => {
    ========================= */
 const URI  = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 const PORT = process.env.PORT || 5000;
+let agendadorRecalculoIniciado = false;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
@@ -784,6 +789,25 @@ async function connectMongo() {
       family: 4,
     });
     console.log('🟢 Conectado ao MongoDB');
+
+    // ✅ RECÁLCULO INICIAL AO SUBIR
+    try {
+      const resultado = await recalcularTodosAlunos();
+      console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
+    } catch (err) {
+      console.error('[startup] erro no recálculo inicial:', err);
+    }
+
+    // ✅ AGENDADOR DIÁRIO (inicia só uma vez)
+    if (!agendadorRecalculoIniciado) {
+      try {
+        iniciarAgendadorRecalculo();
+        agendadorRecalculoIniciado = true;
+        console.log('✅ Agendador de recálculo diário iniciado');
+      } catch (err) {
+        console.error('❌ Falha ao iniciar agendador de recálculo:', err);
+      }
+    }
   } catch (err) {
     console.error('🟡 Falha ao conectar no Mongo:', err?.message || err);
     setTimeout(connectMongo, 15000);

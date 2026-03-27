@@ -1,155 +1,277 @@
-# pdf/generate_notification_docx.py
-import sys, io, json, os
+import sys
+import io
+import os
+import json
 from docx import Document
 from docx.shared import Pt
 
-sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
+# Leitura UTF-8 do stdin
+sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
 
-BASE_DIR = os.path.dirname(__file__)
-modelo_path = os.path.abspath(os.path.join(BASE_DIR, "modelo-notificacao-dinamico.docx"))
-saida_path  = os.path.join(BASE_DIR, "notificacao_preenchida.docx")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELO_PADRAO = os.path.join(BASE_DIR, "modelo-notificacao-dinamico.docx")
+SAIDA_PADRAO = os.path.join(BASE_DIR, "notificacao_preenchida.docx")
 
-def to_s(v): return '' if v is None else str(v)
 
-def is_number(x):
+def to_s(v):
+    return "" if v is None else str(v)
+
+
+def as_float(x, default=0.0):
     try:
-        if isinstance(x, str): x = x.replace(',', '.')
-        float(x); return True
-    except Exception:
-        return False
-
-def as_float(x, default=None):
-    try:
-        if isinstance(x, str): x = x.replace(',', '.')
+        if isinstance(x, str):
+            x = x.replace(",", ".").strip()
         return float(x)
     except Exception:
         return default
 
-def fmt2(x, default=''):
-    if x is None: return default
-    if is_number(x):
-        n = as_float(x, None)
-        return default if n is None else f"{n:.2f}"
-    s = to_s(x).strip()
-    return s if s else default
+
+def fmt2(x):
+    return f"{as_float(x, 0):.2f}"
+
+
+def clamp_nota(n):
+    n = as_float(n, 0)
+    return max(0.0, min(10.0, round(n, 2)))
+
+
+def classificar(nota):
+    n = as_float(nota, 0)
+    if n >= 9.5:
+        return "Excepcional"
+    if n >= 8.5:
+        return "Ótimo"
+    if n >= 7.0:
+        return "Bom"
+    if n >= 5.0:
+        return "Regular"
+    if n >= 3.0:
+        return "Insuficiente"
+    return "Incompatível"
+
 
 def get_nested(d, path, default=None):
     cur = d
-    for p in path.split('.'):
-        if not isinstance(cur, dict) or p not in cur: return default
+    for p in path.split("."):
+        if not isinstance(cur, dict) or p not in cur:
+            return default
         cur = cur[p]
     return cur
 
-# ---------- lê JSON ----------
-try:
-    raw = sys.stdin.read()
-    dados = json.loads(raw) if raw else {}
-except Exception as e:
-    print(f"Erro ao ler os dados: {e}", file=sys.stderr); sys.exit(1)
 
-# ---------- derivação e fallbacks ----------
-aluno_nome  = to_s(dados.get("alunoNome") or (dados.get("aluno") if isinstance(dados.get("aluno"), str) else "") or get_nested(dados, "aluno.nome") or "")
-aluno_turma = to_s(dados.get("turma") or dados.get("alunoTurma") or get_nested(dados, "aluno.turma") or "")
+def aplicar_formatacao_paragrafo(paragraph):
+    for run in paragraph.runs:
+        run.font.name = "Times New Roman"
+        run.font.size = Pt(12)
 
-valor_num       = fmt2(dados.get("valorNumerico", dados.get("Valor")))
-nota_publicavel = None
-for chave in ["notaPublicavel", "notaFinal", "notaAtual", "notaNoDia", "nota", "comportamento"]:
-    v = dados.get(chave, None)
-    if v is not None and is_number(v):
-        nota_publicavel = fmt2(v); break
 
-nota_anterior = fmt2(dados.get("notaAnterior"))
-nota_atual_in = fmt2(dados.get("notaAtual"))  # o que veio do Node (se vier)
-data_por_extenso = to_s(dados.get("dataPorExtenso", dados.get("dataHora", "")))
-descricao_inciso  = to_s(dados.get("descricaoInciso") or dados.get("inciso"))
-tipo_medida       = to_s(dados.get("tipoMedida") or dados.get("tipo"))
-observacao        = to_s(dados.get("observacao", "-"))
-numero_seq        = to_s(dados.get("numeroSequencial") or dados.get("numero"))
-artigo            = to_s(dados.get("artigo", ""))
-classificacao_reg = to_s(dados.get("classificacaoRegulamento", ""))
-descricao_infracao= to_s(dados.get("descricaoInfracao") or dados.get("motivo"))
+def substituir_tokens_no_texto(texto, replacements):
+    for key, value in replacements.items():
+        token = "{{" + key + "}}"
+        texto = texto.replace(token, to_s(value))
+    return texto
 
-# comportamento textual
-comp_text = to_s(dados.get("classificacaoComportamental") or "")
-if not comp_text:
-    c = dados.get("comportamento")
-    if c is not None and not is_number(c):
-        comp_text = to_s(c)
 
-# nota final (numérica, 2 casas)
-nota_final = nota_publicavel  # já formatada em 2 casas
+def substituir_no_paragrafo(paragraph, replacements):
+    if not paragraph.runs:
+        return
 
-# ---------- mapa de placeholders ----------
-mapa = {
-  "numeroSequencial": numero_seq,
-  "numero": numero_seq,
-  "aluno": aluno_nome,
-  "turma": aluno_turma,
-  "artigo": artigo,
-  "descricaoInciso": descricao_inciso,
-  "inciso": descricao_inciso,
-  "classificacaoRegulamento": classificacao_reg,
-  "tipoMedida": tipo_medida,
-  "observacao": observacao,
-  "valorNumerico": valor_num,
-  "Valor": valor_num,
-  "notaAnterior": nota_anterior,
-  # 👇 FORÇA a Nota Atual a ser a nota final do dia, se existir
-  "notaAtual": (nota_final or nota_atual_in or ""),
-  "comportamento": comp_text or "",
-  "notaFinal": (nota_final or ""),
-  "notaPublicavel": (nota_final or ""),
-  "dataPorExtenso": data_por_extenso,
-  "dataHora": data_por_extenso,
-  "descricaoInfracao": descricao_infracao,
-  "cargoAssinatura": to_s(dados.get("cargoAssinatura") or "Coordenador do Corpo de Alunos"),
-  "assinaturaNome": to_s(dados.get("assinaturaNome") or ""),
-  "assinaturaCargo": to_s(dados.get("assinaturaCargo") or to_s(dados.get("cargoAssinatura") or "Coordenador do Corpo de Alunos")),
-}
+    full_text = "".join(run.text for run in paragraph.runs)
+    original_text = full_text
 
-HARDCODED_NAME_VARIATIONS = [
-  "3º SGT BM HELDER","3º SGT BM Helder","3º Sgt BM Helder","SGT BM Helder","Sgt BM Helder","Helder",
-  "3º FREIRE DA SILVA","3º Freire da Silva","3º FREIRE","3º Freire","Freire da Silva","Freire",
-]
+    # Substitui placeholders
+    full_text = substituir_tokens_no_texto(full_text, replacements)
 
-def aplicar_formatacao_paragrafo(p):
-    for run in p.runs:
-        run.font.name = 'Times New Roman'; run.font.size = Pt(12)
+    # Compatibilidade com modelos antigos
+    if "NOTIFICAÇÃO DE MEDIDA DISCIPLINAR" in full_text and replacements.get("tituloDocumento"):
+        full_text = full_text.replace(
+            "NOTIFICAÇÃO DE MEDIDA DISCIPLINAR",
+            to_s(replacements["tituloDocumento"])
+        )
 
-def substituir_no_paragrafo(p, dct):
-    if not p.runs: return
-    full_text = "".join(run.text for run in p.runs); changed = False
-    for chave, valor in dct.items():
-        token = "{{" + chave + "}}"
-        if token in full_text:
-            full_text = full_text.replace(token, valor); changed = True
-    for bad in HARDCODED_NAME_VARIATIONS:
-        if bad and bad in full_text:
-            full_text = full_text.replace(bad, ""); changed = True
-    if changed:
-        p.clear()
-        run = p.add_run(full_text); run.font.name = 'Times New Roman'; run.font.size = Pt(12)
+    frase_antiga = (
+        "Esta medida acarreta perda de sua nota disciplinar em {{Valor}} pontos, "
+        "enquadrando-se no comportamento {{comportamento}}."
+    )
+    if frase_antiga in full_text and replacements.get("fraseResultado"):
+        full_text = full_text.replace(frase_antiga, to_s(replacements["fraseResultado"]))
 
-def substituir_em_tabela(tb, dct):
-    for row in tb.rows:
+    if "{{Valor}}" in full_text:
+        full_text = full_text.replace("{{Valor}}", to_s(replacements.get("valorNumerico", "0.00")))
+
+    if full_text != original_text:
+        paragraph.clear()
+        run = paragraph.add_run(full_text)
+        run.font.name = "Times New Roman"
+        run.font.size = Pt(12)
+
+
+def substituir_em_tabela(table, replacements):
+    for row in table.rows:
         for cell in row.cells:
             for p in cell.paragraphs:
-                substituir_no_paragrafo(p, dct); aplicar_formatacao_paragrafo(p)
+                substituir_no_paragrafo(p, replacements)
+                aplicar_formatacao_paragrafo(p)
+            for inner_table in cell.tables:
+                substituir_em_tabela(inner_table, replacements)
 
-def substituir_em_header_footer(hf, dct):
-    for p in hf.paragraphs:
-        substituir_no_paragrafo(p, dct); aplicar_formatacao_paragrafo(p)
-    for tb in hf.tables: substituir_em_tabela(tb, dct)
 
-def substituir_em_doc(doc, dct):
+def substituir_em_documento(doc, replacements):
     for p in doc.paragraphs:
-        substituir_no_paragrafo(p, dct); aplicar_formatacao_paragrafo(p)
-    for tb in doc.tables: substituir_em_tabela(tb, dct)
-    for section in doc.sections:
-        substituir_em_header_footer(section.header, dct)
-        substituir_em_header_footer(section.footer, dct)
+        substituir_no_paragrafo(p, replacements)
+        aplicar_formatacao_paragrafo(p)
 
-doc = Document(modelo_path)
-substituir_em_doc(doc, mapa)
-doc.save(saida_path)
-print(saida_path)
+    for table in doc.tables:
+        substituir_em_tabela(table, replacements)
+
+    for section in doc.sections:
+        for p in section.header.paragraphs:
+            substituir_no_paragrafo(p, replacements)
+            aplicar_formatacao_paragrafo(p)
+        for p in section.footer.paragraphs:
+            substituir_no_paragrafo(p, replacements)
+            aplicar_formatacao_paragrafo(p)
+
+
+def main():
+    try:
+        raw = sys.stdin.read()
+        dados = json.loads(raw) if raw else {}
+    except Exception as e:
+        print(f"Erro ao ler JSON de entrada: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    modelo_path = dados.get("modeloPath") or MODELO_PADRAO
+    saida_path = dados.get("saidaPath") or SAIDA_PADRAO
+
+    if not os.path.isabs(modelo_path):
+        modelo_path = os.path.join(BASE_DIR, modelo_path)
+    if not os.path.isabs(saida_path):
+        saida_path = os.path.join(BASE_DIR, saida_path)
+
+    if not os.path.exists(modelo_path):
+        print(f"Modelo DOCX não encontrado: {modelo_path}", file=sys.stderr)
+        sys.exit(1)
+
+    aluno_nome = to_s(
+        dados.get("alunoNome")
+        or get_nested(dados, "aluno.nome")
+        or dados.get("aluno")
+        or ""
+    )
+    aluno_turma = to_s(
+        dados.get("turma")
+        or get_nested(dados, "aluno.turma")
+        or ""
+    )
+    numero_seq = to_s(dados.get("numeroSequencial") or dados.get("numero") or "")
+    data_por_extenso = to_s(
+        dados.get("dataPorExtenso")
+        or dados.get("dataHora")
+        or dados.get("data")
+        or ""
+    )
+    observacao = to_s(dados.get("observacao") or "-")
+    descricao_infracao = to_s(
+        dados.get("descricaoInfracao")
+        or dados.get("motivo")
+        or "—"
+    )
+    artigo = to_s(dados.get("artigo") or "")
+    paragrafo = to_s(dados.get("paragrafo") or "")
+    inciso = to_s(dados.get("descricaoInciso") or dados.get("inciso") or "")
+    assinatura_cargo = to_s(
+        dados.get("assinaturaCargo")
+        or "Coordenador do Corpo de Alunos do CMDP II - CZS"
+    )
+
+    natureza = to_s(dados.get("natureza") or "").strip().lower()
+    nota_anterior = clamp_nota(dados.get("notaAnterior", 0))
+    nota_atual = clamp_nota(dados.get("notaAtual", nota_anterior))
+
+    delta_informado = dados.get("deltaNota", dados.get("valorNumerico", None))
+    if delta_informado is None:
+        delta = round(nota_atual - nota_anterior, 2)
+    else:
+        delta = round(as_float(delta_informado, 0), 2)
+
+    # Decide natureza automaticamente se não vier
+    if not natureza:
+        natureza = "elogio" if nota_atual > nota_anterior else "indisciplina"
+
+    if natureza == "elogio":
+        delta = abs(delta) if delta != 0 else abs(round(nota_atual - nota_anterior, 2))
+        titulo_documento = "ELOGIO INDIVIDUAL"
+        frase_resultado = (
+            f"Este elogio acarreta acréscimo de {abs(delta):.2f} pontos em sua nota disciplinar, "
+            f"enquadrando o(a) aluno(a) no comportamento {classificar(nota_atual)}."
+        )
+        frase_final = (
+            "Que esse espírito de disciplina, responsabilidade e dedicação à vida escolar "
+            "continue prevalecendo em sua trajetória acadêmica."
+        )
+    else:
+        delta = -abs(delta) if delta != 0 else -abs(round(nota_atual - nota_anterior, 2))
+        titulo_documento = "NOTIFICAÇÃO DE MEDIDA DISCIPLINAR"
+        frase_resultado = (
+            f"Esta medida acarreta perda de {abs(delta):.2f} pontos em sua nota disciplinar, "
+            f"enquadrando o(a) aluno(a) no comportamento {classificar(nota_atual)}."
+        )
+        frase_final = (
+            "Ressaltamos a importância da reflexão sobre a conduta apresentada, "
+            "visando o desenvolvimento disciplinar e o cumprimento das normas institucionais."
+        )
+
+    classificacao_anterior = to_s(
+        dados.get("classificacaoAnterior") or classificar(nota_anterior)
+    )
+    classificacao_atual = to_s(
+        dados.get("classificacaoAtual") or classificar(nota_atual)
+    )
+
+    replacements = {
+        "tituloDocumento": titulo_documento,
+        "titulo": titulo_documento,
+        "numeroSequencial": numero_seq,
+        "numero": numero_seq,
+        "aluno": aluno_nome,
+        "alunoNome": aluno_nome,
+        "turma": aluno_turma,
+        "dataHora": data_por_extenso,
+        "dataPorExtenso": data_por_extenso,
+        "descricaoInfracao": descricao_infracao,
+        "motivo": descricao_infracao,
+        "observacao": observacao,
+        "artigo": artigo,
+        "paragrafo": paragrafo,
+        "inciso": inciso,
+        "descricaoInciso": inciso,
+        "valorNumerico": f"{abs(delta):.2f}",
+        "Valor": f"{abs(delta):.2f}",
+        "deltaNota": f"{delta:.2f}",
+        "notaAnterior": fmt2(nota_anterior),
+        "notaAtual": fmt2(nota_atual),
+        "notaFinal": fmt2(nota_atual),
+        "notaPublicavel": fmt2(nota_atual),
+        "classificacaoAnterior": classificacao_anterior,
+        "classificacaoAtual": classificacao_atual,
+        "comportamento": classificacao_atual,
+        "fraseResultado": frase_resultado,
+        "frase": frase_resultado,
+        "fraseFinal": frase_final,
+        "assinaturaCargo": assinatura_cargo,
+    }
+
+    try:
+        doc = Document(modelo_path)
+        substituir_em_documento(doc, replacements)
+        doc.save(saida_path)
+    except Exception as e:
+        print(f"Erro ao gerar DOCX: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(saida_path)
+
+
+if __name__ == "__main__":
+    main()
