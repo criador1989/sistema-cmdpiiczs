@@ -2,132 +2,706 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ficha do Aluno</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ficha Pública do Aluno</title>
+  <meta name="theme-color" content="#0A1322" />
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0A1322;
-      color: #fff;
-      text-align: center;
+    :root{
+      --bg-0:#14375f;
+      --bg-1:#0f2f53;
+      --glass:rgba(15,31,54,.74);
+      --glass-2:rgba(18,36,66,.62);
+      --ink:#ecf2ff;
+      --muted:#b8c7e0;
+      --line:rgba(170,200,240,.28);
+      --card:#102544bf;
+      --ok:#7ef0b5;
+      --gold:#e7c873;
+      --warn:#ffb56b;
+      --danger:#ff9b9b;
+      --radius:20px;
+      --shadow:
+        0 22px 60px rgba(0,0,0,.38),
+        inset 0 1px 0 rgba(255,255,255,.05);
+      --glow-1: radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.28), transparent 60%);
+      --glow-2: radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.20), transparent 60%);
+      --glow-3: radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.18), transparent 60%);
     }
 
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
+    *{ box-sizing:border-box; }
+    html,body{ min-height:100%; }
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--ink);
+      background:
+        var(--glow-1),
+        var(--glow-2),
+        var(--glow-3),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1));
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    .card {
-      background: #111c33;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+    .wrap{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
     }
 
-    h1 {
-      margin-bottom: 10px;
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: linear-gradient(180deg, rgba(23,45,82,.72), rgba(20,40,73,.58));
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
     }
 
-    .muted {
-      color: #aaa;
+    .topbar-inner{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      gap:12px;
     }
 
-    .notif {
-      text-align: left;
-      border-left: 4px solid #ff6b6b;
-      padding: 10px;
-      margin: 10px 0;
-      background: #0f1a2f;
-      border-radius: 8px;
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:800;
+      letter-spacing:.2px;
     }
 
-    .empty {
-      color: #888;
+    .brand-dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:linear-gradient(135deg,#7fc2ff,#bdf4ff);
+      box-shadow:0 0 14px rgba(160,220,255,.9), 0 0 28px rgba(120,190,255,.45);
+    }
+
+    .hero{
+      background:linear-gradient(180deg, rgba(26,46,82,.70), rgba(18,36,66,.66));
+      border-radius:var(--radius);
+      padding:20px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--line);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
       margin-top: 20px;
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.5fr .95fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    @media (max-width: 900px){
+      .hero-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .head{
+      display:flex;
+      gap:16px;
+      align-items:center;
+      margin-bottom:16px;
+      padding-bottom:14px;
+      border-bottom:1px dashed rgba(170,200,240,.28);
+    }
+
+    .avatar{
+      width:92px;
+      height:92px;
+      border-radius:999px;
+      overflow:hidden;
+      flex:0 0 92px;
+      background:linear-gradient(180deg,#152c53,#122749);
+      border:1px solid rgba(180,210,245,.36);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#a7b3c8;
+      font-weight:800;
+      box-shadow:
+        0 6px 28px rgba(0,0,0,.35),
+        0 0 0 8px rgba(160,210,255,.06),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .name{
+      margin:0 0 6px;
+      font-size: clamp(1.4rem, 2vw, 2rem);
+    }
+
+    .badges{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .badge{
+      font-size:.82rem;
+      color:#e7f0ff;
+      background:linear-gradient(180deg, rgba(26,46,82,.55), rgba(18,36,66,.52));
+      border:1px solid rgba(180,210,245,.32);
+      padding:6px 10px;
+      border-radius:999px;
+    }
+
+    .kvs{
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+
+    @media (max-width:700px){
+      .kvs{ grid-template-columns:1fr; }
+    }
+
+    .kv{
+      background:linear-gradient(180deg, rgba(22,42,76,.52), rgba(18,36,66,.48));
+      border:1px solid rgba(180,210,245,.32);
+      border-radius:14px;
+      padding:14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .kv b{
+      display:block;
+      color:#cfe1ff;
+      font-size:.86rem;
+      margin-bottom:6px;
+    }
+
+    .kv .value{
+      font-weight:800;
+      font-size:1.15rem;
+      color:#fff;
+    }
+
+    .kv .big{
+      font-size:2rem;
+      line-height:1;
+    }
+
+    .pill{
+      display:inline-block;
+      margin-top:8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(180,210,245,.36);
+      font-weight:700;
+      font-size:.78rem;
+      background:linear-gradient(180deg, rgba(28,50,92,.60), rgba(18,36,66,.55));
+      color:#f0f6ff;
+    }
+
+    .side-card,
+    .card{
+      background:linear-gradient(180deg, rgba(24,44,78,.58), rgba(18,36,66,.54));
+      border-radius:16px;
+      padding:16px;
+      border:1px solid rgba(180,210,245,.34);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px) saturate(130%);
+      -webkit-backdrop-filter: blur(10px) saturate(130%);
+    }
+
+    .side-card h3,
+    .card h3{
+      margin:0 0 12px;
+      font-size:1.05rem;
+    }
+
+    .qr-box{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+      text-align:center;
+    }
+
+    .qr-frame{
+      width: 230px;
+      min-height: 230px;
+      border-radius: 18px;
+      background: #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      box-shadow:
+        0 18px 40px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.65);
+    }
+
+    #qrcode{
+      display:block;
+      max-width:100%;
+      height:auto;
+    }
+
+    .share-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      width:100%;
+      margin-top:8px;
+    }
+
+    @media (max-width:420px){
+      .share-grid{ grid-template-columns:1fr; }
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(180,210,245,.28);
+      cursor:pointer;
+      font-weight:700;
+      padding:11px 14px;
+      border-radius:12px;
+      color:#f0f6ff;
+      background:linear-gradient(135deg, rgba(26,46,82,.9), rgba(20,40,73,.85));
+      box-shadow:
+        0 10px 26px rgba(0,0,0,.30),
+        inset 0 1px 0 rgba(255,255,255,.05);
+      transition:.22s transform,.22s filter,.22s border-color;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:44px;
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+      filter:saturate(1.06);
+    }
+
+    .btn.whats{
+      background:linear-gradient(135deg, #128C7E, #25D366);
+      color:white;
+      border-color:rgba(255,255,255,.18);
+    }
+
+    .btn.mail{
+      background:linear-gradient(135deg, #355C9A, #5B84C4);
+      color:white;
+      border-color:rgba(255,255,255,.18);
+    }
+
+    .btn.copy{
+      background:linear-gradient(135deg, #7a5a18, #b98b2d);
+      color:#fff9ea;
+      border-color:rgba(255,255,255,.18);
+    }
+
+    .btn.print{
+      background:linear-gradient(135deg, #394969, #5a6f98);
+      color:white;
+      border-color:rgba(255,255,255,.18);
+    }
+
+    .link-box{
+      width:100%;
+      font-size:.9rem;
+      color:var(--muted);
+      word-break:break-all;
+      background:linear-gradient(180deg, rgba(18,34,60,.36), rgba(18,36,66,.24));
+      border:1px solid rgba(180,210,245,.20);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+
+    .main-grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:18px;
+      margin-top:18px;
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .notif{
+      border:1px solid rgba(180,210,245,.34);
+      border-left:6px solid var(--danger);
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(28,50,92,.52), rgba(18,36,66,.48));
+      padding:14px;
+      box-shadow:
+        0 10px 26px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .notif-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+      margin-bottom:6px;
+    }
+
+    .notif-title{
+      font-weight:800;
+      color:#fff;
+    }
+
+    .notif-meta{
+      color:var(--muted);
+      font-size:.9rem;
+    }
+
+    .notif-motivo{
+      color:#eef5ff;
+      line-height:1.5;
+      margin-top:6px;
+    }
+
+    .empty,
+    .loading,
+    .error-box{
+      border:1px dashed rgba(180,210,245,.34);
+      border-radius:14px;
+      padding:16px;
+      background:linear-gradient(180deg, rgba(24,44,78,.42), rgba(18,36,66,.38));
+      color:var(--muted);
+      text-align:center;
+    }
+
+    .footer-note{
+      text-align:center;
+      color:#c8d6ef;
+      opacity:.9;
+      font-size:.88rem;
+      margin-top:18px;
+    }
+
+    .hidden{ display:none !important; }
+
+    @media print {
+      .topbar,
+      .share-grid,
+      #btnPrint,
+      .footer-note {
+        display:none !important;
+      }
+
+      body{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .hero, .card, .side-card, .kv, .notif {
+        box-shadow:none !important;
+        background:#fff !important;
+        color:#000 !important;
+        border:1px solid #ddd !important;
+      }
+
+      .link-box,
+      .badge,
+      .pill {
+        color:#000 !important;
+        background:#fff !important;
+      }
+
+      .qr-frame{
+        box-shadow:none !important;
+      }
     }
   </style>
 </head>
 <body>
-
-<div class="container">
-  <h1>Ficha do Aluno</h1>
-
-  <div class="card">
-    <h2 id="nome">Carregando...</h2>
-    <p id="turma" class="muted"></p>
-    <p><strong>Nota de comportamento:</strong> <span id="nota">—</span></p>
-  </div>
-
-  <div class="card">
-    <h3>Notificações</h3>
-    <div id="notificacoes"></div>
-  </div>
-</div>
-
-<script>
-async function carregarFicha() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-
-    if (!token) {
-      throw new Error('Token não informado.');
-    }
-
-    const res = await fetch(`/api/public/alunos/${encodeURIComponent(token)}`, {
-      method: 'GET',
-      cache: 'no-store'
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Erro ao carregar ficha.');
-    }
-
-    document.getElementById('nome').textContent = data.aluno.nome || '—';
-    document.getElementById('turma').textContent = `Turma: ${data.aluno.turma || '—'}`;
-    document.getElementById('nota').textContent =
-      typeof data.aluno.comportamento === 'number'
-        ? data.aluno.comportamento.toFixed(2)
-        : '—';
-
-    const lista = document.getElementById('notificacoes');
-    lista.innerHTML = '';
-
-    if (!data.notificacoes || data.notificacoes.length === 0) {
-      lista.innerHTML = '<div class="empty">Nenhuma notificação encontrada</div>';
-      return;
-    }
-
-    data.notificacoes.forEach(n => {
-      const div = document.createElement('div');
-      div.className = 'notif';
-
-      div.innerHTML = `
-        <strong>${n.tipo || '—'}</strong><br>
-        <span class="muted">${n.motivo || ''}</span><br>
-        <small>${n.data ? new Date(n.data).toLocaleDateString('pt-BR') : ''}</small>
-      `;
-
-      lista.appendChild(div);
-    });
-
-  } catch (err) {
-    document.body.innerHTML = `
-      <div style="padding:40px">
-        <h2>Erro ao carregar ficha</h2>
-        <p>${err.message}</p>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>Ficha Pública do Aluno</span>
       </div>
-    `;
-  }
-}
+    </div>
+  </div>
 
-window.onload = carregarFicha;
-</script>
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="head">
+            <div class="avatar" id="fotoBox">Sem foto</div>
 
+            <div style="flex:1">
+              <h1 class="name" id="nome">Carregando...</h1>
+              <div class="badges">
+                <span class="badge" id="badgeTurma">Turma —</span>
+                <span class="badge" id="badgeStatus">Acesso público</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kvs">
+            <div class="kv">
+              <b>Turma</b>
+              <div class="value" id="kvTurma">—</div>
+            </div>
+
+            <div class="kv">
+              <b>Data de Entrada</b>
+              <div class="value" id="kvEntrada">—</div>
+            </div>
+
+            <div class="kv">
+              <b>Nota de Comportamento</b>
+              <div class="value big" id="kvNota">—</div>
+              <span class="pill" id="kvClassificacao">—</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side-card">
+          <h3>Compartilhar acesso</h3>
+
+          <div class="qr-box">
+            <div class="qr-frame">
+              <canvas id="qrcode"></canvas>
+            </div>
+
+            <div class="link-box" id="publicLinkBox">Carregando link...</div>
+
+            <div class="share-grid">
+              <button class="btn copy" id="btnCopy">Copiar link</button>
+              <button class="btn print" id="btnPrint">Imprimir</button>
+              <a class="btn whats" id="btnWhats" href="#" target="_blank" rel="noopener">WhatsApp</a>
+              <a class="btn mail" id="btnMail" href="#">E-mail</a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <div class="card">
+        <h3>Notificações Disciplinares</h3>
+        <div id="notificacoes" class="list">
+          <div class="loading">Carregando notificações...</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Documento público com acesso por link seguro.
+    </div>
+  </main>
+
+  <script>
+    const qs = (s) => document.querySelector(s);
+    const byId = (id) => document.getElementById(id);
+
+    function parseDateLike(d){
+      if (!d && d !== 0) return null;
+      if (d instanceof Date) return isNaN(+d) ? null : d;
+      if (typeof d === 'number') {
+        const ms = d < 1e12 ? d * 1000 : d;
+        const dt = new Date(ms);
+        return isNaN(+dt) ? null : dt;
+      }
+      const dt = new Date(String(d).trim());
+      return isNaN(+dt) ? null : dt;
+    }
+
+    function fmtData(d){
+      const x = parseDateLike(d);
+      return x ? x.toLocaleDateString('pt-BR') : '—';
+    }
+
+    function escapeHtml(v){
+      return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeText(v){
+      return (v === null || v === undefined || v === '') ? '—' : String(v);
+    }
+
+    function classificarNota(nota){
+      const n = Number(nota);
+      if (isNaN(n)) return { texto:'—', cor:'#9aa3b2' };
+      if (n >= 9.01) return { texto:'Excepcional', cor:'#76ffb3' };
+      if (n >= 8.01) return { texto:'Ótimo', cor:'#a1ffcf' };
+      if (n >= 7.00) return { texto:'Bom', cor:'#e7c873' };
+      if (n >= 5.00) return { texto:'Regular', cor:'#ffcf9a' };
+      if (n >= 3.00) return { texto:'Insuficiente', cor:'#ff9aa1' };
+      return { texto:'Incompatível', cor:'#e7e9ee' };
+    }
+
+    function atualizarFoto(aluno){
+      const fotoBox = byId('fotoBox');
+      const foto = aluno?.foto || aluno?.fotoUrl || '';
+      if (!foto) {
+        fotoBox.textContent = 'Sem foto';
+        return;
+      }
+
+      fotoBox.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = foto;
+      img.alt = 'Foto do aluno';
+      img.onerror = () => {
+        fotoBox.innerHTML = 'Sem foto';
+      };
+      fotoBox.appendChild(img);
+    }
+
+    async function gerarQRCode(link){
+      const canvas = byId('qrcode');
+      await QRCode.toCanvas(canvas, link, {
+        width: 190,
+        margin: 1,
+        color: {
+          dark: '#0A1322',
+          light: '#FFFFFF'
+        }
+      });
+    }
+
+    function configurarCompartilhamento(link, nome){
+      const texto = `Acesse a ficha pública do aluno ${nome || ''}: ${link}`.trim();
+
+      byId('publicLinkBox').textContent = link;
+
+      byId('btnWhats').href =
+        `https://wa.me/?text=${encodeURIComponent(texto)}`;
+
+      byId('btnMail').href =
+        `mailto:?subject=${encodeURIComponent('Ficha pública do aluno')}&body=${encodeURIComponent(texto)}`;
+
+      byId('btnCopy').onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(link);
+          byId('btnCopy').textContent = 'Link copiado';
+          setTimeout(() => byId('btnCopy').textContent = 'Copiar link', 1800);
+        } catch {
+          alert('Não foi possível copiar o link automaticamente.');
+        }
+      };
+
+      byId('btnPrint').onclick = () => window.print();
+    }
+
+    function renderNotificacoes(notificacoes){
+      const lista = byId('notificacoes');
+      lista.innerHTML = '';
+
+      if (!Array.isArray(notificacoes) || notificacoes.length === 0) {
+        lista.innerHTML = '<div class="empty">Nenhuma notificação encontrada.</div>';
+        return;
+      }
+
+      notificacoes.forEach(n => {
+        const tipo = safeText(n.tipo || n.natureza);
+        const motivo = safeText(n.motivo);
+        const data = fmtData(n.data);
+        const valor = (typeof n.valorNumerico === 'number')
+          ? n.valorNumerico.toFixed(2)
+          : (n.valorNumerico != null ? String(n.valorNumerico) : '');
+
+        const box = document.createElement('div');
+        box.className = 'notif';
+        box.innerHTML = `
+          <div class="notif-top">
+            <div class="notif-title">${escapeHtml(tipo)}</div>
+            <div class="notif-meta">${escapeHtml(data)}</div>
+          </div>
+          ${motivo !== '—' ? `<div class="notif-motivo">${escapeHtml(motivo)}</div>` : ''}
+          <div class="notif-meta" style="margin-top:8px;">
+            ${valor ? `Valor: ${escapeHtml(valor)}` : ''}
+          </div>
+        `;
+        lista.appendChild(box);
+      });
+    }
+
+    async function carregarFicha(){
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+
+        if (!token) {
+          throw new Error('Token não informado.');
+        }
+
+        const res = await fetch(`/api/public/alunos/${encodeURIComponent(token)}`, {
+          method: 'GET',
+          cache: 'no-store'
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Erro ao carregar ficha.');
+        }
+
+        const aluno = data.aluno || {};
+        const linkAtual = window.location.href;
+        const nomeAluno = aluno.nome || 'Aluno';
+
+        byId('nome').textContent = nomeAluno;
+        byId('badgeTurma').textContent = `Turma ${aluno.turma || '—'}`;
+        byId('kvTurma').textContent = aluno.turma || '—';
+        byId('kvEntrada').textContent = fmtData(aluno.dataEntrada);
+        byId('kvNota').textContent =
+          typeof aluno.comportamento === 'number'
+            ? aluno.comportamento.toFixed(2)
+            : '—';
+
+        const cls = classificarNota(aluno.comportamento);
+        byId('kvClassificacao').textContent = cls.texto;
+        byId('kvClassificacao').style.color = cls.cor;
+        byId('kvClassificacao').style.borderColor = cls.cor;
+
+        atualizarFoto(aluno);
+        await gerarQRCode(linkAtual);
+        configurarCompartilhamento(linkAtual, nomeAluno);
+        renderNotificacoes(data.notificacoes || []);
+      } catch (err) {
+        byId('nome').textContent = 'Erro ao carregar ficha';
+        byId('publicLinkBox').textContent = 'Não foi possível gerar o link.';
+        byId('notificacoes').innerHTML = `
+          <div class="error-box">
+            ${escapeHtml(err.message || 'Erro inesperado.')}
+          </div>
+        `;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', carregarFicha);
+  </script>
 </body>
 </html>
