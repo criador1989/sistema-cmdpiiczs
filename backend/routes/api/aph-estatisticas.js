@@ -4,10 +4,60 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const AphAtendimento = require('../../models/AphAtendimento');
+const { autenticar } = require('../../middleware/autenticacao');
+const { requireTenant } = require('../../middleware/tenantScope');
 
 // (Opcional) enriquecer com turma/turno do aluno, se existir o model
 let Aluno;
 try { Aluno = require('../../models/Aluno'); } catch { /* opcional */ }
+
+/* ================= Helpers multi-tenant ================= */
+
+function getTenantId(req) {
+  return (
+    req.tenantId ||
+    req.instituicaoId ||
+    req.tenant?._id ||
+    req.tenant?.id ||
+    req.usuario?.tenantId ||
+    req.user?.tenantId ||
+    req.usuario?.instituicao ||
+    req.user?.instituicao ||
+    null
+  );
+}
+
+function buildTenantOrMatch(tenantId) {
+  if (!tenantId) return { _id: null };
+
+  const asStr = String(tenantId);
+  const or = [
+    { tenantId: asStr },
+    { instituicao: asStr }
+  ];
+
+  if (mongoose.isValidObjectId(asStr)) {
+    const oid = new mongoose.Types.ObjectId(asStr);
+    or.push({ tenantId: oid });
+    or.push({ instituicao: oid });
+  }
+
+  return { $or: or };
+}
+
+function buildTenantExprForLookup(tenantId, fieldName) {
+  const asStr = String(tenantId);
+  const exprOr = [
+    { $eq: [`$${fieldName}`, asStr] }
+  ];
+
+  if (mongoose.isValidObjectId(asStr)) {
+    const oid = new mongoose.Types.ObjectId(asStr);
+    exprOr.push({ $eq: [`$${fieldName}`, oid] });
+  }
+
+  return { $or: exprOr };
+}
 
 /* ================= Helpers ================= */
 function parseDateOnly(s) {
@@ -18,9 +68,13 @@ function parseDateOnly(s) {
   return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
-function buildMatch(query) {
+function buildMatch(query, req) {
   const { from, to, turma, turno, local, responsavel } = query;
-  const pre = {};
+  const tenantId = getTenantId(req);
+
+  const pre = {
+    ...buildTenantOrMatch(tenantId)
+  };
 
   // Período em createdAt (timestamps do schema)
   const gte = parseDateOnly(from);
@@ -38,11 +92,13 @@ function buildMatch(query) {
   if (local) pre.local = local;
 
   if (responsavel) {
-    // aceita tanto 'responsavel' quanto 'criadoPor'
-    pre.$or = [
-      { responsavel },
-      { criadoPor: responsavel }
-    ];
+    pre.$and = pre.$and || [];
+    pre.$and.push({
+      $or: [
+        { responsavel },
+        { criadoPor: responsavel }
+      ]
+    });
   }
 
   // turma/turno serão aplicados após $lookup
@@ -53,23 +109,48 @@ function buildMatch(query) {
   return { pre, post };
 }
 
-function pipelineBase(preMatch, postMatch, enrichAluno = true) {
+function pipelineBase(req, preMatch, postMatch, enrichAluno = true) {
+  const tenantId = getTenantId(req);
   const pipe = [];
-  if (Object.keys(preMatch).length) pipe.push({ $match: preMatch });
 
-  if (enrichAluno && mongoose.models.Aluno) {
+  if (Object.keys(preMatch).length) {
+    pipe.push({ $match: preMatch });
+  }
+
+  if (enrichAluno && Aluno) {
+    const alunoTenantExpr = {
+      $or: [
+        buildTenantExprForLookup(tenantId, 'tenantId'),
+        buildTenantExprForLookup(tenantId, 'instituicao')
+      ]
+    };
+
     pipe.push(
       {
         $lookup: {
           from: 'alunos',
-          localField: 'alunoId',
-          foreignField: '_id',
+          let: { alunoIdRef: '$alunoId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$_id', '$$alunoIdRef'] },
+                    alunoTenantExpr
+                  ]
+                }
+              }
+            }
+          ],
           as: 'aluno'
         }
       },
       { $unwind: { path: '$aluno', preserveNullAndEmptyArrays: true } }
     );
-    if (Object.keys(postMatch).length) pipe.push({ $match: postMatch });
+
+    if (Object.keys(postMatch).length) {
+      pipe.push({ $match: postMatch });
+    }
   }
 
   return pipe;
@@ -92,46 +173,68 @@ function groupCount(fieldExpr) {
  *  - local=ex.: "Pátio"
  *  - responsavel=ex.: "Sgt Fulano" (casa com 'responsavel' OU 'criadoPor')
  */
-router.get('/estatisticas', async (req, res) => {
+router.get('/estatisticas', autenticar, requireTenant, async (req, res) => {
   try {
-    const { pre, post } = buildMatch(req.query);
+    const { pre, post } = buildMatch(req.query, req);
 
     // total geral
-    const totalPipe = pipelineBase(pre, post);
+    const totalPipe = pipelineBase(req, pre, post);
     totalPipe.push(...groupCount(null));
     const totalAgg = await AphAtendimento.aggregate(totalPipe);
     const total = totalAgg.reduce((acc, r) => acc + r.total, 0);
 
     // por tipo (array: tipos)
-    const porTipoPipe = pipelineBase(pre, post);
+    const porTipoPipe = pipelineBase(req, pre, post);
     porTipoPipe.push(
       { $unwind: { path: '$tipos', preserveNullAndEmptyArrays: false } },
       ...groupCount('$tipos')
     );
 
     // por material (array: materiais)
-    const porMaterialPipe = pipelineBase(pre, post);
+    const porMaterialPipe = pipelineBase(req, pre, post);
     porMaterialPipe.push(
       { $unwind: { path: '$materiais', preserveNullAndEmptyArrays: false } },
       ...groupCount('$materiais')
     );
 
-    // por encaminhamento (string)
-    const porEncPipe = pipelineBase(pre, post);
+    // por encaminhamento (string/bool normalizado)
+    const porEncPipe = pipelineBase(req, pre, post);
     porEncPipe.push(
-      { $project: { encaminhamento: { $ifNull: ['$encaminhamento', ''] } } },
+      {
+        $project: {
+          encaminhamento: {
+            $cond: [
+              { $eq: ['$houveEncaminhamento', true] },
+              'Sim',
+              {
+                $cond: [
+                  { $eq: ['$encaminhamento', true] },
+                  'Sim',
+                  {
+                    $cond: [
+                      { $gt: [{ $strLenCP: { $ifNull: ['$encaminhamento', ''] } }, 0] },
+                      '$encaminhamento',
+                      'Não'
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
       ...groupCount('$encaminhamento')
     );
 
     // por local (string)
-    const porLocalPipe = pipelineBase(pre, post);
+    const porLocalPipe = pipelineBase(req, pre, post);
     porLocalPipe.push(
       { $project: { local: { $ifNull: ['$local', ''] } } },
       ...groupCount('$local')
     );
 
     // por mês (YYYY-MM)
-    const porMesPipe = pipelineBase(pre, post);
+    const porMesPipe = pipelineBase(req, pre, post);
     porMesPipe.push(
       {
         $addFields: {
@@ -142,21 +245,21 @@ router.get('/estatisticas', async (req, res) => {
     );
 
     // por turma (via aluno)
-    const porTurmaPipe = pipelineBase(pre, post, true);
+    const porTurmaPipe = pipelineBase(req, pre, post, true);
     porTurmaPipe.push(
       { $project: { turma: '$aluno.turma' } },
       ...groupCount('$turma')
     );
 
     // por turno (via aluno)
-    const porTurnoPipe = pipelineBase(pre, post, true);
+    const porTurnoPipe = pipelineBase(req, pre, post, true);
     porTurnoPipe.push(
       { $project: { turno: '$aluno.turno' } },
       ...groupCount('$turno')
     );
 
-    // por responsável (coalesce responsavel/criadoPor) — NÃO lista zeros
-    const porRespPipe = pipelineBase(pre, post, false);
+    // por responsável (coalesce responsavel/criadoPor)
+    const porRespPipe = pipelineBase(req, pre, post, false);
     porRespPipe.push(
       {
         $addFields: {
@@ -225,11 +328,11 @@ router.get('/estatisticas', async (req, res) => {
  *  - limit (1..100) — padrão 10
  *  - mesmos filtros de /estatisticas (from, to, turma, turno, local, responsavel)
  */
-router.get('/top-responsaveis', async (req, res) => {
+router.get('/top-responsaveis', autenticar, requireTenant, async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 10));
-    const { pre, post } = buildMatch(req.query);
-    const pipe = pipelineBase(pre, post, false);
+    const { pre, post } = buildMatch(req.query, req);
+    const pipe = pipelineBase(req, pre, post, false);
 
     pipe.push(
       {

@@ -85,6 +85,38 @@ const upload = multer({
 // ---------- Helpers ----------
 const BASE_SELECT_LISTA = 'nome turma foto fotoThumb fotoOriginal comportamento';
 
+function getTenantId(req) {
+  return (
+    req.tenantId ||
+    req.instituicaoId ||
+    req.tenant?._id ||
+    req.tenant?.id ||
+    req.usuario?.tenantId ||
+    req.user?.tenantId ||
+    null
+  );
+}
+
+function tenantLegacyMatch(req, extra = {}) {
+  const tenantId = getTenantId(req);
+  return {
+    ...extra,
+    $or: [
+      { tenantId },
+      { instituicao: tenantId }
+    ]
+  };
+}
+
+function tenantData(req, extra = {}) {
+  const tenantId = getTenantId(req);
+  return {
+    ...extra,
+    tenantId,
+    instituicao: tenantId
+  };
+}
+
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
     const [dd, mm, yyyy] = d.trim().split('/');
@@ -107,6 +139,7 @@ function sanitizeUpdate(payload = {}) {
   delete dados._id;
   delete dados.id;
   delete dados.instituicao;
+  delete dados.tenantId;
   delete dados.createdAt;
   delete dados.updatedAt;
   return dados;
@@ -411,10 +444,10 @@ function setCached(inst, id, payload) {
 
 router.get('/adesao/por-turma', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
 
     const agreg = await Aluno.aggregate([
-      { $match: { instituicao: inst } },
+      { $match: tenantLegacyMatch(req) },
       {
         $group: {
           _id: '$turma',
@@ -481,7 +514,7 @@ router.get('/:id/telegram', autenticar, requireTenant, apenasLeitura, async (req
 
 router.post('/:id/telegram/vincular', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
     const chatId = normalizeChatId(req.body?.chatId);
     if (!chatId) return res.status(400).json({ message: 'chatId é obrigatório.' });
 
@@ -491,14 +524,13 @@ router.post('/:id/telegram/vincular', autenticar, requireTenant, apenasMonitorOu
     aluno.addChatId(chatId);
     await aluno.save();
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao: inst,
       acao: 'Vincular Telegram',
       entidade: 'Aluno',
       entidadeId: aluno._id,
       detalhe: `chatId=${chatId}`
-    });
+    }));
 
     res.json({ ok: true, message: 'Vinculado com sucesso.', chatIds: aluno.getAllChatIds() });
   } catch (e) {
@@ -509,7 +541,7 @@ router.post('/:id/telegram/vincular', autenticar, requireTenant, apenasMonitorOu
 
 router.delete('/:id/telegram/:chatId', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
     const chatId = normalizeChatId(req.params.chatId);
     const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
@@ -517,14 +549,13 @@ router.delete('/:id/telegram/:chatId', autenticar, requireTenant, apenasMonitorO
     aluno.removeChatId(chatId);
     await aluno.save();
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao: inst,
       acao: 'Desvincular Telegram',
       entidade: 'Aluno',
       entidadeId: aluno._id,
       detalhe: `chatId=${chatId}`
-    });
+    }));
 
     res.json({ ok: true, message: 'ChatId removido.', chatIds: aluno.getAllChatIds() });
   } catch (e) {
@@ -535,7 +566,7 @@ router.delete('/:id/telegram/:chatId', autenticar, requireTenant, apenasMonitorO
 
 router.post('/:id/telegram/optout', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
     const all = String(req.body?.all || '').toLowerCase() === 'true' || req.body?.all === true;
 
     const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
@@ -550,14 +581,13 @@ router.post('/:id/telegram/optout', autenticar, requireTenant, apenasMonitorOuAd
 
     await aluno.save();
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao: inst,
       acao: 'Opt-out Telegram',
       entidade: 'Aluno',
       entidadeId: aluno._id,
       detalhe: all ? 'all=true' : 'principal'
-    });
+    }));
 
     res.json({ ok: true, message: all ? 'Todos os chatIds removidos.' : 'ChatId principal removido.', chatIds: aluno.getAllChatIds() });
   } catch (e) {
@@ -586,7 +616,7 @@ router.get('/:id/telegram/deeplink', autenticar, requireTenant, apenasMonitorOuA
 
 router.post('/:id/telegram/teste', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
     const texto = String(req.body?.texto || '').trim();
     if (!texto) return res.status(400).json({ message: 'Informe "texto" no corpo da requisição.' });
 
@@ -615,14 +645,13 @@ router.post('/:id/telegram/teste', autenticar, requireTenant, apenasMonitorOuAdm
       }
     }
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao: inst,
       acao: 'Envio Teste Telegram',
       entidade: 'Aluno',
       entidadeId: aluno._id,
       detalhe: `enviados=${enviados.length}; falhas=${falhas.length}`
-    });
+    }));
 
     res.json({ ok: true, enviados, falhas });
   } catch (e) {
@@ -694,7 +723,7 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
 ============================================================ */
 router.put('/transferir', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
     const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
     let novaTurma = req.body?.novaTurma;
 
@@ -720,14 +749,13 @@ router.put('/transferir', autenticar, requireTenant, apenasMonitorOuAdmin, async
     } catch {}
 
     try {
-      await Log.create({
+      await Log.create(tenantData(req, {
         usuario: req.usuario.id,
-        instituicao: inst,
         acao: 'Transferência de Turma (lote)',
         entidade: 'Aluno',
         entidadeId: null,
         detalhe: `qtde=${result?.modifiedCount ?? result?.nModified ?? 0}; novaTurma=${novaTurma}`
-      });
+      }));
     } catch {}
 
     const alterados = result?.modifiedCount ?? result?.nModified ?? 0;
@@ -777,7 +805,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
 
     if (painel) {
       const alunos = await Aluno.find(filtro)
-        .select('nome turma foto fotoThumb fotoOriginal instituicao comportamento notaComportamento')
+        .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento')
         .lean();
 
       const alunosComNota = alunos.map((aluno) => {
@@ -795,7 +823,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
     }
 
     const alunos = await Aluno.find(filtro)
-      .select('nome turma foto fotoThumb fotoOriginal instituicao comportamento notaComportamento')
+      .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento')
       .lean();
 
     const alunosComNota = alunos.map((aluno) => {
@@ -818,6 +846,8 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
 
 router.post('/', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
+
     let { nome, turma, dataEntrada, telefone } = req.body;
     nome = String(nome || '').trim();
     turma = normalizaTurma(turma);
@@ -833,22 +863,20 @@ router.post('/', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, re
       if (!isNaN(dt.getTime())) dtEntrada = dt;
     }
 
-    const novoAluno = await Aluno.create({
+    const novoAluno = await Aluno.create(tenantData(req, {
       nome,
       turma,
       dataEntrada: dtEntrada,
       telefone: String(telefone || '').trim(),
-      instituicao: req.instituicaoId,
       ativo: true
-    });
+    }));
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao: req.instituicaoId,
       acao: 'Criação de Aluno',
       entidade: 'Aluno',
       entidadeId: novoAluno._id
-    });
+    }));
 
     res.status(201).json(anexarThumb(novoAluno));
   } catch (error) {
@@ -859,7 +887,7 @@ router.post('/', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, re
 
 router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
-    const inst = req.instituicaoId;
+    const inst = getTenantId(req);
     const id = String(req.params.id);
     const hit = getCached(inst, id);
 
@@ -869,7 +897,7 @@ router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req
     }
 
     const alunoRaw = await Aluno.findOne(tenantFilter(req, { _id: id }))
-      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao updatedAt createdAt codigoAcesso comportamento')
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao tenantId updatedAt createdAt codigoAcesso comportamento')
       .lean();
 
     if (!alunoRaw) {
@@ -972,7 +1000,7 @@ router.put('/:id/foto', autenticar, requireTenant, apenasMonitorOuAdmin, upload.
     }
 
     try {
-      detalhesCache.delete(cacheKey(req.instituicaoId, String(aluno._id)));
+      detalhesCache.delete(cacheKey(getTenantId(req), String(aluno._id)));
     } catch {}
 
     return res.json({
@@ -1008,7 +1036,7 @@ router.get('/:id', autenticar, requireTenant, apenasLeitura, async (req, res) =>
 
 router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
-    const instituicao = req.instituicaoId;
+    const instituicao = getTenantId(req);
     const alunoId = req.params.id;
 
     const alunoAntes = await Aluno.findOne(tenantFilter(req, { _id: alunoId }));
@@ -1100,13 +1128,12 @@ router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, 
       await alunoAtualizado.save();
     }
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao,
       acao: 'Edição de Aluno',
       entidade: 'Aluno',
       entidadeId: alunoAtualizado._id
-    });
+    }));
 
     try { detalhesCache.delete(cacheKey(instituicao, String(alunoAtualizado._id))); } catch {}
 
@@ -1131,15 +1158,14 @@ router.delete('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (re
       Aluno.deleteOne(tenantFilter(req, { _id: aluno._id }))
     ]);
 
-    await Log.create({
+    await Log.create(tenantData(req, {
       usuario: req.usuario.id,
-      instituicao: req.instituicaoId,
       acao: 'Exclusão de Aluno',
       entidade: 'Aluno',
       entidadeId: aluno._id
-    });
+    }));
 
-    try { detalhesCache.delete(cacheKey(req.instituicaoId, String(aluno._id))); } catch {}
+    try { detalhesCache.delete(cacheKey(getTenantId(req), String(aluno._id))); } catch {}
 
     res.json({ message: 'Aluno e dados relacionados deletados com sucesso' });
   } catch (error) {

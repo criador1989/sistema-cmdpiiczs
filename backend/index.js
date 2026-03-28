@@ -15,6 +15,11 @@ const os = require('os');
 const { iniciarAgendadorRecalculo } = require('./services/agendadorRecalculoComportamento');
 const { recalcularTodosAlunos } = require('./utils/recalculoComportamento');
 
+// ✅ NOVOS MIDDLEWARES / AUTH SUPERADMIN
+const resolveTenant = require('./middleware/resolveTenant');
+const requireSuperAdmin = require('./middleware/requireSuperAdmin');
+const superadminAuthRoutes = require('./routes/api/superadminAuth');
+
 const app = express();
 
 /* =========================
@@ -91,64 +96,26 @@ app.use(cookieParser());
 /* =========================
    ✅ TENANT RESOLVER (ANTES DE TUDO)
    ========================= */
-function normalizeSlug(s) {
-  return String(s || '').trim().toLowerCase();
-}
-
-function extractSubdomainSlug(host) {
-  const h = String(host || '').toLowerCase().trim();
-  if (!h) return '';
-
-  const noPort = h.split(':')[0];
-
-  if (noPort === 'localhost') return '';
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(noPort)) return '';
-
-  const parts = noPort.split('.').filter(Boolean);
-  if (parts.length < 3) return '';
-
-  const sub = parts[0];
-  if (sub === 'www') return '';
-  return sub;
-}
-
-try {
-  const { tenantResolver } = require('./middleware/tenant');
-
-  app.use((req, res, next) => {
-    const sub = extractSubdomainSlug(req.headers.host);
-
-    if (!req.query) req.query = {};
-    if (!req.query.t && sub) req.query.t = sub;
-
-    return tenantResolver(req, res, () => {
-      const slug = normalizeSlug(req.tenantSlug);
-
-      if (slug) {
-        res.cookie('tenant', slug, {
-          httpOnly: false,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          path: '/',
-          maxAge: 60 * 24 * 60 * 60 * 1000,
-        });
-      }
-
-      return next();
-    });
-  });
-
-  console.log('🏷️  Tenant resolver ligado (query/header/cookie/subdomínio).');
-} catch (e) {
-  console.warn('⚠️  Tenant resolver não carregado:', e?.message || e);
-}
+app.use(resolveTenant);
+console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
 
 /* =========================
    MODELS
    ========================= */
 [
-  'Aluno', 'Notificacao', 'Usuario', 'Log', 'Instituicao', 'AphAtendimento', 'Counter',
-  'Observacao', 'Monitor', 'MonitorPresenca', 'MonitorNota', 'MonitorAtividade'
+  'Aluno',
+  'Notificacao',
+  'Usuario',
+  'Log',
+  'Instituicao',
+  'AphAtendimento',
+  'Counter',
+  'Observacao',
+  'Monitor',
+  'MonitorPresenca',
+  'MonitorNota',
+  'MonitorAtividade',
+  'SuperAdmin'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -263,6 +230,9 @@ try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } c
 const authRoutes = require('./routes/authRoutes');
 app.use('/auth', authRoutes);
 
+// ✅ AUTH SEPARADA DO SUPERADMIN
+app.use('/api/superadmin', superadminAuthRoutes);
+
 /* ==========================================================
    ✅ FALLBACK: /auth/confirmar-email (se authRoutes não tiver)
    ========================================================== */
@@ -355,7 +325,6 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
 });
 
 const { autenticar } = require('./middleware/autenticacao');
-const exigirSuperAdmin = require('./middleware/exigirSuperAdmin');
 
 /* =========================
    APH
@@ -395,7 +364,8 @@ function buildProfessorGuard(publicRoot) {
     '/transferir-turma.html',
     '/monitores.html',
     '/monitor-ficha.html',
-    '/ranking-alunos.html'
+    '/ranking-alunos.html',
+    '/master-instituicoes.html'
   ]);
 
   const blockedPrefixes = [
@@ -413,10 +383,12 @@ function buildProfessorGuard(publicRoot) {
     '/api/logs',
     '/api/estatisticas',
     '/api/controle-notificacoes',
+    '/api/master'
   ];
 
   const alwaysPublic = new Set([
     '/login.html',
+    '/superadmin-login.html',
     '/cadastro-usuario.html',
     '/bem-vindo.html',
     '/manifest.json',
@@ -457,6 +429,11 @@ function buildProfessorGuard(publicRoot) {
     const prefixHit = blockedPrefixes.some(pref => p === pref || p.startsWith(pref + '/'));
     const shouldCheck = looksLikeHtml || prefixHit;
     if (!shouldCheck) return next();
+
+    // ✅ Tratamento especial do painel master: não depende do login comum
+    if (p === '/master-instituicoes.html' || p === '/api/master' || p.startsWith('/api/master/')) {
+      return next();
+    }
 
     autenticar(req, res, () => {
       const role = getRole(req);
@@ -505,6 +482,7 @@ app.get('/api/debug/whoami-raw', (req, res) => {
     authHeader: req.headers['authorization'] || null,
     origin: req.headers.origin || null,
     host: req.headers.host || null,
+    superAdminCookie: !!req.cookies?.[process.env.SUPERADMIN_COOKIE_NAME || 'superadmin_token']
   });
 });
 
@@ -608,12 +586,12 @@ mountIf('/api/aph', aphPdfRoutes);
 /* =========================
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
    ========================= */
-mountIf('/api/master/instituicoes', masterInstituicoesRoutes, autenticar, exigirSuperAdmin);
+mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
 
 /* =========================
    ✅ FIX TEMPORÁRIO DE INSTITUIÇÃO LEGADA (SuperAdmin)
    ========================= */
-mountIf('/api/fix-instituicao', fixInstituicaoLegacy, autenticar, exigirSuperAdmin);
+mountIf('/api/fix-instituicao', fixInstituicaoLegacy, requireSuperAdmin);
 
 /* =========================
    ESTÁTICOS / HTML
@@ -651,6 +629,17 @@ app.use('/assets', express.static(assetsRoot, {
 app.use(buildProfessorGuard(publicRoot));
 
 /* =========================
+   ✅ ROTAS HTML ESPECIAIS ANTES DO STATIC
+   ========================= */
+app.get('/superadmin-login.html', (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'superadmin-login.html'));
+});
+
+app.get('/master-instituicoes.html', requireSuperAdmin, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'master-instituicoes.html'));
+});
+
+/* =========================
    STATIC (HTML)
    ========================= */
 app.use(express.static(publicRoot, {
@@ -669,6 +658,10 @@ app.get('/', (_req, res) => res.redirect('/login.html'));
 /* =========================
    ✅ PUBLIC TENANT
    ========================= */
+function normalizeSlug(s) {
+  return String(s || '').trim().toLowerCase();
+}
+
 function slugToNameRegex(slug) {
   const safe = String(slug || '').replace(/[^a-z0-9]+/gi, ' ').trim();
   if (!safe) return null;

@@ -1,22 +1,67 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
+
 const Log = require('../../models/Log');
 const { autenticar } = require('../../middleware/autenticacao');
+const { requireTenant } = require('../../middleware/tenantScope');
+
+/* =========================================================
+   HELPERS MULTI-TENANT
+========================================================= */
+
+function getTenantId(req) {
+  return (
+    req.tenantId ||
+    req.instituicaoId ||
+    req.tenant?._id ||
+    req.tenant?.id ||
+    req.usuario?.tenantId ||
+    req.user?.tenantId ||
+    req.usuario?.instituicao ||
+    req.user?.instituicao ||
+    null
+  );
+}
+
+function buildTenantMatch(tenantId) {
+  if (!tenantId) return { _id: null };
+
+  const asStr = String(tenantId);
+  const or = [
+    { tenantId: asStr },
+    { instituicao: asStr }
+  ];
+
+  if (mongoose.isValidObjectId(asStr)) {
+    const oid = new mongoose.Types.ObjectId(asStr);
+    or.push({ tenantId: oid });
+    or.push({ instituicao: oid });
+  }
+
+  return { $or: or };
+}
 
 /**
  * GET /api/logs
  * Lista os logs da instituição do usuário autenticado (paginado simples).
  * Query: ?limit=200&skip=0
  */
-router.get('/', autenticar, async (req, res) => {
+router.get('/', autenticar, requireTenant, async (req, res) => {
   try {
-    const instituicao = req.usuario.instituicao;
+    const tenantId = getTenantId(req);
+    if (!tenantId) {
+      return res.status(401).json({ mensagem: 'Tenant não identificado.' });
+    }
+
     const limit = Math.min(parseInt(req.query.limit || '200', 10), 500);
     const skip = Math.max(parseInt(req.query.skip || '0', 10), 0);
 
-    const total = await Log.countDocuments({ instituicao });
+    const filtro = buildTenantMatch(tenantId);
 
-    const docs = await Log.find({ instituicao })
+    const total = await Log.countDocuments(filtro);
+
+    const docs = await Log.find(filtro)
       .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
       .limit(limit)

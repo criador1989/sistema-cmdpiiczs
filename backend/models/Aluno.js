@@ -4,6 +4,74 @@ const crypto = require('crypto');
 
 const { Schema } = mongoose;
 
+/* =========================
+   HELPERS TENANT
+========================= */
+function toObjectIdOrNull(value) {
+  if (!value) return null;
+  if (value instanceof mongoose.Types.ObjectId) return value;
+  if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+    return new mongoose.Types.ObjectId(value);
+  }
+  return value;
+}
+
+function objectIdToString(value) {
+  if (!value) return null;
+  try {
+    return String(value);
+  } catch {
+    return null;
+  }
+}
+
+function sincronizarTenant(doc) {
+  const instituicao = toObjectIdOrNull(doc.instituicao);
+  const tenantId = toObjectIdOrNull(doc.tenantId);
+
+  if (instituicao && tenantId && objectIdToString(instituicao) !== objectIdToString(tenantId)) {
+    throw new Error('Inconsistência entre instituicao e tenantId no aluno.');
+  }
+
+  if (instituicao && !tenantId) {
+    doc.tenantId = instituicao;
+  } else if (!instituicao && tenantId) {
+    doc.instituicao = tenantId;
+  }
+}
+
+function sincronizarTenantNoUpdate(update) {
+  if (!update || typeof update !== 'object') return;
+
+  const $set = update.$set || {};
+  const $setOnInsert = update.$setOnInsert || {};
+
+  const instituicaoDireta = update.instituicao;
+  const tenantDireto = update.tenantId;
+
+  const instituicaoSet = $set.instituicao ?? $setOnInsert.instituicao ?? instituicaoDireta;
+  const tenantSet = $set.tenantId ?? $setOnInsert.tenantId ?? tenantDireto;
+
+  const instituicao = toObjectIdOrNull(instituicaoSet);
+  const tenantId = toObjectIdOrNull(tenantSet);
+
+  if (instituicao && tenantId && objectIdToString(instituicao) !== objectIdToString(tenantId)) {
+    throw new Error('Inconsistência entre instituicao e tenantId no update do aluno.');
+  }
+
+  if (instituicao && !tenantId) {
+    if (update.$set) update.$set.tenantId = instituicao;
+    else update.tenantId = instituicao;
+  } else if (!instituicao && tenantId) {
+    if (update.$set) update.$set.instituicao = tenantId;
+    else update.instituicao = tenantId;
+  }
+}
+
+/* =========================
+   SUBSCHEMAS
+========================= */
+
 const publicViewSchema = new Schema({
   enabled:   { type: Boolean, default: false },
   token:     { type: String, default: null, index: true },
@@ -122,8 +190,11 @@ const alunoSchema = new Schema({
   // Campo recomendado: vários responsáveis (pai/mãe/guardião)
   chatIdsResponsaveis:  { type: [String], default: [] },
 
-  // 🔐 multi-tenant (ObjectId da Instituicao)
+  // 🔐 multi-tenant (ObjectId da Instituicao) - campo atual/legado
   instituicao: { type: Schema.Types.ObjectId, ref: 'Instituicao', required: true, index: true },
+
+  // 🔐 novo padrão SaaS (mantido sincronizado com instituicao)
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Instituicao', default: null, index: true },
 
 }, { timestamps: true });
 
@@ -212,75 +283,133 @@ alunoSchema.methods.getFotoThumb = function getFotoThumb() {
   return this.fotoThumb || this.fotoOriginal || this.foto || null;
 };
 
+/**
+ * Virtual de conveniência para novo padrão
+ */
+alunoSchema.virtual('tenant').get(function () {
+  return this.tenantId || this.instituicao || null;
+});
+
 /** ============================
  *  Pré-validate
  *  - Gera código de acesso
  *  - Migra legado contatos.telegramChatId
  *  - Deduplica e normaliza chat IDs
  *  - Mantém consistência dos campos de foto
+ *  - Sincroniza instituicao ↔ tenantId
  *  ============================
  */
 alunoSchema.pre('validate', function (next) {
-  // Código curto se não existir
-  if (!this.codigoAcesso) {
-    this.codigoAcesso = crypto.randomBytes(3).toString('hex').toUpperCase();
-  }
+  try {
+    sincronizarTenant(this);
 
-  // Garante arrays
-  if (!Array.isArray(this.chatIdsResponsaveis)) {
-    this.chatIdsResponsaveis = (this.chatIdsResponsaveis ? [this.chatIdsResponsaveis] : []);
-  }
-
-  // Migração: se houver telegramChatId legado em contatos, incorpora
-  const legado = this.contatos?.telegramChatId ? String(this.contatos.telegramChatId).trim() : '';
-  if (legado) {
-    if (!this.chatIdsResponsaveis.includes(legado)) {
-      this.chatIdsResponsaveis.push(legado);
+    // Código curto se não existir
+    if (!this.codigoAcesso) {
+      this.codigoAcesso = crypto.randomBytes(3).toString('hex').toUpperCase();
     }
-    if (!this.chatIdResponsavel) {
-      this.chatIdResponsavel = legado;
+
+    // Garante arrays
+    if (!Array.isArray(this.chatIdsResponsaveis)) {
+      this.chatIdsResponsaveis = (this.chatIdsResponsaveis ? [this.chatIdsResponsaveis] : []);
     }
-  }
 
-  // Se chatIdResponsavel existe e não está no array, adiciona
-  if (this.chatIdResponsavel) {
-    const id = String(this.chatIdResponsavel).trim();
-    if (id && !this.chatIdsResponsaveis.includes(id)) {
-      this.chatIdsResponsaveis.push(id);
+    // Migração: se houver telegramChatId legado em contatos, incorpora
+    const legado = this.contatos?.telegramChatId ? String(this.contatos.telegramChatId).trim() : '';
+    if (legado) {
+      if (!this.chatIdsResponsaveis.includes(legado)) {
+        this.chatIdsResponsaveis.push(legado);
+      }
+      if (!this.chatIdResponsavel) {
+        this.chatIdResponsavel = legado;
+      }
     }
+
+    // Se chatIdResponsavel existe e não está no array, adiciona
+    if (this.chatIdResponsavel) {
+      const id = String(this.chatIdResponsavel).trim();
+      if (id && !this.chatIdsResponsaveis.includes(id)) {
+        this.chatIdsResponsaveis.push(id);
+      }
+    }
+
+    // Deduplica e normaliza (string trim)
+    this.chatIdsResponsaveis = Array.from(
+      new Set((this.chatIdsResponsaveis || []).map(s => String(s || '').trim()).filter(Boolean))
+    );
+
+    /**
+     * ==========================================================
+     * CONSISTÊNCIA DOS CAMPOS DE FOTO
+     * ==========================================================
+     * Regras:
+     * - se fotoOriginal existe e foto não existe, copia para foto
+     * - se foto existe e fotoOriginal não existe, copia para fotoOriginal
+     * - mantém retrocompatibilidade sem quebrar telas antigas
+     */
+    if (this.fotoOriginal && !this.foto) {
+      this.foto = this.fotoOriginal;
+    }
+
+    if (this.foto && !this.fotoOriginal) {
+      this.fotoOriginal = this.foto;
+    }
+
+    if (!this.fotoMeta) {
+      this.fotoMeta = {};
+    }
+
+    if (typeof this.elogios !== 'number') this.elogios = 0;
+    if (typeof this.atosIndisciplina !== 'number') this.atosIndisciplina = 0;
+    if (typeof this.notificacoesNegativas !== 'number') this.notificacoesNegativas = 0;
+
+    next();
+  } catch (err) {
+    next(err);
   }
+});
 
-  // Deduplica e normaliza (string trim)
-  this.chatIdsResponsaveis = Array.from(
-    new Set((this.chatIdsResponsaveis || []).map(s => String(s || '').trim()).filter(Boolean))
-  );
+/** ============================
+ *  Pré findOneAndUpdate
+ *  - Sincroniza instituicao ↔ tenantId em updates
+ *  - Mantém consistência de foto
+ *  - Deduplica chatIdsResponsaveis
+ *  ============================
+ */
+alunoSchema.pre('findOneAndUpdate', function (next) {
+  try {
+    const update = this.getUpdate() || {};
 
-  /**
-   * ==========================================================
-   * CONSISTÊNCIA DOS CAMPOS DE FOTO
-   * ==========================================================
-   * Regras:
-   * - se fotoOriginal existe e foto não existe, copia para foto
-   * - se foto existe e fotoOriginal não existe, copia para fotoOriginal
-   * - mantém retrocompatibilidade sem quebrar telas antigas
-   */
-  if (this.fotoOriginal && !this.foto) {
-    this.foto = this.fotoOriginal;
+    sincronizarTenantNoUpdate(update);
+
+    const $set = update.$set || {};
+
+    const chatIds = update.chatIdsResponsaveis ?? $set.chatIdsResponsaveis;
+    if (Array.isArray(chatIds)) {
+      const normalizados = Array.from(
+        new Set(chatIds.map(s => String(s || '').trim()).filter(Boolean))
+      );
+      if (update.$set) update.$set.chatIdsResponsaveis = normalizados;
+      else update.chatIdsResponsaveis = normalizados;
+    }
+
+    const foto = update.foto ?? $set.foto;
+    const fotoOriginal = update.fotoOriginal ?? $set.fotoOriginal;
+
+    if (fotoOriginal && !foto) {
+      if (update.$set) update.$set.foto = fotoOriginal;
+      else update.foto = fotoOriginal;
+    }
+
+    if (foto && !fotoOriginal) {
+      if (update.$set) update.$set.fotoOriginal = foto;
+      else update.fotoOriginal = foto;
+    }
+
+    this.setUpdate(update);
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  if (this.foto && !this.fotoOriginal) {
-    this.fotoOriginal = this.foto;
-  }
-
-  if (!this.fotoMeta) {
-    this.fotoMeta = {};
-  }
-
-  if (typeof this.elogios !== 'number') this.elogios = 0;
-  if (typeof this.atosIndisciplina !== 'number') this.atosIndisciplina = 0;
-  if (typeof this.notificacoesNegativas !== 'number') this.notificacoesNegativas = 0;
-
-  next();
 });
 
 /** ============================
@@ -288,20 +417,40 @@ alunoSchema.pre('validate', function (next) {
  *  ============================
  */
 alunoSchema.index({ instituicao: 1, codigoAcesso: 1 }, { unique: true, sparse: true });
+alunoSchema.index({ tenantId: 1, codigoAcesso: 1 }, { sparse: true });
+
 alunoSchema.index({ instituicao: 1, turma: 1, nome: 1 });
+alunoSchema.index({ tenantId: 1, turma: 1, nome: 1 });
+
 alunoSchema.index({ instituicao: 1, nome: 1 });
+alunoSchema.index({ tenantId: 1, nome: 1 });
+
 alunoSchema.index({ instituicao: 1, turma: 1, comportamento: -1 });
+alunoSchema.index({ tenantId: 1, turma: 1, comportamento: -1 });
+
 alunoSchema.index({ instituicao: 1, comportamento: -1 });
+alunoSchema.index({ tenantId: 1, comportamento: -1 });
+
 alunoSchema.index({ instituicao: 1, turma: 1, elogios: -1 });
+alunoSchema.index({ tenantId: 1, turma: 1, elogios: -1 });
+
 alunoSchema.index({ instituicao: 1, turma: 1, notificacoesNegativas: -1 });
+alunoSchema.index({ tenantId: 1, turma: 1, notificacoesNegativas: -1 });
+
 alunoSchema.index({ instituicao: 1, turma: 1, atosIndisciplina: -1 });
+alunoSchema.index({ tenantId: 1, turma: 1, atosIndisciplina: -1 });
+
 alunoSchema.index({ 'publicView.token': 1 }, { unique: true, sparse: true });
 
 // Acelera buscas por instituição + chat (envios/relatórios por turma)
 alunoSchema.index({ instituicao: 1, chatIdResponsavel: 1 }, { sparse: true });
+alunoSchema.index({ tenantId: 1, chatIdResponsavel: 1 }, { sparse: true });
+
 alunoSchema.index({ instituicao: 1, chatIdsResponsaveis: 1 }, { sparse: true });
+alunoSchema.index({ tenantId: 1, chatIdsResponsaveis: 1 }, { sparse: true });
 
 // 👇 Útil para relatórios/diagnóstico de comunicação NP
 alunoSchema.index({ instituicao: 1, 'alertas.npRegularEnviadoAt': 1 }, { sparse: true });
+alunoSchema.index({ tenantId: 1, 'alertas.npRegularEnviadoAt': 1 }, { sparse: true });
 
-module.exports = mongoose.model('Aluno', alunoSchema);
+module.exports = mongoose.models.Aluno || mongoose.model('Aluno', alunoSchema);

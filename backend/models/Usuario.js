@@ -1,3 +1,5 @@
+'use strict';
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -8,6 +10,33 @@ function normalizarTurma(valor) {
   return String(valor || '')
     .trim()
     .replace(/\s+/g, ' ');
+}
+
+function toObjectIdOrNull(value) {
+  if (!value) return null;
+  if (value instanceof mongoose.Types.ObjectId) return value;
+  if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+    return new mongoose.Types.ObjectId(value);
+  }
+  return value;
+}
+
+function objectIdToString(value) {
+  if (!value) return null;
+  try {
+    return String(value);
+  } catch {
+    return null;
+  }
+}
+
+async function gerarHash(senha) {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(senha, salt);
+}
+
+function gerarTokenProfessor() {
+  return crypto.randomBytes(16).toString('hex');
 }
 
 const usuarioSchema = new Schema(
@@ -43,6 +72,10 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
+    /**
+     * CAMPO LEGADO / ATUAL
+     * Continua existindo para não quebrar o sistema atual.
+     */
     instituicao: {
       type: Schema.Types.ObjectId,
       ref: 'Instituicao',
@@ -50,7 +83,18 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
-    // ✅ NOVO: turmas vinculadas ao professor
+    /**
+     * NOVO CAMPO MULTI-TENANT
+     * Mantido em paralelo com "instituicao" para transição gradual.
+     */
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Instituicao',
+      default: null,
+      index: true,
+    },
+
+    // turmas vinculadas ao professor
     turmas: {
       type: [String],
       default: [],
@@ -97,21 +141,77 @@ const usuarioSchema = new Schema(
       index: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true
+  }
 );
 
+/* =========================
+   ÍNDICES
+========================= */
 usuarioSchema.index({ instituicao: 1, email: 1 }, { unique: true });
+usuarioSchema.index({ tenantId: 1, email: 1 }, { sparse: true });
 usuarioSchema.index({ tokenVerificacaoHash: 1, tokenVerificacaoExpiraEm: 1 });
 usuarioSchema.index({ instituicao: 1, tipo: 1, turmas: 1 });
+usuarioSchema.index({ tenantId: 1, tipo: 1, turmas: 1 });
 
-async function gerarHash(senha) {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(senha, salt);
+/* =========================
+   SINCRONIZAÇÃO tenantId <-> instituicao
+========================= */
+function sincronizarTenant(doc) {
+  const instituicao = toObjectIdOrNull(doc.instituicao);
+  const tenantId = toObjectIdOrNull(doc.tenantId);
+
+  if (instituicao && tenantId && objectIdToString(instituicao) !== objectIdToString(tenantId)) {
+    throw new Error('Inconsistência entre instituicao e tenantId no usuário.');
+  }
+
+  if (instituicao && !tenantId) {
+    doc.tenantId = instituicao;
+  } else if (!instituicao && tenantId) {
+    doc.instituicao = tenantId;
+  }
 }
 
-function gerarTokenProfessor() {
-  return crypto.randomBytes(16).toString('hex');
+function sincronizarTenantNoUpdate(update) {
+  if (!update || typeof update !== 'object') return;
+
+  const $set = update.$set || {};
+  const $setOnInsert = update.$setOnInsert || {};
+
+  const instituicaoDireta = update.instituicao;
+  const tenantDireto = update.tenantId;
+
+  const instituicaoSet = $set.instituicao ?? $setOnInsert.instituicao ?? instituicaoDireta;
+  const tenantSet = $set.tenantId ?? $setOnInsert.tenantId ?? tenantDireto;
+
+  const instituicao = toObjectIdOrNull(instituicaoSet);
+  const tenantId = toObjectIdOrNull(tenantSet);
+
+  if (instituicao && tenantId && objectIdToString(instituicao) !== objectIdToString(tenantId)) {
+    throw new Error('Inconsistência entre instituicao e tenantId no update do usuário.');
+  }
+
+  if (instituicao && !tenantId) {
+    if (update.$set) update.$set.tenantId = instituicao;
+    else update.tenantId = instituicao;
+  } else if (!instituicao && tenantId) {
+    if (update.$set) update.$set.instituicao = tenantId;
+    else update.instituicao = tenantId;
+  }
 }
+
+/* =========================
+   MIDDLEWARES
+========================= */
+usuarioSchema.pre('validate', function (next) {
+  try {
+    sincronizarTenant(this);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 usuarioSchema.pre('save', async function (next) {
   try {
@@ -122,6 +222,8 @@ usuarioSchema.pre('save', async function (next) {
     if (this.isModified('turmas') && Array.isArray(this.turmas)) {
       this.turmas = [...new Set(this.turmas.map(normalizarTurma).filter(Boolean))];
     }
+
+    sincronizarTenant(this);
 
     if (this.isModified('senha')) {
       this.senha = await gerarHash(this.senha);
@@ -168,12 +270,18 @@ usuarioSchema.pre('findOneAndUpdate', async function (next) {
       else update.tokenAcesso = novoToken;
     }
 
+    sincronizarTenantNoUpdate(update);
+    this.setUpdate(update);
+
     next();
   } catch (err) {
     next(err);
   }
 });
 
+/* =========================
+   MÉTODOS
+========================= */
 usuarioSchema.methods.compararSenha = function (senhaDigitada) {
   return bcrypt.compare(String(senhaDigitada || ''), this.senha);
 };
@@ -186,6 +294,20 @@ usuarioSchema.methods.regenerarTokenProfessor = function () {
   return this.tokenAcesso;
 };
 
+/* =========================
+   VIRTUALS
+========================= */
+usuarioSchema.virtual('tenant').get(function () {
+  return this.tenantId || this.instituicao || null;
+});
+
+usuarioSchema.virtual('tenantSlug').get(function () {
+  return null;
+});
+
+/* =========================
+   TRANSFORM
+========================= */
 function ocultarCampos(_doc, ret) {
   delete ret.senha;
   delete ret.__v;
@@ -197,4 +319,4 @@ function ocultarCampos(_doc, ret) {
 usuarioSchema.set('toJSON', { virtuals: true, transform: ocultarCampos });
 usuarioSchema.set('toObject', { virtuals: true, transform: ocultarCampos });
 
-module.exports = mongoose.model('Usuario', usuarioSchema);
+module.exports = mongoose.models.Usuario || mongoose.model('Usuario', usuarioSchema);

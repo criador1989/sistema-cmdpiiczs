@@ -1,4 +1,3 @@
-// backend/routes/api/aph.js
 'use strict';
 
 const express = require('express');
@@ -6,8 +5,51 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 const { autenticar } = require('../../middleware/autenticacao');
+const { requireTenant } = require('../../middleware/tenantScope');
 const AphAtendimento = require('../../models/AphAtendimento');
 const Aluno = require('../../models/Aluno');
+
+/* -------------------- helpers multi-tenant -------------------- */
+function getTenantId(req) {
+  return (
+    req.tenantId ||
+    req.instituicaoId ||
+    req.tenant?._id ||
+    req.tenant?.id ||
+    req.usuario?.tenantId ||
+    req.user?.tenantId ||
+    req.usuario?.instituicao ||
+    req.user?.instituicao ||
+    null
+  );
+}
+
+function buildTenantMatch(tenantId) {
+  if (!tenantId) return { _id: null };
+
+  const asStr = String(tenantId);
+  const or = [
+    { tenantId: asStr },
+    { instituicao: asStr }
+  ];
+
+  if (mongoose.isValidObjectId(asStr)) {
+    const oid = new mongoose.Types.ObjectId(asStr);
+    or.push({ tenantId: oid });
+    or.push({ instituicao: oid });
+  }
+
+  return { $or: or };
+}
+
+function tenantData(req, extra = {}) {
+  const tenantId = getTenantId(req);
+  return {
+    ...extra,
+    tenantId,
+    instituicao: tenantId
+  };
+}
 
 /* -------------------- utils -------------------- */
 function getMensageria(req) {
@@ -15,13 +57,11 @@ function getMensageria(req) {
 }
 
 function endOfDay(d) {
-  // garante inclusão do último dia por completo
   const x = new Date(d);
   x.setHours(23, 59, 59, 999);
   return x;
 }
 
-// timeout “macio” para chamadas externas (ex.: mensageria)
 function withTimeout(promise, ms = 8000, label = 'operação') {
   let t;
   const timer = new Promise((resolve) => {
@@ -33,13 +73,13 @@ function withTimeout(promise, ms = 8000, label = 'operação') {
 }
 
 function montarMensagemAPH({ aluno, at }) {
-  const nome  = aluno?.nome || 'Aluno(a)';
+  const nome = aluno?.nome || 'Aluno(a)';
   const turma = aluno?.turma || '—';
 
   const data = at?.data ? new Date(at.data) : null;
   const dataStr = data ? data.toLocaleDateString('pt-BR') : '—';
   const horaStr = (at?.hora && String(at.hora).trim()) ? String(at.hora).trim() : '—';
-  const local   = at?.local || '—';
+  const local = at?.local || '—';
 
   const tipos = Array.isArray(at?.tipos) && at.tipos.length ? at.tipos.join(', ') : '—';
   const materiais = Array.isArray(at?.materiais) && at.materiais.length ? at.materiais.join(', ') : '—';
@@ -57,12 +97,12 @@ function montarMensagemAPH({ aluno, at }) {
     `• Ocorrência(s): ${tipos}`,
     `• Materiais/recursos aplicados: ${materiais}`,
   ];
-  if (sintomas)       linhas.push(`• Sinais/sintomas: ${sintomas}`);
-  if (procedimentos)  linhas.push(`• Procedimentos realizados: ${procedimentos}`);
-  if (observ)         linhas.push(`• Observações: ${observ}`);
-  // mostramos "Encaminhamento: Sim/Não" explícito
-  linhas.push(`• Encaminhamento: ${encaminhamento}`);
 
+  if (sintomas) linhas.push(`• Sinais/sintomas: ${sintomas}`);
+  if (procedimentos) linhas.push(`• Procedimentos realizados: ${procedimentos}`);
+  if (observ) linhas.push(`• Observações: ${observ}`);
+
+  linhas.push(`• Encaminhamento: ${encaminhamento}`);
   linhas.push(
     ``,
     `Este comunicado é informativo. Permanecemos à disposição.`,
@@ -76,15 +116,18 @@ function montarMensagemAPH({ aluno, at }) {
 /* -------------------- parse de data robusto -------------------- */
 function parseDateOnlyLocal(v) {
   if (!v) return new Date();
+
   if (typeof v === 'string') {
     const iso = /^\d{4}-\d{2}-\d{2}/.test(v);
-    const br  = /^\d{2}\/\d{2}\/\d{4}$/.test(v);
-    if (iso)   return new Date(v + (v.length === 10 ? 'T00:00:00' : ''));
+    const br = /^\d{2}\/\d{2}\/\d{4}$/.test(v);
+
+    if (iso) return new Date(v + (v.length === 10 ? 'T00:00:00' : ''));
     if (br) {
       const [dd, mm, yyyy] = v.split('/').map(Number);
       return new Date(yyyy, (mm || 1) - 1, dd || 1, 0, 0, 0, 0);
     }
   }
+
   const t = Date.parse(v);
   return Number.isNaN(t) ? new Date() : new Date(t);
 }
@@ -99,22 +142,22 @@ router.get('/status', (_req, res) => res.json({ ok: true, service: 'aph' }));
    ========================================================= */
 
 // GET /api/aph/atendimentos?alunoId=...&q=...&dtIni=YYYY-MM-DD&dtFim=YYYY-MM-DD&page=1&limit=20
-router.get('/atendimentos', autenticar, async (req, res) => {
+router.get('/atendimentos', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
-    const page  = Math.max(parseInt(req.query.page  || '1', 10), 1);
+    const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
 
-    const filtro = { instituicao: inst };
+    const filtro = {
+      ...buildTenantMatch(tenantId)
+    };
 
-    // filtro por aluno
     if (req.query.alunoId && mongoose.isValidObjectId(req.query.alunoId)) {
       filtro.alunoId = new mongoose.Types.ObjectId(req.query.alunoId);
     }
 
-    // filtro por data com inclusão do último dia (23:59:59.999)
     const { dtIni, dtFim } = req.query;
     if (dtIni || dtFim) {
       const dataFiltro = {};
@@ -123,7 +166,6 @@ router.get('/atendimentos', autenticar, async (req, res) => {
       if (Object.keys(dataFiltro).length) filtro.data = dataFiltro;
     }
 
-    // busca textual
     const q = (req.query.q || '').trim();
     if (q) {
       const regex = new RegExp(q, 'i');
@@ -154,8 +196,8 @@ router.get('/atendimentos', autenticar, async (req, res) => {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-      items: list,  // compat en-US
-      itens: list,  // compat pt-BR
+      items: list,
+      itens: list,
     });
   } catch (err) {
     console.error('[APH] GET /atendimentos erro:', err);
@@ -164,32 +206,38 @@ router.get('/atendimentos', autenticar, async (req, res) => {
 });
 
 // Alias de listagem por aluno
-router.get('/atendimentos/aluno/:alunoId', autenticar, (req, res, next) => {
+router.get('/atendimentos/aluno/:alunoId', autenticar, requireTenant, (req, res, next) => {
   req.url = `/atendimentos?alunoId=${encodeURIComponent(req.params.alunoId)}`;
   next();
 });
 
-// 🔁 Alias compatível com front antigo: /api/aph/listar
-router.get('/listar', autenticar, (req, res, next) => {
+// Alias compatível com front antigo: /api/aph/listar
+router.get('/listar', autenticar, requireTenant, (req, res, next) => {
   const q = [];
   if (req.query.alunoId) q.push(`alunoId=${encodeURIComponent(req.query.alunoId)}`);
-  if (req.query.page)    q.push(`page=${encodeURIComponent(req.query.page)}`);
-  if (req.query.limit)   q.push(`limit=${encodeURIComponent(req.query.limit)}`);
-  if (req.query.dtIni)   q.push(`dtIni=${encodeURIComponent(req.query.dtIni)}`);
-  if (req.query.dtFim)   q.push(`dtFim=${encodeURIComponent(req.query.dtFim)}`);
-  if (req.query.q)       q.push(`q=${encodeURIComponent(req.query.q)}`);
+  if (req.query.page) q.push(`page=${encodeURIComponent(req.query.page)}`);
+  if (req.query.limit) q.push(`limit=${encodeURIComponent(req.query.limit)}`);
+  if (req.query.dtIni) q.push(`dtIni=${encodeURIComponent(req.query.dtIni)}`);
+  if (req.query.dtFim) q.push(`dtFim=${encodeURIComponent(req.query.dtFim)}`);
+  if (req.query.q) q.push(`q=${encodeURIComponent(req.query.q)}`);
   req.url = `/atendimentos${q.length ? '?' + q.join('&') : ''}`;
   next();
 });
 
 // Contador para a Ficha
-router.get('/atendimentos/count/:alunoId', autenticar, async (req, res) => {
+router.get('/atendimentos/count/:alunoId', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
+
     const { alunoId } = req.params;
     if (!mongoose.isValidObjectId(alunoId)) return res.json({ total: 0 });
-    const total = await AphAtendimento.countDocuments({ instituicao: inst, alunoId });
+
+    const total = await AphAtendimento.countDocuments({
+      ...buildTenantMatch(tenantId),
+      alunoId
+    });
+
     res.json({ total });
   } catch (e) {
     console.warn('[APH] count falhou:', e?.message || e);
@@ -198,15 +246,21 @@ router.get('/atendimentos/count/:alunoId', autenticar, async (req, res) => {
 });
 
 // Detalhe
-router.get('/atendimentos/:id', autenticar, async (req, res) => {
+router.get('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const _id = req.params.id;
-    if (!mongoose.isValidObjectId(_id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+    if (!mongoose.isValidObjectId(_id)) {
+      return res.status(404).json({ message: 'Registro não encontrado.' });
+    }
 
-    const doc = await AphAtendimento.findOne({ _id, instituicao: inst }).lean();
+    const doc = await AphAtendimento.findOne({
+      _id,
+      ...buildTenantMatch(tenantId)
+    }).lean();
+
     if (!doc) return res.status(404).json({ message: 'Registro não encontrado.' });
 
     res.json(doc);
@@ -217,7 +271,7 @@ router.get('/atendimentos/:id', autenticar, async (req, res) => {
 });
 
 // Alias (compat)
-router.get('/atendimento/:id', autenticar, (req, res, next) => {
+router.get('/atendimento/:id', autenticar, requireTenant, (req, res, next) => {
   req.url = `/atendimentos/${req.params.id}`;
   next();
 });
@@ -226,10 +280,10 @@ router.get('/atendimento/:id', autenticar, (req, res, next) => {
    CRIAR / EDITAR / EXCLUIR
    ========================================================= */
 
-router.post('/atendimentos', autenticar, async (req, res) => {
+router.post('/atendimentos', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const {
       alunoId,
@@ -252,12 +306,18 @@ router.post('/atendimentos', autenticar, async (req, res) => {
       return res.status(400).json({ message: 'alunoId inválido/ausente.' });
     }
 
-    const aluno = await Aluno.findOne({ _id: alunoId, instituicao: inst })
-      .select('nome turma instituicao contatos responsaveis telefone')
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      ...buildTenantMatch(tenantId)
+    })
+      .select('nome turma instituicao tenantId contatos responsaveis telefone')
       .lean();
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' });
 
-    const payload = {
+    if (!aluno) {
+      return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' });
+    }
+
+    const payload = tenantData(req, {
       alunoId: aluno._id,
       responsavel: (responsavel || '').trim(),
       local: (local || '').trim(),
@@ -271,13 +331,11 @@ router.post('/atendimentos', autenticar, async (req, res) => {
       responsaveisInformados: (responsaveisInformados === 'Sim' || responsaveisInformados === true) ? 'Sim' : 'Não',
       meioComunicacao,
       encaminhamento,
-      houveEncaminhamento: Boolean(houveEncaminhamento),
-      instituicao: inst
-    };
+      houveEncaminhamento: Boolean(houveEncaminhamento)
+    });
 
     const novo = await AphAtendimento.create(payload);
 
-    // Disparo de comunicação (tolerante a falhas)
     let comunicacao = { ok: false, motivo: 'mensageria indisponível' };
     try {
       const mensageria = getMensageria(req);
@@ -285,8 +343,8 @@ router.post('/atendimentos', autenticar, async (req, res) => {
         const { titulo, texto } = montarMensagemAPH({ aluno, at: payload });
         const prom = mensageria.enfileirarParaResponsaveis({
           alunoId: String(aluno._id),
-          instituicao: String(inst),
-          // prioriza email, depois telegram; gera link de WhatsApp
+          instituicao: String(tenantId),
+          tenantId: String(tenantId),
           preferenciaCanais: ['email', 'telegram', 'whatsapp'],
           titulo,
           texto,
@@ -315,13 +373,15 @@ router.post('/atendimentos', autenticar, async (req, res) => {
   }
 });
 
-router.put('/atendimentos/:id', autenticar, async (req, res) => {
+router.put('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ message: 'Registro não encontrado.' });
+    }
 
     const patch = {
       responsavel: (req.body?.responsavel || '').trim(),
@@ -337,15 +397,21 @@ router.put('/atendimentos/:id', autenticar, async (req, res) => {
       procedimentos: (req.body?.procedimentos || '').trim(),
       houveEncaminhamento: Boolean(req.body?.houveEncaminhamento),
       ...(req.body?.data ? { data: parseDateOnlyLocal(req.body.data) } : {}),
+      tenantId,
+      instituicao: tenantId
     };
 
     const upd = await AphAtendimento.findOneAndUpdate(
-      { _id: id, instituicao: inst },
+      {
+        _id: id,
+        ...buildTenantMatch(tenantId)
+      },
       { $set: patch },
       { new: true }
     ).lean();
 
     if (!upd) return res.status(404).json({ message: 'Registro não encontrado.' });
+
     res.json({ ok: true, atendimento: upd });
   } catch (err) {
     console.error('[APH] PUT /atendimentos/:id erro:', err);
@@ -353,15 +419,21 @@ router.put('/atendimentos/:id', autenticar, async (req, res) => {
   }
 });
 
-router.delete('/atendimentos/:id', autenticar, async (req, res) => {
+router.delete('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ message: 'Registro não encontrado.' });
+    }
 
-    const del = await AphAtendimento.findOneAndDelete({ _id: id, instituicao: inst }).lean();
+    const del = await AphAtendimento.findOneAndDelete({
+      _id: id,
+      ...buildTenantMatch(tenantId)
+    }).lean();
+
     if (!del) return res.status(404).json({ message: 'Registro não encontrado.' });
 
     res.json({ ok: true });
@@ -375,20 +447,30 @@ router.delete('/atendimentos/:id', autenticar, async (req, res) => {
    REENGATILHAR COMUNICAÇÃO
    ========================================================= */
 
-router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req, res) => {
+router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, requireTenant, async (req, res) => {
   try {
-    const inst = req.usuario?.instituicao;
-    if (!inst) return res.status(401).json({ message: 'Não autenticado.' });
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) return res.status(404).json({ message: 'Registro não encontrado.' });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ message: 'Registro não encontrado.' });
+    }
 
-    const at = await AphAtendimento.findOne({ _id: id, instituicao: inst }).lean();
+    const at = await AphAtendimento.findOne({
+      _id: id,
+      ...buildTenantMatch(tenantId)
+    }).lean();
+
     if (!at) return res.status(404).json({ message: 'Registro não encontrado.' });
 
-    const aluno = await Aluno.findOne({ _id: at.alunoId, instituicao: inst })
-      .select('nome turma instituicao contatos responsaveis telefone')
+    const aluno = await Aluno.findOne({
+      _id: at.alunoId,
+      ...buildTenantMatch(tenantId)
+    })
+      .select('nome turma instituicao tenantId contatos responsaveis telefone')
       .lean();
+
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
     const mensageria = getMensageria(req);
@@ -398,10 +480,10 @@ router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, async (req
 
     const { titulo, texto } = montarMensagemAPH({ aluno, at });
 
-    // não deixar a requisição travar; timeout curto
     const prom = mensageria.enfileirarParaResponsaveis({
       alunoId: String(aluno._id),
-      instituicao: String(inst),
+      instituicao: String(tenantId),
+      tenantId: String(tenantId),
       preferenciaCanais: ['email', 'telegram', 'whatsapp'],
       titulo,
       texto,
