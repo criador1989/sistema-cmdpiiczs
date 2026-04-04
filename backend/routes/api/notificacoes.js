@@ -15,7 +15,10 @@ const { requireTenant } = require('../../middleware/tenantScope');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 const { addBusinessDays } = require('../../utils/businessDays');
 const { logAction, attachActor } = require('../../utils/audit');
-
+const {
+  getConfigDisciplinar,
+  getClassificacaoComportamento
+} = require('../../utils/configuracaoDisciplinar');
 // 🚀 Serviços de mensageria (telegram + NP)
 const { enviarTelegram, enviarNPEncaminhamento } = require('../../services/mensageria');
 
@@ -316,12 +319,16 @@ function normalizarValorPorNatureza(natureza, valor) {
   return normalizeText(natureza) === 'elogio' ? Math.abs(bruto) : -Math.abs(bruto);
 }
 
-function enriquecerClassificacao(notif) {
+async function enriquecerClassificacao(notif, instituicao) {
   if (!notif || typeof notif !== 'object') return notif;
+
+  const config = await getConfigDisciplinar(instituicao);
+
   const notaAnteriorNum =
     notif.notaAnterior === null || notif.notaAnterior === undefined || notif.notaAnterior === ''
       ? null
       : toNumber(notif.notaAnterior, null);
+
   const notaAtualNum =
     notif.notaAtual === null || notif.notaAtual === undefined || notif.notaAtual === ''
       ? null
@@ -333,10 +340,10 @@ function enriquecerClassificacao(notif) {
     notaAtual: notaAtualNum,
     classificacaoAnterior:
       notif.classificacaoAnterior ||
-      (notaAnteriorNum === null ? null : classificarComportamento(notaAnteriorNum)),
+      (notaAnteriorNum === null ? null : getClassificacaoComportamento(notaAnteriorNum, config)),
     classificacaoAtual:
       notif.classificacaoAtual ||
-      (notaAtualNum === null ? null : classificarComportamento(notaAtualNum))
+      (notaAtualNum === null ? null : getClassificacaoComportamento(notaAtualNum, config))
   };
 }
 
@@ -740,11 +747,16 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     const dataRaw = (notificacoes || []).filter((n) => n.aluno);
 
-    const data = dataRaw.map((n) => {
-      const valorTotal = Number(n.valorNumerico || 0);
-      const valorUnitario = valorTotal;
-      return enriquecerClassificacao({ ...n, valorTotal, valorUnitario });
-    });
+    const data = await Promise.all(
+  dataRaw.map((n) => {
+    const valorTotal = Number(n.valorNumerico || 0);
+    const valorUnitario = valorTotal;
+    return enriquecerClassificacao(
+      { ...n, valorTotal, valorUnitario },
+      tenantId
+    );
+  })
+);
 
     res.json({ total, page, totalPages, data });
   } catch (err) {
@@ -794,6 +806,7 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
     }
 
     const ehElogio = natureza === 'elogio';
+    const config = await getConfigDisciplinar(inst);
     let tituloMedida = ehElogio ? 'Elogio' : (tipoMedida || tipo || '').trim();
 
     let dias = 1;
@@ -803,15 +816,44 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
     }
 
     let valor = 0;
-    if (ehElogio) {
-      const m = MAPA_ELOGIOS[tipoElogio] ?? undefined;
-      valor = typeof valorNumerico === 'number' ? valorNumerico : typeof m === 'number' ? m : 0;
-      valor = normalizarValorPorNatureza('elogio', valor);
-    } else {
-      const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
-      valor = typeof valorNumerico === 'number' ? valorNumerico : Number(base.toFixed(2));
-      valor = normalizarValorPorNatureza('indisciplina', valor);
-    }
+
+if (ehElogio) {
+  let valorBase = 0;
+
+  if (tipoElogio === 'elogioVerbal') {
+    valorBase = config.recompensas.elogioVerbal;
+  } else if (tipoElogio === 'boletimInternoIndividual') {
+    valorBase = config.recompensas.elogioIndividual;
+  } else if (tipoElogio === 'boletimInternoColetivo') {
+    valorBase = config.recompensas.elogioColetivo;
+  } else if (tipoElogio === 'mediaAlta') {
+    valorBase = config.recompensas.mediaAlta;
+  }
+
+  valor = typeof valorNumerico === 'number' ? valorNumerico : valorBase;
+  valor = normalizarValorPorNatureza('elogio', valor);
+
+} else {
+  let valorBase = 0;
+
+  const tipoNorm = String(tituloMedida || '').toLowerCase();
+
+  if (tipoNorm.includes('advert')) {
+    valorBase = config.medidas.advertenciaEscrita;
+  } else if (tipoNorm.includes('repre')) {
+    valorBase = config.medidas.repreensao;
+  } else if (tipoNorm.includes('a.e.c.d.e') || tipoNorm.includes('aecde')) {
+    valorBase = config.medidas.aecdePorDia;
+  } else if (tipoNorm.includes('a.i.a') || tipoNorm.includes('aia')) {
+    valorBase = config.medidas.aiaPorDia;
+  }
+
+  valor = typeof valorNumerico === 'number'
+    ? valorNumerico
+    : Number(valorBase.toFixed(2));
+
+  valor = normalizarValorPorNatureza('indisciplina', valor);
+}
 
     const dataRef = data ? parseDateOnlyLocal(data) : new Date();
 
@@ -924,13 +966,16 @@ router.get('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
         : null;
 
     res.json(
-      enriquecerClassificacao({
-        ...notificacao.toObject(),
-        valorTotal,
-        valorUnitario,
-        notaPublicavel
-      })
-    );
+  await enriquecerClassificacao(
+    {
+      ...notificacao.toObject(),
+      valorTotal,
+      valorUnitario,
+      notaPublicavel
+    },
+    getTenantId(req)
+  )
+);
   } catch (err) {
     console.error('Erro ao carregar notificação:', err);
     res.status(500).json({ message: 'Erro ao carregar notificação.' });

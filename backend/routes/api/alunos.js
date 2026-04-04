@@ -17,6 +17,7 @@ const Log = require('../../models/Log');
 const { autenticar, apenasLeitura, apenasMonitorOuAdmin } = require('../../middleware/autenticacao');
 const { requireTenant, tenantFilter } = require('../../middleware/tenantScope');
 const calcularNotaTSMD = require('../../utils/calculoNota');
+const { getConfigDisciplinar } = require('../../utils/configuracaoDisciplinar');
 const { enviarTelegram } = require('../../services/mensageria');
 
 // ======================================================
@@ -911,7 +912,14 @@ router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req
       .sort({ data: 1, createdAt: 1 })
       .lean();
 
-    const notaAtual = calcularNotaTSMD(alunoRaw.dataEntrada, new Date(), notificacoes);
+    const config = await getConfigDisciplinar(alunoRaw.instituicao || alunoRaw.tenantId);
+
+const notaAtual = calcularNotaTSMD(
+  alunoRaw.dataEntrada,
+  new Date(),
+  notificacoes,
+  config
+);
 
     const payload = { aluno, notaAtual, notificacoes };
     setCached(inst, id, payload);
@@ -1118,15 +1126,24 @@ router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, 
     const forcarRecalculo = force === '1' || force === 'true';
 
     if (mudouDataEntrada || forcarRecalculo) {
-      const notificacoes = await Notificacao.find(tenantFilter(req, { aluno: alunoAtualizado._id }))
-        .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
-        .sort({ data: 1, createdAt: 1 })
-        .lean();
+  const [notificacoes, config] = await Promise.all([
+    Notificacao.find(tenantFilter(req, { aluno: alunoAtualizado._id }))
+      .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
+      .sort({ data: 1, createdAt: 1 })
+      .lean(),
+    getConfigDisciplinar(alunoAtualizado.instituicao || alunoAtualizado.tenantId)
+  ]);
 
-      const nota = calcularNotaTSMD(alunoAtualizado.dataEntrada, new Date(), notificacoes);
-      alunoAtualizado.comportamento = nota;
-      await alunoAtualizado.save();
-    }
+  const nota = calcularNotaTSMD(
+    alunoAtualizado.dataEntrada,
+    new Date(),
+    notificacoes,
+    config
+  );
+
+  alunoAtualizado.comportamento = nota;
+  await alunoAtualizado.save();
+}
 
     await Log.create(tenantData(req, {
       usuario: req.usuario.id,

@@ -1,5 +1,10 @@
 'use strict';
 const mongoose = require('mongoose');
+const {
+  CONFIG_PADRAO_CBMAC,
+  getValorMedidaByTipoMedida,
+  getValorElogioByTipoElogio
+} = require('../utils/configuracaoDisciplinar');
 
 /* =========================
    HELPERS TENANT
@@ -165,21 +170,21 @@ notificacaoSchema.index({ instituicao: 1, status: 1 });
 notificacaoSchema.index({ tenantId: 1, status: 1 });
 
 /* =========================
-   LÓGICA ORIGINAL (MANTIDA)
+   LÓGICA PADRÃO / FALLBACK
 ========================= */
 
 const MAPA_NEGATIVOS = {
-  'Advertência Escrita': -0.30,
-  'Repreensão':          -0.50,
-  'A.E.C.D.E':           -0.70,
-  'A.I.A':               -1.20,
+  'Advertência Escrita': CONFIG_PADRAO_CBMAC.medidas.advertenciaEscrita,
+  'Repreensão': CONFIG_PADRAO_CBMAC.medidas.repreensao,
+  'A.E.C.D.E': CONFIG_PADRAO_CBMAC.medidas.aecdePorDia,
+  'A.I.A': CONFIG_PADRAO_CBMAC.medidas.aiaPorDia,
 };
 
 const MAPA_ELOGIOS = {
-  elogioVerbal:             0.15,
-  boletimInternoIndividual: 0.60,
-  boletimInternoColetivo:   0.20,
-  mediaAlta:                0.40,
+  elogioVerbal: CONFIG_PADRAO_CBMAC.recompensas.elogioVerbal,
+  boletimInternoIndividual: CONFIG_PADRAO_CBMAC.recompensas.elogioIndividual,
+  boletimInternoColetivo: CONFIG_PADRAO_CBMAC.recompensas.elogioColetivo,
+  mediaAlta: CONFIG_PADRAO_CBMAC.recompensas.mediaAlta,
 };
 
 const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
@@ -198,20 +203,24 @@ function trimStr(s) {
 ========================= */
 
 notificacaoSchema.pre('validate', function () {
-
   sincronizarTenant(this);
 
-  this.tipo       = trimStr(this.tipo);
-  this.motivo     = trimStr(this.motivo);
+  this.tipo = trimStr(this.tipo);
+  this.motivo = trimStr(this.motivo);
   this.tipoMedida = trimStr(this.tipoMedida);
 
   if (this.natureza === 'elogio') {
     this.quantidadeDias = null;
 
-    if (!this.valorNumerico) {
-      this.valorNumerico = fix2(MAPA_ELOGIOS[this.tipoElogio] || 0);
+    if (this.valorNumerico === undefined || this.valorNumerico === null || this.valorNumerico === '') {
+      const valorPadrao =
+        getValorElogioByTipoElogio(this.tipoElogio, CONFIG_PADRAO_CBMAC) ||
+        MAPA_ELOGIOS[this.tipoElogio] ||
+        0;
+
+      this.valorNumerico = fix2(valorPadrao);
     } else {
-      this.valorNumerico = fix2(Math.abs(this.valorNumerico));
+      this.valorNumerico = fix2(Math.abs(Number(this.valorNumerico) || 0));
     }
 
     this.tipoMedida = 'Elogio';
@@ -223,10 +232,15 @@ notificacaoSchema.pre('validate', function () {
 
   this.quantidadeDias = precisaDias ? Math.max(1, this.quantidadeDias || 1) : 1;
 
-  if (!this.valorNumerico) {
-    this.valorNumerico = fix2(MAPA_NEGATIVOS[titulo] || 0);
+  if (this.valorNumerico === undefined || this.valorNumerico === null || this.valorNumerico === '') {
+    const valorPadrao =
+      getValorMedidaByTipoMedida(titulo, CONFIG_PADRAO_CBMAC) ||
+      MAPA_NEGATIVOS[titulo] ||
+      0;
+
+    this.valorNumerico = fix2(valorPadrao);
   } else {
-    this.valorNumerico = fix2(-Math.abs(this.valorNumerico));
+    this.valorNumerico = fix2(-Math.abs(Number(this.valorNumerico) || 0));
   }
 });
 

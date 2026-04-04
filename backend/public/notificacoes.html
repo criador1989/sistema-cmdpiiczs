@@ -706,17 +706,33 @@
         return typeof base === 'number' ? Number((base * dias).toFixed(2)) : 0;
       }
       function faixaNotaPrevista(n){
-        const antes = Number(n?.notaAnterior);
-        const depois = Number(n?.notaAtual);
-        const temPar = Number.isFinite(antes) && Number.isFinite(depois);
-        if (temPar) {
-          return { antes, depois, corrigido: false };
-        }
-        const total = derivarValorTotal(n);
-        const base = 8.00;
-        return { antes: base, depois: clampNota(base + total), corrigido: true };
-      }
-      const fmtValor = (n)=> (isFinite(n) ? Number(n).toFixed(2) : '—');
+  const antesRaw = Number(n?.notaAnterior);
+  const depoisRaw = Number(n?.notaAtual);
+
+  const antes = Number.isFinite(antesRaw) ? antesRaw : null;
+  const depois = Number.isFinite(depoisRaw) ? depoisRaw : null;
+
+  if (antes !== null && depois !== null) {
+    return { antes, depois, corrigido: false };
+  }
+
+  if (antes !== null && depois === null) {
+    const valor = Number(n?.valorNumerico);
+    if (Number.isFinite(valor)) {
+      return { antes, depois: clampNota(antes + valor), corrigido: true };
+    }
+  }
+
+  if (antes === null && depois !== null) {
+    const valor = Number(n?.valorNumerico);
+    if (Number.isFinite(valor)) {
+      return { antes: clampNota(depois - valor), depois, corrigido: true };
+    }
+  }
+
+  return { antes: null, depois: null, corrigido: true };
+}
+      const fmtValor = (n)=> (Number.isFinite(Number(n)) ? Number(n).toFixed(2) : '—');
 
       const spinnerHTML = `<span class="spinner"></span>Carregando…`;
 

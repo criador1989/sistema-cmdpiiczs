@@ -11,11 +11,11 @@ const router = express.Router();
 /* ------------ Helpers ------------- */
 function calcularComportamentoClassificacao(nota) {
   const n = Number(nota || 0);
-  if (n >= 9.5) return 'Excepcional';
-  if (n >= 8.5) return 'Ótimo';
-  if (n >= 7.5) return 'Bom';
-  if (n >= 6.0) return 'Regular';
-  if (n >= 4.0) return 'Insuficiente';
+  if (n >= 9.01) return 'Excepcional';
+  if (n >= 8.01) return 'Ótimo';
+  if (n >= 7.0) return 'Bom';
+  if (n >= 5.0) return 'Regular';
+  if (n >= 3.0) return 'Insuficiente';
   return 'Incompatível';
 }
 function montarDescricaoInfracao({ artigo, inciso, motivo }) {
@@ -54,9 +54,13 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     // 1) Se conseguimos somar anterior + valor -> essa é a nota final do DOCX
     // 2) Caso contrário, usamos a notaAtual salva, se válida
     // 3) Senão fica vazio
-    let notaFinalNum = Number.isFinite(notaAnteriorNum) && Number.isFinite(valorNum)
-      ? +(notaAnteriorNum + valorNum).toFixed(2)
-      : (Number.isFinite(notaAtualSalva) ? +notaAtualSalva.toFixed(2) : NaN);
+    let notaFinalNum = Number.isFinite(notaAtualSalva)
+  ? +notaAtualSalva.toFixed(2)
+  : (
+      Number.isFinite(notaAnteriorNum) && Number.isFinite(valorNum)
+        ? +(notaAnteriorNum + valorNum).toFixed(2)
+        : NaN
+    );
 
     // Classificação textual baseada na nota final
     const classificacao = calcularComportamentoClassificacao(notaFinalNum);
