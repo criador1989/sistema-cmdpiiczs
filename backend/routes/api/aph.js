@@ -9,6 +9,9 @@ const { requireTenant } = require('../../middleware/tenantScope');
 const AphAtendimento = require('../../models/AphAtendimento');
 const Aluno = require('../../models/Aluno');
 
+// usa o mesmo serviço de e-mail já validado no sistema
+const { sendMail } = require('../../utils/mailer');
+
 /* -------------------- helpers multi-tenant -------------------- */
 function getTenantId(req) {
   return (
@@ -52,10 +55,6 @@ function tenantData(req, extra = {}) {
 }
 
 /* -------------------- utils -------------------- */
-function getMensageria(req) {
-  return req.app?.locals?.mensageria || global.mensageria || null;
-}
-
 function endOfDay(d) {
   const x = new Date(d);
   x.setHours(23, 59, 59, 999);
@@ -72,48 +71,15 @@ function withTimeout(promise, ms = 8000, label = 'operação') {
   return Promise.race([promise.finally(() => clearTimeout(t)), timer]);
 }
 
-function montarMensagemAPH({ aluno, at }) {
-  const nome = aluno?.nome || 'Aluno(a)';
-  const turma = aluno?.turma || '—';
-
-  const data = at?.data ? new Date(at.data) : null;
-  const dataStr = data ? data.toLocaleDateString('pt-BR') : '—';
-  const horaStr = (at?.hora && String(at.hora).trim()) ? String(at.hora).trim() : '—';
-  const local = at?.local || '—';
-
-  const tipos = Array.isArray(at?.tipos) && at.tipos.length ? at.tipos.join(', ') : '—';
-  const materiais = Array.isArray(at?.materiais) && at.materiais.length ? at.materiais.join(', ') : '—';
-
-  const sintomas = (at?.sinaisESintomas || '').trim();
-  const procedimentos = (at?.procedimentos || '').trim();
-  const observ = (at?.observacoes || at?.observacao || '').trim();
-  const encaminhamento = (at?.houveEncaminhamento || at?.encaminhamento) ? 'Sim' : 'Não';
-
-  const linhas = [
-    `Prezados responsáveis de ${nome} (${turma}),`,
-    ``,
-    `Registramos um atendimento de APH realizado pela escola:`,
-    `• Data: ${dataStr}  • Hora: ${horaStr}  • Local: ${local}`,
-    `• Ocorrência(s): ${tipos}`,
-    `• Materiais/recursos aplicados: ${materiais}`,
-  ];
-
-  if (sintomas) linhas.push(`• Sinais/sintomas: ${sintomas}`);
-  if (procedimentos) linhas.push(`• Procedimentos realizados: ${procedimentos}`);
-  if (observ) linhas.push(`• Observações: ${observ}`);
-
-  linhas.push(`• Encaminhamento: ${encaminhamento}`);
-  linhas.push(
-    ``,
-    `Este comunicado é informativo. Permanecemos à disposição.`,
-    `Atenciosamente,`,
-    `Coordenação — CMDPII/CZS`
-  );
-
-  return { titulo: `Comunicado de APH — ${nome}`, texto: linhas.join('\n') };
+function escapeHtml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-/* -------------------- parse de data robusto -------------------- */
 function parseDateOnlyLocal(v) {
   if (!v) return new Date();
 
@@ -130,6 +96,152 @@ function parseDateOnlyLocal(v) {
 
   const t = Date.parse(v);
   return Number.isNaN(t) ? new Date() : new Date(t);
+}
+
+function formatDateBR(dateValue) {
+  if (!dateValue) return '—';
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('pt-BR');
+}
+
+function montarMensagemAPH({ aluno, at }) {
+  const nome = aluno?.nome || 'Aluno(a)';
+  const turma = aluno?.turma || '—';
+
+  const dataStr = formatDateBR(at?.data);
+  const horaStr = (at?.hora && String(at.hora).trim()) ? String(at.hora).trim() : '—';
+  const local = at?.local || '—';
+
+  const tipos = Array.isArray(at?.tipos) && at.tipos.length ? at.tipos.join(', ') : '—';
+  const materiais = Array.isArray(at?.materiais) && at.materiais.length ? at.materiais.join(', ') : '—';
+
+  const sintomas = (at?.sinaisESintomas || '').trim();
+  const procedimentos = (at?.procedimentos || '').trim();
+  const observ = (at?.observacoes || at?.observacao || '').trim();
+  const encaminhamento = (at?.houveEncaminhamento || at?.encaminhamento) ? 'Sim' : 'Não';
+
+  const titulo = `Comunicado de APH — ${nome}`;
+
+  const texto = [
+    `Prezados responsáveis de ${nome} (${turma}),`,
+    ``,
+    `Registramos um atendimento de APH realizado pela escola:`,
+    `• Data: ${dataStr}`,
+    `• Hora: ${horaStr}`,
+    `• Local: ${local}`,
+    `• Ocorrência(s): ${tipos}`,
+    `• Materiais/recursos aplicados: ${materiais}`,
+    ...(sintomas ? [`• Sinais/sintomas: ${sintomas}`] : []),
+    ...(procedimentos ? [`• Procedimentos realizados: ${procedimentos}`] : []),
+    ...(observ ? [`• Observações: ${observ}`] : []),
+    `• Encaminhamento: ${encaminhamento}`,
+    ``,
+    `Este comunicado é informativo. Permanecemos à disposição.`,
+    `Atenciosamente,`,
+    `Coordenação — CMDPII/CZS`
+  ].join('\n');
+
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#222">
+      <p>Prezados responsáveis de <strong>${escapeHtml(nome)}</strong> (${escapeHtml(turma)}),</p>
+      <p>Registramos um atendimento de APH realizado pela escola:</p>
+      <ul>
+        <li><strong>Data:</strong> ${escapeHtml(dataStr)}</li>
+        <li><strong>Hora:</strong> ${escapeHtml(horaStr)}</li>
+        <li><strong>Local:</strong> ${escapeHtml(local)}</li>
+        <li><strong>Ocorrência(s):</strong> ${escapeHtml(tipos)}</li>
+        <li><strong>Materiais/recursos aplicados:</strong> ${escapeHtml(materiais)}</li>
+        ${sintomas ? `<li><strong>Sinais/sintomas:</strong> ${escapeHtml(sintomas)}</li>` : ''}
+        ${procedimentos ? `<li><strong>Procedimentos realizados:</strong> ${escapeHtml(procedimentos)}</li>` : ''}
+        ${observ ? `<li><strong>Observações:</strong> ${escapeHtml(observ)}</li>` : ''}
+        <li><strong>Encaminhamento:</strong> ${escapeHtml(encaminhamento)}</li>
+      </ul>
+      <p>Este comunicado é informativo. Permanecemos à disposição.</p>
+      <p>Atenciosamente,<br>Coordenação — CMDPII/CZS</p>
+    </div>
+  `;
+
+  return { titulo, texto, html };
+}
+
+function extractPossibleEmailsFromValue(value, set) {
+  if (!value) return;
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => extractPossibleEmailsFromValue(item, set));
+    return;
+  }
+
+  if (typeof value === 'object') {
+    Object.values(value).forEach((item) => extractPossibleEmailsFromValue(item, set));
+    return;
+  }
+
+  const str = String(value).trim();
+  if (!str) return;
+
+  const matches = str.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi);
+  if (matches) {
+    matches.forEach((m) => set.add(m.trim().toLowerCase()));
+  }
+}
+
+function getEmailsResponsaveis(aluno) {
+  const set = new Set();
+
+  extractPossibleEmailsFromValue(aluno?.emailResponsavel, set);
+  extractPossibleEmailsFromValue(aluno?.emailMae, set);
+  extractPossibleEmailsFromValue(aluno?.emailPai, set);
+  extractPossibleEmailsFromValue(aluno?.email, set);
+  extractPossibleEmailsFromValue(aluno?.contatos, set);
+  extractPossibleEmailsFromValue(aluno?.responsaveis, set);
+  extractPossibleEmailsFromValue(aluno?.responsavel, set);
+
+  return [...set];
+}
+
+async function enviarComunicadoAPH({ aluno, at, tenantId }) {
+  const emails = getEmailsResponsaveis(aluno);
+
+  if (!emails.length) {
+    return {
+      ok: false,
+      motivo: 'sem_email_responsavel'
+    };
+  }
+
+  const { titulo, texto, html } = montarMensagemAPH({ aluno, at });
+
+  console.log('[APH][MAIL] destinatarios =', emails.join(', '));
+  console.log('[APH][MAIL] tenant =', String(tenantId || ''));
+  console.log('[APH][MAIL] subject =', titulo);
+
+  const result = await withTimeout(
+    sendMail({
+      to: emails,
+      subject: titulo,
+      html,
+      text: texto
+    }),
+    12000,
+    'envio email APH'
+  );
+
+  if (result?.__timeout) {
+    console.warn('[APH][MAIL] timeout no envio do APH.');
+    return {
+      ok: false,
+      motivo: 'timeout_envio_email'
+    };
+  }
+
+  return {
+    ok: true,
+    canal: 'email',
+    to: emails,
+    result
+  };
 }
 
 /* =========================================================
@@ -310,7 +422,7 @@ router.post('/atendimentos', autenticar, requireTenant, async (req, res) => {
       _id: alunoId,
       ...buildTenantMatch(tenantId)
     })
-      .select('nome turma instituicao tenantId contatos responsaveis telefone')
+      .select('nome turma instituicao tenantId contatos responsaveis responsavel telefone email emailResponsavel emailMae emailPai')
       .lean();
 
     if (!aluno) {
@@ -325,45 +437,30 @@ router.post('/atendimentos', autenticar, requireTenant, async (req, res) => {
       data: parseDateOnlyLocal(data),
       tipos: Array.isArray(tipos) ? tipos : [],
       materiais: Array.isArray(materiais) ? materiais : [],
-      sinaisESintomas,
-      procedimentos,
-      observacoes,
+      sinaisESintomas: String(sinaisESintomas || '').trim(),
+      procedimentos: String(procedimentos || '').trim(),
+      observacoes: String(observacoes || '').trim(),
       responsaveisInformados: (responsaveisInformados === 'Sim' || responsaveisInformados === true) ? 'Sim' : 'Não',
-      meioComunicacao,
-      encaminhamento,
+      meioComunicacao: String(meioComunicacao || '').trim(),
+      encaminhamento: String(encaminhamento || '').trim(),
       houveEncaminhamento: Boolean(houveEncaminhamento)
     });
 
     const novo = await AphAtendimento.create(payload);
 
-    let comunicacao = { ok: false, motivo: 'mensageria indisponível' };
+    let comunicacao = { ok: false, motivo: 'nao_enviado' };
     try {
-      const mensageria = getMensageria(req);
-      if (mensageria?.enfileirarParaResponsaveis) {
-        const { titulo, texto } = montarMensagemAPH({ aluno, at: payload });
-        const prom = mensageria.enfileirarParaResponsaveis({
-          alunoId: String(aluno._id),
-          instituicao: String(tenantId),
-          tenantId: String(tenantId),
-          preferenciaCanais: ['email', 'telegram', 'whatsapp'],
-          titulo,
-          texto,
-          html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
-          meta: { tipo: 'aph_atendimento', atendimentoId: String(novo._id) }
-        });
-
-        const r = await withTimeout(prom, 8000, 'mensageria APH');
-        if (r?.__timeout) {
-          console.warn('[APH] mensageria: timeout — resposta não aguardada (considerando enfileirado).');
-          comunicacao = { ok: true, queued: true, motivo: 'timeout_mensageria' };
-        } else {
-          comunicacao = r;
-        }
-      } else {
-        console.warn('[APH] mensageria indisponível (não bloqueia o salvamento).');
-      }
+      comunicacao = await enviarComunicadoAPH({
+        aluno,
+        at: payload,
+        tenantId
+      });
     } catch (e) {
       console.warn('[APH] Falha no disparo de comunicação:', e?.message || e);
+      comunicacao = {
+        ok: false,
+        motivo: e?.message || 'erro_envio_email'
+      };
     }
 
     res.status(201).json({ ok: true, atendimento: novo, comunicacao });
@@ -468,36 +565,18 @@ router.post('/atendimentos/:id/reengatilhar-comunicacao', autenticar, requireTen
       _id: at.alunoId,
       ...buildTenantMatch(tenantId)
     })
-      .select('nome turma instituicao tenantId contatos responsaveis telefone')
+      .select('nome turma instituicao tenantId contatos responsaveis responsavel telefone email emailResponsavel emailMae emailPai')
       .lean();
 
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
 
-    const mensageria = getMensageria(req);
-    if (!mensageria?.enfileirarParaResponsaveis) {
-      return res.json({ ok: false, comunicacao: { motivo: 'mensageria indisponível' } });
-    }
-
-    const { titulo, texto } = montarMensagemAPH({ aluno, at });
-
-    const prom = mensageria.enfileirarParaResponsaveis({
-      alunoId: String(aluno._id),
-      instituicao: String(tenantId),
-      tenantId: String(tenantId),
-      preferenciaCanais: ['email', 'telegram', 'whatsapp'],
-      titulo,
-      texto,
-      html: `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`,
-      meta: { tipo: 'aph_atendimento_reenvio', atendimentoId: String(at._id) }
+    const comunicacao = await enviarComunicadoAPH({
+      aluno,
+      at,
+      tenantId
     });
 
-    const r = await withTimeout(prom, 8000, 'mensageria reenvio APH');
-    if (r?.__timeout) {
-      console.warn('[APH] reenvio: timeout — resposta não aguardada (considerando enfileirado).');
-      return res.json({ ok: true, queued: true, comunicacao: { motivo: 'timeout_mensageria' } });
-    }
-
-    return res.json({ ok: Boolean(r?.ok), comunicacao: r });
+    return res.json({ ok: Boolean(comunicacao?.ok), comunicacao });
   } catch (err) {
     console.error('[APH] POST reengatilhar erro:', err);
     res.status(500).json({ message: 'Erro ao reenviar comunicado.' });
