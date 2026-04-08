@@ -472,6 +472,11 @@
       transform:translateY(-1px);
     }
 
+    .btn-load-more{
+      min-width: 220px;
+      text-align:center;
+    }
+
     .empty{
       opacity:.85;
       color:var(--muted);
@@ -549,6 +554,16 @@
     </div>
 
     <div id="grade-alunos"></div>
+
+    <div id="listagem-status" class="helper" style="margin: 14px 2px 10px; display:none;">
+      <span class="dot"></span>
+      <span id="status-listagem-texto">Exibindo 0 de 0 alunos</span>
+    </div>
+
+    <div id="acoes-listagem" style="display:none; justify-content:center; margin: 0 0 14px;">
+      <button id="btn-carregar-mais" class="btn btn-load-more" type="button">Carregar mais alunos</button>
+    </div>
+
     <div id="sentinel" style="height:1px"></div>
 
     <div id="empty" class="empty" style="display:none">Escolha uma turma para começar.</div>
@@ -672,11 +687,14 @@
   let pageIndex = 0;
   let VIEW_LIST = [];
   let ALL_ALUNOS_TOKEN = [];
-  let ALL_ALUNOS_ADMIN = [];
-
-  const selTurma = qs('#selTurma');
+  let ALL_ALUNOS_ADMIN = [];  const selTurma = qs('#selTurma');
   const grade = qs('#grade-alunos');
   const empty = qs('#empty');
+  const listagemStatus = qs('#listagem-status');
+  const statusListagemTexto = qs('#status-listagem-texto');
+  const acoesListagem = qs('#acoes-listagem');
+  const btnCarregarMais = qs('#btn-carregar-mais');
+  const sentinel = qs('#sentinel');
 
   function buildURL(path, extraParams={}) {
     const u = new URL(path, location.origin);
@@ -788,6 +806,10 @@
 
         const card = document.querySelector(`.card[data-id="${id}"]`);
         if(card) card.remove();
+
+        VIEW_LIST = VIEW_LIST.filter(a => String(a._id) !== String(id));
+        ALL_ALUNOS_ADMIN = ALL_ALUNOS_ADMIN.filter(a => String(a._id) !== String(id));
+        atualizarStatusListagem();
       }catch(err){
         alert('Erro ao excluir aluno.');
       }
@@ -834,25 +856,63 @@
       div.className = 'empty';
       div.textContent = 'Nenhum aluno encontrado para esta turma.';
       grade.appendChild(div);
+      atualizarStatusListagem();
       return;
     }
 
     lista.forEach(a => grade.appendChild(cardAluno(a)));
+    atualizarStatusListagem();
   }
 
   function appendLista(lista){
-    if (!lista.length) return;
+    if (!lista.length) {
+      atualizarStatusListagem();
+      return;
+    }
+
     lista.forEach(a => grade.appendChild(cardAluno(a)));
+    atualizarStatusListagem();
   }
 
   function renderSkeletons(qtd = 8){
     grade.innerHTML = '';
+    listagemStatus.style.display = 'none';
+    acoesListagem.style.display = 'none';
+
     Array.from({length: qtd}).forEach(() => {
       const ph = document.createElement('div');
       ph.className = 'card skeleton';
       ph.style.height = '88px';
       grade.appendChild(ph);
     });
+  }
+
+  function totalCardsRenderizados() {
+    return grade.querySelectorAll('.card[data-id]').length;
+  }
+
+  function haMaisParaRenderizar() {
+    return totalCardsRenderizados() < VIEW_LIST.length;
+  }
+
+  function atualizarStatusListagem() {
+    if (!turma) {
+      listagemStatus.style.display = 'none';
+      acoesListagem.style.display = 'none';
+      return;
+    }
+
+    const total = VIEW_LIST.length;
+    const exibidos = totalCardsRenderizados();
+
+    listagemStatus.style.display = 'flex';
+    statusListagemTexto.textContent = `Exibindo ${exibidos} de ${total} alunos`;
+
+    if (total > 0 && exibidos < total) {
+      acoesListagem.style.display = 'flex';
+    } else {
+      acoesListagem.style.display = 'none';
+    }
   }
 
   async function carregarTurmas() {
@@ -884,6 +944,7 @@
       }
 
       empty.style.display = turma ? 'none' : 'block';
+      atualizarStatusListagem();
       return;
     }
 
@@ -903,6 +964,7 @@
     }
 
     empty.style.display = turma ? 'none' : 'block';
+    atualizarStatusListagem();
   }
 
   function resetListagem() {
@@ -911,6 +973,7 @@
     pageIndex = 0;
     VIEW_LIST = [];
     ALL_ALUNOS_ADMIN = [];
+    atualizarStatusListagem();
   }
 
   function applyFilterTokenMode() {
@@ -944,6 +1007,7 @@
     appendLista(slice);
     pageIndex++;
     carregando = false;
+    atualizarStatusListagem();
   }
 
   function applyFilterAdminMode() {
@@ -978,7 +1042,10 @@
     appendLista(slice);
     pageIndex++;
     carregando = false;
-  }  async function carregarAdminMode() {
+    atualizarStatusListagem();
+  }
+
+  async function carregarAdminMode() {
     if (!turma) return;
 
     const myReq = ++reqSeq;
@@ -1006,11 +1073,22 @@
       console.error(e);
       if (myReq !== reqSeq) return;
       grade.innerHTML = '';
+      atualizarStatusListagem();
       alert('Erro ao carregar alunos.');
     } finally {
       if (myReq === reqSeq) carregando = false;
     }
   }
+
+  btnCarregarMais.addEventListener('click', () => {
+    if (!turma || !haMaisParaRenderizar()) return;
+
+    if (MODE_TOKEN) {
+      renderNextChunkTokenMode();
+    } else {
+      renderNextChunkAdminMode();
+    }
+  });
 
   selTurma.addEventListener('change', () => {
     turma = selTurma.value;
@@ -1040,6 +1118,7 @@
 
       if (!turma) {
         grade.innerHTML = '';
+        atualizarStatusListagem();
         return;
       }
 
@@ -1056,18 +1135,20 @@
   const io = new IntersectionObserver((entries) => {
     if (!entries.some(e => e.isIntersecting)) return;
     if (!turma) return;
-
-    const total = VIEW_LIST.length;
-    const nextStart = pageIndex * PAGE_SIZE;
-    if (nextStart >= total) return;
+    if (!haMaisParaRenderizar()) return;
 
     if (MODE_TOKEN) {
       renderNextChunkTokenMode();
     } else {
       renderNextChunkAdminMode();
     }
+  }, {
+    root: null,
+    rootMargin: '300px 0px',
+    threshold: 0
   });
-  io.observe(document.getElementById('sentinel'));
+
+  io.observe(sentinel);
 
   const ioImg = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -1108,9 +1189,7 @@
     if (!dStr) return '—';
     const d = new Date(dStr);
     return Number.isNaN(+d) ? '—' : d.toLocaleDateString('pt-BR');
-  }
-
-  async function abrirFicha(aCard) {
+  }  async function abrirFicha(aCard) {
     const id = aCard._id;
 
     try {
@@ -1208,6 +1287,8 @@
         } else {
           carregarAdminMode();
         }
+      } else {
+        atualizarStatusListagem();
       }
     })
     .catch(err => {
