@@ -268,6 +268,7 @@
       background-size:200% 100%;
       border-radius:12px;
     }
+
     @keyframes pulse{
       0%{background-position:0 0}
       100%{background-position:200% 0}
@@ -308,6 +309,7 @@
       opacity:0;
       transition:opacity .25s ease;
     }
+
     .avatar-img.show{ opacity:1; }
 
     .trash{
@@ -327,6 +329,7 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
+
     .card:hover .trash{ display:block; }
     .trash svg{display:block}
 
@@ -340,6 +343,7 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
+
     .modal-backdrop.aberto{display:grid}
 
     .modal{
@@ -415,6 +419,7 @@
       gap:8px 14px;
       align-items:center;
     }
+
     .kv label{color:var(--muted)}
 
     .nota{
@@ -429,6 +434,7 @@
       box-shadow:
         inset 0 0 18px rgba(60,120,255,.20);
     }
+
     .nota.ok{
       border-color:#4db8ff;
       box-shadow:
@@ -459,6 +465,7 @@
         0 10px 26px rgba(0,0,0,.8),
         inset 0 1px 0 rgba(255,255,255,.10);
     }
+
     .btn:hover{
       border-color:#ffffff;
       filter:brightness(1.08);
@@ -481,11 +488,14 @@
         flex-wrap:wrap;
         gap:.5rem .75rem;
       }
+
       .brand{
         flex-basis: 100%;
         font-size:.95rem;
       }
+
       .spacer{ display:none; }
+
       .input,
       #selTurma{
         flex:1 1 calc(50% - .75rem);
@@ -658,7 +668,7 @@
   let carregando = false;
   let reqSeq = 0;
 
-  const PAGE_SIZE = 30;
+  const PAGE_SIZE = 24;
   let pageIndex = 0;
   let VIEW_LIST = [];
   let ALL_ALUNOS_TOKEN = [];
@@ -680,11 +690,45 @@
 
   function normalizarUploadsPath(p){
     if(!p) return '';
-    let s=String(p).trim().replace(/^\/+/, '').replace(/\\/g,'/');
-    if(!/^uploads\//i.test(s) && !/^https?:\/\//i.test(s) && !/^data:image\//i.test(s)){
-      s='uploads/'+s;
+
+    let s = String(p).trim();
+
+    if (!s) return '';
+    if (/^data:image\//i.test(s)) return s;
+    if (/^https?:\/\//i.test(s)) return s;
+
+    s = s.replace(/\\/g,'/').replace(/^\/+/, '');
+
+    if (!/^uploads\//i.test(s)) {
+      s = 'uploads/' + s;
     }
-    return /^https?:\/\//i.test(s) || /^data:image\//i.test(s) ? s : '/'+s;
+
+    return '/' + s;
+  }
+
+  function fotoSeguraDoAluno(a){
+    const candidatas = [
+      a?.fotoThumbUrl,
+      a?.fotoThumb,
+      a?.fotoUrl,
+      a?.foto
+    ].filter(Boolean);
+
+    for (const valor of candidatas) {
+      const src = normalizarUploadsPath(valor);
+      if (!src) continue;
+
+      if (/^data:image\//i.test(src)) {
+        if (src.length > 300000) continue;
+        return src;
+      }
+
+      if (/^https?:\/\//i.test(src) || src.startsWith('/uploads/')) {
+        return src;
+      }
+    }
+
+    return '';
   }
 
   function avatarComFoto(a){
@@ -693,8 +737,20 @@
 
     const inic = document.createElement('div');
     inic.className = 'avatar-iniciais';
-    const letras = (a.nome||'').split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('');
+    const letras = (a.nome||'')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0,2)
+      .map(p=>p[0].toUpperCase())
+      .join('');
+
     inic.textContent = letras || '?';
+
+    const src = fotoSeguraDoAluno(a);
+    if (!src) {
+      wrap.append(inic);
+      return wrap;
+    }
 
     const img = document.createElement('img');
     img.className = 'avatar-img';
@@ -702,13 +758,12 @@
     img.loading = 'lazy';
     img.decoding = 'async';
     img.referrerPolicy = 'no-referrer';
+    img.dataset.src = src;
 
-    const src = a.fotoUrl || a.fotoThumbUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
-    if (src) {
-      img.dataset.src = src;
-      img.addEventListener('load', () => img.classList.add('show'));
-      img.addEventListener('error', () => { img.remove(); });
-    }
+    img.addEventListener('load', () => img.classList.add('show'));
+    img.addEventListener('error', () => {
+      img.remove();
+    });
 
     wrap.append(inic, img);
     return wrap;
@@ -716,36 +771,52 @@
 
   function trashButton(id){
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'trash'; b.title = 'Excluir aluno';
+    b.type = 'button';
+    b.className = 'trash';
+    b.title = 'Excluir aluno';
     b.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
     </svg>`;
+
     b.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!confirm('Tem certeza que deseja excluir este aluno permanentemente?')) return;
+
       try{
         const r = await fetch(`/api/alunos/${id}`, { method:'DELETE', credentials:'include' });
         if(!r.ok) throw new Error('Falha ao excluir');
+
         const card = document.querySelector(`.card[data-id="${id}"]`);
         if(card) card.remove();
       }catch(err){
         alert('Erro ao excluir aluno.');
       }
     });
+
     return b;
   }
 
   function infoBlock(a){
-    const info = document.createElement('div'); info.className = 'info';
-    const nome = document.createElement('div'); nome.className = 'nome'; nome.textContent = a.nome || '—';
-    const trm  = document.createElement('div'); trm.className = 'turma'; trm.textContent = a.turma || '';
+    const info = document.createElement('div');
+    info.className = 'info';
+
+    const nome = document.createElement('div');
+    nome.className = 'nome';
+    nome.textContent = a.nome || '—';
+
+    const trm = document.createElement('div');
+    trm.className = 'turma';
+    trm.textContent = a.turma || '';
+
     info.append(nome, trm);
     return info;
   }
 
   function cardAluno(a) {
     const btn = document.createElement('button');
-    btn.className = 'card'; btn.type = 'button'; btn.dataset.id = a._id;
+    btn.className = 'card';
+    btn.type = 'button';
+    btn.dataset.id = a._id;
 
     if (!MODE_TOKEN) btn.append(trashButton(a._id));
     btn.append(avatarComFoto(a), infoBlock(a));
@@ -769,6 +840,11 @@
     lista.forEach(a => grade.appendChild(cardAluno(a)));
   }
 
+  function appendLista(lista){
+    if (!lista.length) return;
+    lista.forEach(a => grade.appendChild(cardAluno(a)));
+  }
+
   function renderSkeletons(qtd = 8){
     grade.innerHTML = '';
     Array.from({length: qtd}).forEach(() => {
@@ -785,17 +861,24 @@
     if (MODE_TOKEN) {
       const res = await fetch(`/api/usuarios/acesso/${encodeURIComponent(token)}`, { cache:'no-store' });
       if (!res.ok) throw new Error('Falha ao buscar acesso do professor');
-      const data = await res.json();
 
+      const data = await res.json();
       if (!data.professor) throw new Error('Token inválido ou professor não encontrado');
 
       ALL_ALUNOS_TOKEN = Array.isArray(data.alunos) ? data.alunos : [];
-      const turmas = Array.from(new Set(ALL_ALUNOS_TOKEN.map(a => (a.turma||'').trim()).filter(Boolean)))
-        .sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
+
+      const turmas = Array.from(
+        new Set(
+          ALL_ALUNOS_TOKEN
+            .map(a => (a.turma||'').trim())
+            .filter(Boolean)
+        )
+      ).sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
 
       for (const t of turmas) {
         const opt = document.createElement('option');
-        opt.value = t; opt.textContent = t;
+        opt.value = t;
+        opt.textContent = t;
         if (t === turma) opt.selected = true;
         selTurma.appendChild(opt);
       }
@@ -806,17 +889,19 @@
 
     const res = await fetch('/api/alunos/turmas', { credentials: 'include', cache:'no-store' });
     if (!res.ok) throw new Error('Falha ao buscar turmas');
-    const data = await res.json();
 
+    const data = await res.json();
     const backendTurmas = data.turmas || [];
     const turmas = mergeTurmas(backendTurmas);
 
     for (const t of turmas) {
       const opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
+      opt.value = t;
+      opt.textContent = t;
       if (t === turma) opt.selected = true;
       selTurma.appendChild(opt);
     }
+
     empty.style.display = turma ? 'none' : 'block';
   }
 
@@ -856,20 +941,51 @@
       return;
     }
 
-    slice.forEach(a => grade.appendChild(cardAluno(a)));
+    appendLista(slice);
     pageIndex++;
     carregando = false;
   }
 
-  async function carregarAdminMode() {
-    if (carregando || !turma) return;
+  function applyFilterAdminMode() {
+    const q = (termo || '').toLowerCase();
 
+    let list = Array.isArray(ALL_ALUNOS_ADMIN) ? [...ALL_ALUNOS_ADMIN] : [];
+
+    if (q) {
+      list = list.filter(a => String(a.nome || '').toLowerCase().includes(q));
+    }
+
+    list.sort((a,b)=> String(a.nome||'').localeCompare(String(b.nome||''), 'pt-BR'));
+    VIEW_LIST = list;
+  }
+
+  function renderNextChunkAdminMode() {
+    if (carregando) return;
     carregando = true;
+
+    const start = pageIndex * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    const slice = VIEW_LIST.slice(start, end);
+
+    if (pageIndex === 0) grade.innerHTML = '';
+
+    if (!slice.length && pageIndex === 0) {
+      renderLista([]);
+      carregando = false;
+      return;
+    }
+
+    appendLista(slice);
+    pageIndex++;
+    carregando = false;
+  }  async function carregarAdminMode() {
+    if (!turma) return;
+
     const myReq = ++reqSeq;
     renderSkeletons(8);
 
     try {
-      const url = buildURL(`/api/alunos/turma/${encodeURIComponent(turma)}`, { q: termo });
+      const url = buildURL(`/api/alunos/turma/${encodeURIComponent(turma)}`, {});
       const res = await fetch(url, { credentials: 'include', cache:'no-store' });
       if (!res.ok) throw new Error('Falha ao listar alunos da turma');
 
@@ -883,7 +999,9 @@
       else if (Array.isArray(data.alunos)) lista = data.alunos;
 
       ALL_ALUNOS_ADMIN = lista;
-      renderLista(ALL_ALUNOS_ADMIN);
+      pageIndex = 0;
+      applyFilterAdminMode();
+      renderNextChunkAdminMode();
     } catch (e) {
       console.error(e);
       if (myReq !== reqSeq) return;
@@ -898,7 +1016,8 @@
     turma = selTurma.value;
 
     const u = new URL(location.href);
-    if (turma) u.searchParams.set('turma', turma); else u.searchParams.delete('turma');
+    if (turma) u.searchParams.set('turma', turma);
+    else u.searchParams.delete('turma');
     window.history.replaceState({}, '', u.toString());
 
     resetListagem();
@@ -917,15 +1036,19 @@
     clearTimeout(tmr);
     tmr = setTimeout(() => {
       termo = (e.target.value || '').trim();
-      resetListagem();
+      pageIndex = 0;
 
-      if (!turma) return;
+      if (!turma) {
+        grade.innerHTML = '';
+        return;
+      }
 
       if (MODE_TOKEN) {
         applyFilterTokenMode();
         renderNextChunkTokenMode();
       } else {
-        carregarAdminMode();
+        applyFilterAdminMode();
+        renderNextChunkAdminMode();
       }
     }, 300);
   });
@@ -933,34 +1056,53 @@
   const io = new IntersectionObserver((entries) => {
     if (!entries.some(e => e.isIntersecting)) return;
     if (!turma) return;
-    if (!MODE_TOKEN) return;
 
     const total = VIEW_LIST.length;
     const nextStart = pageIndex * PAGE_SIZE;
-    if (nextStart < total) renderNextChunkTokenMode();
+    if (nextStart >= total) return;
+
+    if (MODE_TOKEN) {
+      renderNextChunkTokenMode();
+    } else {
+      renderNextChunkAdminMode();
+    }
   });
   io.observe(document.getElementById('sentinel'));
 
   const ioImg = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
+
       const card = entry.target;
       const img = card.querySelector('.avatar-img');
+
       if (img && !img.src && img.dataset.src) {
         img.src = img.dataset.src;
-        img.onload = () => img.classList.add('show');
       }
+
       ioImg.unobserve(card);
     });
   }, { root: null, rootMargin: '200px 0px', threshold: 0 });
 
   const modal = qs('#modal-backdrop');
   const btnFechar = qs('#btn-fechar');
-  function abrirModal(){ modal.classList.add('aberto'); }
-  function fecharModal(){ modal.classList.remove('aberto'); }
+
+  function abrirModal(){
+    modal.classList.add('aberto');
+  }
+
+  function fecharModal(){
+    modal.classList.remove('aberto');
+  }
+
   btnFechar.addEventListener('click', fecharModal);
-  modal.addEventListener('click', (e) => { if (e.target === modal) fecharModal(); });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharModal(); });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) fecharModal();
+  });
+
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharModal();
+  });
 
   function fmtData(dStr){
     if (!dStr) return '—';
@@ -970,14 +1112,15 @@
 
   async function abrirFicha(aCard) {
     const id = aCard._id;
+
     try {
       const img = qs('#modal-foto');
-      const fotoLocal = aCard.fotoUrl || aCard.fotoThumbUrl || aCard.fotoThumb || (aCard.foto ? normalizarUploadsPath(aCard.foto) : '');
+      img.removeAttribute('src');
+
+      const fotoLocal = fotoSeguraDoAluno(aCard);
       if (fotoLocal) {
         img.src = fotoLocal;
         img.onerror = () => { img.removeAttribute('src'); };
-      } else {
-        img.removeAttribute('src');
       }
 
       let a = {};
@@ -985,16 +1128,19 @@
         const url = `/api/fichaAluno/${id}`;
         const res = await fetch(url, { credentials: 'include', cache:'no-store' });
         if (!res.ok) throw new Error('Falha ao buscar detalhes');
+
         const data = await res.json();
         a = data.aluno || {};
       } else {
         a = aCard || {};
       }
 
-      const fotoFicha = a.fotoUrl || a.fotoThumbUrl || a.fotoThumb || (a.foto ? normalizarUploadsPath(a.foto) : '');
+      const fotoFicha = fotoSeguraDoAluno(a);
       if (fotoFicha) {
         img.src = fotoFicha;
         img.onerror = () => { img.removeAttribute('src'); };
+      } else {
+        img.removeAttribute('src');
       }
 
       qs('#badge-turma').textContent = a.turma || '—';
@@ -1049,21 +1195,25 @@
     }
   }
 
-  carregarTurmas().then(() => {
-    empty.style.display = turma ? 'none' : 'block';
-    if (turma) {
-      resetListagem();
-      if (MODE_TOKEN) {
-        applyFilterTokenMode();
-        renderNextChunkTokenMode();
-      } else {
-        carregarAdminMode();
+  carregarTurmas()
+    .then(() => {
+      empty.style.display = turma ? 'none' : 'block';
+
+      if (turma) {
+        resetListagem();
+
+        if (MODE_TOKEN) {
+          applyFilterTokenMode();
+          renderNextChunkTokenMode();
+        } else {
+          carregarAdminMode();
+        }
       }
-    }
-  }).catch(err => {
-    console.error(err);
-    alert('Erro ao carregar turmas.');
-  });
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Erro ao carregar turmas.');
+    });
 })();
 </script>
 <script src="notify.js"></script>
