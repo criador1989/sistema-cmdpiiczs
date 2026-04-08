@@ -687,6 +687,42 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
 
     const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+    const fotoEhBase64Grande = (valor) => {
+      if (!valor) return false;
+      const s = String(valor).trim();
+      return /^data:image\//i.test(s) && s.length > 300000;
+    };
+
+    const resumirAlunoLista = (a) => {
+      const fotoOriginal = a?.fotoOriginal || a?.foto || null;
+      const fotoThumb = a?.fotoThumb || null;
+
+      let foto = fotoOriginal;
+      let thumb = fotoThumb;
+
+      if (fotoEhBase64Grande(foto)) foto = '';
+      if (fotoEhBase64Grande(thumb)) thumb = '';
+
+      const fotoUrl = montarFotoUrlPublica(foto);
+      const fotoThumbUrlPublica = montarFotoUrlPublica(thumb);
+
+      let nota = null;
+      if (typeof a?.comportamento === 'number') nota = a.comportamento;
+      else if (typeof a?.notaComportamento === 'number') nota = a.notaComportamento;
+
+      return {
+        _id: a._id,
+        nome: a.nome || '',
+        turma: a.turma || '',
+        foto: foto || '',
+        fotoOriginal: foto || '',
+        fotoThumb: thumb || '',
+        fotoUrl: fotoUrl || '',
+        fotoThumbUrl: fotoThumbUrlPublica || (a?._id ? `/api/imagens/thumb/${a._id}` : ''),
+        comportamento: Number.isFinite(nota) ? nota : 8.0
+      };
+    };
+
     const filtro = tenantFilter(req, {
       turma: { $regex: `^${escapeRegex(turmaRaw)}$`, $options: 'i' }
     });
@@ -698,27 +734,21 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
     const alunos = await Aluno.find(filtro)
       .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento')
       .sort({ nome: 1 })
+      .limit(120)
       .lean();
 
-    const lista = alunos.map((aluno) => {
-      let nota = null;
-      if (typeof aluno.comportamento === 'number') nota = aluno.comportamento;
-      else if (typeof aluno.notaComportamento === 'number') nota = aluno.notaComportamento;
-
-      return {
-        ...anexarThumbNaPlain(aluno),
-        comportamento: Number.isFinite(nota) ? nota : 8.0
-      };
-    });
+    const lista = alunos.map(resumirAlunoLista);
 
     res.set('Cache-Control', 'private, max-age=30');
     return res.json(lista);
   } catch (error) {
     console.error('Erro GET /api/alunos/turma/:turma:', error);
-    return res.status(500).json({ message: 'Erro ao listar alunos da turma', error: error?.message || error });
+    return res.status(500).json({
+      message: 'Erro ao listar alunos da turma',
+      error: error?.message || error
+    });
   }
 });
-
 /* ============================================================
    ✅ TRANSFERÊNCIA EM LOTE DE TURMA
 ============================================================ */
