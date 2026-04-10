@@ -6,10 +6,10 @@ function toSlug(v) {
   return String(v || '')
     .trim()
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
-    .replace(/[^a-z0-9]+/g, '-')                      // troca não-alfanum por -
-    .replace(/-+/g, '-')                              // remove repetidos
-    .replace(/^-|-$/g, '');                           // tira - das pontas
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 function trimOrUndefined(v) {
@@ -31,15 +31,9 @@ function upperOrUndefined(v) {
 function normalizeDomain(v) {
   const s = lowerOrUndefined(v);
   if (!s) return undefined;
-  return s
-    .replace(/^https?:\/\//, '')
-    .replace(/\/+$/, '');
+  return s.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
 
-/**
- * Representa uma instituição (ex.: CMDPII - CZS)
- * A entrada do sistema deve ser SEMPRE por slug (?t=slug) ou subdomínio.
- */
 const instituicaoSchema = new Schema(
   {
     nome: {
@@ -48,7 +42,6 @@ const instituicaoSchema = new Schema(
       trim: true,
     },
 
-    // ✅ identificador fixo (NUNCA digitado pelo usuário final)
     slug: {
       type: String,
       required: [true, 'Slug da instituição é obrigatório.'],
@@ -84,29 +77,18 @@ const instituicaoSchema = new Schema(
       },
     },
 
-    /**
-     * ✅ Campo atual mantido
-     */
     ativo: {
       type: Boolean,
       default: true,
       index: true,
     },
 
-    /**
-     * ✅ Novo alias semântico para o SaaS
-     * Mantido sincronizado com "ativo"
-     */
     ativa: {
       type: Boolean,
       default: true,
       index: true,
     },
 
-    /**
-     * ✅ Multi-tenant por subdomínio
-     * Ex.: czs.axoriin.com
-     */
     subdominio: {
       type: String,
       trim: true,
@@ -115,10 +97,6 @@ const instituicaoSchema = new Schema(
       default: undefined,
     },
 
-    /**
-     * ✅ Opcional: domínio próprio da instituição
-     * Ex.: portal.escola.com.br
-     */
     dominioPersonalizado: {
       type: String,
       trim: true,
@@ -127,18 +105,19 @@ const instituicaoSchema = new Schema(
       default: undefined,
     },
 
-    /**
-     * ✅ Nome curto opcional para branding
-     */
     nomeExibicao: {
       type: String,
       trim: true,
       default: undefined,
     },
 
-    /**
-     * ✅ Identificador legado/externo opcional
-     */
+    // 🔥 NOVO CAMPO DE LOGO
+    logoUrl: {
+      type: String,
+      trim: true,
+      default: undefined,
+    },
+
     codigo: {
       type: String,
       trim: true,
@@ -164,7 +143,6 @@ instituicaoSchema.pre('validate', function (next) {
   try {
     if (this.nome) this.nome = String(this.nome).trim();
 
-    // se o slug não foi fornecido, gera a partir do nome
     if (!this.slug || String(this.slug).trim().length < 2) {
       this.slug = toSlug(this.nome);
     } else {
@@ -188,7 +166,6 @@ instituicaoSchema.pre('validate', function (next) {
       this.dominioPersonalizado = normalizeDomain(this.dominioPersonalizado);
     }
 
-    // sincroniza ativa <-> ativo
     if (typeof this.ativo === 'boolean' && typeof this.ativa !== 'boolean') {
       this.ativa = this.ativo;
     } else if (typeof this.ativa === 'boolean' && typeof this.ativo !== 'boolean') {
@@ -252,7 +229,6 @@ instituicaoSchema.pre('findOneAndUpdate', function (next) {
   }
 });
 
-/** Virtuais */
 instituicaoSchema.virtual('tenantSlug').get(function () {
   return this.slug || null;
 });
@@ -263,7 +239,6 @@ instituicaoSchema.virtual('hostPreferencial').get(function () {
   return this.slug || null;
 });
 
-/** toJSON limpo */
 instituicaoSchema.set('toJSON', {
   virtuals: true,
   transform: (_doc, ret) => {

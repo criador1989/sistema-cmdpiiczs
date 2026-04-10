@@ -238,6 +238,15 @@
       -webkit-appearance:none;
       -moz-appearance:none;
     }
+    select option{
+  color: #ecf2ff;
+  background: #0f1b33;
+}
+
+select optgroup{
+  color: #ecf2ff;
+  background: #0f1b33;
+}
 
     input::placeholder{ color: rgba(236,242,255,.55); }
 
@@ -509,13 +518,27 @@
             </div>
 
             <div style="margin-top:10px;">
-              <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
-              <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
-              <div class="hint">
-                Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
-                O link fica: <code>/login.html?t=SEU-SLUG</code>
-              </div>
-            </div>
+  <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
+  <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
+
+  <div class="hint">
+    Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
+    O link fica: <code>/login.html?t=SEU-SLUG</code>
+  </div>
+</div>
+
+<div style="margin-top:10px;">
+  <label for="preset">Modelo disciplinar</label>
+  <select id="preset">
+    <option value="militar">Militar (CBMAC)</option>
+    <option value="particular">Particular (pedagógico)</option>
+    <option value="personalizado">Personalizado (flexível)</option>
+  </select>
+
+  <div class="hint" id="presetHint">
+    Modelo rígido com regulamento disciplinar militar.
+  </div>
+</div>
 
             <button class="btn btn-primary" id="btnCriar" style="margin-top:12px; width:100%;">Criar instituição</button>
 
@@ -660,6 +683,8 @@
     const inputSlug = document.getElementById('slug');
     const btnCriar = document.getElementById('btnCriar');
     const msgCreate = document.getElementById('msgCreate');
+    const inputPreset = document.getElementById('preset');
+const presetHint = document.getElementById('presetHint');
 
     const createdLinks = document.getElementById('createdLinks');
     const linkLogin = document.getElementById('linkLogin');
@@ -679,6 +704,18 @@
     const msgUser = document.getElementById('msgUser');
     const userLinks = document.getElementById('userLinks');
     const userLoginLink = document.getElementById('userLoginLink');
+
+    inputPreset.addEventListener('change', () => {
+  const p = inputPreset.value;
+
+  if (p === 'militar') {
+    presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
+  } else if (p === 'particular') {
+    presetHint.textContent = 'Modelo pedagógico com foco em acompanhamento escolar.';
+  } else {
+    presetHint.textContent = 'Modelo flexível totalmente personalizável pela instituição.';
+  }
+});
 
     let all = [];
     let selectedInst = null;
@@ -777,57 +814,73 @@
     }
 
     btnCriar.addEventListener('click', async () => {
-      showMsg(msgCreate, '', '');
-      createdLinks.style.display = 'none';
 
-      const nome = inputNome.value.trim();
-      const sigla = inputSigla.value.trim();
-      const slug = inputSlug.value.trim();
+  showMsg(msgCreate, '', '');
+  createdLinks.style.display = 'none';
 
-      if (!nome || nome.length < 3) {
-        showMsg(msgCreate, 'err', 'Informe um nome válido (mín. 3 caracteres).');
-        return;
-      }
+  const nome = inputNome.value.trim();
+  const sigla = inputSigla.value.trim();
+  const slug = inputSlug.value.trim();
 
-      btnCriar.disabled = true;
-      btnCriar.innerHTML = '<span class="spinner"></span>Criando…';
+  if (!nome || nome.length < 3) {
+    showMsg(msgCreate, 'err', 'Informe um nome válido (mín. 3 caracteres).');
+    return;
+  }
 
-      try{
-        const r = await fetch(MASTER_BASE, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          credentials:'include',
-          body: JSON.stringify({ nome, sigla, slug })
-        });
+  btnCriar.disabled = true;
+  btnCriar.innerHTML = '<span class="spinner"></span>Criando…';
 
-        const data = await r.json().catch(()=> ({}));
+  try {
 
-        if (!r.ok) {
-          showMsg(msgCreate, 'err', data?.mensagem || 'Erro ao criar instituição.');
-          return;
-        }
-
-        showMsg(msgCreate, 'ok', data?.mensagem || 'Instituição criada!');
-
-        const slugFinal = data?.instituicao?.slug || slug;
-        linkLogin.value = absUrl(`/login.html?t=${encodeURIComponent(slugFinal)}`);
-        linkCadastro.value = absUrl(`/cadastro-usuario.html?t=${encodeURIComponent(slugFinal)}`);
-        createdLinks.style.display = 'block';
-
-        inputNome.value = '';
-        inputSigla.value = '';
-        inputSlug.value = '';
-
-        await loadList();
-
-      }catch(err){
-        showMsg(msgCreate, 'err', 'Erro de conexão com o servidor.');
-      }finally{
-        btnCriar.disabled = false;
-        btnCriar.textContent = 'Criar instituição';
-      }
+    const r = await fetch(MASTER_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        nome,
+        sigla,
+        slug,
+        preset: inputPreset ? inputPreset.value : 'militar'
+      })
     });
 
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) {
+      showMsg(msgCreate, 'err', data?.mensagem || 'Erro ao criar instituição.');
+      return;
+    }
+
+    showMsg(msgCreate, 'ok', data?.mensagem || 'Instituição criada!');
+
+    const slugFinal = data?.instituicao?.slug || slug;
+
+    linkLogin.value = absUrl(`/login.html?t=${encodeURIComponent(slugFinal)}`);
+    linkCadastro.value = absUrl(`/cadastro-usuario.html?t=${encodeURIComponent(slugFinal)}`);
+
+    createdLinks.style.display = 'block';
+
+    // limpar campos
+    inputNome.value = '';
+inputSigla.value = '';
+inputSlug.value = '';
+
+if (inputPreset) {
+  inputPreset.value = 'militar';
+}
+if (presetHint) {
+  presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
+}
+    await loadList();
+
+  } catch (err) {
+    showMsg(msgCreate, 'err', 'Erro de conexão com o servidor.');
+  } finally {
+    btnCriar.disabled = false;
+    btnCriar.textContent = 'Criar instituição';
+  }
+
+});
     btnCriarUsuario.addEventListener('click', async () => {
       showMsg(msgUser, '', '');
       userLinks.style.display = 'none';

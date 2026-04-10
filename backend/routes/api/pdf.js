@@ -3,29 +3,29 @@ const express = require('express');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
 const Notificacao = require('../../models/Notificacao');
+const Instituicao = require('../../models/Instituicao'); // 🔥 NOVO
 const { autenticar } = require('../../middleware/autenticacao');
+
+const {
+  getConfigDisciplinar,
+  getClassificacaoComportamento,
+  getTextoRegulamento
+} = require('../../utils/configuracaoDisciplinar');
 
 const router = express.Router();
 
 /* ------------ Helpers ------------- */
-function calcularComportamentoClassificacao(nota) {
-  const n = Number(nota || 0);
-  if (n >= 9.01) return 'Excepcional';
-  if (n >= 8.01) return 'Ótimo';
-  if (n >= 7.0) return 'Bom';
-  if (n >= 5.0) return 'Regular';
-  if (n >= 3.0) return 'Insuficiente';
-  return 'Incompatível';
-}
 function montarDescricaoInfracao({ artigo, inciso, motivo }) {
-  const a = (artigo || '').replace(/^Art\.?\s*/i, '').trim(); // evita "Art. Art. 54"
+  const a = (artigo || '').replace(/^Art\.?\s*/i, '').trim();
   const partes = [];
   if (a) partes.push(`Art. ${a}`);
   if (inciso) partes.push(inciso);
   if (motivo) partes.push(`Motivo: ${motivo}`);
   return partes.join(' | ');
 }
+
 function toFixed2(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n.toFixed(2) : '';
@@ -45,25 +45,27 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
 
     const aluno = notificacao.aluno;
 
-    // Números crus
+    // 🔥 BUSCAR INSTITUIÇÃO (LOGO)
+    const instituicao = await Instituicao.findById(req.usuario.instituicao).lean();
+
+    // 🔥 CONFIGURAÇÃO DISCIPLINAR
+    const config = await getConfigDisciplinar(req.usuario.instituicao);
+    const regulamento = getTextoRegulamento(config);
+
+    // Números
     const notaAnteriorNum = Number(notificacao.notaAnterior);
-    const valorNum        = Number(notificacao.valorNumerico);
-    const notaAtualSalva  = Number(notificacao.notaAtual);
+    const valorNum = Number(notificacao.valorNumerico);
+    const notaAtualSalva = Number(notificacao.notaAtual);
 
-    // 🔒 Cálculo determinístico da nota final do dia (pós-evento)
-    // 1) Se conseguimos somar anterior + valor -> essa é a nota final do DOCX
-    // 2) Caso contrário, usamos a notaAtual salva, se válida
-    // 3) Senão fica vazio
     let notaFinalNum = Number.isFinite(notaAtualSalva)
-  ? +notaAtualSalva.toFixed(2)
-  : (
-      Number.isFinite(notaAnteriorNum) && Number.isFinite(valorNum)
-        ? +(notaAnteriorNum + valorNum).toFixed(2)
-        : NaN
-    );
+      ? +notaAtualSalva.toFixed(2)
+      : (
+          Number.isFinite(notaAnteriorNum) && Number.isFinite(valorNum)
+            ? +(notaAnteriorNum + valorNum).toFixed(2)
+            : NaN
+        );
 
-    // Classificação textual baseada na nota final
-    const classificacao = calcularComportamentoClassificacao(notaFinalNum);
+    const classificacao = getClassificacaoComportamento(notaFinalNum, config);
 
     const descricaoInfracao = montarDescricaoInfracao({
       artigo: notificacao.artigo || '',
@@ -71,9 +73,13 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       motivo: notificacao.motivo || ''
     });
 
-    // Payload para o Python
+    // 🔥 TEXTOS
+    const textoCabecalho = regulamento?.textos?.cabecalho || '';
+    const textoNotificacao = regulamento?.textos?.notificacao || '';
+    const nomeRegulamento = regulamento?.nome || 'Regulamento Disciplinar';
+
+    // 🔥 DADOS PARA O PYTHON
     const dados = {
-      // Identificação
       numero: (notificacao._id || '').toString().slice(-6).toUpperCase(),
       numeroSequencial: notificacao.numeroSequencial || '',
       aluno: aluno.nome,
@@ -81,48 +87,36 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       turma: aluno.turma,
       alunoTurma: aluno.turma,
 
-      // Regulamento
-      artigo: notificacao.artigo || '',
-      paragrafo: notificacao.paragrafo || (notificacao.inciso?.split('–')[0]?.trim() || ''),
-      descricaoInciso: notificacao.inciso || '',
-      descricaoInfracao,
-      classificacaoRegulamento: notificacao.classificacaoRegulamento || '',
+      // 🔥 REGULAMENTO
+      regulamentoNome: nomeRegulamento,
+      cabecalho: textoCabecalho,
+      textoInstitucional: textoNotificacao,
 
-      // Medida
-      tipoMedida: notificacao.tipoMedida,
-      tipo: notificacao.tipo || notificacao.tipoMedida,
+      descricaoInfracao,
       observacao: notificacao.observacao || '-',
 
-      // Valores
       valorNumerico: toFixed2(valorNum),
-      Valor: toFixed2(valorNum),
-
-      // Notas (duas casas)
       notaAnterior: toFixed2(notaAnteriorNum),
-      // 👉 Forçamos que "notaAtual" seja a nota FINAL recalculada
       notaAtual: Number.isFinite(notaFinalNum) ? toFixed2(notaFinalNum) : '',
-      notaPublicavel: Number.isFinite(notaFinalNum) ? toFixed2(notaFinalNum) : '',
-      notaFinal: Number.isFinite(notaFinalNum) ? toFixed2(notaFinalNum) : '',
 
-      // Comportamento (TEXTO)
-      classificacaoComportamental: classificacao,
       comportamento: classificacao,
 
-      // Datas
       dataPorExtenso: new Date(notificacao.data).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'long', year: 'numeric'
       }),
       dataHora: new Date(notificacao.data).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'long', year: 'numeric'
-      })
+      }),
+
+      // 🔥 NOVO: LOGO + LOCALIZAÇÃO
+      logoUrl: instituicao?.logoUrl || '',
+      cidade: instituicao?.municipio || '—',
+      estado: instituicao?.estado || '—'
     };
 
-    // Log detalhado p/ conferir no terminal
-    console.log('📤 Dados enviados ao Python:', {
-      notaAnterior: dados.notaAnterior,
-      valorNumerico: dados.valorNumerico,
-      notaAtual: dados.notaAtual,
-      notaFinal: dados.notaFinal
+    console.log('📤 PDF GERADO COM LOGO:', {
+      instituicao: instituicao?.nome,
+      logo: instituicao?.logoUrl
     });
 
     const scriptPath = path.join(__dirname, '../../pdf/generate_notification_docx.py');
@@ -140,14 +134,20 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
         console.error(`❌ Python finalizou com código ${code}`);
         return res.status(500).send('Erro ao gerar DOCX');
       }
+
       const docxPath = output.trim();
-      if (!fs.existsSync(docxPath)) return res.status(500).send('Arquivo gerado não encontrado');
+
+      if (!fs.existsSync(docxPath)) {
+        return res.status(500).send('Arquivo gerado não encontrado');
+      }
 
       const filename = `notificacao_${aluno.nome.replace(/\s+/g, '_')}.docx`;
+
       res.download(docxPath, filename, (err) => {
         if (err) console.error('❌ Erro ao enviar o arquivo gerado:', err);
       });
     });
+
   } catch (err) {
     console.error('❌ Erro ao gerar notificação:', err);
     res.status(500).json({ error: 'Erro ao gerar notificação' });

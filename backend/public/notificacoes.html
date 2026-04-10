@@ -10,16 +10,25 @@
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
   <style>
     :root{
-      --rubi-1:#8B0000; --rubi-2:#B22222;
-      --line:#ffffff2b; --text:#f2f4f8; --text-soft:#cfd6de;
+      --rubi-1:#8B0000;
+      --rubi-2:#B22222;
+      --line:#ffffff2b;
+      --text:#f2f4f8;
+      --text-soft:#cfd6de;
       --bg:#1e0506;
+      --glass:#ffffff10;
+      --glass-2:#0000002c;
+      --ok:#10a03c45;
+      --warn:#ffb00030;
+      --muted:#b4b4b430;
     }
+
     *{box-sizing:border-box}
+
     body{
       margin:0;
       font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
       color:var(--text);
-      /* 🔹 Fundo com wallpaper + cor base */
       background:
         url("img/bg-painel-smart.png") center/cover fixed no-repeat,
         var(--bg);
@@ -34,13 +43,11 @@
       gap:20px;
       padding:24px;
     }
-    /* tablet: já empilha */
+
     @media (max-width:1024px){
-      .page{
-        grid-template-columns:1fr;
-      }
+      .page{ grid-template-columns:1fr; }
     }
-    /* celular: vira coluna simples, com menos padding lateral */
+
     @media (max-width:768px){
       .page{
         display:flex;
@@ -58,11 +65,12 @@
       position:sticky;
       top:24px;
       border-radius:20px;
-      background:#ffffff10;
+      background:var(--glass);
       border:1px solid #ffffff24;
       backdrop-filter:blur(10px);
       box-shadow:0 10px 28px #0006;
     }
+
     .sb-head{
       display:flex;
       align-items:center;
@@ -70,6 +78,7 @@
       padding:16px;
       border-bottom:1px solid #ffffff24;
     }
+
     .brand{
       width:36px;
       height:36px;
@@ -77,6 +86,7 @@
       background:var(--rubi-1);
       box-shadow:inset 0 0 0 2px #ffffff44;
     }
+
     .sb-title{font-weight:700}
 
     .nav{
@@ -84,6 +94,7 @@
       display:grid;
       gap:6px;
     }
+
     .nav a{
       text-decoration:none;
       color:var(--text);
@@ -94,10 +105,12 @@
       gap:10px;
       border:1px solid transparent;
     }
+
     .nav a:hover{
       background:#ffffff14;
       border-color:#ffffff2d;
     }
+
     .nav a.active{
       background:#ffffff22;
       border-color:#ffffff44;
@@ -109,6 +122,7 @@
       padding:12px;
       border-top:1px solid #ffffff24;
     }
+
     .sb-logout{
       width:100%;
       border:0;
@@ -118,9 +132,11 @@
       border-radius:10px;
       cursor:pointer;
     }
-    .sb-logout:hover{background:var(--rubi-1)}
 
-    /* MOBILE: sidebar deixa de ser sticky e menu vira faixa rolável */
+    .sb-logout:hover{
+      background:var(--rubi-1);
+    }
+
     @media (max-width:768px){
       .sidebar{
         position:static;
@@ -128,14 +144,17 @@
         height:auto;
         border-radius:18px;
       }
+
       .sb-head{
         padding:12px 14px;
       }
+
       .brand{
         width:32px;
         height:32px;
         border-radius:10px;
       }
+
       .nav{
         display:flex;
         flex-wrap:nowrap;
@@ -143,17 +162,21 @@
         padding:8px 8px 10px;
         gap:6px;
       }
+
       .nav::-webkit-scrollbar{
         height:4px;
       }
+
       .nav a{
         white-space:nowrap;
         font-size:.85rem;
         padding:8px 10px;
       }
+
       .sb-foot{
         padding:8px 12px 10px;
       }
+
       .sb-logout{
         font-size:.9rem;
         padding:8px 10px;
@@ -161,9 +184,10 @@
     }
 
     .content .wrap{
-      width:min(1180px,100%);
+      width:min(1220px,100%);
       margin:0 auto 84px;
     }
+
     @media (max-width:768px){
       .content .wrap{
         margin:0 auto 40px;
@@ -171,19 +195,21 @@
     }
 
     .card{
-      background:#ffffff10;
+      background:var(--glass);
       border:1px solid #ffffff24;
       border-radius:24px;
       backdrop-filter:blur(8px);
       box-shadow:0 10px 28px #0006;
       padding:26px 24px 30px;
     }
+
     @media (max-width:768px){
       .card{
         padding:18px 12px 22px;
         border-radius:18px;
       }
     }
+
     h2{
       margin:0 0 16px;
       text-align:center;
@@ -191,34 +217,68 @@
       text-shadow:0 2px 6px #0004;
       font-size:1.4rem;
     }
+
     @media (max-width:480px){
       h2{font-size:1.2rem;}
     }
 
+    .mode-tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:6px 0 16px;
+    }
+
+    .mode-tab{
+      border:1px solid var(--line);
+      background:var(--glass-2);
+      color:#fff;
+      border-radius:12px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:600;
+      min-width:170px;
+      text-align:center;
+    }
+
+    .mode-tab:hover{
+      background:#00000040;
+    }
+
+    .mode-tab.active{
+      background:var(--rubi-1);
+      border-color:var(--rubi-1);
+      box-shadow:0 10px 24px #0004;
+    }
+
     .filters{
       display:grid;
-      grid-template-columns:1fr 1fr 160px 160px 120px;
+      grid-template-columns:1fr 1fr 160px 160px 140px;
       gap:12px;
       margin:12px 0 8px;
     }
+
     .filters label{
       display:block;
       margin:0 0 6px;
       font-weight:700;
       color:var(--text-soft);
     }
+
     .filters input,
     .filters select{
       width:100%;
       padding:10px;
       border-radius:10px;
       border:1px solid var(--line);
-      background:#0000002c;
+      background:var(--glass-2);
       color:#fff;
     }
+
     @media (max-width:900px){
       .filters{grid-template-columns:1fr 1fr 1fr}
     }
+
     @media (max-width:600px){
       .filters{grid-template-columns:1fr}
     }
@@ -230,16 +290,20 @@
       margin:6px 0 12px;
       align-items:center;
     }
+
     .chip{
       padding:6px 10px;
       border:1px solid var(--line);
-      background:#0000002c;
+      background:var(--glass-2);
       color:#fff;
       border-radius:999px;
       cursor:pointer;
       font-size:.9rem;
     }
-    .chip:hover{background:#00000040}
+
+    .chip:hover{
+      background:#00000040;
+    }
 
     .actions-top{
       display:flex;
@@ -248,27 +312,33 @@
       flex-wrap:wrap;
       margin-left:auto;
     }
+
     .btn{
       padding:8px 12px;
       border:1px solid var(--line);
-      background:#0000002c;
+      background:var(--glass-2);
       color:#fff;
       border-radius:10px;
       cursor:pointer;
     }
-    .btn:hover{background:#00000040}
+
+    .btn:hover{
+      background:#00000040;
+    }
 
     @media (max-width:600px){
       .chips{
         flex-direction:column;
         align-items:flex-start;
       }
+
       .actions-top{
         width:100%;
         margin-left:0;
         margin-top:4px;
         justify-content:flex-start;
       }
+
       .actions-top .btn{
         width:100%;
         text-align:center;
@@ -280,28 +350,36 @@
       gap:10px;
       align-items:center;
       justify-content:space-between;
-      margin:8px 0 2px;
+      margin:8px 0 10px;
       flex-wrap:wrap;
     }
+
     .counter{
       color:var(--text-soft);
-      font-size:.9rem;
+      font-size:.92rem;
     }
+
     .pager{
       display:flex;
       gap:6px;
       align-items:center;
       flex-wrap:wrap;
     }
+
     .pager button{
       padding:6px 10px;
       border:1px solid var(--line);
-      background:#0000002c;
+      background:var(--glass-2);
       color:#fff;
       border-radius:10px;
       cursor:pointer;
     }
-    .pager button[disabled]{opacity:.5;cursor:not-allowed}
+
+    .pager button[disabled]{
+      opacity:.5;
+      cursor:not-allowed;
+    }
+
     .pager .current{
       background:var(--rubi-1);
       border-color:var(--rubi-1);
@@ -313,14 +391,21 @@
       gap:16px;
       margin-top:12px;
     }
+
+    .columns.single{
+      grid-template-columns:1fr;
+    }
+
     @media (max-width:1100px){
       .columns{grid-template-columns:1fr}
     }
+
     .col{
       border:1px dashed #ffffff25;
       border-radius:16px;
       padding:12px;
     }
+
     .col h3{
       margin:0 0 8px;
       font-size:1.05rem;
@@ -329,11 +414,13 @@
       gap:8px;
       color:#fff;
     }
+
     .col h3 .count{
       color:var(--text-soft);
       font-weight:500;
       font-size:.9rem;
     }
+
     .col .col-toolbar{
       display:flex;
       align-items:center;
@@ -348,8 +435,9 @@
       gap:10px;
       margin-top:8px;
     }
+
     .empty{
-      opacity:.7;
+      opacity:.78;
       text-align:center;
       padding:18px;
       border:1px dashed #ffffff2c;
@@ -363,6 +451,7 @@
       box-shadow:0 14px 30px #0005;
       overflow:hidden;
     }
+
     .n-head{
       display:grid;
       grid-template-columns:1fr auto auto;
@@ -371,16 +460,20 @@
       padding:12px 14px;
       cursor:pointer;
     }
+
     @media (max-width:700px){
       .n-head{
         grid-template-columns:1fr;
         align-items:flex-start;
       }
+
       .n-head > div:last-child{
         justify-self:flex-start;
       }
     }
+
     .n-title{font-weight:700}
+
     .n-sub{
       color:var(--text-soft);
       font-size:.9rem;
@@ -397,31 +490,36 @@
       gap:4px;
       margin:2px 2px 0 0;
     }
-    .status-pendente{background:#ffb00030}
-    .status-deferido{background:#10a03c45}
+
+    .status-pendente{background:var(--warn)}
+    .status-deferido{background:var(--ok)}
     .status-revisao_solicitada{background:#ffd20035}
-    .status-arquivado{background:#b4b4b430}
+    .status-arquivado{background:var(--muted)}
 
     .n-body{
       display:none;
       border-top:1px dashed #ffffff2c;
       padding:12px 14px;
     }
+
     .n-row{
       display:grid;
       grid-template-columns:repeat(2,1fr);
       gap:8px;
     }
+
     @media (max-width:800px){
       .n-row{grid-template-columns:1fr}
     }
+
     .n-kv{
-      background:#0000002c;
+      background:var(--glass-2);
       border:1px solid #ffffff24;
       border-radius:10px;
       padding:8px;
       font-size:.9rem;
     }
+
     .n-kv b{
       display:block;
       color:var(--text-soft);
@@ -435,6 +533,7 @@
       flex-wrap:wrap;
       margin-top:10px;
     }
+
     .actions button,
     .actions a{
       margin:0;
@@ -446,6 +545,7 @@
       text-decoration:none;
       display:inline-block;
     }
+
     .pdf-btn{background:#007bff;color:#fff}
     .edit-btn{background:#ffc107;color:#000}
     .delete-btn{background:#dc3545;color:#fff}
@@ -459,12 +559,14 @@
       margin-left:8px;
       font-size:.85rem;
     }
+
     .entregue-wrap input{
       accent-color:#10a03c;
       width:18px;
       height:18px;
       cursor:pointer;
     }
+
     .prazo-chip{
       margin-left:8px;
       font-size:.8rem;
@@ -477,10 +579,12 @@
       gap:4px;
       margin-top:4px;
     }
+
     .prazo-chip.atraso{
       border-color:#ff7878a3;
       background:#ff00002e;
     }
+
     .hint{
       color:var(--text-soft);
       font-size:.85rem;
@@ -498,7 +602,10 @@
       vertical-align:-5px;
       margin-right:8px;
     }
-    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @keyframes spin{
+      to{transform:rotate(360deg)}
+    }
 
     .voltar-btn{
       margin-top:16px;
@@ -511,12 +618,20 @@
       width:100%;
       max-width:220px;
     }
-    .voltar-btn:hover{background:#00000040}
+
+    .voltar-btn:hover{
+      background:#00000040;
+    }
+
     @media (max-width:480px){
       .voltar-btn{
         max-width:100%;
         text-align:center;
       }
+    }
+
+    .hidden{
+      display:none !important;
     }
   </style>
 </head>
@@ -530,6 +645,7 @@
           <div style="font-size:.8rem;color:#cfd6de">Sistema Escolar</div>
         </div>
       </div>
+
       <nav class="nav">
         <a href="painel.html">🏠 Painel</a>
         <a href="lista-alunos.html">👥 Alunos</a>
@@ -539,6 +655,7 @@
         <a href="usuarios.html">⚙️ Administração</a>
         <a href="logs.html">🧾 Logs</a>
       </nav>
+
       <div class="sb-foot">
         <button class="sb-logout" onclick="logout()">🚪 Sair</button>
       </div>
@@ -549,48 +666,64 @@
         <section class="card">
           <h2>Notificações Disciplinares</h2>
 
-          <!-- Filtros -->
+          <div class="mode-tabs">
+            <button class="mode-tab active" id="tabPrincipal" data-mode="principal">📋 Notificações Ativas</button>
+            <button class="mode-tab" id="tabPendentes" data-mode="pendentes">⏳ Pendentes do Coordenador</button>
+            <button class="mode-tab" id="tabArquivadas" data-mode="arquivadas">📁 Notificações Arquivadas</button>
+            <button class="mode-tab" id="tabAntigas" data-mode="antigas">🗂️ Notificações Antigas</button>
+          </div>
+
           <div class="filters">
             <div>
               <label for="filtroTurma">Filtrar por turma</label>
-              <select id="filtroTurma"><option value="">Todas</option></select>
+              <select id="filtroTurma">
+                <option value="">Todas</option>
+              </select>
             </div>
+
             <div>
               <label for="pesquisaNome">Pesquisar por nome</label>
               <input type="text" id="pesquisaNome" placeholder="Digite o nome do aluno..." />
             </div>
+
             <div>
               <label for="dataDe">Data (De)</label>
               <input type="date" id="dataDe" />
             </div>
+
             <div>
               <label for="dataAte">Data (Até)</label>
               <input type="date" id="dataAte" />
             </div>
+
             <div>
               <label for="porPaginaSel">Itens por página</label>
-              <select id="porPaginaSel"><option selected>10</option><option>20</option><option>30</option></select>
+              <select id="porPaginaSel">
+                <option selected>10</option>
+                <option>20</option>
+                <option>30</option>
+                <option>50</option>
+              </select>
             </div>
           </div>
 
-          <!-- Chips de período rápido -->
           <div class="chips">
             <button class="chip" id="chipHoje">Hoje</button>
             <button class="chip" id="chip7">Últimos 7 dias</button>
             <button class="chip" id="chip30">Últimos 30 dias</button>
             <button class="chip" id="chipLimpar">Limpar período</button>
-            <div class="actions-top" style="margin-left:auto">
+
+            <div class="actions-top">
+              <button class="btn" id="btnAtualizar">🔄 Atualizar</button>
               <button class="btn" id="btnCsv">⬇️ Exportar CSV (filtro atual)</button>
             </div>
           </div>
 
           <div class="toolbar">
             <div class="counter" id="resumoResultados">—</div>
-            <!-- Paginação geral removida; cada coluna terá a sua -->
           </div>
 
-          <!-- Duas colunas -->
-          <div class="columns">
+          <div class="columns" id="blocoPrincipal">
             <div class="col">
               <h3>✅ Deferidas <span class="count" id="countDeferidas">—</span></h3>
               <div class="col-toolbar">
@@ -599,13 +732,45 @@
               </div>
               <div id="listaDeferidas" class="list"></div>
             </div>
+
             <div class="col">
-              <h3>⏳ Aguardando parecer <span class="count" id="countPendentes">—</span></h3>
+              <h3>📌 Em andamento <span class="count" id="countPendentesPrincipal">—</span></h3>
               <div class="col-toolbar">
-                <div class="counter" id="resumoPen">—</div>
-                <div id="pagPen" class="pager"></div>
+                <div class="counter" id="resumoPenPrincipal">—</div>
+                <div id="pagPenPrincipal" class="pager"></div>
               </div>
-              <div id="listaPendentes" class="list"></div>
+              <div id="listaPendentesPrincipal" class="list"></div>
+            </div>
+          </div>          <div class="columns single hidden" id="blocoPendentes">
+            <div class="col">
+              <h3>⏳ Pendentes do Coordenador <span class="count" id="countPendentesModo">—</span></h3>
+              <div class="col-toolbar">
+                <div class="counter" id="resumoPendentesModo">—</div>
+                <div id="pagPendentesModo" class="pager"></div>
+              </div>
+              <div id="listaPendentesModo" class="list"></div>
+            </div>
+          </div>
+
+          <div class="columns single hidden" id="blocoArquivadas">
+            <div class="col">
+              <h3>📁 Arquivadas / Devolvidas <span class="count" id="countArquivadas">—</span></h3>
+              <div class="col-toolbar">
+                <div class="counter" id="resumoArquivadas">—</div>
+                <div id="pagArquivadas" class="pager"></div>
+              </div>
+              <div id="listaArquivadas" class="list"></div>
+            </div>
+          </div>
+
+          <div class="columns single hidden" id="blocoAntigas">
+            <div class="col">
+              <h3>🗂️ Notificações Antigas <span class="count" id="countAntigas">—</span></h3>
+              <div class="col-toolbar">
+                <div class="counter" id="resumoAntigas">—</div>
+                <div id="pagAntigas" class="pager"></div>
+              </div>
+              <div id="listaAntigas" class="list"></div>
             </div>
           </div>
 
@@ -616,30 +781,43 @@
   </div>
 
   <script>
-    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
-    async function logout(){ try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{} location.href='./login.html'; }
+    const API = (p) => p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/') ? p : '/' + p}`);
 
-    function showError(msg){
+    async function logout() {
+      try {
+        await fetch(API('/auth/logout'), {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store'
+        });
+      } catch {}
+      location.href = './login.html';
+    }
+
+    function showError(msg) {
       let el = document.getElementById('errBanner');
-      if(!el){
+      if (!el) {
         el = document.createElement('div');
         el.id = 'errBanner';
         el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
         document.body.appendChild(el);
       }
       el.textContent = `Erro: ${msg}`;
-      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 8000);
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.remove(), 8000);
     }
-    function showToast(msg){
+
+    function showToast(msg) {
       let el = document.getElementById('okBanner');
-      if(!el){
+      if (!el) {
         el = document.createElement('div');
         el.id = 'okBanner';
         el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#0f5132;color:#d1e7dd;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
         document.body.appendChild(el);
       }
       el.textContent = msg;
-      clearTimeout(el._t); el._t = setTimeout(()=>el.remove(), 4000);
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.remove(), 4000);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -648,15 +826,6 @@
       const porPaginaSel = document.getElementById('porPaginaSel');
       const resumoGeral = document.getElementById('resumoResultados');
 
-      const listaDeferidas = document.getElementById('listaDeferidas');
-      const listaPendentes = document.getElementById('listaPendentes');
-      const countDef = document.getElementById('countDeferidas');
-      const countPen = document.getElementById('countPendentes');
-      const pagDef = document.getElementById('pagDef');
-      const pagPen = document.getElementById('pagPen');
-      const resumoDef = document.getElementById('resumoDef');
-      const resumoPen = document.getElementById('resumoPen');
-
       const dataDe = document.getElementById('dataDe');
       const dataAte = document.getElementById('dataAte');
 
@@ -664,23 +833,76 @@
       const chip7 = document.getElementById('chip7');
       const chip30 = document.getElementById('chip30');
       const chipLimpar = document.getElementById('chipLimpar');
+
       const btnCsv = document.getElementById('btnCsv');
+      const btnAtualizar = document.getElementById('btnAtualizar');
 
+      const tabPrincipal = document.getElementById('tabPrincipal');
+      const tabPendentes = document.getElementById('tabPendentes');
+      const tabArquivadas = document.getElementById('tabArquivadas');
+      const tabAntigas = document.getElementById('tabAntigas');
+
+      const blocoPrincipal = document.getElementById('blocoPrincipal');
+      const blocoPendentes = document.getElementById('blocoPendentes');
+      const blocoArquivadas = document.getElementById('blocoArquivadas');
+      const blocoAntigas = document.getElementById('blocoAntigas');
+
+      const listaDeferidas = document.getElementById('listaDeferidas');
+      const listaPendentesPrincipal = document.getElementById('listaPendentesPrincipal');
+      const listaPendentesModo = document.getElementById('listaPendentesModo');
+      const listaArquivadas = document.getElementById('listaArquivadas');
+      const listaAntigas = document.getElementById('listaAntigas');
+
+      const countDeferidas = document.getElementById('countDeferidas');
+      const countPendentesPrincipal = document.getElementById('countPendentesPrincipal');
+      const countPendentesModo = document.getElementById('countPendentesModo');
+      const countArquivadas = document.getElementById('countArquivadas');
+      const countAntigas = document.getElementById('countAntigas');
+
+      const resumoDef = document.getElementById('resumoDef');
+      const resumoPenPrincipal = document.getElementById('resumoPenPrincipal');
+      const resumoPendentesModo = document.getElementById('resumoPendentesModo');
+      const resumoArquivadas = document.getElementById('resumoArquivadas');
+      const resumoAntigas = document.getElementById('resumoAntigas');
+
+      const pagDef = document.getElementById('pagDef');
+      const pagPenPrincipal = document.getElementById('pagPenPrincipal');
+      const pagPendentesModo = document.getElementById('pagPendentesModo');
+      const pagArquivadas = document.getElementById('pagArquivadas');
+      const pagAntigas = document.getElementById('pagAntigas');
+
+      let modoAtual = 'principal';
       let porPagina = Number(porPaginaSel.value);
+
       let paginaDef = 1;
-      let paginaPen = 1;
+      let paginaPenPrincipal = 1;
+      let paginaPendentesModo = 1;
+      let paginaArquivadas = 1;
+      let paginaAntigas = 1;
 
-      // Estado dos dados (após filtro)
-      let dataset = [];       // tudo (filtrado por nome/turma/data)
-      let dsDef = [];         // deferidas
-      let dsPen = [];         // aguardando
-      let totalBruto = 0;     // total vindo da API antes dos filtros de data locais
+      let datasetAtual = [];
+      let totalAtual = 0;
 
-      // ===== Cálculos de nota (mantidos) =====
-      const BASES = {'Advertência Escrita':-0.30,'Repreensão':-0.50,'A.E.C.D.E':-0.70,'A.I.A':-1.20};
-      const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
-      const clampNota = (n)=> (n>10?10:n<0?0:Number((+n).toFixed(2)));
-      function classificarComportamento(nota){
+      let dsDef = [];
+      let dsPenPrincipal = [];
+      let dsPendentesModo = [];
+      let dsArquivadas = [];
+      let dsAntigas = [];
+
+      const spinnerHTML = `<span class="spinner"></span>Carregando…`;
+
+      const BASES = {
+        'Advertência Escrita': -0.30,
+        'Repreensão': -0.50,
+        'A.E.C.D.E': -0.70,
+        'A.I.A': -1.20
+      };
+
+      const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+
+      const clampNota = (n) => (n > 10 ? 10 : n < 0 ? 0 : Number((+n).toFixed(2)));
+
+      function classificarComportamento(nota) {
         const n = Number(nota || 0);
         if (n >= 9.5) return 'Excepcional';
         if (n >= 8.5) return 'Ótimo';
@@ -689,178 +911,155 @@
         if (n >= 3.0) return 'Insuficiente';
         return 'Incompatível';
       }
-      function badgeNatureza(n){
+
+      function badgeNatureza(n) {
         const nat = String(n?.natureza || '').toLowerCase();
         if (nat === 'elogio') return `<span class="badge">🌟 Elogio</span>`;
         if (nat === 'indisciplina') return `<span class="badge">⚠️ Disciplinar</span>`;
         return `<span class="badge">—</span>`;
       }
-      function derivarValorTotal(n){
+
+      function derivarValorTotal(n) {
         if (typeof n.valorTotal === 'number') return n.valorTotal;
         const bruto = Number(n.valorNumerico ?? 0);
         if (Number.isFinite(bruto)) return bruto;
+
         const titulo = String(n.tipoMedida || n.tipo || '').trim();
         if (!REQUER_DIAS.has(titulo)) return 0;
+
         const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
         const base = BASES[titulo];
         return typeof base === 'number' ? Number((base * dias).toFixed(2)) : 0;
       }
-      function faixaNotaPrevista(n){
-  const antesRaw = Number(n?.notaAnterior);
-  const depoisRaw = Number(n?.notaAtual);
 
-  const antes = Number.isFinite(antesRaw) ? antesRaw : null;
-  const depois = Number.isFinite(depoisRaw) ? depoisRaw : null;
+      function faixaNotaPrevista(n) {
+        const antesRaw = Number(n?.notaAnterior);
+        const depoisRaw = Number(n?.notaAtual);
 
-  if (antes !== null && depois !== null) {
-    return { antes, depois, corrigido: false };
-  }
+        const antes = Number.isFinite(antesRaw) ? antesRaw : null;
+        const depois = Number.isFinite(depoisRaw) ? depoisRaw : null;
 
-  if (antes !== null && depois === null) {
-    const valor = Number(n?.valorNumerico);
-    if (Number.isFinite(valor)) {
-      return { antes, depois: clampNota(antes + valor), corrigido: true };
-    }
-  }
-
-  if (antes === null && depois !== null) {
-    const valor = Number(n?.valorNumerico);
-    if (Number.isFinite(valor)) {
-      return { antes: clampNota(depois - valor), depois, corrigido: true };
-    }
-  }
-
-  return { antes: null, depois: null, corrigido: true };
-}
-      const fmtValor = (n)=> (Number.isFinite(Number(n)) ? Number(n).toFixed(2) : '—');
-
-      const spinnerHTML = `<span class="spinner"></span>Carregando…`;
-
-      // ===== Carregar tudo, paginando no front =====
-      carregarTudo();
-
-      async function carregarTudo(){
-        // placeholders (sem “faixa” visual)
-        listaDeferidas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-        listaPendentes.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-        countDef.textContent = countPen.textContent = '—';
-        resumoGeral.textContent = '—';
-
-        try {
-          // Monta filtros que o backend aceita
-          const paramsBase = new URLSearchParams();
-          if (filtroTurma.value) paramsBase.set('turma', filtroTurma.value);
-          if (pesquisaNome.value.trim()) paramsBase.set('q', pesquisaNome.value.trim());
-          if (dataDe.value)  paramsBase.set('from', dataDe.value);
-          if (dataAte.value) paramsBase.set('to', dataAte.value);
-
-          // Busca todas as páginas para processar no front
-          let page = 1, totalPages = 1;
-          const acumulado = [];
-          do{
-            const params = new URLSearchParams(paramsBase);
-            params.set('page', String(page));
-            params.set('limit', '200'); // lote grande p/ reduzir idas à API
-            const r = await fetch(`/api/notificacoes?${params.toString()}`, { credentials:'include', cache:'no-store' });
-            if (r.status === 401) { location.href='./login.html'; return; }
-            const j = await r.json();
-            const data = Array.isArray(j) ? j : (j.data || []);
-            totalPages = Number(j.totalPages ?? 1);
-            totalBruto = Number(j.total ?? data.length);
-            acumulado.push(...data);
-            page++;
-          } while (page <= totalPages && page <= 20); // segurança
-
-          // Filtro local de datas (caso o backend ignore from/to)
-          const de = dataDe.value ? new Date(dataDe.value + 'T00:00:00') : null;
-          const ate = dataAte.value ? new Date(dataAte.value + 'T23:59:59') : null;
-          const parseDataMod = (n) => {
-            const src = n.atualizadoEm || n.updatedAt || n.data;
-            return src ? new Date(src) : null;
-          };
-
-          dataset = acumulado
-            .filter(n=>{
-              if (!de && !ate) return true;
-              const d = parseDataMod(n); if (!d) return false;
-              if (de && d < de) return false;
-              if (ate && d > ate) return false;
-              return true;
-            })
-            .sort((a,b)=>{
-              const da = parseDataMod(a)?.getTime() ?? 0;
-              const db = parseDataMod(b)?.getTime() ?? 0;
-              return db - da;
-            });
-
-          // Split por status
-          dsDef = dataset.filter(n => String(n.status||'').toLowerCase()==='deferido');
-          dsPen = dataset.filter(n => String(n.status||'').toLowerCase()!=='deferido');
-
-          // Popular filtro de turmas pelas que retornaram
-          renderTurmasDoLote(dataset);
-
-          // zerar páginas das colunas
-          paginaDef = 1; paginaPen = 1;
-
-          // Render colunas + pagers
-          refreshColumns();
-        } catch (e) {
-          console.error(e);
-          showError('Falha ao carregar notificações.');
-          listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
-          listaPendentes.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+        if (antes !== null && depois !== null) {
+          return { antes, depois, corrigido: false };
         }
+
+        if (antes !== null && depois === null) {
+          const valor = Number(n?.valorNumerico);
+          if (Number.isFinite(valor)) {
+            return { antes, depois: clampNota(antes + valor), corrigido: true };
+          }
+        }
+
+        if (antes === null && depois !== null) {
+          const valor = Number(n?.valorNumerico);
+          if (Number.isFinite(valor)) {
+            return { antes: clampNota(depois - valor), depois, corrigido: true };
+          }
+        }
+
+        return { antes: null, depois: null, corrigido: true };
       }
 
-      function renderTurmasDoLote(data){
-        const turmas = new Set((data||[]).map(n => n?.aluno?.turma).filter(Boolean));
-        const cur = filtroTurma.value;
+      const fmtValor = (n) => (Number.isFinite(Number(n)) ? Number(n).toFixed(2) : '—');
+
+      function parseDataRegistro(n) {
+        const src = n.devolvidaEm || n.atualizadoEm || n.updatedAt || n.data || n.createdAt;
+        return src ? new Date(src) : null;
+      }
+
+      function statusPill(status) {
+        const s = String(status || '').toLowerCase();
+        const map = {
+          pendente: '⏳ Pendente',
+          deferido: '✅ Deferido',
+          revisao_solicitada: '🔁 Devolvida',
+          arquivado: '📁 Arquivado'
+        };
+        const cls = `badge status-${s}`;
+        return `<span class="${cls}">${map[s] || '—'}</span>`;
+      }      function limparListasComLoading() {
+        listaDeferidas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+        listaPendentesPrincipal.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+        listaPendentesModo.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+        listaArquivadas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+        listaAntigas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
+
+        countDeferidas.textContent = '—';
+        countPendentesPrincipal.textContent = '—';
+        countPendentesModo.textContent = '—';
+        countArquivadas.textContent = '—';
+        countAntigas.textContent = '—';
+
+        resumoDef.textContent = '—';
+        resumoPenPrincipal.textContent = '—';
+        resumoPendentesModo.textContent = '—';
+        resumoArquivadas.textContent = '—';
+        resumoAntigas.textContent = '—';
+        resumoGeral.textContent = '—';
+      }
+
+      function atualizarAbasVisuais() {
+        [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.mode === modoAtual);
+        });
+
+        blocoPrincipal.classList.toggle('hidden', modoAtual !== 'principal');
+        blocoPendentes.classList.toggle('hidden', modoAtual !== 'pendentes');
+        blocoArquivadas.classList.toggle('hidden', modoAtual !== 'arquivadas');
+        blocoAntigas.classList.toggle('hidden', modoAtual !== 'antigas');
+      }
+
+      function renderTurmas(data) {
+        const turmas = new Set(
+          (data || [])
+            .map(n => n?.aluno?.turma)
+            .filter(Boolean)
+        );
+
+        const atual = filtroTurma.value;
         filtroTurma.innerHTML = '<option value="">Todas</option>';
-        Array.from(turmas).sort().forEach(t => {
+
+        Array.from(turmas).sort().forEach(turma => {
           const opt = document.createElement('option');
-          opt.value = t; opt.textContent = t;
-          if (t === cur) opt.selected = true;
+          opt.value = turma;
+          opt.textContent = turma;
+          if (turma === atual) opt.selected = true;
           filtroTurma.appendChild(opt);
         });
       }
 
-      function statusPill(status){
-        const s = String(status||'').toLowerCase();
-        const map = { pendente:'⏳ Pendente', deferido:'✅ Deferido', revisao_solicitada:'🔁 Devolvida', arquivado:'📁 Arquivado' };
-        const cls = `badge status-${s}`;
-        return `<span class="${cls}">${map[s] || '—'}</span>`;
-      }
-
-      function headMarkup(n){
+      function headMarkup(n) {
         const nome = n.aluno?.nome || '—';
         const turma = n.aluno?.turma || '—';
         const medida = n.tipoMedida || n.tipo || '—';
-        const dmod = (n.atualizadoEm || n.updatedAt || n.data);
-        const dataTxt = dmod ? new Date(dmod).toLocaleString('pt-BR') : '—';
+        const dmod = parseDataRegistro(n);
+        const dataTxt = dmod ? dmod.toLocaleString('pt-BR') : '—';
 
         const vTotal = derivarValorTotal(n);
         const faixa = faixaNotaPrevista(n);
         const classificacaoAtual = n.classificacaoAtual || classificarComportamento(faixa.depois);
 
         let entregueBox = '';
-        if (String(n.status||'').toLowerCase() === 'deferido') {
+        if (String(n.status || '').toLowerCase() === 'deferido' && !n.devolvidoPeloAluno) {
           const checked = n.entregue ? 'checked' : '';
           const disabled = n.entregue ? 'disabled' : '';
           const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
           const atrasado = prazo && Date.now() > prazo.getTime() && !n.devolvidoPeloAluno;
           const prazoTxt = prazo ? prazo.toLocaleString('pt-BR') : '';
+
           entregueBox = `
             <label class="entregue-wrap" onclick="event.stopPropagation()">
               <input type="checkbox" ${checked} ${disabled} data-id="${n._id}" class="chk-entregue" />
               <span>Entregue</span>
             </label>
-            ${n.entregue ? `<span class="prazo-chip ${atrasado?'atraso':''}" title="${atrasado?'Prazo vencido':''}">
+            ${n.entregue ? `<span class="prazo-chip ${atrasado ? 'atraso' : ''}" title="${atrasado ? 'Prazo vencido' : ''}">
               Prazo: ${prazoTxt}
             </span>` : ''}
           `;
         }
+
         const devolv = n.devolvidoPeloAluno ? `<span class="badge" title="Assinada e devolvida">📥 Devolvida</span>` : '';
+
         return `
           <div>
             <div class="n-title">${nome}</div>
@@ -877,13 +1076,15 @@
         `;
       }
 
-      function renderLista(arr, container){
+      function renderLista(arr, container) {
         container.innerHTML = '';
-        if (!arr.length){
+
+        if (!arr.length) {
           container.innerHTML = `<div class="empty">Nada por aqui…</div>`;
           return;
         }
-        arr.forEach(n=>{
+
+        arr.forEach(n => {
           const wrap = document.createElement('div');
           wrap.className = 'n-card';
 
@@ -896,27 +1097,37 @@
           body.innerHTML = `<div class="empty"><span class="spinner"></span>Carregando…</div>`;
 
           let loaded = false;
+
           head.addEventListener('click', async () => {
             const isOpen = body.style.display === 'block';
-            if (isOpen) { body.style.display = 'none'; return; }
+            if (isOpen) {
+              body.style.display = 'none';
+              return;
+            }
 
             body.style.display = 'block';
             if (loaded) return;
 
-            try{
-              const r = await fetch(`/api/notificacoes/${n._id}`, { credentials:'include', cache:'no-store' });
+            try {
+              const r = await fetch(`/api/notificacoes/${n._id}`, {
+                credentials: 'include',
+                cache: 'no-store'
+              });
+
               if (!r.ok) throw new Error('Falha ao carregar detalhes');
+
               const det = await r.json();
 
               const vTotal = (typeof det.valorTotal === 'number') ? det.valorTotal : derivarValorTotal(det);
               const faixa = faixaNotaPrevista(det);
               const classificacaoAnterior = det.classificacaoAnterior || classificarComportamento(faixa.antes);
               const classificacaoAtual = det.classificacaoAtual || classificarComportamento(faixa.depois);
-              const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g,'');
-              const deferida = String(det.status||'').toLowerCase()==='deferido';
-              const showCom = deferida && (med==='AIA' || med==='AECDE');
+              const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g, '');
+              const deferida = String(det.status || '').toLowerCase() === 'deferido';
+              const showCom = deferida && (med === 'AIA' || med === 'AECDE');
 
               const prazoTxt = det.prazoDevolucao ? new Date(det.prazoDevolucao).toLocaleString('pt-BR') : '—';
+
               const entregueDetalhe = deferida ? `
                 <div class="n-kv">
                   <b>Entrega ao aluno</b>
@@ -938,7 +1149,7 @@
                 <div class="n-row">
                   <div class="n-kv"><b>Motivo</b>${det.motivo || '—'}</div>
                   <div class="n-kv"><b>Observação</b>${det.observacao || '—'}</div>
-                  <div class="n-kv"><b>Natureza</b>${String(det.natureza||'').toLowerCase()==='elogio' ? 'Elogio' : 'Notificação disciplinar'}</div>
+                  <div class="n-kv"><b>Natureza</b>${String(det.natureza || '').toLowerCase() === 'elogio' ? 'Elogio' : 'Notificação disciplinar'}</div>
                   <div class="n-kv"><b>Valor</b>${fmtValor(vTotal)}</div>
                   <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
                   <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
@@ -947,17 +1158,20 @@
                   <div class="n-kv"><b>Classificação</b>${classificacaoAnterior} → ${classificacaoAtual}</div>
                   ${entregueDetalhe}
                 </div>
+
                 <div class="actions">
                   <button class="pdf-btn" onclick="gerarPDF('${det._id}')">PDF</button>
-                  <a class="edit-btn" href="editar-notificacao.html?id=${det._id}">Editar</a>
+                  ${modoAtual !== 'arquivadas' && modoAtual !== 'antigas' ? `<a class="edit-btn" href="editar-notificacao.html?id=${det._id}">Editar</a>` : ''}
                   <button class="delete-btn" onclick="excluirNotificacao('${det._id}')">Excluir</button>
-                  ${det.status==='revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
+                  ${det.status === 'revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
                   ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
                 </div>
+
                 ${devolucaoActions}
               `;
+
               loaded = true;
-            }catch(e){
+            } catch (e) {
               console.error(e);
               body.innerHTML = `<div class="empty">Erro ao carregar detalhes.</div>`;
             }
@@ -968,165 +1182,544 @@
           container.appendChild(wrap);
         });
 
-        // checkboxes ENTREGUE
         container.querySelectorAll('.chk-entregue').forEach(chk => {
           chk.addEventListener('click', async (ev) => {
             ev.stopPropagation();
             const id = chk.dataset.id;
             if (!id) return;
+
             const prev = chk.checked;
-            try{
-              const r = await fetch(`/api/notificacoes/${id}/entregar`, { method:'POST', credentials:'include', cache:'no-store' });
+
+            try {
+              const r = await fetch(`/api/notificacoes/${id}/entregar`, {
+                method: 'POST',
+                credentials: 'include',
+                cache: 'no-store'
+              });
+
               const j = await r.json();
-              if (!r.ok) { chk.checked = !prev; showError(j.error || 'Falha ao marcar ENTREGUE'); return; }
+
+              if (!r.ok) {
+                chk.checked = !prev;
+                showError(j.error || 'Falha ao marcar ENTREGUE');
+                return;
+              }
+
               showToast('Notificação marcada como ENTREGUE.');
-              carregarTudo();
-            }catch(e){ chk.checked = !prev; showError('Erro de rede ao marcar ENTREGUE.'); }
+              await carregarModoAtual();
+            } catch (e) {
+              chk.checked = !prev;
+              showError('Erro de rede ao marcar ENTREGUE.');
+            }
           });
         });
       }
 
-      // Paginação por coluna (front)
-      function paginar(arr, page, perPage){
+      function paginar(arr, page, perPage) {
         const total = arr.length;
         const totalPages = Math.max(1, Math.ceil(total / perPage));
-        const start = (page-1)*perPage;
-        return { slice: arr.slice(start, start+perPage), total, totalPages };
+        const start = (page - 1) * perPage;
+        return { slice: arr.slice(start, start + perPage), total, totalPages };
       }
-      function buildPager(el, current, totalPages, onGo){
+
+      function buildPager(el, current, totalPages, onGo) {
         el.innerHTML = '';
-        const add = (lbl, goto, dis=false, cur=false) => {
+
+        const add = (lbl, goto, dis = false, cur = false) => {
           const b = document.createElement('button');
           b.textContent = lbl;
           if (cur) b.classList.add('current');
           b.disabled = dis;
-          b.onclick = ()=> onGo(goto);
+          b.onclick = () => onGo(goto);
           el.appendChild(b);
         };
-        add('«', 1, current===1);
-        add('‹', Math.max(1,current-1), current===1);
-        const s = Math.max(1, current-2);
-        const e = Math.min(totalPages, s+4);
-        for(let i=s;i<=e;i++) add(String(i), i, false, i===current);
-        add('›', Math.min(totalPages, current+1), current===totalPages);
-        add('»', totalPages, current===totalPages);
-      }
 
-      function refreshColumns(){
-        countDef.textContent = `(${dsDef.length})`;
-        countPen.textContent = `(${dsPen.length})`;
+        add('«', 1, current === 1);
+        add('‹', Math.max(1, current - 1), current === 1);
 
-        const per = porPagina;
+        const s = Math.max(1, current - 2);
+        const e = Math.min(totalPages, s + 4);
 
-        // DEF
-        const pDef = paginar(dsDef, paginaDef, per);
-        renderLista(pDef.slice, listaDeferidas);
-        buildPager(pagDef, paginaDef, pDef.totalPages, (g)=>{ paginaDef=g; refreshColumns(); });
-
-        // PEN
-        const pPen = paginar(dsPen, paginaPen, per);
-        renderLista(pPen.slice, listaPendentes);
-        buildPager(pagPen, paginaPen, pPen.totalPages, (g)=>{ paginaPen=g; refreshColumns(); });
-
-        // Resumo geral
-        resumoGeral.textContent = `${dataset.length} resultado(s) filtrados de ${totalBruto} no total`;
-      }
-
-      // ===== CSV do filtro atual =====
-      btnCsv.addEventListener('click', ()=>{
-        if (!dataset.length){ showError('Nada para exportar.'); return; }
-        const head = ['Status','Aluno','Turma','Tipo','Data','Valor','NotaAntes','NotaDepois','Nº Sequencial','Artigo','Inciso','Entregue','PrazoDevolucao','Devolvida'];
-        const rows = [];
-        const all = [...dsDef.map(n=>({n,st:'Deferido'})), ...dsPen.map(n=>({n,st:'Aguardando/' + String(n.status||'')}))];
-
-        for (const {n,st} of all){
-          const nome = n.aluno?.nome || '';
-          const turma = n.aluno?.turma || '';
-          const tipo = n.tipoMedida || n.tipo || '';
-          const dmod = (n.atualizadoEm || n.updatedAt || n.data);
-          const dataTxt = dmod ? new Date(dmod).toLocaleString('pt-BR') : '';
-          const vTotal = derivarValorTotal(n);
-          const faixa = faixaNotaPrevista(n);
-          rows.push([
-            st, nome, turma, tipo, dataTxt, vTotal,
-            faixa.antes ?? '', faixa.depois ?? '',
-            n.numeroSequencial ?? '', n.artigo ?? '', n.inciso ?? '',
-            n.entregue ? 'Sim' : 'Não',
-            n.prazoDevolucao ? new Date(n.prazoDevolucao).toLocaleString('pt-BR') : '',
-            n.devolvidoPeloAluno ? 'Sim' : 'Não'
-          ]);
+        for (let i = s; i <= e; i++) {
+          add(String(i), i, false, i === current);
         }
-        const csv = [head, ...rows].map(r=>r.map(v=>{
-          const s = String(v ?? '');
-          if (s.includes(';') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g,'""')}"`;
-          return s;
-        }).join(';')).join('\n');
 
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url;
-        a.download = `notificacoes_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      });
+        add('›', Math.min(totalPages, current + 1), current === totalPages);
+        add('»', totalPages, current === totalPages);
+      }
 
-      // ===== Ações já existentes =====
+      async function buscarModo(modo) {
+        const baseParams = new URLSearchParams();
+        baseParams.set('modo', modo);
+        baseParams.set('limit', '200');
+
+        if (filtroTurma.value) baseParams.set('turma', filtroTurma.value);
+        if (pesquisaNome.value.trim()) baseParams.set('q', pesquisaNome.value.trim());
+        if (dataDe.value) baseParams.set('from', dataDe.value);
+        if (dataAte.value) baseParams.set('to', dataAte.value);
+
+        let page = 1;
+        let totalPages = 1;
+        let total = 0;
+        const acumulado = [];
+
+        do {
+          const params = new URLSearchParams(baseParams);
+          params.set('page', String(page));
+
+          const r = await fetch(`/api/notificacoes?${params.toString()}`, {
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
+          if (r.status === 401) {
+            location.href = './login.html';
+            return { total: 0, data: [] };
+          }
+
+          if (!r.ok) {
+            throw new Error('Falha ao buscar notificações.');
+          }
+
+          const j = await r.json();
+
+          total = Number(j.total || 0);
+          totalPages = Number(j.totalPages || 1);
+
+          if (Array.isArray(j.data)) {
+            acumulado.push(...j.data);
+          }
+
+          page++;
+        } while (page <= totalPages && page <= 50);
+
+        return {
+          total,
+          data: acumulado
+        };
+      }      function refreshPrincipal() {
+        dsDef = datasetAtual.filter(n => String(n.status || '').toLowerCase() === 'deferido');
+        dsPenPrincipal = datasetAtual.filter(n => String(n.status || '').toLowerCase() !== 'deferido');
+
+        countDeferidas.textContent = `(${dsDef.length})`;
+        countPendentesPrincipal.textContent = `(${dsPenPrincipal.length})`;
+
+        const pDef = paginar(dsDef, paginaDef, porPagina);
+        const pPen = paginar(dsPenPrincipal, paginaPenPrincipal, porPagina);
+
+        renderLista(pDef.slice, listaDeferidas);
+        renderLista(pPen.slice, listaPendentesPrincipal);
+
+        resumoDef.textContent = `${pDef.total} item(ns)`;
+        resumoPenPrincipal.textContent = `${pPen.total} item(ns)`;
+
+        buildPager(pagDef, paginaDef, pDef.totalPages, (g) => {
+          paginaDef = g;
+          refreshPrincipal();
+        });
+
+        buildPager(pagPenPrincipal, paginaPenPrincipal, pPen.totalPages, (g) => {
+          paginaPenPrincipal = g;
+          refreshPrincipal();
+        });
+
+        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em notificações ativas`;
+      }
+
+      function refreshPendentes() {
+        dsPendentesModo = datasetAtual.slice();
+        countPendentesModo.textContent = `(${dsPendentesModo.length})`;
+
+        const p = paginar(dsPendentesModo, paginaPendentesModo, porPagina);
+        renderLista(p.slice, listaPendentesModo);
+
+        resumoPendentesModo.textContent = `${p.total} item(ns)`;
+
+        buildPager(pagPendentesModo, paginaPendentesModo, p.totalPages, (g) => {
+          paginaPendentesModo = g;
+          refreshPendentes();
+        });
+
+        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em pendentes do coordenador`;
+      }
+
+      function refreshArquivadas() {
+        dsArquivadas = datasetAtual.slice();
+        countArquivadas.textContent = `(${dsArquivadas.length})`;
+
+        const p = paginar(dsArquivadas, paginaArquivadas, porPagina);
+        renderLista(p.slice, listaArquivadas);
+
+        resumoArquivadas.textContent = `${p.total} item(ns)`;
+
+        buildPager(pagArquivadas, paginaArquivadas, p.totalPages, (g) => {
+          paginaArquivadas = g;
+          refreshArquivadas();
+        });
+
+        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em notificações arquivadas`;
+      }
+
+      function refreshAntigas() {
+        dsAntigas = datasetAtual.slice();
+        countAntigas.textContent = `(${dsAntigas.length})`;
+
+        const p = paginar(dsAntigas, paginaAntigas, porPagina);
+        renderLista(p.slice, listaAntigas);
+
+        resumoAntigas.textContent = `${p.total} item(ns)`;
+
+        buildPager(pagAntigas, paginaAntigas, p.totalPages, (g) => {
+          paginaAntigas = g;
+          refreshAntigas();
+        });
+
+        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em notificações antigas`;
+      }
+
+      async function carregarModoAtual() {
+        limparListasComLoading();
+        atualizarAbasVisuais();
+
+        try {
+          const { total, data } = await buscarModo(modoAtual);
+          totalAtual = total;
+          datasetAtual = data;
+
+          renderTurmas(data);
+
+          if (modoAtual === 'principal') {
+            paginaDef = 1;
+            paginaPenPrincipal = 1;
+            refreshPrincipal();
+          } else if (modoAtual === 'pendentes') {
+            paginaPendentesModo = 1;
+            refreshPendentes();
+          } else if (modoAtual === 'arquivadas') {
+            paginaArquivadas = 1;
+            refreshArquivadas();
+          } else {
+            paginaAntigas = 1;
+            refreshAntigas();
+          }
+        } catch (e) {
+          console.error(e);
+          showError('Falha ao carregar notificações.');
+
+          listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+          listaPendentesPrincipal.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+          listaPendentesModo.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+          listaArquivadas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+          listaAntigas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+        }
+      }
+
       async function gerarPDF(id) {
         try {
-          const r = await fetch(`/api/pdf/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
+          const r = await fetch(`/api/pdf/${id}`, {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
           if (!r.ok) throw new Error('Erro ao gerar documento');
+
           const blob = await r.blob();
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
+
           const disp = r.headers.get('content-disposition') || '';
           const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disp);
           const nome = m ? m[1].replace(/['"]/g, '') : `notificacao_${Date.now()}.docx`;
+
           a.download = nome.endsWith('.docx') ? nome : (nome + '.docx');
-          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-        } catch { showError('Erro ao gerar documento.'); }
-      }
-      async function reenviarNotificacao(id) {
-        try {
-          const r = await fetch(`/api/notificacoes/${id}/reenviar`, { method:'PUT', credentials:'include', cache:'no-store' });
-          const j = await r.json();
-          if (r.ok) carregarTudo(); else showError(j.message || 'Erro ao reenviar.');
-        } catch { showError('Erro ao reenviar a notificação.'); }
-      }
-      async function excluirNotificacao(id) {
-        if (!confirm('Deseja excluir esta notificação?')) return;
-        try {
-          const r = await fetch(`/api/notificacoes/${id}`, { method:'DELETE', credentials:'include', cache:'no-store' });
-          if (r.ok) carregarTudo(); else showError('Erro ao excluir a notificação.');
-        } catch { showError('Erro ao conectar com o servidor.'); }
-      }
-      async function abrirComunicacao(id) {
-        try {
-          const resp = await fetch(`/api/comunicacao/${id}`, { method:'POST', credentials:'include', cache:'no-store' });
-          if (!resp.ok) throw new Error('Falha ao iniciar comunicação');
-          const comunic = await resp.json();
-          window.location.href = `/comunicacao-pais.html?comunicacao=${comunic._id}&notificacao=${id}`;
-        } catch (e) { showError('Erro ao abrir comunicação.'); console.error(e); }
-      }
-      async function marcarEntregue(id, btn){
-        try{
-          btn && (btn.disabled = true);
-          const r = await fetch(`/api/notificacoes/${id}/entregar`, { method:'POST', credentials:'include', cache:'no-store' });
-          const j = await r.json();
-          if (!r.ok) { showError(j.error || 'Falha ao marcar ENTREGUE'); btn && (btn.disabled=false); return; }
-          showToast('Notificação marcada como ENTREGUE.'); carregarTudo();
-        }catch(e){ showError('Erro de rede ao marcar ENTREGUE.'); btn && (btn.disabled=false); }
-      }
-      async function marcarDevolvida(id, btn){
-        try{
-          btn && (btn.disabled = true);
-          const r = await fetch(`/api/notificacoes/${id}/devolver`, { method:'POST', credentials:'include', cache:'no-store' });
-          const j = await r.json();
-          if (!r.ok) { showError(j.error || 'Falha ao marcar DEVOLVIDA'); btn && (btn.disabled=false); return; }
-          showToast('Notificação marcada como DEVOLVIDA.'); carregarTudo();
-        }catch(e){ showError('Erro ao marcar DEVOLVIDA.'); btn && (btn.disabled=false); }
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch {
+          showError('Erro ao gerar documento.');
+        }
       }
 
-      // Export para escopo global (ações em botões)
+      async function reenviarNotificacao(id) {
+        try {
+          const r = await fetch(`/api/notificacoes/${id}/reenviar`, {
+            method: 'PUT',
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
+          const j = await r.json();
+
+          if (r.ok) {
+            showToast('Notificação reenviada com sucesso.');
+            await carregarModoAtual();
+          } else {
+            showError(j.message || 'Erro ao reenviar.');
+          }
+        } catch {
+          showError('Erro ao reenviar a notificação.');
+        }
+      }
+
+      async function excluirNotificacao(id) {
+        if (!confirm('Deseja excluir esta notificação?')) return;
+
+        try {
+          const r = await fetch(`/api/notificacoes/${id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
+          if (r.ok) {
+            showToast('Notificação excluída com sucesso.');
+            await carregarModoAtual();
+          } else {
+            showError('Erro ao excluir a notificação.');
+          }
+        } catch {
+          showError('Erro ao conectar com o servidor.');
+        }
+      }
+
+      async function abrirComunicacao(id) {
+        try {
+          const resp = await fetch(`/api/comunicacao/${id}`, {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
+          if (!resp.ok) throw new Error('Falha ao iniciar comunicação');
+
+          const comunic = await resp.json();
+          window.location.href = `/comunicacao-pais.html?comunicacao=${comunic._id}&notificacao=${id}`;
+        } catch (e) {
+          showError('Erro ao abrir comunicação.');
+          console.error(e);
+        }
+      }
+
+      async function marcarEntregue(id, btn) {
+        try {
+          if (btn) btn.disabled = true;
+
+          const r = await fetch(`/api/notificacoes/${id}/entregar`, {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
+          const j = await r.json();
+
+          if (!r.ok) {
+            showError(j.error || 'Falha ao marcar ENTREGUE');
+            if (btn) btn.disabled = false;
+            return;
+          }
+
+          showToast('Notificação marcada como ENTREGUE.');
+          await carregarModoAtual();
+        } catch (e) {
+          showError('Erro de rede ao marcar ENTREGUE.');
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      async function marcarDevolvida(id, btn) {
+        try {
+          if (btn) btn.disabled = true;
+
+          const r = await fetch(`/api/notificacoes/${id}/devolver`, {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store'
+          });
+
+          const j = await r.json();
+
+          if (!r.ok) {
+            showError(j.error || 'Falha ao marcar DEVOLVIDA');
+            if (btn) btn.disabled = false;
+            return;
+          }
+
+          showToast('Notificação marcada como DEVOLVIDA e arquivada.');
+          await carregarModoAtual();
+        } catch (e) {
+          showError('Erro ao marcar DEVOLVIDA.');
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function fmtDate(d) {
+        return d.toISOString().slice(0, 10);
+      }
+
+      const debounce = (fn, ms = 250) => {
+        let t;
+        return (...a) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...a), ms);
+        };
+      };
+
+      [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(tab => {
+        tab.addEventListener('click', async () => {
+          const novoModo = tab.dataset.mode;
+          if (novoModo === modoAtual) return;
+
+          modoAtual = novoModo;
+          await carregarModoAtual();
+        });
+      });
+
+      pesquisaNome.addEventListener('input', debounce(async () => {
+        await carregarModoAtual();
+      }, 200));
+
+      filtroTurma.addEventListener('change', async () => {
+        await carregarModoAtual();
+      });
+
+      porPaginaSel.addEventListener('change', () => {
+        porPagina = Number(porPaginaSel.value);
+
+        if (modoAtual === 'principal') {
+          paginaDef = 1;
+          paginaPenPrincipal = 1;
+          refreshPrincipal();
+        } else if (modoAtual === 'pendentes') {
+          paginaPendentesModo = 1;
+          refreshPendentes();
+        } else if (modoAtual === 'arquivadas') {
+          paginaArquivadas = 1;
+          refreshArquivadas();
+        } else {
+          paginaAntigas = 1;
+          refreshAntigas();
+        }
+      });
+
+      dataDe.addEventListener('change', async () => {
+        await carregarModoAtual();
+      });
+
+      dataAte.addEventListener('change', async () => {
+        await carregarModoAtual();
+      });
+
+      btnAtualizar.addEventListener('click', async () => {
+        await carregarModoAtual();
+      });
+
+      chipHoje.addEventListener('click', async () => {
+        const now = new Date();
+        dataDe.value = fmtDate(now);
+        dataAte.value = fmtDate(now);
+        await carregarModoAtual();
+      });
+
+      chip7.addEventListener('click', async () => {
+        const now = new Date();
+        const de = new Date();
+        de.setDate(now.getDate() - 6);
+        dataDe.value = fmtDate(de);
+        dataAte.value = fmtDate(now);
+        await carregarModoAtual();
+      });
+
+      chip30.addEventListener('click', async () => {
+        const now = new Date();
+        const de = new Date();
+        de.setDate(now.getDate() - 29);
+        dataDe.value = fmtDate(de);
+        dataAte.value = fmtDate(now);
+        await carregarModoAtual();
+      });
+
+      chipLimpar.addEventListener('click', async () => {
+        dataDe.value = '';
+        dataAte.value = '';
+        await carregarModoAtual();
+      });
+
+      btnCsv.addEventListener('click', () => {
+        if (!datasetAtual.length) {
+          showError('Nada para exportar.');
+          return;
+        }
+
+        const head = [
+          'Status',
+          'Aluno',
+          'Turma',
+          'Tipo',
+          'Data',
+          'Valor',
+          'NotaAntes',
+          'NotaDepois',
+          'Nº Sequencial',
+          'Artigo',
+          'Inciso',
+          'Entregue',
+          'PrazoDevolucao',
+          'Devolvida'
+        ];
+
+        const rows = datasetAtual.map((n) => {
+          const nome = n.aluno?.nome || '';
+          const turma = n.aluno?.turma || '';
+          const tipo = n.tipoMedida || n.tipo || '';
+          const dmod = parseDataRegistro(n);
+          const dataTxt = dmod ? dmod.toLocaleString('pt-BR') : '';
+          const vTotal = derivarValorTotal(n);
+          const faixa = faixaNotaPrevista(n);
+
+          return [
+            n.status || '',
+            nome,
+            turma,
+            tipo,
+            dataTxt,
+            vTotal,
+            faixa.antes ?? '',
+            faixa.depois ?? '',
+            n.numeroSequencial ?? '',
+            n.artigo ?? '',
+            n.inciso ?? '',
+            n.entregue ? 'Sim' : 'Não',
+            n.prazoDevolucao ? new Date(n.prazoDevolucao).toLocaleString('pt-BR') : '',
+            n.devolvidoPeloAluno ? 'Sim' : 'Não'
+          ];
+        });
+
+        const csv = [head, ...rows]
+          .map(r => r.map(v => {
+            const s = String(v ?? '');
+            if (s.includes(';') || s.includes('"') || s.includes('\n')) {
+              return `"${s.replace(/"/g, '""')}"`;
+            }
+            return s;
+          }).join(';'))
+          .join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+
+        a.href = url;
+        a.download = `notificacoes_${modoAtual}_${new Date().toISOString().slice(0, 10)}.csv`;
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+
       window.gerarPDF = gerarPDF;
       window.reenviarNotificacao = reenviarNotificacao;
       window.excluirNotificacao = excluirNotificacao;
@@ -1134,31 +1727,7 @@
       window.marcarEntregue = marcarEntregue;
       window.marcarDevolvida = marcarDevolvida;
 
-      // ===== Eventos =====
-      const debounce = (fn,ms=250)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
-      pesquisaNome.addEventListener('input', debounce(()=>{ carregarTudo(); }, 200));
-      filtroTurma.addEventListener('change', ()=>{ carregarTudo(); });
-      porPaginaSel.addEventListener('change', ()=>{ porPagina = Number(porPaginaSel.value); paginaDef=1; paginaPen=1; refreshColumns(); });
-      dataDe.addEventListener('change', ()=>{ carregarTudo(); });
-      dataAte.addEventListener('change', ()=>{ carregarTudo(); });
-
-      // Chips de período
-      function fmtDate(d){ return d.toISOString().slice(0,10); }
-      chipHoje.addEventListener('click', ()=>{
-        const now = new Date();
-        dataDe.value = fmtDate(now); dataAte.value = fmtDate(now); carregarTudo();
-      });
-      chip7.addEventListener('click', ()=>{
-        const now = new Date(); const de = new Date(); de.setDate(now.getDate()-6);
-        dataDe.value = fmtDate(de); dataAte.value = fmtDate(now); carregarTudo();
-      });
-      chip30.addEventListener('click', ()=>{
-        const now = new Date(); const de = new Date(); de.setDate(now.getDate()-29);
-        dataDe.value = fmtDate(de); dataAte.value = fmtDate(now); carregarTudo();
-      });
-      chipLimpar.addEventListener('click', ()=>{
-        dataDe.value = ''; dataAte.value=''; carregarTudo();
-      });
+      carregarModoAtual();
     });
   </script>
   <script src="notify.js"></script>

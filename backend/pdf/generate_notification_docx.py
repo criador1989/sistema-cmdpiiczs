@@ -2,10 +2,13 @@ import sys
 import io
 import os
 import json
-from docx import Document
-from docx.shared import Pt
+import requests
+from io import BytesIO
 
-# Leitura UTF-8 do stdin
+from docx import Document
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,28 +38,8 @@ def clamp_nota(n):
     return max(0.0, min(10.0, round(n, 2)))
 
 
-def classificar(nota):
-    n = as_float(nota, 0)
-    if n >= 9.5:
-        return "Excepcional"
-    if n >= 8.5:
-        return "Ótimo"
-    if n >= 7.0:
-        return "Bom"
-    if n >= 5.0:
-        return "Regular"
-    if n >= 3.0:
-        return "Insuficiente"
-    return "Incompatível"
-
-
-def get_nested(d, path, default=None):
-    cur = d
-    for p in path.split("."):
-        if not isinstance(cur, dict) or p not in cur:
-            return default
-        cur = cur[p]
-    return cur
+def classificar(_nota, dados):
+    return to_s(dados.get("classificacaoComportamental") or dados.get("comportamento")) or "—"
 
 
 def aplicar_formatacao_paragrafo(paragraph):
@@ -73,37 +56,17 @@ def substituir_tokens_no_texto(texto, replacements):
 
 
 def substituir_no_paragrafo(paragraph, replacements):
-    if not paragraph.runs:
+    full_text = paragraph.text or ""
+    novo_texto = substituir_tokens_no_texto(full_text, replacements)
+
+    if novo_texto == full_text:
+        aplicar_formatacao_paragrafo(paragraph)
         return
 
-    full_text = "".join(run.text for run in paragraph.runs)
-    original_text = full_text
-
-    # Substitui placeholders
-    full_text = substituir_tokens_no_texto(full_text, replacements)
-
-    # Compatibilidade com modelos antigos
-    if "NOTIFICAÇÃO DE MEDIDA DISCIPLINAR" in full_text and replacements.get("tituloDocumento"):
-        full_text = full_text.replace(
-            "NOTIFICAÇÃO DE MEDIDA DISCIPLINAR",
-            to_s(replacements["tituloDocumento"])
-        )
-
-    frase_antiga = (
-        "Esta medida acarreta perda de sua nota disciplinar em {{Valor}} pontos, "
-        "enquadrando-se no comportamento {{comportamento}}."
-    )
-    if frase_antiga in full_text and replacements.get("fraseResultado"):
-        full_text = full_text.replace(frase_antiga, to_s(replacements["fraseResultado"]))
-
-    if "{{Valor}}" in full_text:
-        full_text = full_text.replace("{{Valor}}", to_s(replacements.get("valorNumerico", "0.00")))
-
-    if full_text != original_text:
-        paragraph.clear()
-        run = paragraph.add_run(full_text)
-        run.font.name = "Times New Roman"
-        run.font.size = Pt(12)
+    paragraph.clear()
+    run = paragraph.add_run(novo_texto)
+    run.font.name = "Times New Roman"
+    run.font.size = Pt(12)
 
 
 def substituir_em_tabela(table, replacements):
@@ -133,12 +96,39 @@ def substituir_em_documento(doc, replacements):
             aplicar_formatacao_paragrafo(p)
 
 
+def inserir_logo_no_topo(doc, logo_url):
+    if not logo_url:
+        return
+
+    try:
+        response = requests.get(logo_url, timeout=8)
+        response.raise_for_status()
+
+        image_stream = BytesIO(response.content)
+
+        # Insere no início do documento
+        primeiro_paragrafo = doc.paragraphs[0] if doc.paragraphs else doc.add_paragraph()
+        p = primeiro_paragrafo.insert_paragraph_before()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        run = p.add_run()
+        run.add_picture(image_stream, width=Inches(1.3))
+
+        # espaço após logo
+        p2 = primeiro_paragrafo.insert_paragraph_before()
+        p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p2.add_run("")
+
+    except Exception as e:
+        print(f"Erro ao carregar logo: {e}", file=sys.stderr)
+
+
 def main():
     try:
         raw = sys.stdin.read()
         dados = json.loads(raw) if raw else {}
     except Exception as e:
-        print(f"Erro ao ler JSON de entrada: {e}", file=sys.stderr)
+        print(f"Erro ao ler JSON: {e}", file=sys.stderr)
         sys.exit(1)
 
     modelo_path = dados.get("modeloPath") or MODELO_PADRAO
@@ -146,125 +136,90 @@ def main():
 
     if not os.path.isabs(modelo_path):
         modelo_path = os.path.join(BASE_DIR, modelo_path)
+
     if not os.path.isabs(saida_path):
         saida_path = os.path.join(BASE_DIR, saida_path)
 
     if not os.path.exists(modelo_path):
-        print(f"Modelo DOCX não encontrado: {modelo_path}", file=sys.stderr)
+        print(f"Modelo não encontrado: {modelo_path}", file=sys.stderr)
         sys.exit(1)
 
-    aluno_nome = to_s(
-        dados.get("alunoNome")
-        or get_nested(dados, "aluno.nome")
-        or dados.get("aluno")
-        or ""
-    )
-    aluno_turma = to_s(
-        dados.get("turma")
-        or get_nested(dados, "aluno.turma")
-        or ""
-    )
-    numero_seq = to_s(dados.get("numeroSequencial") or dados.get("numero") or "")
-    data_por_extenso = to_s(
-        dados.get("dataPorExtenso")
-        or dados.get("dataHora")
-        or dados.get("data")
-        or ""
-    )
+    aluno_nome = to_s(dados.get("alunoNome") or dados.get("aluno"))
+    turma = to_s(dados.get("turma") or dados.get("alunoTurma"))
+    numero = to_s(dados.get("numeroSequencial") or dados.get("numero"))
+    data = to_s(dados.get("dataPorExtenso") or dados.get("dataHora"))
+    descricao = to_s(dados.get("descricaoInfracao") or "—")
     observacao = to_s(dados.get("observacao") or "-")
-    descricao_infracao = to_s(
-        dados.get("descricaoInfracao")
-        or dados.get("motivo")
-        or "—"
-    )
-    artigo = to_s(dados.get("artigo") or "")
-    paragrafo = to_s(dados.get("paragrafo") or "")
-    inciso = to_s(dados.get("descricaoInciso") or dados.get("inciso") or "")
-    assinatura_cargo = to_s(
-        dados.get("assinaturaCargo")
-        or "Coordenador do Corpo de Alunos do CMDP II - CZS"
-    )
 
-    natureza = to_s(dados.get("natureza") or "").strip().lower()
-    nota_anterior = clamp_nota(dados.get("notaAnterior", 0))
-    nota_atual = clamp_nota(dados.get("notaAtual", nota_anterior))
+    nota_anterior = clamp_nota(dados.get("notaAnterior"))
+    nota_atual = clamp_nota(dados.get("notaAtual"))
 
-    delta_informado = dados.get("deltaNota", dados.get("valorNumerico", None))
-    if delta_informado is None:
+    classificacao = classificar(nota_atual, dados)
+
+    delta_raw = dados.get("valorNumerico", None)
+    if delta_raw is None:
         delta = round(nota_atual - nota_anterior, 2)
     else:
-        delta = round(as_float(delta_informado, 0), 2)
+        delta = round(as_float(delta_raw, 0), 2)
 
-    # Decide natureza automaticamente se não vier
+    natureza = to_s(dados.get("natureza")).strip().lower()
     if not natureza:
-        natureza = "elogio" if nota_atual > nota_anterior else "indisciplina"
+        natureza = "elogio" if delta > 0 else "indisciplina"
+
+    texto_institucional = to_s(dados.get("textoInstitucional"))
+    cabecalho = to_s(dados.get("cabecalho"))
+    nome_regulamento = to_s(dados.get("regulamentoNome"))
+
+    cidade = to_s(dados.get("cidade"))
+    estado = to_s(dados.get("estado"))
+    logo_url = to_s(dados.get("logoUrl"))
 
     if natureza == "elogio":
-        delta = abs(delta) if delta != 0 else abs(round(nota_atual - nota_anterior, 2))
-        titulo_documento = "ELOGIO INDIVIDUAL"
+        titulo = "ELOGIO INDIVIDUAL"
         frase_resultado = (
-            f"Este elogio acarreta acréscimo de {abs(delta):.2f} pontos em sua nota disciplinar, "
-            f"enquadrando o(a) aluno(a) no comportamento {classificar(nota_atual)}."
+            f"Este reconhecimento resultou em acréscimo de {abs(delta):.2f} pontos, "
+            f"enquadrando o(a) aluno(a) no comportamento {classificacao}."
         )
-        frase_final = (
-            "Que esse espírito de disciplina, responsabilidade e dedicação à vida escolar "
-            "continue prevalecendo em sua trajetória acadêmica."
-        )
+        frase_final = "Parabenizamos pela postura e incentivamos a continuidade desse desempenho."
     else:
-        delta = -abs(delta) if delta != 0 else -abs(round(nota_atual - nota_anterior, 2))
-        titulo_documento = "NOTIFICAÇÃO DE MEDIDA DISCIPLINAR"
+        titulo = "NOTIFICAÇÃO DISCIPLINAR"
         frase_resultado = (
-            f"Esta medida acarreta perda de {abs(delta):.2f} pontos em sua nota disciplinar, "
-            f"enquadrando o(a) aluno(a) no comportamento {classificar(nota_atual)}."
+            f"Esta ocorrência resultou em redução de {abs(delta):.2f} pontos, "
+            f"enquadrando o(a) aluno(a) no comportamento {classificacao}."
         )
-        frase_final = (
-            "Ressaltamos a importância da reflexão sobre a conduta apresentada, "
-            "visando o desenvolvimento disciplinar e o cumprimento das normas institucionais."
-        )
-
-    classificacao_anterior = to_s(
-        dados.get("classificacaoAnterior") or classificar(nota_anterior)
-    )
-    classificacao_atual = to_s(
-        dados.get("classificacaoAtual") or classificar(nota_atual)
-    )
+        frase_final = "Reforçamos a importância do cumprimento das normas institucionais."
 
     replacements = {
-        "tituloDocumento": titulo_documento,
-        "titulo": titulo_documento,
-        "numeroSequencial": numero_seq,
-        "numero": numero_seq,
+        "tituloDocumento": titulo,
+        "titulo": titulo,
+        "regulamentoNome": nome_regulamento,
+        "cabecalho": cabecalho,
+        "textoInstitucional": texto_institucional,
+        "numeroSequencial": numero,
+        "numero": numero,
         "aluno": aluno_nome,
         "alunoNome": aluno_nome,
-        "turma": aluno_turma,
-        "dataHora": data_por_extenso,
-        "dataPorExtenso": data_por_extenso,
-        "descricaoInfracao": descricao_infracao,
-        "motivo": descricao_infracao,
+        "turma": turma,
+        "dataHora": data,
+        "dataPorExtenso": data,
+        "descricaoInfracao": descricao,
         "observacao": observacao,
-        "artigo": artigo,
-        "paragrafo": paragrafo,
-        "inciso": inciso,
-        "descricaoInciso": inciso,
-        "valorNumerico": f"{abs(delta):.2f}",
-        "Valor": f"{abs(delta):.2f}",
-        "deltaNota": f"{delta:.2f}",
         "notaAnterior": fmt2(nota_anterior),
         "notaAtual": fmt2(nota_atual),
         "notaFinal": fmt2(nota_atual),
-        "notaPublicavel": fmt2(nota_atual),
-        "classificacaoAnterior": classificacao_anterior,
-        "classificacaoAtual": classificacao_atual,
-        "comportamento": classificacao_atual,
+        "comportamento": classificacao,
         "fraseResultado": frase_resultado,
-        "frase": frase_resultado,
         "fraseFinal": frase_final,
-        "assinaturaCargo": assinatura_cargo,
+        "cidade": cidade,
+        "estado": estado,
     }
 
     try:
         doc = Document(modelo_path)
+
+        inserir_logo_no_topo(doc, logo_url)
         substituir_em_documento(doc, replacements)
+
         doc.save(saida_path)
     except Exception as e:
         print(f"Erro ao gerar DOCX: {e}", file=sys.stderr)

@@ -317,9 +317,7 @@ function classificarComportamento(nota) {
 function normalizarValorPorNatureza(natureza, valor) {
   const bruto = toNumber(valor, 0);
   return normalizeText(natureza) === 'elogio' ? Math.abs(bruto) : -Math.abs(bruto);
-}
-
-async function enriquecerClassificacao(notif, instituicao) {
+}async function enriquecerClassificacao(notif, instituicao) {
   if (!notif || typeof notif !== 'object') return notif;
 
   const config = await getConfigDisciplinar(instituicao);
@@ -579,13 +577,15 @@ async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
     const notaAnteriorFmt = clampNota(notaAnterior);
     const notaAtualFmt = clampNota(notaAtual);
 
+    const config = await getConfigDisciplinar(instituicao);
+
     await Notificacao.findByIdAndUpdate(notif._id, {
       $set: {
         valorNumerico: normalizarValorPorNatureza(notif.natureza, notif.valorNumerico),
         notaAnterior: notaAnteriorFmt,
         notaAtual: notaAtualFmt,
-        classificacaoAnterior: classificarComportamento(notaAnteriorFmt),
-        classificacaoAtual: classificarComportamento(notaAtualFmt)
+        classificacaoAnterior: getClassificacaoComportamento(notaAnteriorFmt, config),
+        classificacaoAtual: getClassificacaoComportamento(notaAtualFmt, config)
       }
     });
   } catch (e) {
@@ -616,9 +616,7 @@ async function recomputarSnapshotsPosterioresDoAluno(alunoId, instituicao) {
 
 function isObjectId(v) {
   return /^[0-9a-fA-F]{24}$/.test(String(v));
-}
-
-router.get('/novas', autenticar, requireTenant, attachActor, async (_req, res) => {
+}router.get('/novas', autenticar, requireTenant, attachActor, async (_req, res) => {
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
@@ -682,7 +680,8 @@ router.get('/pendentes', autenticar, requireTenant, attachActor, async (req, res
 
     const itens = await Notificacao.find({
       ...instMatch,
-      status: 'pendente'
+      status: 'pendente',
+      devolvidoPeloAluno: { $ne: true }
     })
       .sort({ data: -1, createdAt: -1 })
       .limit(limit)
@@ -709,24 +708,73 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     const q = (req.query.q || '').trim();
     const turma = (req.query.turma || '').trim();
+    const modo = String(req.query.modo || 'principal').trim().toLowerCase();
 
-    const filtroBase = { ...instMatch };
+    const filtroBase = {
+      ...instMatch,
+      ativo: { $ne: false }
+    };
+
+    const limiteHistorico = new Date('2026-01-01T00:00:00.000Z');
+
+    if (modo === 'antigas') {
+      filtroBase.data = { $lt: limiteHistorico };
+    } else if (modo === 'arquivadas') {
+      filtroBase.data = { $gte: limiteHistorico };
+      filtroBase.devolvidoPeloAluno = true;
+    } else if (modo === 'pendentes') {
+      filtroBase.data = { $gte: limiteHistorico };
+      filtroBase.status = 'pendente';
+      filtroBase.devolvidoPeloAluno = { $ne: true };
+      filtroBase.arquivada = { $ne: true };
+    } else {
+      filtroBase.data = { $gte: limiteHistorico };
+      filtroBase.devolvidoPeloAluno = { $ne: true };
+      filtroBase.arquivada = { $ne: true };
+      filtroBase.status = { $ne: 'arquivado' };
+    }
+
+    if (req.query.from || req.query.to) {
+      const faixaData = {};
+
+      if (modo === 'antigas') {
+        faixaData.$lt = new Date('2026-01-01T00:00:00.000Z');
+      } else {
+        faixaData.$gte = new Date('2026-01-01T00:00:00.000Z');
+      }
+
+      if (req.query.from) {
+        const de = toDayStart(parseDateOnlyLocal(req.query.from));
+        faixaData.$gte = de;
+      }
+
+      if (req.query.to) {
+        const ate = toDayEnd(parseDateOnlyLocal(req.query.to));
+        faixaData.$lte = ate;
+      }
+
+      filtroBase.data = faixaData;
+    }
 
     if (q || turma) {
       const alunoFiltro = { ...buildAlunoMatch(tenantId) };
+
       if (q) {
         alunoFiltro.nome = {
           $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
           $options: 'i'
         };
       }
+
       if (turma) alunoFiltro.turma = turma;
 
       const alunos = await Aluno.find(alunoFiltro).select('_id').lean();
       const ids = alunos.map((a) => a._id);
+
       if (ids.length === 0) {
-        return res.json({ total: 0, page, totalPages: 0, data: [] });
+        return res.json({ total: 0, page, totalPages: 0, modo, data: [] });
       }
+
       filtroBase.aluno = { $in: ids };
     }
 
@@ -737,7 +785,13 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
       .sort({ data: -1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('aluno tipo tipoMedida data status valorNumerico quantidadeDias notaAnterior notaAtual classificacaoAnterior classificacaoAtual comentarioMonitor numeroSequencial entregue prazoDevolucao devolvidoPeloAluno entregueEm natureza mensagemEnviada deferidoEm')
+      .select(`
+        aluno tipo tipoMedida data status valorNumerico quantidadeDias
+        notaAnterior notaAtual classificacaoAnterior classificacaoAtual
+        comentarioMonitor numeroSequencial entregue prazoDevolucao
+        devolvidoPeloAluno devolvidaEm entregueEm natureza mensagemEnviada
+        deferidoEm arquivada ativo
+      `)
       .populate({
         path: 'aluno',
         select: 'nome turma instituicao tenantId',
@@ -748,17 +802,17 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
     const dataRaw = (notificacoes || []).filter((n) => n.aluno);
 
     const data = await Promise.all(
-  dataRaw.map((n) => {
-    const valorTotal = Number(n.valorNumerico || 0);
-    const valorUnitario = valorTotal;
-    return enriquecerClassificacao(
-      { ...n, valorTotal, valorUnitario },
-      tenantId
+      dataRaw.map((n) => {
+        const valorTotal = Number(n.valorNumerico || 0);
+        const valorUnitario = valorTotal;
+        return enriquecerClassificacao(
+          { ...n, valorTotal, valorUnitario },
+          tenantId
+        );
+      })
     );
-  })
-);
 
-    res.json({ total, page, totalPages, data });
+    res.json({ total, page, totalPages, modo, data });
   } catch (err) {
     console.error('Erro ao buscar notificações:', err);
     res.status(500).json({ error: 'Erro ao buscar notificações.' });
@@ -817,720 +871,245 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     let valor = 0;
 
-if (ehElogio) {
-  let valorBase = 0;
+    if (ehElogio) {
+      let valorBase = 0;
 
-  if (tipoElogio === 'elogioVerbal') {
-    valorBase = config.recompensas.elogioVerbal;
-  } else if (tipoElogio === 'boletimInternoIndividual') {
-    valorBase = config.recompensas.elogioIndividual;
-  } else if (tipoElogio === 'boletimInternoColetivo') {
-    valorBase = config.recompensas.elogioColetivo;
-  } else if (tipoElogio === 'mediaAlta') {
-    valorBase = config.recompensas.mediaAlta;
-  }
-
-  valor = typeof valorNumerico === 'number' ? valorNumerico : valorBase;
-  valor = normalizarValorPorNatureza('elogio', valor);
-
-} else {
-  let valorBase = 0;
-
-  const tipoNorm = String(tituloMedida || '').toLowerCase();
-
-  if (tipoNorm.includes('advert')) {
-    valorBase = config.medidas.advertenciaEscrita;
-  } else if (tipoNorm.includes('repre')) {
-    valorBase = config.medidas.repreensao;
-  } else if (tipoNorm.includes('a.e.c.d.e') || tipoNorm.includes('aecde')) {
-    valorBase = config.medidas.aecdePorDia;
-  } else if (tipoNorm.includes('a.i.a') || tipoNorm.includes('aia')) {
-    valorBase = config.medidas.aiaPorDia;
-  }
-
-  valor = typeof valorNumerico === 'number'
-    ? valorNumerico
-    : Number(valorBase.toFixed(2));
-
-  valor = normalizarValorPorNatureza('indisciplina', valor);
-}
-
-    const dataRef = data ? parseDateOnlyLocal(data) : new Date();
-
-    let created = null;
-    let ultimaMensagemErro = null;
-
-    for (let tentativa = 0; tentativa < 5 && !created; tentativa++) {
-      const ns = await getNextNumeroSequencialAtomic(inst, dataRef);
-      const numeroSequencial = ns.numeroSequencial;
-
-      try {
-        created = await Notificacao.create(tenantData(req, {
-          aluno,
-          natureza: ehElogio ? 'elogio' : 'indisciplina',
-          tipo: tituloMedida || (ehElogio ? 'Elogio' : ''),
-          tipoMedida: tituloMedida || (ehElogio ? 'Elogio' : ''),
-          tipoElogio: ehElogio ? tipoElogio || null : null,
-          motivo: ehElogio
-            ? {
-                elogioVerbal: 'Elogio verbal',
-                boletimInternoIndividual: 'Boletim Interno Individual',
-                boletimInternoColetivo: 'Boletim Interno Coletivo',
-                mediaAlta: 'Média ≥ 8,5'
-              }[tipoElogio] || 'Elogio'
-            : (typeof motivo === 'string' ? motivo : '').trim(),
-          quantidadeDias: ehElogio ? 1 : PRECISA_DIAS.has(tituloMedida) ? dias : 1,
-          valorNumerico: Number(valor || 0),
-          observacao: (observacao || '').trim(),
-          data: dataRef,
-          comentarioMonitor: (comentarioMonitor || '').trim(),
-          artigo: ehElogio ? null : artigo || null,
-          paragrafo: ehElogio ? null : paragrafo || null,
-          inciso: ehElogio ? null : inciso || null,
-          classificacaoRegulamento: ehElogio ? null : classificacaoRegulamento || null,
-          status: 'pendente',
-          numeroSequencial
-        }));
-      } catch (errCreate) {
-        ultimaMensagemErro = errCreate;
-        if (errCreate?.code === 11000 && /numeroSequencial/.test(String(errCreate?.message || ''))) {
-          console.warn('[notificacoes] numeroSequencial duplicado, recalculando e tentando novamente...');
-          continue;
-        }
-        throw errCreate;
+      if (tipoElogio === 'elogioVerbal') {
+        valorBase = config.recompensas.elogioVerbal;
+      } else if (tipoElogio === 'boletimInternoIndividual') {
+        valorBase = config.recompensas.elogioIndividual;
+      } else if (tipoElogio === 'boletimInternoColetivo') {
+        valorBase = config.recompensas.elogioColetivo;
+      } else if (tipoElogio === 'mediaAlta') {
+        valorBase = config.recompensas.mediaAlta;
       }
+
+      valor = typeof valorNumerico === 'number' ? valorNumerico : valorBase;
+      valor = normalizarValorPorNatureza('elogio', valor);
+    } else {
+      let valorBase = 0;
+
+      const tipoNorm = String(tituloMedida || '').toLowerCase();
+
+      if (tipoNorm.includes('advert')) {
+        valorBase = config.medidas.advertenciaEscrita;
+      } else if (tipoNorm.includes('repre')) {
+        valorBase = config.medidas.repreensao;
+      } else if (tipoNorm.includes('a.e.c.d.e') || tipoNorm.includes('aecde')) {
+        valorBase = config.medidas.aecdePorDia;
+      } else if (tipoNorm.includes('a.i.a') || tipoNorm.includes('aia')) {
+        valorBase = config.medidas.aiaPorDia;
+      }
+
+      valor = typeof valorNumerico === 'number'
+        ? valorNumerico
+        : Number(valorBase.toFixed(2));
+
+      valor = normalizarValorPorNatureza('indisciplina', valor);
+    }    const dataBase = data ? parseDateOnlyLocal(data) : new Date();
+
+    let prazoDevolucao = null;
+    if (!ehElogio) {
+      const diasUteis = config?.tsmd?.diasParaDevolucao ?? 2;
+      prazoDevolucao = addBusinessDays(new Date(), diasUteis);
     }
 
-    if (!created) {
-      console.error('❌ Falha ao criar notificação após múltiplas tentativas de numeroSequencial.', ultimaMensagemErro);
-      return res.status(500).json({ message: 'Não foi possível gerar número sequencial único. Tente novamente.' });
-    }
+    const seqInfo = await getNextNumeroSequencialAtomic(inst, dataBase);
 
-    await recomputarSnapshotsPosterioresDoAluno(aluno, inst);
-    const alunoAposCreate = await recomputarResumoAlunoAteAgora(aluno, inst);
-    await verificarEnvioNP(alunoAposCreate, inst);
+    const nova = new Notificacao(
+      tenantData(req, {
+        aluno,
+        natureza,
+        tipo,
+        tipoMedida: tituloMedida,
+        tipoElogio: ehElogio ? tipoElogio : undefined,
+        motivo,
+        quantidadeDias: dias,
+        valorNumerico: valor,
+        observacao,
+        data: dataBase,
+        prazoDevolucao,
+        status: 'pendente',
+        numeroSequencial: seqInfo.numeroSequencial,
+        artigo,
+        paragrafo,
+        inciso,
+        classificacaoRegulamento,
+        comentarioMonitor,
+        criadoPor: req.usuario?.id,
+        mensagemEnviada: false
+      })
+    );
 
-    const createdFinal = await Notificacao.findOne({
-      _id: created._id,
-      ...buildInstMatch(inst)
-    });
+    await nova.save();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(aluno, inst);
+    const enrichedBefore = await enriquecerClassificacao(nova.toObject(), inst);
+
+    await recomputarCamposNotaDaNotificacao(nova, inst);
+    await recomputarSnapshotsPosterioresDoAluno(nova.aluno, inst);
+
+    const alunoAtualizado = await recomputarResumoAlunoAteAgora(nova.aluno, inst);
+
+    await verificarEnvioNP(alunoAtualizado, inst);
+
     await logAction({
       req,
-      acao: 'NOTIFICACAO_CRIADA',
-      entidade: 'Notificacao',
-      entidadeId: created._id,
-      extra: {
-        alunoId: String(aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: created.tipo,
-        tipoMedida: created.tipoMedida,
-        numeroSequencial: created.numeroSequencial,
-        natureza: created.natureza,
-        data: created.data,
-        tenantId: inst,
-        instituicao: inst
+      event: 'NOTIFICACAO_CRIADA',
+      targetType: 'Notificacao',
+      targetId: nova._id,
+      meta: {
+        aluno: alunoAtualizado?.nome,
+        turma: alunoAtualizado?.turma,
+        natureza,
+        tipoMedida: tituloMedida,
+        valor,
+        quantidadeDias: dias,
+        numeroSequencial: nova.numeroSequencial,
+        notaAnterior: enrichedBefore.notaAnterior,
+        notaAtual: enrichedBefore.notaAtual
       }
     });
 
-    res.status(201).json({ ok: true, notificacao: createdFinal || created });
-  } catch (err) {
-    console.error('❌ Erro ao criar notificação:', err);
-    res.status(500).json({ message: 'Erro ao criar notificação.' });
+    const created = await Notificacao.findById(nova._id)
+      .populate({
+        path: 'aluno',
+        select: 'nome turma instituicao tenantId',
+        match: buildAlunoMatch(inst)
+      })
+      .lean();
+
+    return res.status(201).json(created);
+  } catch (error) {
+    console.error('Erro ao criar notificação:', error);
+    return res.status(500).json({ message: 'Erro ao criar notificação' });
   }
 });
 
-router.get('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
+router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
+    const inst = getTenantId(req);
     const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
 
-    const instMatch = buildInstMatch(getTenantId(req));
-    const notificacao = await Notificacao.findOne({
+    const n = await Notificacao.findOne({
       _id: id,
-      ...instMatch
-    }).populate({ path: 'aluno', select: 'nome turma instituicao tenantId' });
+      ...buildInstMatch(inst)
+    });
 
-    if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada' });
+    if (!n) {
+      return res.status(404).json({ message: 'Notificação não encontrada' });
+    }
 
-    const valorTotal = Number(notificacao.valorNumerico || 0);
-    const valorUnitario = valorTotal;
+    const alunoId = n.aluno;
 
-    const notaPublicavel =
-      typeof notificacao.notaAtual === 'number'
-        ? Number(notificacao.notaAtual).toFixed(2)
-        : typeof notificacao.notaAnterior === 'number'
-        ? Number(notificacao.notaAnterior).toFixed(2)
-        : null;
+    n.ativo = false;
+    await n.save();
 
-    res.json(
-  await enriquecerClassificacao(
-    {
-      ...notificacao.toObject(),
-      valorTotal,
-      valorUnitario,
-      notaPublicavel
-    },
-    getTenantId(req)
-  )
-);
-  } catch (err) {
-    console.error('Erro ao carregar notificação:', err);
-    res.status(500).json({ message: 'Erro ao carregar notificação.' });
+    await recomputarSnapshotsPosterioresDoAluno(alunoId, inst);
+    const alunoAtualizado = await recomputarResumoAlunoAteAgora(alunoId, inst);
+
+    await verificarEnvioNP(alunoAtualizado, inst);
+
+    await logAction({
+      req,
+      event: 'NOTIFICACAO_EXCLUIDA',
+      targetType: 'Notificacao',
+      targetId: id,
+      meta: { aluno: alunoAtualizado?.nome, turma: alunoAtualizado?.turma }
+    });
+
+    res.json({ message: 'Notificação excluída com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir notificação:', error);
+    res.status(500).json({ message: 'Erro ao excluir notificação' });
   }
 });
 
 router.post('/:id/entregar', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
+    const inst = getTenantId(req);
     const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const notif = await Notificacao.findOne({
+    const n = await Notificacao.findOne({
       _id: id,
-      ...instMatch
-    }).populate(
-      'aluno',
-      'nome turma instituicao tenantId telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId dataEntrada'
-    );
+      ...buildInstMatch(inst)
+    });
 
-    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
-
-    if (notif.status !== 'deferido') {
-      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como ENTREGUE.' });
+    if (!n) {
+      return res.status(404).json({ error: 'Notificação não encontrada.' });
     }
 
-    if (notif.entregue === true) {
-      return res.status(200).json({
-        message: 'Já estava marcada como ENTREGUE.',
-        prazoDevolucao: notif.prazoDevolucao,
-        entregueEm: notif.entregueEm
-      });
+    if (n.status !== 'deferido') {
+      return res.status(400).json({ error: 'Somente notificações deferidas podem ser entregues.' });
     }
 
-    const agora = new Date();
-    const prazo = addBusinessDays(agora, 2, { tz: 'America/Rio_Branco' });
+    if (n.entregue) {
+      return res.json({ ok: true, message: 'Já estava entregue.' });
+    }
 
-    notif.entregue = true;
-    notif.entregueEm = agora;
-    notif.prazoDevolucao = prazo;
-    notif.alertaAtivo = false;
-    await notif.save();
+    n.entregue = true;
+    n.entregueEm = new Date();
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, tenantId);
+    const config = await getConfigDisciplinar(inst);
+    const diasUteis = config?.tsmd?.diasParaDevolucao ?? 2;
+    n.prazoDevolucao = addBusinessDays(new Date(), diasUteis);
+
+    await n.save();
 
     await logAction({
       req,
-      acao: 'NOTIFICACAO_ENTREGUE',
-      entidade: 'Notificacao',
-      entidadeId: notif._id,
-      extra: {
-        alunoId: String(notif.aluno._id || notif.aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: notif.tipo,
-        tipoMedida: notif.tipoMedida,
-        numeroSequencial: notif.numeroSequencial,
-        entregueEm: agora,
-        prazoDevolucao: prazo,
-        tenantId,
-        instituicao: tenantId
-      }
+      event: 'NOTIFICACAO_ENTREGUE',
+      targetType: 'Notificacao',
+      targetId: id,
+      meta: { prazoDevolucao: n.prazoDevolucao }
     });
 
-    const msgEntrega = [
-      '📩 CMDPII/CZS — Confirmação de ENTREGA de notificação',
-      `Aluno(a): ${alunoNome} (${alunoTurma})`,
-      `Nº: ${notif.numeroSequencial}`,
-      `Entregue em: ${formatDataHoraBr(agora)}`,
-      `Prazo de devolução: ${formatDataBr(prazo)}`
-    ].join('\n');
-
-    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
-    for (const cid of chatIds) {
-      try {
-        await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgEntrega);
-      } catch {}
-    }
-
-    if (notif.aluno?.telefone) {
-      try {
-        await enviarWhatsapp(notif.aluno.telefone, msgEntrega);
-      } catch {}
-    }
-
-    const alunoDoc = await Aluno.findOne({
-      _id: notif.aluno._id || notif.aluno,
-      ...buildAlunoMatch(tenantId)
-    });
-    await verificarEnvioNP(alunoDoc, tenantId);
-
-    res.json({
-      message: 'Marcada como ENTREGUE.',
-      prazoDevolucao: notif.prazoDevolucao,
-      entregueEm: notif.entregueEm
-    });
+    res.json({ ok: true });
   } catch (err) {
-    console.error('Erro ao marcar ENTREGUE:', err);
+    console.error('Erro ao marcar entregue:', err);
     res.status(500).json({ error: 'Erro ao marcar ENTREGUE.' });
   }
 });
 
 router.post('/:id/devolver', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
+    const inst = getTenantId(req);
     const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const notif = await Notificacao.findOne({
+    const n = await Notificacao.findOne({
       _id: id,
-      ...instMatch
-    }).populate(
-      'aluno',
-      'nome turma instituicao tenantId telefone chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId'
-    );
+      ...buildInstMatch(inst)
+    });
 
-    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
-
-    if (notif.status !== 'deferido') {
-      return res.status(400).json({ error: 'Apenas notificações deferidas podem ser marcadas como DEVOLVIDA.' });
+    if (!n) {
+      return res.status(404).json({ error: 'Notificação não encontrada.' });
     }
 
-    if (!notif.entregue) {
-      return res.status(400).json({ error: 'Marque ENTREGUE antes de marcar DEVOLVIDA.' });
+    if (!n.entregue) {
+      return res.status(400).json({ error: 'Marque como ENTREGUE antes de DEVOLVIDA.' });
     }
 
-    if (notif.devolvidoPeloAluno === true) {
-      return res.status(200).json({
-        message: 'Já estava marcada como DEVOLVIDA.',
-        devolvidaEm: notif.devolvidaEm
-      });
+    if (n.devolvidoPeloAluno) {
+      return res.json({ ok: true, message: 'Já estava devolvida.' });
     }
 
-    const agora = new Date();
-    notif.devolvidoPeloAluno = true;
-    notif.devolvidaEm = agora;
-    notif.alertaAtivo = false;
-    await notif.save();
+    n.devolvidoPeloAluno = true;
+    n.devolvidaEm = new Date();
+    n.arquivada = true;
+    n.status = 'arquivado';
 
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno._id || notif.aluno, tenantId);
+    await n.save();
 
     await logAction({
       req,
-      acao: 'NOTIFICACAO_DEVOLVIDA',
-      entidade: 'Notificacao',
-      entidadeId: notif._id,
-      extra: {
-        alunoId: String(notif.aluno._id || notif.aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: notif.tipo,
-        tipoMedida: notif.tipoMedida,
-        numeroSequencial: notif.numeroSequencial,
-        devolvidaEm: agora,
-        tenantId,
-        instituicao: tenantId
-      }
+      event: 'NOTIFICACAO_DEVOLVIDA',
+      targetType: 'Notificacao',
+      targetId: id
     });
 
-    const msgDev = [
-      '✅ CMDPII/CZS — Notificação DEVOLVIDA',
-      `Aluno(a): ${alunoNome} (${alunoTurma})`,
-      `Nº: ${notif.numeroSequencial}`,
-      `Devolvida em: ${formatDataHoraBr(agora)}`
-    ].join('\n');
-
-    const chatIds = getChatIdsFromAlunoDoc(notif.aluno);
-    for (const cid of chatIds) {
-      try {
-        await enviarTelegram({ nome: alunoNome, turma: alunoTurma }, 'Notificação', cid, msgDev);
-      } catch {}
-    }
-
-    if (notif.aluno?.telefone) {
-      try {
-        await enviarWhatsapp(notif.aluno.telefone, msgDev);
-      } catch {}
-    }
-
-    const alunoDoc = await Aluno.findOne({
-      _id: notif.aluno._id || notif.aluno,
-      ...buildAlunoMatch(tenantId)
-    });
-    await verificarEnvioNP(alunoDoc, tenantId);
-
-    res.json({
-      message: 'Marcada como DEVOLVIDA.',
-      devolvidaEm: notif.devolvidaEm
-    });
+    res.json({ ok: true });
   } catch (err) {
-    console.error('Erro ao marcar DEVOLVIDA:', err);
+    console.error('Erro ao marcar devolvida:', err);
     res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
-  }
-});
-
-router.put('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
-
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const notif = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
-
-    if (!notif) {
-      return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
-    }
-
-    const alunoAntesId = String(notif.aluno);
-
-    const camposEditaveis = [
-      'aluno',
-      'tipo',
-      'motivo',
-      'tipoMedida',
-      'valorNumerico',
-      'observacao',
-      'data',
-      'quantidadeDias',
-      'comentarioMonitor',
-      'status',
-      'natureza',
-      'tipoElogio',
-      'artigo',
-      'paragrafo',
-      'inciso',
-      'classificacaoRegulamento'
-    ];
-
-    const antes = {
-      aluno: notif.aluno,
-      tipo: notif.tipo,
-      tipoMedida: notif.tipoMedida,
-      natureza: notif.natureza,
-      motivo: notif.motivo,
-      valorNumerico: notif.valorNumerico,
-      quantidadeDias: notif.quantidadeDias,
-      data: notif.data,
-      status: notif.status,
-      numeroSequencial: notif.numeroSequencial
-    };
-
-    for (const campo of camposEditaveis) {
-      if (req.body[campo] !== undefined) {
-        if (campo === 'data' && typeof req.body[campo] === 'string') {
-          notif[campo] = parseDateOnlyLocal(req.body[campo]);
-        } else {
-          notif[campo] = req.body[campo];
-        }
-      }
-    }
-
-    if (notif.natureza === 'elogio') {
-      if (req.body.valorNumerico === undefined && req.body.tipoElogio) {
-        notif.valorNumerico = normalizarValorPorNatureza('elogio', MAPA_ELOGIOS[req.body.tipoElogio] ?? notif.valorNumerico);
-        notif.tipo = 'Elogio';
-        notif.tipoMedida = 'Elogio';
-        notif.artigo = notif.paragrafo = notif.inciso = notif.classificacaoRegulamento = null;
-      } else {
-        notif.valorNumerico = normalizarValorPorNatureza('elogio', notif.valorNumerico);
-      }
-    } else {
-      const tipoMudou = typeof req.body.tipoMedida !== 'undefined' || typeof req.body.tipo !== 'undefined';
-      const diasMudou = typeof req.body.quantidadeDias !== 'undefined';
-
-      if (req.body.valorNumerico === undefined && (tipoMudou || diasMudou)) {
-        const tituloMedida = (
-          req.body.tipoMedida ??
-          notif.tipoMedida ??
-          req.body.tipo ??
-          notif.tipo ??
-          ''
-        ).trim();
-
-        const precisaDias = PRECISA_DIAS.has(tituloMedida);
-        const diasBrutos = req.body.quantidadeDias ?? notif.quantidadeDias ?? 1;
-        const dias = precisaDias ? Math.max(1, parseInt(diasBrutos, 10) || 1) : 1;
-
-        const base = MAPA_NEGATIVOS[tituloMedida] ?? 0;
-
-        notif.valorNumerico = normalizarValorPorNatureza('indisciplina', Number(base.toFixed(2)));
-        notif.tipo = tituloMedida || notif.tipo;
-        notif.tipoMedida = tituloMedida || notif.tipoMedida;
-        notif.quantidadeDias = precisaDias ? dias : 1;
-
-        if (!notif.artigo && !notif.classificacaoRegulamento && (req.body.motivo || notif.motivo)) {
-          const dadosReg = obterDadosDoRegulamento(req.body.motivo || notif.motivo || '');
-          notif.artigo = dadosReg.artigo ?? notif.artigo;
-          notif.paragrafo = dadosReg.paragrafo ?? notif.paragrafo;
-          notif.inciso = dadosReg.inciso ?? notif.inciso;
-          notif.classificacaoRegulamento = dadosReg.classificacao ?? notif.classificacaoRegulamento;
-        }
-      } else {
-        notif.valorNumerico = normalizarValorPorNatureza('indisciplina', notif.valorNumerico);
-      }
-    }
-
-    const virouDeferido = antes.status !== 'deferido' && notif.status === 'deferido';
-
-    if (req.body.aluno && String(req.body.aluno) !== String(alunoAntesId)) {
-      const alunoNovo = await Aluno.findOne({
-        _id: req.body.aluno,
-        ...buildAlunoMatch(tenantId)
-      }).select('_id');
-
-      if (!alunoNovo) {
-        return res.status(400).json({ message: 'O aluno informado não pertence à instituição atual.' });
-      }
-    }
-
-    notif.tenantId = tenantId;
-    notif.instituicao = tenantId;
-
-    await notif.save();
-
-    await recomputarSnapshotsPosterioresDoAluno(notif.aluno, tenantId);
-
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, tenantId);
-
-    await logAction({
-      req,
-      acao: 'NOTIFICACAO_ATUALIZADA',
-      entidade: 'Notificacao',
-      entidadeId: notif._id,
-      extra: {
-        alunoId: String(notif.aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: notif.tipo,
-        tipoMedida: notif.tipoMedida,
-        numeroSequencial: notif.numeroSequencial,
-        tenantId,
-        instituicao: tenantId,
-        antes,
-        depois: {
-          aluno: notif.aluno,
-          tipo: notif.tipo,
-          tipoMedida: notif.tipoMedida,
-          natureza: notif.natureza,
-          motivo: notif.motivo,
-          valorNumerico: notif.valorNumerico,
-          quantidadeDias: notif.quantidadeDias,
-          data: notif.data,
-          status: notif.status,
-          numeroSequencial: notif.numeroSequencial
-        }
-      }
-    });
-
-    const alunoApósUpdate = await recomputarResumoAlunoAteAgora(notif.aluno, tenantId);
-
-    if (String(notif.aluno) !== alunoAntesId) {
-      await recomputarSnapshotsPosterioresDoAluno(alunoAntesId, tenantId);
-      await recomputarResumoAlunoAteAgora(alunoAntesId, tenantId);
-    }
-
-    await verificarEnvioNP(alunoApósUpdate, tenantId);
-
-    if (virouDeferido) {
-      try {
-        await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
-      } catch (e) {
-        console.warn('[deferido/update] falha disparo:', e.message);
-      }
-    }
-
-    res.json({ message: 'Notificação atualizada com sucesso.' });
-  } catch (err) {
-    console.error('Erro ao atualizar notificação:', err);
-    res.status(500).json({ message: 'Erro ao atualizar notificação.' });
-  }
-});
-
-router.put('/:id/reenviar', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
-
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const notificacao = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
-
-    if (!notificacao) return res.status(404).json({ message: 'Notificação não encontrada.' });
-
-    notificacao.status = 'pendente';
-    notificacao.tenantId = tenantId;
-    notificacao.instituicao = tenantId;
-    await notificacao.save();
-
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, tenantId);
-
-    await logAction({
-      req,
-      acao: 'NOTIFICACAO_REENVIADA',
-      entidade: 'Notificacao',
-      entidadeId: notificacao._id,
-      extra: {
-        alunoId: String(notificacao.aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: notificacao.tipo,
-        tipoMedida: notificacao.tipoMedida,
-        numeroSequencial: notificacao.numeroSequencial,
-        status: 'pendente',
-        tenantId,
-        instituicao: tenantId
-      }
-    });
-
-    const alunoApósReenviar = await recomputarResumoAlunoAteAgora(notificacao.aluno, tenantId);
-    await verificarEnvioNP(alunoApósReenviar, tenantId);
-
-    res.json({ message: 'Notificação reenviada com sucesso.' });
-  } catch (err) {
-    console.error('Erro ao reenviar notificação:', err);
-    res.status(500).json({ message: 'Erro ao reenviar notificação.' });
-  }
-});
-
-router.put('/:id/deferir', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ error: 'ID inválido' });
-
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const notif = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
-
-    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada.' });
-
-    if (notif.status !== 'deferido') {
-      notif.status = 'deferido';
-      notif.deferidoEm = new Date();
-      notif.tenantId = tenantId;
-      notif.instituicao = tenantId;
-      await notif.save();
-      await recomputarSnapshotsPosterioresDoAluno(notif.aluno, tenantId);
-      await recomputarResumoAlunoAteAgora(notif.aluno, tenantId);
-    }
-
-    try {
-      await enviarAvisoDeferidoIfNeeded({ req, notifId: notif._id });
-    } catch (e) {
-      console.warn('[deferido/endpoint] falha disparo:', e.message);
-    }
-
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notif.aluno, tenantId);
-
-    await logAction({
-      req,
-      acao: 'NOTIFICACAO_DEFERIDA',
-      entidade: 'Notificacao',
-      entidadeId: notif._id,
-      extra: {
-        alunoId: String(notif.aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: notif.tipo,
-        tipoMedida: notif.tipoMedida,
-        numeroSequencial: notif.numeroSequencial,
-        deferidoEm: notif.deferidoEm,
-        tenantId,
-        instituicao: tenantId
-      }
-    });
-
-    res.json({
-      message: 'Notificação deferida e comunicado disparado (quando aplicável).',
-      notificacao: notif
-    });
-  } catch (err) {
-    console.error('Erro ao deferir notificação:', err);
-    res.status(500).json({ error: 'Erro ao deferir notificação.' });
-  }
-});
-
-router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isObjectId(id)) return res.status(400).json({ message: 'ID inválido' });
-
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const notificacao = await Notificacao.findOne({
-      _id: id,
-      ...instMatch
-    });
-
-    if (!notificacao) {
-      return res.status(404).json({ message: 'Notificação não encontrada ou não pertence à instituição.' });
-    }
-
-    const { alunoNome, alunoTurma } = await getAlunoInfo(notificacao.aluno, tenantId);
-
-    await logAction({
-      req,
-      acao: 'NOTIFICACAO_EXCLUIDA',
-      entidade: 'Notificacao',
-      entidadeId: notificacao._id,
-      extra: {
-        alunoId: String(notificacao.aluno),
-        alunoNome,
-        alunoTurma,
-        tipo: notificacao.tipo,
-        tipoMedida: notificacao.tipoMedida,
-        numeroSequencial: notificacao.numeroSequencial,
-        natureza: notificacao.natureza,
-        motivo: notificacao.motivo,
-        valorNumerico: notificacao.valorNumerico,
-        quantidadeDias: notificacao.quantidadeDias,
-        data: notificacao.data,
-        tenantId,
-        instituicao: tenantId
-      }
-    });
-
-    const alunoId = notificacao.aluno;
-    await notificacao.deleteOne();
-
-    await recomputarSnapshotsPosterioresDoAluno(alunoId, tenantId);
-    const alunoAtual = await recomputarResumoAlunoAteAgora(alunoId, tenantId);
-    await verificarEnvioNP(alunoAtual, tenantId);
-
-    res.json({ message: 'Notificação excluída e nota recalculada com sucesso.' });
-  } catch (err) {
-    console.error('Erro ao excluir notificação:', err);
-    res.status(500).json({ message: 'Erro ao excluir notificação.' });
-  }
-});
-
-router.post('/admin/recalcular-comportamento', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const tenantId = getTenantId(req);
-    const alunos = await Aluno.find(buildAlunoMatch(tenantId)).select('_id').lean();
-
-    for (const aluno of alunos) {
-      await recomputarSnapshotsPosterioresDoAluno(aluno._id, tenantId);
-      await recomputarResumoAlunoAteAgora(aluno._id, tenantId);
-    }
-
-    return res.json({ ok: true, totalAlunos: alunos.length });
-  } catch (err) {
-    console.error('Erro ao recalcular comportamento:', err);
-    return res.status(500).json({ ok: false, message: 'Erro ao recalcular comportamento.' });
   }
 });
 

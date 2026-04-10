@@ -11,73 +11,103 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===========================
-  // TURMAS (merge backend + localStorage)
+  // TURMAS (backend + localStorage)
   // ===========================
   const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
   const LS_REMOVED = 'cmdpii_turmas_removed_v1';
 
-  function safeParseLS(key, fallback){
-    try{
+  function safeParseLS(key, fallback) {
+    try {
       const v = JSON.parse(localStorage.getItem(key) || 'null');
       return (v ?? fallback);
-    }catch(_){
+    } catch (_) {
       return fallback;
     }
   }
 
-  function guessSeg(code){
-    return /^\d+º/.test(code) && (code.startsWith('1º')||code.startsWith('2º')||code.startsWith('3º'))
+  function guessSeg(code) {
+    return /^\d+º/.test(code) && (code.startsWith('1º') || code.startsWith('2º') || code.startsWith('3º'))
       ? 'Ensino Médio'
       : 'Fundamental II';
   }
 
-  function byCode(arr){
+  function byCode(arr) {
     const m = new Map();
-    for (const t of (Array.isArray(arr)?arr:[])) {
+    for (const t of (Array.isArray(arr) ? arr : [])) {
       const code = String(t?.code || t?.turma || t || '').trim();
       if (!code) continue;
-      m.set(code, { code, seg: String(t?.seg || t?.segmento || '').trim() || guessSeg(code) });
+
+      m.set(code, {
+        code,
+        seg: String(t?.seg || t?.segmento || '').trim() || guessSeg(code)
+      });
     }
     return m;
   }
 
-  function getLocalTurmasCodes(){
+  function getLocalTurmasCodes() {
     const custom = safeParseLS(LS_CUSTOM, []);
-    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
+    const removed = new Set(
+      (safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()).filter(Boolean)
+    );
+
     const m = byCode(custom);
 
-    // remove excluídas
+    // remove apenas das locais/customizadas
     for (const r of removed) m.delete(r);
 
     return Array.from(m.keys());
   }
 
-  function mergeTurmas(backendTurmas){
-    const b = (Array.isArray(backendTurmas) ? backendTurmas : [])
+  function normalizarListaTurmasDoBackend(data) {
+    if (Array.isArray(data)) {
+      return data.filter(Boolean).map(String).map(s => s.trim()).filter(Boolean);
+    }
+
+    const candidato =
+      data?.turmas ||
+      data?.items ||
+      data?.lista ||
+      data?.data ||
+      [];
+
+    return (Array.isArray(candidato) ? candidato : [])
+      .filter(Boolean)
+      .map(item => {
+        if (typeof item === 'string') return item.trim();
+        return String(item?.turma || item?.code || item?.nome || '').trim();
+      })
+      .filter(Boolean);
+  }
+
+  function mergeTurmas(backendTurmas) {
+    const backend = (Array.isArray(backendTurmas) ? backendTurmas : [])
       .filter(Boolean)
       .map(t => String(t).trim())
       .filter(Boolean);
 
     const local = getLocalTurmasCodes();
 
-    const set = new Set([...b, ...local]);
-
-    // aplica removidos também ao que veio do backend (se o usuário removeu no gerenciador)
-    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
-    for (const r of removed) set.delete(r);
+    // BLINDAGEM:
+    // turmas vindas do backend não podem desaparecer por causa do localStorage
+    const set = new Set([...backend, ...local]);
 
     const list = Array.from(set);
-    list.sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
+    list.sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+
     return list;
   }
 
   // ===========================
   // Utils
   // ===========================
-  function setBtnState() {
-    const algumMarcado = tbody.querySelectorAll('input.ck:checked').length > 0;
-    const novaTurmaOk  = !!(selNovaTurma.value && String(selNovaTurma.value).trim());
-    btnTransferir.disabled = !(algumMarcado && novaTurmaOk);
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   function optionList(turmas) {
@@ -90,22 +120,35 @@ document.addEventListener('DOMContentLoaded', () => {
       opts.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
   }
 
-  function escapeHtml(s) {
-    return String(s)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+  function safeAlert(msg) {
+    try {
+      alert(msg);
+    } catch (_) {
+      console.warn(msg);
+    }
+  }
+
+  function setBtnState() {
+    const algumMarcado = tbody.querySelectorAll('input.ck:checked').length > 0;
+    const novaTurmaOk  = !!(selNovaTurma.value && String(selNovaTurma.value).trim());
+    btnTransferir.disabled = !(algumMarcado && novaTurmaOk);
   }
 
   async function safeReadJSON(res) {
     const ct = res.headers.get('content-type') || '';
+
     if (ct.includes('application/json')) {
       return res.json().catch(() => ({}));
     }
+
     const txt = await res.text().catch(() => '');
     return { raw: txt };
+  }
+
+  function preencherSelectsTurmas(turmas) {
+    selTurmaAtual.innerHTML = optionList(turmas);
+    selNovaTurma.innerHTML  = optionList(turmas);
+    setBtnState();
   }
 
   // ===========================
@@ -113,27 +156,42 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================
   async function carregarTurmas() {
     try {
-      const r = await fetch('/api/alunos/turmas', { credentials: 'include', cache: 'no-store' });
+      console.log('📦 Carregando turmas...');
+      const r = await fetch('/api/alunos/turmas', {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
       const data = await safeReadJSON(r);
-      if (!r.ok) throw new Error(data?.mensagem || data?.message || 'Falha ao carregar turmas');
 
-      const backend =
-        (data?.turmas || data?.items || data?.lista || [])
-          .filter(Boolean)
-          .map(String);
+      if (!r.ok) {
+        console.error('❌ Resposta inválida ao listar turmas:', {
+          status: r.status,
+          data
+        });
+        throw new Error(data?.mensagem || data?.message || 'Falha ao carregar turmas');
+      }
 
-      const turmas = mergeTurmas(backend);
+      const backendTurmas = normalizarListaTurmasDoBackend(data);
+      const turmas = mergeTurmas(backendTurmas);
 
-      selTurmaAtual.innerHTML = optionList(turmas);
-      selNovaTurma.innerHTML  = optionList(turmas);
+      console.log('✅ Turmas backend:', backendTurmas);
+      console.log('✅ Turmas locais/custom:', getLocalTurmasCodes());
+      console.log('✅ Turmas finais:', turmas);
 
-      setBtnState();
+      preencherSelectsTurmas(turmas);
+
+      if (!turmas.length) {
+        console.warn('⚠️ Nenhuma turma encontrada após merge.');
+      }
     } catch (e) {
       console.error('❌ carregarTurmas:', e);
+
       selTurmaAtual.innerHTML = '<option value="">Erro ao listar turmas</option>';
       selNovaTurma.innerHTML  = '<option value="">Erro ao listar turmas</option>';
       setBtnState();
-      alert('Erro ao listar turmas. Veja o console (F12).');
+
+      safeAlert('Erro ao listar turmas. Veja o console (F12).');
     }
   }
 
@@ -148,15 +206,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const url = `/api/alunos/turma/${encodeURIComponent(turma)}`;
-      const r = await fetch(url, { credentials: 'include', cache: 'no-store' });
+      const r = await fetch(url, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
       const data = await safeReadJSON(r);
 
       if (!r.ok) {
-        console.error('❌ API alunos turma falhou:', { url, status: r.status, data });
+        console.error('❌ API alunos/turma falhou:', {
+          url,
+          status: r.status,
+          data
+        });
         throw new Error(data?.mensagem || data?.message || 'Falha ao buscar alunos');
       }
 
-      const alunos = data?.items || data?.alunos || data?.data || [];
+      let alunos = [];
+      if (Array.isArray(data)) alunos = data;
+      else if (Array.isArray(data?.items)) alunos = data.items;
+      else if (Array.isArray(data?.alunos)) alunos = data.alunos;
+      else if (Array.isArray(data?.data)) alunos = data.data;
 
       if (!Array.isArray(alunos) || alunos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3">Nenhum aluno nesta turma.</td></tr>';
@@ -185,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('❌ carregarAlunosDaTurma:', e);
       tbody.innerHTML = '<tr><td colspan="3">Erro ao carregar alunos.</td></tr>';
       setBtnState();
-      alert(e.message || 'Erro ao carregar alunos. Veja o console (F12).');
+      safeAlert(e.message || 'Erro ao carregar alunos. Veja o console (F12).');
     }
   }
 
@@ -197,20 +267,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const turmaOrigem = String(selTurmaAtual.value || '').trim();
     const turmaDestino = String(selNovaTurma.value || '').trim();
 
-    if (!ids.length) { alert('Selecione pelo menos um aluno.'); return; }
-    if (!turmaDestino) { alert('Escolha a nova turma.'); return; }
+    if (!ids.length) {
+      safeAlert('Selecione pelo menos um aluno.');
+      return;
+    }
+
+    if (!turmaDestino) {
+      safeAlert('Escolha a nova turma.');
+      return;
+    }
+
     if (turmaOrigem && turmaOrigem === turmaDestino) {
-      alert('A nova turma precisa ser diferente da turma atual.');
+      safeAlert('A nova turma precisa ser diferente da turma atual.');
       return;
     }
 
     const payload = {
       ids,
       novaTurma: turmaDestino,
+
+      // compatibilidade defensiva com possíveis versões antigas do backend
       alunosIds: ids,
+      alunoIds: ids,
       turmaDestino,
       turmaOrigem,
-      alunoIds: ids,
       turma: turmaDestino,
       turmaNova: turmaDestino,
       destino: turmaDestino,
@@ -222,6 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btnTransferir.textContent = 'Transferindo...';
 
     try {
+      console.log('📤 Enviando transferência:', payload);
+
       const r = await fetch('/api/alunos/transferir', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -239,18 +321,27 @@ document.addEventListener('DOMContentLoaded', () => {
           resposta: data
         });
 
-        const msg = data?.mensagem || data?.message || data?.erro || data?.error || `Erro ao transferir (${r.status})`;
+        const msg =
+          data?.mensagem ||
+          data?.message ||
+          data?.erro ||
+          data?.error ||
+          `Erro ao transferir (${r.status})`;
+
         throw new Error(msg);
       }
 
-      alert(data?.mensagem || data?.message || 'Transferência realizada com sucesso.');
+      safeAlert(data?.mensagem || data?.message || 'Transferência realizada com sucesso.');
 
       await carregarAlunosDaTurma(turmaOrigem);
+      await carregarTurmas();
+
+      selTurmaAtual.value = turmaOrigem;
       selNovaTurma.value = '';
       setBtnState();
     } catch (e) {
       console.error('❌ transferirSelecionados:', e);
-      alert(e.message || 'Falha ao transferir. Veja o console (F12).');
+      safeAlert(e.message || 'Falha ao transferir. Veja o console (F12).');
     } finally {
       btnTransferir.textContent = oldText || '⇄ Transferir Selecionados';
       setBtnState();
@@ -260,11 +351,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================
   // Eventos
   // ===========================
-  selTurmaAtual.addEventListener('change', () => carregarAlunosDaTurma(selTurmaAtual.value));
+  selTurmaAtual.addEventListener('change', () => {
+    carregarAlunosDaTurma(selTurmaAtual.value);
+  });
+
   selNovaTurma.addEventListener('change', setBtnState);
 
   tbody.addEventListener('change', (ev) => {
-    if (ev.target && ev.target.classList.contains('ck')) setBtnState();
+    if (ev.target && ev.target.classList.contains('ck')) {
+      setBtnState();
+    }
   });
 
   btnTransferir.addEventListener('click', transferirSelecionados);
@@ -272,5 +368,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================
   // Boot
   // ===========================
-  carregarTurmas();
+  (async function init() {
+    tbody.innerHTML = '<tr><td colspan="3">Selecione uma turma.</td></tr>';
+    setBtnState();
+    await carregarTurmas();
+  })();
 });

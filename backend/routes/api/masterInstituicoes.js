@@ -6,6 +6,8 @@ const mongoose = require('mongoose');
 
 const { autenticar } = require('../../middleware/autenticacao');
 const Usuario = require('../../models/Usuario');
+const ConfiguracaoDisciplinar = require('../../models/ConfiguracaoDisciplinar');
+const { getPresetBase } = require('../../utils/configuracaoDisciplinar');
 
 function verificarMaster(req, res, next) {
   const tipo = String(req.usuario?.tipo || '').trim().toLowerCase();
@@ -39,6 +41,67 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
 }
 
+function normalizarPreset(preset) {
+  const p = String(preset || '').trim().toLowerCase();
+
+  if (p === 'particular') return 'particular';
+  if (p === 'personalizado') return 'personalizado';
+  return 'militar';
+}
+
+async function criarConfiguracaoDisciplinarInicial(instituicaoId, preset, session = null) {
+  const base = getPresetBase(preset);
+
+  const payload = {
+    instituicao: instituicaoId,
+    preset: base.preset || normalizarPreset(preset),
+    tipoRegulamento: base.tipoRegulamento || (preset === 'militar' ? 'militar' : 'adaptavel'),
+
+    comportamento: {
+      notaInicial: base.comportamento?.notaInicial ?? 8.0,
+      faixas: Array.isArray(base.comportamento?.faixas) ? base.comportamento.faixas : []
+    },
+
+    medidas: {
+      advertenciaEscrita: Number(base.medidas?.advertenciaEscrita ?? -0.30),
+      repreensao: Number(base.medidas?.repreensao ?? -0.50),
+      aecdePorDia: Number(base.medidas?.aecdePorDia ?? -0.70),
+      aiaPorDia: Number(base.medidas?.aiaPorDia ?? -1.20),
+    },
+
+    recompensas: {
+      elogioVerbal: Number(base.recompensas?.elogioVerbal ?? 0.15),
+      elogioIndividual: Number(base.recompensas?.elogioIndividual ?? 0.60),
+      elogioColetivo: Number(base.recompensas?.elogioColetivo ?? 0.20),
+      mediaAlta: Number(base.recompensas?.mediaAlta ?? 0.40),
+    },
+
+    tsmd: {
+      ativo: !!base.tsmd?.ativo,
+      diasParaIniciar: Number(base.tsmd?.diasParaIniciar ?? 60),
+      incrementoPorDia: Number(base.tsmd?.incrementoPorDia ?? 0.01),
+      limiteMaximo: Number(base.tsmd?.limiteMaximo ?? 10),
+    },
+
+    regulamento: {
+      nome: String(base.regulamento?.nome || 'Regulamento Disciplinar').trim(),
+      versao: String(base.regulamento?.versao || '1.0').trim(),
+      textos: {
+        cabecalho: String(base.regulamento?.textos?.cabecalho || '').trim(),
+        notificacao: String(base.regulamento?.textos?.notificacao || '').trim(),
+        observacaoPadrao: String(base.regulamento?.textos?.observacaoPadrao || '').trim(),
+      }
+    }
+  };
+
+  if (session) {
+    const docs = await ConfiguracaoDisciplinar.create([payload], { session });
+    return docs[0];
+  }
+
+  return ConfiguracaoDisciplinar.create(payload);
+}
+
 /* =========================================================================
  * INSTITUIÇÕES
  * ========================================================================= */
@@ -62,12 +125,15 @@ router.get('/instituicoes', autenticar, verificarMaster, async (_req, res) => {
 });
 
 router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
 
     const nome = String(req.body?.nome || '').trim();
     const sigla = String(req.body?.sigla || '').trim();
     const slug = normSlug(req.body?.slug || sigla || nome);
+    const preset = normalizarPreset(req.body?.preset);
 
     if (!nome || nome.length < 3) {
       return res.status(400).json({ mensagem: 'Informe um nome válido.' });
@@ -88,11 +154,20 @@ router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
       });
     }
 
-    const inst = await Instituicao.create({
-      nome,
-      sigla: sigla || null,
-      slug,
-      ativo: true,
+    let inst = null;
+    let config = null;
+
+    await session.withTransaction(async () => {
+      const created = await Instituicao.create([{
+        nome,
+        sigla: sigla || null,
+        slug,
+        ativo: true,
+      }], { session });
+
+      inst = created[0];
+
+      config = await criarConfiguracaoDisciplinarInicial(inst._id, preset, session);
     });
 
     return res.status(201).json({
@@ -104,6 +179,11 @@ router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
         slug: inst.slug,
         ativo: inst.ativo
       },
+      configuracaoDisciplinar: {
+        id: String(config._id),
+        preset: config.preset,
+        tipoRegulamento: config.tipoRegulamento
+      },
       links: {
         login: `/login.html?t=${encodeURIComponent(slug)}`,
         cadastro: `/cadastro-usuario.html?t=${encodeURIComponent(slug)}`
@@ -114,6 +194,8 @@ router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
       mensagem: 'Erro ao criar instituição.',
       erro: String(e.message || e)
     });
+  } finally {
+    await session.endSession().catch(() => null);
   }
 });
 
@@ -145,7 +227,7 @@ router.patch('/instituicoes/:id', autenticar, verificarMaster, async (req, res) 
 });
 
 /* =========================================================================
- * USUÁRIOS DA INSTITUIÇÃO (NOVO)
+ * USUÁRIOS DA INSTITUIÇÃO
  * ========================================================================= */
 
 router.post('/instituicoes/:id/usuarios', autenticar, verificarMaster, async (req, res) => {

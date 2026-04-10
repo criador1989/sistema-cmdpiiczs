@@ -108,6 +108,7 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'Usuario',
   'Log',
   'Instituicao',
+  'ConfiguracaoDisciplinar',
   'AphAtendimento',
   'Counter',
   'Observacao',
@@ -204,6 +205,7 @@ const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
 const instituicoesRoutes = require('./routes/api/instituicoes');
+const configuracaoDisciplinarRoutes = require('./routes/api/configuracaoDisciplinar');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores');
 const professoresRoute = require('./routes/api/professores');
@@ -569,6 +571,7 @@ mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
 mountIf('/api/metrics', metricsRoutes);
 mountIf('/api/instituicoes', instituicoesRoutes);
+mountIf('/api/configuracao-disciplinar', configuracaoDisciplinarRoutes, autenticar);
 mountIf('/api/alertas', alertasRoutes);
 mountIf('/api/ranking-alunos', rankingAlunosRouter, autenticar);
 mountIf('/api/fix-recalculo-comportamento', fixRecalculoComportamento, autenticar);
