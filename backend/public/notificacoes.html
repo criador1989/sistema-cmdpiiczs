@@ -477,9 +477,7 @@
     .n-sub{
       color:var(--text-soft);
       font-size:.9rem;
-    }
-
-    .badge{
+    }    .badge{
       padding:4px 8px;
       border-radius:999px;
       border:1px solid #ffffff38;
@@ -723,25 +721,17 @@
             <div class="counter" id="resumoResultados">—</div>
           </div>
 
-          <div class="columns" id="blocoPrincipal">
+          <div class="columns single" id="blocoPrincipal">
             <div class="col">
-              <h3>✅ Deferidas <span class="count" id="countDeferidas">—</span></h3>
+              <h3>✅ Notificações Ativas <span class="count" id="countDeferidas">—</span></h3>
               <div class="col-toolbar">
                 <div class="counter" id="resumoDef">—</div>
                 <div id="pagDef" class="pager"></div>
               </div>
               <div id="listaDeferidas" class="list"></div>
             </div>
-
-            <div class="col">
-              <h3>📌 Em andamento <span class="count" id="countPendentesPrincipal">—</span></h3>
-              <div class="col-toolbar">
-                <div class="counter" id="resumoPenPrincipal">—</div>
-                <div id="pagPenPrincipal" class="pager"></div>
-              </div>
-              <div id="listaPendentesPrincipal" class="list"></div>
-            </div>
-          </div>          <div class="columns single hidden" id="blocoPendentes">
+          </div>          <!-- PENDENTES -->
+          <div class="columns hidden" id="blocoPendentes">
             <div class="col">
               <h3>⏳ Pendentes do Coordenador <span class="count" id="countPendentesModo">—</span></h3>
               <div class="col-toolbar">
@@ -752,9 +742,10 @@
             </div>
           </div>
 
-          <div class="columns single hidden" id="blocoArquivadas">
+          <!-- ARQUIVADAS -->
+          <div class="columns hidden" id="blocoArquivadas">
             <div class="col">
-              <h3>📁 Arquivadas / Devolvidas <span class="count" id="countArquivadas">—</span></h3>
+              <h3>📁 Notificações Arquivadas <span class="count" id="countArquivadas">—</span></h3>
               <div class="col-toolbar">
                 <div class="counter" id="resumoArquivadas">—</div>
                 <div id="pagArquivadas" class="pager"></div>
@@ -763,7 +754,8 @@
             </div>
           </div>
 
-          <div class="columns single hidden" id="blocoAntigas">
+          <!-- ANTIGAS -->
+          <div class="columns hidden" id="blocoAntigas">
             <div class="col">
               <h3>🗂️ Notificações Antigas <span class="count" id="countAntigas">—</span></h3>
               <div class="col-toolbar">
@@ -774,57 +766,19 @@
             </div>
           </div>
 
-          <button class="voltar-btn" onclick="history.length>1?history.back():window.location.href='painel.html'">← Voltar</button>
+          <button class="voltar-btn" onclick="window.history.back()">← Voltar</button>
         </section>
       </div>
     </main>
   </div>
 
   <script>
-    const API = (p) => p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/') ? p : '/' + p}`);
-
-    async function logout() {
-      try {
-        await fetch(API('/auth/logout'), {
-          method: 'POST',
-          credentials: 'include',
-          cache: 'no-store'
-        });
-      } catch {}
-      location.href = './login.html';
-    }
-
-    function showError(msg) {
-      let el = document.getElementById('errBanner');
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'errBanner';
-        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
-        document.body.appendChild(el);
-      }
-      el.textContent = `Erro: ${msg}`;
-      clearTimeout(el._t);
-      el._t = setTimeout(() => el.remove(), 8000);
-    }
-
-    function showToast(msg) {
-      let el = document.getElementById('okBanner');
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'okBanner';
-        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#0f5132;color:#d1e7dd;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
-        document.body.appendChild(el);
-      }
-      el.textContent = msg;
-      clearTimeout(el._t);
-      el._t = setTimeout(() => el.remove(), 4000);
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
+
       const filtroTurma = document.getElementById('filtroTurma');
       const pesquisaNome = document.getElementById('pesquisaNome');
       const porPaginaSel = document.getElementById('porPaginaSel');
-      const resumoGeral = document.getElementById('resumoResultados');
+      const resumoResultados = document.getElementById('resumoResultados');
 
       const dataDe = document.getElementById('dataDe');
       const dataAte = document.getElementById('dataAte');
@@ -834,8 +788,8 @@
       const chip30 = document.getElementById('chip30');
       const chipLimpar = document.getElementById('chipLimpar');
 
-      const btnCsv = document.getElementById('btnCsv');
       const btnAtualizar = document.getElementById('btnAtualizar');
+      const btnCsv = document.getElementById('btnCsv');
 
       const tabPrincipal = document.getElementById('tabPrincipal');
       const tabPendentes = document.getElementById('tabPendentes');
@@ -848,59 +802,99 @@
       const blocoAntigas = document.getElementById('blocoAntigas');
 
       const listaDeferidas = document.getElementById('listaDeferidas');
-      const listaPendentesPrincipal = document.getElementById('listaPendentesPrincipal');
       const listaPendentesModo = document.getElementById('listaPendentesModo');
       const listaArquivadas = document.getElementById('listaArquivadas');
       const listaAntigas = document.getElementById('listaAntigas');
 
       const countDeferidas = document.getElementById('countDeferidas');
-      const countPendentesPrincipal = document.getElementById('countPendentesPrincipal');
       const countPendentesModo = document.getElementById('countPendentesModo');
       const countArquivadas = document.getElementById('countArquivadas');
       const countAntigas = document.getElementById('countAntigas');
 
       const resumoDef = document.getElementById('resumoDef');
-      const resumoPenPrincipal = document.getElementById('resumoPenPrincipal');
       const resumoPendentesModo = document.getElementById('resumoPendentesModo');
       const resumoArquivadas = document.getElementById('resumoArquivadas');
       const resumoAntigas = document.getElementById('resumoAntigas');
 
       const pagDef = document.getElementById('pagDef');
-      const pagPenPrincipal = document.getElementById('pagPenPrincipal');
       const pagPendentesModo = document.getElementById('pagPendentesModo');
       const pagArquivadas = document.getElementById('pagArquivadas');
       const pagAntigas = document.getElementById('pagAntigas');
 
       let modoAtual = 'principal';
-      let porPagina = Number(porPaginaSel.value);
+      let porPagina = Number(porPaginaSel.value || 10);
 
       let paginaDef = 1;
-      let paginaPenPrincipal = 1;
       let paginaPendentesModo = 1;
       let paginaArquivadas = 1;
       let paginaAntigas = 1;
 
       let datasetAtual = [];
-      let totalAtual = 0;
 
-      let dsDef = [];
-      let dsPenPrincipal = [];
-      let dsPendentesModo = [];
-      let dsArquivadas = [];
-      let dsAntigas = [];
+      function atualizarAbas(){
+        [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(btn=>{
+          btn.classList.toggle('active', btn.dataset.mode === modoAtual);
+        });
 
-      const spinnerHTML = `<span class="spinner"></span>Carregando…`;
+        blocoPrincipal.classList.toggle('hidden', modoAtual !== 'principal');
+        blocoPendentes.classList.toggle('hidden', modoAtual !== 'pendentes');
+        blocoArquivadas.classList.toggle('hidden', modoAtual !== 'arquivadas');
+        blocoAntigas.classList.toggle('hidden', modoAtual !== 'antigas');
+      }      function limparListasComLoading() {
+        const loading = `<div class="empty"><span class="spinner"></span>Carregando...</div>`;
+        listaDeferidas.innerHTML = loading;
+        listaPendentesModo.innerHTML = loading;
+        listaArquivadas.innerHTML = loading;
+        listaAntigas.innerHTML = loading;
 
-      const BASES = {
-        'Advertência Escrita': -0.30,
-        'Repreensão': -0.50,
-        'A.E.C.D.E': -0.70,
-        'A.I.A': -1.20
-      };
+        countDeferidas.textContent = '—';
+        countPendentesModo.textContent = '—';
+        countArquivadas.textContent = '—';
+        countAntigas.textContent = '—';
 
-      const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+        resumoDef.textContent = '—';
+        resumoPendentesModo.textContent = '—';
+        resumoArquivadas.textContent = '—';
+        resumoAntigas.textContent = '—';
+        resumoResultados.textContent = '—';
+      }
 
-      const clampNota = (n) => (n > 10 ? 10 : n < 0 ? 0 : Number((+n).toFixed(2)));
+      function fmtValor(n) {
+        return Number.isFinite(Number(n)) ? Number(n).toFixed(2) : '—';
+      }
+
+      function parseDataRegistro(n) {
+        const src = n?.devolvidaEm || n?.updatedAt || n?.createdAt || n?.data;
+        return src ? new Date(src) : null;
+      }
+
+      function faixaNotaPrevista(n) {
+        const antesRaw = Number(n?.notaAnterior);
+        const depoisRaw = Number(n?.notaAtual);
+
+        const antes = Number.isFinite(antesRaw) ? antesRaw : null;
+        const depois = Number.isFinite(depoisRaw) ? depoisRaw : null;
+
+        return { antes, depois };
+      }
+
+      function badgeNatureza(n) {
+        const nat = String(n?.natureza || '').toLowerCase();
+        if (nat === 'elogio') return `<span class="badge">🌟 Elogio</span>`;
+        if (nat === 'indisciplina') return `<span class="badge">⚠️ Disciplinar</span>`;
+        return `<span class="badge">—</span>`;
+      }
+
+      function statusPill(status) {
+        const s = String(status || '').toLowerCase();
+        const map = {
+          pendente: '⏳ Pendente',
+          deferido: '✅ Deferido',
+          revisao_solicitada: '🔁 Revisão solicitada',
+          arquivado: '📁 Arquivado'
+        };
+        return `<span class="badge status-${s}">${map[s] || s || '—'}</span>`;
+      }
 
       function classificarComportamento(nota) {
         const n = Number(nota || 0);
@@ -912,111 +906,10 @@
         return 'Incompatível';
       }
 
-      function badgeNatureza(n) {
-        const nat = String(n?.natureza || '').toLowerCase();
-        if (nat === 'elogio') return `<span class="badge">🌟 Elogio</span>`;
-        if (nat === 'indisciplina') return `<span class="badge">⚠️ Disciplinar</span>`;
-        return `<span class="badge">—</span>`;
-      }
-
-      function derivarValorTotal(n) {
-        if (typeof n.valorTotal === 'number') return n.valorTotal;
-        const bruto = Number(n.valorNumerico ?? 0);
-        if (Number.isFinite(bruto)) return bruto;
-
-        const titulo = String(n.tipoMedida || n.tipo || '').trim();
-        if (!REQUER_DIAS.has(titulo)) return 0;
-
-        const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
-        const base = BASES[titulo];
-        return typeof base === 'number' ? Number((base * dias).toFixed(2)) : 0;
-      }
-
-      function faixaNotaPrevista(n) {
-        const antesRaw = Number(n?.notaAnterior);
-        const depoisRaw = Number(n?.notaAtual);
-
-        const antes = Number.isFinite(antesRaw) ? antesRaw : null;
-        const depois = Number.isFinite(depoisRaw) ? depoisRaw : null;
-
-        if (antes !== null && depois !== null) {
-          return { antes, depois, corrigido: false };
-        }
-
-        if (antes !== null && depois === null) {
-          const valor = Number(n?.valorNumerico);
-          if (Number.isFinite(valor)) {
-            return { antes, depois: clampNota(antes + valor), corrigido: true };
-          }
-        }
-
-        if (antes === null && depois !== null) {
-          const valor = Number(n?.valorNumerico);
-          if (Number.isFinite(valor)) {
-            return { antes: clampNota(depois - valor), depois, corrigido: true };
-          }
-        }
-
-        return { antes: null, depois: null, corrigido: true };
-      }
-
-      const fmtValor = (n) => (Number.isFinite(Number(n)) ? Number(n).toFixed(2) : '—');
-
-      function parseDataRegistro(n) {
-        const src = n.devolvidaEm || n.atualizadoEm || n.updatedAt || n.data || n.createdAt;
-        return src ? new Date(src) : null;
-      }
-
-      function statusPill(status) {
-        const s = String(status || '').toLowerCase();
-        const map = {
-          pendente: '⏳ Pendente',
-          deferido: '✅ Deferido',
-          revisao_solicitada: '🔁 Devolvida',
-          arquivado: '📁 Arquivado'
-        };
-        const cls = `badge status-${s}`;
-        return `<span class="${cls}">${map[s] || '—'}</span>`;
-      }      function limparListasComLoading() {
-        listaDeferidas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-        listaPendentesPrincipal.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-        listaPendentesModo.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-        listaArquivadas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-        listaAntigas.innerHTML = `<div class="empty">${spinnerHTML}</div>`;
-
-        countDeferidas.textContent = '—';
-        countPendentesPrincipal.textContent = '—';
-        countPendentesModo.textContent = '—';
-        countArquivadas.textContent = '—';
-        countAntigas.textContent = '—';
-
-        resumoDef.textContent = '—';
-        resumoPenPrincipal.textContent = '—';
-        resumoPendentesModo.textContent = '—';
-        resumoArquivadas.textContent = '—';
-        resumoAntigas.textContent = '—';
-        resumoGeral.textContent = '—';
-      }
-
-      function atualizarAbasVisuais() {
-        [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.mode === modoAtual);
-        });
-
-        blocoPrincipal.classList.toggle('hidden', modoAtual !== 'principal');
-        blocoPendentes.classList.toggle('hidden', modoAtual !== 'pendentes');
-        blocoArquivadas.classList.toggle('hidden', modoAtual !== 'arquivadas');
-        blocoAntigas.classList.toggle('hidden', modoAtual !== 'antigas');
-      }
-
       function renderTurmas(data) {
-        const turmas = new Set(
-          (data || [])
-            .map(n => n?.aluno?.turma)
-            .filter(Boolean)
-        );
-
+        const turmas = new Set((data || []).map(n => n?.aluno?.turma).filter(Boolean));
         const atual = filtroTurma.value;
+
         filtroTurma.innerHTML = '<option value="">Todas</option>';
 
         Array.from(turmas).sort().forEach(turma => {
@@ -1035,12 +928,11 @@
         const dmod = parseDataRegistro(n);
         const dataTxt = dmod ? dmod.toLocaleString('pt-BR') : '—';
 
-        const vTotal = derivarValorTotal(n);
         const faixa = faixaNotaPrevista(n);
         const classificacaoAtual = n.classificacaoAtual || classificarComportamento(faixa.depois);
 
         let entregueBox = '';
-        if (String(n.status || '').toLowerCase() === 'deferido' && !n.devolvidoPeloAluno) {
+        if (String(n.status || '').toLowerCase() === 'deferido' && !n.devolvidoPeloAluno && modoAtual !== 'antigas') {
           const checked = n.entregue ? 'checked' : '';
           const disabled = n.entregue ? 'disabled' : '';
           const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
@@ -1052,13 +944,11 @@
               <input type="checkbox" ${checked} ${disabled} data-id="${n._id}" class="chk-entregue" />
               <span>Entregue</span>
             </label>
-            ${n.entregue ? `<span class="prazo-chip ${atrasado ? 'atraso' : ''}" title="${atrasado ? 'Prazo vencido' : ''}">
-              Prazo: ${prazoTxt}
-            </span>` : ''}
+            ${n.entregue ? `<span class="prazo-chip ${atrasado ? 'atraso' : ''}">Prazo: ${prazoTxt}</span>` : ''}
           `;
         }
 
-        const devolv = n.devolvidoPeloAluno ? `<span class="badge" title="Assinada e devolvida">📥 Devolvida</span>` : '';
+        const devolvida = n.devolvidoPeloAluno ? `<span class="badge">📥 Devolvida</span>` : '';
 
         return `
           <div>
@@ -1067,10 +957,9 @@
           </div>
           <div>${statusPill(n.status)} ${badgeNatureza(n)}</div>
           <div>
-            <span class="badge">Valor: ${fmtValor(vTotal)}</span>
             <span class="badge">Nota: ${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</span>
             <span class="badge">Faixa: ${classificacaoAtual}</span>
-            ${devolv}
+            ${devolvida}
             ${entregueBox}
           </div>
         `;
@@ -1094,7 +983,7 @@
 
           const body = document.createElement('div');
           body.className = 'n-body';
-          body.innerHTML = `<div class="empty"><span class="spinner"></span>Carregando…</div>`;
+          body.innerHTML = `<div class="empty"><span class="spinner"></span>Carregando detalhes...</div>`;
 
           let loaded = false;
 
@@ -1118,27 +1007,23 @@
 
               const det = await r.json();
 
-              const vTotal = (typeof det.valorTotal === 'number') ? det.valorTotal : derivarValorTotal(det);
               const faixa = faixaNotaPrevista(det);
               const classificacaoAnterior = det.classificacaoAnterior || classificarComportamento(faixa.antes);
               const classificacaoAtual = det.classificacaoAtual || classificarComportamento(faixa.depois);
               const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g, '');
               const deferida = String(det.status || '').toLowerCase() === 'deferido';
               const showCom = deferida && (med === 'AIA' || med === 'AECDE');
-
               const prazoTxt = det.prazoDevolucao ? new Date(det.prazoDevolucao).toLocaleString('pt-BR') : '—';
 
               const entregueDetalhe = deferida ? `
                 <div class="n-kv">
                   <b>Entrega ao aluno</b>
-                  <div class="hint">
-                    ${det.entregue ? `✔️ Entregue em ${new Date(det.entregueEm).toLocaleString('pt-BR')}` : 'Ainda não entregue'}
-                  </div>
+                  <div class="hint">${det.entregue ? `✔️ Entregue em ${new Date(det.entregueEm).toLocaleString('pt-BR')}` : 'Ainda não entregue'}</div>
                   ${det.entregue ? `<div class="hint">Prazo para devolução: ${prazoTxt}</div>` : ''}
                 </div>
               ` : '';
 
-              const devolucaoActions = deferida ? `
+              const devolucaoActions = deferida && modoAtual !== 'antigas' ? `
                 <div class="actions">
                   ${!det.entregue ? `<button class="comunicacao-btn" onclick="marcarEntregue('${det._id}', this)">Marcar ENTREGUE</button>` : ''}
                   ${det.entregue && !det.devolvidoPeloAluno ? `<button class="reenviar-btn" onclick="marcarDevolvida('${det._id}', this)">Marcar DEVOLVIDA</button>` : ''}
@@ -1150,11 +1035,10 @@
                   <div class="n-kv"><b>Motivo</b>${det.motivo || '—'}</div>
                   <div class="n-kv"><b>Observação</b>${det.observacao || '—'}</div>
                   <div class="n-kv"><b>Natureza</b>${String(det.natureza || '').toLowerCase() === 'elogio' ? 'Elogio' : 'Notificação disciplinar'}</div>
-                  <div class="n-kv"><b>Valor</b>${fmtValor(vTotal)}</div>
                   <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
                   <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
                   <div class="n-kv"><b>Inciso</b>${det.inciso || '—'}</div>
-                  <div class="n-kv"><b>Nota (no dia)</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</div>
+                  <div class="n-kv"><b>Nota</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</div>
                   <div class="n-kv"><b>Classificação</b>${classificacaoAnterior} → ${classificacaoAtual}</div>
                   ${entregueDetalhe}
                 </div>
@@ -1240,9 +1124,7 @@
         const s = Math.max(1, current - 2);
         const e = Math.min(totalPages, s + 4);
 
-        for (let i = s; i <= e; i++) {
-          add(String(i), i, false, i === current);
-        }
+        for (let i = s; i <= e; i++) add(String(i), i, false, i === current);
 
         add('›', Math.min(totalPages, current + 1), current === totalPages);
         add('»', totalPages, current === totalPages);
@@ -1277,120 +1159,79 @@
             return { total: 0, data: [] };
           }
 
-          if (!r.ok) {
-            throw new Error('Falha ao buscar notificações.');
-          }
+          if (!r.ok) throw new Error('Falha ao buscar notificações.');
 
           const j = await r.json();
-
           total = Number(j.total || 0);
           totalPages = Number(j.totalPages || 1);
 
-          if (Array.isArray(j.data)) {
-            acumulado.push(...j.data);
-          }
+          if (Array.isArray(j.data)) acumulado.push(...j.data);
 
           page++;
         } while (page <= totalPages && page <= 50);
 
-        return {
-          total,
-          data: acumulado
-        };
-      }      function refreshPrincipal() {
-        dsDef = datasetAtual.filter(n => String(n.status || '').toLowerCase() === 'deferido');
-        dsPenPrincipal = datasetAtual.filter(n => String(n.status || '').toLowerCase() !== 'deferido');
+        return { total, data: acumulado };
+      }
 
-        countDeferidas.textContent = `(${dsDef.length})`;
-        countPendentesPrincipal.textContent = `(${dsPenPrincipal.length})`;
-
-        const pDef = paginar(dsDef, paginaDef, porPagina);
-        const pPen = paginar(dsPenPrincipal, paginaPenPrincipal, porPagina);
-
-        renderLista(pDef.slice, listaDeferidas);
-        renderLista(pPen.slice, listaPendentesPrincipal);
-
-        resumoDef.textContent = `${pDef.total} item(ns)`;
-        resumoPenPrincipal.textContent = `${pPen.total} item(ns)`;
-
-        buildPager(pagDef, paginaDef, pDef.totalPages, (g) => {
+      function refreshPrincipal() {
+        const p = paginar(datasetAtual, paginaDef, porPagina);
+        countDeferidas.textContent = `(${datasetAtual.length})`;
+        renderLista(p.slice, listaDeferidas);
+        resumoDef.textContent = `${p.total} item(ns)`;
+        buildPager(pagDef, paginaDef, p.totalPages, (g) => {
           paginaDef = g;
           refreshPrincipal();
         });
-
-        buildPager(pagPenPrincipal, paginaPenPrincipal, pPen.totalPages, (g) => {
-          paginaPenPrincipal = g;
-          refreshPrincipal();
-        });
-
-        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em notificações ativas`;
+        resumoResultados.textContent = `${datasetAtual.length} resultado(s) carregados em notificações ativas`;
       }
 
       function refreshPendentes() {
-        dsPendentesModo = datasetAtual.slice();
-        countPendentesModo.textContent = `(${dsPendentesModo.length})`;
-
-        const p = paginar(dsPendentesModo, paginaPendentesModo, porPagina);
+        const p = paginar(datasetAtual, paginaPendentesModo, porPagina);
+        countPendentesModo.textContent = `(${datasetAtual.length})`;
         renderLista(p.slice, listaPendentesModo);
-
         resumoPendentesModo.textContent = `${p.total} item(ns)`;
-
         buildPager(pagPendentesModo, paginaPendentesModo, p.totalPages, (g) => {
           paginaPendentesModo = g;
           refreshPendentes();
         });
-
-        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em pendentes do coordenador`;
+        resumoResultados.textContent = `${datasetAtual.length} resultado(s) carregados em pendentes do coordenador`;
       }
 
       function refreshArquivadas() {
-        dsArquivadas = datasetAtual.slice();
-        countArquivadas.textContent = `(${dsArquivadas.length})`;
-
-        const p = paginar(dsArquivadas, paginaArquivadas, porPagina);
+        const p = paginar(datasetAtual, paginaArquivadas, porPagina);
+        countArquivadas.textContent = `(${datasetAtual.length})`;
         renderLista(p.slice, listaArquivadas);
-
         resumoArquivadas.textContent = `${p.total} item(ns)`;
-
         buildPager(pagArquivadas, paginaArquivadas, p.totalPages, (g) => {
           paginaArquivadas = g;
           refreshArquivadas();
         });
-
-        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em notificações arquivadas`;
+        resumoResultados.textContent = `${datasetAtual.length} resultado(s) carregados em notificações arquivadas`;
       }
 
       function refreshAntigas() {
-        dsAntigas = datasetAtual.slice();
-        countAntigas.textContent = `(${dsAntigas.length})`;
-
-        const p = paginar(dsAntigas, paginaAntigas, porPagina);
+        const p = paginar(datasetAtual, paginaAntigas, porPagina);
+        countAntigas.textContent = `(${datasetAtual.length})`;
         renderLista(p.slice, listaAntigas);
-
         resumoAntigas.textContent = `${p.total} item(ns)`;
-
         buildPager(pagAntigas, paginaAntigas, p.totalPages, (g) => {
           paginaAntigas = g;
           refreshAntigas();
         });
-
-        resumoGeral.textContent = `${datasetAtual.length} resultado(s) carregados em notificações antigas`;
+        resumoResultados.textContent = `${datasetAtual.length} resultado(s) carregados em notificações antigas`;
       }
 
       async function carregarModoAtual() {
         limparListasComLoading();
-        atualizarAbasVisuais();
+        atualizarAbas();
 
         try {
-          const { total, data } = await buscarModo(modoAtual);
-          totalAtual = total;
+          const { data } = await buscarModo(modoAtual);
           datasetAtual = data;
-
           renderTurmas(data);
 
           if (modoAtual === 'principal') {
             paginaDef = 1;
-            paginaPenPrincipal = 1;
             refreshPrincipal();
           } else if (modoAtual === 'pendentes') {
             paginaPendentesModo = 1;
@@ -1405,9 +1246,7 @@
         } catch (e) {
           console.error(e);
           showError('Falha ao carregar notificações.');
-
           listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
-          listaPendentesPrincipal.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
           listaPendentesModo.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
           listaArquivadas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
           listaAntigas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
@@ -1571,7 +1410,6 @@
         tab.addEventListener('click', async () => {
           const novoModo = tab.dataset.mode;
           if (novoModo === modoAtual) return;
-
           modoAtual = novoModo;
           await carregarModoAtual();
         });
@@ -1590,7 +1428,6 @@
 
         if (modoAtual === 'principal') {
           paginaDef = 1;
-          paginaPenPrincipal = 1;
           refreshPrincipal();
         } else if (modoAtual === 'pendentes') {
           paginaPendentesModo = 1;
@@ -1604,17 +1441,9 @@
         }
       });
 
-      dataDe.addEventListener('change', async () => {
-        await carregarModoAtual();
-      });
-
-      dataAte.addEventListener('change', async () => {
-        await carregarModoAtual();
-      });
-
-      btnAtualizar.addEventListener('click', async () => {
-        await carregarModoAtual();
-      });
+      dataDe.addEventListener('change', async () => { await carregarModoAtual(); });
+      dataAte.addEventListener('change', async () => { await carregarModoAtual(); });
+      btnAtualizar.addEventListener('click', async () => { await carregarModoAtual(); });
 
       chipHoje.addEventListener('click', async () => {
         const now = new Date();
@@ -1654,20 +1483,8 @@
         }
 
         const head = [
-          'Status',
-          'Aluno',
-          'Turma',
-          'Tipo',
-          'Data',
-          'Valor',
-          'NotaAntes',
-          'NotaDepois',
-          'Nº Sequencial',
-          'Artigo',
-          'Inciso',
-          'Entregue',
-          'PrazoDevolucao',
-          'Devolvida'
+          'Status','Aluno','Turma','Tipo','Data','NotaAntes','NotaDepois','Nº Sequencial',
+          'Artigo','Inciso','Entregue','PrazoDevolucao','Devolvida'
         ];
 
         const rows = datasetAtual.map((n) => {
@@ -1676,7 +1493,6 @@
           const tipo = n.tipoMedida || n.tipo || '';
           const dmod = parseDataRegistro(n);
           const dataTxt = dmod ? dmod.toLocaleString('pt-BR') : '';
-          const vTotal = derivarValorTotal(n);
           const faixa = faixaNotaPrevista(n);
 
           return [
@@ -1685,7 +1501,6 @@
             turma,
             tipo,
             dataTxt,
-            vTotal,
             faixa.antes ?? '',
             faixa.depois ?? '',
             n.numeroSequencial ?? '',

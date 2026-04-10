@@ -819,6 +819,49 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
   }
 });
 
+router.get('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isObjectId(id)) {
+      return res.status(400).json({ message: 'ID inválido' });
+    }
+
+    const tenantId = getTenantId(req);
+
+    const notificacao = await Notificacao.findOne({
+      _id: id,
+      ...buildInstMatch(tenantId)
+    })
+      .populate({
+        path: 'aluno',
+        select: 'nome turma instituicao tenantId',
+        match: buildAlunoMatch(tenantId)
+      })
+      .lean();
+
+    if (!notificacao || !notificacao.aluno) {
+      return res.status(404).json({ message: 'Notificação não encontrada' });
+    }
+
+    const valorTotal = Number(notificacao.valorNumerico || 0);
+    const valorUnitario = valorTotal;
+
+    const enriched = await enriquecerClassificacao(
+      {
+        ...notificacao,
+        valorTotal,
+        valorUnitario
+      },
+      tenantId
+    );
+
+    return res.json(enriched);
+  } catch (err) {
+    console.error('Erro ao carregar notificação:', err);
+    return res.status(500).json({ message: 'Erro ao carregar notificação.' });
+  }
+});
+
 router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const inst = getTenantId(req);
