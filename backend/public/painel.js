@@ -101,19 +101,30 @@
 
   async function atualizarContadoresPainel() {
     try {
-      const r = await getJSON('/api/controle-notificacoes?limit=1', { timeoutMs: 9000 });
-      const total = Number(r?.total || 0);
-      setText('mNotif', total.toLocaleString('pt-BR'));
+      const overview = await getJSON('/api/metrics/overview', { timeoutMs: 9000 });
+      const notifPend = Number(overview?.notifPend || 0);
+      setText('mNotif', notifPend.toLocaleString('pt-BR'));
     } catch (e) {
-      console.warn('Falha ao obter controle-notificacoes:', e.message);
+      console.warn('Falha ao obter metrics/overview:', e.message);
+      setText('mNotif', '—');
     }
 
     try {
-      const k = await getJSON('/api/notificacoes/pendencias/devolucao/contador', { timeoutMs: 9000 });
-      const total = Number(k?.total || 0);
+      // Usa a própria listagem para manter a mesma lógica visual da seção do painel.
+      // Assim evitamos divergência com contador bruto caso existam registros sem aluno populável.
+      const pend = await getJSON('/api/notificacoes/pendencias/devolucao?limit=200', { timeoutMs: 10000 });
+      const total = Number(
+        typeof pend?.total === 'number'
+          ? pend.total
+          : Array.isArray(pend?.itens)
+            ? pend.itens.length
+            : 0
+      );
+
       setText('mPendDevol', total.toLocaleString('pt-BR'));
     } catch (e) {
-      console.warn('Falha ao obter pendencias/contador:', e.message);
+      console.warn('Falha ao obter pendencias/devolucao:', e.message);
+      setText('mPendDevol', '—');
     }
   }
 

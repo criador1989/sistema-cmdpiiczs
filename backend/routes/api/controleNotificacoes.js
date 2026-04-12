@@ -22,15 +22,9 @@ try {
 // Monta filtro base por instituição (inclui sem instituicao p/ compatibilidade)
 function filtroInstituicaoDoUsuario(usuario) {
   const inst = (usuario && usuario.instituicao) ? String(usuario.instituicao) : null;
-  if (!inst)
-    return { $or: [{ instituicao: { $exists: false } }, { instituicao: { $eq: null } }] };
-  return {
-    $or: [
-      { instituicao: inst },
-      { instituicao: { $exists: false } },
-      { instituicao: { $eq: null } },
-    ],
-  };
+  if (!inst) return { _id: null };
+
+  return { instituicao: inst };
 }
 
 /* Pequenos helpers para texto/assunto (funcionam mesmo sem templates avançados) */
