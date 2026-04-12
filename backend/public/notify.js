@@ -13,45 +13,61 @@
       max-width: 60vw; word-break: break-word;
     `;
     document.body.appendChild(wrap);
-    requestAnimationFrame(() => { wrap.style.opacity = '1'; wrap.style.transform = 'translateY(0)';});
+    requestAnimationFrame(() => {
+      wrap.style.opacity = '1';
+      wrap.style.transform = 'translateY(0)';
+    });
     clearTimeout(wrap._t);
     wrap._t = setTimeout(() => {
-      wrap.style.opacity = '0'; wrap.style.transform = 'translateY(10px)';
+      wrap.style.opacity = '0';
+      wrap.style.transform = 'translateY(10px)';
       setTimeout(() => wrap.remove(), 220);
     }, 3500);
   }
 
-  window.showError   = (msg) => makeToast(msg || 'Ocorreu um erro.', 'error');
+  window.showToast = (msg) => makeToast(msg || 'Operação realizada.', 'success');
   window.showSuccess = (msg) => makeToast(msg || 'Operação realizada com sucesso.', 'success');
+  window.showError = (msg) => makeToast(msg || 'Ocorreu um erro.', 'error');
+  window.showInfo = (msg) => makeToast(msg || 'Informação.', 'info');
 
-  // Helper de fetch robusto para *qualquer* página
   window.api = async function api(path, opts = {}) {
     const url = path.startsWith('http')
       ? path
       : (path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`);
 
-    const r = await fetch(url, { credentials: 'include', cache: 'no-store', ...opts });
+    const r = await fetch(url, {
+      credentials: 'include',
+      cache: 'no-store',
+      ...opts
+    });
 
-    // Algumas rotas legítimas podem retornar 204 (sem corpo)
     if (r.status === 204) {
       if (!r.ok) throw new Error('Operação não concluída.');
-      return { ok: true }; // convenção
+      return { ok: true };
     }
 
-    // Tente ler JSON somente se houver JSON de fato
     const ct = r.headers.get('content-type') || '';
     let data = null;
+
     if (ct.includes('application/json')) {
-      try { data = await r.json(); } catch { data = null; }
+      try {
+        data = await r.json();
+      } catch {
+        data = null;
+      }
     } else {
-      // se não for JSON, trate como texto (quando útil) mas sem quebrar
-      try { data = { text: await r.text() }; } catch {}
+      try {
+        data = { text: await r.text() };
+      } catch {}
     }
 
     if (!r.ok) {
-      const msg = (data && (data.message || data.error)) || `${r.status} ${r.statusText}`;
+      const msg =
+        (data && (data.message || data.error || data.erro)) ||
+        `${r.status} ${r.statusText}`;
       throw new Error(msg);
     }
+
     return data ?? { ok: true };
   };
 })();

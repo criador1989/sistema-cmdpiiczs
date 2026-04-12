@@ -24,6 +24,14 @@ function toObjectIdSafe(value) {
   return String(value || '').trim();
 }
 
+function filtroNotificacoesAtivas(req, alunoId) {
+  return tenantFilter(req, {
+    aluno: alunoId,
+    ativo: { $ne: false },
+    arquivada: { $ne: true }
+  });
+}
+
 async function calcularNotaComportamento(req, alunoId) {
   const aluno = await Aluno.findOne(
     tenantFilter(req, { _id: alunoId })
@@ -32,10 +40,10 @@ async function calcularNotaComportamento(req, alunoId) {
   if (!aluno) return 8.0;
 
   const notificacoes = await Notificacao.find(
-    tenantFilter(req, { aluno: alunoId })
+    filtroNotificacoesAtivas(req, alunoId)
   )
     .select('data valorNumerico createdAt quantidadeDias tipoMedida tipo natureza')
-    .sort({ data: 1, createdAt: 1 })
+    .sort({ data: 1, createdAt: 1, _id: 1 })
     .lean();
 
   return calcularNotaTSMD(aluno.dataEntrada || null, new Date(), notificacoes || []);
@@ -60,9 +68,9 @@ router.get('/dados/:id', autenticar, requireTenant, async (req, res) => {
     const fotoUrl = montarFotoUrl(fotoBase);
 
     const notificacoes = await Notificacao.find(
-      tenantFilter(req, { aluno: alunoId })
+      filtroNotificacoesAtivas(req, alunoId)
     )
-      .sort({ data: -1, createdAt: -1 })
+      .sort({ data: -1, createdAt: -1, _id: -1 })
       .lean();
 
     let observacoes = [];

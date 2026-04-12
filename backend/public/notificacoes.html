@@ -477,7 +477,9 @@
     .n-sub{
       color:var(--text-soft);
       font-size:.9rem;
-    }    .badge{
+    }
+
+    .badge{
       padding:4px 8px;
       border-radius:999px;
       border:1px solid #ffffff38;
@@ -730,7 +732,8 @@
               </div>
               <div id="listaDeferidas" class="list"></div>
             </div>
-          </div>          <!-- PENDENTES -->
+          </div>
+
           <div class="columns hidden" id="blocoPendentes">
             <div class="col">
               <h3>⏳ Pendentes do Coordenador <span class="count" id="countPendentesModo">—</span></h3>
@@ -742,7 +745,6 @@
             </div>
           </div>
 
-          <!-- ARQUIVADAS -->
           <div class="columns hidden" id="blocoArquivadas">
             <div class="col">
               <h3>📁 Notificações Arquivadas <span class="count" id="countArquivadas">—</span></h3>
@@ -754,7 +756,6 @@
             </div>
           </div>
 
-          <!-- ANTIGAS -->
           <div class="columns hidden" id="blocoAntigas">
             <div class="col">
               <h3>🗂️ Notificações Antigas <span class="count" id="countAntigas">—</span></h3>
@@ -773,8 +774,7 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-
+        document.addEventListener('DOMContentLoaded', () => {
       const filtroTurma = document.getElementById('filtroTurma');
       const pesquisaNome = document.getElementById('pesquisaNome');
       const porPaginaSel = document.getElementById('porPaginaSel');
@@ -821,6 +821,49 @@
       const pagArquivadas = document.getElementById('pagArquivadas');
       const pagAntigas = document.getElementById('pagAntigas');
 
+      const tenant = new URLSearchParams(window.location.search).get('t') || '';
+      const cacheBust = () => String(Date.now());
+
+      function apiUrl(path, params = {}) {
+        const url = new URL(path, window.location.origin);
+        if (tenant) url.searchParams.set('t', tenant);
+        for (const [k, v] of Object.entries(params)) {
+          if (v !== undefined && v !== null && v !== '') {
+            url.searchParams.set(k, v);
+          }
+        }
+        url.searchParams.set('_', cacheBust());
+        return url.toString();
+      }
+
+      async function fetchJson(path, options = {}, params = {}) {
+        const resp = await fetch(apiUrl(path, params), {
+          credentials: 'include',
+          cache: 'no-store',
+          ...options
+        });
+
+        const text = await resp.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          data = { raw: text };
+        }
+
+        if (!resp.ok) {
+          const msg =
+            data?.error ||
+            data?.erro ||
+            data?.message ||
+            data?.msg ||
+            `Falha HTTP ${resp.status}`;
+          throw new Error(msg);
+        }
+
+        return data;
+      }
+
       let modoAtual = 'principal';
       let porPagina = Number(porPaginaSel.value || 10);
 
@@ -831,8 +874,8 @@
 
       let datasetAtual = [];
 
-      function atualizarAbas(){
-        [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(btn=>{
+      function atualizarAbas() {
+        [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(btn => {
           btn.classList.toggle('active', btn.dataset.mode === modoAtual);
         });
 
@@ -840,7 +883,9 @@
         blocoPendentes.classList.toggle('hidden', modoAtual !== 'pendentes');
         blocoArquivadas.classList.toggle('hidden', modoAtual !== 'arquivadas');
         blocoAntigas.classList.toggle('hidden', modoAtual !== 'antigas');
-      }      function limparListasComLoading() {
+      }
+
+      function limparListasComLoading() {
         const loading = `<div class="empty"><span class="spinner"></span>Carregando...</div>`;
         listaDeferidas.innerHTML = loading;
         listaPendentesModo.innerHTML = loading;
@@ -976,6 +1021,7 @@
         arr.forEach(n => {
           const wrap = document.createElement('div');
           wrap.className = 'n-card';
+          wrap.dataset.id = n._id;
 
           const head = document.createElement('div');
           head.className = 'n-head';
@@ -998,14 +1044,7 @@
             if (loaded) return;
 
             try {
-              const r = await fetch(`/api/notificacoes/${n._id}`, {
-                credentials: 'include',
-                cache: 'no-store'
-              });
-
-              if (!r.ok) throw new Error('Falha ao carregar detalhes');
-
-              const det = await r.json();
+              const det = await fetchJson(`/api/notificacoes/${n._id}`);
 
               const faixa = faixaNotaPrevista(det);
               const classificacaoAnterior = det.classificacaoAnterior || classificarComportamento(faixa.antes);
@@ -1045,7 +1084,7 @@
 
                 <div class="actions">
                   <button class="pdf-btn" onclick="gerarPDF('${det._id}')">PDF</button>
-                  ${modoAtual !== 'arquivadas' && modoAtual !== 'antigas' ? `<a class="edit-btn" href="editar-notificacao.html?id=${det._id}">Editar</a>` : ''}
+                  ${modoAtual !== 'arquivadas' && modoAtual !== 'antigas' ? `<a class="edit-btn" href="editar-notificacao.html?id=${det._id}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}">Editar</a>` : ''}
                   <button class="delete-btn" onclick="excluirNotificacao('${det._id}')">Excluir</button>
                   ${det.status === 'revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
                   ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
@@ -1075,25 +1114,15 @@
             const prev = chk.checked;
 
             try {
-              const r = await fetch(`/api/notificacoes/${id}/entregar`, {
-                method: 'POST',
-                credentials: 'include',
-                cache: 'no-store'
+              await fetchJson(`/api/notificacoes/${id}/entregar`, {
+                method: 'POST'
               });
-
-              const j = await r.json();
-
-              if (!r.ok) {
-                chk.checked = !prev;
-                showError(j.error || 'Falha ao marcar ENTREGUE');
-                return;
-              }
 
               showToast('Notificação marcada como ENTREGUE.');
               await carregarModoAtual();
             } catch (e) {
               chk.checked = !prev;
-              showError('Erro de rede ao marcar ENTREGUE.');
+              showError(e.message || 'Erro de rede ao marcar ENTREGUE.');
             }
           });
         });
@@ -1131,14 +1160,14 @@
       }
 
       async function buscarModo(modo) {
-        const baseParams = new URLSearchParams();
-        baseParams.set('modo', modo);
-        baseParams.set('limit', '200');
-
-        if (filtroTurma.value) baseParams.set('turma', filtroTurma.value);
-        if (pesquisaNome.value.trim()) baseParams.set('q', pesquisaNome.value.trim());
-        if (dataDe.value) baseParams.set('from', dataDe.value);
-        if (dataAte.value) baseParams.set('to', dataAte.value);
+        const baseParams = {
+          modo,
+          limit: 200,
+          turma: filtroTurma.value || '',
+          q: pesquisaNome.value.trim() || '',
+          from: dataDe.value || '',
+          to: dataAte.value || ''
+        };
 
         let page = 1;
         let totalPages = 1;
@@ -1146,22 +1175,11 @@
         const acumulado = [];
 
         do {
-          const params = new URLSearchParams(baseParams);
-          params.set('page', String(page));
-
-          const r = await fetch(`/api/notificacoes?${params.toString()}`, {
-            credentials: 'include',
-            cache: 'no-store'
+          const j = await fetchJson('/api/notificacoes', {}, {
+            ...baseParams,
+            page
           });
 
-          if (r.status === 401) {
-            location.href = './login.html';
-            return { total: 0, data: [] };
-          }
-
-          if (!r.ok) throw new Error('Falha ao buscar notificações.');
-
-          const j = await r.json();
           total = Number(j.total || 0);
           totalPages = Number(j.totalPages || 1);
 
@@ -1245,7 +1263,7 @@
           }
         } catch (e) {
           console.error(e);
-          showError('Falha ao carregar notificações.');
+          showError(e.message || 'Falha ao carregar notificações.');
           listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
           listaPendentesModo.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
           listaArquivadas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
@@ -1255,20 +1273,20 @@
 
       async function gerarPDF(id) {
         try {
-          const r = await fetch(`/api/pdf/${id}`, {
+          const resp = await fetch(apiUrl(`/api/pdf/${id}`), {
             method: 'POST',
             credentials: 'include',
             cache: 'no-store'
           });
 
-          if (!r.ok) throw new Error('Erro ao gerar documento');
+          if (!resp.ok) throw new Error('Erro ao gerar documento');
 
-          const blob = await r.blob();
+          const blob = await resp.blob();
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
 
-          const disp = r.headers.get('content-disposition') || '';
+          const disp = resp.headers.get('content-disposition') || '';
           const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disp);
           const nome = m ? m[1].replace(/['"]/g, '') : `notificacao_${Date.now()}.docx`;
 
@@ -1277,29 +1295,21 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-        } catch {
-          showError('Erro ao gerar documento.');
+        } catch (e) {
+          showError(e.message || 'Erro ao gerar documento.');
         }
       }
 
       async function reenviarNotificacao(id) {
         try {
-          const r = await fetch(`/api/notificacoes/${id}/reenviar`, {
-            method: 'PUT',
-            credentials: 'include',
-            cache: 'no-store'
+          await fetchJson(`/api/notificacoes/${id}/reenviar`, {
+            method: 'PUT'
           });
 
-          const j = await r.json();
-
-          if (r.ok) {
-            showToast('Notificação reenviada com sucesso.');
-            await carregarModoAtual();
-          } else {
-            showError(j.message || 'Erro ao reenviar.');
-          }
-        } catch {
-          showError('Erro ao reenviar a notificação.');
+          showToast('Notificação reenviada com sucesso.');
+          await carregarModoAtual();
+        } catch (e) {
+          showError(e.message || 'Erro ao reenviar.');
         }
       }
 
@@ -1307,37 +1317,44 @@
         if (!confirm('Deseja excluir esta notificação?')) return;
 
         try {
-          const r = await fetch(`/api/notificacoes/${id}`, {
-            method: 'DELETE',
-            credentials: 'include',
-            cache: 'no-store'
+          await fetchJson(`/api/notificacoes/${id}`, {
+            method: 'DELETE'
           });
 
-          if (r.ok) {
-            showToast('Notificação excluída com sucesso.');
-            await carregarModoAtual();
+          datasetAtual = datasetAtual.filter(n => String(n._id) !== String(id));
+
+          if (modoAtual === 'principal') {
+            refreshPrincipal();
+          } else if (modoAtual === 'pendentes') {
+            refreshPendentes();
+          } else if (modoAtual === 'arquivadas') {
+            refreshArquivadas();
           } else {
-            showError('Erro ao excluir a notificação.');
+            refreshAntigas();
           }
-        } catch {
-          showError('Erro ao conectar com o servidor.');
+
+          showToast('Notificação excluída com sucesso.');
+          await carregarModoAtual();
+        } catch (e) {
+          console.error(e);
+          showError(e.message || 'Erro ao excluir a notificação.');
         }
       }
 
       async function abrirComunicacao(id) {
         try {
-          const resp = await fetch(`/api/comunicacao/${id}`, {
-            method: 'POST',
-            credentials: 'include',
-            cache: 'no-store'
+          const comunic = await fetchJson(`/api/comunicacao/${id}`, {
+            method: 'POST'
           });
 
-          if (!resp.ok) throw new Error('Falha ao iniciar comunicação');
+          const destino = new URL('/comunicacao-pais.html', window.location.origin);
+          destino.searchParams.set('comunicacao', comunic._id);
+          destino.searchParams.set('notificacao', id);
+          if (tenant) destino.searchParams.set('t', tenant);
 
-          const comunic = await resp.json();
-          window.location.href = `/comunicacao-pais.html?comunicacao=${comunic._id}&notificacao=${id}`;
+          window.location.href = destino.toString();
         } catch (e) {
-          showError('Erro ao abrir comunicação.');
+          showError(e.message || 'Erro ao abrir comunicação.');
           console.error(e);
         }
       }
@@ -1346,24 +1363,14 @@
         try {
           if (btn) btn.disabled = true;
 
-          const r = await fetch(`/api/notificacoes/${id}/entregar`, {
-            method: 'POST',
-            credentials: 'include',
-            cache: 'no-store'
+          await fetchJson(`/api/notificacoes/${id}/entregar`, {
+            method: 'POST'
           });
-
-          const j = await r.json();
-
-          if (!r.ok) {
-            showError(j.error || 'Falha ao marcar ENTREGUE');
-            if (btn) btn.disabled = false;
-            return;
-          }
 
           showToast('Notificação marcada como ENTREGUE.');
           await carregarModoAtual();
         } catch (e) {
-          showError('Erro de rede ao marcar ENTREGUE.');
+          showError(e.message || 'Erro de rede ao marcar ENTREGUE.');
           if (btn) btn.disabled = false;
         }
       }
@@ -1372,24 +1379,14 @@
         try {
           if (btn) btn.disabled = true;
 
-          const r = await fetch(`/api/notificacoes/${id}/devolver`, {
-            method: 'POST',
-            credentials: 'include',
-            cache: 'no-store'
+          await fetchJson(`/api/notificacoes/${id}/devolver`, {
+            method: 'POST'
           });
-
-          const j = await r.json();
-
-          if (!r.ok) {
-            showError(j.error || 'Falha ao marcar DEVOLVIDA');
-            if (btn) btn.disabled = false;
-            return;
-          }
 
           showToast('Notificação marcada como DEVOLVIDA e arquivada.');
           await carregarModoAtual();
         } catch (e) {
-          showError('Erro ao marcar DEVOLVIDA.');
+          showError(e.message || 'Erro ao marcar DEVOLVIDA.');
           if (btn) btn.disabled = false;
         }
       }
@@ -1546,5 +1543,6 @@
     });
   </script>
   <script src="notify.js"></script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

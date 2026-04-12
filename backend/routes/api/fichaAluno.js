@@ -36,10 +36,19 @@ const PROJ_ALUNO =
   'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
 
 const PROJ_NOTIF =
-  '_id data tipo tipoMedida natureza motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt';
+  '_id data tipo tipoMedida natureza motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt ativo arquivada status';
 
 const PROJ_OBS =
   '_id texto autor criadoEm createdAt anexos attachments files';
+
+function filtroNotificacoesVisiveis(alunoId, instituicao) {
+  return {
+    aluno: alunoId,
+    instituicao,
+    ativo: { $ne: false },
+    arquivada: { $ne: true }
+  };
+}
 
 router.get('/:id', autenticar, async (req, res) => {
   try {
@@ -58,7 +67,6 @@ router.get('/:id', autenticar, async (req, res) => {
 
     const isProfessor = usuario.tipo === 'professor';
 
-    // ✅ Se houver turmas vinculadas ao professor, restringe o acesso
     const turmasProfessor = Array.isArray(usuario.turmas) ? usuario.turmas : [];
     if (isProfessor && turmasProfessor.length) {
       const turmaAluno = normalizarTurma(aluno.turma);
@@ -68,8 +76,10 @@ router.get('/:id', autenticar, async (req, res) => {
       }
     }
 
-    const notificacoes = await Notificacao.find({ aluno: aluno._id, instituicao })
-      .sort({ data: 1, createdAt: 1 })
+    const notificacoes = await Notificacao.find(
+      filtroNotificacoesVisiveis(aluno._id, instituicao)
+    )
+      .sort({ data: 1, createdAt: 1, _id: 1 })
       .select(PROJ_NOTIF)
       .lean();
 
@@ -108,7 +118,6 @@ router.get('/:id', autenticar, async (req, res) => {
 
     res.set('Cache-Control', 'no-store');
 
-    // ✅ RESPOSTA REDUZIDA PARA PROFESSOR
     if (isProfessor) {
       return res.json({
         aluno: {
@@ -119,7 +128,6 @@ router.get('/:id', autenticar, async (req, res) => {
           comportamento: notaComportamento,
           notaComportamental: notaComportamento,
 
-          // campos sensíveis removidos para professor
           nascimento: null,
           nomePai: null,
           nomeMae: null,
@@ -160,8 +168,6 @@ router.get('/:id', autenticar, async (req, res) => {
           autor: o.autor || 'Não informado',
           criadoEm: o.criadoEm || o.createdAt || null,
           createdAt: o.createdAt || null,
-
-          // ✅ não expor anexos para professor nesta ficha
           anexos: [],
           attachments: [],
           files: [],
@@ -169,7 +175,6 @@ router.get('/:id', autenticar, async (req, res) => {
       });
     }
 
-    // ✅ RESPOSTA COMPLETA PARA DEMAIS PERFIS
     return res.json({
       aluno: {
         _id: aluno._id,
@@ -227,7 +232,6 @@ router.post('/salvar/:id', autenticar, async (req, res) => {
       return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
     }
 
-    // ✅ Se professor tiver turmas vinculadas, restringe também o salvamento
     if (usuario.tipo === 'professor' && Array.isArray(usuario.turmas) && usuario.turmas.length) {
       const aluno = await Aluno.findOne({ _id: id, instituicao }).select('turma').lean();
       if (!aluno) {

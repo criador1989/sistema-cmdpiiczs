@@ -224,7 +224,7 @@ async function enviarComunicadoAPH({ aluno, at, tenantId }) {
       html,
       text: texto
     }),
-    12000,
+    30000,
     'envio email APH'
   );
 

@@ -83,6 +83,18 @@ function scopedFilter(req, extra = {}) {
 }
 
 /* =========================================================
+   ===== HELPERS DE SEGURANÇA / AUDITORIA ==================
+   ========================================================= */
+
+async function safeLogAction(payload) {
+  try {
+    await logAction(payload);
+  } catch (e) {
+    console.warn('[audit] erro ao gravar log:', e?.message || e);
+  }
+}
+
+/* =========================================================
    ===== NOVOS HELPERS: Mensageria / E-mail Deferido =======
    ========================================================= */
 
@@ -317,7 +329,9 @@ function classificarComportamento(nota) {
 function normalizarValorPorNatureza(natureza, valor) {
   const bruto = toNumber(valor, 0);
   return normalizeText(natureza) === 'elogio' ? Math.abs(bruto) : -Math.abs(bruto);
-}async function enriquecerClassificacao(notif, instituicao) {
+}
+
+async function enriquecerClassificacao(notif, instituicao) {
   if (!notif || typeof notif !== 'object') return notif;
 
   const config = await getConfigDisciplinar(instituicao);
@@ -616,7 +630,9 @@ async function recomputarSnapshotsPosterioresDoAluno(alunoId, instituicao) {
 
 function isObjectId(v) {
   return /^[0-9a-fA-F]{24}$/.test(String(v));
-}router.get('/novas', autenticar, requireTenant, attachActor, async (_req, res) => {
+}
+
+router.get('/novas', autenticar, requireTenant, attachActor, async (_req, res) => {
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
@@ -728,6 +744,9 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
       filtroBase.devolvidoPeloAluno = { $ne: true };
       filtroBase.arquivada = { $ne: true };
     } else {
+      // principal / ativas
+      // mantém pendente + deferido + revisao_solicitada
+      // exclui apenas arquivadas/arquivados
       filtroBase.data = { $gte: limiteHistorico };
       filtroBase.devolvidoPeloAluno = { $ne: true };
       filtroBase.arquivada = { $ne: true };
@@ -949,7 +968,9 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
         : Number(valorBase.toFixed(2));
 
       valor = normalizarValorPorNatureza('indisciplina', valor);
-    }    const dataBase = data ? parseDateOnlyLocal(data) : new Date();
+    }
+
+    const dataBase = data ? parseDateOnlyLocal(data) : new Date();
 
     let prazoDevolucao = null;
     if (!ehElogio) {
@@ -995,7 +1016,7 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     await verificarEnvioNP(alunoAtualizado, inst);
 
-    await logAction({
+    await safeLogAction({
       req,
       event: 'NOTIFICACAO_CRIADA',
       targetType: 'Notificacao',
@@ -1033,26 +1054,32 @@ router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) =
     const inst = getTenantId(req);
     const { id } = req.params;
 
-    const n = await Notificacao.findOne({
+    if (!isObjectId(id)) {
+      return res.status(400).json({ message: 'ID inválido' });
+    }
+
+    const existente = await Notificacao.findOne({
       _id: id,
       ...buildInstMatch(inst)
-    });
+    }).lean();
 
-    if (!n) {
+    if (!existente) {
       return res.status(404).json({ message: 'Notificação não encontrada' });
     }
 
-    const alunoId = n.aluno;
+    const alunoId = existente.aluno;
 
-    n.ativo = false;
-    await n.save();
+    await Notificacao.deleteOne({
+      _id: id,
+      ...buildInstMatch(inst)
+    });
 
     await recomputarSnapshotsPosterioresDoAluno(alunoId, inst);
     const alunoAtualizado = await recomputarResumoAlunoAteAgora(alunoId, inst);
 
     await verificarEnvioNP(alunoAtualizado, inst);
 
-    await logAction({
+    await safeLogAction({
       req,
       event: 'NOTIFICACAO_EXCLUIDA',
       targetType: 'Notificacao',
@@ -1060,10 +1087,10 @@ router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) =
       meta: { aluno: alunoAtualizado?.nome, turma: alunoAtualizado?.turma }
     });
 
-    res.json({ message: 'Notificação excluída com sucesso' });
+    return res.json({ message: 'Notificação excluída com sucesso' });
   } catch (error) {
     console.error('Erro ao excluir notificação:', error);
-    res.status(500).json({ message: 'Erro ao excluir notificação' });
+    return res.status(500).json({ message: 'Erro ao excluir notificação' });
   }
 });
 
@@ -1071,6 +1098,10 @@ router.post('/:id/entregar', autenticar, requireTenant, attachActor, async (req,
   try {
     const inst = getTenantId(req);
     const { id } = req.params;
+
+    if (!isObjectId(id)) {
+      return res.status(400).json({ error: 'ID inválido.' });
+    }
 
     const n = await Notificacao.findOne({
       _id: id,
@@ -1098,7 +1129,7 @@ router.post('/:id/entregar', autenticar, requireTenant, attachActor, async (req,
 
     await n.save();
 
-    await logAction({
+    await safeLogAction({
       req,
       event: 'NOTIFICACAO_ENTREGUE',
       targetType: 'Notificacao',
@@ -1117,6 +1148,10 @@ router.post('/:id/devolver', autenticar, requireTenant, attachActor, async (req,
   try {
     const inst = getTenantId(req);
     const { id } = req.params;
+
+    if (!isObjectId(id)) {
+      return res.status(400).json({ error: 'ID inválido.' });
+    }
 
     const n = await Notificacao.findOne({
       _id: id,
@@ -1142,7 +1177,7 @@ router.post('/:id/devolver', autenticar, requireTenant, attachActor, async (req,
 
     await n.save();
 
-    await logAction({
+    await safeLogAction({
       req,
       event: 'NOTIFICACAO_DEVOLVIDA',
       targetType: 'Notificacao',
