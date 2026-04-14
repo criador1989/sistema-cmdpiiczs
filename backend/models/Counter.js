@@ -35,7 +35,7 @@ function getInstituicaoFromChave(chave) {
   if (!s) return null;
 
   // padrão esperado: notificacao:<instituicao>:<ano>
-  const parts = s.split(':').map(p => p.trim()).filter(Boolean);
+  const parts = s.split(':').map((p) => p.trim()).filter(Boolean);
   if (parts.length < 3) return null;
 
   const instituicao = parts[1];
@@ -111,20 +111,23 @@ function sincronizarTenantNoUpdate(update) {
     const instituicaoFromKey = new mongoose.Types.ObjectId(instituicaoDaChave);
 
     const finalInstituicao = toObjectIdOrNull(
-      (update.$set && update.$set.instituicao) ?? update.instituicao ?? instituicao
+      (update.$set && update.$set.instituicao) ??
+      (update.$setOnInsert && update.$setOnInsert.instituicao) ??
+      update.instituicao ??
+      instituicao
     );
+
     const finalTenantId = toObjectIdOrNull(
-      (update.$set && update.$set.tenantId) ?? update.tenantId ?? tenantId
+      (update.$set && update.$set.tenantId) ??
+      (update.$setOnInsert && update.$setOnInsert.tenantId) ??
+      update.tenantId ??
+      tenantId
     );
 
     if (!finalInstituicao && !finalTenantId) {
-      if (update.$set) {
-        update.$set.instituicao = instituicaoFromKey;
-        update.$set.tenantId = instituicaoFromKey;
-      } else {
-        update.instituicao = instituicaoFromKey;
-        update.tenantId = instituicaoFromKey;
-      }
+      if (!update.$setOnInsert) update.$setOnInsert = {};
+      update.$setOnInsert.instituicao = instituicaoFromKey;
+      update.$setOnInsert.tenantId = instituicaoFromKey;
       return;
     }
 
@@ -153,7 +156,8 @@ const CounterSchema = new mongoose.Schema({
 
   seq: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0
   },
 
   atualizadoEm: {
@@ -161,7 +165,7 @@ const CounterSchema = new mongoose.Schema({
     default: Date.now
   },
 
-  // Novo apoio estrutural para multi-tenant
+  // Apoio estrutural para multi-tenant
   instituicao: {
     type: Schema.Types.ObjectId,
     ref: 'Instituicao',
@@ -175,16 +179,15 @@ const CounterSchema = new mongoose.Schema({
     default: null,
     index: true
   }
-
 }, { timestamps: true });
 
 /* =========================
    ÍNDICES
 ========================= */
-CounterSchema.index({ instituicao: 1, chave: 1 });
-CounterSchema.index({ tenantId: 1, chave: 1 });
-CounterSchema.index({ instituicao: 1, atualizadoEm: -1 });
-CounterSchema.index({ tenantId: 1, atualizadoEm: -1 });
+CounterSchema.index({ instituicao: 1, chave: 1 }, { name: 'idx_counter_instituicao_chave' });
+CounterSchema.index({ tenantId: 1, chave: 1 }, { name: 'idx_counter_tenant_chave' });
+CounterSchema.index({ instituicao: 1, atualizadoEm: -1 }, { name: 'idx_counter_instituicao_atualizadoEm' });
+CounterSchema.index({ tenantId: 1, atualizadoEm: -1 }, { name: 'idx_counter_tenant_atualizadoEm' });
 
 /* =========================
    MIDDLEWARES
@@ -219,10 +222,13 @@ CounterSchema.pre('findOneAndUpdate', function (next) {
     const update = this.getUpdate() || {};
 
     if (!update.$set) update.$set = {};
+    if (!update.$setOnInsert) update.$setOnInsert = {};
+
     update.$set.atualizadoEm = new Date();
 
     if ('chave' in update.$set) update.$set.chave = trimStr(update.$set.chave);
     else if ('chave' in update) update.chave = trimStr(update.chave);
+    else if ('chave' in update.$setOnInsert) update.$setOnInsert.chave = trimStr(update.$setOnInsert.chave);
 
     if ('seq' in update.$set) {
       const n = Number(update.$set.seq);
@@ -230,6 +236,9 @@ CounterSchema.pre('findOneAndUpdate', function (next) {
     } else if ('seq' in update) {
       const n = Number(update.seq);
       update.seq = Number.isFinite(n) ? n : 0;
+    } else if ('seq' in update.$setOnInsert) {
+      const n = Number(update.$setOnInsert.seq);
+      update.$setOnInsert.seq = Number.isFinite(n) ? n : 0;
     }
 
     sincronizarTenantNoUpdate(update);

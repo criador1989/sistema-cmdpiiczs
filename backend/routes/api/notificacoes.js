@@ -524,17 +524,72 @@ async function getMaxSequenceForYear(ano, instituicao) {
 }
 
 async function getNextNumeroSequencialAtomic(instituicao, dataRef = new Date()) {
-  const ano = dataRef instanceof Date ? dataRef.getFullYear() : new Date().getFullYear();
-  const maxSeq = await getMaxSequenceForYear(ano, instituicao);
-  const nextSeq = (maxSeq || 0) + 1;
-  const pad = 4;
-  return {
-    ano,
-    seq: nextSeq,
-    numeroSequencial: `${String(nextSeq).padStart(pad, '0')}/${ano}`
-  };
-}
+  const ano = dataRef instanceof Date
+    ? dataRef.getFullYear()
+    : new Date().getFullYear();
 
+  const pad = 4;
+  const chave = `notificacao:${instituicao}:${ano}`;
+
+  // 1) incrementa atomicamente o contador
+  let counter = await Counter.findOneAndUpdate(
+    { chave },
+    {
+      $inc: { seq: 1 },
+      $setOnInsert: {
+        chave,
+        instituicao,
+        tenantId: instituicao
+      }
+    },
+    {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: false
+    }
+  );
+
+  let seq = Number(counter?.seq || 0);
+  let numeroSequencial = `${String(seq).padStart(pad, '0')}/${ano}`;
+
+  // 2) se já existir notificação com esse número, sincroniza com o maior existente
+  const jaExiste = await Notificacao.findOne({
+    ...buildInstMatch(instituicao),
+    numeroSequencial
+  })
+    .select('_id numeroSequencial')
+    .lean();
+
+  if (!jaExiste) {
+    return { ano, seq, numeroSequencial };
+  }
+
+  // 3) pega o maior sequencial já existente no histórico da instituição/ano
+  const maxSeqExistente = await getMaxSequenceForYear(ano, instituicao);
+  const seqCorrigido = Math.max(seq, maxSeqExistente) + 1;
+
+  // 4) força o counter para frente, nunca para trás
+  counter = await Counter.findOneAndUpdate(
+    {
+      chave,
+      seq: { $lt: seqCorrigido }
+    },
+    {
+      $set: {
+        seq: seqCorrigido,
+        atualizadoEm: new Date()
+      }
+    },
+    {
+      new: true
+    }
+  );
+
+  seq = Number(counter?.seq || seqCorrigido);
+  numeroSequencial = `${String(seq).padStart(pad, '0')}/${ano}`;
+
+  return { ano, seq, numeroSequencial };
+}
 async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
   try {
     const alunoDoc = await Aluno.findOne({
