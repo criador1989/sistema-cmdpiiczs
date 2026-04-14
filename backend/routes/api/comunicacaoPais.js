@@ -10,7 +10,7 @@ const router = express.Router();
 
 /* =========================
    HELPERS
-   ========================= */
+========================= */
 function getMensageria(req) {
   return req.app?.locals?.mensageria || global.mensageria || null;
 }
@@ -22,28 +22,46 @@ function normalizeId(raw) {
   return mongoose.isValidObjectId(s) ? s : null;
 }
 
-// Normaliza qualquer string de tipo/medida da notificação para o enum do schema
-function mapTipoMedidaEnum(notif) {
-  const txt = String(notif?.tipoMedida || notif?.tipo || '').toLowerCase();
-
-  // ajuste conforme sua regra: aqui presume-se que
-  // advertência/repreensão/elogio etc. → 'A.I.A'
-  // e medidas de comparecimento/execução em contraturno → 'A.E.C.D.E'
-  if (/(contraturno|comparecimento|execu[cç][aã]o|atividade|cumprimento|medida)/i.test(txt)) {
-    return 'A.E.C.D.E';
-  }
-  // fallback comum (advertência escrita, repreensão, etc.)
-  return 'A.I.A';
-}
-
+// Garante HH:mm válido
 function hhmm(s, fallback) {
   if (!s || !/^\d{2}:\d{2}$/.test(s)) return fallback;
   return s;
 }
 
+// Normaliza qualquer string de tipo/medida da notificação para o enum do schema
+function mapTipoMedidaEnum(notif) {
+  const txt = String(notif?.tipoMedida || notif?.tipo || '')
+    .trim()
+    .toLowerCase();
+
+  // Reconhece explicitamente A.E.C.D.E / AECDE
+  if (
+    /a\.?\s*e\.?\s*c\.?\s*d\.?\s*e\.?/i.test(txt) ||
+    /\baecde\b/i.test(txt)
+  ) {
+    return 'A.E.C.D.E';
+  }
+
+  // Reconhece explicitamente A.I.A / AIA
+  if (
+    /a\.?\s*i\.?\s*a\.?/i.test(txt) ||
+    /\baia\b/i.test(txt)
+  ) {
+    return 'A.I.A';
+  }
+
+  // Regras por descrição textual
+  if (/(contraturno|comparecimento|execu[cç][aã]o|atividade|cumprimento|medida)/i.test(txt)) {
+    return 'A.E.C.D.E';
+  }
+
+  // Fallback
+  return 'A.I.A';
+}
+
 /* =========================
-   STATUS (primeiras rotas)
-   ========================= */
+   STATUS
+========================= */
 router.get('/status', autenticar, (req, res) => {
   try {
     const m = getMensageria(req);
@@ -57,6 +75,7 @@ router.get('/status', autenticar, (req, res) => {
           hasTelegramBot: false,
           transportMode: 'NONE',
         };
+
     return res.json({ ok: true, mensageria: st });
   } catch (e) {
     console.error('❌ GET /api/comunicacao/status:', e);
@@ -77,7 +96,8 @@ router.get('/status-public', (req, res) => {
           hasTelegramBot: false,
           transportMode: 'NONE',
         };
-  return res.json({ ok: true, mensageria: st });
+
+    return res.json({ ok: true, mensageria: st });
   } catch (e) {
     console.error('❌ GET /api/comunicacao/status-public:', e);
     return res.status(500).json({ ok: false, mensagem: 'Erro ao buscar status público.' });
@@ -86,7 +106,7 @@ router.get('/status-public', (req, res) => {
 
 /* ======================================================
    LER por NOTIFICAÇÃO (GET /:notificacao)
-   ====================================================== */
+====================================================== */
 router.get('/:notificacao', autenticar, async (req, res, next) => {
   try {
     if (req.params.notificacao && /\/pdf$/i.test(req.url)) return next();
@@ -97,7 +117,9 @@ router.get('/:notificacao', autenticar, async (req, res, next) => {
     }
 
     const doc = await ComunicacaoPais.findOne({ notificacao: notifId }).lean();
-    if (!doc) return res.status(404).json({ ok: false, mensagem: 'Comunicação não encontrada.' });
+    if (!doc) {
+      return res.status(404).json({ ok: false, mensagem: 'Comunicação não encontrada.' });
+    }
 
     return res.json({ ok: true, data: doc });
   } catch (e) {
@@ -108,7 +130,7 @@ router.get('/:notificacao', autenticar, async (req, res, next) => {
 
 /* ======================================================
    CRIAR ou RETORNAR (POST /:notificacao) — idempotente
-   ====================================================== */
+====================================================== */
 router.post('/:notificacao', autenticar, async (req, res) => {
   try {
     const notifId = normalizeId(req.params.notificacao);
@@ -116,39 +138,71 @@ router.post('/:notificacao', autenticar, async (req, res) => {
       return res.status(400).json({ ok: false, mensagem: 'Parâmetro de notificação inválido.' });
     }
 
-    // Já existe?
-    let doc = await ComunicacaoPais.findOne({ notificacao: notifId });
-    if (doc) return res.json({ ok: true, data: doc });
-
     // Busca a notificação para popular campos obrigatórios
     const notif = await Notificacao.findById(notifId)
       .populate('aluno', 'nome turma')
       .lean();
+
     if (!notif) {
       return res.status(404).json({ ok: false, mensagem: 'Notificação não encontrada.' });
     }
 
-    // Datas (usa a da notificação quando houver)
+    const tipoMedidaEnum = mapTipoMedidaEnum(notif);
     const dt = notif.data ? new Date(notif.data) : new Date();
 
-    // Mapeia para o enum do schema
-    const tipoMedidaEnum = mapTipoMedidaEnum(notif);
+    // Já existe? sincroniza e retorna
+    let doc = await ComunicacaoPais.findOne({ notificacao: notifId });
+    if (doc) {
+      let alterou = false;
 
-    // Monte o documento com TODOS os required do schema
+      if (doc.tipoMedida !== tipoMedidaEnum) {
+        doc.tipoMedida = tipoMedidaEnum;
+        alterou = true;
+      }
+
+      if (!doc.nomeAluno && notif.aluno?.nome) {
+        doc.nomeAluno = notif.aluno.nome;
+        alterou = true;
+      }
+
+      if (!doc.turma && notif.aluno?.turma) {
+        doc.turma = notif.aluno.turma;
+        alterou = true;
+      }
+
+      if (!doc.dataNotificacao) {
+        doc.dataNotificacao = dt;
+        alterou = true;
+      }
+
+      if (!doc.instituicao && notif.instituicao) {
+        doc.instituicao = notif.instituicao;
+        alterou = true;
+      }
+
+      if (alterou) {
+        await doc.save();
+      }
+
+      return res.json({ ok: true, data: doc });
+    }
+
+    // Monte o documento com todos os campos necessários
     const base = {
       instituicao: notif.instituicao || 'CMDPII/CZS',
-      aluno: notif.aluno?._id || notif.aluno,            // ObjectId
-      notificacao: notifId,                               // ObjectId, unique
+      aluno: notif.aluno?._id || notif.aluno,
+      notificacao: notifId,
       nomeAluno: notif.aluno?.nome || '',
       turma: notif.aluno?.turma || '',
       dataNotificacao: dt,
-      tipoMedida: tipoMedidaEnum,                         // 'A.I.A' | 'A.E.C.D.E'
+      tipoMedida: tipoMedidaEnum,
       observacao: '',
       dataInicio: dt,
       dataFim: dt,
       horaApresentacao: hhmm(req.body?.horaApresentacao, '14:00'),
       horaSaida: hhmm(req.body?.horaSaida, '18:00'),
-      // criadoPor/atualizadoPor opcionais
+      criadoPor: req.user?._id || req.usuario?._id,
+      atualizadoPor: req.user?._id || req.usuario?._id,
     };
 
     doc = await ComunicacaoPais.create(base);
@@ -163,12 +217,16 @@ router.post('/:notificacao', autenticar, async (req, res) => {
         campos,
       });
     }
+
     // erro de unique (duplicado) — tratar como idempotente
     if (e?.code === 11000 && e?.keyPattern?.notificacao) {
-      const notifId = normalizeId(req.params.notificacao);
-      const doc = await ComunicacaoPais.findOne({ notificacao: notifId });
-      if (doc) return res.json({ ok: true, data: doc });
+      try {
+        const notifId = normalizeId(req.params.notificacao);
+        const doc = await ComunicacaoPais.findOne({ notificacao: notifId });
+        if (doc) return res.json({ ok: true, data: doc });
+      } catch (_) {}
     }
+
     console.error('💥 POST /api/comunicacao/:notificacao', e);
     return res.status(500).json({ ok: false, mensagem: 'Falha ao criar comunicação.' });
   }
@@ -176,7 +234,7 @@ router.post('/:notificacao', autenticar, async (req, res) => {
 
 /* ======================================================
    ATUALIZAR (PUT /:id)
-   ====================================================== */
+====================================================== */
 router.put('/:id', autenticar, async (req, res) => {
   try {
     const id = normalizeId(req.params.id) || req.params.id;
@@ -190,11 +248,17 @@ router.put('/:id', autenticar, async (req, res) => {
       dataFim: req.body.dataFim ?? null,
       horaApresentacao: hhmm(req.body.horaApresentacao, '14:00'),
       horaSaida: hhmm(req.body.horaSaida, '18:00'),
-      atualizadoPor: req.user?._id, // se o middleware popular req.user
+      atualizadoPor: req.user?._id || req.usuario?._id,
     };
 
-    const doc = await ComunicacaoPais.findByIdAndUpdate(id, update, { new: true });
-    if (!doc) return res.status(404).json({ ok: false, mensagem: 'Registro não encontrado.' });
+    const doc = await ComunicacaoPais.findByIdAndUpdate(id, update, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!doc) {
+      return res.status(404).json({ ok: false, mensagem: 'Registro não encontrado.' });
+    }
 
     return res.json({ ok: true, data: doc });
   } catch (e) {
@@ -205,7 +269,7 @@ router.put('/:id', autenticar, async (req, res) => {
 
 /* ======================================================
    PDF (GET /:id/pdf)
-   ====================================================== */
+====================================================== */
 router.get('/:id/pdf', autenticar, async (req, res) => {
   try {
     const id = normalizeId(req.params.id) || req.params.id;
@@ -214,9 +278,12 @@ router.get('/:id/pdf', autenticar, async (req, res) => {
     }
 
     const doc = await ComunicacaoPais.findById(id).lean();
-    if (!doc) return res.status(404).json({ ok: false, mensagem: 'Comunicação não encontrada.' });
+    if (!doc) {
+      return res.status(404).json({ ok: false, mensagem: 'Comunicação não encontrada.' });
+    }
 
     const pdfBuffer = await gerarPdfComunicacao(doc);
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=comunicacao-${id}.pdf`);
     return res.send(pdfBuffer);
