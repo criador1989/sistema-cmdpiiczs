@@ -172,7 +172,8 @@ const notificacaoSchema = new mongoose.Schema({
 
   numeroSequencial: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
 
   instituicao: {
@@ -291,20 +292,62 @@ const notificacaoSchema = new mongoose.Schema({
    ÍNDICES
 ========================= */
 
-notificacaoSchema.index({ instituicao: 1, numeroSequencial: 1 }, { unique: true });
-notificacaoSchema.index({ tenantId: 1, numeroSequencial: 1 });
+/**
+ * IMPORTANTE:
+ * O índice único correto é por instituição + número sequencial.
+ * Se ainda existir no MongoDB Atlas o índice legado `numeroSequencial_1`,
+ * ele precisa ser removido manualmente, senão continuará dando E11000
+ * mesmo com este schema correto.
+ */
+notificacaoSchema.index(
+  { instituicao: 1, numeroSequencial: 1 },
+  { unique: true, name: 'uq_notificacao_instituicao_numeroSequencial' }
+);
 
-notificacaoSchema.index({ instituicao: 1, aluno: 1, data: 1 });
-notificacaoSchema.index({ tenantId: 1, aluno: 1, data: 1 });
+notificacaoSchema.index(
+  { tenantId: 1, numeroSequencial: 1 },
+  { name: 'idx_notificacao_tenant_numeroSequencial' }
+);
 
-notificacaoSchema.index({ instituicao: 1, status: 1 });
-notificacaoSchema.index({ tenantId: 1, status: 1 });
+notificacaoSchema.index(
+  { instituicao: 1, aluno: 1, data: 1 },
+  { name: 'idx_notificacao_instituicao_aluno_data' }
+);
 
-notificacaoSchema.index({ instituicao: 1, arquivada: 1, devolvidoPeloAluno: 1, status: 1, data: -1 });
-notificacaoSchema.index({ tenantId: 1, arquivada: 1, devolvidoPeloAluno: 1, status: 1, data: -1 });
+notificacaoSchema.index(
+  { tenantId: 1, aluno: 1, data: 1 },
+  { name: 'idx_notificacao_tenant_aluno_data' }
+);
 
-notificacaoSchema.index({ instituicao: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 });
-notificacaoSchema.index({ tenantId: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 });
+notificacaoSchema.index(
+  { instituicao: 1, status: 1 },
+  { name: 'idx_notificacao_instituicao_status' }
+);
+
+notificacaoSchema.index(
+  { tenantId: 1, status: 1 },
+  { name: 'idx_notificacao_tenant_status' }
+);
+
+notificacaoSchema.index(
+  { instituicao: 1, arquivada: 1, devolvidoPeloAluno: 1, status: 1, data: -1 },
+  { name: 'idx_notificacao_instituicao_arquivada_devolucao_status_data' }
+);
+
+notificacaoSchema.index(
+  { tenantId: 1, arquivada: 1, devolvidoPeloAluno: 1, status: 1, data: -1 },
+  { name: 'idx_notificacao_tenant_arquivada_devolucao_status_data' }
+);
+
+notificacaoSchema.index(
+  { instituicao: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 },
+  { name: 'idx_notificacao_instituicao_status_devolucao_arquivada_createdAt' }
+);
+
+notificacaoSchema.index(
+  { tenantId: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 },
+  { name: 'idx_notificacao_tenant_status_devolucao_arquivada_createdAt' }
+);
 
 /* =========================
    LÓGICA PADRÃO / FALLBACK
@@ -324,7 +367,9 @@ const MAPA_ELOGIOS = {
   mediaAlta: CONFIG_PADRAO_CBMAC.recompensas.mediaAlta
 };
 
-const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);/* =========================
+const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+
+/* =========================
    PRE VALIDATE
 ========================= */
 
@@ -341,6 +386,7 @@ notificacaoSchema.pre('validate', function () {
   this.classificacaoRegulamento = trimStr(this.classificacaoRegulamento);
   this.comentarioMonitor = trimStr(this.comentarioMonitor);
   this.comentarioRevisao = trimStr(this.comentarioRevisao);
+  this.numeroSequencial = trimStr(this.numeroSequencial);
 
   // 🔥 coerência automática de arquivamento
   if (this.devolvidoPeloAluno === true) {

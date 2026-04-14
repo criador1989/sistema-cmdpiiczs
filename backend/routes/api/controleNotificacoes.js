@@ -1,15 +1,32 @@
 // backend/routes/api/controleNotificacoes.js
 const express = require('express');
 const router = express.Router();
+
 const Notificacao = require('../../models/Notificacao');
+const Aluno = require('../../models/Aluno');
 const { autenticar } = require('../../middleware/autenticacao');
 
+let Instituicao = null;
+let ConfiguracaoDisciplinar = null;
+
+try {
+  Instituicao = require('../../models/Instituicao');
+} catch (_) {
+  Instituicao = null;
+}
+
+try {
+  ConfiguracaoDisciplinar = require('../../models/ConfiguracaoDisciplinar');
+} catch (_) {
+  ConfiguracaoDisciplinar = null;
+}
+
 /* ============================================================
-   🔹 (NOVO) Mensageria opcional (lazy require, não quebra se não existir)
+   🔹 Mensageria opcional
    ============================================================ */
 let mensageria = null;
 try {
-  mensageria = require('../../services/mensageria'); // enviarEmail, enviarTelegram, linkWhatsApp
+  mensageria = require('../../services/mensageria');
   console.log('[CTRL-NOTIF] mensageria carregada.');
 } catch (_) {
   console.log('[CTRL-NOTIF] mensageria NÃO encontrada (ok por enquanto).');
@@ -19,67 +36,222 @@ try {
    🔹 UTILITÁRIOS
    ============================================================ */
 
-// Monta filtro base por instituição (inclui sem instituicao p/ compatibilidade)
 function filtroInstituicaoDoUsuario(usuario) {
   const inst = (usuario && usuario.instituicao) ? String(usuario.instituicao) : null;
   if (!inst) return { _id: null };
-
   return { instituicao: inst };
 }
 
-/* Pequenos helpers para texto/assunto (funcionam mesmo sem templates avançados) */
-function assuntoDeferido(aluno, notif) {
+function normalizarTexto(v) {
+  return String(v || '').trim();
+}
+
+function firstNonEmpty(...values) {
+  for (const v of values) {
+    const s = normalizarTexto(v);
+    if (s) return s;
+  }
+  return '';
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function notaEstaNaFaixaNP(nota) {
+  const n = Number(nota);
+  return Number.isFinite(n) && n >= 5.0 && n <= 6.99;
+}
+
+async function carregarContextoInstitucional(instituicaoId) {
+  const fallback = {
+    nomeInstituicao: 'Colégio Militar Dom Pedro II/CZS',
+    siglaInstituicao: 'CMDPII/CZS',
+    instituicaoLabel: 'CMDPII/CZS',
+    setorResponsavel: 'Coordenação',
+    setorEnsino: 'Coordenação de Ensino',
+    assinatura: 'Coordenação — Colégio Militar Dom Pedro II/CZS',
+    mensagemAutomatica: 'Mensagem automática do Sistema Escolar – CMDPII/CZS.',
+    subtituloEmail: 'Comunicado de Notificação Deferida'
+  };
+
+  if (!instituicaoId) return fallback;
+
+  let instituicaoDoc = null;
+  let configDoc = null;
+
+  try {
+    if (Instituicao) {
+      instituicaoDoc = await Instituicao.findById(instituicaoId).lean();
+    }
+  } catch (e) {
+    console.warn('[CTRL-NOTIF] Falha ao carregar Instituicao:', e?.message || e);
+  }
+
+  try {
+    if (ConfiguracaoDisciplinar) {
+      configDoc = await ConfiguracaoDisciplinar.findOne({ instituicao: instituicaoId }).lean();
+    }
+  } catch (e) {
+    console.warn('[CTRL-NOTIF] Falha ao carregar ConfiguracaoDisciplinar:', e?.message || e);
+  }
+
+  const nomeInstituicao = firstNonEmpty(
+    instituicaoDoc?.nome,
+    instituicaoDoc?.nomeExibicao,
+    instituicaoDoc?.nomeColegio,
+    instituicaoDoc?.razaoSocial,
+    fallback.nomeInstituicao
+  );
+
+  const siglaInstituicao = firstNonEmpty(
+    instituicaoDoc?.sigla,
+    instituicaoDoc?.slug,
+    '',
+  );
+
+  // ✅ caminho correto do schema
+  const cabecalhoCfg = firstNonEmpty(
+    configDoc?.regulamento?.textos?.cabecalho
+  );
+
+  const setorResponsavel = firstNonEmpty(
+    cabecalhoCfg && cabecalhoCfg.includes('–') ? cabecalhoCfg.split('–').slice(1).join('–').trim() : '',
+    cabecalhoCfg && cabecalhoCfg.includes('-') ? cabecalhoCfg.split('-').slice(1).join('-').trim() : '',
+    fallback.setorResponsavel
+  );
+
+  const instituicaoLabel = firstNonEmpty(
+    nomeInstituicao,
+    cabecalhoCfg && (cabecalhoCfg.split('–')[0] || cabecalhoCfg.split('-')[0]),
+    siglaInstituicao,
+    fallback.instituicaoLabel
+  );
+
+  return {
+    nomeInstituicao,
+    siglaInstituicao,
+    instituicaoLabel: normalizarTexto(instituicaoLabel) || fallback.instituicaoLabel,
+    setorResponsavel,
+    setorEnsino: firstNonEmpty(setorResponsavel, fallback.setorEnsino),
+    assinatura: `${firstNonEmpty(setorResponsavel, fallback.setorResponsavel)} — ${nomeInstituicao}`,
+    mensagemAutomatica: `Mensagem automática do Sistema Escolar – ${nomeInstituicao || siglaInstituicao || fallback.nomeInstituicao}.`,
+    subtituloEmail: fallback.subtituloEmail
+  };
+}
+
+function assuntoDeferido(aluno, _notif, contexto = {}) {
   const nome = aluno?.nome || 'Aluno';
-  return `Notificação deferida | ${nome}`;
+  const prefixo = contexto?.nomeInstituicao || contexto?.siglaInstituicao || 'Instituição';
+  return `Notificação deferida | ${nome} | ${prefixo}`;
 }
-function htmlDeferido(aluno, notif) {
+
+function htmlDeferido(aluno, notif, contexto = {}) {
   const nome = aluno?.nome || '';
   const turma = aluno?.turma || '';
-  const tipo  = notif?.tipo || notif?.tipoMedida || '—';
-  const motivo= notif?.motivo || '—';
-  const num   = notif?.numeroSequencial || '—';
-  return `
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222">
-      <p>Prezada família do(a) aluno(a) <strong>${nome}</strong> (${turma}),</p>
-      <p>Informamos que foi <strong>deferida</strong> uma notificação disciplinar referente ao(a) estudante.</p>
-      <p><strong>Resumo:</strong></p>
-      <ul>
-        <li><b>Tipo/Medida:</b> ${tipo}</li>
-        <li><b>Motivo:</b> ${motivo}</li>
-        <li><b>Nº Sequencial:</b> ${num}</li>
-      </ul>
-      <p>Estamos à disposição para esclarecimentos.</p>
-      <p>Atenciosamente,<br/>Coordenação — Colégio Militar Dom Pedro II/CZS</p>
-    </div>
-  `;
+  const tipo = notif?.tipo || notif?.tipoMedida || '—';
+  const motivo = notif?.motivo || '—';
+  const num = notif?.numeroSequencial || '—';
+
+  const cabecalho = `${contexto?.instituicaoLabel || 'Instituição'} – ${contexto?.setorEnsino || 'Coordenação'}`;
+  const subtitulo = contexto?.subtituloEmail || 'Comunicado de Notificação Deferida';
+  const assinatura = contexto?.assinatura || 'Coordenação — Instituição';
+  const mensagemAutomatica = contexto?.mensagemAutomatica || 'Mensagem automática do Sistema Escolar.';
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Notificação deferida</title>
+</head>
+<body style="margin:0;background:#f5f6f8;font-family:Segoe UI,Arial,sans-serif;color:#222;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f8;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="width:620px;max-width:100%;background:#ffffff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.06);overflow:hidden;border:1px solid #eceff3;">
+          <tr>
+            <td style="background:#8B0000;padding:16px 22px;color:#fff;">
+              <div style="font-weight:700;font-size:18px;letter-spacing:.2px;">${escapeHtml(cabecalho)}</div>
+              <div style="opacity:.92;font-size:13px;">${escapeHtml(subtitulo)}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:22px;">
+              <p style="margin:0 0 10px 0;font-size:16px;">
+                Prezada família do(a) aluno(a) <strong>${escapeHtml(nome)}</strong> (${escapeHtml(turma)}),
+              </p>
+
+              <p style="margin:0 0 14px 0;font-size:15px;line-height:1.55;">
+                Informamos que foi <strong>deferida</strong> uma notificação disciplinar referente ao(à) estudante.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:14px 0 16px 0;">
+                <tr>
+                  <td style="background:#fff7f7;border:1px solid #f3d1d1;border-radius:10px;padding:14px;">
+                    <div style="font-size:14px;color:#5a0c0d;font-weight:700;margin-bottom:6px;">Resumo</div>
+                    <ul style="margin:0;padding-left:18px;font-size:14px;color:#5a0c0d;line-height:1.6;">
+                      <li><b>Tipo/Medida:</b> ${escapeHtml(tipo)}</li>
+                      <li><b>Motivo:</b> ${escapeHtml(motivo)}</li>
+                      <li><b>Nº Sequencial:</b> ${escapeHtml(num)}</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;">
+                Estamos à disposição para quaisquer esclarecimentos.
+              </p>
+
+              <p style="margin:0 0 6px 0;font-size:14px;color:#444;">
+                Atenciosamente,<br><b>${escapeHtml(assinatura)}</b>
+              </p>
+
+              <p style="margin:16px 0 0 0;font-size:13px;color:#6b6f76;">
+                ${escapeHtml(mensagemAutomatica)}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
-function textoCurtoDeferido(aluno, notif) {
+
+function textoCurtoDeferido(aluno, notif, contexto = {}) {
   const nome = aluno?.nome || '';
   const turma = aluno?.turma || '';
-  const tipo  = notif?.tipo || notif?.tipoMedida || '—';
-  const num   = notif?.numeroSequencial || '—';
+  const tipo = notif?.tipo || notif?.tipoMedida || '—';
+  const num = notif?.numeroSequencial || '—';
+  const assinatura = contexto?.assinatura || 'Coordenação — Instituição';
+
   return [
-    `COMUNICADO — Notificação deferida`,
+    'COMUNICADO — Notificação deferida',
     `Aluno(a): ${nome} (${turma})`,
     `Tipo/Medida: ${tipo}`,
     `Nº: ${num}`,
-    `Estamos à disposição. — CMDPII/CZS`
+    `Estamos à disposição. — ${assinatura}`
   ].join('\n');
 }
 
 /* ============================================================
-   🔹 GET - Listar notificações para controle (pendentes + revisões)
+   🔹 LISTAR notificações para controle
    ============================================================ */
 router.get('/', autenticar, async (req, res) => {
   try {
-    // paginação
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 50);
     const skip = (page - 1) * limit;
 
-    // filtros
     const { q, data } = req.query;
-    // status: pode vir "status=pendente" ou "status=pendente,revisao_solicitada"
     const rawStatus = (req.query.status || '').trim();
     const statuses = rawStatus
       ? rawStatus.split(',').map((s) => s.trim()).filter(Boolean)
@@ -90,7 +262,6 @@ router.get('/', autenticar, async (req, res) => {
       status: { $in: statuses },
     };
 
-    // filtro de data
     if (data) {
       const inicio = new Date(data);
       const fim = new Date(data);
@@ -100,19 +271,16 @@ router.get('/', autenticar, async (req, res) => {
       }
     }
 
-    // busca textual
     const textRegex = q ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
 
-    // consulta principal
     const baseQuery = Notificacao.find(filtro)
-      .populate('aluno', 'nome turma')
+      .populate('aluno', 'nome turma instituicao contatos')
       .sort({ createdAt: -1, _id: -1 });
 
     const countQuery = Notificacao.countDocuments(filtro);
 
     let [total, docs] = await Promise.all([countQuery, baseQuery.skip(skip).limit(limit)]);
 
-    // filtrar se houver q
     if (textRegex) {
       docs = docs.filter((n) => {
         const aluno = n.aluno || {};
@@ -126,10 +294,10 @@ router.get('/', autenticar, async (req, res) => {
         );
       });
 
-      // refaz count para busca textual
       const todosParaCount = await Notificacao.find(filtro)
-        .populate('aluno', 'nome turma')
+        .populate('aluno', 'nome turma instituicao')
         .select('motivo tipo tipoMedida numeroSequencial aluno');
+
       total = todosParaCount.filter((n) => {
         const aluno = n.aluno || {};
         return (
@@ -152,18 +320,24 @@ router.get('/', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 PUT - Deferir notificação (AGORA COM LOGS E DISPARO DE COMUNICAÇÃO)
+   🔹 DEFERIR notificação
    ============================================================ */
 router.put('/:id/deferir', autenticar, async (req, res) => {
   try {
     console.log('[CTRL-NOTIF] deferir chamado para id =', req.params.id);
 
-    // Atualiza para 'deferido' e já traz dados do aluno
-    const notificacao = await Notificacao.findByIdAndUpdate(
-      req.params.id,
-      { status: 'deferido', avaliador: req.usuario._id, comentarioMonitor: '' },
+    const notificacao = await Notificacao.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        ...filtroInstituicaoDoUsuario(req.usuario)
+      },
+      {
+        status: 'deferido',
+        avaliador: req.usuario._id,
+        comentarioMonitor: ''
+      },
       { new: true }
-    ).populate('aluno', 'nome turma contatos');
+    ).populate('aluno', 'nome turma contatos instituicao comportamento alertas');
 
     if (!notificacao) {
       console.log('[CTRL-NOTIF] não encontrado:', req.params.id);
@@ -173,49 +347,61 @@ router.put('/:id/deferir', autenticar, async (req, res) => {
     console.log('[CTRL-NOTIF] deferido OK. Aluno:', notificacao.aluno?.nome || '(sem aluno)');
     console.log('[CTRL-NOTIF] mensageria disponível?', !!mensageria);
 
-    // Disparo de comunicação
     let comunicacao = { tentou: false, resultados: {} };
+
+    const aluno = notificacao.aluno || {};
+    const instituicaoEfetiva = aluno?.instituicao || req.usuario?.instituicao || null;
+    const contexto = await carregarContextoInstitucional(instituicaoEfetiva);
+
     try {
-      const aluno = notificacao.aluno || {};
       if (mensageria && aluno) {
         comunicacao.tentou = true;
 
-        const assunto = assuntoDeferido(aluno, notificacao);
-        const html    = htmlDeferido(aluno, notificacao);
-        const texto   = textoCurtoDeferido(aluno, notificacao);
+        const assunto = assuntoDeferido(aluno, notificacao, contexto);
+        const html = htmlDeferido(aluno, notificacao, contexto);
+        const texto = textoCurtoDeferido(aluno, notificacao, contexto);
 
-        // E-mail
         if (aluno?.contatos?.emailResponsavel) {
           try {
             comunicacao.resultados.email = await mensageria.enviarEmail(
-              aluno, 'Deferido', html, aluno.contatos.emailResponsavel, assunto
+              { ...aluno, instituicao: instituicaoEfetiva },
+              'Deferido',
+              html,
+              aluno.contatos.emailResponsavel,
+              assunto
             );
           } catch (e) {
-            comunicacao.resultados.email = { ok:false, erro:e.message };
+            comunicacao.resultados.email = { ok: false, erro: e.message };
           }
         } else {
-          comunicacao.resultados.email = { ok:false, motivo:'sem emailResponsavel' };
+          comunicacao.resultados.email = { ok: false, motivo: 'sem emailResponsavel' };
         }
 
-        // Telegram
         if (aluno?.contatos?.telegramChatId) {
           try {
             comunicacao.resultados.telegram = await mensageria.enviarTelegram(
-              aluno, 'Deferido', aluno.contatos.telegramChatId, texto
+              { ...aluno, instituicao: instituicaoEfetiva },
+              'Deferido',
+              aluno.contatos.telegramChatId,
+              texto
             );
           } catch (e) {
-            comunicacao.resultados.telegram = { ok:false, erro:e.message };
+            comunicacao.resultados.telegram = { ok: false, erro: e.message };
           }
         } else {
-          comunicacao.resultados.telegram = { ok:false, motivo:'sem telegramChatId' };
+          comunicacao.resultados.telegram = { ok: false, motivo: 'sem telegramChatId' };
         }
 
-        // WhatsApp link
         if (aluno?.contatos?.telefoneResponsavel) {
           try {
-            const tel = String(aluno.contatos.telefoneResponsavel || '').replace(/\D/g,'');
-            comunicacao.resultados.whatsappLink = mensageria.linkWhatsApp(aluno, 'Deferido', tel, texto);
-          } catch (e) {
+            const tel = String(aluno.contatos.telefoneResponsavel || '').replace(/\D/g, '');
+            comunicacao.resultados.whatsappLink = mensageria.linkWhatsApp(
+              { ...aluno, instituicao: instituicaoEfetiva },
+              'Deferido',
+              tel,
+              texto
+            );
+          } catch (_e) {
             comunicacao.resultados.whatsappLink = null;
           }
         } else {
@@ -227,8 +413,82 @@ router.put('/:id/deferir', autenticar, async (req, res) => {
       console.warn('[CTRL-NOTIF] Falha ao enviar comunicação:', e);
     }
 
+    // 🔥 DISPARO DIRETO DO NP SEM DEPENDER DE IMPORT DE OUTRA ROTA
+    try {
+      if (
+        mensageria &&
+        typeof mensageria.enviarNPEncaminhamento === 'function' &&
+        aluno &&
+        instituicaoEfetiva
+      ) {
+        const alunoAtualizado = await Aluno.findById(aluno._id);
+
+        if (alunoAtualizado) {
+          const notaAtual = Number(alunoAtualizado.comportamento);
+
+          console.log('[NP][DEBUG] aluno=', alunoAtualizado.nome);
+          console.log('[NP][DEBUG] notaAtual=', notaAtual);
+          console.log('[NP][DEBUG] instituicao=', instituicaoEfetiva);
+
+          if (notaEstaNaFaixaNP(notaAtual)) {
+            const jaEnviadoEm = alunoAtualizado?.alertas?.npRegularEnviadoAt || null;
+            const ultimaNota = typeof alunoAtualizado?.alertas?.npRegularUltimaNota === 'number'
+              ? alunoAtualizado.alertas.npRegularUltimaNota
+              : null;
+
+            const precisaEnviar =
+              !jaEnviadoEm ||
+              ultimaNota === null ||
+              Math.abs(Number(ultimaNota) - notaAtual) >= 0.01;
+
+            console.log('[NP][DEBUG] jaEnviadoEm=', jaEnviadoEm);
+            console.log('[NP][DEBUG] ultimaNota=', ultimaNota);
+            console.log('[NP][DEBUG] precisaEnviar=', precisaEnviar);
+
+            if (precisaEnviar) {
+              const resultadoNP = await mensageria.enviarNPEncaminhamento({
+                alunoId: alunoAtualizado._id,
+                notaAtual,
+                instituicao: instituicaoEfetiva,
+                tenantId: instituicaoEfetiva,
+                linkAgendamento: process.env.NP_AGENDAMENTO_URL || '',
+                contatoEscola: process.env.CONTATO_ESCOLA || '',
+                preferenciaCanais: ['email', 'telegram']
+              });
+
+              comunicacao.resultados.np = resultadoNP;
+
+              alunoAtualizado.alertas = alunoAtualizado.alertas || {};
+              alunoAtualizado.alertas.npRegularEnviadoAt = new Date();
+              alunoAtualizado.alertas.npRegularUltimaNota = notaAtual;
+              await alunoAtualizado.save();
+
+              console.log('[NP][DEBUG] envio NP resultado=', resultadoNP);
+            } else {
+              comunicacao.resultados.np = {
+                ok: false,
+                motivo: 'np_ja_enviado_para_essa_faixa'
+              };
+            }
+          } else {
+            comunicacao.resultados.np = {
+              ok: false,
+              motivo: `nota_fora_da_faixa_np (${Number.isFinite(notaAtual) ? notaAtual.toFixed(2) : 'inválida'})`
+            };
+          }
+        } else {
+          comunicacao.resultados.np = { ok: false, motivo: 'aluno_nao_encontrado_para_np' };
+        }
+      } else {
+        comunicacao.resultados.np = { ok: false, motivo: 'mensageria_np_indisponivel' };
+      }
+    } catch (e) {
+      comunicacao.resultados.np = { ok: false, erro: e.message };
+      console.warn('[NP][DEFERIR] Falha ao verificar/enviar NP:', e.message);
+    }
+
     console.log('[CTRL-NOTIF] comunicacao:', comunicacao);
-    res.json({ ...notificacao.toObject?.() || notificacao, comunicacao });
+    res.json({ ...(notificacao.toObject?.() || notificacao), comunicacao });
   } catch (err) {
     console.error('Erro ao deferir notificação:', err);
     res.status(500).json({ erro: 'Erro ao deferir notificação' });
@@ -236,13 +496,17 @@ router.put('/:id/deferir', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 PUT - Solicitar revisão
+   🔹 Solicitar revisão
    ============================================================ */
 router.put('/:id/revisar', autenticar, async (req, res) => {
   try {
     const { comentario } = req.body;
-    const notificacao = await Notificacao.findByIdAndUpdate(
-      req.params.id,
+
+    const notificacao = await Notificacao.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        ...filtroInstituicaoDoUsuario(req.usuario)
+      },
       {
         status: 'revisao_solicitada',
         avaliador: req.usuario._id,
@@ -250,6 +514,11 @@ router.put('/:id/revisar', autenticar, async (req, res) => {
       },
       { new: true }
     );
+
+    if (!notificacao) {
+      return res.status(404).json({ erro: 'Notificação não encontrada' });
+    }
+
     res.json(notificacao);
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao solicitar revisão' });
@@ -257,15 +526,23 @@ router.put('/:id/revisar', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 PUT - Arquivar notificação
+   🔹 Arquivar notificação
    ============================================================ */
 router.put('/:id/arquivar', autenticar, async (req, res) => {
   try {
-    const notificacao = await Notificacao.findByIdAndUpdate(
-      req.params.id,
+    const notificacao = await Notificacao.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        ...filtroInstituicaoDoUsuario(req.usuario)
+      },
       { status: 'arquivado', avaliador: req.usuario._id },
       { new: true }
     );
+
+    if (!notificacao) {
+      return res.status(404).json({ erro: 'Notificação não encontrada' });
+    }
+
     res.json(notificacao);
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao arquivar notificação' });
@@ -273,7 +550,7 @@ router.put('/:id/arquivar', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 PUT - Reenviar notificação (voltar ao status pendente)
+   🔹 Reenviar notificação
    ============================================================ */
 router.put('/:id/reenviar', autenticar, async (req, res) => {
   try {
@@ -281,8 +558,10 @@ router.put('/:id/reenviar', autenticar, async (req, res) => {
       _id: req.params.id,
       ...filtroInstituicaoDoUsuario(req.usuario),
     });
-    if (!notificacao)
+
+    if (!notificacao) {
       return res.status(404).json({ erro: 'Notificação não encontrada.' });
+    }
 
     notificacao.status = 'pendente';
     await notificacao.save();
@@ -295,11 +574,19 @@ router.put('/:id/reenviar', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 DELETE - Excluir notificação
+   🔹 Excluir notificação
    ============================================================ */
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    await Notificacao.findByIdAndDelete(req.params.id);
+    const notificacao = await Notificacao.findOneAndDelete({
+      _id: req.params.id,
+      ...filtroInstituicaoDoUsuario(req.usuario)
+    });
+
+    if (!notificacao) {
+      return res.status(404).json({ erro: 'Notificação não encontrada' });
+    }
+
     res.json({ mensagem: 'Notificação excluída com sucesso' });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao excluir notificação' });
@@ -307,10 +594,9 @@ router.delete('/:id', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 NOVAS ROTAS PARA O PAINEL E RELATÓRIOS
+   🔹 Painel e relatórios
    ============================================================ */
 
-// Contador rápido de notificações em controle (painel principal)
 router.get('/contador/painel', autenticar, async (req, res) => {
   try {
     const filtro = {
@@ -325,7 +611,6 @@ router.get('/contador/painel', autenticar, async (req, res) => {
   }
 });
 
-// Dados resumidos p/ gráficos (últimos 30 dias)
 router.get('/estatisticas', autenticar, async (req, res) => {
   try {
     const hoje = new Date();
@@ -372,41 +657,30 @@ router.get('/estatisticas', autenticar, async (req, res) => {
 });
 
 /* ============================================================
-   🔹 (NOVO) ENDPOINTS DE CONTAGEM COMPATÍVEIS COM O PAINEL
+   🔹 Contagens compatíveis com o painel
    ============================================================ */
-/**
- * GET /emitidas/contagem
- * GET /contagem
- * Ambos aceitam filtros opcionais:
- *   - status=pendente,deferido,arquivado
- *   - from=YYYY-MM-DD
- *   - to=YYYY-MM-DD
- * Retorno: { total: <number> }
- */
 async function contarNotificacoes(req, res) {
   try {
     const filtro = { ...filtroInstituicaoDoUsuario(req.usuario) };
 
-    // status (lista separada por vírgulas)
     if (req.query.status) {
       const sts = String(req.query.status)
         .split(',')
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
       if (sts.length) filtro.status = { $in: sts };
     }
 
-    // intervalo de datas por createdAt
     const from = req.query.from ? new Date(req.query.from) : null;
-    const to   = req.query.to   ? new Date(req.query.to)   : null;
+    const to = req.query.to ? new Date(req.query.to) : null;
+
     if ((from && !isNaN(from)) || (to && !isNaN(to))) {
       const ini = from && !isNaN(from) ? from : new Date('1970-01-01');
       const fim = to && !isNaN(to) ? new Date(to) : new Date();
-      if (!isNaN(fim)) fim.setHours(23,59,59,999);
+      if (!isNaN(fim)) fim.setHours(23, 59, 59, 999);
       filtro.createdAt = { $gte: ini, $lte: fim };
     }
 
-    // Por padrão, "emitidas" = todas as notificações da instituição (qualquer status)
     const total = await Notificacao.countDocuments(filtro);
     return res.json({ total });
   } catch (e) {
@@ -417,6 +691,5 @@ async function contarNotificacoes(req, res) {
 
 router.get('/emitidas/contagem', autenticar, contarNotificacoes);
 router.get('/contagem', autenticar, contarNotificacoes);
-/* ============================================================ */
 
 module.exports = router;

@@ -9,7 +9,14 @@ const Aluno = require('../../models/Aluno');
 const Counter = require('../../models/Counter'); // pode ficar aqui, mesmo sem uso direto
 
 const calcularNotaTSMD = require('../../utils/calculoNota');
-const enviarWhatsapp = require('../../utils/twilio');
+
+let enviarWhatsapp = null;
+try {
+  enviarWhatsapp = require('../../utils/twilio');
+} catch (_) {
+  enviarWhatsapp = null;
+}
+
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
@@ -21,6 +28,21 @@ const {
 } = require('../../utils/configuracaoDisciplinar');
 // 🚀 Serviços de mensageria (telegram + NP)
 const { enviarTelegram, enviarNPEncaminhamento } = require('../../services/mensageria');
+
+let Instituicao = null;
+let ConfiguracaoDisciplinar = null;
+
+try {
+  Instituicao = require('../../models/Instituicao');
+} catch (_) {
+  Instituicao = null;
+}
+
+try {
+  ConfiguracaoDisciplinar = require('../../models/ConfiguracaoDisciplinar');
+} catch (_) {
+  ConfiguracaoDisciplinar = null;
+}
 
 /* =========================================================
    ===== HELPERS MULTI-TENANT ==============================
@@ -119,6 +141,104 @@ function getChatIdsFromAlunoDoc(alunoDoc) {
   return Array.from(set);
 }
 
+function normalizarTextoInstitucional(v) {
+  return String(v || '').trim();
+}
+
+function firstNonEmptyInstitucional(...values) {
+  for (const v of values) {
+    const s = normalizarTextoInstitucional(v);
+    if (s) return s;
+  }
+  return '';
+}
+
+async function carregarContextoInstitucional(instituicaoId) {
+  const fallback = {
+    nomeInstituicao: 'Colégio Militar Dom Pedro II/CZS',
+    siglaInstituicao: 'CMDPII/CZS',
+    instituicaoLabel: 'CMDPII/CZS',
+    setorResponsavel: 'Coordenação de Ensino',
+    setorEnsino: 'Coordenação de Ensino',
+    assinatura: 'Coordenação — Colégio Militar Dom Pedro II/CZS',
+    mensagemAutomatica: 'Mensagem automática do Sistema Escolar – CMDPII/CZS.',
+    subtituloEmail: 'Comunicado de Notificação Deferida'
+  };
+
+  if (!instituicaoId) return fallback;
+
+  let instituicaoDoc = null;
+  let configDoc = null;
+
+  try {
+    if (Instituicao) {
+      instituicaoDoc = await Instituicao.findById(instituicaoId).lean();
+    }
+  } catch (e) {
+    console.warn('[NOTIFICACOES] Falha ao carregar Instituicao:', e?.message || e);
+  }
+
+  try {
+    if (ConfiguracaoDisciplinar) {
+      configDoc = await ConfiguracaoDisciplinar.findOne({ instituicao: instituicaoId }).lean();
+    }
+  } catch (e) {
+    console.warn('[NOTIFICACOES] Falha ao carregar ConfiguracaoDisciplinar:', e?.message || e);
+  }
+
+  const nomeInstituicao = firstNonEmptyInstitucional(
+    instituicaoDoc?.nome,
+    instituicaoDoc?.nomeExibicao,
+    instituicaoDoc?.sigla,
+    fallback.nomeInstituicao
+  );
+
+  const siglaInstituicao = firstNonEmptyInstitucional(
+    instituicaoDoc?.sigla,
+    instituicaoDoc?.slug,
+    nomeInstituicao,
+    fallback.siglaInstituicao
+  );
+
+  const cabecalhoCfg = firstNonEmptyInstitucional(
+    configDoc?.regulamento?.textos?.cabecalho
+  );
+
+  const setorResponsavel = firstNonEmptyInstitucional(
+    cabecalhoCfg && cabecalhoCfg.includes('–') ? cabecalhoCfg.split('–').slice(1).join('–').trim() : '',
+    cabecalhoCfg && cabecalhoCfg.includes('-') ? cabecalhoCfg.split('-').slice(1).join('-').trim() : '',
+    fallback.setorResponsavel
+  );
+
+    const instituicaoLabel = firstNonEmptyInstitucional(
+    nomeInstituicao,
+    cabecalhoCfg && cabecalhoCfg.includes('–') ? cabecalhoCfg.split('–')[0].trim() : '',
+    cabecalhoCfg && cabecalhoCfg.includes('-') ? cabecalhoCfg.split('-')[0].trim() : '',
+    siglaInstituicao,
+    fallback.instituicaoLabel
+  );
+
+  return {
+    nomeInstituicao,
+    siglaInstituicao,
+    instituicaoLabel,
+    setorResponsavel,
+    setorEnsino: setorResponsavel || fallback.setorEnsino,
+    assinatura: `${setorResponsavel || fallback.setorResponsavel} — ${nomeInstituicao}`,
+    mensagemAutomatica: `Mensagem automática do Sistema Escolar – ${nomeInstituicao || siglaInstituicao}.`,
+    subtituloEmail: fallback.subtituloEmail
+  };
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function formatDataBr(dt) {
   if (!dt) return '';
   const d = new Date(dt);
@@ -136,7 +256,7 @@ function formatDataHoraBr(dt) {
   return `${formatDataBr(d)} ${hh}:${mi}`;
 }
 
-function montarEmailDeferido({ aluno, notif }) {
+function montarEmailDeferido({ aluno, notif, contexto }) {
   const nome = aluno?.nome || 'Aluno(a)';
   const turma = aluno?.turma || '—';
   const numero = notif?.numeroSequencial || '—';
@@ -149,7 +269,8 @@ function montarEmailDeferido({ aluno, notif }) {
       ? ` (${notif.quantidadeDias} dias)`
       : '';
 
-  const assunto = `Nova Notificação Disciplinar DEFERIDA — ${nome} (${turma}) — Nº ${numero}`;
+    const assunto = `Nova Notificação Disciplinar DEFERIDA — ${nome} (${turma}) — Nº ${numero} — ${contexto?.nomeInstituicao || contexto?.siglaInstituicao || 'Instituição'}`;
+
   const text = [
     'Prezada família,',
     '',
@@ -160,26 +281,75 @@ function montarEmailDeferido({ aluno, notif }) {
     `Motivo/Descrição: ${motivo}`,
     `Nº: ${numero}`,
     '',
-    'Este é um comunicado automático do CMDPII/CZS.'
+    `Este é um comunicado automático do ${contexto?.siglaInstituicao || contexto?.nomeInstituicao || 'Sistema Escolar'}.`
   ]
     .filter(Boolean)
     .join('\n');
 
-  const html = `
-    <div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.5;color:#111">
-      <p>Prezada família,</p>
-      <p>Informamos que foi <strong>DEFERIDA</strong> uma Notificação Disciplinar referente a
-      <strong>${nome}</strong> (turma <strong>${turma}</strong>).</p>
-      <p>
-        <b>Data:</b> ${dataStr}<br/>
-        <b>Medida:</b> ${medida}${dias}<br/>
-        ${inciso ? `<b>Inciso:</b> ${inciso}<br/>` : ``}
-        <b>Motivo/Descrição:</b> ${motivo}<br/>
-        <b>Nº:</b> ${numero}
-      </p>
-      <p style="margin-top:16px">Este é um comunicado automático do <b>CMDPII/CZS</b>.</p>
-    </div>
-  `;
+  const html = `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Notificação deferida</title>
+</head>
+<body style="margin:0;background:#f5f6f8;font-family:Segoe UI,Arial,sans-serif;color:#222;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f8;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="width:620px;max-width:100%;background:#ffffff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.06);overflow:hidden;border:1px solid #eceff3;">
+          <tr>
+            <td style="background:#8B0000;padding:16px 22px;color:#fff;">
+              <div style="font-weight:700;font-size:18px;letter-spacing:.2px;">${escapeHtml((contexto?.instituicaoLabel || 'Instituição') + ' – ' + (contexto?.setorEnsino || 'Coordenação de Ensino'))}</div>
+              <div style="opacity:.92;font-size:13px;">${escapeHtml(contexto?.subtituloEmail || 'Comunicado de Notificação Deferida')}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:22px;">
+              <p style="margin:0 0 10px 0;font-size:16px;">
+                Prezada família do(a) aluno(a) <strong>${escapeHtml(nome)}</strong> (${escapeHtml(turma)}),
+              </p>
+
+              <p style="margin:0 0 14px 0;font-size:15px;line-height:1.55;">
+                Informamos que foi <strong>DEFERIDA</strong> uma Notificação Disciplinar referente ao(à) estudante.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:14px 0 16px 0;">
+                <tr>
+                  <td style="background:#fff7f7;border:1px solid #f3d1d1;border-radius:10px;padding:14px;">
+                    <div style="font-size:14px;color:#5a0c0d;font-weight:700;margin-bottom:6px;">Resumo</div>
+                    <ul style="margin:0;padding-left:18px;font-size:14px;color:#5a0c0d;line-height:1.6;">
+                      <li><b>Data:</b> ${escapeHtml(dataStr)}</li>
+                      <li><b>Medida:</b> ${escapeHtml(medida + dias)}</li>
+                      ${inciso ? `<li><b>Inciso:</b> ${escapeHtml(inciso)}</li>` : ''}
+                      <li><b>Motivo/Descrição:</b> ${escapeHtml(motivo)}</li>
+                      <li><b>Nº:</b> ${escapeHtml(numero)}</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;">
+                Estamos à disposição para quaisquer esclarecimentos.
+              </p>
+
+              <p style="margin:0 0 6px 0;font-size:14px;color:#444;">
+                Atenciosamente,<br><b>${escapeHtml(contexto?.assinatura || 'Coordenação — Instituição')}</b>
+              </p>
+
+              <p style="margin:16px 0 0 0;font-size:13px;color:#6b6f76;">
+                ${escapeHtml(contexto?.mensagemAutomatica || 'Mensagem automática do Sistema Escolar.')}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
   return { subject: assunto, text, html };
 }
 
@@ -201,7 +371,8 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
     ...buildAlunoMatch(tenantId)
   }).lean();
 
-  const { subject, text, html } = montarEmailDeferido({ aluno, notif });
+  const contexto = await carregarContextoInstitucional(notif.instituicao || tenantId);
+  const { subject, text, html } = montarEmailDeferido({ aluno, notif, contexto });
 
   if (mensageria && typeof mensageria.enfileirarParaResponsaveis === 'function') {
     try {
@@ -220,7 +391,7 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
       const chatIds = getChatIdsFromAlunoDoc(aluno);
       if (chatIds.length) {
         const msgTG = [
-          '🔔 CMDPII/CZS — Notificação DEFERIDA',
+          `🔔 ${contexto?.siglaInstituicao || contexto?.nomeInstituicao || 'Instituição'} — Notificação DEFERIDA`,
           `Aluno(a): ${aluno?.nome || '—'} (${aluno?.turma || '—'})`,
           `Medida: ${notif?.tipoMedida || notif?.tipo || '—'}${
             notif?.quantidadeDias > 1 ? ` (${notif.quantidadeDias} dias)` : ''
@@ -231,7 +402,11 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
         for (const cid of chatIds) {
           try {
             await enviarTelegram(
-              { nome: aluno?.nome, turma: aluno?.turma },
+              {
+                nome: aluno?.nome,
+                turma: aluno?.turma,
+                instituicao: notif.instituicao || tenantId
+              },
               'Notificação',
               cid,
               msgTG
@@ -457,21 +632,19 @@ async function getAlunoInfo(alunoId, instituicao) {
 
 async function verificarEnvioNP(alunoDoc, instituicao) {
   if (!alunoDoc) return;
+
   const nota = Number(alunoDoc.comportamento);
   if (!estaFaixaRegular(nota)) return;
 
-  const jaEnviadoEm = alunoDoc.alertas?.npRegularEnviadoAt || null;
-  const ultimaNota =
-    typeof alunoDoc.alertas?.npRegularUltimaNota === 'number'
-      ? alunoDoc.alertas.npRegularUltimaNota
-      : null;
-  const precisaEnviar =
-    !jaEnviadoEm || ultimaNota === null || Math.abs(Number(ultimaNota) - nota) >= 0.01;
-
-  if (!precisaEnviar) return;
+  console.log('[NP] Verificando envio...', {
+    aluno: alunoDoc.nome,
+    nota
+  });
 
   try {
-    await enviarNPEncaminhamento({
+    console.log('[NP] Enviando encaminhamento...');
+
+    const resultado = await enviarNPEncaminhamento({
       alunoId: alunoDoc._id,
       notaAtual: nota,
       instituicao,
@@ -481,15 +654,18 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
       preferenciaCanais: ['email', 'telegram']
     });
 
+    console.log('[NP] Resultado envio:', resultado);
+
     alunoDoc.alertas = alunoDoc.alertas || {};
     alunoDoc.alertas.npRegularEnviadoAt = new Date();
     alunoDoc.alertas.npRegularUltimaNota = nota;
     await alunoDoc.save();
+
+    console.log('[NP] Enviado com sucesso!');
   } catch (e) {
     console.warn('[NP] Falha ao enviar encaminhamento:', e.message);
   }
 }
-
 async function getMaxSequenceForYear(ano, instituicao) {
   const result = await Notificacao.aggregate([
     {
@@ -590,6 +766,7 @@ async function getNextNumeroSequencialAtomic(instituicao, dataRef = new Date()) 
 
   return { ano, seq, numeroSequencial };
 }
+
 async function recomputarCamposNotaDaNotificacao(notif, instituicao) {
   try {
     const alunoDoc = await Aluno.findOne({
@@ -799,9 +976,6 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
       filtroBase.devolvidoPeloAluno = { $ne: true };
       filtroBase.arquivada = { $ne: true };
     } else {
-      // principal / ativas
-      // mantém pendente + deferido + revisao_solicitada
-      // exclui apenas arquivadas/arquivados
       filtroBase.data = { $gte: limiteHistorico };
       filtroBase.devolvidoPeloAluno = { $ne: true };
       filtroBase.arquivada = { $ne: true };

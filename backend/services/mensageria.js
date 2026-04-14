@@ -6,11 +6,26 @@
 
 const TelegramBot = require('node-telegram-bot-api');
 const Aluno = require('../models/Aluno');
-const mailer = require('../utils/mailer'); // <<<<<< usa o objeto exportado pelo utils/mailer
-const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento'); // mantenha se existir
+const mailer = require('../utils/mailer');
+const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento');
+
+let Instituicao = null;
+let ConfiguracaoDisciplinar = null;
+
+try {
+  Instituicao = require('../models/Instituicao');
+} catch (_) {
+  Instituicao = null;
+}
+
+try {
+  ConfiguracaoDisciplinar = require('../models/ConfiguracaoDisciplinar');
+} catch (_) {
+  ConfiguracaoDisciplinar = null;
+}
 
 const IS_PROD = process.env.NODE_ENV === 'production';
-const TG_ENABLED   = String(process.env.TG_ENABLED || '').toLowerCase() === 'true';
+const TG_ENABLED = String(process.env.TG_ENABLED || '').toLowerCase() === 'true';
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
 
 /* =========================
@@ -38,13 +53,162 @@ function waLink(telefoneE164, texto) {
   return `https://wa.me/${tel}?text=${encodeURIComponent(texto || '')}`;
 }
 
-function fallbackTexto(aluno, categoria) {
-  const nome  = aluno?.nome || '';
+function normalizarTexto(v) {
+  return String(v || '').trim();
+}
+
+function firstNonEmpty(...values) {
+  for (const v of values) {
+    const s = normalizarTexto(v);
+    if (s) return s;
+  }
+  return '';
+}
+
+function instituicaoMatches(instA, instB) {
+  if (!instA || !instB) return false;
+  return String(instA) === String(instB);
+}
+
+async function carregarContextoInstitucional(instituicaoId) {
+  const fallback = {
+    instituicaoLabel: 'CMDPII/CZS',
+    nomeInstituicao: 'CMDPII/CZS',
+    siglaInstituicao: 'CMDPII/CZS',
+    setorResponsavel: 'Coordenação de Ensino',
+    subtituloEmail: 'Notificação de Encaminhamento ao Núcleo Psicossocial',
+    mensagemAutomatica: 'Mensagem automática do Sistema Escolar – CMDPII/CZS.',
+    rodapeAviso: 'Caso já tenha ocorrido o atendimento no NP, desconsidere esta mensagem.',
+    baseNormativaTitulo: 'Base normativa',
+    baseNormativaTexto: 'Art. 51 — “Encaminhar ao Núcleo Psicossocial (NP) e registrar no histórico. O NP deve informar os responsáveis.”',
+    observacaoFinal: 'Pedimos acompanhamento e alinhamento com a Monitoria/Coordenação. Em caso de dúvidas, estamos à disposição.',
+    proximosPassos: [
+      'Encaminhamento ao NP para escuta e orientação;',
+      'Registro no histórico escolar;',
+      'Contato do NP com os responsáveis;',
+      'Acompanhamento conjunto com a monitoria.'
+    ]
+  };
+
+  if (!instituicaoId) return fallback;
+
+  let instituicaoDoc = null;
+  let configDoc = null;
+
+  try {
+    if (Instituicao) {
+      instituicaoDoc = await Instituicao.findById(instituicaoId).lean();
+    }
+  } catch (e) {
+    console.warn('[mensageria] Falha ao carregar Instituicao:', e?.message || e);
+  }
+
+  try {
+    if (ConfiguracaoDisciplinar) {
+      configDoc = await ConfiguracaoDisciplinar.findOne({ instituicao: instituicaoId }).lean();
+    }
+  } catch (e) {
+    console.warn('[mensageria] Falha ao carregar ConfiguracaoDisciplinar:', e?.message || e);
+  }
+
+  const nomeInstituicao = firstNonEmpty(
+    instituicaoDoc?.nome,
+    instituicaoDoc?.nomeExibicao,
+    instituicaoDoc?.sigla,
+    fallback.nomeInstituicao
+  );
+
+  const siglaInstituicao = firstNonEmpty(
+    instituicaoDoc?.sigla,
+    instituicaoDoc?.slug,
+    nomeInstituicao,
+    fallback.siglaInstituicao
+  );
+
+  const cabecalhoCfg = firstNonEmpty(
+    configDoc?.regulamento?.textos?.cabecalho
+  );
+
+  const notificacaoCfg = firstNonEmpty(
+    configDoc?.regulamento?.textos?.notificacao
+  );
+
+  const observacaoPadraoCfg = firstNonEmpty(
+    configDoc?.regulamento?.textos?.observacaoPadrao
+  );
+
+  const textoInstitucional = firstNonEmpty(
+    configDoc?.regulamento?.textoInstitucional
+  );
+
+  const artigo51 = Array.isArray(configDoc?.regulamento?.artigos)
+    ? configDoc.regulamento.artigos.find((a) => String(a?.numero || '').trim() === '51')
+    : null;
+
+  const artigo51Texto = firstNonEmpty(
+    artigo51?.titulo,
+    ...(Array.isArray(artigo51?.incisos)
+      ? artigo51.incisos.map((inc) => inc?.texto)
+      : [])
+  );
+
+  const setorResponsavel = firstNonEmpty(
+    cabecalhoCfg && cabecalhoCfg.includes('–') ? cabecalhoCfg.split('–').slice(1).join('–').trim() : '',
+    cabecalhoCfg && cabecalhoCfg.includes('-') ? cabecalhoCfg.split('-').slice(1).join('-').trim() : '',
+    fallback.setorResponsavel
+  );
+
+  // 🔥 CORREÇÃO:
+  // prioriza o nome da instituição para evitar herdar sigla antiga (ex.: CZS)
+  const instituicaoLabel = firstNonEmpty(
+    nomeInstituicao,
+    cabecalhoCfg && (cabecalhoCfg.split('–')[0] || cabecalhoCfg.split('-')[0]),
+    siglaInstituicao,
+    fallback.instituicaoLabel
+  );
+
+  return {
+    instituicaoLabel: normalizarTexto(instituicaoLabel) || fallback.instituicaoLabel,
+    nomeInstituicao,
+    siglaInstituicao,
+    setorResponsavel,
+    subtituloEmail: fallback.subtituloEmail,
+
+    // 🔥 CORREÇÃO:
+    // mensagem automática deve priorizar o nome da instituição
+    mensagemAutomatica: `Mensagem automática do Sistema Escolar – ${nomeInstituicao || siglaInstituicao || fallback.nomeInstituicao}.`,
+
+    rodapeAviso: fallback.rodapeAviso,
+    baseNormativaTitulo: fallback.baseNormativaTitulo,
+    baseNormativaTexto: firstNonEmpty(
+      notificacaoCfg,
+      artigo51Texto,
+      textoInstitucional,
+      fallback.baseNormativaTexto
+    ),
+    observacaoFinal: firstNonEmpty(
+      observacaoPadraoCfg,
+      fallback.observacaoFinal
+    ),
+    proximosPassos: fallback.proximosPassos
+  };
+}
+
+function fallbackTexto(aluno, categoria, contexto = {}) {
+  const nome = aluno?.nome || '';
   const turma = aluno?.turma || '';
+  const assinatura = firstNonEmpty(
+    contexto?.setorResponsavel && contexto?.siglaInstituicao
+      ? `${contexto.setorResponsavel} – ${contexto.siglaInstituicao}`
+      : '',
+    contexto?.instituicaoLabel,
+    'CMDPII/CZS'
+  );
+
   return [
     `COMUNICADO — ${categoria || 'Informação'}`,
     `Aluno(a): ${nome} (${turma})`,
-    `Estamos à disposição. — CMDPII/CZS`
+    `Estamos à disposição. — ${assinatura}`
   ].join('\n');
 }
 
@@ -85,7 +249,8 @@ function extractContatosAluno(alunoDoc) {
 async function enviarEmailDireto({ to, subject, text, html }) {
   const lista = Array.isArray(to)
     ? to.filter(Boolean)
-    : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+    : String(to || '').split(',').map((s) => s.trim()).filter(Boolean);
+
   if (!lista.length) return { ok: false, erro: 'Destinatário ausente' };
 
   try {
@@ -108,11 +273,15 @@ function canSendTelegram() {
 async function enviarTelegramDireto({ chatIds = [], text }) {
   const ids = Array.isArray(chatIds) ? chatIds.filter(Boolean) : [chatIds].filter(Boolean);
   if (!ids.length) return { ok: false, erro: 'chatId ausente' };
+
   const bodyText = text && String(text).trim() ? String(text) : ' ';
 
   if (!canSendTelegram()) {
     if (!IS_PROD) {
-      console.log('📨 [LOG] (simulado) Telegram:', { chatIds: ids, text: bodyText.slice(0, 120) + '...' });
+      console.log('📨 [LOG] (simulado) Telegram:', {
+        chatIds: ids,
+        text: bodyText.slice(0, 120) + '...'
+      });
       return { ok: true, simulated: true, to: ids };
     }
     return { ok: false, erro: 'Telegram indisponível' };
@@ -121,32 +290,39 @@ async function enviarTelegramDireto({ chatIds = [], text }) {
   const results = [];
   for (const chatId of ids) {
     try {
-      const res = await tgBot.sendMessage(chatId, bodyText, { disable_web_page_preview: true, parse_mode: 'HTML' });
+      const res = await tgBot.sendMessage(chatId, bodyText, {
+        disable_web_page_preview: true,
+        parse_mode: 'HTML'
+      });
       results.push({ ok: true, id: res.message_id, to: String(chatId) });
     } catch (e) {
       results.push({ ok: false, erro: e?.message || String(e), to: String(chatId) });
     }
   }
-  return { ok: results.some(r => r.ok), results };
+
+  return { ok: results.some((r) => r.ok), results };
 }
 
 /* =========================
    API legada (mantida)
    ========================= */
 async function enviarEmail(aluno, categoria, html, destinoEmail, assunto) {
-  const textoFallback = fallbackTexto(aluno, categoria);
+  const contexto = await carregarContextoInstitucional(aluno?.instituicao);
+  const textoFallback = fallbackTexto(aluno, categoria, contexto);
+
   return enviarEmailDireto({
     to: destinoEmail,
-    subject: assunto || `Comunicado — ${categoria || 'Informação'}`,
+    subject: assunto || `Comunicado — ${contexto.siglaInstituicao || contexto.nomeInstituicao || 'Instituição'}`,
     text: textoFallback,
     html: html || `<pre style="white-space:pre-wrap">${textoFallback}</pre>`
   });
 }
 
 async function enviarTelegram(aluno, categoria, chatId, texto) {
+  const contexto = await carregarContextoInstitucional(aluno?.instituicao);
   return enviarTelegramDireto({
     chatIds: [chatId],
-    text: texto || fallbackTexto(aluno, categoria)
+    text: texto || fallbackTexto(aluno, categoria, contexto)
   });
 }
 
@@ -165,8 +341,8 @@ async function enfileirarParaResponsaveis(opts = {}) {
     preferenciaCanais = ['email', 'telegram'],
     titulo = 'Comunicado — CMDPII/CZS',
     texto = '',
-    html  = '',
-    meta  = {}
+    html = '',
+    meta = {}
   } = opts;
 
   if (!alunoId) return { ok: false, erro: 'alunoId ausente' };
@@ -177,31 +353,49 @@ async function enfileirarParaResponsaveis(opts = {}) {
   const aluno = await Aluno.findOne(match)
     .select('nome turma contatos responsaveis telefone instituicao')
     .lean();
+
   if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
 
+  const contexto = await carregarContextoInstitucional(instituicao || aluno.instituicao);
   const contatos = extractContatosAluno(aluno);
-  const textoFinal = String(texto || '').trim() || fallbackTexto(aluno, 'Informação');
-  const htmlFinal  = String(html  || '').trim() || `<pre style="white-space:pre-wrap">${textoFinal}</pre>`;
+  const textoFinal = String(texto || '').trim() || fallbackTexto(aluno, 'Informação', contexto);
+  const htmlFinal = String(html || '').trim() || `<pre style="white-space:pre-wrap">${textoFinal}</pre>`;
 
-  const resultados = { tried: [], telegram: null, email: null, whatsapp: null, meta };
+  const resultados = {
+    tried: [],
+    telegram: null,
+    email: null,
+    whatsapp: null,
+    meta
+  };
 
   for (const canal of preferenciaCanais) {
     if (canal === 'email') {
       resultados.tried.push('email');
       if (contatos.emails.length) {
-        resultados.email = await enviarEmailDireto({ to: contatos.emails, subject: titulo, text: textoFinal, html: htmlFinal });
+        resultados.email = await enviarEmailDireto({
+          to: contatos.emails,
+          subject: titulo,
+          text: textoFinal,
+          html: htmlFinal
+        });
       } else {
         resultados.email = { ok: false, erro: 'Sem e-mails' };
       }
     }
+
     if (canal === 'telegram') {
       resultados.tried.push('telegram');
       if (contatos.telegramIds.length) {
-        resultados.telegram = await enviarTelegramDireto({ chatIds: contatos.telegramIds, text: textoFinal });
+        resultados.telegram = await enviarTelegramDireto({
+          chatIds: contatos.telegramIds,
+          text: textoFinal
+        });
       } else {
         resultados.telegram = { ok: false, erro: 'Sem telegramChatId' };
       }
     }
+
     if (canal === 'whatsapp') {
       resultados.tried.push('whatsapp');
       const n = contatos.whatsapps[0] || '';
@@ -255,7 +449,8 @@ const mensageriaForApp = {
     return enviarEmailDireto({ to, subject, text, html });
   },
   async sendTelegram({ chatId, chatIds, text }) {
-    const ids = chatIds && Array.isArray(chatIds) ? chatIds
+    const ids = chatIds && Array.isArray(chatIds)
+      ? chatIds
       : (chatId ? [chatId] : []);
     return enviarTelegramDireto({ chatIds: ids, text });
   }
@@ -297,21 +492,37 @@ module.exports = {
     const aluno = await Aluno.findOne(match).select('nome turma instituicao').lean();
     if (!aluno) return { ok: false, erro: 'Aluno não encontrado' };
 
-    const { subject, text, html } = montarEmailNP ? montarEmailNP({
-      aluno: aluno.nome,
-      turma: aluno.turma,
-      notaAtual,
-      linkAgendamento: linkAgendamento || '',
-      contatoEscola: contatoEscola || ''
-    }) : {
-      subject: 'Encaminhamento NP',
-      text: fallbackTexto(aluno, 'NP'),
-      html: `<pre style="white-space:pre-wrap">${fallbackTexto(aluno, 'NP')}</pre>`
-    };
+    const instituicaoEfetiva = instituicao || aluno.instituicao;
+    const contexto = await carregarContextoInstitucional(instituicaoEfetiva);
+
+    const { subject, text, html } = montarEmailNP
+      ? montarEmailNP({
+          aluno: aluno.nome,
+          turma: aluno.turma,
+          notaAtual,
+          linkAgendamento: linkAgendamento || '',
+          contatoEscola: contatoEscola || '',
+
+          siglaInstituicao: contexto.siglaInstituicao,
+          nomeInstituicao: contexto.nomeInstituicao,
+          setorResponsavel: contexto.setorResponsavel,
+          subtituloEmail: contexto.subtituloEmail,
+          mensagemAutomatica: contexto.mensagemAutomatica,
+          rodapeAviso: contexto.rodapeAviso,
+          baseNormativaTitulo: contexto.baseNormativaTitulo,
+          baseNormativaTexto: contexto.baseNormativaTexto,
+          observacaoFinal: contexto.observacaoFinal,
+          proximosPassos: contexto.proximosPassos
+        })
+      : {
+          subject: `Encaminhamento NP — ${contexto.siglaInstituicao || contexto.nomeInstituicao || 'Instituição'}`,
+          text: fallbackTexto(aluno, 'NP', contexto),
+          html: `<pre style="white-space:pre-wrap">${fallbackTexto(aluno, 'NP', contexto)}</pre>`
+        };
 
     return enfileirarParaResponsaveis({
       alunoId,
-      instituicao,
+      instituicao: instituicaoEfetiva,
       preferenciaCanais,
       titulo: subject,
       texto: text,
