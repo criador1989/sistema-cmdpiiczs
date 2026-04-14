@@ -117,6 +117,154 @@ async function safeLogAction(payload) {
 }
 
 /* =========================================================
+   ===== HELPERS REGULAMENTO DINÂMICO ======================
+   ========================================================= */
+
+function normalizeRuleText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function normalizarCategoriaRegulamento(value) {
+  const txt = normalizeRuleText(value);
+
+  if (txt === 'leve') return 'leve';
+  if (txt === 'medio' || txt === 'médio') return 'medio';
+  if (txt === 'grave') return 'grave';
+  if (txt === 'gravissimo' || txt === 'gravíssimo') return 'gravissimo';
+  if (txt === 'elogio' || txt === 'positivo' || txt === 'positiva') return 'elogio';
+
+  return String(value || '').trim();
+}
+
+function montarDadosRegulamentoBase({ artigo, paragrafo, inciso, classificacaoRegulamento, motivo }) {
+  return {
+    artigo: String(artigo || '').trim(),
+    paragrafo: String(paragrafo || '').trim(),
+    inciso: String(inciso || '').trim(),
+    classificacao: String(classificacaoRegulamento || '').trim(),
+    texto: String(motivo || '').trim()
+  };
+}
+
+function encontrarIncisoNaConfiguracao(configDoc, { artigo, paragrafo, inciso, motivo } = {}) {
+  const artigos = Array.isArray(configDoc?.regulamento?.artigos)
+    ? configDoc.regulamento.artigos
+    : [];
+
+  if (!artigos.length) return null;
+
+  const artigoStr = String(artigo || '').trim();
+  const paragrafoStr = String(paragrafo || '').trim();
+  const incisoStr = String(inciso || '').trim();
+  const motivoNorm = normalizeRuleText(motivo);
+
+  // 1) Prioridade máxima: _id do inciso
+  if (incisoStr && mongoose.isValidObjectId(incisoStr)) {
+    for (const art of artigos) {
+      for (const inc of art?.incisos || []) {
+        if (String(inc?._id) === incisoStr) {
+          return {
+            artigo: String(art?.numero || '').trim(),
+            paragrafo: String(art?.titulo || '').trim(),
+            inciso: String(inc?.codigo || '').trim() || incisoStr,
+            classificacao: normalizarCategoriaRegulamento(inc?.categoria),
+            texto: String(inc?.texto || '').trim()
+          };
+        }
+      }
+    }
+  }
+
+  // 2) Artigo + código do inciso
+  if (incisoStr) {
+    for (const art of artigos) {
+      const artNumero = String(art?.numero || '').trim();
+      const artTitulo = String(art?.titulo || '').trim();
+
+      if (artigoStr && artNumero !== artigoStr) continue;
+      if (paragrafoStr && artTitulo !== paragrafoStr) continue;
+
+      for (const inc of art?.incisos || []) {
+        if (String(inc?.codigo || '').trim() === incisoStr) {
+          return {
+            artigo: artNumero,
+            paragrafo: artTitulo,
+            inciso: String(inc?.codigo || '').trim(),
+            classificacao: normalizarCategoriaRegulamento(inc?.categoria),
+            texto: String(inc?.texto || '').trim()
+          };
+        }
+      }
+    }
+  }
+
+  // 3) Busca por texto/motivo editado
+  if (motivoNorm) {
+    for (const art of artigos) {
+      const artNumero = String(art?.numero || '').trim();
+      const artTitulo = String(art?.titulo || '').trim();
+
+      for (const inc of art?.incisos || []) {
+        const textoInciso = String(inc?.texto || '').trim();
+        if (normalizeRuleText(textoInciso) !== motivoNorm) continue;
+
+        if (artigoStr && artNumero !== artigoStr) continue;
+        if (paragrafoStr && artTitulo !== paragrafoStr) continue;
+
+        return {
+          artigo: artNumero,
+          paragrafo: artTitulo,
+          inciso: String(inc?.codigo || '').trim(),
+          classificacao: normalizarCategoriaRegulamento(inc?.categoria),
+          texto: textoInciso
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+async function resolverDadosRegulamentoDaInstituicao(inst, payload = {}) {
+  const base = montarDadosRegulamentoBase(payload);
+
+  if (!ConfiguracaoDisciplinar || !inst) {
+    return resolverDadosRegulamentoFallback(base);
+  }
+
+  try {
+    const configDoc = await ConfiguracaoDisciplinar.findOne({ instituicao: inst }).lean();
+
+    if (configDoc) {
+      const encontrado = encontrarIncisoNaConfiguracao(configDoc, payload);
+      if (encontrado) return encontrado;
+    }
+  } catch (e) {
+    console.warn('[NOTIFICACOES] Falha ao consultar ConfiguracaoDisciplinar:', e?.message || e);
+  }
+
+  return resolverDadosRegulamentoFallback(base);
+}
+
+function resolverDadosRegulamentoFallback(base) {
+  const fallback = obterDadosDoRegulamento(base.texto || '');
+
+  return {
+    artigo: base.artigo || String(fallback?.artigo || '').trim(),
+    paragrafo: base.paragrafo || String(fallback?.paragrafo || '').trim(),
+    inciso: base.inciso || String(fallback?.inciso || '').trim(),
+    classificacao:
+      base.classificacao ||
+      String(fallback?.classificacao || '').trim(),
+    texto: base.texto
+  };
+}
+
+/* =========================================================
    ===== NOVOS HELPERS: Mensageria / E-mail Deferido =======
    ========================================================= */
 
@@ -210,7 +358,7 @@ async function carregarContextoInstitucional(instituicaoId) {
     fallback.setorResponsavel
   );
 
-    const instituicaoLabel = firstNonEmptyInstitucional(
+  const instituicaoLabel = firstNonEmptyInstitucional(
     nomeInstituicao,
     cabecalhoCfg && cabecalhoCfg.includes('–') ? cabecalhoCfg.split('–')[0].trim() : '',
     cabecalhoCfg && cabecalhoCfg.includes('-') ? cabecalhoCfg.split('-')[0].trim() : '',
@@ -269,7 +417,7 @@ function montarEmailDeferido({ aluno, notif, contexto }) {
       ? ` (${notif.quantidadeDias} dias)`
       : '';
 
-    const assunto = `Nova Notificação Disciplinar DEFERIDA — ${nome} (${turma}) — Nº ${numero} — ${contexto?.nomeInstituicao || contexto?.siglaInstituicao || 'Instituição'}`;
+  const assunto = `Nova Notificação Disciplinar DEFERIDA — ${nome} (${turma}) — Nº ${numero} — ${contexto?.nomeInstituicao || contexto?.siglaInstituicao || 'Instituição'}`;
 
   const text = [
     'Prezada família,',
@@ -666,6 +814,7 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
     console.warn('[NP] Falha ao enviar encaminhamento:', e.message);
   }
 }
+
 async function getMaxSequenceForYear(ano, instituicao) {
   const result = await Notificacao.aggregate([
     {
@@ -1038,7 +1187,7 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
         notaAnterior notaAtual classificacaoAnterior classificacaoAtual
         comentarioMonitor numeroSequencial entregue prazoDevolucao
         devolvidoPeloAluno devolvidaEm entregueEm natureza mensagemEnviada
-        deferidoEm arquivada ativo
+        deferidoEm arquivada ativo artigo paragrafo inciso classificacaoRegulamento motivo
       `)
       .populate({
         path: 'aluno',
@@ -1209,6 +1358,24 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     const seqInfo = await getNextNumeroSequencialAtomic(inst, dataBase);
 
+    let dadosRegulamento = montarDadosRegulamentoBase({
+      artigo,
+      paragrafo,
+      inciso,
+      classificacaoRegulamento,
+      motivo
+    });
+
+    if (!ehElogio) {
+      dadosRegulamento = await resolverDadosRegulamentoDaInstituicao(inst, {
+        artigo,
+        paragrafo,
+        inciso,
+        classificacaoRegulamento,
+        motivo
+      });
+    }
+
     const nova = new Notificacao(
       tenantData(req, {
         aluno,
@@ -1216,7 +1383,7 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
         tipo,
         tipoMedida: tituloMedida,
         tipoElogio: ehElogio ? tipoElogio : undefined,
-        motivo,
+        motivo: dadosRegulamento.texto || motivo,
         quantidadeDias: dias,
         valorNumerico: valor,
         observacao,
@@ -1224,10 +1391,10 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
         prazoDevolucao,
         status: 'pendente',
         numeroSequencial: seqInfo.numeroSequencial,
-        artigo,
-        paragrafo,
-        inciso,
-        classificacaoRegulamento,
+        artigo: dadosRegulamento.artigo,
+        paragrafo: dadosRegulamento.paragrafo,
+        inciso: dadosRegulamento.inciso,
+        classificacaoRegulamento: dadosRegulamento.classificacao,
         comentarioMonitor,
         criadoPor: req.usuario?.id,
         mensagemEnviada: false
@@ -1259,7 +1426,11 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
         quantidadeDias: dias,
         numeroSequencial: nova.numeroSequencial,
         notaAnterior: enrichedBefore.notaAnterior,
-        notaAtual: enrichedBefore.notaAtual
+        notaAtual: enrichedBefore.notaAtual,
+        artigo: dadosRegulamento.artigo,
+        paragrafo: dadosRegulamento.paragrafo,
+        inciso: dadosRegulamento.inciso,
+        classificacaoRegulamento: dadosRegulamento.classificacao
       }
     });
 
