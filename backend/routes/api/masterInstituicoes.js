@@ -4,22 +4,10 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-const { autenticar } = require('../../middleware/autenticacao');
+const requireSuperAdmin = require('../../middleware/requireSuperAdmin');
 const Usuario = require('../../models/Usuario');
 const ConfiguracaoDisciplinar = require('../../models/ConfiguracaoDisciplinar');
 const { getPresetBase } = require('../../utils/configuracaoDisciplinar');
-
-function verificarMaster(req, res, next) {
-  const tipo = String(req.usuario?.tipo || '').trim().toLowerCase();
-
-  if (['admin', 'superadmin', 'master'].includes(tipo)) {
-    return next();
-  }
-
-  return res.status(403).json({
-    mensagem: 'Acesso restrito ao painel master.'
-  });
-}
 
 function normSlug(s) {
   return String(s || '')
@@ -106,7 +94,7 @@ async function criarConfiguracaoDisciplinarInicial(instituicaoId, preset, sessio
  * INSTITUIÇÕES
  * ========================================================================= */
 
-router.get('/instituicoes', autenticar, verificarMaster, async (_req, res) => {
+router.get('/instituicoes', requireSuperAdmin, async (_req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
 
@@ -124,7 +112,7 @@ router.get('/instituicoes', autenticar, verificarMaster, async (_req, res) => {
   }
 });
 
-router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
+router.post('/instituicoes', requireSuperAdmin, async (req, res) => {
   const session = await mongoose.startSession();
 
   try {
@@ -199,7 +187,7 @@ router.post('/instituicoes', autenticar, verificarMaster, async (req, res) => {
   }
 });
 
-router.patch('/instituicoes/:id', autenticar, verificarMaster, async (req, res) => {
+router.patch('/instituicoes/:id', requireSuperAdmin, async (req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
     const id = String(req.params.id || '').trim();
@@ -230,7 +218,7 @@ router.patch('/instituicoes/:id', autenticar, verificarMaster, async (req, res) 
  * USUÁRIOS DA INSTITUIÇÃO
  * ========================================================================= */
 
-router.post('/instituicoes/:id/usuarios', autenticar, verificarMaster, async (req, res) => {
+router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
 
