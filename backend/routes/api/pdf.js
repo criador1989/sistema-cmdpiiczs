@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const Notificacao = require('../../models/Notificacao');
-const Instituicao = require('../../models/Instituicao'); // 🔥 NOVO
+const Instituicao = require('../../models/Instituicao');
 const { autenticar } = require('../../middleware/autenticacao');
 
 const {
@@ -17,13 +17,63 @@ const {
 const router = express.Router();
 
 /* ------------ Helpers ------------- */
-function montarDescricaoInfracao({ artigo, inciso, motivo }) {
-  const a = (artigo || '').replace(/^Art\.?\s*/i, '').trim();
-  const partes = [];
-  if (a) partes.push(`Art. ${a}`);
-  if (inciso) partes.push(inciso);
-  if (motivo) partes.push(`Motivo: ${motivo}`);
-  return partes.join(' | ');
+function numeroParaRomano(valor) {
+  const n = Number(valor);
+  if (!Number.isFinite(n) || n <= 0) return String(valor || '').trim();
+
+  const mapa = [
+    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
+    [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
+    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
+  ];
+
+  let restante = Math.trunc(n);
+  let romano = '';
+
+  for (const [num, simb] of mapa) {
+    while (restante >= num) {
+      romano += simb;
+      restante -= num;
+    }
+  }
+
+  return romano || String(valor || '').trim();
+}
+
+function montarDescricaoInfracao({
+  artigo = '',
+  paragrafo = '',
+  inciso = '',
+  motivo = '',
+  classificacao = ''
+} = {}) {
+  const artigoTxt = String(artigo || '').trim();
+  const paragrafoTxt = String(paragrafo || '').trim();
+  const incisoTxt = numeroParaRomano(inciso);
+  const motivoTxt = String(motivo || '').trim();
+  const classificacaoTxt = String(classificacao || '').trim();
+
+  const linhas = [];
+
+  if (artigoTxt || paragrafoTxt) {
+    linhas.push([artigoTxt, paragrafoTxt].filter(Boolean).join('. '));
+  }
+
+  if (classificacaoTxt) {
+    linhas.push(`Classificação: ${classificacaoTxt}`);
+  }
+
+  if (incisoTxt || motivoTxt) {
+    if (incisoTxt && motivoTxt) {
+      linhas.push(`${incisoTxt} – ${motivoTxt}`);
+    } else if (incisoTxt) {
+      linhas.push(incisoTxt);
+    } else {
+      linhas.push(motivoTxt);
+    }
+  }
+
+  return linhas.join('\n').trim() || '—';
 }
 
 function toFixed2(x) {
@@ -45,14 +95,11 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
 
     const aluno = notificacao.aluno;
 
-    // 🔥 BUSCAR INSTITUIÇÃO (LOGO)
     const instituicao = await Instituicao.findById(req.usuario.instituicao).lean();
 
-    // 🔥 CONFIGURAÇÃO DISCIPLINAR
     const config = await getConfigDisciplinar(req.usuario.instituicao);
     const regulamento = getTextoRegulamento(config);
 
-    // Números
     const notaAnteriorNum = Number(notificacao.notaAnterior);
     const valorNum = Number(notificacao.valorNumerico);
     const notaAtualSalva = Number(notificacao.notaAtual);
@@ -67,18 +114,28 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
 
     const classificacao = getClassificacaoComportamento(notaFinalNum, config);
 
+    // 🔥 AQUI ESTÁ A CORREÇÃO PRINCIPAL
     const descricaoInfracao = montarDescricaoInfracao({
       artigo: notificacao.artigo || '',
+      paragrafo: notificacao.paragrafo || '',
       inciso: notificacao.inciso || '',
-      motivo: notificacao.motivo || ''
+      motivo: notificacao.motivo || '',
+      classificacao: notificacao.classificacaoRegulamento || ''
     });
 
-    // 🔥 TEXTOS
+    console.log('📄 DEBUG PDF:', {
+      artigo: notificacao.artigo,
+      paragrafo: notificacao.paragrafo,
+      inciso: notificacao.inciso,
+      classificacaoRegulamento: notificacao.classificacaoRegulamento,
+      motivo: notificacao.motivo,
+      descricaoInfracao
+    });
+
     const textoCabecalho = regulamento?.textos?.cabecalho || '';
     const textoNotificacao = regulamento?.textos?.notificacao || '';
     const nomeRegulamento = regulamento?.nome || 'Regulamento Disciplinar';
 
-    // 🔥 DADOS PARA O PYTHON
     const dados = {
       numero: (notificacao._id || '').toString().slice(-6).toUpperCase(),
       numeroSequencial: notificacao.numeroSequencial || '',
@@ -87,7 +144,6 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       turma: aluno.turma,
       alunoTurma: aluno.turma,
 
-      // 🔥 REGULAMENTO
       regulamentoNome: nomeRegulamento,
       cabecalho: textoCabecalho,
       textoInstitucional: textoNotificacao,
@@ -108,16 +164,10 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
         day: '2-digit', month: 'long', year: 'numeric'
       }),
 
-      // 🔥 NOVO: LOGO + LOCALIZAÇÃO
       logoUrl: instituicao?.logoUrl || '',
       cidade: instituicao?.municipio || '—',
       estado: instituicao?.estado || '—'
     };
-
-    console.log('📤 PDF GERADO COM LOGO:', {
-      instituicao: instituicao?.nome,
-      logo: instituicao?.logoUrl
-    });
 
     const scriptPath = path.join(__dirname, '../../pdf/generate_notification_docx.py');
     const python = spawn('python', [scriptPath], { cwd: path.resolve(__dirname, '../../') });

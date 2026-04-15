@@ -150,7 +150,10 @@ function montarDadosRegulamentoBase({ artigo, paragrafo, inciso, classificacaoRe
   };
 }
 
-function encontrarIncisoNaConfiguracao(configDoc, { artigo, paragrafo, inciso, motivo } = {}) {
+function encontrarIncisoNaConfiguracao(
+  configDoc,
+  { artigo, paragrafo, inciso, motivo, classificacaoRegulamento } = {}
+) {
   const artigos = Array.isArray(configDoc?.regulamento?.artigos)
     ? configDoc.regulamento.artigos
     : [];
@@ -161,6 +164,7 @@ function encontrarIncisoNaConfiguracao(configDoc, { artigo, paragrafo, inciso, m
   const paragrafoStr = String(paragrafo || '').trim();
   const incisoStr = String(inciso || '').trim();
   const motivoNorm = normalizeRuleText(motivo);
+  const classificacaoNorm = normalizarCategoriaRegulamento(classificacaoRegulamento);
 
   // 1) Prioridade máxima: _id do inciso
   if (incisoStr && mongoose.isValidObjectId(incisoStr)) {
@@ -179,7 +183,7 @@ function encontrarIncisoNaConfiguracao(configDoc, { artigo, paragrafo, inciso, m
     }
   }
 
-  // 2) Artigo + código do inciso
+  // 2) Artigo + parágrafo + código do inciso + classificação
   if (incisoStr) {
     for (const art of artigos) {
       const artNumero = String(art?.numero || '').trim();
@@ -189,20 +193,24 @@ function encontrarIncisoNaConfiguracao(configDoc, { artigo, paragrafo, inciso, m
       if (paragrafoStr && artTitulo !== paragrafoStr) continue;
 
       for (const inc of art?.incisos || []) {
-        if (String(inc?.codigo || '').trim() === incisoStr) {
-          return {
-            artigo: artNumero,
-            paragrafo: artTitulo,
-            inciso: String(inc?.codigo || '').trim(),
-            classificacao: normalizarCategoriaRegulamento(inc?.categoria),
-            texto: String(inc?.texto || '').trim()
-          };
-        }
+        const codigoInc = String(inc?.codigo || '').trim();
+        const categoriaInc = normalizarCategoriaRegulamento(inc?.categoria);
+
+        if (codigoInc !== incisoStr) continue;
+        if (classificacaoNorm && categoriaInc !== classificacaoNorm) continue;
+
+        return {
+          artigo: artNumero,
+          paragrafo: artTitulo,
+          inciso: codigoInc,
+          classificacao: categoriaInc,
+          texto: String(inc?.texto || '').trim()
+        };
       }
     }
   }
 
-  // 3) Busca por texto/motivo editado
+  // 3) Busca por texto/motivo editado + classificação
   if (motivoNorm) {
     for (const art of artigos) {
       const artNumero = String(art?.numero || '').trim();
@@ -210,16 +218,18 @@ function encontrarIncisoNaConfiguracao(configDoc, { artigo, paragrafo, inciso, m
 
       for (const inc of art?.incisos || []) {
         const textoInciso = String(inc?.texto || '').trim();
-        if (normalizeRuleText(textoInciso) !== motivoNorm) continue;
+        const categoriaInc = normalizarCategoriaRegulamento(inc?.categoria);
 
+        if (normalizeRuleText(textoInciso) !== motivoNorm) continue;
         if (artigoStr && artNumero !== artigoStr) continue;
         if (paragrafoStr && artTitulo !== paragrafoStr) continue;
+        if (classificacaoNorm && categoriaInc !== classificacaoNorm) continue;
 
         return {
           artigo: artNumero,
           paragrafo: artTitulo,
           inciso: String(inc?.codigo || '').trim(),
-          classificacao: normalizarCategoriaRegulamento(inc?.categoria),
+          classificacao: categoriaInc,
           texto: textoInciso
         };
       }
@@ -254,13 +264,14 @@ function resolverDadosRegulamentoFallback(base) {
   const fallback = obterDadosDoRegulamento(base.texto || '');
 
   return {
-    artigo: base.artigo || String(fallback?.artigo || '').trim(),
-    paragrafo: base.paragrafo || String(fallback?.paragrafo || '').trim(),
-    inciso: base.inciso || String(fallback?.inciso || '').trim(),
+    artigo: base.artigo || String(fallback?.artigo || '').trim() || 'Art. —',
+    paragrafo: base.paragrafo || String(fallback?.paragrafo || '').trim() || '',
+    inciso: base.inciso || String(fallback?.inciso || '').trim() || '',
     classificacao:
       base.classificacao ||
-      String(fallback?.classificacao || '').trim(),
-    texto: base.texto
+      String(fallback?.classificacao || '').trim() ||
+      '',
+    texto: base.texto || String(fallback?.motivo || '').trim() || '—'
   };
 }
 
