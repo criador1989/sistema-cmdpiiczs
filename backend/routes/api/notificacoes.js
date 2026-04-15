@@ -1033,13 +1033,17 @@ router.get('/pendencias/devolucao/contador', autenticar, requireTenant, attachAc
     const tenantId = getTenantId(req);
     const instMatch = buildInstMatch(tenantId);
     const agora = new Date();
+
     const total = await Notificacao.countDocuments({
       ...instMatch,
       status: 'deferido',
       entregue: true,
       devolvidoPeloAluno: { $ne: true },
+      arquivada: { $ne: true },
+      ativo: { $ne: false },
       prazoDevolucao: { $ne: null, $lt: agora }
     });
+
     res.json({ total });
   } catch (err) {
     console.error('Erro contador pendências:', err);
@@ -1056,12 +1060,14 @@ async function handlerPendenciasDevolucao(req, res) {
     const agora = new Date();
 
     const itens = await Notificacao.find({
-      ...instMatch,
-      status: 'deferido',
-      entregue: true,
-      devolvidoPeloAluno: { $ne: true },
-      prazoDevolucao: { $ne: null, $lt: agora }
-    })
+  ...instMatch,
+  status: 'deferido',
+  entregue: true,
+  devolvidoPeloAluno: { $ne: true },
+  arquivada: { $ne: true },
+  ativo: { $ne: false },
+  prazoDevolucao: { $ne: null, $lt: agora }
+})
       .sort({ prazoDevolucao: 1 })
       .limit(limit)
       .select('aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data')

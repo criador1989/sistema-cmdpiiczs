@@ -29,12 +29,14 @@ router.get('/summary', async (req, res) => {
         { $group: { _id: null, m: { $avg: { $ifNull: ['$comportamento', 0] } } } }
       ]),
       Notificacao.countDocuments({
-        ...im,
-        status: 'deferido',
-        entregue: true,
-        devolvidoPeloAluno: { $ne: true },
-        prazoDevolucao: { $ne: null, $lt: new Date() }
-      })
+  ...im,
+  status: 'deferido',
+  entregue: true,
+  devolvidoPeloAluno: { $ne: true },
+  arquivada: { $ne: true },
+  ativo: { $ne: false },
+  prazoDevolucao: { $ne: null, $lt: new Date() }
+})
     ]);
 
     const comportamentoMedio = Number(((mediaAgg?.[0]?.m) || 0).toFixed(2));
