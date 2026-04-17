@@ -222,6 +222,7 @@ const monitoresApiRoutes = require('./routes/api/monitores');
 const rankingAlunosRouter = require('./routes/api/rankingAlunos');
 const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
 const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
+const chamadasRoutes = require('./routes/api/chamadas');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -581,7 +582,7 @@ mountIf('/api/comunicacao', comunicacaoPaisRoutes);
 mountIf('/api/comunicacao', comunicacaoAutoRoutes);
 
 mountIf('/api/monitores', monitoresApiRoutes, autenticar);
-
+mountIf('/api/chamadas', chamadasRoutes);
 mountIf('/api/aph', aphCrudRoutes, autenticar);
 mountIf('/api/aph', aphEstatisticasRoutes);
 mountIf('/api/aph', aphPdfRoutes);
