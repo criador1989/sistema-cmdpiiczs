@@ -162,7 +162,6 @@ h1, h2, h3, h4, h5, h6,
 
 .page{
   position:relative;
-  z-index:3;
   width:100%;
   display:grid;
   grid-template-columns:280px 1fr;
@@ -1631,8 +1630,528 @@ canvas{
 @media(max-width:1024px){
   #axoriin-footer-phrase{ bottom:54px; }
 }
+/* ===== MENU MOBILE / SIDEBAR RETRÁTIL ===== */
+.mobile-menu-btn{
+  display:none;
+  position:fixed;
+  top:14px;
+  left:14px;
+  z-index:260;
+  border:1px solid rgba(90,220,255,0.14);
+  border-radius:14px;
+  background:rgba(7,16,28,0.78);
+  color:#fff;
+  padding:10px 14px;
+  font-size:.95rem;
+  font-weight:600;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:0 8px 18px rgba(0,0,0,0.24);
+  cursor:pointer;
+  transition:opacity .18s ease, transform .18s ease;
+}
+
+.mobile-sidebar-backdrop{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:200; /* menor que a sidebar */
+  background:rgba(0,0,0,0.32);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .22s ease;
+}
+
+.mobile-close-sidebar{
+  display:none;
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:5;
+  width:38px;
+  height:38px;
+  border:none;
+  border-radius:12px;
+  background:rgba(255,255,255,0.06);
+  color:#fff;
+  font-size:1rem;
+  cursor:pointer;
+}
+
+@media (max-width: 1024px){
+  .page{
+    grid-template-columns:1fr;
+    padding:12px;
+  }
+
+  .mobile-menu-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+
+  .mobile-close-sidebar{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .mobile-sidebar-backdrop.show{
+    display:block;
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .sidebar{
+    display:flex !important;
+    position:fixed !important;
+    top:0 !important;
+    left:0 !important;
+    bottom:0 !important;
+    width:min(88vw, 320px);
+    height:100vh !important;
+    max-height:100vh !important;
+    border-radius:0 22px 22px 0;
+    z-index:250;
+    transform:translateX(-105%);
+    transition:transform .24s ease;
+    overflow:hidden;
+  }
+
+  .sidebar.open{
+    transform:translateX(0);
+  }
+
+  .sb-head{
+    padding-top:56px;
+  }
+
+  .nav{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    padding-bottom:18px;
+  }
+
+  .content{
+    width:100%;
+    min-width:0;
+  }
+
+  .wrap{
+    margin-top:58px;
+  }
+}
+
+/* ===== AJUSTE DE CLIQUE SIDEBAR MOBILE ===== */
+.sidebar{
+  pointer-events:auto;
+}
+
+.mobile-sidebar-backdrop.show{
+  pointer-events:auto;
+}
+
+.mobile-sidebar-backdrop{
+  pointer-events:none;
+}
+/* ===== CORREÇÃO DE CLIQUES NO MENU MOBILE ===== */
+.sidebar,
+.sidebar *{
+  pointer-events:auto !important;
+}
+
+.mobile-sidebar-backdrop{
+  z-index:200 !important;
+  pointer-events:none;
+}
+
+.mobile-sidebar-backdrop.show{
+  pointer-events:auto;
+}
+
+.sidebar{
+  z-index:250 !important;
+}
+
+.mobile-menu-btn{
+  z-index:260 !important;
+}
+
+.mobile-menu-btn.is-hidden{
+  opacity:0 !important;
+  pointer-events:none !important;
+  transform:translateY(-8px);
+}
+/* ===== MOBILE APP UX ===== */
+.mobile-appbar{
+  display:none;
+}
+
+@media (max-width: 1024px){
+  .mobile-appbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    position:fixed;
+    top:10px;
+    left:10px;
+    right:10px;
+    z-index:280;
+    height:58px;
+    padding:8px 10px;
+    border-radius:18px;
+    background:rgba(7,16,28,0.82);
+    border:1px solid rgba(90,220,255,0.12);
+    box-shadow:0 10px 28px rgba(0,0,0,0.28);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+
+  .mobile-appbar-center{
+    min-width:0;
+    flex:1;
+    text-align:center;
+    pointer-events:none;
+  }
+
+  .mobile-appbar-title{
+    font-size:.95rem;
+    font-weight:800;
+    line-height:1.1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .mobile-appbar-subtitle{
+    font-size:.7rem;
+    color:var(--text-soft) !important;
+    margin-top:2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .mobile-appbar-btn{
+    flex:0 0 auto;
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:12px;
+    background:rgba(255,255,255,0.05);
+    color:#fff;
+    font-size:1rem;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:inset 0 0 0 1px rgba(90,220,255,0.08);
+  }
+
+  .mobile-menu-btn{
+    display:none !important;
+  }
+
+  .mobile-close-sidebar{
+    top:14px;
+    right:14px;
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.06);
+    box-shadow:inset 0 0 0 1px rgba(90,220,255,0.08);
+  }
+
+  .sidebar{
+    width:min(86vw, 330px) !important;
+    border-radius:0 22px 22px 0 !important;
+    background:
+      linear-gradient(180deg, rgba(5,12,22,0.96), rgba(4,10,18,0.94)) !important;
+    box-shadow:18px 0 36px rgba(0,0,0,0.28);
+  }
+
+  .sb-head{
+    padding-top:64px !important;
+  }
+
+  .sb-head-top{
+    align-items:flex-start;
+  }
+
+  .brand{
+    width:40px;
+    height:40px;
+  }
+
+  .sb-title{
+    font-size:1rem;
+  }
+
+  .sb-subtitle{
+    font-size:.76rem;
+  }
+
+  .sb-top-actions{
+    margin-top:2px;
+  }
+
+  .sb-logout-top{
+    min-height:42px;
+    border-radius:14px;
+  }
+
+  .nav{
+    padding:10px 10px 20px !important;
+    gap:10px !important;
+  }
+
+  .nav a{
+    min-height:46px;
+    border-radius:14px;
+    font-size:.95rem;
+    padding:12px 14px;
+  }
+
+  .wrap{
+    margin-top:74px !important;
+    margin-bottom:110px !important;
+  }
+
+  .topo{
+    align-items:flex-start;
+    text-align:left;
+    padding:0 4px;
+  }
+
+  .titulo{
+    font-size:1.65rem;
+    line-height:1.05;
+  }
+
+  .sub{
+    font-size:.92rem;
+  }
+
+  .btn-wallpaper{
+    display:none;
+  }
+
+  .painel{
+    padding:6px 2px 22px;
+  }
+
+  .metrics{
+    grid-template-columns:repeat(2, minmax(0,1fr)) !important;
+    gap:10px !important;
+    margin-bottom:18px !important;
+  }
+
+  .metric{
+    min-height:170px !important;
+    padding:6px 2px 8px !important;
+  }
+
+  .metric:first-child{
+    grid-column:1 / -1;
+  }
+
+  .metric-hud{
+    --size:94px !important;
+  }
+
+  .metric:first-child .metric-hud{
+    --size:112px !important;
+  }
+
+  .metric-hud-core{
+    width:54px !important;
+    height:54px !important;
+  }
+
+  .metric:first-child .metric-hud-core{
+    width:64px !important;
+    height:64px !important;
+  }
+
+  .metric .v{
+    font-size:1.15rem !important;
+  }
+
+  .metric:first-child .v{
+    font-size:1.45rem !important;
+  }
+
+  .metric .k{
+    font-size:.62rem !important;
+  }
+
+  .metric-hud-meta{
+    padding-inline:4px !important;
+  }
+
+  .metric-hud-status{
+    font-size:.68rem !important;
+  }
+
+  .metric-hud-percent{
+    font-size:.78rem !important;
+  }
+
+  .menu-windows{
+    grid-template-columns:repeat(2,1fr) !important;
+    gap:12px !important;
+  }
+
+  .window-card{
+    grid-column:span 1 !important;
+    min-height:120px !important;
+    height:120px !important;
+    border-radius:18px !important;
+  }
+
+  .window-content{
+    padding:14px 14px !important;
+  }
+
+  .kicker{
+    font-size:.58rem !important;
+  }
+
+  .card-copy h3{
+    font-size:1.08rem !important;
+    line-height:1.1 !important;
+  }
+
+  .pend-card,
+  .alertas-comportamento,
+  .chart-card,
+  .qrcode-box{
+    padding:14px 12px !important;
+    border-radius:18px !important;
+  }
+
+  .pend-card header,
+  .ac-head{
+    align-items:flex-start !important;
+  }
+
+  .pend-card h3,
+  .ac-head h3{
+    font-size:1rem;
+    line-height:1.2;
+  }
+
+  .charts{
+    grid-template-columns:1fr !important;
+    gap:14px !important;
+  }
+
+  .chart-title{
+    font-size:.76rem !important;
+  }
+
+  .bottom-nav{
+    display:block;
+    z-index:270;
+    background:rgba(7,15,28,0.92);
+    border-top:1px solid rgba(90,220,255,0.10);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+  }
+
+  .bottom-nav .row{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    overflow:hidden;
+  }
+
+  .bottom-nav button{
+    min-height:58px;
+    padding:8px 4px 9px;
+    flex:none;
+    border-radius:0;
+  }
+
+  .bottom-nav button span{
+    font-size:.68rem;
+    margin-top:2px;
+  }
+
+  .bottom-nav button.active{
+    background:linear-gradient(180deg, rgba(89,231,255,0.14), rgba(89,231,255,0.05));
+    border-radius:0;
+  }
+
+  #axoriin-footer-phrase{
+    bottom:58px !important;
+    font-size:.8rem;
+    padding:8px 10px;
+  }
+
+  #smartclass-mascote{
+    bottom:72px !important;
+    right:10px !important;
+    width:58px !important;
+    height:58px !important;
+  }
+
+  #smartclass-mascote .ax-stage,
+  #smartclass-mascote img{
+    width:58px !important;
+    height:58px !important;
+  }
+
+  #smartclass-mascote .ax-core{
+    width:36px !important;
+    height:36px !important;
+  }
+}
+
+@media (max-width: 560px){
+  .metrics{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  .metric:first-child{
+    grid-column:1 / -1;
+  }
+
+  .menu-windows{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  .window-card{
+    min-height:110px !important;
+    height:110px !important;
+  }
+
+  .bottom-nav .row{
+    grid-template-columns:repeat(5, 1fr);
+  }
+}
 </style>
-</head><body>
+</head>
+
+<body>
+  <div class="mobile-appbar">
+  <button id="mobileMenuBtn" class="mobile-appbar-btn mobile-appbar-menu" type="button" aria-label="Abrir menu">
+    ☰
+  </button>
+
+  <div class="mobile-appbar-center">
+    <div class="mobile-appbar-title" id="mobileAppbarTitle">CMDPII-CZS</div>
+    <div class="mobile-appbar-subtitle">Sistema Escolar</div>
+  </div>
+
+  <button class="mobile-appbar-btn mobile-appbar-exit" type="button" onclick="logout()" aria-label="Sair do sistema">
+    ⏻
+  </button>
+</div>
+
+<div id="mobileSidebarBackdrop" class="mobile-sidebar-backdrop"></div>
   <div id="bg-wallpaper"></div>
   <div id="intro-hex-overlay"></div>
 
@@ -1651,6 +2170,9 @@ canvas{
 
   <div class="page">
     <aside class="sidebar" aria-label="Navegação lateral">
+      <button id="mobileCloseSidebar" class="mobile-close-sidebar" type="button" aria-label="Fechar menu">
+  ✕
+</button>
       <div class="sb-head">
   <div class="sb-head-top">
     <div class="brand"></div>
@@ -1675,19 +2197,19 @@ canvas{
 </div>
 
             <nav class="nav" id="sb-nav">
-        <a class="active" href="#" id="sbPainel">🏠 Painel</a>
-        <a href="#" id="sbAlunos">👥 Alunos</a>
-        <a href="#" id="sbChamada">📋 Chamada</a>
-        <a href="#" id="sbRanking">🏆 Ranking de Alunos</a>
-        <a href="#" id="sbNotificacoes">🔔 Notificações</a>
-        <a href="#" id="sbEstatisticas">📉 Relatórios</a>
-        <a href="#" id="sbMensagens">✉️ Mensagens</a>
-        <a href="#" id="sbMonitores">🧭 Monitores</a>
-        <a href="#" id="sbTransferir">🔁 Transferir Turmas</a>
-        <a href="#" id="sbAdmin">⚙️ Administração</a>
-        <a href="#" id="sbConfigDisciplinar">🧠 Configuração Disciplinar</a>
-        <a href="#" id="sbLogs">🧾 Logs</a>
-      </nav>
+  <a class="active" href="painel.html?t=cmdpii" id="sbPainel">🏠 Painel</a>
+  <a href="lista-alunos.html?t=cmdpii" id="sbAlunos">👥 Alunos</a>
+  <a href="chamadas.html?t=cmdpii" id="sbChamada">📋 Chamada</a>
+  <a href="ranking-alunos.html?t=cmdpii" id="sbRanking">🏆 Ranking de Alunos</a>
+  <a href="/notificacoes?t=cmdpii" id="sbNotificacoes">🔔 Notificações</a>
+  <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
+  <a href="mensagens.html?t=cmdpii" id="sbMensagens">✉️ Mensagens</a>
+  <a href="/monitores.html?t=cmdpii" id="sbMonitores">🧭 Monitores</a>
+  <a href="transferir-turma.html?t=cmdpii" id="sbTransferir">🔁 Transferir Turmas</a>
+  <a href="usuarios.html?t=cmdpii" id="sbAdmin">⚙️ Administração</a>
+  <a href="configuracao-disciplinar.html?t=cmdpii" id="sbConfigDisciplinar">🧠 Configuração Disciplinar</a>
+  <a href="logs.html?t=cmdpii" id="sbLogs">🧾 Logs</a>
+</nav>
     </aside>
 
     <main class="content">
@@ -2117,9 +2639,9 @@ canvas{
       <button onclick="location.href=withTenant('mensagens.html')" id="bnMensagens">
         ✉️<span>Mensagens</span>
       </button>
-      <button onclick="location.href=withTenant('/monitores.html')" id="bnMonitores">
-        🧭<span>Monitores</span>
-      </button>
+      <button type="button" id="bnMais">
+  ☰<span>Mais</span>
+</button>
     </div>
   </nav>  <script>
   const DEFAULT_TENANT = 'cmdpii';
@@ -2285,27 +2807,27 @@ canvas{
   const AUTH = (p)=> `${BASE}${p.startsWith('/auth') ? p : '/auth' + (p.startsWith('/') ? p : '/' + p)}`;
 
   (function syncPanelLinks() {
-    const map = {
-      sbAlunos: 'lista-alunos.html',
-      sbRanking: 'ranking-alunos.html',
-      sbNotificacoes: '/notificacoes',
-      sbEstatisticas: 'estatisticas.html',
-      sbMensagens: 'mensagens.html',
-      sbMonitores: '/monitores.html',
-      sbTransferir: 'transferir-turma.html',
-      sbAdmin: 'usuarios.html',
-      sbLogs: 'logs.html',
-      sbConfigDisciplinar: 'configuracao-disciplinar.html'
-    };
+  const map = {
+    sbAlunos: 'lista-alunos.html',
+    sbRanking: 'ranking-alunos.html',
+    sbNotificacoes: '/notificacoes',
+    sbEstatisticas: 'estatisticas.html',
+    sbMensagens: 'mensagens.html',
+    sbMonitores: '/monitores.html',
+    sbTransferir: 'transferir-turma.html',
+    sbAdmin: 'usuarios.html',
+    sbLogs: 'logs.html',
+    sbConfigDisciplinar: 'configuracao-disciplinar.html'
+  };
 
-    Object.entries(map).forEach(([id, url]) => {
-      const el = document.getElementById(id);
-      if (el) el.href = withTenant(url);
-    });
+  Object.entries(map).forEach(([id, url]) => {
+    const el = document.getElementById(id);
+    if (el) el.href = withTenant(url);
+  });
 
-    const sbPainel = document.getElementById('sbPainel');
-    if (sbPainel) sbPainel.href = withTenant('painel.html');
-  })();
+  const sbPainel = document.getElementById('sbPainel');
+  if (sbPainel) sbPainel.href = withTenant('painel.html');
+})();
 
   (async function carregarNomeInstituicaoPainel() {
     const el = document.getElementById('sbNomeInstituicao');
@@ -3421,6 +3943,167 @@ function renderPendenciasPaged(){
         .catch(err => console.warn('Falha ao registrar SW:', err));
     });
   }
+  (function mobileSidebarController(){
+  const sidebar = document.querySelector('.sidebar');
+  const openBtn = document.getElementById('mobileMenuBtn');
+  const closeBtn = document.getElementById('mobileCloseSidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+
+  if (!sidebar || !openBtn || !closeBtn || !backdrop) return;
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+    openBtn.classList.add('is-hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+    openBtn.classList.remove('is-hidden');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    openSidebar();
+  });
+
+  closeBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  });
+
+  backdrop.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  });
+
+  document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', function(){
+      if (window.innerWidth <= 1024) {
+        setTimeout(() => {
+          closeSidebar();
+        }, 80);
+      }
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) {
+      closeSidebar();
+    }
+  });
+})();
+(function mobileAppUx(){
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  const openBtn = document.getElementById('mobileMenuBtn');
+  const closeBtn = document.getElementById('mobileCloseSidebar');
+  const moreBtn = document.getElementById('bnMais');
+  const appbarTitle = document.getElementById('mobileAppbarTitle');
+
+  if (!sidebar || !backdrop || !openBtn || !closeBtn) return;
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    openSidebar();
+  });
+
+  closeBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  });
+
+  backdrop.addEventListener('click', function(){
+    closeSidebar();
+  });
+
+  if (moreBtn) {
+    moreBtn.addEventListener('click', function(){
+      openSidebar();
+    });
+  }
+
+  document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', function(){
+      if (window.innerWidth <= 1024) {
+        setTimeout(closeSidebar, 80);
+      }
+    });
+  });
+
+  function setActiveBottomNav(){
+    const path = location.pathname.toLowerCase();
+    const buttons = document.querySelectorAll('.bottom-nav button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    const byId = (id) => document.getElementById(id);
+
+    if (path.includes('lista-alunos')) byId('bnAlunos')?.classList.add('active');
+    else if (path.includes('ranking-alunos')) byId('bnRanking')?.classList.add('active');
+    else if (path.includes('mensagens')) byId('bnMensagens')?.classList.add('active');
+    else if (path.includes('estatisticas')) byId('bnRelatorios')?.classList.add('active');
+    else if (path.includes('notific')) byId('bnNotifs')?.classList.add('active');
+    else byId('bnPainel')?.classList.add('active');
+  }
+
+  function syncMobileTitle(){
+    const el = document.getElementById('sbNomeInstituicao');
+    if (el && appbarTitle) {
+      appbarTitle.textContent = el.textContent.trim() || 'CMDPII-CZS';
+    }
+  }
+
+  let touchStartX = 0;
+  let touchCurrentX = 0;
+
+  sidebar.addEventListener('touchstart', (e) => {
+    if (!sidebar.classList.contains('open')) return;
+    touchStartX = e.touches[0].clientX;
+    touchCurrentX = touchStartX;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchmove', (e) => {
+    if (!sidebar.classList.contains('open')) return;
+    touchCurrentX = e.touches[0].clientX;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchend', () => {
+    if (!sidebar.classList.contains('open')) return;
+    const delta = touchCurrentX - touchStartX;
+    if (delta < -60) {
+      closeSidebar();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) {
+      closeSidebar();
+    }
+  });
+
+  syncMobileTitle();
+  setActiveBottomNav();
+})();
   </script>
 
   <script src="notify.js"></script>
