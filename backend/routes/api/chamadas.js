@@ -6,6 +6,7 @@ const Chamada = require('../../models/Chamada');
 const ChamadaConfiguracao = require('../../models/ChamadaConfiguracao');
 const Aluno = require('../../models/Aluno');
 const { autenticar } = require('../../middleware/autenticacao');
+const { logAction, attachActor } = require('../../utils/audit');
 
 function normalizarTurma(valor) {
   return String(valor || '')
@@ -132,12 +133,45 @@ function montarHtmlEmail(chamada) {
   `;
 }
 
+async function safeAudit(payload) {
+  try {
+    await logAction(payload);
+  } catch (e) {
+    console.warn('[audit][chamadas] falha ao gravar log:', e?.message || e);
+  }
+}
+
+function buildForcedReq(req) {
+  return {
+    ...req,
+    actor: req.actor || {
+      id: req.usuario?.id || req.usuario?._id || null,
+      nome: req.usuario?.nome || null,
+      tipo: req.usuario?.tipo || null,
+      email: req.usuario?.email || null,
+      instituicao: req.usuario?.instituicao || req.usuario?.tenantId || getInstituicao(req) || null
+    }
+  };
+}
+
+function buildResumoPayload(chamada) {
+  const resumo = montarResumo(chamada);
+  return {
+    turma: chamada?.turma || '',
+    data: chamada?.data || '',
+    status: chamada?.status || '',
+    total: resumo.total,
+    presentes: resumo.presentes,
+    faltas: resumo.faltas,
+    justificadas: resumo.justificadas
+  };
+}
 
 /* =========================
    CONFIGURAÇÃO DE ENVIO
    ========================= */
 
-router.get('/configuracao', autenticar, async (req, res) => {
+router.get('/configuracao', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
     if (!instituicao) {
@@ -145,6 +179,19 @@ router.get('/configuracao', autenticar, async (req, res) => {
     }
 
     const config = await obterOuCriarConfig(instituicao);
+
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_CONFIG_VISUALIZADA',
+      targetType: 'ChamadaConfiguracao',
+      targetId: config._id,
+      entidadeNome: 'Configuração de chamada',
+      meta: {
+        emailDestino: config.emailDestino || '',
+        whatsappDestino: config.whatsappDestino || ''
+      }
+    });
+
     return res.json({
       emailDestino: config.emailDestino || '',
       whatsappDestino: config.whatsappDestino || ''
@@ -155,7 +202,7 @@ router.get('/configuracao', autenticar, async (req, res) => {
   }
 });
 
-router.put('/configuracao', autenticar, async (req, res) => {
+router.put('/configuracao', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
     if (!instituicao) {
@@ -166,9 +213,32 @@ router.put('/configuracao', autenticar, async (req, res) => {
     const whatsappDestino = String(req.body?.whatsappDestino || '').trim();
 
     const config = await obterOuCriarConfig(instituicao);
+
+    const before = {
+      emailDestino: config.emailDestino || '',
+      whatsappDestino: config.whatsappDestino || ''
+    };
+
     config.emailDestino = emailDestino;
     config.whatsappDestino = whatsappDestino;
     await config.save();
+
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_CONFIG_ATUALIZADA',
+      targetType: 'ChamadaConfiguracao',
+      targetId: config._id,
+      entidadeNome: 'Configuração de chamada',
+      before,
+      after: {
+        emailDestino: config.emailDestino || '',
+        whatsappDestino: config.whatsappDestino || ''
+      },
+      meta: {
+        emailDestino: config.emailDestino || '',
+        whatsappDestino: config.whatsappDestino || ''
+      }
+    });
 
     return res.json({
       ok: true,
@@ -187,7 +257,7 @@ router.put('/configuracao', autenticar, async (req, res) => {
    CHAMADA DO DIA
    ========================= */
 
-router.get('/turma/:turma', autenticar, async (req, res) => {
+router.get('/turma/:turma', autenticar, attachActor, async (req, res) => {
   try {
     const turma = normalizarTurma(req.params.turma);
     const instituicao = getInstituicao(req);
@@ -212,6 +282,8 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
       data
     }).lean();
 
+    let foiCriadaAgora = false;
+
     if (!chamada) {
       const alunos = await Aluno.find({ instituicao, turma })
         .select('_id nome')
@@ -220,7 +292,7 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
 
       const config = await obterOuCriarConfig(instituicao);
 
-      chamada = await Chamada.create({
+      const nova = await Chamada.create({
         instituicao,
         turma,
         data,
@@ -240,7 +312,19 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
         status: 'aberta'
       });
 
-      chamada = chamada.toObject();
+      chamada = nova.toObject();
+      foiCriadaAgora = true;
+    }
+
+    if (foiCriadaAgora) {
+      await safeAudit({
+        req: buildForcedReq(req),
+        event: 'CHAMADA_ABERTA',
+        targetType: 'Chamada',
+        targetId: chamada._id,
+        entidadeNome: `Chamada ${chamada.turma} ${chamada.data}`,
+        meta: buildResumoPayload(chamada)
+      });
     }
 
     return res.json(chamada);
@@ -349,7 +433,7 @@ router.get('/:id', autenticar, async (req, res) => {
    SALVAR / EDITAR
    ========================= */
 
-router.put('/:id', autenticar, async (req, res) => {
+router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
     const { alunos, emailDestino, whatsappDestino, status } = req.body || {};
@@ -375,6 +459,15 @@ router.put('/:id', autenticar, async (req, res) => {
       return res.status(403).json({ erro: 'Professor sem permissão para esta turma.' });
     }
 
+    const before = {
+      status: chamada.status,
+      envio: {
+        emailDestino: chamada.envio?.emailDestino || '',
+        whatsappDestino: chamada.envio?.whatsappDestino || ''
+      },
+      resumo: montarResumo(chamada)
+    };
+
     chamada.alunos = alunos.map((a) => formatarLinhaAluno({
       aluno: a.aluno,
       nome: a.nome,
@@ -398,6 +491,24 @@ router.put('/:id', autenticar, async (req, res) => {
 
     await chamada.save();
 
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_EDITADA',
+      targetType: 'Chamada',
+      targetId: chamada._id,
+      entidadeNome: `Chamada ${chamada.turma} ${chamada.data}`,
+      before,
+      after: {
+        status: chamada.status,
+        envio: {
+          emailDestino: chamada.envio?.emailDestino || '',
+          whatsappDestino: chamada.envio?.whatsappDestino || ''
+        },
+        resumo: montarResumo(chamada)
+      },
+      meta: buildResumoPayload(chamada)
+    });
+
     return res.json({
       ok: true,
       chamada,
@@ -409,7 +520,7 @@ router.put('/:id', autenticar, async (req, res) => {
   }
 });
 
-router.post('/:id/fechar', autenticar, async (req, res) => {
+router.post('/:id/fechar', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
 
@@ -433,6 +544,15 @@ router.post('/:id/fechar', autenticar, async (req, res) => {
     chamada.status = 'fechada';
     await chamada.save();
 
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_FECHADA',
+      targetType: 'Chamada',
+      targetId: chamada._id,
+      entidadeNome: `Chamada ${chamada.turma} ${chamada.data}`,
+      meta: buildResumoPayload(chamada)
+    });
+
     return res.json({ ok: true });
   } catch (erro) {
     console.error('Erro ao fechar chamada:', erro);
@@ -444,7 +564,7 @@ router.post('/:id/fechar', autenticar, async (req, res) => {
    EXCLUIR CHAMADA
    ========================= */
 
-router.delete('/:id', autenticar, async (req, res) => {
+router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
 
@@ -470,6 +590,15 @@ router.delete('/:id', autenticar, async (req, res) => {
       instituicao
     });
 
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_EXCLUIDA',
+      targetType: 'Chamada',
+      targetId: chamada._id,
+      entidadeNome: `Chamada ${chamada.turma} ${chamada.data}`,
+      meta: buildResumoPayload(chamada)
+    });
+
     return res.json({ ok: true });
   } catch (erro) {
     console.error('Erro ao excluir chamada:', erro);
@@ -481,7 +610,7 @@ router.delete('/:id', autenticar, async (req, res) => {
    ENVIO POR E-MAIL
    ========================= */
 
-router.post('/:id/enviar', autenticar, async (req, res) => {
+router.post('/:id/enviar', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
 
@@ -523,6 +652,18 @@ router.post('/:id/enviar', autenticar, async (req, res) => {
     chamada.envio.ultimoErroEmail = '';
     await chamada.save();
 
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_EMAIL_ENVIADO',
+      targetType: 'Chamada',
+      targetId: chamada._id,
+      entidadeNome: `Chamada ${chamada.turma} ${chamada.data}`,
+      meta: {
+        ...buildResumoPayload(chamada),
+        emailDestino: destino
+      }
+    });
+
     return res.json({ ok: true });
   } catch (erro) {
     console.error('Erro ao enviar chamada por e-mail:', erro);
@@ -546,7 +687,7 @@ router.post('/:id/enviar', autenticar, async (req, res) => {
    EXPORTAÇÃO CSV
    ========================= */
 
-router.get('/exportar/csv', autenticar, async (req, res) => {
+router.get('/exportar/csv', autenticar, attachActor, async (req, res) => {
   try {
     const instituicao = getInstituicao(req);
     if (!instituicao) {
@@ -611,6 +752,21 @@ router.get('/exportar/csv', autenticar, async (req, res) => {
     });
 
     const nome = `chamadas-${turma || 'todas'}-${hojeISO()}.csv`;
+
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'CHAMADA_CSV_EXPORTADO',
+      targetType: 'Chamada',
+      targetId: null,
+      entidadeNome: turma ? `Exportação ${turma}` : 'Exportação de chamadas',
+      meta: {
+        turma: turma || '',
+        dataInicio,
+        dataFim,
+        quantidadeChamadas: chamadas.length,
+        arquivo: nome
+      }
+    });
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);

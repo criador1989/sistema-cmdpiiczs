@@ -114,6 +114,21 @@ router.get('/alunos/:id/public/qrcode', autenticar, requireTenant, attachActor, 
     const url = `${base}/ficha-publica.html?token=${aluno.publicView.token}`;
     const qrCode = await QRCode.toDataURL(url, { width: 300, margin: 1 });
 
+  await logAction({
+    req,
+    acao: 'ALUNO_PUBLIC_QRCODE_GERADO',
+    entidade: 'Aluno',
+    entidadeId: aluno._id,
+    entidadeNome: aluno.nome,
+    extra: {
+      alunoId: String(aluno._id),
+      alunoNome: aluno.nome,
+      alunoTurma: aluno.turma,
+      token: aluno.publicView.token,
+      expiresAt: aluno.publicView.expiresAt || null
+    }
+  });
+
     res.json({
       url,
       token: aluno.publicView.token,

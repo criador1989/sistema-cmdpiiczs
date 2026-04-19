@@ -9,6 +9,7 @@ const Observacao = require('../../models/Observacao');
 const Aluno = require('../../models/Aluno');
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
+const { logAction, attachActor } = require('../../utils/audit');
 
 /* =========================================================
    HELPERS MULTI-TENANT
@@ -117,7 +118,7 @@ function mapFilesToAnexos(files = []) {
 /* =========================================================
    CRIAR OBSERVAÇÃO
 ========================================================= */
-router.post('/:alunoId', autenticar, requireTenant, upload.any(), async (req, res) => {
+router.post('/:alunoId', autenticar, requireTenant, attachActor, upload.any(), async (req, res) => {
   try {
     const tenantId = getTenantId(req);
     const { texto } = req.body;
@@ -148,6 +149,22 @@ router.post('/:alunoId', autenticar, requireTenant, upload.any(), async (req, re
     );
 
     await novaObs.save();
+
+    await logAction({
+      req,
+      event: 'OBSERVACAO_CRIADA',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: aluno.nome,
+      alunoNome: aluno.nome,
+      meta: {
+        turma: aluno.turma,
+        observacaoId: novaObs._id,
+        anexos: anexos.length,
+        tamanhoTexto: texto.length
+      }
+    });
+
     res.status(201).json(novaObs);
   } catch (erro) {
     console.error('Erro ao salvar observação:', erro);
@@ -186,7 +203,7 @@ router.get('/:alunoId', autenticar, requireTenant, async (req, res) => {
 /* =========================================================
    DELETE
 ========================================================= */
-router.delete('/:id', autenticar, requireTenant, async (req, res) => {
+router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const tenantId = getTenantId(req);
 
@@ -198,6 +215,11 @@ router.delete('/:id', autenticar, requireTenant, async (req, res) => {
     if (!observacao) {
       return res.status(404).json({ mensagem: 'Observação não encontrada ou pertence a outra instituição.' });
     }
+
+    const aluno = await Aluno.findOne({
+      _id: observacao.aluno,
+      ...buildTenantMatch(tenantId)
+    }).select('_id nome turma');
 
     if (Array.isArray(observacao.anexos)) {
       for (const a of observacao.anexos) {
@@ -211,6 +233,22 @@ router.delete('/:id', autenticar, requireTenant, async (req, res) => {
     }
 
     await observacao.deleteOne();
+
+    await logAction({
+      req,
+      event: 'OBSERVACAO_EXCLUIDA',
+      targetType: 'Aluno',
+      targetId: aluno?._id || observacao.aluno,
+      entidadeNome: aluno?.nome || null,
+      alunoNome: aluno?.nome || null,
+      meta: {
+        turma: aluno?.turma || null,
+        observacaoId: observacao._id,
+        autorOriginal: observacao.autor || null,
+        tamanhoTexto: String(observacao.texto || '').trim().length
+      }
+    });
+
     res.json({ mensagem: 'Observação excluída com sucesso.' });
   } catch (erro) {
     console.error('Erro ao excluir observação:', erro);
@@ -221,7 +259,7 @@ router.delete('/:id', autenticar, requireTenant, async (req, res) => {
 /* =========================================================
    UPDATE
 ========================================================= */
-router.put('/:id', autenticar, requireTenant, upload.any(), async (req, res) => {
+router.put('/:id', autenticar, requireTenant, attachActor, upload.any(), async (req, res) => {
   try {
     const tenantId = getTenantId(req);
     const { texto } = req.body;
@@ -234,6 +272,14 @@ router.put('/:id', autenticar, requireTenant, upload.any(), async (req, res) => 
     if (!observacao) {
       return res.status(404).json({ mensagem: 'Observação não encontrada ou pertence a outra instituição.' });
     }
+
+    const aluno = await Aluno.findOne({
+      _id: observacao.aluno,
+      ...buildTenantMatch(tenantId)
+    }).select('_id nome turma');
+
+    const textoAntes = String(observacao.texto || '');
+    const qtdAnexosAntes = Array.isArray(observacao.anexos) ? observacao.anexos.length : 0;
 
     if (typeof texto === 'string') {
       observacao.texto = texto;
@@ -248,6 +294,24 @@ router.put('/:id', autenticar, requireTenant, upload.any(), async (req, res) => 
     }
 
     await observacao.save();
+
+    await logAction({
+      req,
+      event: 'OBSERVACAO_EDITADA',
+      targetType: 'Aluno',
+      targetId: aluno?._id || observacao.aluno,
+      entidadeNome: aluno?.nome || null,
+      alunoNome: aluno?.nome || null,
+      meta: {
+        turma: aluno?.turma || null,
+        observacaoId: observacao._id,
+        tamanhoTextoAntes: textoAntes.trim().length,
+        tamanhoTextoDepois: String(observacao.texto || '').trim().length,
+        anexosAntes: qtdAnexosAntes,
+        anexosDepois: Array.isArray(observacao.anexos) ? observacao.anexos.length : 0
+      }
+    });
+
     res.json({ mensagem: 'Observação atualizada com sucesso.', observacao });
   } catch (erro) {
     console.error('Erro ao atualizar observação:', erro);

@@ -1430,26 +1430,28 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
     await verificarEnvioNP(alunoAtualizado, inst);
 
     await safeLogAction({
-      req,
-      event: 'NOTIFICACAO_CRIADA',
-      targetType: 'Notificacao',
-      targetId: nova._id,
-      meta: {
-        aluno: alunoAtualizado?.nome,
-        turma: alunoAtualizado?.turma,
-        natureza,
-        tipoMedida: tituloMedida,
-        valor,
-        quantidadeDias: dias,
-        numeroSequencial: nova.numeroSequencial,
-        notaAnterior: enrichedBefore.notaAnterior,
-        notaAtual: enrichedBefore.notaAtual,
-        artigo: dadosRegulamento.artigo,
-        paragrafo: dadosRegulamento.paragrafo,
-        inciso: dadosRegulamento.inciso,
-        classificacaoRegulamento: dadosRegulamento.classificacao
-      }
-    });
+  req,
+  event: 'NOTIFICACAO_CRIADA',
+  targetType: 'Notificacao',
+  targetId: nova._id,
+  entidadeNome: alunoAtualizado?.nome || alunoDoc?.nome || null,
+  alunoNome: alunoAtualizado?.nome || alunoDoc?.nome || null,
+  meta: {
+    aluno: alunoAtualizado?.nome || alunoDoc?.nome,
+    turma: alunoAtualizado?.turma || alunoDoc?.turma,
+    natureza,
+    tipoMedida: tituloMedida,
+    valor,
+    quantidadeDias: dias,
+    numeroSequencial: nova.numeroSequencial,
+    notaAnterior: enrichedBefore.notaAnterior,
+    notaAtual: enrichedBefore.notaAtual,
+    artigo: dadosRegulamento.artigo,
+    paragrafo: dadosRegulamento.paragrafo,
+    inciso: dadosRegulamento.inciso,
+    classificacaoRegulamento: dadosRegulamento.classificacao
+  }
+});
 
     const created = await Notificacao.findById(nova._id)
       .populate({
@@ -1497,12 +1499,14 @@ router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) =
     await verificarEnvioNP(alunoAtualizado, inst);
 
     await safeLogAction({
-      req,
-      event: 'NOTIFICACAO_EXCLUIDA',
-      targetType: 'Notificacao',
-      targetId: id,
-      meta: { aluno: alunoAtualizado?.nome, turma: alunoAtualizado?.turma }
-    });
+  req,
+  event: 'NOTIFICACAO_EXCLUIDA',
+  targetType: 'Notificacao',
+  targetId: id,
+  entidadeNome: alunoAtualizado?.nome || null,
+  alunoNome: alunoAtualizado?.nome || null,
+  meta: { aluno: alunoAtualizado?.nome, turma: alunoAtualizado?.turma }
+});
 
     return res.json({ message: 'Notificação excluída com sucesso' });
   } catch (error) {
@@ -1547,12 +1551,17 @@ router.post('/:id/entregar', autenticar, requireTenant, attachActor, async (req,
     await n.save();
 
     await safeLogAction({
-      req,
-      event: 'NOTIFICACAO_ENTREGUE',
-      targetType: 'Notificacao',
-      targetId: id,
-      meta: { prazoDevolucao: n.prazoDevolucao }
-    });
+  req,
+  event: 'NOTIFICACAO_ENTREGUE',
+  targetType: 'Notificacao',
+  targetId: id,
+  entidadeNome: alunoInfo.alunoNome,
+  alunoNome: alunoInfo.alunoNome,
+  meta: {
+    prazoDevolucao: n.prazoDevolucao,
+    turma: alunoInfo.alunoTurma
+  }
+});
 
     res.json({ ok: true });
   } catch (err) {
@@ -1595,11 +1604,16 @@ router.post('/:id/devolver', autenticar, requireTenant, attachActor, async (req,
     await n.save();
 
     await safeLogAction({
-      req,
-      event: 'NOTIFICACAO_DEVOLVIDA',
-      targetType: 'Notificacao',
-      targetId: id
-    });
+  req,
+  event: 'NOTIFICACAO_DEVOLVIDA',
+  targetType: 'Notificacao',
+  targetId: id,
+  entidadeNome: alunoInfo.alunoNome,
+  alunoNome: alunoInfo.alunoNome,
+  meta: {
+    turma: alunoInfo.alunoTurma
+  }
+});
 
     res.json({ ok: true });
   } catch (err) {

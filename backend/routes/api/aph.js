@@ -8,6 +8,7 @@ const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
 const AphAtendimento = require('../../models/AphAtendimento');
 const Aluno = require('../../models/Aluno');
+const { logAction, attachActor } = require('../../utils/audit');
 
 // usa o mesmo serviço de e-mail já validado no sistema
 const { sendMail } = require('../../utils/mailer');
@@ -392,7 +393,7 @@ router.get('/atendimento/:id', autenticar, requireTenant, (req, res, next) => {
    CRIAR / EDITAR / EXCLUIR
    ========================================================= */
 
-router.post('/atendimentos', autenticar, requireTenant, async (req, res) => {
+router.post('/atendimentos', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const tenantId = getTenantId(req);
     if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
@@ -447,6 +448,25 @@ router.post('/atendimentos', autenticar, requireTenant, async (req, res) => {
     });
 
     const novo = await AphAtendimento.create(payload);
+    
+    await logAction({
+  req,
+  event: 'APH_ATENDIMENTO_CRIADO',
+  targetType: 'APH',
+  targetId: novo._id,
+  entidadeNome: aluno.nome,
+  alunoNome: aluno.nome,
+  meta: {
+    turma: aluno.turma,
+    tipos: payload.tipos,
+    local: payload.local,
+    hora: payload.hora,
+    data: payload.data,
+    sintomas: payload.sinaisESintomas,
+    procedimentos: payload.procedimentos,
+    encaminhamento: payload.houveEncaminhamento
+  }
+});
 
     let comunicacao = { ok: false, motivo: 'nao_enviado' };
     try {
@@ -470,12 +490,23 @@ router.post('/atendimentos', autenticar, requireTenant, async (req, res) => {
   }
 });
 
-router.put('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
+router.put('/atendimentos/:id', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const tenantId = getTenantId(req);
     if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const { id } = req.params;
+    const atendimentoAntigo = await AphAtendimento.findOne({
+  _id: id,
+  ...buildTenantMatch(tenantId)
+}).lean();
+
+const aluno = atendimentoAntigo
+  ? await Aluno.findOne({
+      _id: atendimentoAntigo.alunoId,
+      ...buildTenantMatch(tenantId)
+    }).lean()
+  : null;
     if (!mongoose.isValidObjectId(id)) {
       return res.status(404).json({ message: 'Registro não encontrado.' });
     }
@@ -509,6 +540,20 @@ router.put('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
 
     if (!upd) return res.status(404).json({ message: 'Registro não encontrado.' });
 
+await logAction({
+  req,
+  event: 'APH_ATENDIMENTO_EDITADO',
+  targetType: 'APH',
+  targetId: id,
+  entidadeNome: aluno?.nome,
+  alunoNome: aluno?.nome,
+  meta: {
+    tipos: patch.tipos,
+    local: patch.local,
+    sintomas: patch.sinaisESintomas
+  }
+});
+
     res.json({ ok: true, atendimento: upd });
   } catch (err) {
     console.error('[APH] PUT /atendimentos/:id erro:', err);
@@ -516,12 +561,23 @@ router.put('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
   }
 });
 
-router.delete('/atendimentos/:id', autenticar, requireTenant, async (req, res) => {
+router.delete('/atendimentos/:id', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const tenantId = getTenantId(req);
     if (!tenantId) return res.status(401).json({ message: 'Não autenticado.' });
 
     const { id } = req.params;
+    const atendimento = await AphAtendimento.findOne({
+  _id: id,
+  ...buildTenantMatch(tenantId)
+}).lean();
+
+const aluno = atendimento
+  ? await Aluno.findOne({
+      _id: atendimento.alunoId,
+      ...buildTenantMatch(tenantId)
+    }).lean()
+  : null;
     if (!mongoose.isValidObjectId(id)) {
       return res.status(404).json({ message: 'Registro não encontrado.' });
     }
@@ -532,6 +588,15 @@ router.delete('/atendimentos/:id', autenticar, requireTenant, async (req, res) =
     }).lean();
 
     if (!del) return res.status(404).json({ message: 'Registro não encontrado.' });
+
+    await logAction({
+  req,
+  event: 'APH_ATENDIMENTO_EXCLUIDO',
+  targetType: 'APH',
+  targetId: id,
+  entidadeNome: aluno?.nome,
+  alunoNome: aluno?.nome
+});
 
     res.json({ ok: true });
   } catch (err) {

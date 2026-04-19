@@ -12,13 +12,13 @@ const { getSignedUrl } = require('@aws-sdk/cloudfront-signer');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
-const Log = require('../../models/Log');
 
 const { autenticar, apenasLeitura, apenasMonitorOuAdmin } = require('../../middleware/autenticacao');
 const { requireTenant, tenantFilter } = require('../../middleware/tenantScope');
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const { getConfigDisciplinar } = require('../../utils/configuracaoDisciplinar');
 const { enviarTelegram } = require('../../services/mensageria');
+const { logAction, attachActor } = require('../../utils/audit');
 
 // ======================================================
 // ☁️ AWS S3 / CloudFront
@@ -94,6 +94,8 @@ function getTenantId(req) {
     req.tenant?.id ||
     req.usuario?.tenantId ||
     req.user?.tenantId ||
+    req.usuario?.instituicao ||
+    req.user?.instituicao ||
     null
   );
 }
@@ -116,6 +118,14 @@ function tenantData(req, extra = {}) {
     tenantId,
     instituicao: tenantId
   };
+}
+
+async function safeAudit(payload) {
+  try {
+    await logAction(payload);
+  } catch (e) {
+    console.warn('[audit][alunos] falha ao gravar log:', e?.message || e);
+  }
 }
 
 function parsePtBrDateToDate(d) {
@@ -441,232 +451,20 @@ function setCached(inst, id, payload) {
   detalhesCache.set(k, { exp: Date.now() + DETALHES_TTL_MS, payload });
 }
 
-/* ===================== NOVAS ROTAS TELEGRAM & ADESÃO ===================== */
+/* ===================== ROTAS ===================== */
 
-router.get('/adesao/por-turma', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
+/* ===================== ROTAS ===================== */
 
-    const agreg = await Aluno.aggregate([
-      { $match: tenantLegacyMatch(req) },
-      {
-        $group: {
-          _id: '$turma',
-          totalAlunos: { $sum: 1 },
-          comTelegram: {
-            $sum: {
-              $cond: [
-                {
-                  $or: [
-                    { $gt: [{ $strLenCP: { $ifNull: ['$chatIdResponsavel', ''] } }, 0] },
-                    { $gt: [{ $size: { $ifNull: ['$chatIdsResponsaveis', []] } }, 0] },
-                    { $gt: [{ $strLenCP: { $ifNull: ['$contatos.telegramChatId', ''] } }, 0] }
-                  ]
-                },
-                1, 0
-              ]
-            }
-          }
-        }
-      },
-      { $project: { turma: '$_id', _id: 0, totalAlunos: 1, comTelegram: 1 } }
-    ]);
-
-    const resList = agreg.map(it => ({
-      turma: it.turma,
-      totalAlunos: it.totalAlunos,
-      comTelegram: it.comTelegram,
-      percentual: it.totalAlunos ? Math.round((it.comTelegram / it.totalAlunos) * 100) : 0
-    })).sort((a, b) => String(a.turma).localeCompare(String(b.turma), 'pt-BR', { numeric: true, sensitivity: 'base' }));
-
-    res.set('Cache-Control', 'private, max-age=60');
-    res.json({ adesao: resList });
-  } catch (e) {
-    console.error('Erro GET /api/alunos/adesao/por-turma:', e);
-    res.status(500).json({ message: 'Erro ao calcular adesão' });
-  }
-});
-
-router.get('/:id/telegram', autenticar, requireTenant, apenasLeitura, async (req, res) => {
-  try {
-    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }))
-      .select('nome turma chatIdResponsavel chatIdsResponsaveis contatos.telegramChatId')
-      .lean();
-
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    const set = new Set([
-      ...(aluno.chatIdsResponsaveis || []),
-      aluno.chatIdResponsavel || '',
-      aluno.contatos?.telegramChatId || ''
-    ].map(s => String(s || '').trim()).filter(Boolean));
-
-    res.json({
-      nome: aluno.nome,
-      turma: aluno.turma,
-      chatIdResponsavel: aluno.chatIdResponsavel || '',
-      chatIdsResponsaveis: Array.from(set)
-    });
-  } catch (e) {
-    console.error('Erro GET /api/alunos/:id/telegram:', e);
-    res.status(500).json({ message: 'Erro ao obter dados de Telegram' });
-  }
-});
-
-router.post('/:id/telegram/vincular', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const chatId = normalizeChatId(req.body?.chatId);
-    if (!chatId) return res.status(400).json({ message: 'chatId é obrigatório.' });
-
-    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    aluno.addChatId(chatId);
-    await aluno.save();
-
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Vincular Telegram',
-      entidade: 'Aluno',
-      entidadeId: aluno._id,
-      detalhe: `chatId=${chatId}`
-    }));
-
-    res.json({ ok: true, message: 'Vinculado com sucesso.', chatIds: aluno.getAllChatIds() });
-  } catch (e) {
-    console.error('Erro POST /api/alunos/:id/telegram/vincular:', e);
-    res.status(500).json({ message: 'Erro ao vincular chatId' });
-  }
-});
-
-router.delete('/:id/telegram/:chatId', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const chatId = normalizeChatId(req.params.chatId);
-    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    aluno.removeChatId(chatId);
-    await aluno.save();
-
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Desvincular Telegram',
-      entidade: 'Aluno',
-      entidadeId: aluno._id,
-      detalhe: `chatId=${chatId}`
-    }));
-
-    res.json({ ok: true, message: 'ChatId removido.', chatIds: aluno.getAllChatIds() });
-  } catch (e) {
-    console.error('Erro DELETE /api/alunos/:id/telegram/:chatId:', e);
-    res.status(500).json({ message: 'Erro ao remover chatId' });
-  }
-});
-
-router.post('/:id/telegram/optout', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const all = String(req.body?.all || '').toLowerCase() === 'true' || req.body?.all === true;
-
-    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    if (all) {
-      aluno.chatIdsResponsaveis = [];
-      aluno.chatIdResponsavel = '';
-    } else if (aluno.chatIdResponsavel) {
-      aluno.removeChatId(aluno.chatIdResponsavel);
-    }
-
-    await aluno.save();
-
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Opt-out Telegram',
-      entidade: 'Aluno',
-      entidadeId: aluno._id,
-      detalhe: all ? 'all=true' : 'principal'
-    }));
-
-    res.json({ ok: true, message: all ? 'Todos os chatIds removidos.' : 'ChatId principal removido.', chatIds: aluno.getAllChatIds() });
-  } catch (e) {
-    console.error('Erro POST /api/alunos/:id/telegram/optout:', e);
-    res.status(500).json({ message: 'Erro ao processar opt-out' });
-  }
-});
-
-router.get('/:id/telegram/deeplink', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }))
-      .select('_id nome turma')
-      .lean();
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    const botUser = process.env.TG_BOT_USERNAME || 'cmdpiiczs_bot';
-    const token = String(aluno._id);
-    const url = `https://t.me/${botUser}?start=${encodeURIComponent(token)}`;
-
-    res.json({ deeplink: url, bot: botUser, token, aluno: { id: String(aluno._id), nome: aluno.nome, turma: aluno.turma } });
-  } catch (e) {
-    console.error('Erro GET /api/alunos/:id/telegram/deeplink:', e);
-    res.status(500).json({ message: 'Erro ao gerar deeplink' });
-  }
-});
-
-router.post('/:id/telegram/teste', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const texto = String(req.body?.texto || '').trim();
-    if (!texto) return res.status(400).json({ message: 'Informe "texto" no corpo da requisição.' });
-
-    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
-    if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado.' });
-
-    const chatIds = aluno.getAllChatIds();
-    if (!chatIds.length) return res.status(400).json({ message: 'Aluno sem chatId cadastrado.' });
-
-    const enviados = [];
-    const falhas = [];
-
-    for (const cid of chatIds) {
-      try {
-        const ok = await enviarTelegram(
-          { nome: aluno.nome, turma: aluno.turma },
-          'Teste',
-          cid,
-          texto
-        );
-
-        if (ok?.ok) enviados.push(cid);
-        else falhas.push({ cid, motivo: ok?.motivo || ok?.erro || 'desconhecido' });
-      } catch (err) {
-        falhas.push({ cid, motivo: err?.message || 'erro' });
-      }
-    }
-
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Envio Teste Telegram',
-      entidade: 'Aluno',
-      entidadeId: aluno._id,
-      detalhe: `enviados=${enviados.length}; falhas=${falhas.length}`
-    }));
-
-    res.json({ ok: true, enviados, falhas });
-  } catch (e) {
-    console.error('Erro POST /api/alunos/:id/telegram/teste:', e);
-    res.status(500).json({ message: 'Erro ao enviar teste' });
-  }
-});
-
-/* ===================== ROTAS RÁPIDAS (LEITURA) ===================== */
-
+// GET - Listar turmas
 router.get('/turmas', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const turmas = await Aluno.distinct('turma', tenantFilter(req));
-    turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    turmas.sort((a, b) =>
+      String(a).localeCompare(String(b), 'pt-BR', {
+        numeric: true,
+        sensitivity: 'base'
+      })
+    );
 
     res.set('Cache-Control', 'private, max-age=120');
     res.json({ turmas });
@@ -676,6 +474,7 @@ router.get('/turmas', autenticar, requireTenant, apenasLeitura, async (req, res)
   }
 });
 
+// GET - Listar alunos por turma
 router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const termo = String(req.query.q || '').trim();
@@ -749,60 +548,8 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
     });
   }
 });
-/* ============================================================
-   ✅ TRANSFERÊNCIA EM LOTE DE TURMA
-============================================================ */
-router.put('/transferir', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
-    let novaTurma = req.body?.novaTurma;
 
-    novaTurma = normalizaTurma(novaTurma);
-    const idsLimpos = ids.map(String).map(s => s.trim()).filter(Boolean);
-
-    if (!idsLimpos.length) {
-      return res.status(400).json({ message: 'Informe "ids" (array) com pelo menos 1 aluno.' });
-    }
-    if (!novaTurma) {
-      return res.status(400).json({ message: 'Informe "novaTurma".' });
-    }
-
-    const result = await Aluno.updateMany(
-      tenantFilter(req, { _id: { $in: idsLimpos } }),
-      { $set: { turma: novaTurma } }
-    );
-
-    try {
-      for (const id of idsLimpos) {
-        detalhesCache.delete(cacheKey(inst, String(id)));
-      }
-    } catch {}
-
-    try {
-      await Log.create(tenantData(req, {
-        usuario: req.usuario.id,
-        acao: 'Transferência de Turma (lote)',
-        entidade: 'Aluno',
-        entidadeId: null,
-        detalhe: `qtde=${result?.modifiedCount ?? result?.nModified ?? 0}; novaTurma=${novaTurma}`
-      }));
-    } catch {}
-
-    const alterados = result?.modifiedCount ?? result?.nModified ?? 0;
-    res.json({
-      ok: true,
-      mensagem: `Transferência concluída. ${alterados} aluno(s) atualizado(s) para a turma ${novaTurma}.`,
-      alterados
-    });
-  } catch (error) {
-    console.error('Erro PUT /api/alunos/transferir:', error);
-    res.status(500).json({ message: 'Erro ao transferir alunos', error: error?.message || error });
-  }
-});
-
-/* ===================== ROTAS ORIGINAIS ===================== */
-
+// GET - Contagem
 router.get(['/contagem', '/count'], autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const filtro = tenantFilter(req);
@@ -818,6 +565,7 @@ router.get(['/contagem', '/count'], autenticar, requireTenant, apenasLeitura, as
   }
 });
 
+// GET - Listar alunos
 router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const semNota = ['1', 'true'].includes(String(req.query.semNota || '').toLowerCase());
@@ -875,47 +623,76 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   }
 });
 
-router.post('/', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
-  try {
-    const tenantId = getTenantId(req);
+// POST - Criar aluno
+router.post(
+  '/',
+  autenticar,
+  requireTenant,
+  attachActor,
+  apenasMonitorOuAdmin,
+  upload.single('foto'),
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+      if (!inst) return res.status(400).json({ mensagem: 'Tenant não identificado.' });
 
-    let { nome, turma, dataEntrada, telefone } = req.body;
-    nome = String(nome || '').trim();
-    turma = normalizaTurma(turma);
+      let { nome, turma, dataEntrada, telefone } = req.body;
+      nome = String(nome || '').trim();
+      turma = normalizaTurma(turma);
 
-    if (!nome || !turma) {
-      return res.status(400).json({ message: 'Nome e turma são obrigatórios.' });
+      if (!nome || !turma) {
+        return res.status(400).json({ message: 'Nome e turma são obrigatórios.' });
+      }
+
+      let dtEntrada;
+      if (dataEntrada) {
+        const iso = String(dataEntrada).trim();
+        const dt = new Date(iso + 'T00:00:00');
+        if (!isNaN(dt.getTime())) dtEntrada = dt;
+      }
+
+      const novoAluno = await Aluno.create(tenantData(req, {
+        nome,
+        turma,
+        dataEntrada: dtEntrada,
+        telefone: String(telefone || '').trim(),
+        ativo: true
+      }));
+
+      console.log('[ALUNOS][CRIAR] actor=', req.actor);
+      console.log('[ALUNOS][CRIAR] usuario=', req.usuario);
+      console.log('[ALUNOS][CRIAR] tenant=', getTenantId(req));
+      
+    await safeAudit({
+        req: {
+    ...req,
+    actor: req.actor || {
+      id: req.usuario?.id || req.user?.id || req.usuario?._id || req.user?._id,
+      nome: req.usuario?.nome || req.user?.nome || null,
+      tipo: req.usuario?.tipo || req.user?.tipo || null,
+      email: req.usuario?.email || req.user?.email || null,
+      instituicao: req.usuario?.instituicao || req.user?.instituicao || getTenantId(req)
     }
+  },
+        event: 'ALUNO_CRIADO',
+        targetType: 'Aluno',
+        targetId: novoAluno._id,
+        entidadeNome: novoAluno.nome,
+        alunoNome: novoAluno.nome,
+        meta: {
+          turma: novoAluno.turma
+        }
+      });
 
-    let dtEntrada;
-    if (dataEntrada) {
-      const iso = String(dataEntrada).trim();
-      const dt = new Date(iso + 'T00:00:00');
-      if (!isNaN(dt.getTime())) dtEntrada = dt;
+      res.status(201).json(anexarThumb(novoAluno));
+    } catch (error) {
+      console.error('Erro POST /api/alunos:', error);
+      res.status(500).json({ message: 'Erro ao criar aluno', error: error?.message || error });
     }
-
-    const novoAluno = await Aluno.create(tenantData(req, {
-      nome,
-      turma,
-      dataEntrada: dtEntrada,
-      telefone: String(telefone || '').trim(),
-      ativo: true
-    }));
-
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Criação de Aluno',
-      entidade: 'Aluno',
-      entidadeId: novoAluno._id
-    }));
-
-    res.status(201).json(anexarThumb(novoAluno));
-  } catch (error) {
-    console.error('Erro POST /api/alunos:', error);
-    res.status(500).json({ message: 'Erro ao criar aluno', error: error?.message || error });
   }
-});
+);
 
+// GET - Detalhes do aluno
 router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const inst = getTenantId(req);
@@ -944,12 +721,12 @@ router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req
 
     const config = await getConfigDisciplinar(alunoRaw.instituicao || alunoRaw.tenantId);
 
-const notaAtual = calcularNotaTSMD(
-  alunoRaw.dataEntrada,
-  new Date(),
-  notificacoes,
-  config
-);
+    const notaAtual = calcularNotaTSMD(
+      alunoRaw.dataEntrada,
+      new Date(),
+      notificacoes,
+      config
+    );
 
     const payload = { aluno, notaAtual, notificacoes };
     setCached(inst, id, payload);
@@ -962,6 +739,7 @@ const notaAtual = calcularNotaTSMD(
   }
 });
 
+// PUT - Atualizar foto
 router.put('/:id/foto', autenticar, requireTenant, apenasMonitorOuAdmin, upload.single('foto'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -1059,6 +837,7 @@ router.put('/:id/foto', autenticar, requireTenant, apenasMonitorOuAdmin, upload.
   }
 });
 
+// GET - Buscar aluno por ID
 router.get('/:id', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
     const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
@@ -1072,7 +851,8 @@ router.get('/:id', autenticar, requireTenant, apenasLeitura, async (req, res) =>
   }
 });
 
-router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
+// PUT - Editar aluno
+router.put('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdmin, async (req, res) => {
   try {
     const instituicao = getTenantId(req);
     const alunoId = req.params.id;
@@ -1146,41 +926,46 @@ router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, 
     const mudouDataEntrada = updateDoc.dataEntrada !== undefined &&
       String(depoisEntradaMs) !== String(antesEntradaMs);
 
+    const force = String(req.query.recalcular || '').toLowerCase();
+    const forcarRecalculo = force === '1' || force === 'true';
+
     const alunoAtualizado = await Aluno.findOneAndUpdate(
       tenantFilter(req, { _id: alunoId }),
       { $set: updateDoc },
       { new: true, runValidators: true }
     );
 
-    const force = String(req.query.recalcular || '').toLowerCase();
-    const forcarRecalculo = force === '1' || force === 'true';
-
     if (mudouDataEntrada || forcarRecalculo) {
-  const [notificacoes, config] = await Promise.all([
-    Notificacao.find(tenantFilter(req, { aluno: alunoAtualizado._id }))
-      .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
-      .sort({ data: 1, createdAt: 1 })
-      .lean(),
-    getConfigDisciplinar(alunoAtualizado.instituicao || alunoAtualizado.tenantId)
-  ]);
+      const [notificacoes, config] = await Promise.all([
+        Notificacao.find(tenantFilter(req, { aluno: alunoAtualizado._id }))
+          .select('data valorNumerico createdAt quantidadeDias tipoMedida natureza')
+          .sort({ data: 1, createdAt: 1 })
+          .lean(),
+        getConfigDisciplinar(alunoAtualizado.instituicao || alunoAtualizado.tenantId)
+      ]);
 
-  const nota = calcularNotaTSMD(
-    alunoAtualizado.dataEntrada,
-    new Date(),
-    notificacoes,
-    config
-  );
+      const nota = calcularNotaTSMD(
+        alunoAtualizado.dataEntrada,
+        new Date(),
+        notificacoes,
+        config
+      );
 
-  alunoAtualizado.comportamento = nota;
-  await alunoAtualizado.save();
-}
+      alunoAtualizado.comportamento = nota;
+      await alunoAtualizado.save();
+    }
 
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Edição de Aluno',
-      entidade: 'Aluno',
-      entidadeId: alunoAtualizado._id
-    }));
+    await safeAudit({
+      req,
+      event: 'ALUNO_EDITADO',
+      targetType: 'Aluno',
+      targetId: alunoAtualizado._id,
+      entidadeNome: alunoAtualizado.nome,
+      alunoNome: alunoAtualizado.nome,
+      meta: {
+        turma: alunoAtualizado.turma
+      }
+    });
 
     try { detalhesCache.delete(cacheKey(instituicao, String(alunoAtualizado._id))); } catch {}
 
@@ -1191,11 +976,15 @@ router.put('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, 
   }
 });
 
-router.delete('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
+// DELETE - Excluir aluno
+router.delete('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdmin, async (req, res) => {
   try {
     const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
 
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    const nomeAluno = aluno.nome;
+    const turmaAluno = aluno.turma;
 
     await apagarFotosAntigasDoAluno(aluno);
 
@@ -1205,12 +994,30 @@ router.delete('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (re
       Aluno.deleteOne(tenantFilter(req, { _id: aluno._id }))
     ]);
 
-    await Log.create(tenantData(req, {
-      usuario: req.usuario.id,
-      acao: 'Exclusão de Aluno',
-      entidade: 'Aluno',
-      entidadeId: aluno._id
-    }));
+    console.log('[ALUNOS][EXCLUIR] actor=', req.actor);
+    console.log('[ALUNOS][EXCLUIR] usuario=', req.usuario);
+    console.log('[ALUNOS][EXCLUIR] tenant=', getTenantId(req));
+
+    await safeAudit({
+      req: {
+    ...req,
+    actor: req.actor || {
+      id: req.usuario?.id || req.user?.id || req.usuario?._id || req.user?._id,
+      nome: req.usuario?.nome || req.user?.nome || null,
+      tipo: req.usuario?.tipo || req.user?.tipo || null,
+      email: req.usuario?.email || req.user?.email || null,
+      instituicao: req.usuario?.instituicao || req.user?.instituicao || getTenantId(req)
+    }
+  },
+      event: 'ALUNO_EXCLUIDO',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: nomeAluno,
+      alunoNome: nomeAluno,
+      meta: {
+        turma: turmaAluno
+      }
+    });
 
     try { detalhesCache.delete(cacheKey(getTenantId(req), String(aluno._id))); } catch {}
 
@@ -1220,5 +1027,156 @@ router.delete('/:id', autenticar, requireTenant, apenasMonitorOuAdmin, async (re
     res.status(500).json({ message: 'Erro ao deletar aluno', error });
   }
 });
+
+module.exports = router;
+
+// POST - Transferir alunos de turma
+router.post(
+  '/transferir-turma',
+  autenticar,
+  requireTenant,
+  attachActor,
+  apenasMonitorOuAdmin,
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+      if (!inst) return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+
+      const { turmaOrigem, novaTurma } = req.body;
+
+      if (!turmaOrigem || !novaTurma) {
+        return res.status(400).json({ mensagem: 'Dados inválidos.' });
+      }
+
+      const result = await Aluno.updateMany(
+        tenantFilter(req, { turma: normalizaTurma(turmaOrigem) }),
+        { turma: normalizaTurma(novaTurma) }
+      );
+
+      // 🔥 LOG CORRIGIDO
+      await safeAudit({
+        req,
+        event: 'ALUNO_TRANSFERIDO',
+        targetType: 'Aluno',
+        targetId: null,
+        entidadeNome: `Turma ${turmaOrigem}`,
+        meta: {
+          novaTurma,
+          quantidade: result.modifiedCount
+        }
+      });
+
+      res.json({
+        mensagem: 'Transferência realizada com sucesso.',
+        quantidade: result.modifiedCount
+      });
+    } catch (erro) {
+      console.error('Erro ao transferir turma:', erro);
+      res.status(500).json({ mensagem: 'Erro ao transferir turma.' });
+    }
+  }
+);
+
+// POST - Enviar Telegram
+router.post(
+  '/telegram',
+  autenticar,
+  requireTenant,
+  attachActor,
+  apenasMonitorOuAdmin,
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+      if (!inst) return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+
+      const { alunoId, mensagem } = req.body;
+
+      if (!alunoId || !mensagem) {
+        return res.status(400).json({ mensagem: 'Dados inválidos.' });
+      }
+
+      const aluno = await Aluno.findOne(
+        tenantLegacyMatch(req, { _id: alunoId })
+      );
+
+      if (!aluno) return res.status(404).json({ mensagem: 'Aluno não encontrado.' });
+
+      const chatId = normalizeChatId(aluno.telegramChatId);
+
+      if (!chatId) {
+        return res.status(400).json({ mensagem: 'Aluno não possui Telegram vinculado.' });
+      }
+
+      await enviarTelegram(chatId, mensagem);
+
+      // 🔥 LOG CORRIGIDO
+      await safeAudit({
+        req,
+        event: 'ALUNO_TELEGRAM_ENVIADO',
+        targetType: 'Aluno',
+        targetId: aluno._id,
+        entidadeNome: aluno.nome,
+        alunoNome: aluno.nome,
+        meta: {
+          turma: aluno.turma
+        }
+      });
+
+      res.json({ mensagem: 'Mensagem enviada com sucesso.' });
+    } catch (erro) {
+      console.error('Erro ao enviar Telegram:', erro);
+      res.status(500).json({ mensagem: 'Erro ao enviar Telegram.' });
+    }
+  }
+);
+
+// GET - Detalhes do aluno (com cache leve)
+router.get(
+  '/:id/detalhes',
+  autenticar,
+  requireTenant,
+  apenasLeitura,
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+      if (!inst) return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+
+      const cached = getCached(inst, req.params.id);
+      if (cached) return res.json(cached);
+
+      const aluno = await Aluno.findOne(
+        tenantLegacyMatch(req, { _id: req.params.id })
+      );
+
+      if (!aluno) return res.status(404).json({ mensagem: 'Aluno não encontrado.' });
+
+      const notificacoes = await Notificacao.find(
+        tenantFilter(req, { aluno: aluno._id })
+      ).lean();
+
+      const observacoes = await Observacao.find(
+        tenantFilter(req, { aluno: aluno._id })
+      ).lean();
+
+      const config = await getConfigDisciplinar(inst);
+
+      const nota = calcularNotaTSMD(notificacoes, config);
+
+      const payload = {
+        aluno: anexarThumb(aluno),
+        notificacoes,
+        observacoes,
+        nota
+      };
+
+      setCached(inst, req.params.id, payload);
+
+      res.json(payload);
+    } catch (erro) {
+      console.error('Erro ao buscar detalhes do aluno:', erro);
+      res.status(500).json({ mensagem: 'Erro ao buscar detalhes do aluno.' });
+    }
+  }
+);
 
 module.exports = router;

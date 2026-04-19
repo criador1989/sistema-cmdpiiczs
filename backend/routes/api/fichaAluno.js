@@ -7,6 +7,7 @@ const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
 const { autenticar } = require('../../middleware/autenticacao');
+const { logAction, attachActor } = require('../../utils/audit');
 
 let calcularNotaTSMD;
 try {
@@ -32,6 +33,28 @@ function normalizarTurma(v) {
     .replace(/\s+/g, ' ');
 }
 
+function getTenantId(req) {
+  return (
+    req.tenantId ||
+    req.instituicaoId ||
+    req.tenant?._id ||
+    req.tenant?.id ||
+    req.usuario?.tenantId ||
+    req.user?.tenantId ||
+    req.usuario?.instituicao ||
+    req.user?.instituicao ||
+    null
+  );
+}
+
+async function safeAudit(payload) {
+  try {
+    await logAction(payload);
+  } catch (e) {
+    console.warn('[audit][ficha] falha ao gravar log:', e?.message || e);
+  }
+}
+
 const PROJ_ALUNO =
   'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
 
@@ -50,11 +73,11 @@ function filtroNotificacoesVisiveis(alunoId, instituicao) {
   };
 }
 
-router.get('/:id', autenticar, async (req, res) => {
+router.get('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     const usuario = req.usuario || {};
-    const instituicao = usuario.instituicao;
+    const instituicao = getTenantId(req);
 
     if (!instituicao) {
       return res.status(401).json({ erro: 'Não autenticado.' });
@@ -115,6 +138,19 @@ router.get('/:id', autenticar, async (req, res) => {
     const fotoUrl = toPublicUrl(aluno.fotoOriginal || aluno.foto || aluno.fotoThumb || null);
     const fotoThumbUrl = toPublicUrl(aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || null);
     const contatos = aluno.contatos || {};
+
+    await safeAudit({
+      req,
+      event: 'FICHA_ALUNO_VISUALIZADA',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: aluno.nome,
+      alunoNome: aluno.nome,
+      meta: {
+        turma: aluno.turma,
+        perfilSolicitante: usuario.tipo || null
+      }
+    });
 
     res.set('Cache-Control', 'no-store');
 
@@ -211,12 +247,12 @@ router.get('/:id', autenticar, async (req, res) => {
   }
 });
 
-router.post('/salvar/:id', autenticar, async (req, res) => {
+router.post('/salvar/:id', autenticar, attachActor, async (req, res) => {
   try {
     const { id } = req.params;
     const { texto } = req.body;
     const usuario = req.usuario || {};
-    const instituicao = usuario.instituicao;
+    const instituicao = getTenantId(req);
     const autor = usuario.nome || usuario.email || 'Sistema';
 
     if (!instituicao) {
@@ -227,18 +263,13 @@ router.post('/salvar/:id', autenticar, async (req, res) => {
       return res.status(400).json({ erro: 'Texto da observação é obrigatório.' });
     }
 
-    const exists = await Aluno.exists({ _id: id, instituicao });
-    if (!exists) {
+    const alunoBase = await Aluno.findOne({ _id: id, instituicao }).select('nome turma').lean();
+    if (!alunoBase) {
       return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
     }
 
     if (usuario.tipo === 'professor' && Array.isArray(usuario.turmas) && usuario.turmas.length) {
-      const aluno = await Aluno.findOne({ _id: id, instituicao }).select('turma').lean();
-      if (!aluno) {
-        return res.status(404).json({ erro: 'Aluno não encontrado nesta instituição.' });
-      }
-
-      const turmaAluno = normalizarTurma(aluno.turma);
+      const turmaAluno = normalizarTurma(alunoBase.turma);
       const permitidas = usuario.turmas.map(normalizarTurma);
 
       if (!permitidas.includes(turmaAluno)) {
@@ -251,6 +282,21 @@ router.post('/salvar/:id', autenticar, async (req, res) => {
       instituicao: String(instituicao),
       texto: String(texto).trim(),
       autor,
+    });
+
+    await safeAudit({
+      req,
+      event: 'OBSERVACAO_CRIADA',
+      targetType: 'Aluno',
+      targetId: id,
+      entidadeNome: alunoBase.nome,
+      alunoNome: alunoBase.nome,
+      meta: {
+        turma: alunoBase.turma,
+        observacaoId: novaObs._id,
+        tamanhoTexto: String(texto).trim().length,
+        perfilSolicitante: usuario.tipo || null
+      }
     });
 
     res.json({

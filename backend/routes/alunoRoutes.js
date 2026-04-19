@@ -8,9 +8,9 @@ const multer = require('multer');
 const Aluno = require('../models/Aluno');
 const Notificacao = require('../models/Notificacao');
 const Observacao = require('../models/Observacao');
-const { autenticar } = require('../middleware/autenticacao'); // usa cookie JWT
+const { autenticar } = require('../middleware/autenticacao');
 const calcularNotaTSMD = require('../utils/calculoNota');
-const Log = require('../models/Log');
+const { logAction, attachActor } = require('../utils/audit');
 
 // ---------- Upload de foto (multer) ----------
 const pastaAlunos = path.join(__dirname, '../uploads/alunos');
@@ -23,28 +23,32 @@ const storage = multer.diskStorage({
     cb(null, `${req.params.id}-${Date.now()}${ext}`);
   }
 });
+
 const fileFilter = (req, file, cb) => {
   if (!file?.mimetype?.startsWith('image/')) {
     return cb(new Error('Envie um arquivo de imagem.'), false);
   }
   cb(null, true);
 };
+
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // ---------- Helpers ----------
-const BASE_SELECT_LISTA = 'nome turma'; // mínimo necessário
+const BASE_SELECT_LISTA = 'nome turma';
 
 function anexarThumbNaPlain(a) {
   return { ...a, fotoThumbUrl: `/api/imagens/thumb/${a._id}` };
 }
+
 function anexarThumb(alunoDoc) {
   const obj = alunoDoc?.toObject ? alunoDoc.toObject() : alunoDoc;
   return anexarThumbNaPlain(obj);
 }
+
 function parsePtBrDateToDate(d) {
   if (typeof d === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(d.trim())) {
     const [dd, mm, yyyy] = d.trim().split('/');
@@ -52,20 +56,42 @@ function parsePtBrDateToDate(d) {
   }
   return d;
 }
+
 async function calcularNotaComportamento(alunoId) {
   const aluno = await Aluno.findById(alunoId).select('dataEntrada');
   const notificacoes = await Notificacao.find({ aluno: alunoId }).select('data valorNumerico createdAt');
   return calcularNotaTSMD(aluno?.dataEntrada, new Date(), notificacoes);
 }
 
+async function safeAudit(payload) {
+  try {
+    await logAction(payload);
+  } catch (e) {
+    console.warn('[audit][alunoRoutes] falha ao gravar log:', e?.message || e);
+  }
+}
+
+function buildForcedReq(req) {
+  return {
+    ...req,
+    actor: req.actor || {
+      id: req.usuario?.id || req.usuario?._id || null,
+      nome: req.usuario?.nome || null,
+      tipo: req.usuario?.tipo || null,
+      email: req.usuario?.email || null,
+      instituicao: req.usuario?.instituicao || null
+    }
+  };
+}
+
 // ============= NOVAS LISTAS =============
 
-// GET /api/alunos/turmas -> lista de turmas (da instituição do usuário)
+// GET /api/alunos/turmas
 router.get('/turmas', autenticar, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
     const turmas = await Aluno.distinct('turma', { instituicao: inst, turma: { $ne: null } });
-    turmas.sort((a,b) => String(a).localeCompare(String(b), 'pt-BR', { numeric:true }));
+    turmas.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true }));
     res.json({ turmas });
   } catch (e) {
     console.error('Erro GET /alunos/turmas:', e);
@@ -73,8 +99,7 @@ router.get('/turmas', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/alunos/turma/:turma -> paginação leve para a grade
-// aceita ?pagina=1&limite=24&q=termo
+// GET /api/alunos/turma/:turma
 router.get('/turma/:turma', autenticar, async (req, res) => {
   try {
     const { turma } = req.params;
@@ -86,6 +111,7 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
       instituicao: req.usuario.instituicao,
       turma
     };
+
     if (q) {
       filtro.nome = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
     }
@@ -94,7 +120,7 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
     const paginas = Math.max(Math.ceil(total / limite), 1);
 
     const alunos = await Aluno.find(filtro)
-      .select(`${BASE_SELECT_LISTA}`)
+      .select(BASE_SELECT_LISTA)
       .sort({ nome: 1 })
       .skip((pagina - 1) * limite)
       .limit(limite)
@@ -108,13 +134,12 @@ router.get('/turma/:turma', autenticar, async (req, res) => {
   }
 });
 
-// ============= ENDPOINTS EXISTENTES (mantidos) =============
-
-// GET /api/alunos/:id/nota -> calcula nota deste aluno
+// GET /api/alunos/:id/nota
 router.get('/:id/nota', autenticar, async (req, res) => {
   try {
     const aluno = await Aluno.findOne({ _id: req.params.id, instituicao: req.usuario.instituicao }).select('_id');
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
+
     const nota = await calcularNotaComportamento(aluno._id);
     res.json({ comportamento: nota });
   } catch (error) {
@@ -123,7 +148,7 @@ router.get('/:id/nota', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/alunos -> lista (modo antigo / não usada pela nova grade)
+// GET /api/alunos
 router.get('/', autenticar, async (req, res) => {
   try {
     const semNota = String(req.query.semNota || '').toLowerCase() === '1' || String(req.query.semNota || '').toLowerCase() === 'true';
@@ -140,10 +165,11 @@ router.get('/', autenticar, async (req, res) => {
     const alunosComNota = await Promise.all(
       alunos.map(async (aluno) => {
         let nota = 8.0;
-        try { nota = await calcularNotaComportamento(aluno._id); } catch (e) {}
+        try { nota = await calcularNotaComportamento(aluno._id); } catch {}
         return { ...anexarThumb(aluno), comportamento: nota };
       })
     );
+
     res.json(alunosComNota);
   } catch (error) {
     console.error('Erro GET /api/alunos:', error);
@@ -151,7 +177,7 @@ router.get('/', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/alunos/:id -> detalhes leves do aluno (para o modal)
+// GET /api/alunos/:id
 router.get('/:id', autenticar, async (req, res) => {
   try {
     const aluno = await Aluno.findOne({
@@ -169,14 +195,14 @@ router.get('/:id', autenticar, async (req, res) => {
 });
 
 // POST /api/alunos
-router.post('/', autenticar, async (req, res) => {
+router.post('/', autenticar, attachActor, async (req, res) => {
   try {
     const {
       nome, turma, dataEntrada, nascimento, telefone, endereco,
       nomePai, nomeMae, foto
     } = req.body;
 
-    const turmaNormalizada = turma
+    const turmaNormalizada = String(turma || '')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
 
@@ -197,11 +223,16 @@ router.post('/', autenticar, async (req, res) => {
 
     const alunoSalvo = await novoAluno.save();
 
-    await Log.create({
-      usuario: req.usuario._id,
-      acao: 'Cadastro de Aluno',
-      entidade: 'Aluno',
-      entidadeId: alunoSalvo._id
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'ALUNO_CRIADO',
+      targetType: 'Aluno',
+      targetId: alunoSalvo._id,
+      entidadeNome: alunoSalvo.nome,
+      alunoNome: alunoSalvo.nome,
+      meta: {
+        turma: alunoSalvo.turma
+      }
     });
 
     res.status(201).json(anexarThumb(alunoSalvo));
@@ -218,7 +249,8 @@ router.put('/transferir', autenticar, async (req, res) => {
     if (!Array.isArray(ids) || !novaTurma) {
       return res.status(400).json({ mensagem: 'IDs e nova turma são obrigatórios.' });
     }
-    const turmaNormalizada = novaTurma
+
+    const turmaNormalizada = String(novaTurma || '')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
 
@@ -235,7 +267,7 @@ router.put('/transferir', autenticar, async (req, res) => {
 });
 
 // PUT /api/alunos/:id/foto
-router.put('/:id/foto', autenticar, upload.single('foto'), async (req, res) => {
+router.put('/:id/foto', autenticar, attachActor, upload.single('foto'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -249,6 +281,8 @@ router.put('/:id/foto', autenticar, upload.single('foto'), async (req, res) => {
       return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
 
+    const fotoAnterior = aluno.foto || null;
+
     if (aluno.foto) {
       const caminhoAntigo = path.join(__dirname, '../', aluno.foto.replace(/^\//, ''));
       try { if (fs.existsSync(caminhoAntigo)) fs.unlinkSync(caminhoAntigo); } catch {}
@@ -258,6 +292,21 @@ router.put('/:id/foto', autenticar, upload.single('foto'), async (req, res) => {
     aluno.foto = publicPath;
     await aluno.save();
 
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'ALUNO_FOTO_ATUALIZADA',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: aluno.nome,
+      alunoNome: aluno.nome,
+      meta: {
+        turma: aluno.turma,
+        fotoAnterior,
+        fotoAtual: publicPath,
+        nomeArquivo: req.file.originalname || req.file.filename
+      }
+    });
+
     return res.json({ ok: true, message: 'Foto atualizada com sucesso.', foto: publicPath });
   } catch (err) {
     console.error('Erro ao atualizar foto:', err);
@@ -266,12 +315,12 @@ router.put('/:id/foto', autenticar, upload.single('foto'), async (req, res) => {
 });
 
 // PUT /api/alunos/:id
-router.put('/:id', autenticar, async (req, res) => {
+router.put('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const dadosAtualizados = { ...req.body };
 
     if (dadosAtualizados.turma) {
-      dadosAtualizados.turma = dadosAtualizados.turma
+      dadosAtualizados.turma = String(dadosAtualizados.turma || '')
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[ºº°]/g, 'º').replace(/[ª]/g, 'ª').trim();
     }
@@ -283,9 +332,23 @@ router.put('/:id', autenticar, async (req, res) => {
     const alunoAntes = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
-    }).select('_id dataEntrada');
+    });
 
     if (!alunoAntes) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    const snapshotAntes = {
+      nome: alunoAntes.nome || null,
+      turma: alunoAntes.turma || null,
+      dataEntrada: alunoAntes.dataEntrada || null,
+      nascimento: alunoAntes.nascimento || null,
+      nomePai: alunoAntes.nomePai || null,
+      nomeMae: alunoAntes.nomeMae || null,
+      telefone: alunoAntes.telefone || null,
+      endereco: alunoAntes.endereco || null,
+      codigoAcesso: alunoAntes.codigoAcesso || null,
+      foto: alunoAntes.foto || null,
+      contatos: alunoAntes.contatos || null
+    };
 
     const mudouDataEntrada = dadosAtualizados.dataEntrada !== undefined &&
       String(new Date(dadosAtualizados.dataEntrada).getTime()) !== String(new Date(alunoAntes.dataEntrada).getTime());
@@ -310,11 +373,33 @@ router.put('/:id', autenticar, async (req, res) => {
       await alunoAtualizado.save();
     }
 
-    await Log.create({
-      usuario: req.usuario._id,
-      acao: 'Edição de Aluno',
-      entidade: 'Aluno',
-      entidadeId: alunoAtualizado._id
+    const snapshotDepois = {
+      nome: alunoAtualizado.nome || null,
+      turma: alunoAtualizado.turma || null,
+      dataEntrada: alunoAtualizado.dataEntrada || null,
+      nascimento: alunoAtualizado.nascimento || null,
+      nomePai: alunoAtualizado.nomePai || null,
+      nomeMae: alunoAtualizado.nomeMae || null,
+      telefone: alunoAtualizado.telefone || null,
+      endereco: alunoAtualizado.endereco || null,
+      codigoAcesso: alunoAtualizado.codigoAcesso || null,
+      foto: alunoAtualizado.foto || null,
+      contatos: alunoAtualizado.contatos || null
+    };
+
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'ALUNO_EDITADO',
+      targetType: 'Aluno',
+      targetId: alunoAtualizado._id,
+      entidadeNome: alunoAtualizado.nome,
+      alunoNome: alunoAtualizado.nome,
+      before: snapshotAntes,
+      after: snapshotDepois,
+      meta: {
+        turma: alunoAtualizado.turma,
+        camposRecebidos: Object.keys(req.body || {})
+      }
     });
 
     res.json(anexarThumb(alunoAtualizado));
@@ -325,13 +410,18 @@ router.put('/:id', autenticar, async (req, res) => {
 });
 
 // DELETE /api/alunos/:id
-router.delete('/:id', autenticar, async (req, res) => {
+router.delete('/:id', autenticar, attachActor, async (req, res) => {
   try {
     const aluno = await Aluno.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
     });
+
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
+
+    const nomeAluno = aluno.nome;
+    const turmaAluno = aluno.turma;
+    const fotoAluno = aluno.foto || null;
 
     if (aluno.foto) {
       const caminho = path.join(__dirname, '../', aluno.foto.replace(/^\//, ''));
@@ -344,11 +434,17 @@ router.delete('/:id', autenticar, async (req, res) => {
       Aluno.deleteOne({ _id: aluno._id })
     ]);
 
-    await Log.create({
-      usuario: req.usuario._id,
-      acao: 'Exclusão de Aluno',
-      entidade: 'Aluno',
-      entidadeId: aluno._id
+    await safeAudit({
+      req: buildForcedReq(req),
+      event: 'ALUNO_EXCLUIDO',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: nomeAluno,
+      alunoNome: nomeAluno,
+      meta: {
+        turma: turmaAluno,
+        foto: fotoAluno
+      }
     });
 
     res.json({ message: 'Aluno e dados relacionados deletados com sucesso' });
