@@ -507,6 +507,7 @@
       grid-template-columns:repeat(2,1fr);
       gap:8px;
     }
+    
 
     @media (max-width:800px){
       .n-row{grid-template-columns:1fr}
@@ -633,6 +634,216 @@
     .hidden{
       display:none !important;
     }
+    /* =========================
+   PREMIUM REVIEW UX
+========================= */
+.review-banner{
+  margin:10px 0 0;
+  border:1px solid rgba(255, 196, 0, .34);
+  background:
+    linear-gradient(135deg, rgba(255,196,0,.14), rgba(255,140,0,.10)),
+    rgba(255,255,255,.04);
+  border-radius:16px;
+  padding:12px 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 10px 24px rgba(0,0,0,.22);
+}
+
+.review-banner-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.review-banner-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:800;
+  color:#ffe082;
+  letter-spacing:.01em;
+}
+
+.review-banner-sub{
+  color:#ffe9b0;
+  font-size:.92rem;
+  opacity:.92;
+}
+
+.review-banner-body{
+  margin-top:10px;
+  display:grid;
+  gap:10px;
+}
+
+.review-reason{
+  color:#fff8dc;
+  font-size:.95rem;
+  line-height:1.5;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(0,0,0,.18);
+  border:1px solid rgba(255,255,255,.10);
+}
+
+.review-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.btn-review{
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  border-radius:12px;
+  padding:9px 12px;
+  cursor:pointer;
+  font-weight:700;
+  transition:transform .16s ease, background .16s ease, border-color .16s ease;
+}
+
+.btn-review:hover{
+  transform:translateY(-1px);
+  background:rgba(255,255,255,.14);
+  border-color:rgba(255,255,255,.26);
+}
+
+.btn-review.primary{
+  background:linear-gradient(135deg, rgba(255,170,0,.28), rgba(255,120,0,.24));
+  border-color:rgba(255,196,0,.38);
+}
+
+.btn-review.primary:hover{
+  background:linear-gradient(135deg, rgba(255,180,0,.34), rgba(255,130,0,.30));
+}
+
+.n-card.has-review{
+  border-color:rgba(255,196,0,.32);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.35),
+    0 0 0 1px rgba(255,196,0,.08);
+}
+
+/* Modal premium */
+.review-modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(5,10,20,.65);
+  backdrop-filter:blur(8px);
+  z-index:9999;
+}
+
+.review-modal.is-open{
+  display:flex;
+}
+
+.review-modal-card{
+  width:min(620px, 100%);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.14);
+  background:
+    radial-gradient(circle at top left, rgba(255,196,0,.08), transparent 38%),
+    linear-gradient(180deg, rgba(18,28,46,.96), rgba(10,18,34,.96));
+  box-shadow:0 24px 60px rgba(0,0,0,.42);
+  overflow:hidden;
+}
+
+.review-modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+.review-modal-title{
+  font-size:1.05rem;
+  font-weight:800;
+  color:#ffe082;
+}
+
+.review-modal-close{
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+.review-modal-body{
+  padding:18px;
+  display:grid;
+  gap:12px;
+}
+
+.review-modal-note{
+  color:var(--text-soft);
+  font-size:.92rem;
+}
+
+.review-modal-reason{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  border-radius:16px;
+  padding:14px;
+  color:#fff;
+  line-height:1.65;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+@media (max-width: 768px){
+  .review-banner{
+    padding:12px;
+    border-radius:14px;
+  }
+
+  .review-banner-title{
+    font-size:.96rem;
+  }
+
+  .review-banner-sub,
+  .review-reason{
+    font-size:.92rem;
+  }
+
+  .review-actions{
+    flex-direction:column;
+  }
+
+  .review-actions .btn-review{
+    width:100%;
+    justify-content:center;
+    text-align:center;
+  }
+
+  .review-modal{
+    padding:12px;
+    align-items:flex-end;
+  }
+
+  .review-modal-card{
+    width:100%;
+    border-radius:20px 20px 0 0;
+    max-height:88dvh;
+  }
+
+  .review-modal-body{
+    overflow:auto;
+    max-height:calc(88dvh - 72px);
+  }
+}
   </style>
 </head>
 <body>
@@ -649,7 +860,7 @@
       <nav class="nav">
         <a href="painel.html">🏠 Painel</a>
         <a href="lista-alunos.html">👥 Alunos</a>
-        <a class="active" href="/notificacoes">🔔 Notificações</a>
+        <a class="active" href="notificacoes.html">🔔 Notificações</a>
         <a href="estatisticas.html">📉 Relatórios</a>
         <a href="mensagens.html">✉️ Mensagens</a>
         <a href="usuarios.html">⚙️ Administração</a>
@@ -1021,6 +1232,9 @@
         arr.forEach(n => {
           const wrap = document.createElement('div');
           wrap.className = 'n-card';
+          if (n.status === 'revisao_solicitada') {
+          wrap.classList.add('has-review');
+          }
           wrap.dataset.id = n._id;
 
           const head = document.createElement('div');
@@ -1069,29 +1283,57 @@
                 </div>
               ` : '';
 
-              body.innerHTML = `
-                <div class="n-row">
-                  <div class="n-kv"><b>Motivo</b>${det.motivo || '—'}</div>
-                  <div class="n-kv"><b>Observação</b>${det.observacao || '—'}</div>
-                  <div class="n-kv"><b>Natureza</b>${String(det.natureza || '').toLowerCase() === 'elogio' ? 'Elogio' : 'Notificação disciplinar'}</div>
-                  <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
-                  <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
-                  <div class="n-kv"><b>Inciso</b>${det.inciso || '—'}</div>
-                  <div class="n-kv"><b>Nota</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</div>
-                  <div class="n-kv"><b>Classificação</b>${classificacaoAnterior} → ${classificacaoAtual}</div>
-                  ${entregueDetalhe}
-                </div>
+              const reviewBanner = det.status === 'revisao_solicitada' ? `
+  <div class="review-banner">
+    <div class="review-banner-head">
+      <div>
+        <div class="review-banner-title">⚠ Revisão solicitada</div>
+        <div class="review-banner-sub">Esta notificação precisa ser corrigida antes de seguir no fluxo.</div>
+      </div>
+    </div>
 
-                <div class="actions">
-                  <button class="pdf-btn" onclick="gerarPDF('${det._id}')">PDF</button>
-                  ${modoAtual !== 'arquivadas' && modoAtual !== 'antigas' ? `<a class="edit-btn" href="editar-notificacao.html?id=${det._id}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}">Editar</a>` : ''}
-                  <button class="delete-btn" onclick="excluirNotificacao('${det._id}')">Excluir</button>
-                  ${det.status === 'revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
-                  ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
-                </div>
+    <div class="review-banner-body">
+      <div class="review-reason">
+        ${det.comentarioRevisao || det.comentarioMonitor || 'Sem motivo informado pelo controle.'}
+      </div>
 
-                ${devolucaoActions}
-              `;
+      <div class="review-actions">
+        <button class="btn-review" onclick="abrirModalRevisao(${JSON.stringify(det.comentarioRevisao || det.comentarioMonitor || 'Sem motivo informado pelo controle.')})">
+          Mostrar motivo completo
+        </button>
+        <button class="btn-review primary" onclick="location.href='editar-notificacao.html?id=${det._id}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}'">
+          Corrigir agora
+        </button>
+      </div>
+    </div>
+  </div>
+` : '';
+
+body.innerHTML = `
+  <div class="n-row">
+    <div class="n-kv"><b>Motivo</b>${det.motivo || '—'}</div>
+    <div class="n-kv"><b>Observação</b>${det.observacao || '—'}</div>
+    <div class="n-kv"><b>Natureza</b>${String(det.natureza || '').toLowerCase() === 'elogio' ? 'Elogio' : 'Notificação disciplinar'}</div>
+    <div class="n-kv"><b>Nº Sequencial</b>${det.numeroSequencial || '—'}</div>
+    <div class="n-kv"><b>Artigo</b>${det.artigo || '—'}</div>
+    <div class="n-kv"><b>Inciso</b>${det.inciso || '—'}</div>
+    <div class="n-kv"><b>Nota</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</div>
+    <div class="n-kv"><b>Classificação</b>${classificacaoAnterior} → ${classificacaoAtual}</div>
+    ${entregueDetalhe}
+  </div>
+
+  ${reviewBanner}
+
+  <div class="actions">
+    <button class="pdf-btn" onclick="gerarPDF('${det._id}')">PDF</button>
+    ${modoAtual !== 'arquivadas' && modoAtual !== 'antigas' ? `<a class="edit-btn" href="editar-notificacao.html?id=${det._id}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}">Editar</a>` : ''}
+    <button class="delete-btn" onclick="excluirNotificacao('${det._id}')">Excluir</button>
+    ${det.status === 'revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
+    ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
+  </div>
+
+  ${devolucaoActions}
+`;
 
               loaded = true;
             } catch (e) {
@@ -1301,17 +1543,17 @@
       }
 
       async function reenviarNotificacao(id) {
-        try {
-          await fetchJson(`/api/notificacoes/${id}/reenviar`, {
-            method: 'PUT'
-          });
+  try {
+    await fetchJson(`/api/controle-notificacoes/${id}/reenviar`, {
+      method: 'PUT'
+    });
 
-          showToast('Notificação reenviada com sucesso.');
-          await carregarModoAtual();
-        } catch (e) {
-          showError(e.message || 'Erro ao reenviar.');
-        }
-      }
+    showToast('Notificação reenviada com sucesso.');
+    await carregarModoAtual();
+  } catch (e) {
+    showError(e.message || 'Erro ao reenviar.');
+  }
+}
 
       async function excluirNotificacao(id) {
         if (!confirm('Deseja excluir esta notificação?')) return;
@@ -1541,8 +1783,48 @@
 
       carregarModoAtual();
     });
+    function abrirModalRevisao(texto){
+  const modal = document.getElementById('reviewModal');
+  const reason = document.getElementById('reviewModalReason');
+  if (!modal || !reason) return;
+
+  reason.textContent = texto || 'Sem motivo informado.';
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharModalRevisao(){
+  const modal = document.getElementById('reviewModal');
+  if (!modal) return;
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('reviewModalClose')?.addEventListener('click', fecharModalRevisao);
+document.getElementById('reviewModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'reviewModal') fecharModalRevisao();
+});
   </script>
   <script src="notify.js"></script>
   <script src="/update-client.js"></script>
+  <!-- =========================
+     MODAL PREMIUM - MOTIVO DA REVISÃO
+========================= -->
+<div id="reviewModal" class="review-modal" aria-hidden="true">
+  <div class="review-modal-card">
+    <div class="review-modal-head">
+      <div class="review-modal-title">⚠ Motivo da revisão</div>
+      <button type="button" id="reviewModalClose" class="review-modal-close">✕</button>
+    </div>
+    <div class="review-modal-body">
+      <div class="review-modal-note">
+        Confira o motivo solicitado pelo controle antes de editar ou reenviar a notificação.
+      </div>
+      <div id="reviewModalReason" class="review-modal-reason">—</div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

@@ -1621,5 +1621,111 @@ router.post('/:id/devolver', autenticar, requireTenant, attachActor, async (req,
     res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
   }
 });
+// ✏️ Atualizar notificação
+router.put('/:id',
+  autenticar,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
+      const inst = getTenantId(req);
+
+      const notif = await Notificacao.findOne({
+        _id: id,
+        ...buildTenantMatch(inst)
+      });
+
+      if (!notif) {
+        return res.status(404).json({ message: 'Notificação não encontrada.' });
+      }
+
+      // 🔥 Atualiza campos permitidos
+      const campos = [
+        'natureza',
+        'status',
+        'data',
+        'tipoElogio',
+        'tipoMedida',
+        'motivo',
+        'valorNumerico',
+        'quantidadeDias',
+        'classificacaoRegulamento',
+        'artigo',
+        'paragrafo',
+        'inciso',
+        'observacao',
+        'aluno'
+      ];
+
+      campos.forEach(c => {
+        if (req.body[c] !== undefined) {
+          notif[c] = req.body[c];
+        }
+      });
+
+      // 🔥 Regra importante: se foi corrigido, limpa revisão
+      if (notif.status === 'revisao_solicitada') {
+        notif.status = 'pendente';
+        notif.alertaAtivo = false;
+      }
+
+      await notif.save();
+
+      return res.json({
+        message: 'Notificação atualizada com sucesso.',
+        notificacao: notif
+      });
+
+    } catch (err) {
+      console.error('[NOTIFICACOES][UPDATE]', err);
+      return res.status(500).json({
+        message: 'Erro ao atualizar notificação.'
+      });
+    }
+  }
+);
+// =========================
+// 🚨 RESUMO DE REVISÕES PENDENTES
+// =========================
+router.get('/revisoes/pendentes',
+  autenticar,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+
+      const lista = await Notificacao.find({
+        ...buildTenantMatch(inst),
+        status: 'revisao_solicitada',
+        ativo: { $ne: false }
+      })
+        .populate('aluno', 'nome turma')
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .lean();
+
+      const itens = lista.map(n => ({
+        _id: n._id,
+        numeroSequencial: n.numeroSequencial || '',
+        motivo: n.motivo || '',
+        comentarioRevisao: n.comentarioRevisao || '',
+        updatedAt: n.updatedAt,
+        aluno: {
+          nome: n.aluno?.nome || 'Aluno',
+          turma: n.aluno?.turma || '—'
+        }
+      }));
+
+      return res.json({
+        total: itens.length,
+        itens: itens.slice(0, 8)
+      });
+    } catch (err) {
+      console.error('[NOTIFICACOES][REVISOES_PENDENTES]', err);
+      return res.status(500).json({
+        message: 'Erro ao buscar revisões pendentes.'
+      });
+    }
+  }
+);
 module.exports = router;

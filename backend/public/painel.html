@@ -2132,6 +2132,76 @@ canvas{
     grid-template-columns:repeat(5, 1fr);
   }
 }
+.review-alert-box{
+  margin:0 0 18px;
+  padding:18px;
+  border-radius:24px;
+  border:1px solid rgba(255,196,0,.20);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,196,0,.12), transparent 32%),
+    radial-gradient(circle at 100% 100%, rgba(255,120,0,.10), transparent 34%),
+    linear-gradient(180deg, rgba(18,28,46,.72), rgba(10,18,34,.78));
+  box-shadow:0 18px 44px rgba(0,0,0,.34);
+}
+
+.review-alert-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.review-alert-kicker{
+  font-size:.76rem;
+  font-weight:800;
+  letter-spacing:.18em;
+  color:#ffd98b !important;
+}
+
+.review-alert-title{
+  margin:6px 0 6px;
+  color:#fff8dc;
+}
+
+.review-alert-text{
+  margin:0;
+  color:rgba(255,248,220,.82);
+}
+
+.review-alert-btn{
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+  text-decoration:none;
+  font-weight:800;
+  color:#1b1200 !important;
+  background:linear-gradient(135deg, #ffd24d, #ffb347);
+}
+
+.review-alert-count{
+  margin-top:14px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  font-weight:700;
+}
+
+@media (max-width: 768px){
+  .review-alert-box{
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .review-alert-btn{
+    width:100%;
+    text-align:center;
+    justify-content:center;
+    display:inline-flex;
+    align-items:center;
+  }
+}
 </style>
 </head>
 
@@ -2224,7 +2294,19 @@ canvas{
         </div>
 
         <section class="painel">
-          <div class="metrics" id="metrics">
+  <section id="reviewAlertBox" style="display:none;" class="review-alert-box">
+    <div class="review-alert-head">
+      <div>
+        <div class="review-alert-kicker">REVISÃO PENDENTE</div>
+        <h3 class="review-alert-title">Existem notificações aguardando correção</h3>
+        <p class="review-alert-text">Abra as notificações e ajuste os documentos devolvidos pelo controle.</p>
+      </div>
+      <a href="/notificacoes?t=cmdpii" class="review-alert-btn">Abrir notificações</a>
+    </div>
+    <div id="reviewAlertCount" class="review-alert-count">0 pendências</div>
+  </section>
+
+  <div class="metrics" id="metrics">
   <div class="metric metric--hud" id="metricAlunos">
     <div class="metric-hud-frame"></div>
     <div class="metric-hud-corners"></div>
@@ -3919,19 +4001,47 @@ function renderPendenciasPaged(){
 
     location.href = withTenant('./login.html');
   }
+async function carregarAlertaRevisoes() {
+  try {
+    const r = await fetch('/api/notificacoes/revisoes/pendentes', {
+      credentials: 'include',
+      cache: 'no-store'
+    });
 
-  async function boot(){
-    await aplicarPermissoesNoPainel();
-    await verificarUsuario();
-    await verificarAdmin();
-    await carregarMetricas();
-    await carregarPendenciasDevolucao();
+    if (!r.ok) return;
 
-    if (window._carregarAlertasComportamento) {
-      await window._carregarAlertasComportamento();
-      setInterval(window._carregarAlertasComportamento, 60000);
+    const payload = await r.json();
+    const total = Number(payload?.total || 0);
+
+    const box = document.getElementById('reviewAlertBox');
+    const count = document.getElementById('reviewAlertCount');
+
+    if (!box || !count) return;
+
+    if (total <= 0) {
+      box.style.display = 'none';
+      return;
     }
+
+    box.style.display = 'block';
+    count.textContent = `${total} pendência${total > 1 ? 's' : ''} de revisão`;
+  } catch (err) {
+    console.warn('[painel] erro ao carregar alerta de revisões:', err);
   }
+}
+  async function boot(){
+  await aplicarPermissoesNoPainel();
+  await verificarUsuario();
+  await verificarAdmin();
+  await carregarMetricas();
+  await carregarPendenciasDevolucao();
+  await carregarAlertaRevisoes();
+
+  if (window._carregarAlertasComportamento) {
+    await window._carregarAlertasComportamento();
+    setInterval(window._carregarAlertasComportamento, 60000);
+  }
+}
 
   boot();
 

@@ -508,9 +508,10 @@ router.put('/:id/revisar', autenticar, async (req, res) => {
         ...filtroInstituicaoDoUsuario(req.usuario)
       },
       {
-        status: 'revisao_solicitada',
-        avaliador: req.usuario._id,
-        comentarioMonitor: comentario || '',
+  status: 'revisao_solicitada',
+  avaliador: req.usuario._id,
+  comentarioRevisao: comentario || '',
+  comentarioMonitor: comentario || '', 
       },
       { new: true }
     );
