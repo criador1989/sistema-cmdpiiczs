@@ -851,6 +851,53 @@ router.get('/:id', autenticar, requireTenant, apenasLeitura, async (req, res) =>
   }
 });
 
+// PUT - Transferir alunos selecionados
+router.put(
+  '/transferir',
+  autenticar,
+  requireTenant,
+  attachActor,
+  apenasMonitorOuAdmin,
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+      if (!inst) {
+        return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+      }
+
+      const { alunosIds, novaTurma } = req.body;
+
+      if (!Array.isArray(alunosIds) || !alunosIds.length || !novaTurma) {
+        return res.status(400).json({ mensagem: 'Dados inválidos.' });
+      }
+
+      const result = await Aluno.updateMany(
+        tenantFilter(req, { _id: { $in: alunosIds } }),
+        { $set: { turma: normalizaTurma(novaTurma) } }
+      );
+
+      await safeAudit({
+        req,
+        event: 'ALUNO_TRANSFERIDO_LOTE',
+        targetType: 'Aluno',
+        targetId: null,
+        meta: {
+          novaTurma,
+          quantidade: result.modifiedCount
+        }
+      });
+
+      return res.json({
+        mensagem: 'Transferência realizada com sucesso.',
+        quantidade: result.modifiedCount
+      });
+    } catch (erro) {
+      console.error('Erro ao transferir alunos:', erro);
+      return res.status(500).json({ mensagem: 'Erro ao transferir alunos.' });
+    }
+  }
+);
+
 // PUT - Editar aluno
 router.put('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdmin, async (req, res) => {
   try {
@@ -1028,8 +1075,6 @@ router.delete('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdm
   }
 });
 
-module.exports = router;
-
 // POST - Transferir alunos de turma
 router.post(
   '/transferir-turma',
@@ -1175,6 +1220,55 @@ router.get(
     } catch (erro) {
       console.error('Erro ao buscar detalhes do aluno:', erro);
       res.status(500).json({ mensagem: 'Erro ao buscar detalhes do aluno.' });
+    }
+  }
+);
+// ===============================
+// 🚀 NOVA ROTA - TRANSFERÊNCIA POR IDS
+// ===============================
+router.put(
+  '/transferir',
+  autenticar,
+  requireTenant,
+  attachActor,
+  apenasMonitorOuAdmin,
+  async (req, res) => {
+    try {
+      const inst = getTenantId(req);
+      if (!inst) {
+        return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+      }
+
+      const { alunosIds, novaTurma } = req.body;
+
+      if (!Array.isArray(alunosIds) || !alunosIds.length || !novaTurma) {
+        return res.status(400).json({ mensagem: 'Dados inválidos.' });
+      }
+
+      const result = await Aluno.updateMany(
+        tenantFilter(req, { _id: { $in: alunosIds } }),
+        { turma: normalizaTurma(novaTurma) }
+      );
+
+      await safeAudit({
+        req,
+        event: 'ALUNO_TRANSFERIDO_LOTE',
+        targetType: 'Aluno',
+        targetId: null,
+        meta: {
+          novaTurma,
+          quantidade: result.modifiedCount
+        }
+      });
+
+      res.json({
+        mensagem: 'Transferência realizada com sucesso.',
+        quantidade: result.modifiedCount
+      });
+
+    } catch (erro) {
+      console.error('Erro ao transferir alunos:', erro);
+      res.status(500).json({ mensagem: 'Erro ao transferir alunos.' });
     }
   }
 );
