@@ -1,930 +1,807 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Cache-Control" content="no-store" />
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>APH - Atendimento</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icons/icon-192x192.png">
-  <meta name="theme-color" content="#0A1322">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APH - Atendimento</title>
 
-  <style>
-  /* =========================
-     TEMA GLASS (BASE GERAL)
-  ========================== */
-  :root{
-    /* fundo / vidro */
-    --bg-main: radial-gradient(circle at top left, #111827 0, #020617 45%, #000000 100%);
-    --glass-bg: rgba(15,23,42,0.92);
-    --glass-border: rgba(148,163,184,0.55);
-    --glass-highlight: rgba(255,255,255,0.80);
-
-    --glass-radius: 22px;
-    --glass-blur: 18px;
-    --glass-shadow:
-      0 2px 6px rgba(0,0,0,0.25),
-      0 14px 42px rgba(0,0,0,0.55);
-
-    /* textos / cores */
-    --text-main: #f9fafb;
-    --text-soft: rgba(249,250,251,0.86);
-    --text-muted: rgba(148,163,184,0.9);
-
-    --border-subtle: rgba(148,163,184,0.45);
-
-    --accent-1: #38bdf8; /* azul neon */
-    --accent-2: #f97316; /* laranja */
-    --accent-danger: #f43f5e;
-    --accent-success: #22c55e;
-  }
-
-  *{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-  }
-
-  html,body{
-    height:100%;
-  }
-
-  body{
-  font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color:var(--text-main);
-  background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
-  color-scheme:dark;
-  -webkit-font-smoothing:antialiased;
+<style>
+:root{
+  --bg:#0f172a;
+  --card:#111827;
+  --accent:#38bdf8;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --danger:#ef4444;
 }
 
-  /* LAYOUT GERAL */
-  .app-shell{
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-  }
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:linear-gradient(135deg,#020617,#0f172a);
+  color:var(--text);
+}
 
-  .app-header{
-    padding:12px 18px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    border-bottom:1px solid rgba(15,23,42,0.9);
-    background: linear-gradient(
-      135deg,
-      rgba(15,23,42,0.98),
-      rgba(15,23,42,0.82),
-      rgba(15,23,42,0.98)
-    );
-    backdrop-filter: blur(18px);
-    position:sticky;
-    top:0;
-    z-index:20;
-  }
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
 
-  .app-header-logo{
-    width:40px;
-    height:40px;
-    border-radius:999px;
-    border:1px solid rgba(148,163,184,0.70);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:16px;
-    font-weight:600;
-    letter-spacing:0.06em;
-  }
+.card{
+  background:rgba(17,24,39,.9);
+  border:1px solid rgba(148,163,184,.2);
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:18px;
+}
 
-  .app-header-titles{
-    display:flex;
-    flex-direction:column;
-    gap:2px;
-  }
+h2{
+  margin:0 0 10px 0;
+  font-size:16px;
+  color:#38bdf8;
+}
 
-  .app-main{
-    flex:1;
-    padding:18px;
-    display:flex;
-    justify-content:center;
-    align-items:flex-start;
-  }
+.grid{
+  display:grid;
+  gap:12px;
+}
 
-  .app-main-center{
-    width:100%;
-    max-width:1080px;
-    margin:0 auto;
-  }
+.grid-2{ grid-template-columns:1fr 1fr; }
+.grid-3{ grid-template-columns:1fr 1fr 1fr; }
 
-  .app-footer{
-    padding:10px 16px;
-    font-size:11px;
-    color:var(--text-muted);
-    text-align:right;
-    border-top:1px solid rgba(15,23,42,0.7);
-    background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(2,6,23,0.96));
-  }
+input, select, textarea{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+}
 
-  /* BOTÕES */
-  .btn{
-    border:none;
-    border-radius:999px;
-    padding:8px 14px;
-    font-size:13px;
-    font-weight:500;
-    letter-spacing:0.02em;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    background: rgba(15,23,42,0.96);
-    color:var(--text-soft);
-    border:1px solid rgba(148,163,184,0.65);
-    transition: background .18s, transform .12s, box-shadow .18s, border-color .18s;
-    text-decoration:none;
-  }
+textarea{
+  min-height:90px;
+}
 
-  .btn:hover{
-    background: rgba(15,23,42,1);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(15,23,42,0.85);
-  }
+.cards{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
 
-  .btn:active{
-    transform: translateY(0);
-    box-shadow:none;
-  }
+.card-choice{
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  cursor:pointer;
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
 
-  .btn-primary{
-    background: radial-gradient(circle at 0 0, rgba(56,189,248,0.28), rgba(15,23,42,0.96));
-    border-color: rgba(56,189,248,0.8);
-    color:#e0f2fe;
-  }
+.card-choice input{
+  accent-color:var(--accent);
+}
 
-  .btn-primary:hover{
-    background: radial-gradient(circle at 0 0, rgba(56,189,248,0.38), rgba(15,23,42,1));
-  }
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
 
-  .btn-secondary{
-    border-color: rgba(148,163,184,0.8);
-  }
+button{
+  padding:10px 16px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+}
 
-  .app-header-actions{
-    margin-left:auto;
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-  }
+.btn-primary{
+  background:linear-gradient(135deg,#1d4ed8,#38bdf8);
+  color:white;
+}
 
-  .page-title{
-    font-size:16px;
-    font-weight:600;
-    letter-spacing:0.04em;
-  }
+.btn-sec{
+  background:#1e293b;
+  color:white;
+}
 
-  .page-subtitle{
-    font-size:12px;
-    color:var(--text-muted);
-  }
+.hidden{ display:none; }
 
-  /* CARDS GLASS */
-  .glass-card{
-    position:relative;
-    background: linear-gradient(
-      135deg,
-      rgba(15,23,42,0.96),
-      rgba(15,23,42,0.82),
-      rgba(15,23,42,0.98)
-    );
-    border-radius: var(--glass-radius);
-    border:1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    padding:18px 20px;
-    backdrop-filter: blur(var(--glass-blur));
-    overflow:hidden;
-  }
-
-  .glass-card::before{
-    content:"";
-    position:absolute;
-    inset:-1px;
-    border-radius: inherit;
-    border:1px solid transparent;
-    background:
-      linear-gradient(120deg, rgba(56,189,248,0.45), rgba(249,115,22,0.25))
-      border-box;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    pointer-events:none;
-    opacity:.85;
-  }
-
-  .glass-card::after{
-    content:"";
-    position:absolute;
-    inset:-40%;
-    background:
-      radial-gradient(circle at 10% 0%, rgba(56,189,248,0.14) 0, transparent 55%),
-      radial-gradient(circle at 90% 100%, rgba(249,115,22,0.12) 0, transparent 52%),
-      linear-gradient(115deg, rgba(148,163,184,0.18) 0, transparent 60%);
-    opacity:0.9;
-    pointer-events:none;
-  }
-
-  .glass-card > *{
-    position:relative;
-    z-index:1;
-  }
-
-  .page{
-    animation:fadeIn .35s ease-out both;
-  }
-
-  @keyframes fadeIn{
-    from{opacity:0;transform:translateY(10px)}
-    to{opacity:1;transform:none}
-  }
-
-  .section{
-    margin-top:16px;
-  }
-
-  .legend{
-    font-weight:700;
-    color:var(--text-soft);
-    margin-bottom:10px;
-    letter-spacing:.3px;
-    font-size:14px;
-    text-transform:uppercase;
-  }
-
-  /* FORM / GRID */
-  .grid-3{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:12px;
-  }
-
-  .grid-2{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-
-  @media (max-width:980px){
-    .grid-3{grid-template-columns:1fr 1fr;}
-  }
-  @media (max-width:680px){
-    .grid-3,
-    .grid-2{grid-template-columns:1fr;}
-    .app-main{padding:12px;}
-    .glass-card{padding:16px;}
-  }
-
-  label{
-    font-weight:600;
-    font-size:13px;
-    color:var(--text-soft);
-    display:block;
-    margin-bottom:4px;
-  }
-
-  .input,
-  select,
-  textarea{
-    width:100%;
-    padding:9px 11px;
-    border-radius:12px;
-    border:1px solid var(--border-subtle);
-    background:rgba(15,23,42,0.96);
-    color:var(--text-main);
-    font-size:13px;
-    outline:none;
-    transition:border-color .18s, box-shadow .18s, background .18s;
-  }
-
-  .input:focus,
-  select:focus,
-  textarea:focus{
-    border-color:var(--accent-1);
-    box-shadow:0 0 0 1px rgba(56,189,248,0.40);
-    background:rgba(15,23,42,0.9);
-  }
-
-  textarea{
-    resize:vertical;
-    min-height:90px;
-  }
-
-  select option{
-    background-color:#020617;
-    color:var(--text-main);
-  }
-
-  .row{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 10px;
-    border-radius:999px;
-    border:1px solid var(--border-subtle);
-    background:rgba(15,23,42,0.96);
-    font-size:12px;
-    color:var(--text-soft);
-  }
-
-  .muted{
-    color:var(--text-muted);
-    font-size:12px;
-  }
-
-  .right{
-    margin-left:auto;
-  }
-
-  .cards{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-
-  @media (max-width:980px){
-    .cards{grid-template-columns:1fr;}
-  }
-
-  .cardChoice{
-    position:relative;
-    display:flex;
-    align-items:flex-start;
-    gap:12px;
-    padding:12px;
-    border-radius:14px;
-    background:rgba(15,23,42,0.96);
-    border:1px solid var(--border-subtle);
-    transition:.2s border-color,.2s background,.2s filter;
-    cursor:pointer;
-  }
-
-  .cardChoice:hover{
-    filter:brightness(1.06);
-  }
-
-  .cardChoice input[type="checkbox"]{
-    position:absolute;
-    opacity:0;
-    inset:0;
-    cursor:pointer;
-  }
-
-  .cardChoice:has(input:checked){
-    background:linear-gradient(135deg, rgba(56,189,248,0.20), rgba(15,23,42,1));
-    border-color:rgba(56,189,248,0.7);
-    box-shadow:0 8px 28px rgba(15,23,42,0.9) inset;
-  }
-
-  .check{
-    width:20px;
-    height:20px;
-    border-radius:6px;
-    border:2px solid rgba(148,163,184,0.8);
-    background:rgba(15,23,42,0.9);
-    margin-top:2px;
-    flex:0 0 20px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-
-  .cardChoice:has(input:checked) .check{
-    border-color:var(--accent-1);
-    background:linear-gradient(180deg, rgba(56,189,248,.9), rgba(37,99,235,.9));
-    box-shadow:0 0 0 3px rgba(56,189,248,.35);
-  }
-
-  .icon{
-    width:28px;
-    height:28px;
-    display:grid;
-    place-items:center;
-    border-radius:8px;
-    background:rgba(15,23,42,0.96);
-    border:1px solid var(--border-subtle);
-    flex:0 0 28px;
-    font-size:16px;
-  }
-
-  .ctitle{
-    font-weight:600;
-    color:var(--text-main);
-    font-size:13px;
-  }
-
-  .cdesc{
-    color:var(--text-muted);
-    font-size:12px;
-    margin-top:2px;
-  }
-
-  .actions{
-    display:flex;
-    gap:10px;
-    justify-content:flex-end;
-    margin-top:16px;
-  }
-
-  .small{
-    font-size:.88rem;
-    color:var(--text-muted);
-  }
-
-  .switch{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    user-select:none;
-    cursor:pointer;
-    font-size:13px;
-    color:var(--text-soft);
-  }
-
-  .switch input{
-    width:18px;
-    height:18px;
-    accent-color:var(--accent-1);
-  }
-
-  .toast{
-    position:fixed;
-    left:50%;
-    bottom:24px;
-    transform:translateX(-50%);
-    background:rgba(15,23,42,0.96);
-    border:1px solid rgba(148,163,184,0.8);
-    color:var(--text-main);
-    padding:10px 14px;
-    border-radius:12px;
-    box-shadow:0 12px 35px rgba(0,0,0,.55);
-    z-index:9999;
-    display:none;
-    backdrop-filter:blur(10px);
-    font-size:13px;
-  }
-
-  .toast.ok{
-    border-color:#22c55e;
-  }
-
-  .toast.err{
-    border-color:#ef4444;
-  }
-
-  .glass-card.section{
-    padding:18px;
-  }
-
-  @media print{
-    body{
-      background:#ffffff !important;
-      color:#000000 !important;
-    }
-    .app-header,
-    .app-footer,
-    .btn{
-      display:none !important;
-    }
-    .glass-card{
-      box-shadow:none !important;
-      border:1px solid #999 !important;
-      background:#ffffff !important;
-    }
-    .badge{
-      background:#f3f4f6 !important;
-      border-color:#d1d5db !important;
-      color:#111827 !important;
-    }
-    .toast{
-      display:none !important;
-    }
-  }
-  </style>
+</style>
 </head>
+
 <body>
-  <div class="app-shell">
 
-    <!-- CABEÇALHO -->
-    <header class="app-header">
-      <div class="app-header-logo">APH</div>
-      <div class="app-header-titles">
-        <span id="title" class="page-title">APH - Atendimento</span>
-        <span class="page-subtitle">Registro de Atendimento Pré-Hospitalar</span>
-      </div>
+<div class="container">
+<form id="formAPH">
 
-      <div class="app-header-actions">
-        <button class="btn btn-secondary" id="btnVoltar">← Ficha do Aluno</button>
-        <a class="btn btn-secondary" href="/painel.html">🏠 Painel</a>
-        <button class="btn btn-secondary" id="btnLimpar">Limpar</button>
-        <button class="btn btn-primary" id="btnSalvar">Salvar</button>
-        <button class="btn btn-primary" id="btnEditar" style="display:none">✏️ Editar</button>
-      </div>
-    </header>
+<!-- IDENTIFICAÇÃO -->
+<div class="card">
+<h2>1. Identificação do Registro</h2>
 
-    <!-- CONTEÚDO -->
-    <main class="app-main">
-      <div class="app-main-center">
-        <div class="page">
+<div class="grid grid-3">
+<div>
+<label>Nº Registro</label>
+<input id="numeroRegistro" disabled>
+</div>
 
-          <!-- Identificação & Contexto -->
-          <section class="glass-card section">
-            <div class="legend">Identificação & Contexto</div>
-            <div class="grid-3">
-              <div>
-                <label>Responsável pelo registro</label>
-                <input id="inpResp" class="input" placeholder="Nome do monitor/professor/bombeiro">
-              </div>
-              <div>
-                <label>Local do ocorrido</label>
-                <select id="inpLocal" class="input">
-                  <option value="">Selecione...</option>
-                  <option>Sala</option><option>Pátio</option><option>Quadra</option>
-                  <option>Corredor</option><option>Refeitório</option><option>Banheiro</option>
-                  <option>Entrada/Saída</option><option>Área externa</option><option>Outro</option>
-                </select>
-              </div>
-              <div>
-                <label>Horário aproximado</label>
-                <input id="inpHora" type="time" class="input">
-              </div>
-            </div>
-            <div class="row" style="margin-top:8px">
-              <span class="badge">Aluno: <b id="alunoNome" style="margin-left:6px">—</b></span>
-              <span class="badge">Turma: <b id="alunoTurma" style="margin-left:6px">—</b></span>
-              <span class="right small">
-                <input id="inpData" type="date" class="input" style="width:auto">
-              </span>
-            </div>
-          </section>
+<div>
+<label>Data</label>
+<input type="date" id="data">
+</div>
 
-          <!-- Tipo de Ocorrência -->
-          <section class="glass-card section">
-            <div class="legend">Tipo de Ocorrência</div>
-            <div id="tiposBox" class="cards"></div>
-          </section>
+<div>
+<label>Hora início</label>
+<input type="time" id="horaInicio">
+</div>
+</div>
 
-          <!-- Materiais & Procedimentos -->
-          <section class="glass-card section">
-            <div class="legend">Materiais & Procedimentos</div>
-            <div id="materiaisBox" class="cards"></div>
-            <div style="margin-top:12px">
-              <label>Observações</label>
-              <textarea id="inpObs" class="input" placeholder="Breve descrição e evolução imediata..."></textarea>
-            </div>
-          </section>
+<div class="grid grid-3" style="margin-top:10px">
+<div>
+<label>Hora fim</label>
+<input type="time" id="horaFim">
+</div>
 
-          <!-- Encaminhamento -->
-          <section class="glass-card section">
-            <div class="legend">Encaminhamento</div>
-            <div class="row" style="margin-bottom:10px">
-              <label class="switch">
-                <input type="checkbox" id="chkEncaminhamento">
-                <span>Houve encaminhamento</span>
-              </label>
-              <span class="muted">Marque se o aluno foi encaminhado (posto de saúde, hospital, etc.).</span>
-            </div>
-            <div>
-              <label>Para onde / como foi encaminhado</label>
-              <textarea id="txtEncaminhamento" class="input" placeholder="Ex.: Responsáveis acionados; aluno conduzido ao UPA; ..."></textarea>
-            </div>
-          </section>
+<div>
+<label>Local</label>
+<select id="local">
+<option>Sala</option>
+<option>Pátio</option>
+<option>Quadra</option>
+<option>Corredor</option>
+<option>Outro</option>
+</select>
+</div>
 
-          <!-- Comunicação -->
-          <section class="glass-card section">
-            <div class="legend">Comunicação</div>
-            <div class="grid-2">
-              <div>
-                <label>Responsáveis informados?</label>
-                <select id="selRespInf" class="input">
-                  <option value="Não">Não</option>
-                  <option value="Sim">Sim</option>
-                </select>
-              </div>
-              <div>
-                <label>Meio</label>
-                <select id="selMeio" class="input">
-                  <option value="">—</option>
-                  <option value="Email">E-mail</option>
-                  <option value="Telegram">Telegram</option>
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="Telefone">Telefone</option>
-                  <option value="Agenda">Agenda</option>
-                </select>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn btn-secondary" id="btnLimpar2">Limpar</button>
-              <button class="btn btn-primary" id="btnSalvar2">Salvar</button>
-            </div>
-          </section>
+<div id="localOutroBox" class="hidden">
+<label>Outro local</label>
+<input id="localOutro">
+</div>
+</div>
 
-        </div>
-      </div>
-    </main>
+<div style="margin-top:10px">
+<label>Servidor responsável</label>
+<input id="servidor">
+</div>
 
-    <!-- RODAPÉ -->
-    <footer class="app-footer">
-      CMDPII/CZS — APH Atendimento
-    </footer>
-  </div>
+</div>
 
-  <div id="toast" class="toast"></div>
+<!-- ALUNO -->
+<div class="card">
+<h2>2. Identificação do Aluno</h2>
+
+<div class="grid grid-3">
+<input id="alunoNome" placeholder="Nome">
+<input id="turma" placeholder="Turma">
+<input id="matricula" placeholder="Matrícula">
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<input type="date" id="nascimento">
+<input id="telefoneAluno" placeholder="Telefone">
+</div>
+
+</div>
+
+<!-- RESPONSÁVEL -->
+<div class="card">
+<h2>3. Responsável</h2>
+
+<div class="grid grid-2">
+<input id="respNome" placeholder="Nome do responsável">
+<input id="respVinculo" placeholder="Vínculo">
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<input id="respTel1" placeholder="Telefone principal">
+<input id="respTel2" placeholder="Telefone secundário">
+</div>
+
+</div><!-- CLASSIFICAÇÃO -->
+<div class="card">
+<h2>4. Classificação da Ocorrência / Intercorrência</h2>
+
+<div class="cards" id="boxClassificacoes">
+<label class="card-choice"><input type="checkbox" value="Mal-estar"> Mal-estar</label>
+<label class="card-choice"><input type="checkbox" value="Tontura"> Tontura</label>
+<label class="card-choice"><input type="checkbox" value="Desmaio"> Desmaio</label>
+<label class="card-choice"><input type="checkbox" value="Crise emocional/ansiedade"> Crise emocional / ansiedade</label>
+<label class="card-choice"><input type="checkbox" value="Escoriação"> Escoriação</label>
+<label class="card-choice"><input type="checkbox" value="Pequeno corte"> Pequeno corte</label>
+<label class="card-choice"><input type="checkbox" value="Queda"> Queda</label>
+<label class="card-choice"><input type="checkbox" value="Ocorrência em atividade física"> Atividade física</label>
+<label class="card-choice"><input type="checkbox" value="Náusea/vômito"> Náusea / vômito</label>
+<label class="card-choice"><input type="checkbox" value="Cefaleia/dor"> Cefaleia / dor</label>
+<label class="card-choice"><input type="checkbox" value="Outro" id="chkClassOutro"> Outro</label>
+</div>
+
+<div id="classOutroBox" class="hidden" style="margin-top:10px">
+<label>Outro tipo de ocorrência</label>
+<input id="classificacaoOutro">
+</div>
+</div>
+
+<!-- DESCRIÇÃO -->
+<div class="card">
+<h2>5. Descrição Objetiva dos Fatos</h2>
+<textarea id="descricaoFatos" placeholder="Relate de forma clara, impessoal e cronológica os fatos observados e/ou informados, sem juízo de valor."></textarea>
+</div>
+
+<!-- SINAIS -->
+<div class="card">
+<h2>6. Sinais Observados / Queixa Apresentada</h2>
+<textarea id="sinaisESintomas" placeholder="Ex.: dor, tontura, sangramento, ansiedade, náusea, palidez, choro, dificuldade de locomoção..."></textarea>
+</div>
+
+<!-- PROVIDÊNCIAS -->
+<div class="card">
+<h2>7. Providências Adotadas pela Equipe Escolar</h2>
+
+<div class="cards" id="boxProvidencias">
+<label class="card-choice"><input type="checkbox" value="Acolhimento inicial"> Acolhimento inicial</label>
+<label class="card-choice"><input type="checkbox" value="Observação do aluno"> Observação do aluno</label>
+<label class="card-choice"><input type="checkbox" value="Primeiros socorros"> Primeiros socorros</label>
+<label class="card-choice"><input type="checkbox" value="Encaminhamento para ambiente de observação"> Ambiente de observação</label>
+<label class="card-choice"><input type="checkbox" value="Acionamento da Direção"> Direção</label>
+<label class="card-choice"><input type="checkbox" value="Acionamento da Coordenação de Ensino"> Coordenação de Ensino</label>
+<label class="card-choice"><input type="checkbox" value="Acionamento da Coordenação Pedagógica"> Coordenação Pedagógica</label>
+<label class="card-choice"><input type="checkbox" value="Comunicação aos pais/responsáveis"> Comunicação aos responsáveis</label>
+<label class="card-choice"><input type="checkbox" value="Encaminhamento ao pronto socorro"> Pronto socorro</label>
+<label class="card-choice"><input type="checkbox" value="Outro" id="chkProvOutro"> Outro</label>
+</div>
+
+<div id="provOutroBox" class="hidden" style="margin-top:10px">
+<label>Outra providência</label>
+<input id="providenciaOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Descrição das providências adotadas</label>
+<textarea id="descricaoProvidencias" placeholder="Descreva de forma objetiva o que foi feito pela equipe escolar."></textarea>
+</div>
+</div>
+
+<!-- MATERIAIS / PROCEDIMENTOS -->
+<div class="card">
+<h2>Materiais / Recursos Utilizados</h2>
+
+<div class="cards" id="boxMateriais">
+<label class="card-choice"><input type="checkbox" value="Curativo simples"> Curativo simples</label>
+<label class="card-choice"><input type="checkbox" value="Gaze / Atadura"> Gaze / Atadura</label>
+<label class="card-choice"><input type="checkbox" value="Antisséptico"> Antisséptico</label>
+<label class="card-choice"><input type="checkbox" value="Bolsa de gelo"> Bolsa de gelo</label>
+<label class="card-choice"><input type="checkbox" value="Imobilização provisória"> Imobilização provisória</label>
+<label class="card-choice"><input type="checkbox" value="Higienização"> Higienização</label>
+<label class="card-choice"><input type="checkbox" value="Hidratação"> Hidratação</label>
+<label class="card-choice"><input type="checkbox" value="Máscara fornecida"> Máscara fornecida</label>
+<label class="card-choice"><input type="checkbox" value="Apoio emocional"> Apoio emocional</label>
+</div>
+
+<div style="margin-top:10px">
+<label>Procedimentos complementares</label>
+<textarea id="procedimentos" placeholder="Detalhe algum procedimento complementar, se necessário."></textarea>
+</div>
+</div>
+
+<!-- EVOLUÇÃO -->
+<div class="card">
+<h2>8. Tempo de Observação e Evolução do Quadro</h2>
+
+<div class="grid grid-2">
+<div>
+<label>Tempo de observação</label>
+<input id="tempoObservacao" placeholder="Ex.: 15 minutos, 30 minutos, 1 hora">
+</div>
+
+<div>
+<label>Evolução observada</label>
+<select id="evolucaoQuadro">
+<option value="">Selecione</option>
+<option>Houve melhora</option>
+<option>Não houve melhora satisfatória</option>
+<option>Houve agravamento</option>
+<option>Situação estabilizada</option>
+<option>Outro</option>
+</select>
+</div>
+</div>
+
+<div id="evolucaoOutroBox" class="hidden" style="margin-top:10px">
+<label>Outra evolução observada</label>
+<input id="evolucaoOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Descrição complementar da evolução</label>
+<textarea id="descricaoEvolucao" placeholder="Descreva como o aluno evoluiu durante o período de observação."></textarea>
+</div>
+</div><!-- COMUNICAÇÃO -->
+<div class="card">
+<h2>9. Comunicação aos Pais ou Responsáveis</h2>
+
+<div class="grid grid-3">
+<div>
+<label>Responsáveis informados?</label>
+<select id="responsaveisInformados">
+<option value="Não">Não</option>
+<option value="Sim">Sim</option>
+</select>
+</div>
+
+<div>
+<label>Data do contato</label>
+<input type="date" id="dataContato">
+</div>
+
+<div>
+<label>Hora do contato</label>
+<input type="time" id="horaContato">
+</div>
+</div>
+
+<div style="margin-top:10px">
+<label>Meio utilizado</label>
+<div class="cards" id="boxMeios">
+<label class="card-choice"><input type="checkbox" value="Ligação telefônica"> Ligação telefônica</label>
+<label class="card-choice"><input type="checkbox" value="WhatsApp"> WhatsApp</label>
+<label class="card-choice"><input type="checkbox" value="Mensagem escrita"> Mensagem escrita</label>
+<label class="card-choice"><input type="checkbox" value="Presencial"> Presencial</label>
+<label class="card-choice"><input type="checkbox" value="Outro" id="chkMeioOutro"> Outro</label>
+</div>
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Nome da pessoa contatada</label>
+<input id="nomePessoaContatada">
+</div>
+
+<div>
+<label>Vínculo com o aluno</label>
+<input id="vinculoComAluno">
+</div>
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Houve êxito no contato?</label>
+<select id="houveExitoContato">
+<option value="Sim">Sim</option>
+<option value="Não">Não</option>
+</select>
+</div>
+
+<div>
+<label>Orientação principal</label>
+<select id="orientacaoRapida">
+<option value="">Selecione</option>
+<option>Ciência da ocorrência</option>
+<option>Comparecer imediatamente à escola</option>
+<option>Buscar o aluno na escola</option>
+<option>Dirigir-se ao pronto socorro</option>
+<option>Acompanhar/receber o aluno na unidade de saúde</option>
+<option>Outro</option>
+</select>
+</div>
+</div>
+
+<div id="orientacaoOutroBox" class="hidden" style="margin-top:10px">
+<label>Outra orientação</label>
+<input id="orientacaoOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Síntese da informação prestada</label>
+<textarea id="sinteseInformacaoPrestada" placeholder="Informe, de forma objetiva, o que foi comunicado ao responsável."></textarea>
+</div>
+</div>
+
+<!-- DESFECHO -->
+<div class="card">
+<h2>10. Desfecho da Ocorrência / Intercorrência</h2>
+
+<div>
+<label>Desfecho</label>
+<select id="desfecho">
+<option value="">Selecione</option>
+<option>Aluno retornou à sala de aula</option>
+<option>Aluno permaneceu em observação e foi liberado ao responsável</option>
+<option>Aluno foi entregue ao responsável na escola</option>
+<option>Aluno foi encaminhado ao pronto socorro</option>
+<option>Aluno foi entregue à equipe plantonista da unidade de saúde</option>
+<option>Outro</option>
+</select>
+</div>
+
+<div id="desfechoOutroBox" class="hidden" style="margin-top:10px">
+<label>Outro desfecho</label>
+<input id="desfechoOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Descrição do desfecho</label>
+<textarea id="descricaoDesfecho" placeholder="Descreva como a situação foi finalizada."></textarea>
+</div>
+
+<div style="margin-top:10px">
+<label>
+<input type="checkbox" id="houveEncaminhamento" style="width:auto">
+Houve encaminhamento externo?
+</label>
+</div>
+
+<div id="encaminhamentoBox" class="hidden" style="margin-top:10px">
+<label>Encaminhamento</label>
+<textarea id="encaminhamento" placeholder="Ex.: Responsável conduziu ao pronto socorro; aluno entregue à equipe da unidade de saúde..."></textarea>
+</div>
+</div>
+
+<!-- OBSERVAÇÕES -->
+<div class="card">
+<h2>11. Observações Complementares</h2>
+<textarea id="observacoes" placeholder="Registre observações adicionais, se necessário."></textarea>
+</div>
+
+<!-- ASSINATURAS -->
+<div class="card">
+<h2>12. Assinaturas / Visto</h2>
+
+<div class="grid grid-2">
+<div>
+<label>Nome do servidor responsável</label>
+<input id="assinServidorNome">
+</div>
+
+<div>
+<label>Função do servidor</label>
+<input id="assinServidorFuncao">
+</div>
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Visto da Direção/Coordenação</label>
+<input id="vistoNome">
+</div>
+
+<div>
+<label>Função</label>
+<input id="vistoFuncao">
+</div>
+</div>
+</div>
+
+<div class="actions">
+<button type="button" class="btn-sec" id="btnVoltar">Cancelar</button>
+<button type="submit" class="btn-primary">Salvar Atendimento</button>
+</div>
+
+</form>
+</div>
 
 <script>
-/* ===== helpers / dados ===== */
-const $ = (s)=>document.querySelector(s);
+const $ = (s) => document.querySelector(s);
 const params = new URLSearchParams(location.search);
-let alunoId = params.get('alunoId') || params.get('id') || '';   // pode vir vazio e ser preenchido após carregar o doc
-const atendimentoId = params.get('id');                          // id do atendimento (quando VER/EDITAR)
-const modeParam = (params.get('mode') || '').toLowerCase();
-let mode = atendimentoId ? (modeParam || 'view') : 'new';        // new | view | edit
 
-const TIPOS = [
-  { t:'Arranhão / escoriação', i:'🩹', d:'Limpeza e curativo simples.' },
-  { t:'Corte leve',            i:'✂️', d:'Antisséptico + gaze/atadura.' },
-  { t:'Queimadura',            i:'🔥', d:'Resfriamento local.' },
-  { t:'Torção',                i:'🧊', d:'Gelo + repouso.' },
-  { t:'Luxação',               i:'🦴', d:'Imobilização provisória.' },
-  { t:'Fratura suspeita',      i:'🩻', d:'Imobilizar e encaminhar.' },
-  { t:'Sangramento nasal',     i:'🩸', d:'Compressão suave.' },
-  { t:'Queda',                 i:'⬇️', d:'Inspeção; gelo se preciso.' },
-  { t:'Convulsão / crise epiléptica', i:'⚡', d:'Proteger cabeça; lateralizar.' },
-  { t:'Ansiedade / pânico',    i:'🫱', d:'Ambiente calmo; respiração guiada.' },
-  { t:'Gripe/febre/tosse (máscara)', i:'😷', d:'Máscara oferecida.' },
-  { t:'Outro',                 i:'📝', d:'Especificar nas observações.' }
-];
+const alunoId = params.get('alunoId') || params.get('id') || '';
+const atendimentoId = params.get('atendimentoId') || params.get('aid') || params.get('idAtendimento') || '';
+const modo = (params.get('mode') || '').toLowerCase();
 
-const MATERIAIS = [
-  { t:'Curativo simples',  i:'🩹', d:'Bandagem, micropore, etc.' },
-  { t:'Gaze / Atadura',    i:'🧻', d:'Compressão / fixação.' },
-  { t:'Antisséptico',      i:'🧴', d:'Clorexidina / iodo.' },
-  { t:'Bolsa de gelo',     i:'🧊', d:'Com proteção têxtil.' },
-  { t:'Imobilização provisória', i:'🦴', d:'Até avaliação.' },
-  { t:'Compressa morna/fria', i:'🧯', d:'Conforme orientação.' },
-  { t:'Higienização',      i:'🧼', d:'Limpeza inicial.' },
-  { t:'Hidratação',        i:'💧', d:'Água oferecida.' },
-  { t:'Máscara fornecida', i:'😷', d:'Sintomas respiratórios.' },
-  { t:'Apoio emocional',   i:'💬', d:'Acolhimento.' },
-  { t:'Encaminhado ao hospital/posto', i:'🏥', d:'Registrado abaixo.' },
-  { t:'Contato responsável', i:'📞', d:'Ver comunicação.' }
-];
-
-function toast(msg, type='ok'){
-  const el = $('#toast');
-  el.className = `toast ${type==='error'?'err':'ok'}`;
-  el.textContent = msg;
-  el.style.display = 'block';
-  clearTimeout(el._t);
-  el._t = setTimeout(()=>{ el.style.display='none'; }, 2600);
+function hojeISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-/* Montagem dos cards com checkbox visível */
-function cardList(container, items){
-  container.innerHTML = items.map((o,idx)=>`
-    <label class="cardChoice" data-idx="${idx}">
-      <input type="checkbox" value="${o.t}">
-      <span class="check" aria-hidden="true"></span>
-      <span class="icon">${o.i||'•'}</span>
-      <div>
-        <div class="ctitle">${o.t}</div>
-        <div class="cdesc">${o.d||''}</div>
-      </div>
-    </label>
-  `).join('');
+function horaAtual(){
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
-function selected(container){ return Array.from(container.querySelectorAll('input:checked')).map(i=>i.value); }
-function setSelected(container, values = []){
-  const set = new Set(values);
-  container.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+
+function selecionados(boxId){
+  return Array.from(document.querySelectorAll(`#${boxId} input[type="checkbox"]:checked`))
+    .map(i => i.value)
+    .filter(Boolean);
+}
+
+function setSelecionados(boxId, valores = []){
+  const set = new Set(Array.isArray(valores) ? valores : []);
+  document.querySelectorAll(`#${boxId} input[type="checkbox"]`).forEach(cb => {
     cb.checked = set.has(cb.value);
   });
 }
 
-/* fetch com timeout */
 async function api(path, opts = {}){
-  const ctl = new AbortController();
-  const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000);
-  try{
-    const r = await fetch(`/api${path.startsWith('/')?path:`/${path}`}`, {
-      credentials:'include',
-      method: opts.method || 'GET',
-      headers: { 'Content-Type':'application/json' },
-      body: opts.body,
-      signal: ctl.signal
-    });
-    const ct = r.headers.get('content-type')||'';
-    const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
-    if (r.status === 401) { alert('Sessão expirada. Faça login.'); location.href='/login.html'; return Promise.reject(new Error('401')); }
-    if(!r.ok) throw new Error(data.message || data.error || `Erro ${r.status}`);
-    return data;
-  } finally { clearTimeout(id); }
-}
-
-/* ===== Modo (view/edit/new) ===== */
-function applyMode(){
-  const isView = (mode === 'view');
-  const isNew  = (mode === 'new');
-  const isEdit = (mode === 'edit');
-
-  $('#title').textContent =
-    isNew  ? 'APH - Novo Atendimento' :
-    isEdit ? 'APH - Editar Atendimento' :
-             'APH - Visualização do Atendimento';
-
-  $('#btnSalvar').style.display  = (isNew || isEdit) ? '' : 'none';
-  $('#btnSalvar2').style.display = (isNew || isEdit) ? '' : 'none';
-  $('#btnLimpar').style.display  = isNew ? '' : 'none';
-  $('#btnLimpar2').style.display = isNew ? '' : 'none';
-  $('#btnEditar').style.display  = isView ? '' : 'none';
-
-  const disable = isView;
-  document.querySelectorAll('input, select, textarea').forEach(el=>{
-    if (el.id !== 'btnVoltar') el.disabled = disable && el.id !== 'inpData';
+  const res = await fetch(path, {
+    credentials:'include',
+    method: opts.method || 'GET',
+    headers:{ 'Content-Type':'application/json', Accept:'application/json' },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    cache:'no-store'
   });
-  $('#inpData').disabled = disable;
 
-  toggleEncaminhamento();
+  const ct = res.headers.get('content-type') || '';
+  const data = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
+
+  if(res.status === 401){
+    alert('Sessão expirada. Faça login novamente.');
+    location.href = '/login.html';
+    throw new Error('401');
+  }
+
+  if(!res.ok){
+    throw new Error(data.message || data.error || `Erro ${res.status}`);
+  }
+
+  return data;
 }
 
-/* ===== aluno ===== */
 async function carregarAluno(){
   if(!alunoId) return;
-  const { aluno } = await api(`/ficha/dados/${alunoId}`);
-  $('#alunoNome').textContent = aluno?.nome || '—';
-  $('#alunoTurma').textContent = aluno?.turma || '—';
-}
 
-/* ===== carregar atendimento (quando id) ===== */
-async function carregarAtendimento(){
-  if (!atendimentoId) return;
+  try{
+    const j = await api(`/api/ficha/dados/${alunoId}`);
+    const a = j.aluno || j || {};
 
-  const at = await api(`/aph/atendimentos/${atendimentoId}`);
-  if (!alunoId && at?.alunoId) alunoId = String(at.alunoId);
+    $('#alunoNome').value = a.nome || '';
+    $('#turma').value = a.turma || '';
+    $('#matricula').value = a.matricula || a.codigoAcesso || '';
 
-  $('#inpResp').value  = at.responsavel || '';
-  $('#inpLocal').value = at.local || '';
-  $('#inpHora').value  = (at.hora || '').slice(0,5);
+    if(a.nascimento){
+      $('#nascimento').value = String(a.nascimento).slice(0,10);
+    }
 
-  const d = at.data ? new Date(at.data) : null;
-  $('#inpData').value = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
+    $('#telefoneAluno').value = a.telefone || a.contatos?.whatsapp || '';
 
-  setSelected($('#tiposBox'), at.tipos || []);
-  setSelected($('#materiaisBox'), at.materiais || []);
-
-  $('#inpObs').value     = at.observacoes || at.observacao || '';
-  $('#selRespInf').value = (at.responsaveisInformados === 'Sim') ? 'Sim' : 'Não';
-  $('#selMeio').value    = at.meioComunicacao || '';
-  $('#chkEncaminhamento').checked = !!(at.houveEncaminhamento || at.encaminhamento);
-  $('#txtEncaminhamento').value   = at.encaminhamento || '';
-
-  toggleEncaminhamento();
-
-  await carregarAluno().catch(()=>{});
-}
-
-/* ===== controles de formulário ===== */
-function limpar(){
-  $('#inpResp').value=''; $('#inpLocal').value='';
-  const now=new Date();
-  $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  $('#inpData').value=now.toISOString().slice(0,10);
-  $('#inpObs').value='';
-  $('#selRespInf').value='Não'; $('#selMeio').value='';
-  $('#chkEncaminhamento').checked=false; toggleEncaminhamento();
-  document.querySelectorAll('.cards input[type="checkbox"]').forEach(cb=>cb.checked=false);
-}
-function toggleEncaminhamento(){
-  const on = $('#chkEncaminhamento').checked;
-  const txt = $('#txtEncaminhamento');
-  txt.disabled = !on || (mode==='view');
-  txt.style.opacity = on ? '1' : '.65';
-}
-
-let saving=false;
-function setSavingState(on){
-  saving=on;
-  ['#btnSalvar','#btnSalvar2','#btnLimpar','#btnLimpar2','#btnVoltar','#btnEditar'].forEach(sel=>{
-    const b=$(sel); if(b) b && (b.disabled=on);
-  });
-  const b1=$('#btnSalvar'), b2=$('#btnSalvar2');
-  if(on){
-    if(b1) b1.textContent=(mode==='edit'?'Atualizando...':'Salvando...');
-    if(b2) b2.textContent=b1.textContent;
-  } else {
-    if(b1) b1.textContent=(mode==='edit'?'Atualizar':'Salvar');
-    if(b2) b2.textContent=b1.textContent;
+    $('#respNome').value = a.nomeResponsavel || a.responsavel?.nome || a.nomeMae || a.nomePai || '';
+    $('#respTel1').value = a.telefone || a.contatos?.whatsapp || '';
+  }catch(e){
+    console.warn('Falha ao carregar aluno:', e);
   }
 }
 
-function payloadFromUI(){
+async function carregarAtendimento(){
+  if(!atendimentoId || modo === 'new') return;
+
+  try{
+    const at = await api(`/api/aph/atendimentos/${atendimentoId}`);
+
+    $('#numeroRegistro').value = at.numeroRegistro || '';
+    $('#data').value = at.data ? String(at.data).slice(0,10) : hojeISO();
+    $('#horaInicio').value = at.horaInicioAtendimento || at.hora || '';
+    $('#horaFim').value = at.horaEncerramentoAtendimento || '';
+
+    $('#local').value = at.local || 'Sala';
+    $('#localOutro').value = at.localOutro || '';
+    $('#servidor').value = at.servidorResponsavelRegistro || at.responsavel || '';
+
+    $('#alunoNome').value = at.alunoNomeSnapshot || $('#alunoNome').value;
+    $('#turma').value = at.alunoTurmaSnapshot || $('#turma').value;
+    $('#matricula').value = at.alunoMatriculaSnapshot || $('#matricula').value;
+    if(at.alunoNascimentoSnapshot) $('#nascimento').value = String(at.alunoNascimentoSnapshot).slice(0,10);
+
+    $('#respNome').value = at.responsavelContato?.nome || '';
+    $('#respVinculo').value = at.responsavelContato?.vinculo || '';
+    $('#respTel1').value = at.responsavelContato?.telefonePrincipal || '';
+    $('#respTel2').value = at.responsavelContato?.telefoneSecundario || '';
+
+    setSelecionados('boxClassificacoes', at.classificacoes || at.tipos || []);
+    $('#classificacaoOutro').value = at.classificacaoOutro || '';
+    $('#descricaoFatos').value = at.descricaoFatos || '';
+    $('#sinaisESintomas').value = at.sinaisESintomas || at.queixaAluno || '';
+
+    setSelecionados('boxProvidencias', at.providenciasAdotadas || []);
+    $('#providenciaOutro').value = at.providenciaOutro || '';
+    $('#descricaoProvidencias').value = at.descricaoProvidencias || at.procedimentos || '';
+
+    setSelecionados('boxMateriais', at.materiais || []);
+    $('#procedimentos').value = at.procedimentos || '';
+
+    $('#tempoObservacao').value = at.tempoObservacao || '';
+    $('#evolucaoQuadro').value = at.evolucaoQuadro || '';
+    $('#evolucaoOutro').value = at.evolucaoOutro || '';
+    $('#descricaoEvolucao').value = at.descricaoEvolucao || '';
+
+    $('#responsaveisInformados').value = at.responsaveisInformados || at.comunicacaoPais?.houveComunicacao || 'Não';
+    if(at.comunicacaoPais?.dataContato) $('#dataContato').value = String(at.comunicacaoPais.dataContato).slice(0,10);
+    $('#horaContato').value = at.comunicacaoPais?.horaContato || '';
+
+    setSelecionados('boxMeios', at.comunicacaoPais?.meiosUtilizados || []);
+    $('#nomePessoaContatada').value = at.comunicacaoPais?.nomePessoaContatada || '';
+    $('#vinculoComAluno').value = at.comunicacaoPais?.vinculoComAluno || '';
+    $('#houveExitoContato').value = at.comunicacaoPais?.houveExitoContato || 'Sim';
+
+    const orientacoes = at.comunicacaoPais?.orientacoesTransmitidas || [];
+    $('#orientacaoRapida').value = orientacoes[0] || '';
+    $('#orientacaoOutro').value = at.comunicacaoPais?.orientacaoOutro || '';
+    $('#sinteseInformacaoPrestada').value = at.comunicacaoPais?.sinteseInformacaoPrestada || '';
+
+    $('#desfecho').value = at.desfecho || '';
+    $('#desfechoOutro').value = at.desfechoOutro || '';
+    $('#descricaoDesfecho').value = at.descricaoDesfecho || '';
+    $('#houveEncaminhamento').checked = !!at.houveEncaminhamento;
+    $('#encaminhamento').value = at.encaminhamento || '';
+
+    $('#observacoes').value = at.observacoes || at.observacao || '';
+
+    $('#assinServidorNome').value = at.assinaturas?.servidorResponsavelNome || at.servidorResponsavelRegistro || '';
+    $('#assinServidorFuncao').value = at.assinaturas?.servidorResponsavelFuncao || at.funcaoServidorResponsavel || '';
+    $('#vistoNome').value = at.assinaturas?.vistoDirecaoCoordenacaoNome || '';
+    $('#vistoFuncao').value = at.assinaturas?.vistoDirecaoCoordenacaoFuncao || '';
+
+    aplicarVisibilidade();
+  }catch(e){
+    alert('Erro ao carregar atendimento: ' + e.message);
+  }
+}
+
+function aplicarVisibilidade(){
+  $('#localOutroBox').classList.toggle('hidden', $('#local').value !== 'Outro');
+  $('#classOutroBox').classList.toggle('hidden', !$('#chkClassOutro')?.checked);
+  $('#provOutroBox').classList.toggle('hidden', !$('#chkProvOutro')?.checked);
+  $('#evolucaoOutroBox').classList.toggle('hidden', $('#evolucaoQuadro').value !== 'Outro');
+  $('#orientacaoOutroBox').classList.toggle('hidden', $('#orientacaoRapida').value !== 'Outro');
+  $('#desfechoOutroBox').classList.toggle('hidden', $('#desfecho').value !== 'Outro');
+  $('#encaminhamentoBox').classList.toggle('hidden', !$('#houveEncaminhamento').checked);
+}
+
+function montarPayload(){
+  const orientacoes = [];
+  if($('#orientacaoRapida').value) orientacoes.push($('#orientacaoRapida').value);
+
+  const classificacoes = selecionados('boxClassificacoes');
+  const providencias = selecionados('boxProvidencias');
+  const materiais = selecionados('boxMateriais');
+  const meios = selecionados('boxMeios');
+
   return {
     alunoId,
-    data: $('#inpData').value || new Date().toISOString().slice(0,10),
-    hora: $('#inpHora').value || '',
-    local: ($('#inpLocal').value || '').trim() || '—',
-    responsavel: ($('#inpResp').value || '').trim(),
-    tipos: selected($('#tiposBox')),
-    materiais: selected($('#materiaisBox')),
-    sinaisESintomas: '',
-    procedimentos: '',
-    observacoes: ($('#inpObs').value || '').trim(),
-    responsaveisInformados: $('#selRespInf').value === 'Sim' ? 'Sim' : 'Não',
-    meioComunicacao: $('#selMeio').value || '',
-    houveEncaminhamento: $('#chkEncaminhamento').checked,
-    encaminhamento: ($('#txtEncaminhamento').value || '').trim()
+
+    data: $('#data').value,
+    hora: $('#horaInicio').value,
+    horaInicioAtendimento: $('#horaInicio').value,
+    horaEncerramentoAtendimento: $('#horaFim').value,
+
+    local: $('#local').value,
+    localOutro: $('#localOutro').value,
+
+    responsavel: $('#servidor').value,
+    servidorResponsavelRegistro: $('#servidor').value,
+
+    alunoNomeSnapshot: $('#alunoNome').value,
+    alunoTurmaSnapshot: $('#turma').value,
+    alunoMatriculaSnapshot: $('#matricula').value,
+    alunoNascimentoSnapshot: $('#nascimento').value || null,
+
+    responsavelContato: {
+      nome: $('#respNome').value,
+      vinculo: $('#respVinculo').value,
+      telefonePrincipal: $('#respTel1').value,
+      telefoneSecundario: $('#respTel2').value
+    },
+
+    tipos: classificacoes,
+    classificacoes,
+    classificacaoOutro: $('#classificacaoOutro').value,
+
+    descricaoFatos: $('#descricaoFatos').value,
+    sinaisESintomas: $('#sinaisESintomas').value,
+    queixaAluno: $('#sinaisESintomas').value,
+
+    providenciasAdotadas: providencias,
+    providenciaOutro: $('#providenciaOutro').value,
+    descricaoProvidencias: $('#descricaoProvidencias').value,
+
+    materiais,
+    procedimentos: $('#procedimentos').value,
+
+    tempoObservacao: $('#tempoObservacao').value,
+    evolucaoQuadro: $('#evolucaoQuadro').value,
+    evolucaoOutro: $('#evolucaoOutro').value,
+    descricaoEvolucao: $('#descricaoEvolucao').value,
+
+    responsaveisInformados: $('#responsaveisInformados').value,
+    meioComunicacao: meios.join(', '),
+
+    comunicacaoPais: {
+      houveComunicacao: $('#responsaveisInformados').value,
+      dataContato: $('#dataContato').value || null,
+      horaContato: $('#horaContato').value,
+      meiosUtilizados: meios,
+      nomePessoaContatada: $('#nomePessoaContatada').value,
+      vinculoComAluno: $('#vinculoComAluno').value,
+      houveExitoContato: $('#houveExitoContato').value,
+      sinteseInformacaoPrestada: $('#sinteseInformacaoPrestada').value,
+      orientacoesTransmitidas: orientacoes,
+      orientacaoOutro: $('#orientacaoOutro').value
+    },
+
+    desfecho: $('#desfecho').value,
+    desfechoOutro: $('#desfechoOutro').value,
+    descricaoDesfecho: $('#descricaoDesfecho').value,
+
+    houveEncaminhamento: $('#houveEncaminhamento').checked,
+    encaminhamento: $('#encaminhamento').value,
+
+    observacoes: $('#observacoes').value,
+
+    assinaturas: {
+      servidorResponsavelNome: $('#assinServidorNome').value || $('#servidor').value,
+      servidorResponsavelFuncao: $('#assinServidorFuncao').value,
+      vistoDirecaoCoordenacaoNome: $('#vistoNome').value,
+      vistoDirecaoCoordenacaoFuncao: $('#vistoFuncao').value
+    },
+
+    statusRegistro: 'finalizado'
   };
 }
 
-async function salvar(){
-  if(saving) return;
+async function salvar(e){
+  e.preventDefault();
+
+  if(!alunoId && !atendimentoId){
+    alert('Aluno não informado.');
+    return;
+  }
+
+  const payload = montarPayload();
+
   try{
-    if(!alunoId) { toast('ID do aluno ausente.', 'error'); return; }
-    setSavingState(true);
-    const body = JSON.stringify(payloadFromUI());
+    const isEdit = !!atendimentoId && modo !== 'new';
 
-    if (mode === 'edit' && atendimentoId){
-      const resp = await api(`/aph/atendimentos/${atendimentoId}`, { method:'PUT', body, timeoutMs:12000 });
-      if (resp?.ok){
-        toast('Atendimento atualizado.', 'ok');
-        setTimeout(()=>{
-          location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
-        }, 700);
-      } else {
-        toast('Atualização sem confirmação.', 'error');
-      }
-      return;
+    const url = isEdit
+      ? `/api/aph/atendimentos/${atendimentoId}`
+      : '/api/aph/atendimentos';
+
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const j = await api(url, { method, body: payload });
+
+    alert('Atendimento salvo com sucesso.');
+
+    const idFinal = j.atendimento?._id || j.item?._id || atendimentoId;
+    if(idFinal){
+      location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
+    }else{
+      history.back();
     }
-
-    const resp = await api('/aph/atendimentos', { method:'POST', body, timeoutMs:12000 });
-    if (resp?.ok) {
-      toast('Atendimento salvo com sucesso!', 'ok');
-      setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 700);
-    } else {
-      toast('Salvo, mas sem confirmação de comunicação.', 'ok');
-      setTimeout(()=>{ location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`; }, 900);
-    }
-  } catch(e){
-    console.error(e);
-    toast(e.name==='AbortError'?'Tempo esgotado. Verifique a conexão.':(e.message||'Erro ao salvar.'),'error');
-  } finally { setSavingState(false); }
+  }catch(err){
+    alert('Erro ao salvar: ' + err.message);
+  }
 }
 
-function voltar(){
-  if(alunoId) location.href = `/ficha-aluno.html?id=${encodeURIComponent(alunoId)}`;
-  else history.back();
+function bind(){
+  $('#local').addEventListener('change', aplicarVisibilidade);
+  $('#chkClassOutro')?.addEventListener('change', aplicarVisibilidade);
+  $('#chkProvOutro')?.addEventListener('change', aplicarVisibilidade);
+  $('#evolucaoQuadro').addEventListener('change', aplicarVisibilidade);
+  $('#orientacaoRapida').addEventListener('change', aplicarVisibilidade);
+  $('#desfecho').addEventListener('change', aplicarVisibilidade);
+  $('#houveEncaminhamento').addEventListener('change', aplicarVisibilidade);
+
+  $('#btnVoltar').addEventListener('click', () => history.back());
+  $('#formAPH').addEventListener('submit', salvar);
 }
 
-function goEdit(){
-  const qp = new URLSearchParams(location.search);
-  qp.set('mode','edit');
-  if (alunoId) qp.set('alunoId', alunoId);
-  location.search = `?${qp.toString()}`;
-}
-
-/* ===== boot ===== */
 async function init(){
-  cardList($('#tiposBox'), TIPOS);
-  cardList($('#materiaisBox'), MATERIAIS);
+  $('#data').value = hojeISO();
+  $('#horaInicio').value = horaAtual();
+  $('#dataContato').value = hojeISO();
 
-  if (mode === 'new'){
-    const now=new Date();
-    $('#inpData').value=now.toISOString().slice(0,10);
-    $('#inpHora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  bind();
+  aplicarVisibilidade();
+
+  await carregarAluno();
+  await carregarAtendimento();
+
+  if(!$('#assinServidorNome').value && $('#servidor').value){
+    $('#assinServidorNome').value = $('#servidor').value;
   }
-
-  if (atendimentoId){
-    try { await carregarAtendimento(); }
-    catch(e){ console.error(e); toast(e.message || 'Erro ao carregar atendimento.','error'); }
-  } else {
-    if (alunoId) await carregarAluno().catch(()=>{});
-  }
-
-  applyMode();
-
-  $('#btnSalvar').addEventListener('click', salvar);
-  $('#btnSalvar2').addEventListener('click', salvar);
-  $('#btnLimpar').addEventListener('click', limpar);
-  $('#btnLimpar2').addEventListener('click', limpar);
-  $('#btnVoltar').addEventListener('click', voltar);
-  $('#btnEditar').addEventListener('click', goEdit);
-  $('#chkEncaminhamento').addEventListener('change', toggleEncaminhamento);
 }
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+
+init();
 </script>
-<script src="/update-client.js"></script>
+
 </body>
 </html>

@@ -1,4 +1,6 @@
 // backend/routes/api/aph-pdf.js
+'use strict';
+
 const express = require('express');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
@@ -11,101 +13,279 @@ try { Aluno = require('../../models/Aluno'); } catch {}
 const RUBI = '#8B0000';
 const DOURADO = '#C9A227';
 const CINZA_TEXTO = '#333333';
+const CINZA_CLARO = '#f7f7f7';
 const PRETO = '#111111';
 const INSTITUICAO_NOME = 'Colégio Militar Dom Pedro II • Unidade Cruzeiro do Sul';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
-function dtBR(din){
+
+function dtBR(din, withHour = true){
+  if (!din) return '—';
   const d = (din instanceof Date) ? din : new Date(din);
   if (isNaN(d)) return '—';
-  return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+  const data = `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}`;
+  if (!withHour) return data;
+  return `${data} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
-function texto(v){ return (v==null || String(v).trim()==='') ? '—' : String(v).trim(); }
+
+function texto(v){
+  return (v == null || String(v).trim() === '') ? '—' : String(v).trim();
+}
+
 function joinArr(arr){
   if (!Array.isArray(arr) || !arr.length) return '—';
-  return arr.map(x => (x==null ? '' : String(x))).filter(Boolean).join(', ');
+  return arr.map(x => (x == null ? '' : String(x).trim())).filter(Boolean).join(', ');
 }
+
 function canPopulateAluno(){
   try{ return mongoose.modelNames().includes('Aluno'); } catch { return false; }
 }
 
-/* ---------- Cabeçalho / Rodapé / Página ---------- */
+function pickAlunoNome(item){
+  return texto(
+    item?.alunoNomeSnapshot ||
+    item?.alunoId?.nome ||
+    item?.alunoNome ||
+    item?.aluno ||
+    item?.alunoId
+  );
+}
+
+function pickTurma(item){
+  return texto(
+    item?.alunoTurmaSnapshot ||
+    item?.alunoId?.turma ||
+    item?.turma
+  );
+}
+
+function pickMatricula(item){
+  return texto(
+    item?.alunoMatriculaSnapshot ||
+    item?.alunoId?.matricula ||
+    item?.alunoId?.codigoAcesso ||
+    item?.matricula
+  );
+}
+
+function pickNascimento(item){
+  return dtBR(
+    item?.alunoNascimentoSnapshot ||
+    item?.alunoId?.nascimento ||
+    item?.alunoId?.dataNascimento,
+    false
+  );
+}
+
+function valorLocal(item){
+  if (item?.local === 'Outro' && item?.localOutro) return item.localOutro;
+  return texto(item?.local);
+}
+
+function valorClassificacoes(item){
+  const base = Array.isArray(item?.classificacoes) && item.classificacoes.length
+    ? item.classificacoes
+    : item?.tipos;
+
+  let txt = joinArr(base);
+  if (item?.classificacaoOutro) {
+    txt = txt === '—' ? item.classificacaoOutro : `${txt}; Outro: ${item.classificacaoOutro}`;
+  }
+  return txt;
+}
+
+function valorProvidencias(item){
+  let txt = joinArr(item?.providenciasAdotadas);
+  if (item?.providenciaOutro) {
+    txt = txt === '—' ? item.providenciaOutro : `${txt}; Outro: ${item.providenciaOutro}`;
+  }
+
+  if (txt === '—' && item?.procedimentos) return texto(item.procedimentos);
+  return txt;
+}
+
+function valorEvolucao(item){
+  if (item?.evolucaoQuadro === 'Outro' && item?.evolucaoOutro) {
+    return item.evolucaoOutro;
+  }
+  return texto(item?.evolucaoQuadro);
+}
+
+function valorDesfecho(item){
+  if (item?.desfecho === 'Outro' && item?.desfechoOutro) {
+    return item.desfechoOutro;
+  }
+  return texto(item?.desfecho);
+}
+
+function valorMeiosComunicacao(item){
+  const meios = item?.comunicacaoPais?.meiosUtilizados;
+  if (Array.isArray(meios) && meios.length) return joinArr(meios);
+  return texto(item?.meioComunicacao);
+}
+
 function headerTema(doc, titulo, subtitulo){
   const W = doc.page.width;
-  doc.save().rect(0, 0, W, 70).fill(RUBI).restore();
-  doc.save().rect(0, 68, W, 2).fill(DOURADO).restore();
+  doc.save().rect(0, 0, W, 76).fill(RUBI).restore();
+  doc.save().rect(0, 74, W, 2).fill(DOURADO).restore();
 
   const m = doc.page.margins.left;
-  doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(14)
-     .text(INSTITUICAO_NOME, m, 18, { width: W - m*2, align: 'left', lineBreak: false });
-  doc.font('Helvetica-Bold').fontSize(18)
-     .text(titulo || '', m, 38, { width: W - m*2, align: 'left', lineBreak: false });
+
+  doc.fillColor('#ffffff')
+    .font('Helvetica-Bold')
+    .fontSize(13)
+    .text(INSTITUICAO_NOME, m, 16, {
+      width: W - m * 2,
+      align: 'center',
+      lineBreak: false
+    });
+
+  doc.font('Helvetica-Bold')
+    .fontSize(16)
+    .text(titulo || '', m, 36, {
+      width: W - m * 2,
+      align: 'center',
+      lineBreak: false
+    });
+
   if (subtitulo) {
-    doc.font('Helvetica').fontSize(11)
-       .text(subtitulo, m, 58, { width: W - m*2, align: 'left', lineBreak: false });
+    doc.font('Helvetica')
+      .fontSize(9)
+      .text(subtitulo, m, 58, {
+        width: W - m * 2,
+        align: 'center',
+        lineBreak: false
+      });
   }
-  doc.y = 86; // um respiro extra
+
+  doc.y = 94;
 }
+
 function footerTema(doc){
   const W = doc.page.width;
   const H = doc.page.height;
-  const y = H - 28;
-  doc.save().strokeColor('#dddddd').lineWidth(0.5).moveTo(32, y).lineTo(W-32, y).stroke().restore();
-  doc.fillColor(CINZA_TEXTO).fontSize(9)
-     .text(INSTITUICAO_NOME, 32, y+6, { width: W-120, align: 'left', lineBreak: false });
-  doc.fillColor(CINZA_TEXTO).fontSize(9)
-     .text(`Página ${doc.page.number}`, W-120, y+6, { width: 90, align: 'right', lineBreak: false });
+  const bottom = doc.page.margins.bottom || 40;
+
+  // mantém o rodapé dentro da área segura da página
+  const lineY = H - bottom + 10;
+  const textY = H - bottom + 16;
+
+  doc.save();
+
+  doc.strokeColor('#dddddd')
+    .lineWidth(0.5)
+    .moveTo(32, lineY)
+    .lineTo(W - 32, lineY)
+    .stroke();
+
+  doc.fillColor(CINZA_TEXTO)
+    .font('Helvetica')
+    .fontSize(8)
+    .text(INSTITUICAO_NOME, 32, textY, {
+      width: W - 130,
+      align: 'left',
+      lineBreak: false,
+      height: 10
+    });
+
+  doc.fillColor(CINZA_TEXTO)
+    .font('Helvetica')
+    .fontSize(8)
+    .text(`Página ${doc.page.number || ''}`, W - 120, textY, {
+      width: 90,
+      align: 'right',
+      lineBreak: false,
+      height: 10
+    });
+
+  doc.restore();
 }
+
 function safeAddPage(doc, titulo, subtitulo){
   footerTema(doc);
   doc.addPage();
   headerTema(doc, titulo, subtitulo);
 }
 
-/* ---------- Helpers de layout (duas colunas e blocos) ---------- */
+function safeAddPage(doc, titulo, subtitulo){
+  footerTema(doc);
+  doc.addPage();
+  headerTema(doc, titulo, subtitulo);
+}
+
+function sectionTitle(doc, title, opts = {}){
+  const mL = doc.page.margins.left;
+  const mR = doc.page.margins.right;
+  const usableW = doc.page.width - (mL + mR);
+
+  if (doc.y > doc.page.height - 80) {
+    safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+  }
+
+  doc.moveDown(0.45);
+
+  const y = doc.y;
+  doc.save()
+    .rect(mL, y, usableW, 22)
+    .fill(RUBI)
+    .restore();
+
+  doc.fillColor('#ffffff')
+    .font('Helvetica-Bold')
+    .fontSize(11)
+    .text(title, mL + 8, y + 6, {
+      width: usableW - 16,
+      align: 'left',
+      lineBreak: false
+    });
+
+  doc.y = y + 28;
+}
+
 function writePairs(doc, pairs, opts = {}){
   const mL = doc.page.margins.left;
   const mR = doc.page.margins.right;
   const usableW = doc.page.width - (mL + mR);
 
-  const labelW = opts.labelW ?? 140; // largura fixa do rótulo
-  const gap = opts.gap ?? 10;        // espaço entre rótulo e valor
+  const labelW = opts.labelW ?? 145;
+  const gap = opts.gap ?? 10;
   const valW = usableW - labelW - gap;
   const linePadY = opts.linePadY ?? 4;
-  const title = opts.title;
 
-  if (title) {
-    if (doc.y > doc.page.height - 80) safeAddPage(doc, title, opts.subtitle);
-    doc.moveDown(0.4);
-    doc.fillColor(PRETO).font('Helvetica-Bold').fontSize(13).text(title, mL, doc.y, {
-      width: usableW, align: 'left'
-    });
-    doc.moveDown(0.2);
+  if (opts.title) {
+    sectionTitle(doc, opts.title, opts);
   }
 
-  pairs.forEach(({k, v})=>{
+  pairs.forEach(({ k, v }) => {
     const label = String(k ?? '');
     const val = texto(v);
-    const hLabel = 12; // rótulo é sempre uma linha
 
-    // Altura estimada do valor
-    const hVal = Math.max(
-      12,
-      doc.heightOfString(val, { width: valW, align: 'left' })
-    );
-    const rowH = Math.max(hLabel, hVal) + linePadY*2;
+    const hVal = Math.max(12, doc.heightOfString(val, { width: valW, align: 'left' }));
+    const rowH = Math.max(12, hVal) + linePadY * 2;
 
-    // quebra de página
-    if (doc.y + rowH > doc.page.height - 50) safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+    if (doc.y + rowH > doc.page.height - doc.page.margins.bottom - 20) {
+      safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+    }
 
     const baseY = doc.y;
-    // rótulo
-    doc.fillColor(PRETO).font('Helvetica-Bold').fontSize(11)
-       .text(label + ':', mL, baseY + linePadY, { width: labelW, align: 'left', lineBreak: false });
 
-    // valor (coluna fixa)
-    doc.fillColor(CINZA_TEXTO).font('Helvetica').fontSize(11)
-       .text(val, mL + labelW + gap, baseY + linePadY, { width: valW, align: 'left' });
+    doc.fillColor(PRETO)
+      .font('Helvetica-Bold')
+      .fontSize(10.5)
+      .text(label + ':', mL, baseY + linePadY, {
+        width: labelW,
+        align: 'left',
+        lineBreak: false
+      });
+
+    doc.fillColor(CINZA_TEXTO)
+      .font('Helvetica')
+      .fontSize(10.5)
+      .text(val, mL + labelW + gap, baseY + linePadY, {
+        width: valW,
+        align: 'left'
+      });
 
     doc.y = baseY + rowH;
   });
@@ -115,166 +295,391 @@ function writeBlock(doc, title, value, opts = {}){
   const mL = doc.page.margins.left;
   const mR = doc.page.margins.right;
   const usableW = doc.page.width - (mL + mR);
-  const padY = opts.padY ?? 6;
 
   const val = texto(value);
 
-  // espaço para título + algumas linhas
-  if (doc.y > doc.page.height - 100) safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+  if (doc.y > doc.page.height - 105) {
+    safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+  }
 
-  doc.moveDown(0.5);
-  doc.fillColor(PRETO).font('Helvetica-Bold').fontSize(12)
-     .text(title + ':', mL, doc.y, { width: usableW, align: 'left' });
+  if (title) {
+    sectionTitle(doc, title, opts);
+  }
 
-  doc.fillColor(CINZA_TEXTO).font('Helvetica').fontSize(11)
-     .text(val, mL, doc.y + 2, { width: usableW, align: 'justify' });
-
-  doc.moveDown(0.4);
-  doc.y += padY;
-}
-
-/* ======================= PDF INDIVIDUAL ======================= */
-router.get('/pdf/:id', async (req, res) => {
-  try{
-    const doPopulate = canPopulateAluno();
-    let q = AphAtendimento.findById(req.params.id);
-    if (doPopulate) q = q.populate({ path: 'alunoId', select: 'nome' });
-    const item = await q.lean();
-    if (!item) return res.status(404).send('Atendimento não encontrado.');
-
-    const doc = new PDFDocument({ size:'A4', margins:{ top:36, left:32, right:32, bottom:40 } });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="APH_${String(item._id)}.pdf"`);
-    doc.pipe(res);
-
-    const titulo = 'Relatório de Atendimento - APH';
-    const subtitulo = `Gerado em ${dtBR(new Date())}`;
-    headerTema(doc, titulo, subtitulo);
-
-    const alunoNome = texto(item?.alunoId?.nome || item?.alunoNome || item?.aluno || item?.alunoId);
-
-    // Bloco "Dados do Atendimento" em DUAS COLUNAS
-    writePairs(doc, [
-      { k:'Data',         v: dtBR(item.createdAt) },
-      { k:'Aluno',        v: alunoNome },
-      { k:'Responsável',  v: item.responsavel || item.criadoPor },
-      { k:'Local',        v: item.local },
-      { k:'Hora',         v: item.hora },
-      { k:'Criado por',   v: item.criadoPor },
-    ], {
-      headerTitle: titulo, headerSubtitle: subtitulo,
-      title: 'Dados do atendimento',
-      labelW: 150, gap: 12, linePadY: 4
+  doc.fillColor(CINZA_TEXTO)
+    .font('Helvetica')
+    .fontSize(10.5)
+    .text(val, mL, doc.y, {
+      width: usableW,
+      align: 'justify'
     });
 
-    // Blocos de texto corrido (justificado)
-    writeBlock(doc, 'Tipos', joinArr(item.tipos), { headerTitle: titulo, headerSubtitle: subtitulo });
-    writeBlock(doc, 'Materiais', joinArr(item.materiais), { headerTitle: titulo, headerSubtitle: subtitulo });
-    writeBlock(doc, 'Encaminhamento', item.encaminhamento, { headerTitle: titulo, headerSubtitle: subtitulo });
-    writeBlock(doc, 'Responsáveis informados', item.responsaveisInformados, { headerTitle: titulo, headerSubtitle: subtitulo });
-    writeBlock(doc, 'Meio de comunicação', item.meioComunicacao, { headerTitle: titulo, headerSubtitle: subtitulo });
-    writeBlock(doc, 'Observações', item.observacoes, { headerTitle: titulo, headerSubtitle: subtitulo });
+  doc.moveDown(0.5);
+}
+
+function assinaturaLinha(doc, label, nome = '', funcao = '', opts = {}){
+  const mL = doc.page.margins.left;
+  const usableW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+  if (doc.y > doc.page.height - 110) {
+    safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+  }
+
+  doc.moveDown(1.6);
+
+  doc.strokeColor('#444')
+    .lineWidth(0.6)
+    .moveTo(mL + 40, doc.y)
+    .lineTo(mL + usableW - 40, doc.y)
+    .stroke();
+
+  doc.moveDown(0.25);
+
+  doc.fillColor(PRETO)
+    .font('Helvetica-Bold')
+    .fontSize(10)
+    .text(label, mL, doc.y, { width: usableW, align: 'center' });
+
+  if (nome) {
+    doc.font('Helvetica')
+      .fontSize(9.5)
+      .fillColor(CINZA_TEXTO)
+      .text(nome, { align: 'center' });
+  }
+
+  if (funcao) {
+    doc.font('Helvetica')
+      .fontSize(9)
+      .fillColor(CINZA_TEXTO)
+      .text(`Função: ${funcao}`, { align: 'center' });
+  }
+}
+/* ======================= PDF INDIVIDUAL ======================= */
+/* ======================= PDF INDIVIDUAL ======================= */
+router.get('/pdf/:id', async (req, res) => {
+  try {
+    const doPopulate = canPopulateAluno();
+
+    let q = AphAtendimento.findById(req.params.id);
+
+    if (doPopulate) {
+      q = q.populate({
+        path: 'alunoId',
+        select: 'nome turma matricula codigoAcesso nascimento dataNascimento'
+      });
+    }
+
+    const item = await q.lean();
+
+    if (!item) {
+      return res.status(404).send('Atendimento não encontrado.');
+    }
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 36, left: 36, right: 36, bottom: 44 }
+    });
+
+    const nomeArquivo = `APH_${item.numeroRegistro || String(item._id)}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${nomeArquivo}"`);
+
+    doc.pipe(res);
+
+    const titulo = 'RELATÓRIO DE OCORRÊNCIA / INTERCORRÊNCIA COM ALUNO';
+    const subtitulo = `Registro: ${texto(item.numeroRegistro)} • Gerado em ${dtBR(new Date())}`;
+
+    headerTema(doc, titulo, subtitulo);
+
+    writePairs(doc, [
+      { k: 'Número do registro', v: item.numeroRegistro },
+      { k: 'Data', v: dtBR(item.data, false) },
+      { k: 'Horário do início', v: item.horaInicioAtendimento || item.hora },
+      { k: 'Horário do encerramento', v: item.horaEncerramentoAtendimento },
+      { k: 'Local da ocorrência/intercorrência', v: valorLocal(item) },
+    ], {
+      title: '1. IDENTIFICAÇÃO DO REGISTRO',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 190
+    });
+
+    writePairs(doc, [
+      { k: 'Nome completo', v: pickAlunoNome(item) },
+      { k: 'Ano/Série/Turma', v: pickTurma(item) },
+      { k: 'Matrícula', v: pickMatricula(item) },
+      { k: 'Data de nascimento', v: pickNascimento(item) },
+    ], {
+      title: '2. IDENTIFICAÇÃO DO ALUNO',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 160
+    });
+
+    writePairs(doc, [
+      { k: 'Nome do responsável', v: item.responsavelContato?.nome },
+      { k: 'Grau de parentesco/vínculo', v: item.responsavelContato?.vinculo },
+      { k: 'Telefone principal', v: item.responsavelContato?.telefonePrincipal },
+      { k: 'Telefone secundário', v: item.responsavelContato?.telefoneSecundario },
+    ], {
+      title: '3. IDENTIFICAÇÃO DO RESPONSÁVEL',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 190
+    });
+
+    writeBlock(doc, '4. CLASSIFICAÇÃO DA OCORRÊNCIA/INTERCORRÊNCIA', valorClassificacoes(item), {
+      headerTitle: titulo,
+      headerSubtitle: subtitulo
+    });
+
+    writeBlock(doc, '5. DESCRIÇÃO OBJETIVA DOS FATOS', item.descricaoFatos || item.observacoes, {
+      headerTitle: titulo,
+      headerSubtitle: subtitulo
+    });
+
+    writeBlock(doc, '6. SINAIS OBSERVADOS E/OU QUEIXA APRESENTADA PELO ALUNO',
+      item.sinaisESintomas || item.queixaAluno, {
+      headerTitle: titulo,
+      headerSubtitle: subtitulo
+    });
+
+    writePairs(doc, [
+      { k: 'Providências adotadas', v: valorProvidencias(item) },
+      { k: 'Descrição das providências', v: item.descricaoProvidencias || item.procedimentos },
+      { k: 'Materiais/recursos utilizados', v: joinArr(item.materiais) },
+    ], {
+      title: '7. PROVIDÊNCIAS ADOTADAS PELA EQUIPE ESCOLAR',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 190
+    });
+
+    writePairs(doc, [
+      { k: 'Tempo de observação', v: item.tempoObservacao },
+      { k: 'Evolução observada', v: valorEvolucao(item) },
+      { k: 'Descrição complementar', v: item.descricaoEvolucao },
+    ], {
+      title: '8. TEMPO DE OBSERVAÇÃO E EVOLUÇÃO DO QUADRO',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 190
+    });
+
+    writePairs(doc, [
+      { k: 'Houve comunicação', v: item.comunicacaoPais?.houveComunicacao || item.responsaveisInformados },
+      { k: 'Data do contato', v: dtBR(item.comunicacaoPais?.dataContato, false) },
+      { k: 'Horário do contato', v: item.comunicacaoPais?.horaContato },
+      { k: 'Meio utilizado', v: valorMeiosComunicacao(item) },
+      { k: 'Nome da pessoa contatada', v: item.comunicacaoPais?.nomePessoaContatada },
+      { k: 'Vínculo com o aluno', v: item.comunicacaoPais?.vinculoComAluno },
+      { k: 'Houve êxito no contato', v: item.comunicacaoPais?.houveExitoContato },
+      { k: 'Síntese da informação prestada', v: item.comunicacaoPais?.sinteseInformacaoPrestada },
+      { k: 'Orientação transmitida', v: joinArr(item.comunicacaoPais?.orientacoesTransmitidas) },
+      { k: 'Outra orientação', v: item.comunicacaoPais?.orientacaoOutro },
+    ], {
+      title: '9. COMUNICAÇÃO AOS PAIS OU RESPONSÁVEIS',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 190
+    });
+
+    writePairs(doc, [
+      { k: 'Desfecho', v: valorDesfecho(item) },
+      { k: 'Descrição do desfecho', v: item.descricaoDesfecho || item.encaminhamento },
+      { k: 'Houve encaminhamento', v: item.houveEncaminhamento ? 'Sim' : 'Não' },
+      { k: 'Encaminhamento', v: item.encaminhamento },
+    ], {
+      title: '10. DESFECHO DA OCORRÊNCIA/INTERCORRÊNCIA',
+      headerTitle: titulo,
+      headerSubtitle: subtitulo,
+      labelW: 190
+    });
+
+    writeBlock(doc, '11. OBSERVAÇÕES COMPLEMENTARES', item.observacoes || item.observacao, {
+      headerTitle: titulo,
+      headerSubtitle: subtitulo
+    });
+
+    sectionTitle(doc, '12. ASSINATURAS', {
+      headerTitle: titulo,
+      headerSubtitle: subtitulo
+    });
+
+    assinaturaLinha(
+      doc,
+      'Nome do servidor responsável pelo registro',
+      item.assinaturas?.servidorResponsavelNome || item.servidorResponsavelRegistro || item.responsavel,
+      item.assinaturas?.servidorResponsavelFuncao || item.funcaoServidorResponsavel,
+      { headerTitle: titulo, headerSubtitle: subtitulo }
+    );
+
+    assinaturaLinha(
+      doc,
+      'Visto da Direção/Coordenação',
+      item.assinaturas?.vistoDirecaoCoordenacaoNome,
+      item.assinaturas?.vistoDirecaoCoordenacaoFuncao,
+      { headerTitle: titulo, headerSubtitle: subtitulo }
+    );
 
     footerTema(doc);
     doc.end();
-  }catch(err){
+
+  } catch (err) {
     console.error('pdf individual erro:', err);
-    try{ res.status(500).send('Erro ao gerar PDF individual.'); }catch{}
+    try { res.status(500).send('Erro ao gerar PDF individual.'); } catch {}
   }
 });
 
 /* ======================= PDF CONSOLIDADO ======================= */
 router.get('/pdf-consolidado', async (req, res) => {
-  try{
+  try {
     const { from, to } = req.query;
     const filtro = {};
+
     if (from) {
-      const d = new Date(from); if (!isNaN(d)) filtro.createdAt = { ...(filtro.createdAt||{}), $gte: d };
+      const d = new Date(from);
+      if (!isNaN(d)) filtro.data = { ...(filtro.data || {}), $gte: d };
     }
+
     if (to) {
       const d = new Date(to);
-      if (!isNaN(d)) { const end = new Date(d); end.setDate(end.getDate()+1); filtro.createdAt = { ...(filtro.createdAt||{}), $lt: end }; }
+      if (!isNaN(d)) {
+        const end = new Date(d);
+        end.setDate(end.getDate() + 1);
+        filtro.data = { ...(filtro.data || {}), $lt: end };
+      }
     }
 
     const doPopulate = canPopulateAluno();
-    let itens;
-    try{
-      let q = AphAtendimento.find(filtro).sort({ createdAt: 1 });
-      if (doPopulate) q = q.populate({ path: 'alunoId', select: 'nome' });
-      itens = await q.lean();
-    }catch{
-      itens = await AphAtendimento.find(filtro).sort({ createdAt: 1 }).lean();
+
+    let q = AphAtendimento.find(filtro).sort({ data: 1, horaInicioAtendimento: 1, createdAt: 1 });
+
+    if (doPopulate) {
+      q = q.populate({
+        path: 'alunoId',
+        select: 'nome turma matricula codigoAcesso nascimento dataNascimento'
+      });
     }
-    if (!Array.isArray(itens) || !itens.length){
+
+    const itens = await q.lean();
+
+    if (!Array.isArray(itens) || !itens.length) {
       return res.status(404).send('Nenhum atendimento encontrado no período.');
     }
 
-    const doc = new PDFDocument({ size:'A4', margins:{ top:36, left:32, right:32, bottom:40 } });
-    const nome = `APH-Consolidado_${from||'inicio'}_a_${to||'atual'}.pdf`;
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 36, left: 32, right: 32, bottom: 40 }
+    });
+
+    const nome = `APH-Consolidado_${from || 'inicio'}_a_${to || 'atual'}.pdf`;
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${nome}"`);
+
     doc.pipe(res);
 
-    const titulo = 'Relatório Consolidado de Atendimentos APH';
+    const titulo = 'RELATÓRIO CONSOLIDADO DE ATENDIMENTOS APH';
     const subtitulo = `Período: ${from || 'início'} até ${to || 'atual'} • Gerado em ${dtBR(new Date())}`;
+
     headerTema(doc, titulo, subtitulo);
 
-    const usableW = doc.page.width - (doc.page.margins.left + doc.page.margins.right); // ~531
+    const usableW = doc.page.width - (doc.page.margins.left + doc.page.margins.right);
+
     const COLS = [
-      { key:'data',   title:'Data',           w: 80, lineBreak:false },
-      { key:'aluno',  title:'Aluno',          w: 90 },
-      { key:'resp',   title:'Responsável',    w: 80 },
-      { key:'local',  title:'Local',          w: 55 },
-      { key:'tipos',  title:'Tipos',          w: 80 },
-      { key:'mats',   title:'Materiais',      w: 80 },
-      { key:'enc',    title:'Encaminhamento', w: 81 },
-    ]; // soma ≈ 531
+      { key: 'data', title: 'Data', w: 62, lineBreak: false },
+      { key: 'reg', title: 'Registro', w: 70 },
+      { key: 'aluno', title: 'Aluno', w: 92 },
+      { key: 'turma', title: 'Turma', w: 55 },
+      { key: 'local', title: 'Local', w: 65 },
+      { key: 'class', title: 'Classificação', w: 90 },
+      { key: 'desf', title: 'Desfecho', w: 97 },
+    ];
 
     const startX = doc.page.margins.left;
     let y = doc.y;
 
-    function cabecalhoTabela(){
-      doc.save().rect(startX, y, usableW, 20).fill(RUBI).restore();
+    function cabecalhoTabela() {
+      doc.save().rect(startX, y, usableW, 22).fill(RUBI).restore();
+
       let x = startX;
-      COLS.forEach(c=>{
-        doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10)
-           .text(c.title, x+6, y+5, { width: c.w-12, align:'left', lineBreak:false });
+
+      COLS.forEach(c => {
+        doc.fillColor('#ffffff')
+          .font('Helvetica-Bold')
+          .fontSize(8.5)
+          .text(c.title, x + 4, y + 6, {
+            width: c.w - 8,
+            align: 'left',
+            lineBreak: false
+          });
+
         x += c.w;
       });
+
       y += 24;
     }
 
-    function linhaTabela(dados, zebra=false){
-      const padX = 6, padY = 4;
-      const alturas = COLS.map(c=>{
-        const txt = String(dados[c.key] ?? '—');
-        try{
-          const opts = { width: c.w - padX*2, align:'left' };
-          const h = c.lineBreak === false
-            ? 10 + padY*2
-            : Math.max(10, doc.heightOfString(txt, opts)) + padY*2;
-          return Math.max(18, h);
-        }catch{ return 18; }
-      });
-      const rowH = Math.max(18, ...alturas);
+    function linhaTabela(dados, zebra = false) {
+      const padX = 4;
+      const padY = 4;
 
-      if (y + rowH > doc.page.height - 50) {
+      const alturas = COLS.map(c => {
+        const txt = String(dados[c.key] ?? '—');
+        try {
+          const opts = { width: c.w - padX * 2, align: 'left' };
+          const h = c.lineBreak === false
+            ? 10 + padY * 2
+            : Math.max(10, doc.heightOfString(txt, opts)) + padY * 2;
+
+          return Math.max(20, h);
+        } catch {
+          return 20;
+        }
+      });
+
+      const rowH = Math.max(20, ...alturas);
+
+      if (y + rowH > doc.page.height - 52) {
         safeAddPage(doc, titulo, subtitulo);
         y = doc.y;
         cabecalhoTabela();
       }
 
-      if (zebra) doc.save().rect(startX, y, usableW, rowH).fill('#f7efef').restore();
-      doc.save().strokeColor('#e8e0e0').lineWidth(0.5)
-         .moveTo(startX, y+rowH).lineTo(startX+usableW, y+rowH).stroke().restore();
+      if (zebra) {
+        doc.save().rect(startX, y, usableW, rowH).fill(CINZA_CLARO).restore();
+      }
+
+      doc.save()
+        .strokeColor('#e5e5e5')
+        .lineWidth(0.5)
+        .moveTo(startX, y + rowH)
+        .lineTo(startX + usableW, y + rowH)
+        .stroke()
+        .restore();
 
       let x = startX;
-      COLS.forEach(c=>{
+
+      COLS.forEach(c => {
         const txt = String(dados[c.key] ?? '—');
-        const opts = { width: c.w - padX*2, align:'left' };
-        doc.fillColor(PRETO).font('Helvetica').fontSize(10);
-        if (c.lineBreak === false) doc.text(txt, x+padX, y+padY, { ...opts, lineBreak:false });
-        else doc.text(txt, x+padX, y+padY, opts);
+
+        doc.fillColor(PRETO)
+          .font('Helvetica')
+          .fontSize(8.2);
+
+        const opts = {
+          width: c.w - padX * 2,
+          align: 'left'
+        };
+
+        if (c.lineBreak === false) {
+          doc.text(txt, x + padX, y + padY, { ...opts, lineBreak: false });
+        } else {
+          doc.text(txt, x + padX, y + padY, opts);
+        }
+
         x += c.w;
       });
 
@@ -282,32 +687,42 @@ router.get('/pdf-consolidado', async (req, res) => {
     }
 
     cabecalhoTabela();
-    itens.forEach((a, i)=>{
-      const alunoNome = texto(a?.alunoId?.nome || a?.alunoNome || a?.aluno || a?.alunoId);
-      const dados = {
-        data: dtBR(a.createdAt),
-        aluno: alunoNome,
-        resp: texto(a.responsavel || a.criadoPor),
-        local: texto(a.local),
-        tipos: joinArr(a.tipos),
-        mats: joinArr(a.materiais),
-        enc: texto(a.encaminhamento),
-      };
-      linhaTabela(dados, i % 2 === 1);
+
+    itens.forEach((a, i) => {
+      linhaTabela({
+        data: dtBR(a.data || a.createdAt, false),
+        reg: texto(a.numeroRegistro),
+        aluno: pickAlunoNome(a),
+        turma: pickTurma(a),
+        local: valorLocal(a),
+        class: valorClassificacoes(a),
+        desf: valorDesfecho(a),
+      }, i % 2 === 1);
     });
 
-    if (y > doc.page.height - 80) {
+    if (y > doc.page.height - 90) {
       safeAddPage(doc, titulo, subtitulo);
       y = doc.y;
     }
-    doc.font('Helvetica').fontSize(9).fillColor(CINZA_TEXTO)
-       .text('Observação: textos longos são automaticamente quebrados e justificados para caber na página.', startX, y, { width: usableW });
+
+    doc.y = y + 10;
+
+    doc.fillColor(CINZA_TEXTO)
+      .font('Helvetica')
+      .fontSize(9)
+      .text(
+        'Observação: este relatório consolidado apresenta os principais registros de APH no período selecionado. Para consulta integral, emitir o relatório individual do atendimento.',
+        startX,
+        doc.y,
+        { width: usableW, align: 'justify' }
+      );
 
     footerTema(doc);
     doc.end();
-  }catch(err){
+
+  } catch (err) {
     console.error('pdf consolidado erro (fatal):', err);
-    try{ res.status(500).send('Erro ao gerar PDF consolidado.'); }catch{}
+    try { res.status(500).send('Erro ao gerar PDF consolidado.'); } catch {}
   }
 });
 

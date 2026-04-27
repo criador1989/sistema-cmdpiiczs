@@ -1892,33 +1892,99 @@
     }
 
     async function carregarDadosAPH(){
-      const p = montarQueryAPH();
-      try{
-        const j = await fetchJsonSeguro('/api/aph/estatisticas' + (p.toString() ? `?${p.toString()}` : ''));
+  const { inicioISO, fimISO, turma } = getFiltros();
 
-        ultimoSnapshot.aph.porTipo = j.porTipo || [];
-        ultimoSnapshot.aph.porMaterial = j.porMaterial || [];
-        ultimoSnapshot.aph.porEncaminhamento = j.porEncaminhamento || [];
-        ultimoSnapshot.aph.porLocal = j.porLocal || [];
-        ultimoSnapshot.aph.porTurma = j.porTurma || [];
-        ultimoSnapshot.aph.porTurno = j.porTurno || [];
-        ultimoSnapshot.aph.porResponsavel = j.porResponsavel || [];
-        ultimoSnapshot.aph.porMes = ordPorMesAsc(j.porMes || []);
+  const params = new URLSearchParams();
+  if (inicioISO) params.set('inicio', inicioISO);
+  if (fimISO) params.set('fim', fimISO);
+  if (turma && turma !== 'Todas') params.set('turma', turma);
 
-        drawBars('aphTipo', ultimoSnapshot.aph.porTipo, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porTipo.map(x => x.total || 0)));
-        drawBars('aphMateriais', ultimoSnapshot.aph.porMaterial, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porMaterial.map(x => x.total || 0)));
-        drawBars('aphEnc', ultimoSnapshot.aph.porEncaminhamento, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porEncaminhamento.map(x => x.total || 0)));
-        drawBars('aphLocal', ultimoSnapshot.aph.porLocal, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porLocal.map(x => x.total || 0)));
-        drawBars('aphTurma', ultimoSnapshot.aph.porTurma, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porTurma.map(x => x.total || 0)));
-        drawBars('aphTurno', ultimoSnapshot.aph.porTurno, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porTurno.map(x => x.total || 0)));
-        drawBars('aphResp', ultimoSnapshot.aph.porResponsavel, '_id', 'total', Math.max(5, ...ultimoSnapshot.aph.porResponsavel.map(x => x.total || 0)));
-        drawLine('aphMes', ultimoSnapshot.aph.porMes, '_id', 'total');
-      }catch(e){
-        console.error(e);
-        showError(e.message || 'Falha ao carregar estatísticas de APH');
-        ['aphTipo','aphMateriais','aphEnc','aphLocal','aphMes','aphTurma','aphTurno','aphResp'].forEach(id => drawEmptyState(id));
-      }
-    }
+  const qs = params.toString() ? `?${params.toString()}` : '';
+
+  try {
+    // 🔥 NOVOS ENDPOINTS
+    const [
+      tipos,
+      materiais,
+      encaminhamentos,
+      locais,
+      turmas,
+      turnos,
+      responsaveis,
+      meses
+    ] = await Promise.all([
+      fetchJsonSeguro('/api/estatisticas/aph/tipos' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/materiais' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/encaminhamentos' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/locais' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/turmas' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/turnos' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/responsaveis' + qs),
+      fetchJsonSeguro('/api/estatisticas/aph/mes' + qs)
+    ]);
+
+    // 🔄 NORMALIZAÇÃO (compatível com seus gráficos atuais)
+    ultimoSnapshot.aph.porTipo = (tipos || []).map(x => ({
+      _id: x.tipo,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porMaterial = (materiais || []).map(x => ({
+      _id: x.material,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porEncaminhamento = (encaminhamentos || []).map(x => ({
+      _id: x.encaminhamento,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porLocal = (locais || []).map(x => ({
+      _id: x.local,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porTurma = (turmas || []).map(x => ({
+      _id: x.turma,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porTurno = (turnos || []).map(x => ({
+      _id: x.turno,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porResponsavel = (responsaveis || []).map(x => ({
+      _id: x.responsavel,
+      total: x.total
+    }));
+
+    ultimoSnapshot.aph.porMes = (meses || []).map(x => ({
+      _id: x.label,
+      total: x.total
+    }));
+
+    // 🎨 DESENHO (mantém seu estilo atual)
+    drawBars('aphTipo', ultimoSnapshot.aph.porTipo, '_id', 'total');
+    drawBars('aphMateriais', ultimoSnapshot.aph.porMaterial, '_id', 'total');
+    drawBars('aphEnc', ultimoSnapshot.aph.porEncaminhamento, '_id', 'total');
+    drawBars('aphLocal', ultimoSnapshot.aph.porLocal, '_id', 'total');
+    drawBars('aphTurma', ultimoSnapshot.aph.porTurma, '_id', 'total');
+    drawBars('aphTurno', ultimoSnapshot.aph.porTurno, '_id', 'total');
+    drawBars('aphResp', ultimoSnapshot.aph.porResponsavel, '_id', 'total');
+
+    drawLine('aphMes', ultimoSnapshot.aph.porMes, '_id', 'total');
+
+  } catch (e) {
+    console.error(e);
+    showError('Erro ao carregar estatísticas APH');
+
+    [
+      'aphTipo','aphMateriais','aphEnc','aphLocal',
+      'aphMes','aphTurma','aphTurno','aphResp'
+    ].forEach(drawEmptyState);
+  }
+}
 
     async function aplicarFiltros(){
       try{
