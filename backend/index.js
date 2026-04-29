@@ -228,9 +228,9 @@ const rankingAlunosRouter = require('./routes/api/rankingAlunos');
 const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
 const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
 const chamadasRoutes = require('./routes/api/chamadas');
-const redacaoRoutes = require('./routes/api/redacao');
-const questionariosRoutes = require('./routes/api/questionarios');
-const rifasRoutes = require('./routes/api/rifas');
+// const redacaoRoutes = require('./routes/api/redacao');
+// const questionariosRoutes = require('./routes/api/questionarios');
+// const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 
 let masterInstituicoesRoutes = null;
@@ -607,17 +607,17 @@ mountIf('/api/aph', aphPdfRoutes);
 /* =========================
    ✅ NOVA ROTA: REDAÇÃO ENEM
    ========================= */
-mountIf('/api/redacao', redacaoRoutes);
+//mountIf('/api/redacao', redacaoRoutes);
 
 /* =========================
    ✅ NOVA ROTA: QUESTIONÁRIOS
    ========================= */
-mountIf('/api/questionarios', questionariosRoutes);
+//mountIf('/api/questionarios', questionariosRoutes);
 
 /* =========================
    🚀 RIFAS (NOVO MÓDULO)
    ========================= */
-mountIf('/api/rifas', rifasRoutes, autenticar);
+//mountIf('/api/rifas', rifasRoutes, autenticar);
 
 /* =========================
    🚀 BAILE FORMATURA (NOVO MÓDULO)
