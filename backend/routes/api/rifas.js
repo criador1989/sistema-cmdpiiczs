@@ -1,0 +1,1466 @@
+const express = require("express");
+const router = express.Router();
+
+const CampanhaRifa = require("../../models/CampanhaRifa");
+const RifaNumero = require("../../models/RifaNumero");
+const Aluno = require("../../models/Aluno");
+
+const { requireTenant } = require("../../middleware/tenantScope");
+
+function getUsuarioReq(req) {
+  return req.usuario || req.user || {};
+}
+
+function getUserId(req) {
+  const u = getUsuarioReq(req);
+  return u._id || u.id || null;
+}
+
+function getInstituicaoId(req) {
+  const u = getUsuarioReq(req);
+
+  return (
+    req.instituicao?._id ||
+    req.instituicaoId ||
+    u.instituicao ||
+    u.instituicaoId ||
+    null
+  );
+}
+
+function requireAdminRifas(req, res, next) {
+  const u = getUsuarioReq(req);
+
+  const perfil = String(
+    u.perfil ||
+    u.tipo ||
+    u.role ||
+    u.cargo ||
+    ""
+  ).toLowerCase();
+
+  const permitido =
+    perfil.includes("admin") ||
+    perfil.includes("master") ||
+    perfil.includes("superadmin") ||
+    perfil.includes("financeiro");
+
+  if (!permitido) {
+    return res.status(403).json({
+      erro: "Acesso negado. Módulo de rifas restrito à administração.",
+      perfilDetectado: perfil || "não identificado",
+    });
+  }
+
+  next();
+}
+
+function formatNumero(numero, largura = 4) {
+  return String(numero).padStart(largura, "0");
+}
+
+function toNumberOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * GET /api/rifas/turmas-alunos
+ * Lista turmas disponíveis para seleção no módulo de rifas
+ */
+router.get(
+  "/turmas-alunos",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
+
+      const turmas = await Aluno.distinct("turma", {
+        instituicao,
+        ativo: { $ne: false },
+        turma: { $nin: [null, ""] },
+      });
+
+      return res.json({
+        ok: true,
+        turmas: turmas.filter(Boolean).sort(),
+      });
+    } catch (error) {
+      console.error("[RIFAS][TURMAS_ALUNOS]", error);
+      return res.status(500).json({
+        erro: "Erro ao listar turmas dos alunos.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/alunos-por-turma?turma=...
+ * Lista alunos de uma turma para distribuir rifas sem digitar nome manualmente
+ */
+router.get(
+  "/alunos-por-turma",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const turma = String(req.query.turma || "").trim();
+
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
+
+      if (!turma) {
+        return res.status(400).json({ erro: "Informe a turma." });
+      }
+
+      const alunos = await Aluno.find({
+        instituicao,
+        turma,
+        ativo: { $ne: false },
+      })
+        .select("_id nome turma codigo codigoAcesso matricula")
+        .sort({ nome: 1 })
+        .lean();
+
+      return res.json({
+        ok: true,
+        alunos,
+      });
+    } catch (error) {
+      console.error("[RIFAS][ALUNOS_POR_TURMA]", error);
+      return res.status(500).json({
+        erro: "Erro ao listar alunos da turma.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/rifas/campanhas
+ * Cria uma campanha de rifa
+ */
+router.post(
+  "/campanhas",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
+
+      const {
+        nome,
+        descricao,
+        numeroInicial,
+        numeroFinal,
+        valorUnitario,
+        chavePix,
+        responsavelFinanceiro,
+        dataInicio,
+        dataFim,
+      } = req.body;
+
+      if (!nome || !numeroInicial || !numeroFinal) {
+        return res.status(400).json({
+          erro: "Informe nome, número inicial e número final da campanha.",
+        });
+      }
+
+      const inicial = Number(numeroInicial);
+      const final = Number(numeroFinal);
+
+      if (!Number.isInteger(inicial) || !Number.isInteger(final)) {
+        return res.status(400).json({
+          erro: "Número inicial e final precisam ser números inteiros.",
+        });
+      }
+
+      if (final < inicial) {
+        return res.status(400).json({
+          erro: "O número final não pode ser menor que o número inicial.",
+        });
+      }
+
+      const campanha = await CampanhaRifa.create({
+        instituicao,
+        nome,
+        descricao: descricao || "",
+        numeroInicial: inicial,
+        numeroFinal: final,
+        quantidadeTotal: final - inicial + 1,
+        valorUnitario: Number(valorUnitario || 0),
+        chavePix: chavePix || "",
+        responsavelFinanceiro: responsavelFinanceiro || "",
+        dataInicio: dataInicio || null,
+        dataFim: dataFim || null,
+        criadoPor: getUserId(req),
+      });
+
+      return res.status(201).json({
+        ok: true,
+        campanha,
+      });
+    } catch (error) {
+      console.error("[RIFAS][CRIAR_CAMPANHA]", error);
+      return res.status(500).json({
+        erro: "Erro ao criar campanha de rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/campanhas
+ * Lista campanhas
+ */
+router.get(
+  "/campanhas",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      const campanhas = await CampanhaRifa.find({ instituicao })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return res.json({
+        ok: true,
+        campanhas,
+      });
+    } catch (error) {
+      console.error("[RIFAS][LISTAR_CAMPANHAS]", error);
+      return res.status(500).json({
+        erro: "Erro ao listar campanhas de rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/rifas/gerar-numeros
+ * Gera os números da campanha
+ */
+router.post(
+  "/gerar-numeros",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.body;
+
+      if (!campanhaId) {
+        return res.status(400).json({ erro: "Informe a campanha." });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const existentes = await RifaNumero.countDocuments({
+        instituicao,
+        campanha: campanha._id,
+      });
+
+      if (existentes > 0) {
+        return res.status(400).json({
+          erro: "Os números dessa campanha já foram gerados.",
+        });
+      }
+
+      const largura = String(campanha.numeroFinal).length;
+      const lote = [];
+
+      for (let n = campanha.numeroInicial; n <= campanha.numeroFinal; n++) {
+        lote.push({
+          instituicao,
+          campanha: campanha._id,
+          numero: formatNumero(n, largura),
+          numeroValor: n,
+          status: "disponivel",
+          valor: campanha.valorUnitario || 0,
+          criadoPor: getUserId(req),
+        });
+      }
+
+      await RifaNumero.insertMany(lote, { ordered: false });
+
+      return res.status(201).json({
+        ok: true,
+        mensagem: "Números gerados com sucesso.",
+        totalGerado: lote.length,
+      });
+    } catch (error) {
+      console.error("[RIFAS][GERAR_NUMEROS]", error);
+      return res.status(500).json({
+        erro: "Erro ao gerar números da campanha.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/dashboard/:campanhaId
+ */
+router.get(
+  "/dashboard/:campanhaId",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.params;
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      }).lean();
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const resumoStatus = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+          },
+        },
+        {
+          $group: {
+            _id: "$status",
+            total: { $sum: 1 },
+            valorTotal: { $sum: "$valor" },
+            valorPago: { $sum: "$valorPago" },
+          },
+        },
+      ]);
+
+      const totais = {
+        total: campanha.quantidadeTotal || 0,
+        disponivel: 0,
+        distribuida: 0,
+        vendida: 0,
+        paga: 0,
+        devolvida: 0,
+        arrecadado: 0,
+        pendente: 0,
+      };
+
+      resumoStatus.forEach((item) => {
+        totais[item._id] = item.total;
+        totais.arrecadado += item.valorPago || 0;
+      });
+
+      const valorEsperadoVendido = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+            status: { $in: ["vendida", "paga"] },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            valor: { $sum: "$valor" },
+            pago: { $sum: "$valorPago" },
+          },
+        },
+      ]);
+
+      const esperado = valorEsperadoVendido[0]?.valor || 0;
+      const pago = valorEsperadoVendido[0]?.pago || 0;
+      totais.pendente = Math.max(esperado - pago, 0);
+
+      return res.json({
+        ok: true,
+        campanha,
+        totais,
+      });
+    } catch (error) {
+      console.error("[RIFAS][DASHBOARD]", error);
+      return res.status(500).json({
+        erro: "Erro ao carregar dashboard da campanha.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/rifas/distribuir-bloco
+ */
+router.post(
+  "/distribuir-bloco",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      const {
+        campanhaId,
+        numeroInicial,
+        numeroFinal,
+        responsavelTipo,
+        responsavelId,
+        responsavelNome,
+        turmaOuSetor,
+        observacao,
+      } = req.body;
+
+      if (!campanhaId || !numeroInicial || !numeroFinal || !responsavelNome) {
+        return res.status(400).json({
+          erro: "Informe campanha, bloco inicial/final e responsável.",
+        });
+      }
+
+      const inicial = Number(numeroInicial);
+      const final = Number(numeroFinal);
+
+      if (!Number.isInteger(inicial) || !Number.isInteger(final)) {
+        return res.status(400).json({
+          erro: "Número inicial e final precisam ser números inteiros.",
+        });
+      }
+
+      if (final < inicial) {
+        return res.status(400).json({
+          erro: "O número final do bloco não pode ser menor que o inicial.",
+        });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const numeros = await RifaNumero.find({
+        instituicao,
+        campanha: campanha._id,
+        numeroValor: { $gte: inicial, $lte: final },
+      });
+
+      const esperado = final - inicial + 1;
+
+      if (numeros.length !== esperado) {
+        return res.status(400).json({
+          erro: "Nem todos os números do bloco existem na campanha.",
+        });
+      }
+
+      const indisponiveis = numeros.filter((n) => n.status !== "disponivel");
+
+      if (indisponiveis.length > 0) {
+        return res.status(400).json({
+          erro: "Existem números nesse bloco que já foram distribuídos ou movimentados.",
+          numerosIndisponiveis: indisponiveis.map((n) => n.numero),
+        });
+      }
+
+      await RifaNumero.updateMany(
+        {
+          instituicao,
+          campanha: campanha._id,
+          numeroValor: { $gte: inicial, $lte: final },
+          status: "disponivel",
+        },
+        {
+          $set: {
+            status: "distribuida",
+            responsavelTipo: responsavelTipo || (responsavelId ? "aluno" : "outro"),
+            responsavelId: responsavelId || null,
+            responsavelNome,
+            turmaOuSetor: turmaOuSetor || "",
+            observacao: observacao || "",
+            dataDistribuicao: new Date(),
+            atualizadoPor: getUserId(req),
+          },
+        }
+      );
+
+      return res.json({
+        ok: true,
+        mensagem: "Bloco distribuído com sucesso.",
+        totalDistribuido: esperado,
+      });
+    } catch (error) {
+      console.error("[RIFAS][DISTRIBUIR_BLOCO]", error);
+      return res.status(500).json({
+        erro: "Erro ao distribuir bloco de rifas.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/rifas/prestacao
+ */
+router.post(
+  "/prestacao",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      const {
+        campanhaId,
+        numeros,
+        status,
+        formaPagamento,
+        valorPago,
+        comprovanteUrl,
+        observacao,
+      } = req.body;
+
+      if (!campanhaId || !Array.isArray(numeros) || numeros.length === 0) {
+        return res.status(400).json({
+          erro: "Informe a campanha e os números da prestação.",
+        });
+      }
+
+      if (!["vendida", "paga", "devolvida"].includes(status)) {
+        return res.status(400).json({
+          erro: "Status inválido para prestação.",
+        });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const agora = new Date();
+
+      const set = {
+        status,
+        observacao: observacao || "",
+        atualizadoPor: getUserId(req),
+      };
+
+      if (status === "vendida") {
+        set.dataVenda = agora;
+      }
+
+      if (status === "paga") {
+        set.dataVenda = agora;
+        set.dataPagamento = agora;
+        set.formaPagamento = formaPagamento || "";
+        set.valorPago = Number(valorPago || campanha.valorUnitario || 0);
+        set.comprovanteUrl = comprovanteUrl || "";
+      }
+
+      if (status === "devolvida") {
+        set.responsavelTipo = "";
+        set.responsavelId = null;
+        set.responsavelNome = "";
+        set.turmaOuSetor = "";
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+      }
+
+      const resultado = await RifaNumero.updateMany(
+        {
+          instituicao,
+          campanha: campanha._id,
+          numero: { $in: numeros.map(String) },
+        },
+        {
+          $set: set,
+        }
+      );
+
+      return res.json({
+        ok: true,
+        mensagem: "Prestação registrada com sucesso.",
+        modificados: resultado.modifiedCount || resultado.nModified || 0,
+      });
+    } catch (error) {
+      console.error("[RIFAS][PRESTACAO]", error);
+      return res.status(500).json({
+        erro: "Erro ao registrar prestação de contas.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * PATCH /api/rifas/editar-responsavel
+ * Corrige responsável, aluno vinculado, turma/setor ou observação de um intervalo
+ */
+router.patch(
+  "/editar-responsavel",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      const {
+        campanhaId,
+        numeroInicial,
+        numeroFinal,
+        novoResponsavelNome,
+        novoResponsavelId,
+        novaTurmaOuSetor,
+        novaObservacao,
+      } = req.body;
+
+      if (!campanhaId || !numeroInicial || !numeroFinal) {
+        return res.status(400).json({
+          erro: "Informe campanha e intervalo de números.",
+        });
+      }
+
+      const inicial = Number(numeroInicial);
+      const final = Number(numeroFinal);
+
+      if (!Number.isInteger(inicial) || !Number.isInteger(final)) {
+        return res.status(400).json({
+          erro: "Número inicial e final precisam ser números inteiros.",
+        });
+      }
+
+      if (final < inicial) {
+        return res.status(400).json({
+          erro: "Intervalo inválido.",
+        });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const filtro = {
+        instituicao,
+        campanha: campanha._id,
+        numeroValor: { $gte: inicial, $lte: final },
+      };
+
+      const numeros = await RifaNumero.find(filtro).lean();
+
+      if (!numeros.length) {
+        return res.status(404).json({
+          erro: "Nenhum número encontrado nesse intervalo.",
+        });
+      }
+
+      await RifaNumero.updateMany(filtro, {
+        $set: {
+          responsavelNome: novoResponsavelNome || "",
+          responsavelId: novoResponsavelId || null,
+          responsavelTipo: novoResponsavelId ? "aluno" : "outro",
+          turmaOuSetor: novaTurmaOuSetor || "",
+          observacao: novaObservacao || "",
+          atualizadoPor: getUserId(req),
+        },
+      });
+
+      return res.json({
+        ok: true,
+        mensagem: "Responsável/bloco atualizado com sucesso.",
+        totalAtualizado: numeros.length,
+      });
+    } catch (error) {
+      console.error("[RIFAS][EDITAR_RESPONSAVEL]", error);
+      return res.status(500).json({
+        erro: "Erro ao editar responsável da rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * PATCH /api/rifas/editar-pagamento
+ * Corrige pagamento/status de um intervalo ou lista de números
+ */
+router.patch(
+  "/editar-pagamento",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      const {
+        campanhaId,
+        numeros,
+        numeroInicial,
+        numeroFinal,
+        status,
+        formaPagamento,
+        valorPago,
+        comprovanteUrl,
+        observacao,
+      } = req.body;
+
+      if (!campanhaId) {
+        return res.status(400).json({ erro: "Informe a campanha." });
+      }
+
+      if (
+        !["disponivel", "distribuida", "vendida", "paga", "devolvida"].includes(
+          status
+        )
+      ) {
+        return res.status(400).json({ erro: "Status inválido." });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      let filtro = {
+        instituicao,
+        campanha: campanha._id,
+      };
+
+      if (Array.isArray(numeros) && numeros.length > 0) {
+        filtro.numero = { $in: numeros.map(String) };
+      } else {
+        const inicial = toNumberOrNull(numeroInicial);
+        const final = toNumberOrNull(numeroFinal);
+
+        if (!inicial || !final) {
+          return res.status(400).json({
+            erro: "Informe números ou intervalo inicial/final.",
+          });
+        }
+
+        if (final < inicial) {
+          return res.status(400).json({
+            erro: "Intervalo inválido.",
+          });
+        }
+
+        filtro.numeroValor = { $gte: inicial, $lte: final };
+      }
+
+      const set = {
+        status,
+        observacao: observacao || "",
+        atualizadoPor: getUserId(req),
+      };
+
+      const agora = new Date();
+
+      if (status === "vendida") {
+        set.dataVenda = agora;
+        set.dataPagamento = null;
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+      }
+
+      if (status === "paga") {
+        set.dataVenda = agora;
+        set.dataPagamento = agora;
+        set.formaPagamento = formaPagamento || "";
+        set.valorPago = Number(valorPago || campanha.valorUnitario || 0);
+        set.comprovanteUrl = comprovanteUrl || "";
+      }
+
+      if (status === "distribuida") {
+        set.dataVenda = null;
+        set.dataPagamento = null;
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+      }
+
+      if (status === "disponivel") {
+        set.responsavelTipo = "";
+        set.responsavelId = null;
+        set.responsavelNome = "";
+        set.turmaOuSetor = "";
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+        set.dataDistribuicao = null;
+        set.dataVenda = null;
+        set.dataPagamento = null;
+      }
+
+      if (status === "devolvida") {
+        set.responsavelTipo = "";
+        set.responsavelId = null;
+        set.responsavelNome = "";
+        set.turmaOuSetor = "";
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+        set.dataVenda = null;
+        set.dataPagamento = null;
+      }
+
+      const resultado = await RifaNumero.updateMany(filtro, { $set: set });
+
+      return res.json({
+        ok: true,
+        mensagem: "Pagamento/status atualizado com sucesso.",
+        modificados: resultado.modifiedCount || resultado.nModified || 0,
+      });
+    } catch (error) {
+      console.error("[RIFAS][EDITAR_PAGAMENTO]", error);
+      return res.status(500).json({
+        erro: "Erro ao editar pagamento/status da rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/responsaveis/:campanhaId
+ */
+router.get(
+  "/responsaveis/:campanhaId",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.params;
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      }).lean();
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const responsaveis = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+            responsavelNome: { $ne: "" },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              responsavelId: "$responsavelId",
+              responsavelNome: "$responsavelNome",
+              turmaOuSetor: "$turmaOuSetor",
+            },
+            entregues: { $sum: 1 },
+            vendidas: {
+              $sum: {
+                $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0],
+              },
+            },
+            pagas: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "paga"] }, 1, 0],
+              },
+            },
+            devolvidas: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "devolvida"] }, 1, 0],
+              },
+            },
+           valorEsperado: {
+            $sum: {
+                $cond: [
+                { $in: ["$status", ["vendida", "paga"]] },
+                "$valor",
+                0,
+                ],
+            },
+            },
+            valorPago: { $sum: "$valorPago" },
+
+            menorNumero: { $min: "$numeroValor" },
+            maiorNumero: { $max: "$numeroValor" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            responsavelId: "$_id.responsavelId",
+            responsavelNome: "$_id.responsavelNome",
+            turmaOuSetor: "$_id.turmaOuSetor",
+            entregues: 1,
+            vendidas: 1,
+            pagas: 1,
+            devolvidas: 1,
+            valorEsperado: 1,
+            valorPago: 1,
+            pendente: {
+              $max: [{ $subtract: ["$valorEsperado", "$valorPago"] }, 0],
+            },
+            menorNumero: 1,
+            maiorNumero: 1,
+          },
+        },
+        {
+          $sort: {
+            turmaOuSetor: 1,
+            responsavelNome: 1,
+          },
+        },
+      ]);
+
+      return res.json({
+        ok: true,
+        responsaveis,
+      });
+    } catch (error) {
+      console.error("[RIFAS][RESPONSAVEIS]", error);
+      return res.status(500).json({
+        erro: "Erro ao listar responsáveis da rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/inadimplencia/:campanhaId
+ * Relatório profissional de inadimplência
+ */
+router.get(
+  "/inadimplencia/:campanhaId",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.params;
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      }).lean();
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const agora = new Date();
+
+      const dados = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+            responsavelNome: { $ne: "" },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              responsavelId: "$responsavelId",
+              responsavelNome: "$responsavelNome",
+              turmaOuSetor: "$turmaOuSetor",
+            },
+
+            entregues: { $sum: 1 },
+
+            vendidas: {
+              $sum: {
+                $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0],
+              },
+            },
+
+            pagas: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "paga"] }, 1, 0],
+              },
+            },
+
+            valorEsperado: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["vendida", "paga"]] },
+                  "$valor",
+                  0,
+                ],
+              },
+            },
+
+            valorPago: { $sum: "$valorPago" },
+
+            ultimaMovimentacao: {
+              $max: {
+                $ifNull: ["$dataPagamento", "$dataVenda"],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+
+            responsavelId: "$_id.responsavelId",
+            responsavelNome: "$_id.responsavelNome",
+            turmaOuSetor: "$_id.turmaOuSetor",
+
+            entregues: 1,
+            vendidas: 1,
+            pagas: 1,
+
+            valorEsperado: 1,
+            valorPago: 1,
+
+            pendente: {
+              $max: [{ $subtract: ["$valorEsperado", "$valorPago"] }, 0],
+            },
+
+            percentualPago: {
+              $cond: [
+                { $gt: ["$valorEsperado", 0] },
+                {
+                  $multiply: [
+                    { $divide: ["$valorPago", "$valorEsperado"] },
+                    100,
+                  ],
+                },
+                0,
+              ],
+            },
+
+            ultimaMovimentacao: 1,
+          },
+        },
+      ]);
+
+      // 🔥 CLASSIFICAÇÃO INTELIGENTE
+      const resultado = dados.map((r) => {
+        const diasSemMovimento = r.ultimaMovimentacao
+          ? Math.floor(
+              (agora - new Date(r.ultimaMovimentacao)) /
+                (1000 * 60 * 60 * 24)
+            )
+          : 999;
+
+        let nivel = "em_dia";
+
+        if (r.pendente > 0) {
+          if (r.pendente >= 100 || diasSemMovimento > 7) {
+            nivel = "critico";
+          } else if (r.pendente >= 50 || diasSemMovimento > 3) {
+            nivel = "atrasado";
+          } else {
+            nivel = "atencao";
+          }
+        }
+
+        const mensagem = `Olá, ${r.responsavelNome}.
+Consta uma pendência referente à rifa "${campanha.nome}".
+
+Rifas vendidas: ${r.vendidas}
+Valor esperado: R$ ${r.valorEsperado.toFixed(2)}
+Valor pago: R$ ${r.valorPago.toFixed(2)}
+Pendente: R$ ${r.pendente.toFixed(2)}
+
+Pedimos, por gentileza, a regularização.`;
+
+        return {
+          ...r,
+          diasSemMovimento,
+          nivelAlerta: nivel,
+          mensagemCobranca: mensagem,
+        };
+      });
+
+      return res.json({
+        ok: true,
+        campanha: campanha.nome,
+        totalResponsaveis: resultado.length,
+        inadimplentes: resultado.filter((r) => r.pendente > 0).length,
+        dados: resultado,
+      });
+    } catch (error) {
+      console.error("[RIFAS][INADIMPLENCIA]", error);
+      return res.status(500).json({
+        erro: "Erro ao gerar relatório de inadimplência.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/ranking/:campanhaId
+ * Ranking profissional de vendas por responsável e por turma/setor
+ */
+router.get(
+  "/ranking/:campanhaId",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.params;
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      }).lean();
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const topResponsaveis = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+            responsavelNome: { $ne: "" },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              responsavelId: "$responsavelId",
+              responsavelNome: "$responsavelNome",
+              turmaOuSetor: "$turmaOuSetor",
+            },
+            entregues: { $sum: 1 },
+            vendidas: {
+              $sum: {
+                $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0],
+              },
+            },
+            pagas: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "paga"] }, 1, 0],
+              },
+            },
+            valorVendido: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["vendida", "paga"]] },
+                  "$valor",
+                  0,
+                ],
+              },
+            },
+            valorPago: { $sum: "$valorPago" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            responsavelId: "$_id.responsavelId",
+            responsavelNome: "$_id.responsavelNome",
+            turmaOuSetor: "$_id.turmaOuSetor",
+            entregues: 1,
+            vendidas: 1,
+            pagas: 1,
+            valorVendido: 1,
+            valorPago: 1,
+            pendente: {
+              $max: [{ $subtract: ["$valorVendido", "$valorPago"] }, 0],
+            },
+            percentualPrestado: {
+              $cond: [
+                { $gt: ["$valorVendido", 0] },
+                { $multiply: [{ $divide: ["$valorPago", "$valorVendido"] }, 100] },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $sort: {
+            vendidas: -1,
+            valorPago: -1,
+            pendente: 1,
+            responsavelNome: 1,
+          },
+        },
+        { $limit: 20 },
+      ]);
+
+      const topTurmas = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+            turmaOuSetor: { $ne: "" },
+          },
+        },
+        {
+          $group: {
+            _id: "$turmaOuSetor",
+            responsaveis: { $addToSet: "$responsavelNome" },
+            entregues: { $sum: 1 },
+            vendidas: {
+              $sum: {
+                $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0],
+              },
+            },
+            pagas: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "paga"] }, 1, 0],
+              },
+            },
+            valorVendido: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["vendida", "paga"]] },
+                  "$valor",
+                  0,
+                ],
+              },
+            },
+            valorPago: { $sum: "$valorPago" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            turmaOuSetor: "$_id",
+            totalResponsaveis: { $size: "$responsaveis" },
+            entregues: 1,
+            vendidas: 1,
+            pagas: 1,
+            valorVendido: 1,
+            valorPago: 1,
+            pendente: {
+              $max: [{ $subtract: ["$valorVendido", "$valorPago"] }, 0],
+            },
+            percentualPrestado: {
+              $cond: [
+                { $gt: ["$valorVendido", 0] },
+                { $multiply: [{ $divide: ["$valorPago", "$valorVendido"] }, 100] },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $sort: {
+            vendidas: -1,
+            valorPago: -1,
+            pendente: 1,
+            turmaOuSetor: 1,
+          },
+        },
+        { $limit: 20 },
+      ]);
+
+      const resumo = await RifaNumero.aggregate([
+        {
+          $match: {
+            instituicao: campanha.instituicao,
+            campanha: campanha._id,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalEntregue: {
+              $sum: {
+                $cond: [{ $ne: ["$responsavelNome", ""] }, 1, 0],
+              },
+            },
+            totalVendido: {
+              $sum: {
+                $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0],
+              },
+            },
+            totalPago: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "paga"] }, 1, 0],
+              },
+            },
+            valorVendido: {
+              $sum: {
+                $cond: [
+                  { $in: ["$status", ["vendida", "paga"]] },
+                  "$valor",
+                  0,
+                ],
+              },
+            },
+            valorPago: { $sum: "$valorPago" },
+          },
+        },
+      ]);
+
+      const resumoFinal = resumo[0] || {
+        totalEntregue: 0,
+        totalVendido: 0,
+        totalPago: 0,
+        valorVendido: 0,
+        valorPago: 0,
+      };
+
+      return res.json({
+        ok: true,
+        campanha: campanha.nome,
+        resumo: {
+          totalEntregue: resumoFinal.totalEntregue || 0,
+          totalVendido: resumoFinal.totalVendido || 0,
+          totalPago: resumoFinal.totalPago || 0,
+          valorVendido: resumoFinal.valorVendido || 0,
+          valorPago: resumoFinal.valorPago || 0,
+          pendente: Math.max(
+            (resumoFinal.valorVendido || 0) - (resumoFinal.valorPago || 0),
+            0
+          ),
+          melhorResponsavel: topResponsaveis[0] || null,
+          melhorTurma: topTurmas[0] || null,
+        },
+        topResponsaveis,
+        topTurmas,
+      });
+    } catch (error) {
+      console.error("[RIFAS][RANKING]", error);
+      return res.status(500).json({
+        erro: "Erro ao gerar ranking de vendas.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/numeros/:campanhaId
+ */
+router.get(
+  "/numeros/:campanhaId",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.params;
+      const { status, responsavel, turma, limite = 300 } = req.query;
+
+      const filtro = {
+        instituicao,
+        campanha: campanhaId,
+      };
+
+      if (status) filtro.status = status;
+      if (responsavel) filtro.responsavelNome = new RegExp(responsavel, "i");
+      if (turma) filtro.turmaOuSetor = new RegExp(turma, "i");
+
+      const numeros = await RifaNumero.find(filtro)
+        .sort({ numeroValor: 1 })
+        .limit(Math.min(Number(limite) || 300, 1000))
+        .lean();
+
+      return res.json({
+        ok: true,
+        numeros,
+      });
+    } catch (error) {
+      console.error("[RIFAS][NUMEROS]", error);
+      return res.status(500).json({
+        erro: "Erro ao listar números da rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * PATCH /api/rifas/:id/status
+ */
+router.patch(
+  "/:id/status",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (
+        !["disponivel", "distribuida", "vendida", "paga", "devolvida"].includes(
+          status
+        )
+      ) {
+        return res.status(400).json({ erro: "Status inválido." });
+      }
+
+      const atualizado = await RifaNumero.findOneAndUpdate(
+        {
+          _id: id,
+          instituicao,
+        },
+        {
+          $set: {
+            status,
+            atualizadoPor: getUserId(req),
+          },
+        },
+        { new: true }
+      );
+
+      if (!atualizado) {
+        return res.status(404).json({ erro: "Número não encontrado." });
+      }
+
+      return res.json({
+        ok: true,
+        numero: atualizado,
+      });
+    } catch (error) {
+      console.error("[RIFAS][ALTERAR_STATUS]", error);
+      return res.status(500).json({
+        erro: "Erro ao alterar status da rifa.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+module.exports = router;

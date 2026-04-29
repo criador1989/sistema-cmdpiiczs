@@ -230,7 +230,7 @@ const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportament
 const chamadasRoutes = require('./routes/api/chamadas');
 // const redacaoRoutes = require('./routes/api/redacao');
 // const questionariosRoutes = require('./routes/api/questionarios');
-// const rifasRoutes = require('./routes/api/rifas');
+const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 
 let masterInstituicoesRoutes = null;
@@ -617,7 +617,7 @@ mountIf('/api/aph', aphPdfRoutes);
 /* =========================
    🚀 RIFAS (NOVO MÓDULO)
    ========================= */
-//mountIf('/api/rifas', rifasRoutes, autenticar);
+mountIf('/api/rifas', rifasRoutes, autenticar);
 
 /* =========================
    🚀 BAILE FORMATURA (NOVO MÓDULO)
