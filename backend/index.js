@@ -116,7 +116,12 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'MonitorPresenca',
   'MonitorNota',
   'MonitorAtividade',
-  'SuperAdmin'
+  'SuperAdmin',
+  'Questao',
+  'QuestionarioTentativa',
+  'CampanhaRifa',
+  'RifaNumero',
+  'BaileContrato'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -223,6 +228,10 @@ const rankingAlunosRouter = require('./routes/api/rankingAlunos');
 const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
 const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
 const chamadasRoutes = require('./routes/api/chamadas');
+const redacaoRoutes = require('./routes/api/redacao');
+const questionariosRoutes = require('./routes/api/questionarios');
+const rifasRoutes = require('./routes/api/rifas');
+const baileContratosRoutes = require('./routes/api/baileContratos');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -368,7 +377,8 @@ function buildProfessorGuard(publicRoot) {
     '/monitores.html',
     '/monitor-ficha.html',
     '/ranking-alunos.html',
-    '/master-instituicoes.html'
+    '/master-instituicoes.html',
+    '/rifas.html'
   ]);
 
   const blockedPrefixes = [
@@ -386,11 +396,18 @@ function buildProfessorGuard(publicRoot) {
     '/api/logs',
     '/api/estatisticas',
     '/api/controle-notificacoes',
-    '/api/master'
+    '/api/master',
+    '/rifas',
+    '/api/rifas'
   ];
 
   const alwaysPublic = new Set([
     '/login.html',
+    '/login-aluno.html',
+    '/painel-aluno.html',
+    '/painel-aluno.js',
+    '/aluno-redacao.html',
+    '/aluno-questionarios.html',
     '/superadmin-login.html',
     '/cadastro-usuario.html',
     '/bem-vindo.html',
@@ -588,6 +605,26 @@ mountIf('/api/aph', aphEstatisticasRoutes);
 mountIf('/api/aph', aphPdfRoutes);
 
 /* =========================
+   ✅ NOVA ROTA: REDAÇÃO ENEM
+   ========================= */
+mountIf('/api/redacao', redacaoRoutes);
+
+/* =========================
+   ✅ NOVA ROTA: QUESTIONÁRIOS
+   ========================= */
+mountIf('/api/questionarios', questionariosRoutes);
+
+/* =========================
+   🚀 RIFAS (NOVO MÓDULO)
+   ========================= */
+mountIf('/api/rifas', rifasRoutes, autenticar);
+
+/* =========================
+   🚀 BAILE FORMATURA (NOVO MÓDULO)
+   ========================= */
+mountIf('/api/baile-contratos', baileContratosRoutes, autenticar);
+
+/* =========================
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
    ========================= */
 mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
@@ -744,7 +781,12 @@ app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendF
 app.get('/__version', (_req, res) =>
   res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', builtAt: new Date().toISOString() })
 );
-app.get('/healthz', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+
+app.get('/healthz', (_req, res) => res.json({
+  ok: true,
+  mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+  ts: Date.now()
+}));
 
 app.use((req, res) => {
   if (req.method === 'GET') {
@@ -766,51 +808,68 @@ const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
 const PORT = process.env.PORT || 5000;
 let agendadorRecalculoIniciado = false;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
-  console.log('🧪 Health pronto: /__version e /healthz');
-  console.log('🌍 CORS: Render + localhost + *.onrender.com');
-  (async () => { try { await verifyAll(); } catch {} })();
-});
-
 async function connectMongo() {
-  if (!/^mongodb(\+srv)?:\/\//i.test(URI)) return console.error('❌ URI do Mongo inválida.');
+  if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
+    throw new Error('URI do Mongo inválida ou ausente no .env.');
+  }
+
   const masked = URI.replace(/\/\/.*?@/, '//***@');
   console.log('🔐 Conectando no Mongo:', masked);
+
+  await mongoose.connect(URI, {
+    serverSelectionTimeoutMS: Number(process.env.DB_SERVER_SEL_MS || 60000),
+    socketTimeoutMS: Number(process.env.DB_SOCKET_MS || 60000),
+    heartbeatFrequencyMS: 10000,
+    maxPoolSize: Number(process.env.DB_MAX_POOL || 20),
+    minPoolSize: Number(process.env.DB_MIN_POOL || 0),
+    retryWrites: true,
+    family: 4,
+  });
+
+  console.log('🟢 Conectado ao MongoDB');
+
+  setTimeout(async () => {
   try {
-    await mongoose.connect(URI, {
-      serverSelectionTimeoutMS: Number(process.env.DB_SERVER_SEL_MS || 60000),
-      socketTimeoutMS: Number(process.env.DB_SOCKET_MS || 60000),
-      heartbeatFrequencyMS: 10000,
-      maxPoolSize: Number(process.env.DB_MAX_POOL || 20),
-      minPoolSize: Number(process.env.DB_MIN_POOL || 0),
-      retryWrites: true,
-      family: 4,
-    });
-    console.log('🟢 Conectado ao MongoDB');
-
-    try {
-      const resultado = await recalcularTodosAlunos();
-      console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
-    } catch (err) {
-      console.error('[startup] erro no recálculo inicial:', err);
-    }
-
-    if (!agendadorRecalculoIniciado) {
-      try {
-        iniciarAgendadorRecalculo();
-        agendadorRecalculoIniciado = true;
-        console.log('✅ Agendador de recálculo diário iniciado');
-      } catch (err) {
-        console.error('❌ Falha ao iniciar agendador de recálculo:', err);
-      }
-    }
+    const resultado = await recalcularTodosAlunos();
+    console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
   } catch (err) {
-    console.error('🟡 Falha ao conectar no Mongo:', err?.message || err);
-    setTimeout(connectMongo, 15000);
+    console.error('[startup] erro no recálculo inicial:', err);
+  }
+}, 5000);
+
+  if (!agendadorRecalculoIniciado) {
+    try {
+      iniciarAgendadorRecalculo();
+      agendadorRecalculoIniciado = true;
+      console.log('✅ Agendador de recálculo diário iniciado');
+    } catch (err) {
+      console.error('❌ Falha ao iniciar agendador de recálculo:', err);
+    }
   }
 }
-connectMongo();
+
+async function startServer() {
+  try {
+    await connectMongo();
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
+      console.log('🧪 Health pronto: /__version e /healthz');
+      console.log('🌍 CORS: Render + localhost + *.onrender.com');
+
+      (async () => {
+        try {
+          await verifyAll();
+        } catch {}
+      })();
+    });
+  } catch (err) {
+    console.error('❌ Falha crítica ao iniciar servidor:', err?.message || err);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 process.on('SIGINT', async () => {
   try { await mongoose.disconnect(); } catch {}
