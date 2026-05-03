@@ -2,6 +2,7 @@
 
 const Notificacao = require('../models/Notificacao');
 const Aluno = require('../models/Aluno');
+const ConfiguracaoDisciplinar = require('../models/ConfiguracaoDisciplinar');
 const calcularNotaTSMD = require('./calculoNota');
 
 function classificarComportamento(nota) {
@@ -16,14 +17,37 @@ function classificarComportamento(nota) {
 
 function normalizarValorPorNatureza(notificacao) {
   const valor = Number(notificacao?.valorNumerico || 0);
+
   if (String(notificacao?.natureza || '').toLowerCase() === 'elogio') {
     return Math.abs(valor);
   }
+
   return -Math.abs(valor);
 }
 
-async function recalcularNotificacaoIndividual(notificacaoDoc, alunoDoc) {
+function getDataBaseAluno(alunoDoc) {
+  return (
+    alunoDoc?.dataEntrada ||
+    alunoDoc?.dataMatricula ||
+    alunoDoc?.createdAt ||
+    new Date()
+  );
+}
+
+async function getConfigDisciplinarAluno(alunoDoc) {
+  if (!alunoDoc?.instituicao) return null;
+
+  return ConfiguracaoDisciplinar.findOne({
+    instituicao: alunoDoc.instituicao
+  }).lean();
+}
+
+async function recalcularNotificacaoIndividual(notificacaoDoc, alunoDoc, configDisc = null) {
+  const config = configDisc || await getConfigDisciplinarAluno(alunoDoc);
+  const dataBaseAluno = getDataBaseAluno(alunoDoc);
+
   const dt = new Date(notificacaoDoc.data || notificacaoDoc.createdAt || new Date());
+
   const inicioDia = new Date(dt);
   inicioDia.setHours(0, 0, 0, 0);
 
@@ -46,9 +70,10 @@ async function recalcularNotificacaoIndividual(notificacaoDoc, alunoDoc) {
   }));
 
   const notaAnterior = calcularNotaTSMD(
-    alunoDoc.dataEntrada,
+    dataBaseAluno,
     new Date(inicioDia.getTime() - 1),
-    anterioresNormalizados
+    anterioresNormalizados,
+    config
   );
 
   const ateODia = await Notificacao.find({
@@ -67,6 +92,7 @@ async function recalcularNotificacaoIndividual(notificacaoDoc, alunoDoc) {
         valorNumerico: normalizarValorPorNatureza(notificacaoDoc)
       };
     }
+
     return {
       ...n,
       valorNumerico: normalizarValorPorNatureza(n)
@@ -74,9 +100,10 @@ async function recalcularNotificacaoIndividual(notificacaoDoc, alunoDoc) {
   });
 
   const notaAtual = calcularNotaTSMD(
-    alunoDoc.dataEntrada,
+    dataBaseAluno,
     fimDia,
-    ateODiaNormalizado
+    ateODiaNormalizado,
+    config
   );
 
   await Notificacao.updateOne(
@@ -97,6 +124,9 @@ async function recalcularAlunoCompleto(alunoId) {
   const aluno = await Aluno.findById(alunoId);
   if (!aluno) return null;
 
+  const configDisc = await getConfigDisciplinarAluno(aluno);
+  const dataBaseAluno = getDataBaseAluno(aluno);
+
   const notificacoes = await Notificacao.find({
     aluno: alunoId,
     ativo: { $ne: false },
@@ -104,7 +134,7 @@ async function recalcularAlunoCompleto(alunoId) {
   }).sort({ data: 1, createdAt: 1 });
 
   for (const notif of notificacoes) {
-    await recalcularNotificacaoIndividual(notif, aluno);
+    await recalcularNotificacaoIndividual(notif, aluno, configDisc);
   }
 
   const historicoFinal = await Notificacao.find({
@@ -121,9 +151,10 @@ async function recalcularAlunoCompleto(alunoId) {
   }));
 
   const notaFinal = calcularNotaTSMD(
-    aluno.dataEntrada,
+    dataBaseAluno,
     new Date(),
-    historicoNormalizado
+    historicoNormalizado,
+    configDisc
   );
 
   const elogios = historicoNormalizado.filter(
