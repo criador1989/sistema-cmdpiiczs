@@ -361,7 +361,7 @@
 
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      grid-template-columns: repeat(7, minmax(130px, 1fr));
       gap: 10px;
       margin-bottom: 16px;
     }
@@ -415,6 +415,48 @@
       background: rgba(15, 23, 42, 0.96);
       box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
       padding: 22px;
+    }
+
+
+
+    .modal-card.large {
+      width: min(1100px, 100%);
+    }
+
+    .auto-tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+      align-items: center;
+    }
+
+    .auto-lista {
+      max-height: 280px;
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(2, 6, 23, 0.24);
+    }
+
+    .auto-aluno-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 7px 0;
+      color: var(--text);
+      font-weight: 750;
+    }
+
+    .auto-aluno-item input {
+      width: auto;
+    }
+
+    .auto-preview-table {
+      width: 100%;
+      min-width: 760px;
+      margin-top: 10px;
     }
 
     .modal-head {
@@ -614,11 +656,13 @@
         <button class="btn" onclick="trocarTabelaPorNome('assinaturas')">Lista assinatura</button>
         <button class="btn" onclick="imprimirListaAssinatura()">Imprimir lista</button>
         <button class="btn good" onclick="exportarCSVBasico()">Exportar CSV</button>
+        <button class="btn primary" onclick="abrirModalDistribuicaoAuto()">Distribuição automática</button>
       </div>
 
       <div class="notice" style="margin-bottom:0;">
         As ações de edição e exclusão dependem das rotas correspondentes no backend.
         A lista de assinatura, impressão e CSV usam os dados já carregados da campanha.
+        A distribuição automática permite selecionar alunos por turma, desmarcar participantes e gerar blocos em sequência.
       </div>
     </section>
 
@@ -1255,6 +1299,93 @@
     </div>
   </div>
 
+
+  <div id="modalDistribuicaoAuto" class="modal">
+    <div class="modal-card large">
+      <div class="modal-head">
+        <div>
+          <h3>Distribuição automática de blocos</h3>
+          <p class="muted" style="margin:4px 0 0;">
+            Selecione os alunos, defina o tamanho do bloco e gere a distribuição em sequência.
+          </p>
+        </div>
+        <button class="close" onclick="fecharModalDistribuicaoAuto()">×</button>
+      </div>
+
+      <div class="notice">
+        Para campanhas grandes, como 9000 rifas, use a prévia antes de confirmar. Alunos com “teste” no nome são ignorados automaticamente.
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Categoria do responsável</label>
+          <select id="autoCategoria">
+            <option value="aluno">Aluno</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Turma</label>
+          <select id="autoTurma">
+            <option value="todas">Todas as turmas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Tamanho do bloco</label>
+          <input id="autoTamanho" type="number" value="10" min="1" />
+        </div>
+
+        <div>
+          <label>Buscar aluno</label>
+          <input id="autoBuscaAluno" placeholder="Digite parte do nome ou turma" oninput="renderizarListaAlunosAuto()" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Número inicial</label>
+          <input id="autoInicio" type="number" min="1" />
+        </div>
+        <div>
+          <label>Número final</label>
+          <input id="autoFim" type="number" min="1" />
+        </div>
+      </div>
+
+      <label style="display:flex; align-items:center; gap:8px; color:var(--text); font-weight:800;">
+        <input type="checkbox" id="autoIgnorarJaDistribuidos" checked style="width:auto;" />
+        Ignorar alunos que já possuem bloco
+      </label>
+
+      <div class="auto-tools">
+        <button type="button" class="btn small" onclick="marcarTodosAuto(true)">Marcar todos</button>
+        <button type="button" class="btn small" onclick="marcarTodosAuto(false)">Desmarcar todos</button>
+        <button type="button" class="btn small" onclick="carregarAlunosAuto()">Recarregar alunos</button>
+        <span class="muted" id="autoResumoSelecao">Nenhum aluno carregado.</span>
+      </div>
+
+      <label>Alunos participantes</label>
+      <div id="autoListaAlunos" class="auto-lista">
+        Carregando alunos...
+      </div>
+
+      <div id="autoPreview" class="notice hidden" style="margin-top:14px;"></div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
+        <button class="btn" onclick="gerarPreviewAuto()">
+          Gerar prévia
+        </button>
+
+        <button class="btn primary" onclick="executarDistribuicaoAuto()">
+          Confirmar distribuição automática
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script>
@@ -1268,6 +1399,8 @@
     let numerosCache = [];
     let inadimplenciaCache = [];
     let rankingCache = null;
+    let autoAlunos = [];
+    let autoPreviewGerado = [];
 
     const money = new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -1762,6 +1895,318 @@
         <strong>Valor esperado:</strong> ${money.format(total * valor)}
       `;
     }
+
+
+    const ordemTurmasRifa = [
+      "6ºA", "6ºB",
+      "7ºA", "7ºB",
+      "8ºA", "8ºB",
+      "9ºA", "9ºB",
+      "1ºA", "1ºB",
+      "2ºA", "2ºB",
+      "3ºA", "3ºB"
+    ];
+
+    function normalizarTurmaRifa(turma) {
+      return String(turma || "")
+        .toUpperCase()
+        .replace(/\\s+/g, "")
+        .replace("ANO", "")
+        .replace("SÉRIE", "")
+        .replace("SERIE", "");
+    }
+
+    function indiceTurmaRifa(turma) {
+      const t = normalizarTurmaRifa(turma);
+      const i = ordemTurmasRifa.findIndex(x => normalizarTurmaRifa(x) === t);
+      return i >= 0 ? i : 999;
+    }
+
+    function alunoDeTesteRifa(aluno) {
+      const nome = String(aluno?.nome || "").toLowerCase();
+      return nome.includes("teste") || nome.includes("aluno teste");
+    }
+
+    function atualizarResumoSelecaoAuto() {
+      const resumo = document.getElementById("autoResumoSelecao");
+      if (!resumo) return;
+
+      const total = autoAlunos.length;
+      const selecionados = document.querySelectorAll(".autoAlunoCheck:checked").length;
+      resumo.textContent = `${selecionados} selecionado(s) de ${total} aluno(s) carregado(s).`;
+    }
+
+    function abrirModalDistribuicaoAuto() {
+      if (!campanhaAtual?._id) {
+        return toast("Selecione uma campanha antes de distribuir automaticamente.", "erro");
+      }
+
+      document.getElementById("autoInicio").value = campanhaAtual.numeroInicial || 1;
+      document.getElementById("autoFim").value = campanhaAtual.numeroFinal || 9000;
+      document.getElementById("autoTamanho").value = 10;
+      document.getElementById("autoBuscaAluno").value = "";
+      document.getElementById("autoPreview").classList.add("hidden");
+      document.getElementById("modalDistribuicaoAuto").classList.add("active");
+
+      carregarTurmasAuto();
+      carregarAlunosAuto();
+    }
+
+    function fecharModalDistribuicaoAuto() {
+      document.getElementById("modalDistribuicaoAuto").classList.remove("active");
+      autoAlunos = [];
+      autoPreviewGerado = [];
+    }
+
+    async function carregarTurmasAuto() {
+      const select = document.getElementById("autoTurma");
+      if (!select) return;
+
+      select.innerHTML = `<option value="todas">Todas as turmas</option>`;
+
+      try {
+        const data = await api("/api/rifas/turmas-alunos");
+        const turmas = data.turmas || [];
+
+        turmas
+          .sort((a, b) => indiceTurmaRifa(a) - indiceTurmaRifa(b) || String(a).localeCompare(String(b), "pt-BR"))
+          .forEach(t => {
+            select.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`;
+          });
+      } catch (e) {
+        console.error(e);
+        toast("Não foi possível carregar as turmas.", "erro");
+      }
+    }
+
+    async function carregarAlunosAuto() {
+      const box = document.getElementById("autoListaAlunos");
+      const turmaSelecionada = document.getElementById("autoTurma")?.value || "todas";
+
+      box.innerHTML = "Carregando alunos...";
+      autoAlunos = [];
+      autoPreviewGerado = [];
+      document.getElementById("autoPreview")?.classList.add("hidden");
+
+      try {
+        let alunos = [];
+
+        if (turmaSelecionada === "todas") {
+          const dataTurmas = await api("/api/rifas/turmas-alunos");
+          const turmas = (dataTurmas.turmas || [])
+            .sort((a, b) => indiceTurmaRifa(a) - indiceTurmaRifa(b) || String(a).localeCompare(String(b), "pt-BR"));
+
+          for (const turma of turmas) {
+            const data = await api(`/api/rifas/alunos-por-turma?turma=${encodeURIComponent(turma)}`);
+            alunos.push(...(data.alunos || []));
+          }
+        } else {
+          const data = await api(`/api/rifas/alunos-por-turma?turma=${encodeURIComponent(turmaSelecionada)}`);
+          alunos = data.alunos || [];
+        }
+
+        autoAlunos = alunos
+          .filter(a => a && a._id && a.nome)
+          .filter(a => !alunoDeTesteRifa(a))
+          .sort((a, b) => {
+            const turmaA = indiceTurmaRifa(a.turma);
+            const turmaB = indiceTurmaRifa(b.turma);
+            if (turmaA !== turmaB) return turmaA - turmaB;
+            return String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR");
+          });
+
+        renderizarListaAlunosAuto();
+      } catch (e) {
+        console.error(e);
+        box.innerHTML = `<div class="danger-notice notice">Erro ao carregar alunos.</div>`;
+        toast("Erro ao carregar alunos para distribuição automática.", "erro");
+      }
+    }
+
+    function renderizarListaAlunosAuto() {
+      const box = document.getElementById("autoListaAlunos");
+      if (!box) return;
+
+      const busca = String(document.getElementById("autoBuscaAluno")?.value || "").trim().toLowerCase();
+
+      const filtrados = autoAlunos.filter(a => {
+        if (!busca) return true;
+        const base = `${a.nome || ""} ${a.turma || ""}`.toLowerCase();
+        return base.includes(busca);
+      });
+
+      if (!filtrados.length) {
+        box.innerHTML = "Nenhum aluno encontrado.";
+        atualizarResumoSelecaoAuto();
+        return;
+      }
+
+      box.innerHTML = filtrados.map(a => `
+        <label class="auto-aluno-item">
+          <input
+            type="checkbox"
+            class="autoAlunoCheck"
+            value="${escapeHtml(a._id)}"
+            checked
+            onchange="atualizarResumoSelecaoAuto()"
+          />
+          <span>${escapeHtml(a.nome)} — <span class="muted">${escapeHtml(a.turma || "Sem turma")}</span></span>
+        </label>
+      `).join("");
+
+      atualizarResumoSelecaoAuto();
+    }
+
+    function marcarTodosAuto(valor) {
+      document.querySelectorAll(".autoAlunoCheck").forEach(chk => {
+        chk.checked = valor;
+      });
+      atualizarResumoSelecaoAuto();
+    }
+
+    function obterAlunosSelecionadosAuto() {
+      const ids = Array.from(document.querySelectorAll(".autoAlunoCheck:checked")).map(chk => chk.value);
+      return autoAlunos.filter(a => ids.includes(String(a._id)));
+    }
+
+    function responsavelJaTemBlocoAuto(aluno) {
+      const id = String(aluno?._id || "");
+      const nome = String(aluno?.nome || "").trim().toLowerCase();
+
+      return responsaveisCache.some(r => {
+        const rid = String(r.responsavelId || r._id || "");
+        const rnome = String(r.responsavelNome || "").trim().toLowerCase();
+        return (id && rid && id === rid) || (nome && rnome && nome === rnome);
+      });
+    }
+
+    function gerarPreviewAuto() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const inicio = Number(document.getElementById("autoInicio").value);
+      const fim = Number(document.getElementById("autoFim").value);
+      const tamanho = Number(document.getElementById("autoTamanho").value);
+      const ignorar = document.getElementById("autoIgnorarJaDistribuidos")?.checked;
+
+      let alunos = obterAlunosSelecionadosAuto();
+
+      if (ignorar && responsaveisCache.length) {
+        alunos = alunos.filter(a => !responsavelJaTemBlocoAuto(a));
+      }
+
+      if (!inicio || !fim || fim < inicio) return toast("Informe um intervalo válido.", "erro");
+      if (!tamanho || tamanho <= 0) return toast("Informe o tamanho do bloco.", "erro");
+      if (!alunos.length) return toast("Selecione pelo menos um aluno disponível.", "erro");
+
+      autoPreviewGerado = [];
+      let numeroAtual = inicio;
+
+      for (const aluno of alunos) {
+        const blocoInicio = numeroAtual;
+        const blocoFim = Math.min(numeroAtual + tamanho - 1, fim);
+        if (blocoInicio > fim) break;
+
+        autoPreviewGerado.push({
+          alunoId: aluno._id,
+          nome: aluno.nome,
+          turma: aluno.turma,
+          inicio: blocoInicio,
+          fim: blocoFim,
+          qtd: blocoFim - blocoInicio + 1
+        });
+
+        numeroAtual = blocoFim + 1;
+      }
+
+      const totalDisponivel = fim - inicio + 1;
+      const totalNecessario = alunos.length * tamanho;
+      const totalDistribuido = autoPreviewGerado.reduce((s, x) => s + x.qtd, 0);
+      const sobrando = Math.max(0, totalDisponivel - totalDistribuido);
+      const semBloco = Math.max(0, alunos.length - autoPreviewGerado.length);
+
+      let alerta = "";
+      if (sobrando > 0) alerta += `<br><span style="color:#facc15;">⚠️ Sobrarão ${sobrando} rifas.</span>`;
+      if (semBloco > 0) alerta += `<br><span style="color:#fb7185;">❌ ${semBloco} aluno(s) ficarão sem bloco por falta de número.</span>`;
+
+      const el = document.getElementById("autoPreview");
+      el.classList.remove("hidden");
+
+      el.innerHTML = `
+        <strong>Prévia da distribuição</strong><br>
+        Alunos selecionados/disponíveis: <strong>${alunos.length}</strong><br>
+        Tamanho do bloco: <strong>${tamanho}</strong><br>
+        Intervalo disponível: <strong>${formatNumeroBloco(inicio)} a ${formatNumeroBloco(fim)}</strong><br>
+        Total disponível: <strong>${totalDisponivel}</strong> rifas<br>
+        Total necessário: <strong>${totalNecessario}</strong> rifas<br>
+        Total que será distribuído: <strong>${totalDistribuido}</strong> rifas<br>
+        Sobra: <strong>${sobrando}</strong> rifas<br>
+        Alunos sem bloco: <strong>${semBloco}</strong>
+        ${alerta}
+        <br><br>
+        <strong>Primeiros blocos:</strong><br>
+        ${autoPreviewGerado.slice(0, 12).map(p => `
+          ${escapeHtml(p.nome)} — ${escapeHtml(p.turma || "Sem turma")}:
+          ${formatNumeroBloco(p.inicio)} a ${formatNumeroBloco(p.fim)}
+        `).join("<br>")}
+        ${autoPreviewGerado.length > 12 ? `<br>... e mais ${autoPreviewGerado.length - 12} bloco(s).` : ""}
+      `;
+    }
+
+    function blocoTemConflitoAuto(item) {
+      return numerosCache.some(n => {
+        const numeroValor = Number(n.numeroValor || n.numero || 0);
+        return numeroValor >= item.inicio && numeroValor <= item.fim && String(n.status || "disponivel") !== "disponivel";
+      });
+    }
+
+    async function executarDistribuicaoAuto() {
+  if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+  if (!autoPreviewGerado.length) {
+    gerarPreviewAuto();
+  }
+
+  if (!autoPreviewGerado.length) {
+    return toast("Gere a prévia antes de confirmar.", "erro");
+  }
+
+  const confirmar = confirm(
+    `Confirmar distribuição automática?\n\n` +
+    `Blocos: ${autoPreviewGerado.length}\n` +
+    `Total de rifas: ${autoPreviewGerado.reduce((s, x) => s + x.qtd, 0)}\n\n` +
+    `Essa ação será feita em lote, de forma mais rápida.`
+  );
+
+  if (!confirmar) return;
+
+  try {
+    const data = await api("/api/rifas/distribuir-blocos-lote", {
+      method: "POST",
+      body: JSON.stringify({
+        campanhaId: campanhaAtual._id,
+        blocos: autoPreviewGerado.map(item => ({
+          inicio: item.inicio,
+          fim: item.fim,
+          alunoId: item.alunoId,
+          nome: item.nome,
+          turma: item.turma
+        }))
+      })
+    });
+
+    toast(data.mensagem || "Distribuição automática concluída.");
+
+    fecharModalDistribuicaoAuto();
+
+    await carregarDashboard();
+    await carregarResponsaveis();
+    await carregarNumeros();
+    await carregarAssinaturas();
+  } catch (e) {
+    console.error(e);
+    toast(e.message || "Erro ao executar distribuição automática.", "erro");
+  }
+}
 
     async function distribuirBlocoSeguro() {
       if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");

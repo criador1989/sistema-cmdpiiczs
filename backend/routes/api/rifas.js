@@ -1467,5 +1467,104 @@ router.get(
     }
   }
 );
+/**
+ * POST /api/rifas/distribuir-blocos-lote
+ * Distribuição automática em lote (alta performance)
+ */
+router.post(
+  "/distribuir-blocos-lote",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
 
+      const {
+        campanhaId,
+        blocos // [{inicio, fim, alunoId, nome, turma}]
+      } = req.body;
+
+      if (!campanhaId || !Array.isArray(blocos) || !blocos.length) {
+        return res.status(400).json({
+          erro: "Informe campanha e blocos para distribuição.",
+        });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      // 🔥 verifica conflitos antes de tudo
+      // 🔥 cria lista de todos intervalos
+const filtros = blocos.map(b => ({
+  numeroValor: { $gte: b.inicio, $lte: b.fim }
+}));
+
+// 🔥 busca conflitos em UMA consulta
+const conflitos = await RifaNumero.find({
+  instituicao,
+  campanha: campanha._id,
+  status: { $ne: "disponivel" },
+  $or: filtros
+})
+  .select("numero numeroValor")
+  .limit(1)
+  .lean();
+
+if (conflitos.length > 0) {
+  return res.status(400).json({
+    erro: "Existem números já utilizados dentro dos blocos.",
+    numero: conflitos[0].numero,
+  });
+}
+
+      // 🚀 montagem em lote
+      const ops = [];
+
+      for (const b of blocos) {
+        ops.push({
+          updateMany: {
+            filter: {
+              instituicao,
+              campanha: campanha._id,
+              numeroValor: { $gte: b.inicio, $lte: b.fim },
+              status: "disponivel",
+            },
+            update: {
+              $set: {
+                status: "distribuida",
+                responsavelTipo: "aluno",
+                responsavelId: b.alunoId || null,
+                responsavelNome: b.nome,
+                turmaOuSetor: b.turma || "",
+                observacao: "Distribuição automática em lote",
+                dataDistribuicao: new Date(),
+                atualizadoPor: getUserId(req),
+              },
+            },
+          },
+        });
+      }
+
+      const resultado = await RifaNumero.bulkWrite(ops);
+
+      return res.json({
+        ok: true,
+        mensagem: "Distribuição em lote concluída.",
+        modificados: resultado.modifiedCount || 0,
+      });
+    } catch (error) {
+      console.error("[RIFAS][DISTRIBUICAO_LOTE]", error);
+      return res.status(500).json({
+        erro: "Erro na distribuição automática em lote.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
 module.exports = router;
