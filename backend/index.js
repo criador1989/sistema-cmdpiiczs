@@ -15,14 +15,15 @@ const os = require('os');
 const { iniciarAgendadorRecalculo } = require('./services/agendadorRecalculoComportamento');
 const { recalcularTodosAlunos } = require('./utils/recalculoComportamento');
 
+// 🚀 NOVO: SNAPSHOTS DE COMPORTAMENTO
+const { iniciarAgendadorSnapshotsComportamento } = require('./jobs/agendadorSnapshotsComportamento');
+
 // ✅ NOVOS MIDDLEWARES / AUTH SUPERADMIN
 const resolveTenant = require('./middleware/resolveTenant');
 const requireSuperAdmin = require('./middleware/requireSuperAdmin');
 const superadminAuthRoutes = require('./routes/api/superadminAuth');
 
-const app = express();
-
-/* =========================
+const app = express();/* =========================
    DIAGNÓSTICO / SEGURANÇA
    ========================= */
 console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
@@ -83,9 +84,7 @@ app.use(
       optionsSuccessStatus: 200,
     });
   })
-);
-
-/* =========================
+);/* =========================
    PARSERS
    ========================= */
 app.use(compression());
@@ -109,6 +108,7 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'Log',
   'Instituicao',
   'ConfiguracaoDisciplinar',
+  'ComportamentoSnapshot',
   'AphAtendimento',
   'Counter',
   'Observacao',
@@ -121,7 +121,8 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'QuestionarioTentativa',
   'CampanhaRifa',
   'RifaNumero',
-  'BaileContrato'
+  'BaileContrato',
+  'BaileMesa'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -204,6 +205,7 @@ const usuariosRoutes = require('./routes/api/usuarios');
 const logsRoutes = require('./routes/api/logs');
 const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
 const estatisticasRoutes = require('./routes/api/estatisticas');
+const estatisticasComportamentoRoutes = require('./routes/api/estatisticasComportamento');
 const mensagensRoutes = require('./routes/api/mensagens');
 const observacoesRoutes = require('./routes/api/observacoes');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
@@ -232,6 +234,7 @@ const chamadasRoutes = require('./routes/api/chamadas');
 // const questionariosRoutes = require('./routes/api/questionarios');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
+const baileMesasRoutes = require('./routes/api/baileMesas');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -243,9 +246,7 @@ const authRoutes = require('./routes/authRoutes');
 app.use('/auth', authRoutes);
 
 // ✅ AUTH SEPARADA DO SUPERADMIN
-app.use('/api/superadmin', superadminAuthRoutes);
-
-/* ==========================================================
+app.use('/api/superadmin', superadminAuthRoutes);/* ==========================================================
    ✅ FALLBACK: /auth/confirmar-email (se authRoutes não tiver)
    ========================================================== */
 app.get('/auth/confirmar-email', async (req, res, next) => {
@@ -584,6 +585,7 @@ mountIf('/api/logs', logsRoutes);
 mountIf('/api/controle-notificacoes', controleNotificacoesRoutes);
 mountIf('/api', relatorioNotificacoesRoute);
 mountIf('/api/estatisticas', estatisticasRoutes);
+mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, autenticar);
 mountIf('/api/mensagens', mensagensRoutes);
 mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
@@ -623,6 +625,8 @@ mountIf('/api/rifas', rifasRoutes, autenticar);
    🚀 BAILE FORMATURA (NOVO MÓDULO)
    ========================= */
 mountIf('/api/baile-contratos', baileContratosRoutes, autenticar);
+
+mountIf('/api/baile-mesas', baileMesasRoutes, autenticar);
 
 /* =========================
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
@@ -829,21 +833,25 @@ async function connectMongo() {
   console.log('🟢 Conectado ao MongoDB');
 
   setTimeout(async () => {
-  try {
-    const resultado = await recalcularTodosAlunos();
-    console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
-  } catch (err) {
-    console.error('[startup] erro no recálculo inicial:', err);
-  }
-}, 5000);
+    try {
+      const resultado = await recalcularTodosAlunos();
+      console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
+    } catch (err) {
+      console.error('[startup] erro no recálculo inicial:', err);
+    }
+  }, 5000);
 
   if (!agendadorRecalculoIniciado) {
     try {
       iniciarAgendadorRecalculo();
-      agendadorRecalculoIniciado = true;
       console.log('✅ Agendador de recálculo diário iniciado');
+
+      iniciarAgendadorSnapshotsComportamento();
+      console.log('📊 Agendador de snapshots de comportamento iniciado');
+
+      agendadorRecalculoIniciado = true;
     } catch (err) {
-      console.error('❌ Falha ao iniciar agendador de recálculo:', err);
+      console.error('❌ Falha ao iniciar agendadores:', err);
     }
   }
 }

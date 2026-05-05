@@ -687,6 +687,65 @@
             <button id="btnFiltrar" class="btn">Aplicar filtros</button>
           </div>
 
+        <h2 class="section-title">
+          📈 Evolução Comportamental
+          <span class="chip">snapshots históricos</span>
+        </h2>
+
+        <div class="chart-card" id="cardParecerIA" style="grid-column:span 2">
+  <div class="chart-title">🧠 Análise Inteligente do Comportamento</div>
+  <div class="chart-note">
+  Interpretação automática baseada nos dados do período selecionado
+  <br>
+  <span style="
+    font-size:.8rem;
+    color:#94a3b8;
+  ">
+    O sistema identifica evolução, queda e situação atual para orientar intervenções pedagógicas e disciplinares.
+  </span>
+</div>
+
+  <div id="parecerIA" style="
+    margin-top:10px;
+    font-size:.95rem;
+    line-height:1.5;
+    color:#dbe8f7;
+  ">
+    Carregando análise...
+  </div>
+</div>
+
+        <div class="grid">
+          <div class="chart-card" style="grid-column:span 2">
+            <div class="chart-title">Evolução da média geral de comportamento</div>
+            <div class="chart-note">Linha do tempo baseada nos snapshots diários/mensais gerados pelo sistema.</div>
+            <div class="chart-wrap">
+              <canvas id="chartEvolucaoComportamental" aria-label="Gráfico de linha - evolução comportamental"></canvas>
+              <div class="print-data" id="data-chartEvolucaoComportamental"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:18px">
+          <div class="chart-card">
+            <div class="chart-title">Maiores avanços no período</div>
+            <div class="chart-note">Alunos com maior crescimento na nota de comportamento no período filtrado.</div>
+            <div class="chart-wrap">
+              <canvas id="chartRankingMelhores" aria-label="Ranking de evolução positiva"></canvas>
+              <div class="print-data" id="data-chartRankingMelhores"></div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Maiores quedas no período</div>
+            <div class="chart-note">Alunos que precisam de maior atenção pedagógica/disciplinar.</div>
+            <div class="chart-wrap">
+              <canvas id="chartRankingQuedas" aria-label="Ranking de queda comportamental"></canvas>
+              <div class="print-data" id="data-chartRankingQuedas"></div>
+            </div>
+          </div>
+        </div>
+
           <h2 class="section-title">🔔 Notificações <span class="chip">módulo existente</span></h2>
 
           <div class="grid">
@@ -832,6 +891,11 @@
         porTurma: [],
         porTurno: [],
         porResponsavel: []
+      },
+      comportamentoHistorico: {
+        evolucaoGeral: [],
+        rankingMelhores: [],
+        rankingQuedas: []
       }
     };
 
@@ -1838,15 +1902,321 @@
       return p;
     }
 
-    function montarQueryAPH(){
-      const { inicioISO, fimISO, turma } = getFiltros();
+    function montarQueryComportamentoHistorico(){
+      const { inicioISO, fimISO } = getFiltros();
       const p = new URLSearchParams();
-      if(inicioISO) p.set('from', inicioISO);
-      if(fimISO) p.set('to', fimISO);
-      if(turma && turma !== 'Todas') p.set('turma', turma);
+
+      // A API nova de snapshots recebe datas em ISO: YYYY-MM-DD.
+      if(inicioISO) p.set('inicio', inicioISO);
+      if(fimISO) p.set('fim', fimISO);
+
+      // Observação: não enviamos turma por enquanto porque o filtro da tela usa nome da turma,
+      // e a API de snapshots aceita ID de turma. Depois podemos ajustar o select para usar ID.
       return p;
     }
 
+    async function carregarDadosEvolucaoComportamental(){
+  const p = montarQueryComportamentoHistorico();
+  const qs = p.toString() ? `?${p.toString()}` : '';
+  const join = qs ? '&' : '?';
+
+  try{
+    const [evolucao, melhores, quedas] = await Promise.all([
+      fetchJsonSeguro('/api/estatisticas-comportamento/evolucao-geral' + qs),
+      fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=melhores&limite=10'),
+      fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=piores&limite=10')
+    ]);
+
+    ultimoSnapshot.comportamentoHistorico.evolucaoGeral = Array.isArray(evolucao?.dados)
+      ? evolucao.dados.map(item => ({
+          periodo: item.periodo || '—',
+          mediaNota: Number(item.mediaNota || 0)
+        }))
+      : [];
+
+    ultimoSnapshot.comportamentoHistorico.rankingMelhores = Array.isArray(melhores?.dados)
+      ? melhores.dados
+          .map(item => ({
+            alunoNome: item.alunoNome || 'Aluno',
+            variacao: Number(item.variacao || 0)
+          }))
+          .filter(item => item.variacao > 0)
+      : [];
+
+    ultimoSnapshot.comportamentoHistorico.rankingQuedas = Array.isArray(quedas?.dados)
+      ? quedas.dados
+          .map(item => ({
+            alunoNome: item.alunoNome || 'Aluno',
+            variacao: Math.abs(Number(item.variacao || 0))
+          }))
+          .filter(item => item.variacao > 0)
+      : [];
+
+    drawLine(
+      'chartEvolucaoComportamental',
+      ultimoSnapshot.comportamentoHistorico.evolucaoGeral,
+      'periodo',
+      'mediaNota'
+    );
+
+    drawBars(
+      'chartRankingMelhores',
+      ultimoSnapshot.comportamentoHistorico.rankingMelhores,
+      'alunoNome',
+      'variacao',
+      10
+    );
+
+    drawBars(
+      'chartRankingQuedas',
+      ultimoSnapshot.comportamentoHistorico.rankingQuedas,
+      'alunoNome',
+      'variacao',
+      10
+    );
+
+    const parecer = await fetchJsonSeguro('/api/estatisticas-comportamento/parecer' + qs);
+    const el = document.getElementById('parecerIA');
+    if(!el) return;
+
+    if(parecer?.semDados){
+      el.innerHTML = `
+        <div style="
+          padding:14px;
+          border-radius:16px;
+          background:rgba(15,23,42,.72);
+          border:1px solid rgba(148,163,184,.22);
+          color:#dbe8f7;
+        ">
+          Não há dados suficientes para gerar análise no período selecionado.
+        </div>
+      `;
+      return;
+    }
+
+    el.innerHTML = `
+      <div style="margin-bottom:10px">
+        <strong>Nível:</strong> ${parecer.resumo?.nivel || '—'} |
+        <strong>Média:</strong> ${parecer.resumo?.mediaGeral ?? 0} |
+        <strong>Tendência:</strong> ${parecer.resumo?.tendencia || '—'}
+      </div>
+
+      <div style="margin-bottom:12px">
+        ${parecer.parecer || ''}
+      </div>
+
+      ${parecer.pontosFortes?.length ? `
+        <div style="margin-bottom:12px">
+          <strong>Pontos Fortes</strong>
+          <ul>
+            ${parecer.pontosFortes.map(p => `<li>${p}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+
+      ${parecer.pontosAtencao?.length ? `
+        <div style="margin-bottom:12px">
+          <strong>Pontos de Atenção</strong>
+          <ul>
+            ${parecer.pontosAtencao.map(p => `<li>${p}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+
+      ${parecer.recomendacoes?.length ? `
+        <div style="margin-bottom:12px">
+          <strong>Recomendações</strong>
+          <ul>
+            ${parecer.recomendacoes.map(p => `<li>${p}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+
+      ${(parecer.alunosEmRisco || []).length ? `
+        <div style="margin-top:18px">
+          <button onclick="toggleAlunosRisco()" style="
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            background:linear-gradient(135deg,rgba(127,29,29,.95),rgba(239,68,68,.88));
+            color:#fff;
+            border:1px solid rgba(252,165,165,.38);
+            padding:11px 15px;
+            border-radius:14px;
+            cursor:pointer;
+            font-weight:900;
+            box-shadow:0 10px 24px rgba(239,68,68,.16);
+          ">
+            🔴 Ver alunos em atenção (${parecer.alunosEmRisco.length})
+          </button>
+
+          <div id="boxAlunosRisco" style="display:none;margin-top:14px">
+            <div style="
+              display:grid;
+              grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+              gap:12px;
+            ">
+              ${parecer.alunosEmRisco.map(a => {
+                const nome = a.alunoNome || 'Aluno';
+                const variacao = Number(a.variacao || 0);
+                const riscoAlto = variacao <= -1;
+                const iniciais = nome
+                  .split(' ')
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map(p => p[0])
+                  .join('')
+                  .toUpperCase();
+
+                const foto = a.fotoUrl || a.foto || a.fotoAluno || a.imagem || '';
+
+                return `
+                  <div style="
+                    display:flex;
+                    gap:12px;
+                    align-items:center;
+                    padding:12px;
+                    border-radius:18px;
+                    background:${riscoAlto
+                      ? 'linear-gradient(135deg,rgba(127,29,29,.6),rgba(239,68,68,.35))'
+                      : 'linear-gradient(135deg,rgba(127,29,29,.22),rgba(15,23,42,.72))'
+                    };
+                    border:1px solid rgba(252,165,165,.22);
+                    box-shadow:${riscoAlto
+                      ? '0 0 20px rgba(239,68,68,.25)'
+                      : 'inset 0 0 0 1px rgba(255,255,255,.03),0 10px 22px rgba(0,0,0,.20)'
+                    };
+                  ">
+                    <div style="
+                      width:50px;
+                      height:50px;
+                      border-radius:16px;
+                      overflow:hidden;
+                      flex:0 0 auto;
+                      display:grid;
+                      place-items:center;
+                      background:linear-gradient(135deg,#7f1d1d,#ef4444);
+                      color:#fff;
+                      font-weight:900;
+                      border:1px solid rgba(255,255,255,.18);
+                      box-shadow:0 0 18px rgba(239,68,68,.18);
+                    ">
+                      ${foto ? `
+                        <img
+                          src="${foto}"
+                          alt="${nome}"
+                          loading="lazy"
+                          style="width:100%;height:100%;object-fit:cover;display:block"
+                          onerror="this.style.display='none';this.parentElement.innerHTML='${iniciais || 'A'}'"
+                        >
+                      ` : `
+                        ${iniciais || 'A'}
+                      `}
+                    </div>
+
+                    <div style="min-width:0;flex:1">
+                      <div style="
+                        font-weight:900;
+                        color:#fff;
+                        white-space:nowrap;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                      ">
+                        ${nome}
+                      </div>
+
+                      ${riscoAlto ? `
+                        <div style="
+                          margin-top:2px;
+                          font-size:.7rem;
+                          color:#fecaca;
+                          font-weight:900;
+                        ">
+                          ⚠️ Risco alto
+                        </div>
+                      ` : ''}
+
+                      <div style="
+                        margin-top:2px;
+                        font-size:.82rem;
+                        color:#cbd5e1;
+                      ">
+                        ${a.turmaNome || 'Turma não informada'}
+                      </div>
+
+                      <div style="
+                        margin-top:8px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:space-between;
+                        gap:8px;
+                        flex-wrap:wrap;
+                      ">
+                        <span style="
+                          font-size:.82rem;
+                          color:#dbeafe;
+                          background:rgba(59,130,246,.12);
+                          border:1px solid rgba(147,197,253,.18);
+                          padding:4px 8px;
+                          border-radius:999px;
+                        ">
+                          Nota: ${a.primeiraNota} → ${a.ultimaNota}
+                        </span>
+
+                        <span style="
+                          font-size:.82rem;
+                          font-weight:900;
+                          color:#fecaca;
+                          background:rgba(239,68,68,.16);
+                          border:1px solid rgba(252,165,165,.26);
+                          padding:4px 8px;
+                          border-radius:999px;
+                        ">
+                          ${variacao}
+                        </span>
+                      </div>
+
+                      <button onclick="abrirAluno('${a.aluno || ''}')" style="
+                        margin-top:8px;
+                        font-size:.75rem;
+                        background:rgba(59,130,246,.15);
+                        border:1px solid rgba(147,197,253,.3);
+                        color:#93c5fd;
+                        padding:4px 8px;
+                        border-radius:8px;
+                        cursor:pointer;
+                        font-weight:800;
+                      ">
+                        Ver ficha
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      ` : ''}
+    `;
+
+  }catch(err){
+    console.error(err);
+    const el = document.getElementById('parecerIA');
+    if(el){
+      el.innerHTML = `
+        <div style="
+          padding:14px;
+          border-radius:16px;
+          background:rgba(127,29,29,.24);
+          border:1px solid rgba(252,165,165,.24);
+          color:#fecaca;
+        ">
+          Não foi possível carregar a análise inteligente do comportamento.
+        </div>
+      `;
+    }
+  }
+}
     async function carregarDadosNotificacoes(){
       const p = montarQueryNotificacoes();
       const qs = p.toString() ? `?${p.toString()}` : '';
@@ -1989,6 +2359,7 @@
     async function aplicarFiltros(){
       try{
         setLoading(true);
+        await carregarDadosEvolucaoComportamental();
         await carregarDadosNotificacoes();
         await carregarDadosAPH();
       } finally {
@@ -2143,6 +2514,10 @@
     function redrawAll(){
       drawBars('chartAlunosTurma', ultimoSnapshot.notificacoes.alunosPorTurma, 'turma', 'total', Math.max(10, ...((ultimoSnapshot.notificacoes.alunosPorTurma || []).map(x => x.total || 0)), 10));
       drawBars('chartComportamento', ultimoSnapshot.notificacoes.comportamento, 'turma', 'media', 10);
+      drawLine('chartEvolucaoComportamental', ultimoSnapshot.comportamentoHistorico.evolucaoGeral || [], 'periodo', 'mediaNota');
+      drawBars('chartRankingMelhores', ultimoSnapshot.comportamentoHistorico.rankingMelhores || [], 'alunoNome', 'variacao', 10);
+      drawBars('chartRankingQuedas', ultimoSnapshot.comportamentoHistorico.rankingQuedas || [], 'alunoNome', 'variacao', 10);
+
       drawDonut('chartDistribuicao', ultimoSnapshot.notificacoes.distribuicao || {});
 
       drawBars('aphTipo', ultimoSnapshot.aph.porTipo, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porTipo || []).map(x => x.total || 0)), 5));
@@ -2172,6 +2547,17 @@
       await carregarTurmas();
       await aplicarFiltros();
     })();
+    function toggleAlunosRisco(){
+  const box = document.getElementById('boxAlunosRisco');
+  if(!box) return;
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function abrirAluno(id){
+  if(!id) return;
+  window.location.href = `/ficha-aluno.html?id=${encodeURIComponent(id)}`;
+}
+
   </script>
   <script src="/update-client.js"></script>
 </body>
