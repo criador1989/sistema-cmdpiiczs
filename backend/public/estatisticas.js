@@ -32,48 +32,151 @@ let chartAlunosTurma = null;
 let chartTiposNotif = null;
 let chartCompMedio = null;
 
+async function carregarEvolucaoComportamental(){
+  const di = qs('dataInicio')?.value;
+  const df = qs('dataFim')?.value;
+
+  const params = new URLSearchParams();
+  if(di) params.set('inicio', di);
+  if(df) params.set('fim', df);
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+
+  const evolucao = await fetchJsonSeguro(
+    `/api/estatisticas-comportamento/evolucao-geral${query}`
+  );
+
+  const melhores = await fetchJsonSeguro(
+    `/api/estatisticas-comportamento/ranking-evolucao${query}${query ? '&' : '?'}tipo=melhores&limite=10`
+  );
+
+  const quedas = await fetchJsonSeguro(
+    `/api/estatisticas-comportamento/ranking-evolucao${query}${query ? '&' : '?'}tipo=piores&limite=10`
+  );
+
+  // 📈 LINHA DO TEMPO
+  const labelsLinha = (evolucao.dados || []).map(d => d.periodo);
+  const dataLinha = (evolucao.dados || []).map(d => d.mediaNota);
+
+  new Chart(qs('chartEvolucaoComportamental'), {
+    type: 'line',
+    data: {
+      labels: labelsLinha,
+      datasets: [{
+        label: 'Média de Comportamento',
+        data: dataLinha,
+        tension: 0.3
+      }]
+    }
+  });
+
+  // 🏆 MELHORES
+  const labelsMelhores = (melhores.dados || []).map(d => d.alunoNome);
+  const dataMelhores = (melhores.dados || []).map(d => d.variacao);
+
+  new Chart(qs('chartRankingMelhores'), {
+    type: 'bar',
+    data: {
+      labels: labelsMelhores,
+      datasets: [{
+        label: 'Evolução',
+        data: dataMelhores
+      }]
+    }
+  });
+
+  // ⚠️ QUEDAS
+  const labelsQuedas = (quedas.dados || []).map(d => d.alunoNome);
+  const dataQuedas = (quedas.dados || []).map(d => Math.abs(d.variacao));
+
+  new Chart(qs('chartRankingQuedas'), {
+    type: 'bar',
+    data: {
+      labels: labelsQuedas,
+      datasets: [{
+        label: 'Queda',
+        data: dataQuedas
+      }]
+    }
+  });
+}
+
 /* ================ Carregamento de dados ================ */
 async function carregarGraficos(){
   try{
-    // Filtros opcionais (se existirem na página)
-    const diEl = qs('dataInicio'), dfEl = qs('dataFim'), turmaEl = qs('filtroTurma');
+    await carregarEvolucaoComportamental();
+    setLoading(true);
+
+    const di = document.getElementById('dataInicio')?.value;
+    const df = document.getElementById('dataFim')?.value;
+    const turma = document.getElementById('filtroTurma')?.value;
+
     const params = new URLSearchParams();
-    if(diEl?.value) params.set('inicio', isoToBR(diEl.value));   // dd/mm/aaaa
-    if(dfEl?.value) params.set('fim',    isoToBR(dfEl.value));
-    if(turmaEl?.value && turmaEl.value !== 'Todas') params.set('turma', turmaEl.value);
+    if(di) params.set('inicio', di);
+    if(df) params.set('fim', df);
 
-    // 1) Alunos por turma
-    const alunosPorTurma = await fetchJsonSeguro('/api/estatisticas/alunos-por-turma' + (params.toString()?`?${params}`:''), 12000);
-    const labelsTurma = (alunosPorTurma||[]).map(r=>r.turma||'—');
-    const dataTurma   = (alunosPorTurma||[]).map(r=>Number(r.total||0));
+    // 🚀 NOVO BACKEND
+    const evolucao = await fetchJsonSeguro(
+      '/api/estatisticas-comportamento/evolucao-geral?' + params.toString()
+    );
 
-    // 2) Distribuição por faixas (para pizza)
-    const dist = await fetchJsonSeguro('/api/estatisticas/distribuicao', 12000);
-    const labelsDist = ['Excepcional','Ótimo','Bom','Regular','Insuficiente','Incompatível'];
-    const dataDist = [
-      Number(dist?.excepcional||0),
-      Number(dist?.otimo||0),
-      Number(dist?.bom||0),
-      Number(dist?.regular||0),
-      Number(dist?.insuficiente||0),
-      Number(dist?.incompativel||0),
-    ];
+    const distribuicao = await fetchJsonSeguro(
+      '/api/estatisticas-comportamento/distribuicao-faixas?' + params.toString()
+    );
 
-    // 3) Comportamento médio por turma (linha)
-    const comp = await fetchJsonSeguro('/api/estatisticas/comportamento-por-turma', 12000);
-    const labelsComp = (comp||[]).map(r=>r.turma||'—');
-    const dataComp   = (comp||[]).map(r=>Number(r.media||0));
+    const turmas = await fetchJsonSeguro(
+      '/api/estatisticas-comportamento/evolucao-turmas?' + params.toString()
+    );
 
-    desenharGraficos({ labelsTurma, dataTurma, labelsDist, dataDist, labelsComp, dataComp });
+    // =========================
+    // 📊 TRATAMENTO DOS DADOS
+    // =========================
+
+    const dadosLinha = (evolucao.dados || []).map(d => ({
+      periodo: d.periodo,
+      valor: d.mediaNota
+    }));
+
+    const dadosTurma = (turmas.dados || []).reduce((acc, item) => {
+      const nome = item.turmaNome || '—';
+      if(!acc[nome]) acc[nome] = [];
+      acc[nome].push(item);
+      return acc;
+    }, {});
+
+    const dadosDistribuicao = {};
+    (distribuicao.dados || []).forEach(d => {
+      dadosDistribuicao[d.faixa.toLowerCase()] = d.total;
+    });
+
+    // =========================
+    // 🎨 DESENHAR GRÁFICOS
+    // =========================
+
+    drawLine(
+      'chartComportamento',
+      dadosLinha.map(d => ({ periodo: d.periodo, valor: d.valor })),
+      'periodo',
+      'valor'
+    );
+
+    drawDonut('chartDistribuicao', dadosDistribuicao);
+
+    drawBars(
+      'chartAlunosTurma',
+      Object.keys(dadosTurma).map(t => ({
+        turma: t,
+        total: dadosTurma[t].length
+      })),
+      'turma',
+      'total'
+    );
+
   }catch(e){
     console.error(e);
-    showError(e.message || 'Falha ao carregar dados');
-    // desenha “vazio” para não deixar a tela em branco
-    desenharGraficos({
-      labelsTurma: [], dataTurma: [],
-      labelsDist: [], dataDist: [],
-      labelsComp: [], dataComp: []
-    });
+    showError(e.message || 'Erro ao carregar dados');
+  }finally{
+    setLoading(false);
   }
 }
 
