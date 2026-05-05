@@ -9,12 +9,12 @@ const Aluno = require('../../models/Aluno');
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
 const { uploadArquivoBaile, deletarArquivoBaile } = require('../../utils/s3BaileUpload');
-console.log('[BAILE][S3_IMPORT]', {
-  uploadArquivoBaile: typeof uploadArquivoBaile,
-  deletarArquivoBaile: typeof deletarArquivoBaile,
-});
 
 const router = express.Router();
+
+const CAPACIDADE_PADRAO_CADEIRAS = 600;
+const VALOR_UNITARIO_PADRAO = 150;
+const LIMITE_PARCELAS_PADRAO = 12;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -62,8 +62,20 @@ function isTerceiroAno(turma = '') {
   );
 }
 
+function inteiroSeguro(valor, padrao = 0, minimo = 0, maximo = 9999) {
+  const n = Number(valor);
+
+  if (!Number.isFinite(n)) return padrao;
+
+  return Math.max(minimo, Math.min(Math.floor(n), maximo));
+}
+
 function gerarParcelas({ valorTotal, quantidadeParcelas, dataInicial }) {
-  const qtd = Math.max(1, Math.min(Number(quantidadeParcelas || 8), 8));
+  const qtd = Math.max(
+    1,
+    Math.min(Number(quantidadeParcelas || 8), LIMITE_PARCELAS_PADRAO)
+  );
+
   const total = Number(valorTotal || 0);
   const valorParcela = Number((total / qtd).toFixed(2));
 
@@ -133,8 +145,16 @@ function resumoContrato(contrato) {
     (p) => p.status === 'atrasada'
   ).length;
 
+  const obj = contrato.toObject();
+
   return {
-    ...contrato.toObject(),
+    ...obj,
+    statusParticipacao: obj.statusParticipacao || 'participante',
+    ingressosIniciais:
+      obj.ingressosIniciais !== undefined
+        ? obj.ingressosIniciais
+        : Number(obj.quantidadeIngressos || 0),
+    ingressosAdicionais: Number(obj.ingressosAdicionais || 0),
     financeiro,
     alertas: {
       semContrato: !contrato.contratoAssinado,
@@ -143,23 +163,34 @@ function resumoContrato(contrato) {
       atrasado: contrato.status === 'atrasado',
       quitado: contrato.status === 'quitado',
       desistente: contrato.status === 'desistente',
+      naoParticipa: obj.statusParticipacao === 'nao_participa',
     },
   };
+}
+
+function contratoContaComoParticipante(c) {
+  return (
+    (c.statusParticipacao || 'participante') === 'participante' &&
+    !['desistente', 'cancelado'].includes(c.status)
+  );
+}
+
+async function buscarAlunosTerceiros(instituicao) {
+  const alunos = await Aluno.find({
+    instituicao,
+    ativo: { $ne: false },
+  })
+    .select('_id nome turma responsavel responsavelNome cpfResponsavel telefoneResponsavel')
+    .sort({ turma: 1, nome: 1 })
+    .lean();
+
+  return alunos.filter((a) => isTerceiroAno(a.turma));
 }
 
 router.get('/alunos-terceiros', autenticar, requireTenant, async (req, res) => {
   try {
     const instituicao = getInstituicaoId(req);
-
-    const alunos = await Aluno.find({
-      instituicao,
-      ativo: { $ne: false },
-    })
-      .select('_id nome turma responsavel responsavelNome cpfResponsavel telefoneResponsavel')
-      .sort({ turma: 1, nome: 1 })
-      .lean();
-
-    const terceiros = alunos.filter((a) => isTerceiroAno(a.turma));
+    const terceiros = await buscarAlunosTerceiros(instituicao);
 
     res.json({
       ok: true,
@@ -183,6 +214,7 @@ router.get('/', autenticar, requireTenant, async (req, res) => {
       anoLetivo = 2026,
       turma,
       status,
+      statusParticipacao,
       busca,
       somenteAlertas,
     } = req.query;
@@ -194,6 +226,7 @@ router.get('/', autenticar, requireTenant, async (req, res) => {
 
     if (turma) filtro.turma = turma;
     if (status) filtro.status = status;
+    if (statusParticipacao) filtro.statusParticipacao = statusParticipacao;
 
     if (busca) {
       filtro.$or = [
@@ -220,31 +253,59 @@ router.get('/', autenticar, requireTenant, async (req, res) => {
         (c) =>
           c.alertas.semContrato ||
           c.alertas.parcelasAtrasadas > 0 ||
-          c.alertas.atrasado
+          c.alertas.atrasado ||
+          c.alertas.naoParticipa
       );
     }
 
+    const terceiros = await buscarAlunosTerceiros(instituicao);
+    const alunosComRegistro = new Set(
+      dados.map((c) => String(c.aluno || '')).filter(Boolean)
+    );
+
     const totais = dados.reduce(
       (acc, c) => {
+        const participante = contratoContaComoParticipante(c);
+        const qtdIngressos = participante ? Number(c.quantidadeIngressos || 0) : 0;
+
         acc.valorPrevisto += Number(c.financeiro.valorTotal || 0);
         acc.valorRecebido += Number(c.financeiro.totalPago || 0);
         acc.valorPendente += Number(c.financeiro.valorPendente || 0);
+        acc.cadeirasSolicitadas += qtdIngressos;
+        acc.ingressosIniciais += Number(c.ingressosIniciais || 0);
+        acc.ingressosAdicionais += Number(c.ingressosAdicionais || 0);
 
+        if (participante) acc.participantes += 1;
+        if ((c.statusParticipacao || '') === 'nao_participa') acc.naoParticipam += 1;
         if (c.status === 'quitado') acc.quitados += 1;
         if (c.status === 'atrasado') acc.atrasados += 1;
-        if (!c.contratoAssinado) acc.semContrato += 1;
+        if (!c.contratoAssinado && participante) acc.semContrato += 1;
 
         return acc;
       },
       {
         contratos: dados.length,
+        participantes: 0,
+        naoParticipam: 0,
+        semResposta: 0,
         valorPrevisto: 0,
         valorRecebido: 0,
         valorPendente: 0,
         quitados: 0,
         atrasados: 0,
         semContrato: 0,
+        capacidadeMaximaCadeiras: CAPACIDADE_PADRAO_CADEIRAS,
+        cadeirasSolicitadas: 0,
+        cadeirasDisponiveis: CAPACIDADE_PADRAO_CADEIRAS,
+        ingressosIniciais: 0,
+        ingressosAdicionais: 0,
       }
+    );
+
+    totais.semResposta = terceiros.filter((a) => !alunosComRegistro.has(String(a._id))).length;
+    totais.cadeirasDisponiveis = Math.max(
+      totais.capacidadeMaximaCadeiras - totais.cadeirasSolicitadas,
+      0
     );
 
     res.json({
@@ -269,7 +330,9 @@ router.post('/', autenticar, requireTenant, async (req, res) => {
 
     const {
       alunoId,
-      quantidadeIngressos = 1,
+      quantidadeIngressos,
+      ingressosIniciais,
+      ingressosAdicionais,
       quantidadeParcelas = 8,
       responsavelNome = '',
       responsavelCpf = '',
@@ -277,6 +340,8 @@ router.post('/', autenticar, requireTenant, async (req, res) => {
       observacoes = '',
       anoLetivo = 2026,
       dataAdesao,
+      statusParticipacao = 'participante',
+      valorUnitario = VALOR_UNITARIO_PADRAO,
     } = req.body;
 
     const aluno = await Aluno.findOne({
@@ -298,10 +363,30 @@ router.post('/', autenticar, requireTenant, async (req, res) => {
       });
     }
 
-    const qtdIngressos = Math.max(1, Math.min(Number(quantidadeIngressos), 6));
-    const valorUnitario = 150;
-    const valorTotal = qtdIngressos * valorUnitario;
-    const qtdParcelas = Math.max(1, Math.min(Number(quantidadeParcelas), 8));
+    const participa = statusParticipacao !== 'nao_participa';
+
+    const qtdInicial =
+      ingressosIniciais !== undefined
+        ? inteiroSeguro(ingressosIniciais, 0, 0, CAPACIDADE_PADRAO_CADEIRAS)
+        : inteiroSeguro(quantidadeIngressos, participa ? 1 : 0, 0, CAPACIDADE_PADRAO_CADEIRAS);
+
+    const qtdAdicional = inteiroSeguro(
+      ingressosAdicionais,
+      0,
+      0,
+      CAPACIDADE_PADRAO_CADEIRAS
+    );
+
+    const qtdIngressos = participa
+      ? Math.min(qtdInicial + qtdAdicional, CAPACIDADE_PADRAO_CADEIRAS)
+      : 0;
+
+    const unitario = Number(valorUnitario || VALOR_UNITARIO_PADRAO);
+    const valorTotal = qtdIngressos * unitario;
+    const qtdParcelas = Math.max(
+      1,
+      Math.min(Number(quantidadeParcelas || 8), LIMITE_PARCELAS_PADRAO)
+    );
 
     const contrato = await BaileContrato.create({
       instituicao,
@@ -314,16 +399,22 @@ router.post('/', autenticar, requireTenant, async (req, res) => {
       responsavelCpf: responsavelCpf || aluno.cpfResponsavel || '',
       responsavelTelefone:
         responsavelTelefone || aluno.telefoneResponsavel || '',
+      aderiu: participa,
+      statusParticipacao: participa ? 'participante' : 'nao_participa',
+      ingressosIniciais: qtdInicial,
+      ingressosAdicionais: qtdAdicional,
       quantidadeIngressos: qtdIngressos,
-      valorUnitario,
+      valorUnitario: unitario,
       valorTotal,
       quantidadeParcelas: qtdParcelas,
       dataAdesao: dataAdesao ? new Date(dataAdesao) : new Date(),
-      parcelas: gerarParcelas({
-        valorTotal,
-        quantidadeParcelas: qtdParcelas,
-        dataInicial: '2026-04-30T12:00:00',
-      }),
+      parcelas: participa
+        ? gerarParcelas({
+            valorTotal,
+            quantidadeParcelas: qtdParcelas,
+            dataInicial: '2026-04-30T12:00:00',
+          })
+        : [],
       observacoes,
       criadoPor: usuarioId,
       criadoPorNome: usuarioNome,
@@ -336,7 +427,9 @@ router.post('/', autenticar, requireTenant, async (req, res) => {
 
     res.status(201).json({
       ok: true,
-      message: 'Contrato do baile cadastrado com sucesso.',
+      message: participa
+        ? 'Contrato do baile cadastrado com sucesso.'
+        : 'Aluno registrado como não participante do baile.',
       contrato: resumoContrato(contrato),
     });
   } catch (err) {
@@ -345,7 +438,7 @@ router.post('/', autenticar, requireTenant, async (req, res) => {
     if (err.code === 11000) {
       return res.status(409).json({
         ok: false,
-        message: 'Este aluno já possui adesão cadastrada para este baile.',
+        message: 'Este aluno já possui registro cadastrado para este baile.',
       });
     }
 
@@ -379,10 +472,15 @@ router.put('/:id', autenticar, requireTenant, async (req, res) => {
       'responsavelCpf',
       'responsavelTelefone',
       'quantidadeIngressos',
+      'ingressosIniciais',
+      'ingressosAdicionais',
       'quantidadeParcelas',
       'observacoes',
       'dataAdesao',
       'status',
+      'statusParticipacao',
+      'mesaNumero',
+      'cadeiraNumero',
     ];
 
     const motivo = req.body.motivoCorrecao || 'Correção manual no módulo do baile.';
@@ -404,22 +502,48 @@ router.put('/:id', autenticar, requireTenant, async (req, res) => {
       }
     });
 
-    contrato.quantidadeIngressos = Math.max(
-      1,
-      Math.min(Number(contrato.quantidadeIngressos || 1), 6)
+    const participa = contrato.statusParticipacao !== 'nao_participa';
+
+    const qtdInicial =
+      req.body.ingressosIniciais !== undefined
+        ? inteiroSeguro(req.body.ingressosIniciais, 0, 0, CAPACIDADE_PADRAO_CADEIRAS)
+        : inteiroSeguro(
+            contrato.ingressosIniciais || contrato.quantidadeIngressos,
+            participa ? 1 : 0,
+            0,
+            CAPACIDADE_PADRAO_CADEIRAS
+          );
+
+    const qtdAdicional = inteiroSeguro(
+      contrato.ingressosAdicionais,
+      0,
+      0,
+      CAPACIDADE_PADRAO_CADEIRAS
     );
+
+    contrato.ingressosIniciais = participa ? qtdInicial : 0;
+    contrato.ingressosAdicionais = participa ? qtdAdicional : 0;
+    contrato.quantidadeIngressos = participa
+      ? Math.min(qtdInicial + qtdAdicional, CAPACIDADE_PADRAO_CADEIRAS)
+      : 0;
 
     contrato.quantidadeParcelas = Math.max(
       1,
-      Math.min(Number(contrato.quantidadeParcelas || 8), 8)
+      Math.min(Number(contrato.quantidadeParcelas || 8), LIMITE_PARCELAS_PADRAO)
     );
 
+    contrato.aderiu = participa;
     contrato.valorTotal =
       Number(contrato.quantidadeIngressos || 0) *
-      Number(contrato.valorUnitario || 150);
+      Number(contrato.valorUnitario || VALOR_UNITARIO_PADRAO);
 
-    if (
+    if (!participa) {
+      contrato.status = 'cancelado';
+      contrato.parcelas = [];
+    } else if (
       req.body.quantidadeIngressos !== undefined ||
+      req.body.ingressosIniciais !== undefined ||
+      req.body.ingressosAdicionais !== undefined ||
       req.body.quantidadeParcelas !== undefined
     ) {
       contrato.parcelas = gerarParcelas({
@@ -670,6 +794,8 @@ router.post('/:id/desistencia', autenticar, requireTenant, async (req, res) => {
     const resumo = contrato.calcularResumoFinanceiro();
 
     contrato.status = 'desistente';
+    contrato.statusParticipacao = 'nao_participa';
+    contrato.aderiu = false;
     contrato.dataDesistencia = req.body.dataDesistencia
       ? new Date(req.body.dataDesistencia)
       : new Date();
@@ -725,6 +851,7 @@ router.get('/alertas/resumo', autenticar, requireTenant, async (req, res) => {
         atrasados: dados.filter((c) => c.alertas.atrasado),
         pendentes: dados.filter((c) => c.alertas.possuiPendencia),
         desistentes: dados.filter((c) => c.status === 'desistente'),
+        naoParticipam: dados.filter((c) => c.statusParticipacao === 'nao_participa'),
       },
     });
   } catch (err) {
@@ -735,37 +862,164 @@ router.get('/alertas/resumo', autenticar, requireTenant, async (req, res) => {
     });
   }
 });
+
 router.get('/dashboard/pro', autenticar, requireTenant, async (req, res) => {
-  res.json({
-    ok: true,
-    resumo: {
-      contratos: 0,
-      valorPrevisto: 0,
-      valorRecebido: 0,
-      valorPendente: 0,
-      quitados: 0,
-      atrasados: 0,
-      emDia: 0,
-      emAberto: 0,
-      desistentes: 0,
-      cancelados: 0,
-      semContrato: 0,
-      comContrato: 0,
-      pagamentosPix: 0,
-      pagamentosDinheiro: 0,
-      pagamentosMisto: 0,
-      pagamentosOutro: 0,
-      percentualRecebido: 0,
-      percentualInadimplencia: 0
-    },
-    porTurma: [],
-    porFormaPagamento: [],
-    listas: {
-      inadimplentes: [],
-      contratosPendentes: [],
-      quitados: []
+  try {
+    const instituicao = getInstituicaoId(req);
+    const anoLetivo = Number(req.query.anoLetivo || 2026);
+
+    const contratos = await BaileContrato.find({
+      instituicao,
+      anoLetivo,
+    });
+
+    for (const contrato of contratos) {
+      recalcularParcelasComPagamentos(contrato);
+      await contrato.save();
     }
-  });
+
+    const dados = contratos.map(resumoContrato);
+    const terceiros = await buscarAlunosTerceiros(instituicao);
+
+    const porTurmaMap = new Map();
+
+    const resumo = dados.reduce(
+      (acc, c) => {
+        const participante = contratoContaComoParticipante(c);
+        const qtdIngressos = participante ? Number(c.quantidadeIngressos || 0) : 0;
+
+        acc.contratos += 1;
+        acc.valorPrevisto += Number(c.financeiro.valorTotal || 0);
+        acc.valorRecebido += Number(c.financeiro.totalPago || 0);
+        acc.valorPendente += Number(c.financeiro.valorPendente || 0);
+        acc.cadeirasSolicitadas += qtdIngressos;
+        acc.ingressosIniciais += participante ? Number(c.ingressosIniciais || 0) : 0;
+        acc.ingressosAdicionais += participante ? Number(c.ingressosAdicionais || 0) : 0;
+
+        if (participante) acc.participantes += 1;
+        if (c.statusParticipacao === 'nao_participa') acc.naoParticipam += 1;
+        if (c.status === 'quitado') acc.quitados += 1;
+        if (c.status === 'atrasado') acc.atrasados += 1;
+        if (c.status === 'em_dia') acc.emDia += 1;
+        if (c.status === 'em_aberto') acc.emAberto += 1;
+        if (c.status === 'desistente') acc.desistentes += 1;
+        if (c.status === 'cancelado') acc.cancelados += 1;
+        if (!c.contratoAssinado && participante) acc.semContrato += 1;
+        if (c.contratoAssinado) acc.comContrato += 1;
+
+        (c.pagamentos || []).forEach((pg) => {
+          const valor = Number(pg.valor || 0);
+
+          if (pg.formaPagamento === 'pix') acc.pagamentosPix += valor;
+          else if (pg.formaPagamento === 'dinheiro') acc.pagamentosDinheiro += valor;
+          else if (pg.formaPagamento === 'misto') acc.pagamentosMisto += valor;
+          else acc.pagamentosOutro += valor;
+        });
+
+        const turma = c.turma || 'Sem turma';
+
+        if (!porTurmaMap.has(turma)) {
+          porTurmaMap.set(turma, {
+            turma,
+            contratos: 0,
+            participantes: 0,
+            naoParticipam: 0,
+            cadeirasSolicitadas: 0,
+            valorPrevisto: 0,
+            valorRecebido: 0,
+            valorPendente: 0,
+          });
+        }
+
+        const t = porTurmaMap.get(turma);
+        t.contratos += 1;
+        if (participante) t.participantes += 1;
+        if (c.statusParticipacao === 'nao_participa') t.naoParticipam += 1;
+        t.cadeirasSolicitadas += qtdIngressos;
+        t.valorPrevisto += Number(c.financeiro.valorTotal || 0);
+        t.valorRecebido += Number(c.financeiro.totalPago || 0);
+        t.valorPendente += Number(c.financeiro.valorPendente || 0);
+
+        return acc;
+      },
+      {
+        contratos: 0,
+        participantes: 0,
+        naoParticipam: 0,
+        semResposta: 0,
+        valorPrevisto: 0,
+        valorRecebido: 0,
+        valorPendente: 0,
+        quitados: 0,
+        atrasados: 0,
+        emDia: 0,
+        emAberto: 0,
+        desistentes: 0,
+        cancelados: 0,
+        semContrato: 0,
+        comContrato: 0,
+        pagamentosPix: 0,
+        pagamentosDinheiro: 0,
+        pagamentosMisto: 0,
+        pagamentosOutro: 0,
+        percentualRecebido: 0,
+        percentualInadimplencia: 0,
+        capacidadeMaximaCadeiras: CAPACIDADE_PADRAO_CADEIRAS,
+        cadeirasSolicitadas: 0,
+        cadeirasDisponiveis: CAPACIDADE_PADRAO_CADEIRAS,
+        ingressosIniciais: 0,
+        ingressosAdicionais: 0,
+      }
+    );
+
+    const alunosComRegistro = new Set(
+      dados.map((c) => String(c.aluno || '')).filter(Boolean)
+    );
+
+    resumo.semResposta = terceiros.filter((a) => !alunosComRegistro.has(String(a._id))).length;
+    resumo.cadeirasDisponiveis = Math.max(
+      resumo.capacidadeMaximaCadeiras - resumo.cadeirasSolicitadas,
+      0
+    );
+
+    resumo.percentualRecebido =
+      resumo.valorPrevisto > 0
+        ? Number(((resumo.valorRecebido / resumo.valorPrevisto) * 100).toFixed(1))
+        : 0;
+
+    resumo.percentualInadimplencia =
+      resumo.valorPrevisto > 0
+        ? Number(((resumo.valorPendente / resumo.valorPrevisto) * 100).toFixed(1))
+        : 0;
+
+    res.json({
+      ok: true,
+      resumo,
+      porTurma: Array.from(porTurmaMap.values()).sort((a, b) =>
+        String(a.turma).localeCompare(String(b.turma), 'pt-BR')
+      ),
+      porFormaPagamento: [
+        { forma: 'PIX', valor: resumo.pagamentosPix },
+        { forma: 'Dinheiro', valor: resumo.pagamentosDinheiro },
+        { forma: 'Misto', valor: resumo.pagamentosMisto },
+        { forma: 'Outro', valor: resumo.pagamentosOutro },
+      ],
+      listas: {
+        inadimplentes: dados.filter((c) => c.status === 'atrasado'),
+        contratosPendentes: dados.filter((c) => !c.contratoAssinado && contratoContaComoParticipante(c)),
+        quitados: dados.filter((c) => c.status === 'quitado'),
+        participantes: dados.filter((c) => contratoContaComoParticipante(c)),
+        naoParticipam: dados.filter((c) => c.statusParticipacao === 'nao_participa'),
+        semResposta: terceiros.filter((a) => !alunosComRegistro.has(String(a._id))),
+      },
+    });
+  } catch (err) {
+    console.error('[BAILE][DASHBOARD_PRO]', err);
+    res.status(500).json({
+      ok: false,
+      message: 'Erro ao gerar dashboard do baile.',
+    });
+  }
 });
 
 module.exports = router;

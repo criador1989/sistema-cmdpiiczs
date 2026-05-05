@@ -23,7 +23,6 @@ const bailePagamentoSchema = new mongoose.Schema(
       type: String,
       default: '',
       trim: true,
-      // Exemplo: "1/8", "2/8", "pagamento parcial", etc.
     },
 
     comprovanteUrl: {
@@ -157,11 +156,29 @@ const baileContratoSchema = new mongoose.Schema(
       default: true,
     },
 
+    statusParticipacao: {
+      type: String,
+      enum: ['participante', 'nao_participa', 'indefinido'],
+      default: 'participante',
+      index: true,
+    },
+
+    ingressosIniciais: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    ingressosAdicionais: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     quantidadeIngressos: {
       type: Number,
       required: true,
-      min: 1,
-      max: 6,
+      min: 0,
       default: 1,
     },
 
@@ -182,7 +199,7 @@ const baileContratoSchema = new mongoose.Schema(
     quantidadeParcelas: {
       type: Number,
       min: 1,
-      max: 8,
+      max: 12,
       default: 8,
     },
 
@@ -241,6 +258,18 @@ const baileContratoSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+
+    mesaNumero: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    cadeiraNumero: {
+      type: String,
+      default: '',
+      trim: true,
     },
 
     observacoes: {
@@ -304,8 +333,26 @@ baileContratoSchema.index(
 );
 
 baileContratoSchema.pre('validate', function (next) {
-  this.valorTotal =
-    Number(this.quantidadeIngressos || 0) * Number(this.valorUnitario || 0);
+  if (!this.ingressosIniciais && this.quantidadeIngressos) {
+    this.ingressosIniciais = Number(this.quantidadeIngressos || 0);
+  }
+
+  const iniciais = Number(this.ingressosIniciais || 0);
+  const adicionais = Number(this.ingressosAdicionais || 0);
+
+  if (iniciais > 0 || adicionais > 0) {
+    this.quantidadeIngressos = iniciais + adicionais;
+  }
+
+  if (this.statusParticipacao === 'nao_participa') {
+    this.aderiu = false;
+    this.quantidadeIngressos = 0;
+    this.valorTotal = 0;
+  } else {
+    this.aderiu = true;
+    this.valorTotal =
+      Number(this.quantidadeIngressos || 0) * Number(this.valorUnitario || 0);
+  }
 
   next();
 });
@@ -326,6 +373,11 @@ baileContratoSchema.methods.calcularResumoFinanceiro = function () {
 
 baileContratoSchema.methods.atualizarStatusFinanceiro = function () {
   if (['desistente', 'cancelado'].includes(this.status)) {
+    return;
+  }
+
+  if (this.statusParticipacao === 'nao_participa') {
+    this.status = 'cancelado';
     return;
   }
 
@@ -350,7 +402,6 @@ baileContratoSchema.methods.atualizarStatusFinanceiro = function () {
   }
 };
 
-module.exports = mongoose.model('BaileContrato', baileContratoSchema);
 module.exports =
   mongoose.models.BaileContrato ||
   mongoose.model('BaileContrato', baileContratoSchema);

@@ -23,9 +23,7 @@
       --radius: 20px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -115,7 +113,7 @@
 
     .main {
       padding: 28px;
-      max-width: 1500px;
+      max-width: 1600px;
       width: 100%;
       margin: 0 auto;
     }
@@ -137,7 +135,7 @@
     .title p {
       margin: 0;
       color: var(--muted);
-      max-width: 780px;
+      max-width: 850px;
       line-height: 1.5;
     }
 
@@ -241,7 +239,7 @@
 
     .filters {
       display: grid;
-      grid-template-columns: 1.4fr .8fr .8fr .8fr auto;
+      grid-template-columns: 1.4fr .8fr .8fr .8fr .8fr auto;
       gap: 10px;
       margin-bottom: 16px;
     }
@@ -295,7 +293,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1080px;
+      min-width: 1220px;
       background: rgba(2, 11, 22, .28);
     }
 
@@ -330,6 +328,7 @@
       font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
+      margin: 2px 2px 2px 0;
     }
 
     .b-em_dia { color: #b9ffe1; background: rgba(66,245,155,.1); border-color: rgba(66,245,155,.28); }
@@ -338,10 +337,13 @@
     .b-em_aberto { color: #d8eaff; background: rgba(56,213,255,.08); border-color: rgba(56,213,255,.24); }
     .b-desistente { color: #ffe7b3; background: rgba(255,209,102,.12); border-color: rgba(255,209,102,.28); }
     .b-cancelado { color: #d6d6d6; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+    .b-nao_participa { color: #ffd5dc; background: rgba(255,95,122,.12); border-color: rgba(255,95,122,.28); }
+    .b-participante { color: #b9ffe1; background: rgba(66,245,155,.12); border-color: rgba(66,245,155,.28); }
+    .b-indefinido { color: #ffe7b3; background: rgba(255,209,102,.12); border-color: rgba(255,209,102,.28); }
 
     .alert-list {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
 
@@ -360,6 +362,11 @@
     .alert-card.green {
       border-color: rgba(66,245,155,.25);
       background: rgba(66,245,155,.08);
+    }
+
+    .alert-card.cyan {
+      border-color: rgba(56,213,255,.28);
+      background: rgba(56,213,255,.08);
     }
 
     .alert-card strong {
@@ -408,7 +415,7 @@
     }
 
     .drawer-box {
-      width: min(720px, 96vw);
+      width: min(900px, 96vw);
       height: 100vh;
       overflow-y: auto;
       background: #071727;
@@ -463,16 +470,21 @@
       gap: 8px;
     }
 
-    .parcela {
+    .parcela,
+    .item-card {
       display: grid;
-      grid-template-columns: 60px 1fr 1fr auto;
       gap: 10px;
-      align-items: center;
-      padding: 10px;
+      padding: 12px;
       border-radius: 14px;
       background: rgba(255,255,255,.035);
       border: 1px solid rgba(255,255,255,.07);
       font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .parcela {
+      grid-template-columns: 60px 1fr 1fr auto;
+      align-items: center;
     }
 
     .toast {
@@ -493,8 +505,6 @@
     .toast.show {
       display: block;
     }
-
-
 
     .pro-grid {
       display: grid;
@@ -586,6 +596,187 @@
       color: var(--muted);
     }
 
+    .lista-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .lista-card {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .lista-card strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .lista-card span {
+      color: var(--muted);
+      font-size: 13px;
+      display: block;
+    }
+
+    .mapa-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .mapa-resumo {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .mapa-resumo .box {
+      border-radius: 16px;
+      border: 1px solid rgba(56,213,255,.16);
+      background: rgba(255,255,255,.035);
+      padding: 12px;
+    }
+
+    .mapa-resumo .box small {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .mapa-resumo .box strong {
+      font-size: 20px;
+    }
+
+    .mapa-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 12px;
+    }
+
+    .mesa-card {
+      border-radius: 18px;
+      border: 1px solid rgba(56,213,255,.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mesa-card.completa {
+      border-color: rgba(66,245,155,.34);
+    }
+
+    .mesa-card.cheia-alerta {
+      border-color: rgba(255,209,102,.34);
+    }
+
+    .mesa-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .mesa-top strong {
+      font-size: 16px;
+    }
+
+    .mesa-top span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mesa-desenho {
+      min-height: 150px;
+      display: grid;
+      place-items: center;
+      margin: 8px 0 12px;
+    }
+
+    .mesa-circulo {
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      border: 2px solid rgba(56,213,255,.45);
+      background: radial-gradient(circle, rgba(56,213,255,.14), rgba(255,255,255,.03));
+      display: grid;
+      place-items: center;
+      position: relative;
+      box-shadow: 0 0 24px rgba(56,213,255,.08);
+    }
+
+    .mesa-circulo .mesa-numero {
+      font-weight: 900;
+      font-size: 15px;
+      text-align: center;
+      padding: 8px;
+    }
+
+    .cadeira-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.35);
+      background: rgba(143,180,199,.25);
+      position: absolute;
+      transform: translate(-50%, -50%);
+    }
+
+    .cadeira-dot.ocupada {
+      background: rgba(66,245,155,.55);
+      border-color: rgba(66,245,155,.75);
+      box-shadow: 0 0 12px rgba(66,245,155,.24);
+    }
+
+    .ocupante-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .ocupante {
+      border-radius: 12px;
+      background: rgba(2,11,22,.35);
+      border: 1px solid rgba(255,255,255,.07);
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    .ocupante strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .ocupante span {
+      color: var(--muted);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .mesa-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .nao-alocados {
+      margin-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding-top: 16px;
+    }
+
+    .alocado-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+
     @media (max-width: 1100px) {
       .app {
         grid-template-columns: 1fr;
@@ -621,14 +812,14 @@
         grid-template-columns: 1fr;
       }
 
-      .turma-mini {
+      .turma-mini,
+      .lista-grid,
+      .mapa-resumo {
         grid-template-columns: 1fr;
       }
     }
   </style>
-</head>
-
-<body>
+</head><body>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
@@ -655,29 +846,37 @@
         <div class="title">
           <h2>Baile de Formatura 2026</h2>
           <p>
-            Controle de adesões dos terceiros anos, contratos assinados, pagamentos,
-            comprovantes, pendências, desistências e alertas financeiros.
+            Controle de adesões, comprovantes, contratos, pagamentos, ingressos/cadeiras,
+            capacidade máxima, alunos participantes, não participantes e mapa editável de mesas.
           </p>
         </div>
 
         <div class="actions">
           <button class="btn-ghost" onclick="carregarTudo()">Atualizar</button>
           <button class="btn-ghost" onclick="exportarExcel()">Exportar Excel</button>
+          <button class="btn-ghost" onclick="abrirListasParticipacao()">Listas</button>
+          <button class="btn-ghost" onclick="abrirMapaMesas()">Mapa de Mesas</button>
           <button class="btn-primary" onclick="abrirNovaAdesao()">+ Nova adesão</button>
         </div>
       </section>
 
       <section class="grid-cards">
         <div class="metric">
-          <small>Contratos</small>
-          <strong id="mContratos">0</strong>
-          <div class="hint">alunos aderidos</div>
+          <small>Participantes</small>
+          <strong id="mParticipantes">0</strong>
+          <div class="hint">alunos no baile</div>
         </div>
 
         <div class="metric">
-          <small>Previsto</small>
-          <strong id="mPrevisto">R$ 0,00</strong>
-          <div class="hint">valor total contratado</div>
+          <small>Cadeiras solicitadas</small>
+          <strong id="mCadeirasSolicitadas">0</strong>
+          <div class="hint">ingressos totais</div>
+        </div>
+
+        <div class="metric">
+          <small>Cadeiras disponíveis</small>
+          <strong id="mCadeirasDisponiveis">600</strong>
+          <div class="hint">limite atual: 600</div>
         </div>
 
         <div class="metric">
@@ -693,6 +892,26 @@
         </div>
 
         <div class="metric">
+          <small>Não participam</small>
+          <strong id="mNaoParticipam">0</strong>
+          <div class="hint">registrados fora do baile</div>
+        </div>
+      </section>
+
+      <section class="grid-cards">
+        <div class="metric">
+          <small>Contratos</small>
+          <strong id="mContratos">0</strong>
+          <div class="hint">registros cadastrados</div>
+        </div>
+
+        <div class="metric">
+          <small>Previsto</small>
+          <strong id="mPrevisto">R$ 0,00</strong>
+          <div class="hint">valor total contratado</div>
+        </div>
+
+        <div class="metric">
           <small>Atrasados</small>
           <strong id="mAtrasados">0</strong>
           <div class="hint">com parcelas vencidas</div>
@@ -702,6 +921,18 @@
           <small>Sem contrato</small>
           <strong id="mSemContrato">0</strong>
           <div class="hint">contrato não anexado</div>
+        </div>
+
+        <div class="metric">
+          <small>Sem resposta</small>
+          <strong id="mSemResposta">0</strong>
+          <div class="hint">alunos sem registro</div>
+        </div>
+
+        <div class="metric">
+          <small>Adicionais</small>
+          <strong id="mIngressosAdicionais">0</strong>
+          <div class="hint">cadeiras extras pedidas</div>
         </div>
       </section>
 
@@ -774,12 +1005,17 @@
             <strong id="aQuitados">0 contratos quitados</strong>
             <span>Alunos com pagamento integral concluído.</span>
           </div>
+
+          <div class="alert-card cyan">
+            <strong id="aCadeiras">0 de 600 cadeiras</strong>
+            <span>Controle de capacidade máxima do evento.</span>
+          </div>
         </div>
       </section>
 
       <section class="panel">
         <div class="panel-header">
-          <h3>Contratos e pagamentos</h3>
+          <h3>Contratos, pagamentos e cadeiras</h3>
         </div>
 
         <div class="filters">
@@ -790,13 +1026,20 @@
           </select>
 
           <select id="fStatus" onchange="carregarContratos()">
-            <option value="">Todos os status</option>
+            <option value="">Todos os status financeiros</option>
             <option value="em_aberto">Em aberto</option>
             <option value="em_dia">Em dia</option>
             <option value="atrasado">Atrasado</option>
             <option value="quitado">Quitado</option>
             <option value="desistente">Desistente</option>
             <option value="cancelado">Cancelado</option>
+          </select>
+
+          <select id="fParticipacao" onchange="carregarContratos()">
+            <option value="">Toda participação</option>
+            <option value="participante">Participantes</option>
+            <option value="nao_participa">Não participam</option>
+            <option value="indefinido">Indefinidos</option>
           </select>
 
           <select id="fAno" onchange="carregarContratos()">
@@ -814,19 +1057,21 @@
               <tr>
                 <th>Aluno</th>
                 <th>Responsável</th>
+                <th>Participação</th>
                 <th>Ingressos</th>
                 <th>Total</th>
                 <th>Pago</th>
                 <th>Pendente</th>
                 <th>Status</th>
                 <th>Contrato</th>
+                <th>Comprovantes</th>
                 <th>Alertas</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tbodyContratos">
               <tr>
-                <td colspan="10" class="muted">Carregando...</td>
+                <td colspan="12" class="muted">Carregando...</td>
               </tr>
             </tbody>
           </table>
@@ -853,9 +1098,13 @@
 
   <script>
     const API_BASE = '/api/baile-contratos';
+    const API_MESAS = '/api/baile-mesas';
+    const CAPACIDADE_CADEIRAS = 600;
 
     let alunosTerceiros = [];
     let contratos = [];
+    let ultimoDashboardPro = null;
+    let ultimoMapaMesas = null;
     let contratoAtual = null;
     let timerBusca = null;
 
@@ -923,6 +1172,15 @@
       }, 3300);
     }
 
+    function escapeHtml(s) {
+      return String(s || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
     function statusLabel(s) {
       const map = {
         em_aberto: 'Em aberto',
@@ -936,17 +1194,27 @@
       return map[s] || s || '—';
     }
 
+    function participacaoLabel(s) {
+      const map = {
+        participante: 'Participante',
+        nao_participa: 'Não participa',
+        indefinido: 'Indefinido'
+      };
+
+      return map[s] || 'Participante';
+    }
+
     function badgeStatus(s) {
       return `<span class="badge b-${s || 'em_aberto'}">${statusLabel(s)}</span>`;
     }
 
-    function escapeHtml(s) {
-      return String(s || '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+    function badgeParticipacao(s) {
+      const st = s || 'participante';
+      return `<span class="badge b-${st}">${participacaoLabel(st)}</span>`;
+    }
+
+    function qtdComprovantes(c) {
+      return (c.pagamentos || []).filter(pg => pg.comprovanteUrl).length;
     }
 
     async function apiGet(url) {
@@ -992,7 +1260,19 @@
       return data;
     }
 
-    async function carregarTudo() {
+    async function apiDelete(url) {
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: headersJson()
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.message || 'Erro ao excluir.');
+      }
+
+      return data;
+    }    async function carregarTudo() {
       try {
         await carregarAlunosTerceiros();
         await carregarContratos();
@@ -1021,10 +1301,12 @@
       const busca = document.getElementById('fBusca').value.trim();
       const turma = document.getElementById('fTurma').value;
       const status = document.getElementById('fStatus').value;
+      const participacao = document.getElementById('fParticipacao').value;
 
       if (busca) params.set('busca', busca);
       if (turma) params.set('turma', turma);
       if (status) params.set('status', status);
+      if (participacao) params.set('statusParticipacao', participacao);
 
       Object.entries(extra).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== '') params.set(k, v);
@@ -1034,97 +1316,162 @@
     }
 
     async function carregarContratos(extra = {}) {
-      const tbody = document.getElementById('tbodyContratos');
-      tbody.innerHTML = `<tr><td colspan="10" class="muted">Carregando contratos...</td></tr>`;
-
       try {
         const qs = montarQueryContratos(extra);
         const data = await apiGet(`${API_BASE}?${qs}`);
 
         contratos = data.contratos || [];
 
-        atualizarMetricas(data.totais || {});
-        renderContratos();
-        carregarDashboardPro();
+        renderTabela();
+        renderMetricas(data.totais || {});
+        await carregarDashboardPro();
       } catch (err) {
         console.error(err);
-        tbody.innerHTML = `<tr><td colspan="10" class="muted">${escapeHtml(err.message)}</td></tr>`;
+        toast(err.message);
+
+        document.getElementById('tbodyContratos').innerHTML =
+          `<tr><td colspan="12" class="muted">Erro ao carregar contratos.</td></tr>`;
       }
     }
 
-    function atualizarMetricas(totais) {
-      document.getElementById('mContratos').textContent = totais.contratos || 0;
-      document.getElementById('mPrevisto').textContent = dinheiro(totais.valorPrevisto);
-      document.getElementById('mRecebido').textContent = dinheiro(totais.valorRecebido);
-      document.getElementById('mPendente').textContent = dinheiro(totais.valorPendente);
-      document.getElementById('mAtrasados').textContent = totais.atrasados || 0;
-      document.getElementById('mSemContrato').textContent = totais.semContrato || 0;
+    async function carregarDashboardPro() {
+      try {
+        const ano = document.getElementById('fAno').value || '2026';
+        const data = await apiGet(`${API_BASE}/dashboard/pro?anoLetivo=${ano}`);
+        ultimoDashboardPro = data;
 
-      document.getElementById('aAtrasados').textContent = `${totais.atrasados || 0} alunos atrasados`;
-      document.getElementById('aSemContrato').textContent = `${totais.semContrato || 0} sem contrato anexado`;
-      document.getElementById('aQuitados').textContent = `${totais.quitados || 0} contratos quitados`;
+        const resumo = data.resumo || {};
+
+        const percentualRecebido = Number(resumo.percentualRecebido || 0);
+        const percentualInadimplencia = Number(resumo.percentualInadimplencia || 0);
+
+        document.getElementById('proPercentualRecebido').textContent = `${percentualRecebido}%`;
+        document.getElementById('proPercentualRecebidoBar').style.width = `${Math.min(percentualRecebido, 100)}%`;
+
+        document.getElementById('proInadimplencia').textContent = `${percentualInadimplencia}%`;
+        document.getElementById('proInadimplenciaBar').style.width = `${Math.min(percentualInadimplencia, 100)}%`;
+
+        document.getElementById('proPix').textContent = dinheiro(resumo.pagamentosPix || 0);
+        document.getElementById('proDinheiro').textContent = dinheiro(resumo.pagamentosDinheiro || 0);
+        document.getElementById('proOutros').textContent =
+          dinheiro(Number(resumo.pagamentosMisto || 0) + Number(resumo.pagamentosOutro || 0));
+
+        const turmas = data.porTurma || [];
+        document.getElementById('proTurmas').innerHTML = turmas.length
+          ? turmas.map(t => `
+              <div class="turma-card">
+                <div class="turma-top">
+                  <strong>${escapeHtml(t.turma)}</strong>
+                  <span>${Number(t.cadeirasSolicitadas || 0)} cadeiras</span>
+                </div>
+                <div class="turma-mini">
+                  <div>Participantes: <strong>${Number(t.participantes || 0)}</strong></div>
+                  <div>Recebido: <strong>${dinheiro(t.valorRecebido || 0)}</strong></div>
+                  <div>Pendente: <strong>${dinheiro(t.valorPendente || 0)}</strong></div>
+                </div>
+              </div>
+            `).join('')
+          : '<p class="muted">Nenhuma turma com dados ainda.</p>';
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    function renderContratos() {
+    function renderMetricas(t) {
+      document.getElementById('mParticipantes').textContent = Number(t.participantes || 0);
+      document.getElementById('mCadeirasSolicitadas').textContent = Number(t.cadeirasSolicitadas || 0);
+      document.getElementById('mCadeirasDisponiveis').textContent = Number(t.cadeirasDisponiveis ?? CAPACIDADE_CADEIRAS);
+      document.getElementById('mRecebido').textContent = dinheiro(t.valorRecebido || 0);
+      document.getElementById('mPendente').textContent = dinheiro(t.valorPendente || 0);
+      document.getElementById('mNaoParticipam').textContent = Number(t.naoParticipam || 0);
+
+      document.getElementById('mContratos').textContent = Number(t.contratos || 0);
+      document.getElementById('mPrevisto').textContent = dinheiro(t.valorPrevisto || 0);
+      document.getElementById('mAtrasados').textContent = Number(t.atrasados || 0);
+      document.getElementById('mSemContrato').textContent = Number(t.semContrato || 0);
+      document.getElementById('mSemResposta').textContent = Number(t.semResposta || 0);
+      document.getElementById('mIngressosAdicionais').textContent = Number(t.ingressosAdicionais || 0);
+
+      document.getElementById('aAtrasados').textContent =
+        `${Number(t.atrasados || 0)} alunos atrasados`;
+
+      document.getElementById('aSemContrato').textContent =
+        `${Number(t.semContrato || 0)} sem contrato anexado`;
+
+      document.getElementById('aQuitados').textContent =
+        `${Number(t.quitados || 0)} contratos quitados`;
+
+      document.getElementById('aCadeiras').textContent =
+        `${Number(t.cadeirasSolicitadas || 0)} de ${Number(t.capacidadeMaximaCadeiras || CAPACIDADE_CADEIRAS)} cadeiras`;
+    }
+
+    function renderTabela() {
       const tbody = document.getElementById('tbodyContratos');
 
       if (!contratos.length) {
-        tbody.innerHTML = `<tr><td colspan="10" class="muted">Nenhum contrato encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="muted">Nenhum contrato encontrado.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = contratos.map(c => {
-        const financeiro = c.financeiro || {};
+        const f = c.financeiro || {};
         const alertas = [];
 
-        if (c.alertas?.semContrato) alertas.push('Contrato pendente');
-        if (c.alertas?.parcelasAtrasadas > 0) alertas.push(`${c.alertas.parcelasAtrasadas} parcela(s) atrasada(s)`);
-        if (c.alertas?.possuiPendencia && c.status !== 'quitado') alertas.push('Saldo pendente');
+        if (c.alertas?.semContrato && (c.statusParticipacao || 'participante') === 'participante') {
+          alertas.push('Sem contrato');
+        }
+
+        if (c.alertas?.parcelasAtrasadas) {
+          alertas.push(`${c.alertas.parcelasAtrasadas} parcela(s) atrasada(s)`);
+        }
+
+        if (c.statusParticipacao === 'nao_participa') {
+          alertas.push('Não participa');
+        }
+
+        const contratoHtml = c.contratoUrl
+          ? `<a class="badge b-quitado" href="${escapeHtml(c.contratoUrl)}" target="_blank" rel="noopener">Ver contrato</a>`
+          : `<span class="badge b-atrasado">Pendente</span>`;
+
+        const comprovantes = qtdComprovantes(c);
+        const comprovanteHtml = comprovantes > 0
+          ? `<span class="badge b-quitado">${comprovantes} comprovante(s)</span>`
+          : `<span class="badge b-em_aberto">Sem comprovante</span>`;
+
+        const iniciais = Number(c.ingressosIniciais ?? c.quantidadeIngressos ?? 0);
+        const adicionais = Number(c.ingressosAdicionais || 0);
+        const totalIngressos = Number(c.quantidadeIngressos || 0);
 
         return `
           <tr>
             <td>
-              <strong>${escapeHtml(c.alunoNome)}</strong><br>
-              <span class="muted">${escapeHtml(c.turma)}</span>
+              <strong>${escapeHtml(c.alunoNome)}</strong>
+              <div class="muted">${escapeHtml(c.turma || '')}</div>
+              ${c.mesaNumero ? `<div class="muted">Mesa: ${escapeHtml(c.mesaNumero)}</div>` : ''}
             </td>
-
             <td>
-              ${escapeHtml(c.responsavelNome || '—')}<br>
-              <span class="muted">${escapeHtml(c.responsavelTelefone || '')}</span>
+              ${escapeHtml(c.responsavelNome || '—')}
+              <div class="muted">${escapeHtml(c.responsavelTelefone || '')}</div>
             </td>
-
+            <td>${badgeParticipacao(c.statusParticipacao || 'participante')}</td>
             <td>
-              <strong>${c.quantidadeIngressos || 0}</strong><br>
-              <span class="muted">${dinheiro(c.valorUnitario || 150)} cada</span>
+              <strong>${totalIngressos}</strong>
+              <div class="muted">Inicial: ${iniciais} · Adic.: ${adicionais}</div>
             </td>
-
-            <td class="money">${dinheiro(financeiro.valorTotal)}</td>
-            <td class="money">${dinheiro(financeiro.totalPago)}</td>
-            <td class="money">${dinheiro(financeiro.valorPendente)}</td>
-
+            <td class="money">${dinheiro(f.valorTotal || c.valorTotal || 0)}</td>
+            <td class="money">${dinheiro(f.totalPago || 0)}</td>
+            <td class="money">${dinheiro(f.valorPendente || 0)}</td>
             <td>${badgeStatus(c.status)}</td>
-
-            <td>
-              ${
-                c.contratoAssinado
-                  ? `<a class="badge b-quitado" href="${c.contratoUrl}" target="_blank">Ver contrato</a>`
-                  : `<span class="badge b-atrasado">Não anexado</span>`
-              }
-            </td>
-
-            <td>
-              ${
-                alertas.length
-                  ? alertas.map(a => `<span class="badge b-atrasado" style="margin:2px 2px 2px 0;">${escapeHtml(a)}</span>`).join('')
-                  : `<span class="badge b-quitado">Sem alerta</span>`
-              }
-            </td>
-
+            <td>${contratoHtml}</td>
+            <td>${comprovanteHtml}</td>
+            <td>${alertas.length ? alertas.map(a => `<span class="badge b-atrasado">${escapeHtml(a)}</span>`).join('') : '<span class="muted">—</span>'}</td>
             <td>
               <div class="row-actions">
-                <button class="mini" onclick="abrirDetalhes('${c._id}')">Detalhes</button>
-                <button class="mini" onclick="abrirPagamento('${c._id}')">Pagamento</button>
-                <button class="mini" onclick="abrirContratoUpload('${c._id}')">Contrato</button>
+                <button class="mini" onclick="abrirDetalhes('${c._id}')">Abrir</button>
+                <button class="mini btn-ghost" onclick="abrirContrato('${c._id}')">Contrato</button>
+                <button class="mini btn-ghost" onclick="abrirComprovantes('${c._id}')">Comprovantes</button>
+                <button class="mini btn-primary" onclick="abrirPagamento('${c._id}')">Pagamento</button>
+                <button class="mini btn-danger" onclick="excluirParticipante('${c._id}')">Excluir</button>
               </div>
             </td>
           </tr>
@@ -1141,7 +1488,7 @@
       document.getElementById('fBusca').value = '';
       document.getElementById('fTurma').value = '';
       document.getElementById('fStatus').value = '';
-      document.getElementById('fAno').value = '2026';
+      document.getElementById('fParticipacao').value = '';
       carregarContratos();
     }
 
@@ -1161,477 +1508,350 @@
       contratoAtual = null;
     }
 
-    function abrirNovaAdesao() {
-      const alunosOptions = alunosTerceiros.map(a => {
-        return `<option value="${a._id}">${escapeHtml(a.nome)} — ${escapeHtml(a.turma || '')}</option>`;
-      }).join('');
-
-      abrirDrawer(
-        'Nova adesão ao baile',
-        'Selecione apenas alunos que realmente participarão do baile.',
-        `
-          <form id="formNovaAdesao" onsubmit="salvarNovaAdesao(event)">
-            <div class="form-grid">
-              <div class="full">
-                <label>Aluno do 3º ano</label>
-                <select name="alunoId" required>
-                  <option value="">Selecione...</option>
-                  ${alunosOptions}
-                </select>
-              </div>
-
-              <div>
-                <label>Quantidade de ingressos</label>
-                <input name="quantidadeIngressos" type="number" min="1" max="6" value="1" required />
-              </div>
-
-              <div>
-                <label>Parcelas</label>
-                <input name="quantidadeParcelas" type="number" min="1" max="8" value="8" required />
-              </div>
-
-              <div>
-                <label>Ano letivo</label>
-                <input name="anoLetivo" type="number" value="2026" required />
-              </div>
-
-              <div>
-                <label>Data de adesão</label>
-                <input name="dataAdesao" type="date" />
-              </div>
-
-              <div class="half">
-                <label>Nome do responsável</label>
-                <input name="responsavelNome" placeholder="Opcional, se já constar no cadastro do aluno" />
-              </div>
-
-              <div>
-                <label>CPF do responsável</label>
-                <input name="responsavelCpf" placeholder="Opcional" />
-              </div>
-
-              <div>
-                <label>Telefone</label>
-                <input name="responsavelTelefone" placeholder="Opcional" />
-              </div>
-
-              <div class="full">
-                <label>Observações</label>
-                <textarea name="observacoes" placeholder="Ex.: responsável pagará em dinheiro, observações do contrato, etc."></textarea>
-              </div>
-
-              <div class="full">
-                <button class="btn-primary" type="submit">Cadastrar adesão</button>
-              </div>
-            </div>
-          </form>
-        `
-      );
+    function buscarContrato(id) {
+      return contratos.find(c => String(c._id) === String(id));
     }
 
-    async function salvarNovaAdesao(event) {
-      event.preventDefault();
+    function optionsAlunos() {
+      return alunosTerceiros.map(a => `
+        <option value="${a._id}">
+          ${escapeHtml(a.nome)} — ${escapeHtml(a.turma || '')}
+        </option>
+      `).join('');
+    }
 
-      const form = event.target;
-      const fd = new FormData(form);
+    function abrirNovaAdesao() {
+      abrirDrawer(
+        'Nova adesão ao baile',
+        'Cadastre participante, não participante ou registro inicial de controle.',
+        `
+          <div class="form-grid">
+            <div class="full">
+              <label>Aluno</label>
+              <select id="nAluno">
+                <option value="">Selecione...</option>
+                ${optionsAlunos()}
+              </select>
+            </div>
 
-      const body = {
-        alunoId: fd.get('alunoId'),
-        quantidadeIngressos: Number(fd.get('quantidadeIngressos') || 1),
-        quantidadeParcelas: Number(fd.get('quantidadeParcelas') || 8),
-        anoLetivo: Number(fd.get('anoLetivo') || 2026),
-        dataAdesao: fd.get('dataAdesao') || undefined,
-        responsavelNome: fd.get('responsavelNome'),
-        responsavelCpf: fd.get('responsavelCpf'),
-        responsavelTelefone: fd.get('responsavelTelefone'),
-        observacoes: fd.get('observacoes')
-      };
+            <div class="half">
+              <label>Status de participação</label>
+              <select id="nStatusParticipacao" onchange="toggleParticipacaoNova()">
+                <option value="participante">Participante</option>
+                <option value="nao_participa">Não participa</option>
+                <option value="indefinido">Indefinido</option>
+              </select>
+            </div>
 
+            <div class="half">
+              <label>Data de adesão/registro</label>
+              <input id="nDataAdesao" type="date" />
+            </div>
+
+            <div class="half">
+              <label>Responsável</label>
+              <input id="nResponsavelNome" placeholder="Nome do responsável" />
+            </div>
+
+            <div class="half">
+              <label>Telefone do responsável</label>
+              <input id="nResponsavelTelefone" placeholder="Contato" />
+            </div>
+
+            <div class="half camposParticipante">
+              <label>Ingressos iniciais</label>
+              <input id="nIngressosIniciais" type="number" min="0" value="1" />
+            </div>
+
+            <div class="half camposParticipante">
+              <label>Ingressos adicionais</label>
+              <input id="nIngressosAdicionais" type="number" min="0" value="0" />
+            </div>
+
+            <div class="half camposParticipante">
+              <label>Quantidade de parcelas</label>
+              <input id="nQuantidadeParcelas" type="number" min="1" max="12" value="8" />
+            </div>
+
+            <div class="half camposParticipante">
+              <label>Valor unitário</label>
+              <input id="nValorUnitario" type="number" min="0" step="0.01" value="150" />
+            </div>
+
+            <div class="full">
+              <label>Observações</label>
+              <textarea id="nObservacoes" placeholder="Ex.: responsável pediu só 3 cadeiras; aluno não participará; aguarda confirmação etc."></textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarNovaAdesao()">Salvar registro</button>
+            </div>
+          </div>
+        `
+      );
+
+      const hoje = new Date().toISOString().slice(0, 10);
+      document.getElementById('nDataAdesao').value = hoje;
+    }
+
+    function toggleParticipacaoNova() {
+      const status = document.getElementById('nStatusParticipacao').value;
+      const mostrar = status !== 'nao_participa';
+
+      document.querySelectorAll('.camposParticipante').forEach(el => {
+        el.style.display = mostrar ? '' : 'none';
+      });
+    }
+
+    async function salvarNovaAdesao() {
       try {
+        const alunoId = document.getElementById('nAluno').value;
+
+        if (!alunoId) {
+          toast('Selecione o aluno.');
+          return;
+        }
+
+        const statusParticipacao = document.getElementById('nStatusParticipacao').value;
+
+        const body = {
+          alunoId,
+          statusParticipacao,
+          dataAdesao: document.getElementById('nDataAdesao').value,
+          responsavelNome: document.getElementById('nResponsavelNome').value.trim(),
+          responsavelTelefone: document.getElementById('nResponsavelTelefone').value.trim(),
+          ingressosIniciais: Number(document.getElementById('nIngressosIniciais')?.value || 0),
+          ingressosAdicionais: Number(document.getElementById('nIngressosAdicionais')?.value || 0),
+          quantidadeParcelas: Number(document.getElementById('nQuantidadeParcelas')?.value || 8),
+          valorUnitario: Number(document.getElementById('nValorUnitario')?.value || 150),
+          observacoes: document.getElementById('nObservacoes').value.trim(),
+          anoLetivo: Number(document.getElementById('fAno').value || 2026)
+        };
+
         await apiPost(API_BASE, body);
-        toast('Adesão cadastrada com sucesso.');
+
+        toast('Registro salvo com sucesso.');
         fecharDrawer();
-        carregarContratos();
+        await carregarContratos();
       } catch (err) {
+        console.error(err);
         toast(err.message);
       }
     }
 
-    function getContrato(id) {
-      return contratos.find(c => String(c._id) === String(id));
-    }
-
     function abrirDetalhes(id) {
-      const c = getContrato(id);
+      const c = buscarContrato(id);
       if (!c) return;
 
       contratoAtual = c;
 
-      const financeiro = c.financeiro || {};
-      const pagamentos = c.pagamentos || [];
-      const parcelas = c.parcelas || [];
+      const f = c.financeiro || {};
+      const iniciais = Number(c.ingressosIniciais ?? c.quantidadeIngressos ?? 0);
+      const adicionais = Number(c.ingressosAdicionais || 0);
 
       abrirDrawer(
-        'Detalhes do contrato',
-        `${c.alunoNome} — ${c.turma}`,
+        'Detalhes do registro',
+        `${c.alunoNome} — ${c.turma || ''}`,
         `
           <div class="tabs">
-            <div class="tab active" onclick="trocarTab(event, 'tabResumo')">Resumo</div>
-            <div class="tab" onclick="trocarTab(event, 'tabParcelas')">Parcelas</div>
-            <div class="tab" onclick="trocarTab(event, 'tabPagamentos')">Pagamentos</div>
-            <div class="tab" onclick="trocarTab(event, 'tabEditar')">Corrigir dados</div>
-            <div class="tab" onclick="trocarTab(event, 'tabDesistencia')">Desistência</div>
+            <div class="tab active" onclick="trocarTab('tabDados', this)">Dados</div>
+            <div class="tab" onclick="trocarTab('tabParcelas', this)">Parcelas</div>
+            <div class="tab" onclick="trocarTab('tabHistorico', this)">Histórico</div>
           </div>
 
-          <div id="tabResumo" class="tab-content active">
-            <div class="panel">
-              <p><strong>Aluno:</strong> ${escapeHtml(c.alunoNome)}</p>
-              <p><strong>Turma:</strong> ${escapeHtml(c.turma)}</p>
-              <p><strong>Responsável:</strong> ${escapeHtml(c.responsavelNome || '—')}</p>
-              <p><strong>Telefone:</strong> ${escapeHtml(c.responsavelTelefone || '—')}</p>
-              <p><strong>Status:</strong> ${badgeStatus(c.status)}</p>
-              <p><strong>Ingressos:</strong> ${c.quantidadeIngressos} x ${dinheiro(c.valorUnitario)}</p>
-              <p><strong>Total:</strong> ${dinheiro(financeiro.valorTotal)}</p>
-              <p><strong>Pago:</strong> ${dinheiro(financeiro.totalPago)}</p>
-              <p><strong>Pendente:</strong> ${dinheiro(financeiro.valorPendente)}</p>
-              <p><strong>Contrato:</strong> ${
-                c.contratoAssinado
-                  ? `<a href="${c.contratoUrl}" target="_blank">abrir contrato anexado</a>`
-                  : 'não anexado'
-              }</p>
-              <p><strong>Observações:</strong><br>${escapeHtml(c.observacoes || '—')}</p>
+          <div id="tabDados" class="tab-content active">
+            <div class="form-grid">
+              <div class="half">
+                <label>Status de participação</label>
+                <select id="eStatusParticipacao" onchange="toggleParticipacaoEdicao()">
+                  <option value="participante" ${c.statusParticipacao === 'participante' || !c.statusParticipacao ? 'selected' : ''}>Participante</option>
+                  <option value="nao_participa" ${c.statusParticipacao === 'nao_participa' ? 'selected' : ''}>Não participa</option>
+                  <option value="indefinido" ${c.statusParticipacao === 'indefinido' ? 'selected' : ''}>Indefinido</option>
+                </select>
+              </div>
+
+              <div class="half">
+                <label>Status financeiro</label>
+                <select id="eStatus">
+                  <option value="em_aberto" ${c.status === 'em_aberto' ? 'selected' : ''}>Em aberto</option>
+                  <option value="em_dia" ${c.status === 'em_dia' ? 'selected' : ''}>Em dia</option>
+                  <option value="atrasado" ${c.status === 'atrasado' ? 'selected' : ''}>Atrasado</option>
+                  <option value="quitado" ${c.status === 'quitado' ? 'selected' : ''}>Quitado</option>
+                  <option value="desistente" ${c.status === 'desistente' ? 'selected' : ''}>Desistente</option>
+                  <option value="cancelado" ${c.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                </select>
+              </div>
+
+              <div class="half">
+                <label>Responsável</label>
+                <input id="eResponsavelNome" value="${escapeHtml(c.responsavelNome || '')}" />
+              </div>
+
+              <div class="half">
+                <label>Telefone</label>
+                <input id="eResponsavelTelefone" value="${escapeHtml(c.responsavelTelefone || '')}" />
+              </div>
+
+              <div class="half camposEdicaoParticipante">
+                <label>Ingressos iniciais</label>
+                <input id="eIngressosIniciais" type="number" min="0" value="${iniciais}" />
+              </div>
+
+              <div class="half camposEdicaoParticipante">
+                <label>Ingressos adicionais</label>
+                <input id="eIngressosAdicionais" type="number" min="0" value="${adicionais}" />
+              </div>
+
+              <div class="half camposEdicaoParticipante">
+                <label>Quantidade de parcelas</label>
+                <input id="eQuantidadeParcelas" type="number" min="1" max="12" value="${Number(c.quantidadeParcelas || 8)}" />
+              </div>
+
+              <div class="half camposEdicaoParticipante">
+                <label>Total atual</label>
+                <input value="${dinheiro(f.valorTotal || c.valorTotal || 0)}" disabled />
+              </div>
+
+              <div class="half">
+                <label>Mesa</label>
+                <input id="eMesaNumero" value="${escapeHtml(c.mesaNumero || '')}" placeholder="Ex.: Mesa 12" />
+              </div>
+
+              <div class="half">
+                <label>Cadeira/Lugar</label>
+                <input id="eCadeiraNumero" value="${escapeHtml(c.cadeiraNumero || '')}" placeholder="Ex.: Lugar 3" />
+              </div>
+
+              <div class="full">
+                <label>Motivo da alteração</label>
+                <input id="eMotivo" placeholder="Ex.: pedido de cadeiras adicionais, correção de dados, confirmação de não participação..." />
+              </div>
+
+              <div class="full">
+                <label>Observações</label>
+                <textarea id="eObservacoes">${escapeHtml(c.observacoes || '')}</textarea>
+              </div>
+
+              <div class="full">
+                <button class="btn-primary" onclick="salvarEdicaoContrato('${c._id}')">Salvar alterações</button>
+              </div>
             </div>
           </div>
 
           <div id="tabParcelas" class="tab-content">
             <div class="parcelas">
-              ${parcelas.map(p => `
+              ${(c.parcelas || []).length ? c.parcelas.map(p => `
                 <div class="parcela">
-                  <strong>${p.numero}/${c.quantidadeParcelas}</strong>
+                  <strong>${p.numero}/${c.quantidadeParcelas || ''}</strong>
                   <span>Venc.: ${dataBR(p.vencimento)}</span>
-                  <span>${dinheiro(p.valorPago)} / ${dinheiro(p.valorPrevisto)}</span>
-                  ${badgeStatusParcela(p.status)}
+                  <span>${dinheiro(p.valorPrevisto || 0)} · Pago: ${dinheiro(p.valorPago || 0)}</span>
+                  <span>${escapeHtml(p.status || '')}</span>
                 </div>
-              `).join('') || '<p class="muted">Nenhuma parcela gerada.</p>'}
+              `).join('') : '<p class="muted">Sem parcelas registradas.</p>'}
             </div>
           </div>
 
-          <div id="tabPagamentos" class="tab-content">
-            ${
-              pagamentos.length
-                ? pagamentos.map(p => `
-                    <div class="panel">
-                      <p><strong>Data:</strong> ${dataBR(p.dataPagamento)}</p>
-                      <p><strong>Valor:</strong> ${dinheiro(p.valor)}</p>
-                      <p><strong>Forma:</strong> ${escapeHtml(p.formaPagamento || '—')}</p>
-                      <p><strong>Referência:</strong> ${escapeHtml(p.referenciaParcela || '—')}</p>
-                      <p><strong>Comprovante:</strong> ${
-                        p.comprovanteUrl
-                          ? `<a href="${p.comprovanteUrl}" target="_blank">abrir comprovante</a>`
-                          : 'não anexado'
-                      }</p>
-                      <p><strong>Observação:</strong> ${escapeHtml(p.observacao || '—')}</p>
-                      <button class="mini btn-danger" onclick="removerPagamento('${c._id}', '${p._id}')">Remover pagamento</button>
-                    </div>
-                  `).join('')
-                : '<p class="muted">Nenhum pagamento registrado.</p>'
-            }
-          </div>
-
-          <div id="tabEditar" class="tab-content">
-            ${formEditarContrato(c)}
-          </div>
-
-          <div id="tabDesistencia" class="tab-content">
-            ${formDesistencia(c)}
+          <div id="tabHistorico" class="tab-content">
+            ${(c.historicoCorrecoes || []).length ? c.historicoCorrecoes.slice().reverse().map(h => `
+              <div class="item-card">
+                <strong>${escapeHtml(h.campo || 'Alteração')}</strong>
+                <span class="muted">${dataBR(h.data)} · ${escapeHtml(h.usuarioNome || '')}</span>
+                <div>De: ${escapeHtml(h.valorAnterior ?? '')}</div>
+                <div>Para: ${escapeHtml(h.valorNovo ?? '')}</div>
+                <div class="muted">${escapeHtml(h.motivo || '')}</div>
+              </div>
+            `).join('') : '<p class="muted">Nenhum histórico de alteração.</p>'}
           </div>
         `
       );
+
+      toggleParticipacaoEdicao();
     }
 
-    function badgeStatusParcela(s) {
-      const map = {
-        pendente: ['Em aberto', 'b-em_aberto'],
-        parcial: ['Parcial', 'b-em_dia'],
-        paga: ['Paga', 'b-quitado'],
-        atrasada: ['Atrasada', 'b-atrasado']
-      };
-
-      const item = map[s] || ['—', 'b-em_aberto'];
-      return `<span class="badge ${item[1]}">${item[0]}</span>`;
-    }
-
-    function trocarTab(event, id) {
+    function trocarTab(id, el) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
 
-      event.currentTarget.classList.add('active');
+      el.classList.add('active');
       document.getElementById(id).classList.add('active');
     }
 
-    function formEditarContrato(c) {
-      return `
-        <form onsubmit="salvarEdicaoContrato(event, '${c._id}')">
-          <div class="form-grid">
-            <div class="half">
-              <label>Responsável</label>
-              <input name="responsavelNome" value="${escapeHtml(c.responsavelNome || '')}" />
-            </div>
+    function toggleParticipacaoEdicao() {
+      const status = document.getElementById('eStatusParticipacao')?.value;
+      const mostrar = status !== 'nao_participa';
 
-            <div>
-              <label>CPF</label>
-              <input name="responsavelCpf" value="${escapeHtml(c.responsavelCpf || '')}" />
-            </div>
-
-            <div>
-              <label>Telefone</label>
-              <input name="responsavelTelefone" value="${escapeHtml(c.responsavelTelefone || '')}" />
-            </div>
-
-            <div>
-              <label>Ingressos</label>
-              <input name="quantidadeIngressos" type="number" min="1" max="6" value="${c.quantidadeIngressos || 1}" />
-            </div>
-
-            <div>
-              <label>Parcelas</label>
-              <input name="quantidadeParcelas" type="number" min="1" max="8" value="${c.quantidadeParcelas || 8}" />
-            </div>
-
-            <div>
-              <label>Status</label>
-              <select name="status">
-                ${['em_aberto','em_dia','atrasado','quitado','desistente','cancelado'].map(s => `
-                  <option value="${s}" ${c.status === s ? 'selected' : ''}>${statusLabel(s)}</option>
-                `).join('')}
-              </select>
-            </div>
-
-            <div>
-              <label>Data de adesão</label>
-              <input name="dataAdesao" type="date" value="${c.dataAdesao ? new Date(c.dataAdesao).toISOString().slice(0,10) : ''}" />
-            </div>
-
-            <div class="full">
-              <label>Observações</label>
-              <textarea name="observacoes">${escapeHtml(c.observacoes || '')}</textarea>
-            </div>
-
-            <div class="full">
-              <label>Motivo da correção</label>
-              <textarea name="motivoCorrecao" required>Correção administrativa no contrato do baile.</textarea>
-            </div>
-
-            <div class="full">
-              <button class="btn-primary" type="submit">Salvar correções</button>
-            </div>
-          </div>
-        </form>
-      `;
+      document.querySelectorAll('.camposEdicaoParticipante').forEach(el => {
+        el.style.display = mostrar ? '' : 'none';
+      });
     }
 
-    async function salvarEdicaoContrato(event, id) {
-      event.preventDefault();
-
-      const fd = new FormData(event.target);
-
-      const body = {
-        responsavelNome: fd.get('responsavelNome'),
-        responsavelCpf: fd.get('responsavelCpf'),
-        responsavelTelefone: fd.get('responsavelTelefone'),
-        quantidadeIngressos: Number(fd.get('quantidadeIngressos') || 1),
-        quantidadeParcelas: Number(fd.get('quantidadeParcelas') || 8),
-        status: fd.get('status'),
-        dataAdesao: fd.get('dataAdesao') || undefined,
-        observacoes: fd.get('observacoes'),
-        motivoCorrecao: fd.get('motivoCorrecao')
-      };
-
+    async function salvarEdicaoContrato(id) {
       try {
+        const body = {
+          statusParticipacao: document.getElementById('eStatusParticipacao').value,
+          status: document.getElementById('eStatus').value,
+          responsavelNome: document.getElementById('eResponsavelNome').value.trim(),
+          responsavelTelefone: document.getElementById('eResponsavelTelefone').value.trim(),
+          ingressosIniciais: Number(document.getElementById('eIngressosIniciais')?.value || 0),
+          ingressosAdicionais: Number(document.getElementById('eIngressosAdicionais')?.value || 0),
+          quantidadeParcelas: Number(document.getElementById('eQuantidadeParcelas')?.value || 8),
+          mesaNumero: document.getElementById('eMesaNumero').value.trim(),
+          cadeiraNumero: document.getElementById('eCadeiraNumero').value.trim(),
+          observacoes: document.getElementById('eObservacoes').value.trim(),
+          motivoCorrecao: document.getElementById('eMotivo').value.trim() || 'Alteração manual no módulo do baile.'
+        };
+
         await apiPut(`${API_BASE}/${id}`, body);
-        toast('Contrato atualizado com sucesso.');
+
+        toast('Registro atualizado com sucesso.');
         fecharDrawer();
-        carregarContratos();
+        await carregarContratos();
       } catch (err) {
+        console.error(err);
         toast(err.message);
       }
-    }
-
-    function formDesistencia(c) {
-      const totalPago = c.financeiro?.totalPago || 0;
-      const devolucao = totalPago * 0.5;
-
-      return `
-        <div class="panel">
-          <p>
-            Pelo contrato, em caso de desistência dentro das condições previstas,
-            o sistema calcula uma devolução estimada de <strong>${dinheiro(devolucao)}</strong>,
-            correspondente a 50% do valor já pago.
-          </p>
-        </div>
-
-        <form onsubmit="registrarDesistencia(event, '${c._id}')">
-          <div class="form-grid">
-            <div>
-              <label>Data da desistência</label>
-              <input name="dataDesistencia" type="date" required />
-            </div>
-
-            <div class="full">
-              <label>Motivo</label>
-              <textarea name="motivo" required placeholder="Descreva o motivo ou observação administrativa."></textarea>
-            </div>
-
-            <div class="full">
-              <button class="btn-danger" type="submit">Registrar desistência</button>
-            </div>
-          </div>
-        </form>
-      `;
-    }
-
-    async function registrarDesistencia(event, id) {
-      event.preventDefault();
-
-      const fd = new FormData(event.target);
-
-      try {
-        await apiPost(`${API_BASE}/${id}/desistencia`, {
-          dataDesistencia: fd.get('dataDesistencia'),
-          motivo: fd.get('motivo')
-        });
-
-        toast('Desistência registrada.');
-        fecharDrawer();
-        carregarContratos();
-      } catch (err) {
-        toast(err.message);
-      }
-    }
-
-    function abrirPagamento(id) {
-      const c = getContrato(id);
+    }    function abrirContrato(id) {
+      const c = buscarContrato(id);
       if (!c) return;
 
       abrirDrawer(
-        'Registrar pagamento',
-        `${c.alunoNome} — pendente: ${dinheiro(c.financeiro?.valorPendente || 0)}`,
+        'Contrato assinado',
+        `${c.alunoNome} — ${c.turma || ''}`,
         `
-          <form id="formPagamento" onsubmit="salvarPagamento(event, '${c._id}')" enctype="multipart/form-data">
-            <div class="form-grid">
-              <div>
-                <label>Data do pagamento</label>
-                <input name="dataPagamento" type="date" required />
-              </div>
+          <div class="item-card">
+            <strong>Status do contrato</strong>
+            <span>${c.contratoUrl ? 'Contrato anexado.' : 'Contrato ainda não anexado.'}</span>
+            ${c.contratoUrl ? `
+              <a class="btn" href="${escapeHtml(c.contratoUrl)}" target="_blank" rel="noopener">Visualizar contrato</a>
+            ` : ''}
+          </div>
 
-              <div>
-                <label>Valor pago</label>
-                <input name="valor" type="number" min="0.01" step="0.01" required />
-              </div>
-
-              <div>
-                <label>Forma de pagamento</label>
-                <select name="formaPagamento">
-                  <option value="pix">PIX</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="misto">Misto</option>
-                  <option value="outro">Outro</option>
-                </select>
-              </div>
-
-              <div>
-                <label>Referência</label>
-                <input name="referenciaParcela" placeholder="Ex.: 1/8, parcial, entrada..." />
-              </div>
-
-              <div class="full">
-                <label>Comprovante</label>
-                <input name="comprovante" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" />
-              </div>
-
-              <div class="full">
-                <label>Observação</label>
-                <textarea name="observacao" placeholder="Ex.: comprovante enviado no grupo, pagamento recebido em mãos, etc."></textarea>
-              </div>
-
-              <div class="full">
-                <button class="btn-primary" type="submit">Registrar pagamento</button>
-              </div>
+          <div class="form-grid">
+            <div class="full">
+              <label>Anexar ou substituir contrato</label>
+              <input id="arquivoContrato" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" />
             </div>
-          </form>
+
+            <div class="full">
+              <button class="btn-primary" onclick="enviarContrato('${c._id}')">Salvar contrato</button>
+            </div>
+          </div>
         `
       );
     }
 
-    async function salvarPagamento(event, id) {
-      event.preventDefault();
-
-      const form = event.target;
-      const fd = new FormData(form);
-
+    async function enviarContrato(id) {
       try {
-        const res = await fetch(`${API_BASE}/${id}/pagamentos`, {
-          method: 'POST',
-          headers: headersForm(),
-          body: fd
-        });
+        const file = document.getElementById('arquivoContrato').files[0];
 
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok || data.ok === false) {
-          throw new Error(data.message || 'Erro ao registrar pagamento.');
+        if (!file) {
+          toast('Selecione o arquivo do contrato.');
+          return;
         }
 
-        toast('Pagamento registrado com sucesso.');
-        fecharDrawer();
-        carregarContratos();
-      } catch (err) {
-        toast(err.message);
-      }
-    }
+        const fd = new FormData();
+        fd.append('contrato', file);
 
-    function abrirContratoUpload(id) {
-      const c = getContrato(id);
-      if (!c) return;
-
-      abrirDrawer(
-        'Anexar contrato assinado',
-        `${c.alunoNome} — ${c.turma}`,
-        `
-          <div class="panel">
-            <p>
-              Anexe aqui o contrato individual do aluno. Isso ajuda no controle documental
-              e evita perda de informações durante o período de arrecadação.
-            </p>
-            ${
-              c.contratoAssinado
-                ? `<p><strong>Contrato atual:</strong> <a href="${c.contratoUrl}" target="_blank">abrir arquivo anexado</a></p>`
-                : `<p><strong>Status:</strong> contrato ainda não anexado.</p>`
-            }
-          </div>
-
-          <form onsubmit="salvarContratoUpload(event, '${c._id}')" enctype="multipart/form-data">
-            <div class="form-grid">
-              <div class="full">
-                <label>Arquivo do contrato</label>
-                <input name="contrato" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx" required />
-              </div>
-
-              <div class="full">
-                <button class="btn-primary" type="submit">Anexar contrato</button>
-              </div>
-            </div>
-          </form>
-        `
-      );
-    }
-
-    async function salvarContratoUpload(event, id) {
-      event.preventDefault();
-
-      const fd = new FormData(event.target);
-
-      try {
         const res = await fetch(`${API_BASE}/${id}/contrato`, {
           method: 'POST',
           headers: headersForm(),
@@ -1644,19 +1864,158 @@
           throw new Error(data.message || 'Erro ao anexar contrato.');
         }
 
-        toast('Contrato anexado com sucesso.');
+        toast('Contrato salvo com sucesso.');
         fecharDrawer();
-        carregarContratos();
+        await carregarContratos();
       } catch (err) {
+        console.error(err);
         toast(err.message);
       }
     }
 
-    async function removerPagamento(contratoId, pagamentoId) {
-      const ok = confirm('Deseja realmente remover este pagamento? Essa ação deve ser usada apenas em caso de lançamento incorreto.');
-      if (!ok) return;
+    function abrirPagamento(id) {
+      const c = buscarContrato(id);
+      if (!c) return;
 
+      abrirDrawer(
+        'Registrar pagamento',
+        `${c.alunoNome} — ${c.turma || ''}`,
+        `
+          <div class="form-grid">
+            <div class="half">
+              <label>Valor pago</label>
+              <input id="pValor" type="number" min="0" step="0.01" placeholder="0,00" />
+            </div>
+
+            <div class="half">
+              <label>Data do pagamento</label>
+              <input id="pData" type="date" />
+            </div>
+
+            <div class="half">
+              <label>Forma de pagamento</label>
+              <select id="pForma">
+                <option value="pix">PIX</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="misto">Misto</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+
+            <div class="half">
+              <label>Referência</label>
+              <input id="pReferencia" placeholder="Ex.: 1/8, entrada, adicional..." />
+            </div>
+
+            <div class="full">
+              <label>Comprovante</label>
+              <input id="pComprovante" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+            </div>
+
+            <div class="full">
+              <label>Observação</label>
+              <textarea id="pObservacao" placeholder="Observação opcional sobre o pagamento."></textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarPagamento('${c._id}')">Salvar pagamento</button>
+            </div>
+          </div>
+        `
+      );
+
+      document.getElementById('pData').value = new Date().toISOString().slice(0, 10);
+    }
+
+    async function salvarPagamento(id) {
       try {
+        const valor = Number(document.getElementById('pValor').value || 0);
+
+        if (valor <= 0) {
+          toast('Informe um valor válido.');
+          return;
+        }
+
+        const fd = new FormData();
+        fd.append('valor', valor);
+        fd.append('dataPagamento', document.getElementById('pData').value);
+        fd.append('formaPagamento', document.getElementById('pForma').value);
+        fd.append('referenciaParcela', document.getElementById('pReferencia').value.trim());
+        fd.append('observacao', document.getElementById('pObservacao').value.trim());
+
+        const file = document.getElementById('pComprovante').files[0];
+        if (file) fd.append('comprovante', file);
+
+        const res = await fetch(`${API_BASE}/${id}/pagamentos`, {
+          method: 'POST',
+          headers: headersForm(),
+          body: fd
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.message || 'Erro ao salvar pagamento.');
+        }
+
+        toast('Pagamento salvo com sucesso.');
+        fecharDrawer();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    function abrirComprovantes(id) {
+      const c = buscarContrato(id);
+      if (!c) return;
+
+      const pagamentos = c.pagamentos || [];
+
+      abrirDrawer(
+        'Comprovantes de pagamento',
+        `${c.alunoNome} — ${c.turma || ''}`,
+        `
+          <div class="item-card">
+            <strong>Resumo financeiro</strong>
+            <span>Total: ${dinheiro(c.financeiro?.valorTotal || c.valorTotal || 0)}</span>
+            <span>Pago: ${dinheiro(c.financeiro?.totalPago || 0)}</span>
+            <span>Pendente: ${dinheiro(c.financeiro?.valorPendente || 0)}</span>
+          </div>
+
+          <div class="actions" style="justify-content:flex-start;margin-bottom:14px;">
+            <button class="btn-primary" onclick="abrirPagamento('${c._id}')">+ Registrar novo pagamento</button>
+          </div>
+
+          ${
+            pagamentos.length
+              ? pagamentos.slice().reverse().map(pg => `
+                <div class="item-card">
+                  <strong>${dinheiro(pg.valor || 0)} · ${escapeHtml(pg.formaPagamento || 'pix').toUpperCase()}</strong>
+                  <span>Data: ${dataBR(pg.dataPagamento)}</span>
+                  <span>Referência: ${escapeHtml(pg.referenciaParcela || '—')}</span>
+                  ${pg.observacao ? `<span>Obs.: ${escapeHtml(pg.observacao)}</span>` : ''}
+                  ${
+                    pg.comprovanteUrl
+                      ? `<a class="btn" href="${escapeHtml(pg.comprovanteUrl)}" target="_blank" rel="noopener">Visualizar comprovante</a>`
+                      : `<span class="muted">Sem comprovante anexado.</span>`
+                  }
+                  <button class="mini btn-danger" onclick="removerPagamento('${c._id}', '${pg._id}')">Remover pagamento</button>
+                </div>
+              `).join('')
+              : '<p class="muted">Nenhum pagamento registrado ainda.</p>'
+          }
+        `
+      );
+    }
+
+    async function removerPagamento(contratoId, pagamentoId) {
+      try {
+        const ok = confirm('Tem certeza que deseja remover este pagamento? O comprovante associado também poderá ser removido do armazenamento.');
+
+        if (!ok) return;
+
         const res = await fetch(`${API_BASE}/${contratoId}/pagamentos/${pagamentoId}`, {
           method: 'DELETE',
           headers: headersJson()
@@ -1670,120 +2029,815 @@
 
         toast('Pagamento removido.');
         fecharDrawer();
-        carregarContratos();
+        await carregarContratos();
       } catch (err) {
+        console.error(err);
         toast(err.message);
       }
     }
 
-
-    async function carregarDashboardPro() {
+    async function excluirParticipante(id) {
       try {
-        const ano = document.getElementById('fAno')?.value || '2026';
-        const data = await apiGet(`${API_BASE}/dashboard/pro?anoLetivo=${encodeURIComponent(ano)}`);
-        const resumo = data.resumo || {};
+        const c = buscarContrato(id);
+        if (!c) return;
 
-        const percentualRecebido = Number(resumo.percentualRecebido || 0);
-        const percentualInadimplencia = Number(resumo.percentualInadimplencia || 0);
+        const ok = confirm(
+          `Deseja remover "${c.alunoNome}" da participação do baile?\n\n` +
+          'Por segurança, o registro não será apagado do banco. Ele será marcado como "não participa" e "cancelado", preservando histórico, pagamentos e comprovantes.'
+        );
 
-        const recebidoTxt = document.getElementById('proPercentualRecebido');
-        const inadTxt = document.getElementById('proInadimplencia');
-        const recebidoBar = document.getElementById('proPercentualRecebidoBar');
-        const inadBar = document.getElementById('proInadimplenciaBar');
+        if (!ok) return;
 
-        if (recebidoTxt) recebidoTxt.textContent = `${percentualRecebido.toFixed(2)}%`;
-        if (inadTxt) inadTxt.textContent = `${percentualInadimplencia.toFixed(2)}%`;
-        if (recebidoBar) recebidoBar.style.width = `${Math.min(percentualRecebido, 100)}%`;
-        if (inadBar) inadBar.style.width = `${Math.min(percentualInadimplencia, 100)}%`;
+        await apiPut(`${API_BASE}/${id}`, {
+          statusParticipacao: 'nao_participa',
+          status: 'cancelado',
+          ingressosIniciais: 0,
+          ingressosAdicionais: 0,
+          quantidadeParcelas: Number(c.quantidadeParcelas || 8),
+          mesaNumero: '',
+          cadeiraNumero: '',
+          observacoes: c.observacoes || '',
+          motivoCorrecao: 'Remoção do participante do baile pela tela principal.'
+        });
 
-        const pix = document.getElementById('proPix');
-        const dinheiroEl = document.getElementById('proDinheiro');
-        const outros = document.getElementById('proOutros');
+        toast('Participante removido da lista do baile.');
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
 
-        if (pix) pix.textContent = dinheiro(resumo.pagamentosPix || 0);
-        if (dinheiroEl) dinheiroEl.textContent = dinheiro(resumo.pagamentosDinheiro || 0);
-        if (outros) {
-          outros.textContent = dinheiro(
-            Number(resumo.pagamentosMisto || 0) + Number(resumo.pagamentosOutro || 0)
-          );
-        }
+    function abrirListasParticipacao() {
+      const listas = ultimoDashboardPro?.listas || {};
 
-        const turmas = data.porTurma || [];
-        const boxTurmas = document.getElementById('proTurmas');
-        if (!boxTurmas) return;
+      const participantes = listas.participantes || contratos.filter(c =>
+        (c.statusParticipacao || 'participante') === 'participante' &&
+        !['desistente', 'cancelado'].includes(c.status)
+      );
 
-        if (!turmas.length) {
-          boxTurmas.innerHTML = '<p class="muted">Nenhuma turma com adesão cadastrada.</p>';
+      const naoParticipam = listas.naoParticipam || contratos.filter(c =>
+        c.statusParticipacao === 'nao_participa'
+      );
+
+      const semResposta = listas.semResposta || [];
+
+      abrirDrawer(
+        'Listas do baile',
+        'Participantes, não participantes e alunos ainda sem resposta.',
+        `
+          <div class="tabs">
+            <div class="tab active" onclick="trocarTab('listaParticipantes', this)">Participantes</div>
+            <div class="tab" onclick="trocarTab('listaNaoParticipam', this)">Não participam</div>
+            <div class="tab" onclick="trocarTab('listaSemResposta', this)">Sem resposta</div>
+          </div>
+
+          <div id="listaParticipantes" class="tab-content active">
+            <div class="actions" style="justify-content:flex-start;margin-bottom:12px;">
+              <button onclick="copiarLista('participantes')">Copiar lista</button>
+            </div>
+            ${
+              participantes.length
+                ? `<div class="lista-grid">${participantes.map(c => `
+                    <div class="lista-card">
+                      <strong>${escapeHtml(c.alunoNome || c.nome)}</strong>
+                      <span>${escapeHtml(c.turma || '')}</span>
+                      <span>${Number(c.quantidadeIngressos || 0)} cadeira(s)</span>
+                      ${c.mesaNumero ? `<span>Mesa: ${escapeHtml(c.mesaNumero)}</span>` : ''}
+                    </div>
+                  `).join('')}</div>`
+                : '<p class="muted">Nenhum participante listado.</p>'
+            }
+          </div>
+
+          <div id="listaNaoParticipam" class="tab-content">
+            <div class="actions" style="justify-content:flex-start;margin-bottom:12px;">
+              <button onclick="copiarLista('naoParticipam')">Copiar lista</button>
+            </div>
+            ${
+              naoParticipam.length
+                ? `<div class="lista-grid">${naoParticipam.map(c => `
+                    <div class="lista-card">
+                      <strong>${escapeHtml(c.alunoNome || c.nome)}</strong>
+                      <span>${escapeHtml(c.turma || '')}</span>
+                      <span>${escapeHtml(c.observacoes || 'Registrado como não participante.')}</span>
+                    </div>
+                  `).join('')}</div>`
+                : '<p class="muted">Nenhum aluno registrado como não participante.</p>'
+            }
+          </div>
+
+          <div id="listaSemResposta" class="tab-content">
+            <div class="actions" style="justify-content:flex-start;margin-bottom:12px;">
+              <button onclick="copiarLista('semResposta')">Copiar lista</button>
+            </div>
+            ${
+              semResposta.length
+                ? `<div class="lista-grid">${semResposta.map(a => `
+                    <div class="lista-card">
+                      <strong>${escapeHtml(a.alunoNome || a.nome)}</strong>
+                      <span>${escapeHtml(a.turma || '')}</span>
+                      <span>Ainda sem registro no módulo do baile.</span>
+                    </div>
+                  `).join('')}</div>`
+                : '<p class="muted">Nenhum aluno sem resposta.</p>'
+            }
+          </div>
+        `
+      );
+    }
+
+    function copiarLista(tipo) {
+      const listas = ultimoDashboardPro?.listas || {};
+      let itens = [];
+
+      if (tipo === 'participantes') {
+        itens = listas.participantes || contratos.filter(c =>
+          (c.statusParticipacao || 'participante') === 'participante' &&
+          !['desistente', 'cancelado'].includes(c.status)
+        );
+      }
+
+      if (tipo === 'naoParticipam') {
+        itens = listas.naoParticipam || contratos.filter(c => c.statusParticipacao === 'nao_participa');
+      }
+
+      if (tipo === 'semResposta') {
+        itens = listas.semResposta || [];
+      }
+
+      const texto = itens.map((item, i) => {
+        const nome = item.alunoNome || item.nome || '';
+        const turma = item.turma || '';
+        const qtd = item.quantidadeIngressos ? ` - ${item.quantidadeIngressos} cadeira(s)` : '';
+        const mesa = item.mesaNumero ? ` - ${item.mesaNumero}` : '';
+        return `${i + 1}. ${nome} - ${turma}${qtd}${mesa}`;
+      }).join('\n');
+
+      navigator.clipboard.writeText(texto || 'Nenhum item encontrado.');
+      toast('Lista copiada.');
+    }
+
+    async function abrirMapaMesas() {
+      try {
+        const ano = document.getElementById('fAno').value || 2026;
+        const data = await apiGet(`${API_MESAS}?anoLetivo=${ano}`);
+        ultimoMapaMesas = data;
+        renderMapaMesas(data);
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    function renderMapaMesas(data) {
+      const mesas = data.mesas || [];
+      const naoAlocados = data.naoAlocados || [];
+      const resumo = data.resumo || {};
+
+      abrirDrawer(
+        'Mapa de Mesas',
+        'Crie mesas, faça sorteio automático, ajuste manualmente e gere uma imagem do mapa.',
+        `
+          <div class="mapa-toolbar">
+            <button class="btn-primary" onclick="abrirCriarMesasLote()">+ Criar mesas</button>
+            <button onclick="abrirCriarMesaIndividual()">+ Mesa individual</button>
+            <button onclick="sortearMesas()">Sortear automático</button>
+            <button onclick="baixarImagemMapa()">Gerar imagem</button>
+            <button class="btn-danger" onclick="limparMapaMesas()">Limpar mapa</button>
+          </div>
+
+          <div class="mapa-resumo">
+            <div class="box">
+              <small>Mesas</small>
+              <strong>${Number(resumo.mesas || 0)}</strong>
+            </div>
+            <div class="box">
+              <small>Lugares ocupados</small>
+              <strong>${Number(resumo.lugaresOcupados || 0)}/${Number(resumo.capacidadeTotal || 0)}</strong>
+            </div>
+            <div class="box">
+              <small>Disponíveis</small>
+              <strong>${Number(resumo.lugaresDisponiveis || 0)}</strong>
+            </div>
+            <div class="box">
+              <small>Não alocados</small>
+              <strong>${Number(resumo.naoAlocados || 0)}</strong>
+            </div>
+          </div>
+
+          ${mesas.length ? `
+            <div id="areaMapaMesas" class="mapa-grid">
+              ${mesas.map(mesa => renderMesaCard(mesa)).join('')}
+            </div>
+          ` : `
+            <div class="item-card">
+              <strong>Nenhuma mesa cadastrada</strong>
+              <span class="muted">Clique em “Criar mesas” para gerar mesas de 6, 8 e 10 lugares.</span>
+            </div>
+          `}
+
+          <div class="nao-alocados">
+            <h3>Participantes não alocados</h3>
+            ${
+              naoAlocados.length
+                ? `<div class="alocado-grid">${naoAlocados.map(p => `
+                    <div class="lista-card">
+                      <strong>${escapeHtml(p.alunoNome)}</strong>
+                      <span>${escapeHtml(p.turma || '')}</span>
+                      <span>${Number(p.quantidadeIngressos || 0)} lugar(es)</span>
+                    </div>
+                  `).join('')}</div>`
+                : '<p class="muted">Todos os participantes estão alocados em mesas.</p>'
+            }
+          </div>
+        `
+      );
+    }
+
+    function renderMesaCard(mesa) {
+      const ocupados = Number(mesa.lugaresOcupados || 0);
+      const capacidade = Number(mesa.capacidade || 0);
+      const ocupantes = mesa.ocupantes || [];
+      const classe = ocupados >= capacidade ? 'completa' : ocupados > capacidade ? 'cheia-alerta' : '';
+
+      return `
+        <div class="mesa-card ${classe}">
+          <div class="mesa-top">
+            <div>
+              <strong>${escapeHtml(mesa.numeroMesa)}</strong>
+              <span>${escapeHtml(mesa.setor || 'Sem setor')}</span>
+            </div>
+            <span>${ocupados}/${capacidade} lugares</span>
+          </div>
+
+          <div class="mesa-desenho">
+            <div class="mesa-circulo">
+              <div class="mesa-numero">${escapeHtml(mesa.numeroMesa)}</div>
+              ${renderCadeirasMesa(capacidade, ocupados)}
+            </div>
+          </div>
+
+          <div class="ocupante-list">
+            ${
+              ocupantes.length
+                ? ocupantes.map(o => `
+                    <div class="ocupante">
+                      <strong>${escapeHtml(o.alunoNome)}</strong>
+                      <span>${escapeHtml(o.turma || '')} · ${Number(o.quantidadeLugares || 0)} lugar(es)</span>
+                      <button class="mini btn-danger" onclick="removerOcupanteMesa('${mesa._id}', '${o._id}')">Remover</button>
+                    </div>
+                  `).join('')
+                : '<span class="muted">Mesa vazia.</span>'
+            }
+          </div>
+
+          <div class="mesa-actions">
+            <button class="mini" onclick="abrirAlocarManual('${mesa._id}')">Adicionar aluno</button>
+            <button class="mini btn-ghost" onclick="abrirEditarMesa('${mesa._id}')">Editar</button>
+            <button class="mini btn-danger" onclick="excluirMesa('${mesa._id}')">Excluir mesa</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCadeirasMesa(capacidade, ocupados) {
+      const total = Math.max(1, Number(capacidade || 0));
+      const dots = [];
+
+      for (let i = 0; i < total; i += 1) {
+        const ang = (Math.PI * 2 * i) / total - Math.PI / 2;
+        const raio = 78;
+        const x = 64 + Math.cos(ang) * raio;
+        const y = 64 + Math.sin(ang) * raio;
+        const ocupada = i < ocupados ? 'ocupada' : '';
+
+        dots.push(`<span class="cadeira-dot ${ocupada}" style="left:${x}px;top:${y}px;"></span>`);
+      }
+
+      return dots.join('');
+    }
+
+    function abrirCriarMesasLote() {
+      abrirDrawer(
+        'Criar mesas em lote',
+        'Informe a quantidade de mesas de cada capacidade.',
+        `
+          <div class="form-grid">
+            <div>
+              <label>Mesas de 6 lugares</label>
+              <input id="mQtd6" type="number" min="0" value="0" />
+            </div>
+
+            <div>
+              <label>Mesas de 8 lugares</label>
+              <input id="mQtd8" type="number" min="0" value="0" />
+            </div>
+
+            <div>
+              <label>Mesas de 10 lugares</label>
+              <input id="mQtd10" type="number" min="0" value="0" />
+            </div>
+
+            <div>
+              <label>Prefixo</label>
+              <input id="mPrefixo" value="Mesa" />
+            </div>
+
+            <div class="full">
+              <label>Setor/ambiente</label>
+              <input id="mSetor" placeholder="Ex.: Salão principal, lateral esquerda, área VIP..." />
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarMesasLote()">Criar mesas</button>
+            </div>
+          </div>
+        `
+      );
+    }
+
+    async function salvarMesasLote() {
+      try {
+        const ano = Number(document.getElementById('fAno').value || 2026);
+
+        await apiPost(`${API_MESAS}/lote`, {
+          anoLetivo: ano,
+          quantidadeMesas6: Number(document.getElementById('mQtd6').value || 0),
+          quantidadeMesas8: Number(document.getElementById('mQtd8').value || 0),
+          quantidadeMesas10: Number(document.getElementById('mQtd10').value || 0),
+          prefixo: document.getElementById('mPrefixo').value.trim() || 'Mesa',
+          setor: document.getElementById('mSetor').value.trim()
+        });
+
+        toast('Mesas criadas com sucesso.');
+        await abrirMapaMesas();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    function abrirCriarMesaIndividual() {
+      abrirDrawer(
+        'Criar mesa individual',
+        'Cadastre uma mesa específica.',
+        `
+          <div class="form-grid">
+            <div class="half">
+              <label>Número/identificação da mesa</label>
+              <input id="miNumero" placeholder="Ex.: Mesa 01, Mesa Família, VIP 1..." />
+            </div>
+
+            <div class="half">
+              <label>Capacidade</label>
+              <select id="miCapacidade">
+                <option value="6">6 lugares</option>
+                <option value="8">8 lugares</option>
+                <option value="10">10 lugares</option>
+              </select>
+            </div>
+
+            <div class="half">
+              <label>Ordem</label>
+              <input id="miOrdem" type="number" min="0" value="0" />
+            </div>
+
+            <div class="half">
+              <label>Setor</label>
+              <input id="miSetor" placeholder="Ex.: Salão principal" />
+            </div>
+
+            <div class="full">
+              <label>Observações</label>
+              <textarea id="miObs"></textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarMesaIndividual()">Salvar mesa</button>
+            </div>
+          </div>
+        `
+      );
+    }
+
+    async function salvarMesaIndividual() {
+      try {
+        const numeroMesa = document.getElementById('miNumero').value.trim();
+
+        if (!numeroMesa) {
+          toast('Informe o número ou identificação da mesa.');
           return;
         }
 
-        boxTurmas.innerHTML = turmas.map(t => {
-          const recebido = Number(t.valorRecebido || 0);
-          const previsto = Number(t.valorPrevisto || 0);
-          const percentual = previsto > 0 ? (recebido / previsto) * 100 : 0;
-
-          return `
-            <div class="turma-card">
-              <div class="turma-top">
-                <strong>${escapeHtml(t.turma)}</strong>
-                <span class="badge b-em_dia">${percentual.toFixed(1)}%</span>
-              </div>
-
-              <div class="bar-track">
-                <div class="bar-fill" style="width:${Math.min(percentual, 100)}%"></div>
-              </div>
-
-              <div class="turma-mini" style="margin-top:10px;">
-                <div>Contratos: <strong>${t.contratos}</strong></div>
-                <div>Recebido: <strong>${dinheiro(t.valorRecebido)}</strong></div>
-                <div>Pendente: <strong>${dinheiro(t.valorPendente)}</strong></div>
-              </div>
-
-              <div class="turma-mini" style="margin-top:8px;">
-                <div>Quitados: <strong>${t.quitados}</strong></div>
-                <div>Atrasados: <strong>${t.atrasados}</strong></div>
-                <div>Sem contrato: <strong>${t.semContrato}</strong></div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (err) {
-        console.error('[DASHBOARD PRO]', err);
-        const boxTurmas = document.getElementById('proTurmas');
-        if (boxTurmas) {
-          boxTurmas.innerHTML = `<p class="muted">${escapeHtml(err.message)}</p>`;
-        }
-      }
-    }
-
-    async function exportarExcel() {
-      try {
-        const ano = document.getElementById('fAno')?.value || '2026';
-        const res = await fetch(`${API_BASE}/exportar/excel?anoLetivo=${encodeURIComponent(ano)}`, {
-          method: 'GET',
-          headers: headersJson()
+        await apiPost(API_MESAS, {
+          anoLetivo: Number(document.getElementById('fAno').value || 2026),
+          numeroMesa,
+          capacidade: Number(document.getElementById('miCapacidade').value || 6),
+          ordem: Number(document.getElementById('miOrdem').value || 0),
+          setor: document.getElementById('miSetor').value.trim(),
+          observacoes: document.getElementById('miObs').value.trim()
         });
 
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || 'Erro ao exportar Excel.');
-        }
-
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `baile-formatura-${ano}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        toast('Mesa criada com sucesso.');
+        await abrirMapaMesas();
       } catch (err) {
-        console.error('[EXPORTAR EXCEL]', err);
+        console.error(err);
         toast(err.message);
       }
     }
- 
+
+    function abrirEditarMesa(mesaId) {
+      const mesa = (ultimoMapaMesas?.mesas || []).find(m => String(m._id) === String(mesaId));
+      if (!mesa) return;
+
+      abrirDrawer(
+        'Editar mesa',
+        mesa.numeroMesa,
+        `
+          <div class="form-grid">
+            <div class="half">
+              <label>Número/identificação</label>
+              <input id="emNumero" value="${escapeHtml(mesa.numeroMesa || '')}" />
+            </div>
+
+            <div class="half">
+              <label>Capacidade</label>
+              <select id="emCapacidade">
+                <option value="6" ${Number(mesa.capacidade) === 6 ? 'selected' : ''}>6 lugares</option>
+                <option value="8" ${Number(mesa.capacidade) === 8 ? 'selected' : ''}>8 lugares</option>
+                <option value="10" ${Number(mesa.capacidade) === 10 ? 'selected' : ''}>10 lugares</option>
+              </select>
+            </div>
+
+            <div class="half">
+              <label>Ordem</label>
+              <input id="emOrdem" type="number" value="${Number(mesa.ordem || 0)}" />
+            </div>
+
+            <div class="half">
+              <label>Setor</label>
+              <input id="emSetor" value="${escapeHtml(mesa.setor || '')}" />
+            </div>
+
+            <div class="full">
+              <label>Observações</label>
+              <textarea id="emObs">${escapeHtml(mesa.observacoes || '')}</textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarEdicaoMesa('${mesa._id}')">Salvar mesa</button>
+            </div>
+          </div>
+        `
+      );
+    }
+
+    async function salvarEdicaoMesa(mesaId) {
+      try {
+        await apiPut(`${API_MESAS}/${mesaId}`, {
+          numeroMesa: document.getElementById('emNumero').value.trim(),
+          capacidade: Number(document.getElementById('emCapacidade').value || 6),
+          ordem: Number(document.getElementById('emOrdem').value || 0),
+          setor: document.getElementById('emSetor').value.trim(),
+          observacoes: document.getElementById('emObs').value.trim()
+        });
+
+        toast('Mesa atualizada.');
+        await abrirMapaMesas();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    function abrirAlocarManual(mesaId) {
+      const mesa = (ultimoMapaMesas?.mesas || []).find(m => String(m._id) === String(mesaId));
+      const naoAlocados = ultimoMapaMesas?.naoAlocados || [];
+
+      if (!mesa) return;
+
+      abrirDrawer(
+        'Alocar aluno manualmente',
+        mesa.numeroMesa,
+        `
+          <div class="form-grid">
+            <div class="full">
+              <label>Participante não alocado</label>
+              <select id="amContrato">
+                <option value="">Selecione...</option>
+                ${naoAlocados.map(p => `
+                  <option value="${p._id}" data-lugares="${Number(p.quantidadeIngressos || 1)}">
+                    ${escapeHtml(p.alunoNome)} — ${escapeHtml(p.turma || '')} — ${Number(p.quantidadeIngressos || 1)} lugar(es)
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+
+            <div class="half">
+              <label>Quantidade de lugares</label>
+              <input id="amLugares" type="number" min="1" value="1" />
+            </div>
+
+            <div class="half">
+              <label>Mesa</label>
+              <input value="${escapeHtml(mesa.numeroMesa)} — ${Number(mesa.lugaresOcupados || 0)}/${Number(mesa.capacidade || 0)} lugares" disabled />
+            </div>
+
+            <div class="full">
+              <label>Observação</label>
+              <textarea id="amObs" placeholder="Ex.: família do aluno, grupo de amigos, ajuste manual..."></textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarAlocacaoManual('${mesa._id}')">Adicionar na mesa</button>
+            </div>
+          </div>
+        `
+      );
+
+      const sel = document.getElementById('amContrato');
+      sel.addEventListener('change', () => {
+        const opt = sel.options[sel.selectedIndex];
+        document.getElementById('amLugares').value = opt?.dataset?.lugares || 1;
+      });
+    }
+
+    async function salvarAlocacaoManual(mesaId) {
+      try {
+        const contratoId = document.getElementById('amContrato').value;
+
+        if (!contratoId) {
+          toast('Selecione o participante.');
+          return;
+        }
+
+        await apiPost(`${API_MESAS}/${mesaId}/ocupantes`, {
+          contratoId,
+          quantidadeLugares: Number(document.getElementById('amLugares').value || 1),
+          observacao: document.getElementById('amObs').value.trim()
+        });
+
+        toast('Participante alocado na mesa.');
+        await abrirMapaMesas();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    async function removerOcupanteMesa(mesaId, ocupanteId) {
+      try {
+        const ok = confirm('Remover este participante da mesa?');
+        if (!ok) return;
+
+        await apiDelete(`${API_MESAS}/${mesaId}/ocupantes/${ocupanteId}`);
+
+        toast('Participante removido da mesa.');
+        await abrirMapaMesas();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    async function excluirMesa(mesaId) {
+      try {
+        const ok = confirm('Deseja excluir esta mesa? Os participantes serão desalocados.');
+        if (!ok) return;
+
+        await apiDelete(`${API_MESAS}/${mesaId}`);
+
+        toast('Mesa excluída.');
+        await abrirMapaMesas();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    async function sortearMesas() {
+      try {
+        const ok = confirm('Deseja sortear automaticamente os participantes nas mesas? Isso limpará a distribuição atual.');
+        if (!ok) return;
+
+        await apiPost(`${API_MESAS}/sortear`, {
+          anoLetivo: Number(document.getElementById('fAno').value || 2026),
+          limparMesasAntes: true
+        });
+
+        toast('Sorteio realizado com sucesso.');
+        await abrirMapaMesas();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    async function limparMapaMesas() {
+      try {
+        const ok = confirm('Deseja limpar todos os ocupantes das mesas? As mesas continuarão cadastradas.');
+        if (!ok) return;
+
+        await apiPost(`${API_MESAS}/limpar`, {
+          anoLetivo: Number(document.getElementById('fAno').value || 2026)
+        });
+
+        toast('Mapa de mesas limpo.');
+        await abrirMapaMesas();
+        await carregarContratos();
+      } catch (err) {
+        console.error(err);
+        toast(err.message);
+      }
+    }
+
+    function baixarImagemMapa() {
+      const data = ultimoMapaMesas;
+      if (!data) {
+        toast('Abra o mapa de mesas primeiro.');
+        return;
+      }
+
+      const mesas = data.mesas || [];
+      const canvas = document.createElement('canvas');
+      const largura = 1600;
+      const colunas = 4;
+      const cardW = 360;
+      const cardH = 300;
+      const gap = 28;
+      const margem = 50;
+      const linhas = Math.max(1, Math.ceil(mesas.length / colunas));
+      const altura = 220 + linhas * (cardH + gap);
+
+      canvas.width = largura;
+      canvas.height = altura;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#06111f';
+      ctx.fillRect(0, 0, largura, altura);
+
+      ctx.fillStyle = '#e8f7ff';
+      ctx.font = 'bold 42px Arial';
+      ctx.fillText('Mapa de Mesas — Baile de Formatura', margem, 70);
+
+      ctx.fillStyle = '#8fb4c7';
+      ctx.font = '24px Arial';
+      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')} · ${mesas.length} mesa(s)`, margem, 110);
+
+      mesas.forEach((mesa, idx) => {
+        const col = idx % colunas;
+        const lin = Math.floor(idx / colunas);
+        const x = margem + col * (cardW + gap);
+        const y = 160 + lin * (cardH + gap);
+
+        desenharMesaCanvas(ctx, mesa, x, y, cardW, cardH);
+      });
+
+      const a = document.createElement('a');
+      a.download = `mapa-mesas-baile-${document.getElementById('fAno').value || '2026'}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    function desenharMesaCanvas(ctx, mesa, x, y, w, h) {
+      const ocupantes = mesa.ocupantes || [];
+      const ocupados = Number(mesa.lugaresOcupados || 0);
+      const capacidade = Number(mesa.capacidade || 0);
+
+      ctx.fillStyle = '#0d1f35';
+      ctx.strokeStyle = 'rgba(56,213,255,.45)';
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 20, true, true);
+
+      ctx.fillStyle = '#e8f7ff';
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText(String(mesa.numeroMesa || ''), x + 18, y + 36);
+
+      ctx.fillStyle = '#8fb4c7';
+      ctx.font = '16px Arial';
+      ctx.fillText(`${ocupados}/${capacidade} lugares`, x + 18, y + 62);
+
+      const cx = x + 92;
+      const cy = y + 145;
+      const raioMesa = 50;
+
+      ctx.fillStyle = 'rgba(56,213,255,.13)';
+      ctx.strokeStyle = 'rgba(56,213,255,.75)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, raioMesa, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      for (let i = 0; i < capacidade; i += 1) {
+        const ang = (Math.PI * 2 * i) / capacidade - Math.PI / 2;
+        const px = cx + Math.cos(ang) * 72;
+        const py = cy + Math.sin(ang) * 72;
+
+        ctx.fillStyle = i < ocupados ? '#42f59b' : '#8fb4c7';
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#e8f7ff';
+      ctx.font = 'bold 13px Arial';
+
+      ocupantes.slice(0, 7).forEach((o, i) => {
+        const linha = `${i + 1}. ${String(o.alunoNome || '').slice(0, 28)} (${Number(o.quantidadeLugares || 0)})`;
+        ctx.fillText(linha, x + 170, y + 100 + i * 22);
+      });
+
+      if (ocupantes.length > 7) {
+        ctx.fillStyle = '#ffd166';
+        ctx.fillText(`+ ${ocupantes.length - 7} ocupante(s)`, x + 170, y + 100 + 7 * 22);
+      }
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function exportarExcel() {
+      const linhas = [
+        [
+          'Aluno',
+          'Turma',
+          'Responsável',
+          'Telefone',
+          'Participação',
+          'Ingressos iniciais',
+          'Ingressos adicionais',
+          'Ingressos total',
+          'Valor total',
+          'Pago',
+          'Pendente',
+          'Status financeiro',
+          'Contrato anexado',
+          'Comprovantes',
+          'Mesa',
+          'Cadeira',
+          'Observações'
+        ]
+      ];
+
+      contratos.forEach(c => {
+        linhas.push([
+          c.alunoNome || '',
+          c.turma || '',
+          c.responsavelNome || '',
+          c.responsavelTelefone || '',
+          participacaoLabel(c.statusParticipacao || 'participante'),
+          Number(c.ingressosIniciais ?? c.quantidadeIngressos ?? 0),
+          Number(c.ingressosAdicionais || 0),
+          Number(c.quantidadeIngressos || 0),
+          Number(c.financeiro?.valorTotal || c.valorTotal || 0),
+          Number(c.financeiro?.totalPago || 0),
+          Number(c.financeiro?.valorPendente || 0),
+          statusLabel(c.status),
+          c.contratoUrl ? 'Sim' : 'Não',
+          qtdComprovantes(c),
+          c.mesaNumero || '',
+          c.cadeiraNumero || '',
+          c.observacoes || ''
+        ]);
+      });
+
+      const csv = linhas.map(row =>
+        row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(';')
+      ).join('\n');
+
+      const blob = new Blob(['\ufeff' + csv], {
+        type: 'text/csv;charset=utf-8;'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `baile-formatura-${document.getElementById('fAno').value || '2026'}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
 
     document.addEventListener('DOMContentLoaded', carregarTudo);
   </script>
