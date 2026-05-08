@@ -43,32 +43,50 @@ router.get('/comportamento', autenticar, requireTenant, async (req, res) => {
 
     const regular = [];
     const insuficiente = [];
+    const incompativel = [];
 
     for (const a of alunos) {
-      const { faixa } = classificarComportamento(Number(a.comportamento));
 
-      if (faixa === 'regular') {
-        regular.push({
-          _id: a._id,
-          nome: a.nome,
-          turma: a.turma,
-          nota: Number(a.comportamento),
-          acao: 'Encaminhar ao NP e registrar no histórico'
-        });
-      }
+  const { faixa } = classificarComportamento(
+    Number(a.comportamento)
+  );
 
-      if (faixa === 'insuficiente') {
-        insuficiente.push({
-          _id: a._id,
-          nome: a.nome,
-          turma: a.turma,
-          nota: Number(a.comportamento),
-          acao: 'Informar responsáveis sobre possível não renovação'
-        });
-      }
-    }
+  if (faixa === 'regular') {
+    regular.push({
+      _id: a._id,
+      nome: a.nome,
+      turma: a.turma,
+      nota: Number(a.comportamento),
+      acao: 'Encaminhar ao NP e registrar no histórico'
+    });
+  }
 
-    res.json({ regular, insuficiente });
+  if (faixa === 'insuficiente') {
+    insuficiente.push({
+      _id: a._id,
+      nome: a.nome,
+      turma: a.turma,
+      nota: Number(a.comportamento),
+      acao: 'Informar responsáveis sobre possível não renovação'
+    });
+  }
+
+  if (faixa === 'incompativel' || faixa === 'incompatível') {
+    incompativel.push({
+      _id: a._id,
+      nome: a.nome,
+      turma: a.turma,
+      nota: Number(a.comportamento),
+      acao: 'Informar responsáveis sobre comportamento incompatível'
+    });
+  }
+}
+
+res.json({
+  regular,
+  insuficiente,
+  incompativel
+});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Falha ao carregar alertas de comportamento' });
