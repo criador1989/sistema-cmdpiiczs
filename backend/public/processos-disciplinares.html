@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Procedimentos Disciplinares</title>
+  <meta name="theme-color" content="#8B0000" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon-192x192.png" />
+
+  <style>
+    :root{
+      --rubi-1:#8B0000;
+      --rubi-2:#B22222;
+      --line:rgba(255,255,255,.14);
+      --text:#f8fafc;
+      --text-soft:#cbd5e1;
+      --muted:#94a3b8;
+      --bg:#020617;
+      --panel:rgba(8,13,28,.78);
+      --panel-2:rgba(15,23,42,.86);
+      --panel-3:rgba(15,23,42,.64);
+      --input:rgba(2,6,23,.62);
+      --purple:#7c3aed;
+      --purple-2:#5b21b6;
+      --blue:#0ea5e9;
+      --green:#15803d;
+      --orange:#f97316;
+      --red:#dc2626;
+      --yellow:#eab308;
+      --slate:#334155;
+    }
+
+    *{box-sizing:border-box}
+
+    html{scroll-behavior:smooth}
+
+    body{
+      margin:0;
+      font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 55% 0%,rgba(14,165,233,.18),transparent 32%),
+        linear-gradient(rgba(2,6,23,.82),rgba(2,6,23,.9)),
+        url("img/bg-painel-smart.png") center/cover fixed no-repeat,
+        var(--bg);
+      min-height:100vh;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg,rgba(2,6,23,.86),rgba(2,6,23,.54) 42%,rgba(2,6,23,.86)),
+        radial-gradient(circle at 70% 45%,rgba(14,165,233,.14),transparent 34%);
+      z-index:-1;
+    }
+
+    .page{
+      display:grid;
+      grid-template-columns:280px 1fr;
+      gap:22px;
+      padding:24px;
+    }
+
+    @media(max-width:900px){
+      .page{grid-template-columns:1fr;padding:10px}
+    }
+
+    .sidebar{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      height:calc(100dvh - 48px);
+      position:sticky;
+      top:24px;
+      border-radius:22px;
+      background:linear-gradient(180deg,rgba(15,23,42,.88),rgba(8,13,28,.82));
+      border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(16px);
+      box-shadow:0 18px 45px rgba(0,0,0,.38);
+      overflow:hidden;
+    }
+
+    @media(max-width:900px){
+      .sidebar{height:auto;position:static;border-radius:18px}
+    }
+
+    .sb-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:16px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+    }
+
+    .brand{
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      background:linear-gradient(135deg,var(--rubi-1),#c81e1e);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.22),0 0 24px rgba(220,38,38,.28);
+    }
+
+    .sb-title{font-weight:900;letter-spacing:.02em}
+
+    .nav{
+      padding:10px;
+      display:grid;
+      gap:6px;
+    }
+
+    @media(max-width:900px){
+      .nav{display:flex;overflow-x:auto}
+    }
+
+    .nav a{
+      text-decoration:none;
+      color:var(--text-soft);
+      font-size:.94rem;
+      padding:11px 12px;
+      border-radius:14px;
+      display:flex;
+      gap:10px;
+      border:1px solid transparent;
+      white-space:nowrap;
+      transition:.16s ease;
+    }
+
+    .nav a:hover{
+      color:#fff;
+      background:rgba(255,255,255,.07);
+      border-color:rgba(255,255,255,.12);
+      transform:translateX(2px);
+    }
+
+    .nav a.active{
+      color:#fff;
+      background:linear-gradient(135deg,rgba(124,58,237,.28),rgba(14,165,233,.12));
+      border-color:rgba(167,139,250,.34);
+      box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+
+    .sb-foot{
+      margin-top:auto;
+      padding:12px;
+      border-top:1px solid rgba(255,255,255,.10);
+    }
+
+    .sb-logout{
+      width:100%;
+      border:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(135deg,#b91c1c,#dc2626);
+      color:#fff;
+      padding:11px 14px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+    }
+
+    .content .wrap{
+      width:min(1280px,100%);
+      margin:0 auto 60px;
+    }
+
+    .card{
+      background:linear-gradient(180deg,rgba(15,23,42,.84),rgba(8,13,28,.78));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:28px;
+      backdrop-filter:blur(18px);
+      box-shadow:0 24px 80px rgba(0,0,0,.42);
+      padding:24px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:radial-gradient(circle at 82% 10%,rgba(14,165,233,.13),transparent 28%);
+      pointer-events:none;
+    }
+
+    .card>*{position:relative}
+
+    @media(max-width:600px){
+      .card{padding:14px;border-radius:20px}
+    }
+
+    h1{
+      margin:0 0 6px;
+      text-align:center;
+      font-size:1.55rem;
+      letter-spacing:-.02em;
+    }
+
+    .subtitle{
+      text-align:center;
+      color:var(--text-soft);
+      margin-bottom:18px;
+      line-height:1.45;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .filters{
+      display:grid;
+      grid-template-columns:1fr 180px 180px;
+      gap:10px;
+      width:100%;
+      margin-bottom:14px;
+      padding:12px;
+      border-radius:20px;
+      background:rgba(2,6,23,.42);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    @media(max-width:700px){
+      .filters{grid-template-columns:1fr}
+    }
+
+    input,select,textarea{
+      width:100%;
+      padding:11px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.13);
+      background:var(--input);
+      color:#fff;
+      outline:none;
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    input:focus,select:focus,textarea:focus{
+      border-color:rgba(14,165,233,.55);
+      box-shadow:0 0 0 3px rgba(14,165,233,.12);
+    }
+
+    select{
+      background:
+        linear-gradient(45deg,transparent 50%,#fff 50%),
+        linear-gradient(135deg,#fff 50%,transparent 50%),
+        var(--input);
+      background-position:calc(100% - 18px) calc(50% - 3px),calc(100% - 12px) calc(50% - 3px),0 0;
+      background-size:6px 6px,6px 6px,100% 100%;
+      background-repeat:no-repeat;
+      padding-right:36px;
+    }
+
+    select option{background:#101827;color:#f8fafc}
+    textarea{min-height:110px;resize:vertical}
+
+    .btn{
+      border:1px solid rgba(255,255,255,.13);
+      background:linear-gradient(135deg,rgba(30,41,59,.92),rgba(15,23,42,.92));
+      color:#fff;
+      border-radius:13px;
+      padding:9px 12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:.88rem;
+      letter-spacing:-.01em;
+      transition:.16s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+    }
+
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .btn.primary{background:linear-gradient(135deg,var(--purple),var(--purple-2));border-color:rgba(167,139,250,.35)}
+    .btn.danger{background:linear-gradient(135deg,#dc2626,#991b1b);border-color:rgba(248,113,113,.35)}
+    .btn.ok{background:linear-gradient(135deg,#16a34a,#166534);border-color:rgba(74,222,128,.30)}
+    .btn.blue{background:linear-gradient(135deg,#0284c7,#075985);border-color:rgba(56,189,248,.32)}
+    .btn.warn{background:linear-gradient(135deg,#d97706,#92400e);border-color:rgba(251,191,36,.28)}
+    .btn.dark{background:linear-gradient(135deg,#1f2937,#111827);border-color:rgba(255,255,255,.12)}
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+      gap:10px;
+      margin:16px 0 18px;
+    }
+
+    .stat-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:18px;
+      padding:14px;
+      background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(30,41,59,.58));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 10px 24px rgba(0,0,0,.28);
+    }
+
+    .stat-card::before{
+      content:"";
+      position:absolute;
+      inset:-50%;
+      background:radial-gradient(circle,rgba(14,165,233,.16),transparent 45%);
+      opacity:.65;
+      pointer-events:none;
+    }
+
+    .stat-label{position:relative;color:var(--muted);font-size:.72rem;font-weight:900;letter-spacing:.06em}
+    .stat-value{position:relative;font-size:1.55rem;font-weight:950;margin-top:6px}
+    .stat-sub{position:relative;color:#cbd5e1;font-size:.75rem;margin-top:4px}
+
+    .list{display:grid;gap:14px}
+
+    .empty{
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:16px;
+      padding:18px;
+      text-align:center;
+      color:var(--text-soft);
+      background:rgba(2,6,23,.26);
+    }
+
+    .p-card{
+      border:1px solid rgba(255,255,255,.11);
+      background:linear-gradient(180deg,rgba(15,23,42,.84),rgba(15,23,42,.64));
+      border-radius:22px;
+      overflow:hidden;
+      box-shadow:0 16px 36px rgba(0,0,0,.34);
+    }
+
+    .p-card.risco-alto{border-color:rgba(239,68,68,.42);box-shadow:0 16px 36px rgba(0,0,0,.34),0 0 0 1px rgba(239,68,68,.16)}
+    .p-card.risco-medio{border-color:rgba(245,158,11,.38);box-shadow:0 16px 36px rgba(0,0,0,.34),0 0 0 1px rgba(245,158,11,.13)}
+
+    .p-head{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:14px;
+      padding:16px;
+      cursor:pointer;
+      background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(2,6,23,.20));
+    }
+
+    @media(max-width:700px){.p-head{grid-template-columns:1fr}}
+
+    .p-title{font-weight:950;font-size:1.08rem;letter-spacing:-.02em}
+    .p-sub{color:var(--text-soft);font-size:.88rem;margin-top:5px;line-height:1.4}
+
+    .badges{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+      max-width:680px;
+    }
+
+    @media(max-width:700px){.badges{justify-content:flex-start;max-width:none}}
+
+    .badge{
+      padding:5px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(15,23,42,.62);
+      color:#e5e7eb;
+      font-size:.77rem;
+      font-weight:800;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      white-space:nowrap;
+    }
+
+    .status-aberto{background:rgba(234,179,8,.18);border-color:rgba(234,179,8,.30)}
+    .status-em_apuracao{background:rgba(249,115,22,.18);border-color:rgba(249,115,22,.30)}
+    .status-aguardando_responsavel{background:rgba(234,179,8,.18);border-color:rgba(234,179,8,.30)}
+    .status-em_acompanhamento{background:rgba(14,165,233,.18);border-color:rgba(14,165,233,.30)}
+    .status-arquivado{background:rgba(100,116,139,.32);border-color:rgba(148,163,184,.26)}
+    .status-encaminhado{background:rgba(220,38,38,.20);border-color:rgba(248,113,113,.30)}
+    .status-resolvido{background:rgba(22,163,74,.20);border-color:rgba(74,222,128,.28)}
+    .status-cancelado{background:rgba(82,82,91,.38);border-color:rgba(161,161,170,.26)}
+    .natureza-ato_infracional{background:rgba(220,38,38,.22);border-color:rgba(248,113,113,.32)}
+    .natureza-indisciplina{background:rgba(124,58,237,.20);border-color:rgba(167,139,250,.30)}
+    .fam-ok{background:rgba(22,163,74,.18);border-color:rgba(74,222,128,.26)}
+    .fam-warn{background:rgba(234,179,8,.18);border-color:rgba(250,204,21,.28)}
+    .fam-off{background:rgba(100,116,139,.28);border-color:rgba(148,163,184,.22)}
+    .risco-alto-badge{background:rgba(220,38,38,.28);border-color:rgba(248,113,113,.36)}
+    .risco-medio-badge{background:rgba(249,115,22,.24);border-color:rgba(251,146,60,.34)}
+    .risco-baixo-badge{background:rgba(22,163,74,.18);border-color:rgba(74,222,128,.28)}
+
+    .p-body{
+      display:none;
+      border-top:1px solid rgba(255,255,255,.10);
+      padding:14px;
+      background:rgba(2,6,23,.16);
+    }
+
+    .dossie-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;align-items:start}
+    @media(max-width:980px){.dossie-grid{grid-template-columns:1fr}}
+
+    .section-box{
+      margin:12px 0;
+      padding:14px;
+      border-radius:18px;
+      background:linear-gradient(135deg,rgba(15,23,42,.72),rgba(2,6,23,.34));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
+    }
+
+    .section-title{
+      font-weight:950;
+      margin-bottom:10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      letter-spacing:-.01em;
+    }
+
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+    .kv{
+      background:rgba(2,6,23,.38);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      padding:10px;
+      font-size:.9rem;
+      line-height:1.38;
+    }
+
+    .kv b{display:block;color:var(--muted);margin-bottom:4px;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+
+    .family-grid,.doc-grid,.risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    @media(max-width:800px){.family-grid,.doc-grid,.risk-grid{grid-template-columns:1fr}}
+
+    .alert-box{
+      border-radius:16px;
+      padding:12px;
+      margin:10px 0;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(2,6,23,.38);
+      line-height:1.42;
+    }
+
+    .alert-box.danger{border-color:rgba(239,68,68,.42);background:rgba(127,29,29,.24)}
+    .alert-box.warn{border-color:rgba(245,158,11,.40);background:rgba(120,53,15,.22)}
+    .alert-box.ok{border-color:rgba(22,163,74,.36);background:rgba(20,83,45,.20)}
+    .alert-title{font-weight:950;margin-bottom:4px}
+
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+
+    .quick-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .quick-actions .btn{width:100%;min-height:38px}
+    @media(max-width:580px){.quick-actions{grid-template-columns:1fr}}
+
+    .docs-collapse{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      background:rgba(2,6,23,.28);
+      overflow:hidden;
+      margin-top:10px;
+    }
+
+    .docs-collapse summary{
+      cursor:pointer;
+      padding:13px 14px;
+      font-weight:950;
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(14,165,233,.07));
+    }
+
+    .docs-collapse summary::-webkit-details-marker{display:none}
+    .docs-collapse summary::after{content:"Abrir";font-size:.75rem;color:#cbd5e1;font-weight:800;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:4px 8px;border-radius:999px}
+    .docs-collapse[open] summary::after{content:"Fechar"}
+    .docs-collapse .actions{padding:12px;margin:0}
+
+    .docs-actions .btn{font-size:.82rem;padding:8px 10px}
+
+    .timeline{
+      position:relative;
+      display:grid;
+      gap:10px;
+      margin-top:12px;
+      max-height:460px;
+      overflow:auto;
+      padding-right:3px;
+    }
+
+    .tl-item{
+      position:relative;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(2,6,23,.36);
+      border-radius:14px;
+      padding:10px 10px 10px 12px;
+    }
+
+    .tl-item::before{
+      content:"";
+      position:absolute;
+      left:-1px;
+      top:12px;
+      bottom:12px;
+      width:3px;
+      border-radius:999px;
+      background:linear-gradient(var(--blue),var(--purple));
+    }
+
+    .tl-title{font-weight:900}
+    .tl-date{color:var(--muted);font-size:.78rem;margin-top:4px}
+
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(10px);
+      z-index:9999;
+      padding:14px;
+    }
+
+    .modal.open{display:flex}
+
+    .modal-card{
+      width:min(720px,100%);
+      background:linear-gradient(180deg,rgba(20,28,46,.98),rgba(8,13,28,.98));
+      border:1px solid rgba(255,255,255,.13);
+      border-radius:22px;
+      box-shadow:0 25px 70px rgba(0,0,0,.58);
+      overflow:hidden;
+    }
+
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,.10)}
+    .modal-head b{font-size:1.05rem}
+    .modal-body{padding:16px;display:grid;gap:10px}
+    .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:700px){.modal-grid{grid-template-columns:1fr}}
+    .modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 16px;border-top:1px solid rgba(255,255,255,.10);flex-wrap:wrap}
+    .modal-note{color:var(--text-soft);font-size:.9rem;line-height:1.45}
+
+    .spinner{
+      display:inline-block;
+      width:20px;
+      height:20px;
+      border:3px solid rgba(255,255,255,.22);
+      border-top-color:#fff;
+      border-radius:50%;
+      animation:spin .7s linear infinite;
+      vertical-align:-5px;
+      margin-right:8px;
+    }
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <div class="sb-head">
+        <div class="brand"></div>
+        <div>
+          <div class="sb-title">CMDPII</div>
+          <div style="font-size:.8rem;color:#cfd6de">Sistema Escolar</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="painel.html">🏠 Painel</a>
+        <a href="lista-alunos.html">👥 Alunos</a>
+        <a href="notificacoes.html">🔔 Notificações</a>
+        <a class="active" href="processos-disciplinares.html">⚖️ Procedimentos</a>
+        <a href="estatisticas.html">📉 Relatórios</a>
+        <a href="mensagens.html">✉️ Mensagens</a>
+        <a href="usuarios.html">⚙️ Administração</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+
+      <div class="sb-foot">
+        <button class="sb-logout" onclick="logout()">🚪 Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="wrap">
+        <section class="card">
+          <h1>⚖️ Procedimentos Disciplinares</h1>
+          <div class="subtitle">
+            Gestão institucional do caso com leitura rápida, ações essenciais, documentos oficiais e linha do tempo.
+          </div>
+
+          <div class="topbar">
+            <button class="btn" onclick="window.location.href='notificacoes.html'">← Voltar para notificações</button>
+            <button class="btn primary" onclick="carregarProcessos()">🔄 Atualizar</button>
+          </div>
+
+          <div class="filters">
+            <input id="busca" type="text" placeholder="Pesquisar por aluno, turma, responsável, local ou nº do processo..." />
+            <select id="filtroStatus">
+              <option value="">Todos os status</option>
+              <option value="aberto">Aberto</option>
+              <option value="em_apuracao">Em apuração</option>
+              <option value="aguardando_responsavel">Aguardando responsável</option>
+              <option value="em_acompanhamento">Em acompanhamento</option>
+              <option value="resolvido">Resolvido</option>
+              <option value="encaminhado">Encaminhado</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+
+            <select id="filtroNatureza">
+              <option value="">Todas as naturezas</option>
+              <option value="indisciplina">Indisciplina</option>
+              <option value="ato_infracional">Ato infracional</option>
+            </select>
+          </div>
+
+          <div id="statsProcessos" class="stats-grid">
+  <div class="empty">Carregando estatísticas...</div>
+</div>
+
+<div id="resumo" class="subtitle">—</div>
+<div id="lista" class="list">
+            <div class="empty"><span class="spinner"></span>Carregando procedimentos...</div>
+          </div>
+          <div id="paginacaoProcessos" class="actions" style="justify-content:center;margin-top:16px"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="modalObs" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <b>Adicionar observação</b>
+        <button class="btn" onclick="fecharModalObs()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input id="obsTitulo" placeholder="Título da observação" />
+        <textarea id="obsDescricao" placeholder="Descreva o acompanhamento, contato com responsável, providência pedagógica, reunião, orientação, etc."></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="fecharModalObs()">Cancelar</button>
+        <button class="btn primary" onclick="salvarObservacao()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalArquivar" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <b>Arquivar procedimento</b>
+        <button class="btn" onclick="fecharModalArquivar()">✕</button>
+      </div>
+      <div class="modal-body">
+        <select id="resultadoAcompanhamento">
+          <option value="reintegrado">Aluno reintegrado satisfatoriamente</option>
+          <option value="reincidiu">Houve reincidência</option>
+          <option value="sem_solucao">Não houve solução</option>
+          <option value="encaminhado">Encaminhado a órgão externo</option>
+        </select>
+        <textarea id="motivoArquivamento" placeholder="Motivo do arquivamento"></textarea>
+        <textarea id="parecerFinal" placeholder="Parecer final do procedimento"></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="fecharModalArquivar()">Cancelar</button>
+        <button class="btn ok" onclick="salvarArquivamento()">Arquivar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalResponsavel" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <b>Notificar responsável</b>
+        <button class="btn" onclick="fecharModalResponsavel()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-note">
+          Registre formalmente que o responsável foi comunicado sobre o procedimento.
+        </div>
+        <div class="modal-grid">
+          <input id="respNome" placeholder="Nome do responsável" />
+          <input id="respParentesco" placeholder="Parentesco" />
+          <input id="respTelefone" placeholder="Telefone" />
+          <input id="respEmail" placeholder="E-mail" />
+        </div>
+        <textarea id="respResposta" placeholder="Observação ou resposta inicial do responsável"></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="fecharModalResponsavel()">Cancelar</button>
+        <button class="btn blue" onclick="salvarResponsavelNotificado()">Registrar notificação</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalComparecimento" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <b>Responsável compareceu</b>
+        <button class="btn" onclick="fecharModalComparecimento()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-note">
+          Registre o comparecimento, a orientação realizada e os compromissos assumidos.
+        </div>
+        <textarea id="comparecimentoResposta" placeholder="Ex.: Responsável compareceu à escola, tomou ciência dos fatos e comprometeu-se a acompanhar o estudante durante o período de acompanhamento."></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="fecharModalComparecimento()">Cancelar</button>
+        <button class="btn ok" onclick="salvarComparecimento()">Registrar comparecimento</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalCiencia" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <b>Confirmar ciência</b>
+        <button class="btn" onclick="fecharModalCiencia()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-note">
+          Esta ação registra que o responsável tomou ciência do procedimento disciplinar.
+        </div>
+        <div class="empty">
+          Confirma o registro de ciência do responsável neste procedimento?
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="fecharModalCiencia()">Cancelar</button>
+        <button class="btn ok" onclick="salvarCiencia()">Confirmar ciência</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tenant = new URLSearchParams(window.location.search).get('t') || '';
+    const lista = document.getElementById('lista');
+    const resumo = document.getElementById('resumo');
+    const statsProcessos = document.getElementById('statsProcessos');
+    const busca = document.getElementById('busca');
+    const filtroStatus = document.getElementById('filtroStatus');
+    const filtroNatureza = document.getElementById('filtroNatureza');
+
+    let processos = [];
+    let processoSelecionado = null;
+    let paginaAtualProcessos = 1;
+    let itensPorPaginaProcessos = 10;
+
+    function apiUrl(path, params = {}) {
+      const url = new URL(path, window.location.origin);
+      if (tenant) url.searchParams.set('t', tenant);
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+      }
+      url.searchParams.set('_', Date.now());
+      return url.toString();
+    }
+
+    async function fetchJson(path, options = {}, params = {}) {
+      const resp = await fetch(apiUrl(path, params), {
+        credentials: 'include',
+        cache: 'no-store',
+        ...options
+      });
+
+      const text = await resp.text();
+      let data = null;
+
+      try { data = text ? JSON.parse(text) : null; }
+      catch { data = { raw: text }; }
+
+      if (!resp.ok) {
+        throw new Error(data?.message || data?.error || `Erro HTTP ${resp.status}`);
+      }
+
+      return data;
+    }
+
+    function fmtData(dt) {
+      if (!dt) return '—';
+      try { return new Date(dt).toLocaleString('pt-BR'); }
+      catch { return '—'; }
+    }
+
+    function fmtDataCurta(dt) {
+      if (!dt) return '—';
+      try { return new Date(dt).toLocaleDateString('pt-BR'); }
+      catch { return '—'; }
+    }
+
+    function statusLabel(s) {
+      const map = {
+        aberto: 'Aberto',
+        em_apuracao: 'Em apuração',
+        aguardando_responsavel: 'Aguardando responsável',
+        em_acompanhamento: 'Em acompanhamento',
+        resolvido: 'Resolvido',
+        encaminhado: 'Encaminhado',
+        arquivado: 'Arquivado',
+        cancelado: 'Cancelado'
+      };
+      return map[s] || s || '—';
+    }
+
+    function naturezaLabel(s) {
+      return s === 'ato_infracional' ? 'Ato infracional' : 'Indisciplina';
+    }
+
+    function gravidadeLabel(g) {
+      const map = {
+        leve: 'Leve',
+        media: 'Média',
+        grave: 'Grave',
+        gravissima: 'Gravíssima'
+      };
+      return map[g] || g || '—';
+    }
+
+    function orgaoLabel(o) {
+      const map = {
+        conselho_tutelar: 'Conselho Tutelar',
+        ministerio_publico: 'Ministério Público',
+        delegacia: 'Delegacia',
+        judiciario: 'Judiciário'
+      };
+      return map[o] || o || '—';
+    }
+
+    function calcularRisco(p) {
+      let pontos = 0;
+
+      if (p.natureza === 'ato_infracional') pontos += 4;
+      if (p.gravidade === 'gravissima') pontos += 4;
+      if (p.gravidade === 'grave') pontos += 3;
+      if (p.possuiViolencia) pontos += 2;
+      if (p.possuiLesao) pontos += 3;
+      if (p.possuiDanoPatrimonial) pontos += 2;
+      if (p.possuiSubstanciaIlicita) pontos += 4;
+      if (p.possuiArmaOuObjetoPerigoso) pontos += 4;
+      if (p.exigeEncaminhamentoExterno) pontos += 3;
+
+      if (pontos >= 7) return { nivel:'alto', label:'Risco alto', emoji:'🔴' };
+      if (pontos >= 3) return { nivel:'medio', label:'Risco médio', emoji:'🟠' };
+      return { nivel:'baixo', label:'Risco baixo', emoji:'🟢' };
+    }
+
+    function familiaBadges(p) {
+      const r = p.responsavel || {};
+      return `
+        <span class="badge ${r.notificado ? 'fam-ok' : 'fam-off'}">${r.notificado ? '📨 Responsável notificado' : '📭 Não notificado'}</span>
+        <span class="badge ${r.compareceu ? 'fam-ok' : 'fam-warn'}">${r.compareceu ? '👤 Compareceu' : '👤 Sem comparecimento'}</span>
+        <span class="badge ${r.confirmouCiencia ? 'fam-ok' : 'fam-warn'}">${r.confirmouCiencia ? '✅ Ciência confirmada' : '⚠️ Ciência pendente'}</span>
+      `;
+    }
+
+    function documentosResumo(p) {
+      const docs = Array.isArray(p.documentos) ? p.documentos : [];
+      return `<span class="badge">${docs.length ? `📄 ${docs.length} documento(s)` : '📄 Sem documentos'}</span>`;
+    }
+
+    function renderAlertas(p) {
+      const risco = calcularRisco(p);
+      const alertas = [];
+
+      if (risco.nivel === 'alto') {
+        alertas.push(`
+          <div class="alert-box danger">
+            <div class="alert-title">🔴 Atenção institucional</div>
+            Este procedimento possui indicadores de maior gravidade. Recomenda-se cautela no arquivamento simples e análise de eventual encaminhamento externo.
+          </div>
+        `);
+      } else if (risco.nivel === 'medio') {
+        alertas.push(`
+          <div class="alert-box warn">
+            <div class="alert-title">🟠 Caso requer acompanhamento</div>
+            O procedimento possui elementos que recomendam acompanhamento próximo da coordenação e registro das providências adotadas.
+          </div>
+        `);
+      } else {
+        alertas.push(`
+          <div class="alert-box ok">
+            <div class="alert-title">🟢 Caso de menor complexidade</div>
+            O procedimento não possui, até o momento, marcadores críticos registrados.
+          </div>
+        `);
+      }
+
+      if (p.exigeEncaminhamentoExterno) {
+        alertas.push(`
+          <div class="alert-box danger">
+            <div class="alert-title">📤 Encaminhamento externo indicado</div>
+            Órgão indicado: <strong>${orgaoLabel(p.orgaoEncaminhamento)}</strong>. Registre protocolo, ofício e providências tomadas.
+          </div>
+        `);
+      }
+
+      if (p.natureza === 'ato_infracional') {
+        alertas.push(`
+          <div class="alert-box danger">
+            <div class="alert-title">⚖️ Possível ato infracional</div>
+            O caso foi classificado como possível ato infracional. O fluxo documental deve priorizar registro formal e encaminhamento adequado.
+          </div>
+        `);
+      }
+
+      return alertas.join('');
+    }
+
+    function aplicarFiltros() {
+      const q = busca.value.trim().toLowerCase();
+      const st = filtroStatus.value;
+      const nat = filtroNatureza.value;
+
+      return processos.filter(p => {
+        const texto = [
+          p.numeroProcesso,
+          p.aluno?.nome,
+          p.aluno?.turma,
+          p.descricaoFato,
+          p.localFato,
+          p.responsavel?.nome,
+          p.responsavel?.telefone,
+          p.orgaoEncaminhamento
+        ].join(' ').toLowerCase();
+
+        if (q && !texto.includes(q)) return false;
+        if (st && p.status !== st) return false;
+        if (nat && p.natureza !== nat) return false;
+
+        return true;
+      });
+    }
+
+    function renderTimeline(timeline = []) {
+      if (!timeline.length) {
+        return `<div class="empty">Nenhum registro na linha do tempo.</div>`;
+      }
+
+      return `
+        <div class="timeline">
+          ${timeline.slice().reverse().map(t => `
+            <div class="tl-item">
+              <div class="tl-title">${t.titulo || 'Registro'}</div>
+              <div>${t.descricao || '—'}</div>
+              <div class="tl-date">${fmtData(t.criadoEm)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderDocumentos(p) {
+
+  const docs =
+    Array.isArray(p.documentos)
+      ? p.documentos.slice().reverse()
+      : [];
+
+  if (!docs.length) {
+    return `
+      <div class="empty">
+        Nenhum documento gerado ainda.
+      </div>
+    `;
+  }
+
+  const dossies = docs.filter(
+    d =>
+      d.tipo === 'dossie_pdf' ||
+      d.categoria === 'dossie_final'
+  );
+
+  const documentos = docs.filter(
+    d =>
+      d.tipo !== 'dossie_pdf' &&
+      d.categoria !== 'dossie_final'
+  );
+
+  return `
+
+    ${
+      dossies.length
+        ? `
+          <div style="margin-bottom:18px">
+
+            <div class="section-title" style="margin-bottom:12px">
+              📚 Dossiês institucionais
+            </div>
+            <div style="
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:12px;
+">
+
+  <button
+    class="btn dark"
+    onclick="limparDocumentos('${p._id}')"
+  >
+    🧹 Limpar antigos
+  </button>
+
+</div>
+
+            <div style="
+              display:grid;
+              grid-template-columns:
+                repeat(auto-fit,minmax(240px,1fr));
+              gap:12px;
+            ">
+
+              ${dossies.map((d, index) => {
+
+                const hashCurto =
+                  d.hash
+                    ? d.hash.slice(0, 18) + '...'
+                    : '—';
+
+                const destaque =
+                  index === 0;
+
+                return `
+
+                  <div style="
+                    border-radius:18px;
+                    padding:16px;
+                    border:1px solid ${
+                      destaque
+                        ? '#7c3aed88'
+                        : '#ffffff24'
+                    };
+
+                    background:
+                      ${
+                        destaque
+                          ? 'linear-gradient(135deg,#7c3aed35,#111827)'
+                          : 'linear-gradient(135deg,#ffffff10,#00000020)'
+                      };
+
+                    box-shadow:
+                      ${
+                        destaque
+                          ? '0 10px 30px #7c3aed33'
+                          : '0 10px 24px #0005'
+                      };
+                  ">
+
+                    <div style="
+                      display:flex;
+                      justify-content:space-between;
+                      align-items:flex-start;
+                      gap:10px;
+                      margin-bottom:12px;
+                    ">
+
+                      <div>
+
+                        <div style="
+                          font-weight:900;
+                          font-size:.95rem;
+                        ">
+                          📄 Dossiê Disciplinar Completo
+                        </div>
+
+                        <div style="
+                          color:#cbd5e1;
+                          font-size:.8rem;
+                          margin-top:4px;
+                        ">
+                          ${fmtData(d.geradoEm)}
+                        </div>
+
+                      </div>
+
+                      ${
+                        destaque
+                          ? `
+                            <div class="badge"
+                              style="
+                                background:#7c3aed55;
+                                border-color:#a78bfa55;
+                              ">
+                              MAIS RECENTE
+                            </div>
+                          `
+                          : ''
+                      }
+
+                    </div>
+
+                    <div style="
+                      background:#0000002c;
+                      border:1px solid #ffffff12;
+                      border-radius:12px;
+                      padding:10px;
+                      margin-bottom:12px;
+                    ">
+
+                      <div style="
+                        font-size:.7rem;
+                        color:#94a3b8;
+                        margin-bottom:4px;
+                        letter-spacing:.08em;
+                      ">
+                        HASH DOCUMENTAL
+                      </div>
+
+                      <div style="
+                        font-size:.82rem;
+                        word-break:break-all;
+                        color:#f8fafc;
+                      ">
+                        ${hashCurto}
+                      </div>
+
+                    </div>
+
+                    <div style="
+                      display:flex;
+                      gap:8px;
+                      flex-wrap:wrap;
+                    ">
+
+                      ${
+                        d.caminhoLocal
+                          ? `
+                            <button
+                              class="btn blue"
+                              onclick="
+                                baixarDocumentoSalvo(
+                                  '${p._id}',
+                                  '${encodeURIComponent(d.caminhoLocal)}',
+                                  '${encodeURIComponent(
+                                    (d.titulo || 'dossie.pdf')
+                                  )}'
+                                )
+                              "
+                            >
+                              ⬇️ Baixar PDF
+                            </button>
+                          `
+                          : `
+                            <span class="badge">
+                              Sem arquivo
+                            </span>
+                          `
+                      }
+
+                      ${
+                        d.hash
+                          ? `
+                            <button
+                              class="btn dark"
+                              onclick="
+                                window.open(
+                                  '/verificar-documento.html?hash=${d.hash}',
+                                  '_blank'
+                                )
+                              "
+                            >
+                              🔐 Validar
+                            </button>
+                          `
+                          : ''
+                      }
+
+                    </div>
+
+                  </div>
+
+                `;
+
+              }).join('')}
+
+            </div>
+
+          </div>
+        `
+        : ''
+    }
+
+    ${
+      documentos.length
+        ? `
+          <div>
+
+            <div class="section-title" style="margin-bottom:12px">
+              📁 Documentos individuais
+            </div>
+
+            <div class="doc-grid">
+
+              ${documentos.map(d => `
+
+                <div class="kv">
+
+                  <b>
+                    ${d.titulo || d.tipo || 'Documento'}
+                  </b>
+
+                  <div>
+                    ${fmtData(d.geradoEm)}
+                  </div>
+
+                  <div style="margin-top:8px">
+
+                    ${
+                      d.caminhoLocal
+                        ? `
+                          <button
+                            class="btn blue"
+                            onclick="
+                              baixarDocumentoSalvo(
+                                '${p._id}',
+                                '${encodeURIComponent(d.caminhoLocal)}',
+                                '${encodeURIComponent(
+                                  (d.titulo || d.tipo || 'documento')
+                                )}'
+                              )
+                            "
+                          >
+                            Baixar
+                          </button>
+                        `
+                        : `
+                          <span class="badge">
+                            Sem caminho
+                          </span>
+                        `
+                    }
+
+                  </div>
+
+                </div>
+
+              `).join('')}
+
+            </div>
+
+          </div>
+        `
+        : ''
+    }
+
+  `;
+}
+    function renderProcessos() {
+      const filtrados = aplicarFiltros();
+
+      resumo.textContent = `${filtrados.length} procedimento(s) encontrado(s).`;
+      renderPaginacaoProcessos(filtrados.length);
+      const totalPaginas =
+  Math.max(1, Math.ceil(filtrados.length / itensPorPaginaProcessos));
+
+if (paginaAtualProcessos > totalPaginas) {
+  paginaAtualProcessos = totalPaginas;
+}
+
+const inicio =
+  (paginaAtualProcessos - 1) * itensPorPaginaProcessos;
+
+const fim =
+  inicio + itensPorPaginaProcessos;
+
+const pagina =
+  filtrados.slice(inicio, fim);
+
+      if (!filtrados.length) {
+        lista.innerHTML = `<div class="empty">Nenhum procedimento encontrado.</div>`;
+        return;
+      }
+
+      lista.innerHTML = pagina.map(p => {
+        const nome = p.aluno?.nome || 'Aluno';
+        const turma = p.aluno?.turma || '—';
+        const r = p.responsavel || {};
+        const risco = calcularRisco(p);
+        const cardRiscoClass = risco.nivel === 'alto' ? 'risco-alto' : risco.nivel === 'medio' ? 'risco-medio' : '';
+
+        return `
+          <div class="p-card ${cardRiscoClass}" data-id="${p._id}">
+            <div class="p-head" onclick="toggleProcesso('${p._id}')">
+              <div>
+                <div class="p-title">${p.numeroProcesso || '—'} — ${nome}</div>
+                <div class="p-sub">${turma} • ${p.localFato || 'Local não informado'} • ${fmtDataCurta(p.dataFato)} ${p.horaFato ? `• ${p.horaFato}` : ''}</div>
+              </div>
+              <div class="badges">
+                <span class="badge status-${p.status}">${statusLabel(p.status)}</span>
+                <span class="badge natureza-${p.natureza}">${naturezaLabel(p.natureza)}</span>
+                <span class="badge risco-${risco.nivel}-badge">${risco.emoji} ${risco.label}</span>
+                <span class="badge">Prazo: ${fmtDataCurta(p.prazoAcompanhamentoAte)}</span>
+
+              </div>
+            </div>
+
+            <div class="p-body" id="body-${p._id}">
+              <div class="actions" style="margin:0 0 12px">
+                ${familiaBadges(p)}
+                ${documentosResumo(p)}
+              </div>
+              <div class="dossie-grid">
+                <div>
+                  ${renderAlertas(p)}
+
+                  <div class="section-box">
+                    <div class="section-title">📌 Dados do caso</div>
+                    <div class="grid">
+                      <div class="kv"><b>Aluno</b>${nome}</div>
+                      <div class="kv"><b>Turma</b>${turma}</div>
+                      <div class="kv"><b>Nº do procedimento</b>${p.numeroProcesso || '—'}</div>
+                      <div class="kv"><b>Status</b>${statusLabel(p.status)}</div>
+                      <div class="kv"><b>Natureza</b>${naturezaLabel(p.natureza)}</div>
+                      <div class="kv"><b>Classificação</b>${p.classificacaoOcorrencia || '—'}</div>
+                      <div class="kv"><b>Gravidade</b>${gravidadeLabel(p.gravidade)}</div>
+                      <div class="kv"><b>Risco operacional</b>${risco.emoji} ${risco.label}</div>
+                      <div class="kv"><b>Data do fato</b>${fmtDataCurta(p.dataFato)}</div>
+                      <div class="kv"><b>Horário aproximado</b>${p.horaFato || '—'}</div>
+                      <div class="kv"><b>Local</b>${p.localFato || '—'}</div>
+                      <div class="kv"><b>Prazo de acompanhamento</b>${fmtDataCurta(p.prazoAcompanhamentoAte)}</div>
+                      <div class="kv"><b>Encaminhamento externo</b>${p.exigeEncaminhamentoExterno ? 'Sim' : 'Não'}</div>
+                      <div class="kv"><b>Órgão</b>${orgaoLabel(p.orgaoEncaminhamento)}</div>
+                      <div class="kv" style="grid-column:1/-1"><b>Descrição do fato</b>${p.descricaoFato || '—'}</div>
+                      <div class="kv" style="grid-column:1/-1"><b>Providências imediatas</b>${p.providenciasImediatas || '—'}</div>
+                    </div>
+                  </div>
+
+                  <div class="section-box">
+                    <div class="section-title">🚨 Marcadores críticos</div>
+                    <div class="risk-grid">
+                      <div class="kv"><b>Violência</b>${p.possuiViolencia ? 'Sim' : 'Não'}</div>
+                      <div class="kv"><b>Lesão</b>${p.possuiLesao ? 'Sim' : 'Não'}</div>
+                      <div class="kv"><b>Dano patrimonial</b>${p.possuiDanoPatrimonial ? 'Sim' : 'Não'}</div>
+                      <div class="kv"><b>Substância ilícita</b>${p.possuiSubstanciaIlicita ? 'Sim' : 'Não'}</div>
+                      <div class="kv"><b>Arma/objeto perigoso</b>${p.possuiArmaOuObjetoPerigoso ? 'Sim' : 'Não'}</div>
+                      <div class="kv"><b>Ato infracional</b>${p.natureza === 'ato_infracional' ? 'Sim' : 'Não'}</div>
+                    </div>
+                  </div>
+
+                  <div class="section-box">
+                    <div class="section-title">👨‍👩‍👧 Acompanhamento familiar</div>
+                    <div class="family-grid">
+                      <div class="kv"><b>Responsável</b>${r.nome || '—'}</div>
+                      <div class="kv"><b>Parentesco</b>${r.parentesco || '—'}</div>
+                      <div class="kv"><b>Telefone</b>${r.telefone || '—'}</div>
+                      <div class="kv"><b>E-mail</b>${r.email || '—'}</div>
+                      <div class="kv"><b>Notificado em</b>${fmtData(r.notificadoEm)}</div>
+                      <div class="kv"><b>Visualizou em</b>${fmtData(r.visualizouEm)}</div>
+                      <div class="kv"><b>Compareceu em</b>${fmtData(r.compareceuEm)}</div>
+                      <div class="kv"><b>Ciência em</b>${fmtData(r.confirmouCienciaEm)}</div>
+                      <div class="kv"><b>IP da ciência</b>${r.ipCiencia || '—'}</div>
+                      <div class="kv" style="grid-column:1/-1"><b>Resposta/observação</b>${r.resposta || '—'}</div>
+                    </div>
+                  </div>
+
+                  <div class="section-box">
+                    <div class="section-title">📁 Documentos do procedimento</div>
+                    <details class="docs-collapse">
+                      <summary>📄 Gerar documentos oficiais</summary>
+                      <div class="actions docs-actions">
+                        <button class="btn dark" onclick="gerarDocumento('${p._id}', 'capa')">🗂️ Capa</button>
+                        <button class="btn warn" onclick="gerarPortariaInstauracao('${p._id}')">📜 Portaria</button>
+                        <button class="btn danger" onclick="gerarRemessaConselhoTutelar('${p._id}')">📤 Conselho Tutelar</button>
+                        <button class="btn danger" onclick="gerarOficioMinisterioPublico('${p._id}')">📨 Ministério Público</button>
+                        <button class="btn danger" onclick="gerarOficioDelegacia('${p._id}')">🚔 Delegacia</button>
+                        <button class="btn danger" onclick="gerarOficioJudiciario('${p._id}')">⚖️ Judiciário</button>
+                        <button class="btn warn" onclick="gerarRelatorioFinal('${p._id}')">📑 Relatório Final</button>
+                        <button class="btn blue" onclick="gerarDocumento('${p._id}', 'termo_ciencia')">📄 Termo de ciência</button>
+                        <button class="btn ok" onclick="gerarDocumento('${p._id}', 'termo_comparecimento')">👤 Comparecimento</button>
+                        <button class="btn primary" onclick="gerarDocumento('${p._id}', 'termo_compromisso')">🤝 Compromisso</button>
+                        <button class="btn dark" onclick="gerarDocumento('${p._id}', 'arquivamento')">📁 Arquivamento</button>
+                        <button class="btn warn" onclick="gerarDossieCompleto('${p._id}')">📚 Dossiê completo</button>
+                        <button class="btn primary" onclick="gerarDossiePdf('${p._id}')">📄 PDF único</button>
+                      </div>
+                    </details>
+                    ${renderDocumentos(p)}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="section-box">
+                    <div class="section-title">⚙️ Ações do procedimento</div>
+                    <div class="quick-actions">
+                      <button class="btn blue" onclick="abrirModalResponsavel('${p._id}')">📨 Notificar responsável</button>
+                      <button class="btn ok" onclick="abrirModalComparecimento('${p._id}')">👤 Responsável compareceu</button>
+                      <button class="btn warn" onclick="abrirModalCiencia('${p._id}')">✅ Confirmar ciência</button>
+                      <button class="btn primary" onclick="abrirModalObs('${p._id}')">➕ Observação</button>
+
+                      ${p.status !== 'arquivado'
+                        ? `<button class="btn ok" onclick="abrirModalArquivar('${p._id}')">📁 Arquivar</button>`
+                        : ''
+                      }
+
+                      ${p.status !== 'cancelado'
+                        ? `<button class="btn danger" onclick="cancelarProcedimento('${p._id}','${p.numeroProcesso}')">❌ Cancelar procedimento</button>`
+                        : ''
+                      }
+
+                      ${p.notificacao?._id
+                        ? `<button class="btn dark" onclick="location.href='notificacoes.html${tenant ? `?t=${encodeURIComponent(tenant)}` : ''}'">🔔 Ver notificações</button>`
+                        : ''
+                      }
+                    </div>
+                  </div>
+
+                  <div class="section-box">
+                    <div class="section-title">🕒 Linha do tempo</div>
+                    ${renderTimeline(p.timeline)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+function renderPaginacaoProcessos(totalItens) {
+  const el = document.getElementById('paginacaoProcessos');
+  if (!el) return;
+
+  const totalPaginas =
+    Math.max(1, Math.ceil(totalItens / itensPorPaginaProcessos));
+
+  if (totalItens <= itensPorPaginaProcessos) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <button class="btn dark" onclick="mudarPaginaProcessos(-1)" ${paginaAtualProcessos <= 1 ? 'disabled' : ''}>
+      ← Anterior
+    </button>
+
+    <span class="badge">
+      Página ${paginaAtualProcessos} de ${totalPaginas}
+    </span>
+
+    <button class="btn dark" onclick="mudarPaginaProcessos(1)" ${paginaAtualProcessos >= totalPaginas ? 'disabled' : ''}>
+      Próxima →
+    </button>
+  `;
+}
+
+function mudarPaginaProcessos(delta) {
+  paginaAtualProcessos += delta;
+  renderProcessos();
+}
+    async function carregarEstatisticas() {
+
+  try {
+
+    const stats =
+      await fetchJson(
+        '/api/processos-disciplinares/estatisticas'
+      );
+
+    const gravidadeTotal =
+      Object.values(
+        stats.gravidade || {}
+      ).reduce((a, b) => a + b, 0);
+
+    statsProcessos.innerHTML = `
+
+      <div class="stat-card">
+        <div class="stat-label">
+          TOTAL
+        </div>
+
+        <div class="stat-value">
+          ${stats.total || 0}
+        </div>
+
+        <div class="stat-sub">
+          procedimentos registrados
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          ATIVOS
+        </div>
+
+        <div class="stat-value">
+          ${stats.ativos || 0}
+        </div>
+
+        <div class="stat-sub">
+          em andamento
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          ARQUIVADOS
+        </div>
+
+        <div class="stat-value">
+          ${stats.arquivados || 0}
+        </div>
+
+        <div class="stat-sub">
+          concluídos
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          ATOS INFRACIONAIS
+        </div>
+
+        <div class="stat-value">
+          ${stats.atosInfracionais || 0}
+        </div>
+
+        <div class="stat-sub">
+          classificados
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          COMPARECIMENTO
+        </div>
+
+        <div class="stat-value">
+          ${stats.taxaComparecimento || 0}%
+        </div>
+
+        <div class="stat-sub">
+          responsáveis presentes
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          GRAVIDADE
+        </div>
+
+        <div class="stat-value">
+          ${gravidadeTotal}
+        </div>
+
+        <div class="stat-sub">
+          registros classificados
+        </div>
+      </div>
+
+    `;
+
+  } catch (err) {
+
+    console.error(
+      '[STATS_PROCESSOS]',
+      err
+    );
+
+    statsProcessos.innerHTML = `
+      <div class="empty">
+        Erro ao carregar estatísticas.
+      </div>
+    `;
+  }
+}
+    async function carregarProcessos() {
+      lista.innerHTML = `<div class="empty"><span class="spinner"></span>Carregando procedimentos...</div>`;
+
+      try {
+        processos = await fetchJson('/api/processos-disciplinares');
+        carregarEstatisticas();
+        renderProcessos();
+
+        const processoQuery = new URLSearchParams(window.location.search).get('processo');
+        if (processoQuery) {
+          setTimeout(() => {
+            const body = document.getElementById(`body-${processoQuery}`);
+            if (body) {
+              body.style.display = 'block';
+              body.scrollIntoView({ behavior:'smooth', block:'center' });
+            }
+          }, 250);
+        }
+      } catch (e) {
+        console.error(e);
+        lista.innerHTML = `<div class="empty">Erro ao carregar procedimentos: ${e.message}</div>`;
+      }
+    }
+
+    function toggleProcesso(id) {
+      const body = document.getElementById(`body-${id}`);
+      if (!body) return;
+      body.style.display = body.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function abrirModalObs(id) {
+      processoSelecionado = id;
+      document.getElementById('obsTitulo').value = '';
+      document.getElementById('obsDescricao').value = '';
+      document.getElementById('modalObs').classList.add('open');
+    }
+
+    function fecharModalObs() {
+      document.getElementById('modalObs').classList.remove('open');
+      processoSelecionado = null;
+    }
+
+    async function salvarObservacao() {
+      if (!processoSelecionado) return;
+
+      const titulo = document.getElementById('obsTitulo').value.trim() || 'Observação registrada';
+      const descricao = document.getElementById('obsDescricao').value.trim();
+
+      if (!descricao) {
+        alert('Informe a descrição da observação.');
+        return;
+      }
+
+      try {
+        await fetchJson(`/api/processos-disciplinares/${processoSelecionado}/observacao`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ titulo, descricao })
+        });
+
+        fecharModalObs();
+        await carregarProcessos();
+        alert('Observação registrada com sucesso.');
+      } catch (e) {
+        alert(e.message || 'Erro ao salvar observação.');
+      }
+    }
+
+    function abrirModalResponsavel(id) {
+      processoSelecionado = id;
+      const p = processos.find(x => String(x._id) === String(id));
+      const r = p?.responsavel || {};
+
+      document.getElementById('respNome').value = r.nome || '';
+      document.getElementById('respParentesco').value = r.parentesco || '';
+      document.getElementById('respTelefone').value = r.telefone || '';
+      document.getElementById('respEmail').value = r.email || '';
+      document.getElementById('respResposta').value = r.resposta || '';
+
+      document.getElementById('modalResponsavel').classList.add('open');
+    }
+
+    function fecharModalResponsavel() {
+      document.getElementById('modalResponsavel').classList.remove('open');
+      processoSelecionado = null;
+    }
+
+    async function salvarResponsavelNotificado() {
+      if (!processoSelecionado) return;
+
+      const payload = {
+        nome: document.getElementById('respNome').value.trim(),
+        parentesco: document.getElementById('respParentesco').value.trim(),
+        telefone: document.getElementById('respTelefone').value.trim(),
+        email: document.getElementById('respEmail').value.trim(),
+        resposta: document.getElementById('respResposta').value.trim()
+      };
+
+      if (!payload.nome) {
+        alert('Informe o nome do responsável.');
+        return;
+      }
+
+      try {
+        await fetchJson(`/api/processos-disciplinares/${processoSelecionado}/notificar-responsavel`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(payload)
+        });
+
+        fecharModalResponsavel();
+        await carregarProcessos();
+        alert('Responsável notificado com sucesso.');
+      } catch (e) {
+        alert(e.message || 'Erro ao registrar notificação do responsável.');
+      }
+    }
+
+    function abrirModalComparecimento(id) {
+      processoSelecionado = id;
+      const p = processos.find(x => String(x._id) === String(id));
+      document.getElementById('comparecimentoResposta').value =
+        p?.responsavel?.resposta ||
+        'Responsável compareceu à escola, tomou ciência dos fatos e foi orientado quanto ao acompanhamento do estudante.';
+      document.getElementById('modalComparecimento').classList.add('open');
+    }
+
+    function fecharModalComparecimento() {
+      document.getElementById('modalComparecimento').classList.remove('open');
+      processoSelecionado = null;
+    }
+
+    async function salvarComparecimento() {
+      if (!processoSelecionado) return;
+
+      const resposta = document.getElementById('comparecimentoResposta').value.trim();
+
+      if (!resposta) {
+        alert('Informe a observação do comparecimento.');
+        return;
+      }
+
+      try {
+        await fetchJson(`/api/processos-disciplinares/${processoSelecionado}/responsavel-compareceu`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ resposta })
+        });
+
+        fecharModalComparecimento();
+        await carregarProcessos();
+        alert('Comparecimento registrado com sucesso.');
+      } catch (e) {
+        alert(e.message || 'Erro ao registrar comparecimento.');
+      }
+    }
+
+    function abrirModalCiencia(id) {
+      processoSelecionado = id;
+      document.getElementById('modalCiencia').classList.add('open');
+    }
+
+    function fecharModalCiencia() {
+      document.getElementById('modalCiencia').classList.remove('open');
+      processoSelecionado = null;
+    }
+
+    async function salvarCiencia() {
+      if (!processoSelecionado) return;
+
+      try {
+        await fetchJson(`/api/processos-disciplinares/${processoSelecionado}/confirmar-ciencia`, {
+          method:'POST'
+        });
+
+        fecharModalCiencia();
+        await carregarProcessos();
+        alert('Ciência confirmada com sucesso.');
+      } catch (e) {
+        alert(e.message || 'Erro ao confirmar ciência.');
+      }
+    }
+
+    function abrirModalArquivar(id) {
+      processoSelecionado = id;
+      document.getElementById('resultadoAcompanhamento').value = 'reintegrado';
+      document.getElementById('motivoArquivamento').value = '';
+      document.getElementById('parecerFinal').value = '';
+      document.getElementById('modalArquivar').classList.add('open');
+    }
+
+    function fecharModalArquivar() {
+      document.getElementById('modalArquivar').classList.remove('open');
+      processoSelecionado = null;
+    }
+
+    async function salvarArquivamento() {
+      if (!processoSelecionado) return;
+
+      const resultadoAcompanhamento = document.getElementById('resultadoAcompanhamento').value;
+      const motivoArquivamento = document.getElementById('motivoArquivamento').value.trim();
+      const parecerFinal = document.getElementById('parecerFinal').value.trim();
+
+      if (!motivoArquivamento) {
+        alert('Informe o motivo do arquivamento.');
+        return;
+      }
+
+      try {
+        await fetchJson(`/api/processos-disciplinares/${processoSelecionado}/arquivar`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            resultadoAcompanhamento,
+            motivoArquivamento,
+            parecerFinal
+          })
+        });
+
+        fecharModalArquivar();
+        await carregarProcessos();
+        alert('Procedimento arquivado com sucesso.');
+      } catch (e) {
+        alert(e.message || 'Erro ao arquivar procedimento.');
+      }
+    }
+
+    async function cancelarProcedimento(id, numero) {
+      try {
+        const confirmar = confirm(
+          `Deseja realmente cancelar o procedimento:\n\n${numero}?\n\nEsta ação removerá o vínculo com a notificação.`
+        );
+
+        if (!confirmar) return;
+
+        const motivo = prompt(
+          'Informe o motivo do cancelamento:',
+          'Procedimento criado para testes.'
+        );
+
+        if (motivo === null) return;
+
+        await fetchJson(`/api/processos-disciplinares/${id}/cancelar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ motivo })
+        });
+
+        alert('Procedimento cancelado com sucesso.');
+        await carregarProcessos();
+      } catch (e) {
+        console.error(e);
+        alert(e.message || 'Erro ao cancelar procedimento.');
+      }
+    }
+async function gerarDocumento(id, tipoDocumento) {
+  try {
+    const confirmar = confirm(
+      'Deseja gerar e baixar este documento institucional?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-documento`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipoDocumento })
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error('Documento gerado, mas o caminho não foi retornado.');
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo || `${tipoDocumento}.docx`
+    );
+
+    alert('Documento gerado e baixado com sucesso.');
+
+    await carregarProcessos();
+
+  } catch (e) {
+    console.error('[GERAR_DOCUMENTO]', e);
+    alert(e.message || 'Erro ao gerar documento.');
+  }
+}
+    async function gerarPortariaInstauracao(id) {
+  try {
+    const confirmar = confirm(
+      'Deseja gerar e baixar a Portaria de Instauração?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-portaria-instauracao`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error('Portaria gerada, mas o caminho não foi retornado.');
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo || 'portaria_instauracao.docx'
+    );
+
+    alert('Portaria de Instauração gerada e baixada com sucesso.');
+
+    await carregarProcessos();
+
+  } catch (err) {
+    console.error('[PORTARIA]', err);
+    alert(err.message || 'Erro ao gerar portaria.');
+  }
+}
+async function gerarRemessaConselhoTutelar(id) {
+
+  try {
+
+    const confirmar = confirm(
+      'Deseja gerar o termo de remessa ao Conselho Tutelar?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-remessa-conselho-tutelar`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error(
+        'Documento gerado, mas o caminho não foi retornado.'
+      );
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo ||
+      'remessa_conselho_tutelar.docx'
+    );
+
+    alert(
+      'Termo de remessa gerado com sucesso.'
+    );
+
+    await carregarProcessos();
+
+  } catch (err) {
+
+    console.error(
+      '[REMESSA_CT]',
+      err
+    );
+
+    alert(
+      err.message ||
+      'Erro ao gerar remessa.'
+    );
+  }
+}
+async function gerarOficioMinisterioPublico(id) {
+
+  try {
+
+    const confirmar = confirm(
+      'Deseja gerar o Ofício ao Ministério Público?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-oficio-ministerio-publico`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error(
+        'Documento gerado, mas o caminho não foi retornado.'
+      );
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo ||
+      'oficio_ministerio_publico.docx'
+    );
+
+    alert(
+      'Ofício ao Ministério Público gerado com sucesso.'
+    );
+
+    await carregarProcessos();
+
+  } catch (err) {
+
+    console.error(
+      '[OFICIO_MP]',
+      err
+    );
+
+    alert(
+      err.message ||
+      'Erro ao gerar ofício.'
+    );
+  }
+}
+async function gerarOficioDelegacia(id) {
+
+  try {
+
+    const confirmar = confirm(
+      'Deseja gerar o Ofício à Delegacia?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-oficio-delegacia`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error(
+        'Documento gerado, mas o caminho não foi retornado.'
+      );
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo ||
+      'oficio_delegacia.docx'
+    );
+
+    alert(
+      'Ofício à Delegacia gerado com sucesso.'
+    );
+
+    await carregarProcessos();
+
+  } catch (err) {
+
+    console.error(
+      '[OFICIO_DELEGACIA]',
+      err
+    );
+
+    alert(
+      err.message ||
+      'Erro ao gerar ofício.'
+    );
+  }
+}
+async function gerarOficioJudiciario(id) {
+
+  try {
+
+    const confirmar = confirm(
+      'Deseja gerar o Ofício ao Judiciário?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-oficio-judiciario`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error(
+        'Documento gerado, mas o caminho não foi retornado.'
+      );
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo ||
+      'oficio_judiciario.docx'
+    );
+
+    alert(
+      'Ofício ao Judiciário gerado com sucesso.'
+    );
+
+    await carregarProcessos();
+
+  } catch (err) {
+
+    console.error(
+      '[OFICIO_JUDICIARIO]',
+      err
+    );
+
+    alert(
+      err.message ||
+      'Erro ao gerar ofício.'
+    );
+  }
+}
+async function gerarRelatorioFinal(id) {
+
+  try {
+
+    const confirmar = confirm(
+      'Deseja gerar o Relatório Final / Despacho Conclusivo?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-relatorio-final`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.documento?.caminho) {
+      throw new Error(
+        'Documento gerado, mas o caminho não foi retornado.'
+      );
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.documento.caminho,
+      resultado.documento.nomeArquivo ||
+      'relatorio_final.docx'
+    );
+
+    alert(
+      'Relatório final gerado com sucesso.'
+    );
+
+    await carregarProcessos();
+
+  } catch (err) {
+
+    console.error(
+      '[RELATORIO_FINAL]',
+      err
+    );
+
+    alert(
+      err.message ||
+      'Erro ao gerar relatório final.'
+    );
+  }
+}
+    async function baixarDocumentoPorCaminho(id, caminho, nomeArquivo) {
+      const resp = await fetch(`/api/processos-disciplinares/${id}/baixar-documento?caminho=${encodeURIComponent(caminho)}&nome=${encodeURIComponent(nomeArquivo)}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}`, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
+      if (!resp.ok) {
+        throw new Error('Houve erro no download do documento.');
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomeArquivo;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+    }
+
+    async function baixarDocumentoSalvo(id, caminhoEncoded, nomeEncoded) {
+      try {
+        const caminho = decodeURIComponent(caminhoEncoded);
+        const nome = decodeURIComponent(nomeEncoded || 'documento.docx');
+        await baixarDocumentoPorCaminho(id, caminho, nome);
+      } catch (e) {
+        console.error(e);
+        alert(e.message || 'Erro ao baixar documento.');
+      }
+    }
+async function gerarDossieCompleto(id) {
+  try {
+    const confirmar = confirm(
+      'Deseja baixar todos os documentos deste procedimento em ordem de dossiê?'
+    );
+
+    if (!confirmar) return;
+
+    const data = await fetchJson(
+      `/api/processos-disciplinares/${id}/dossie-completo`
+    );
+
+    if (!data?.documentos?.length) {
+      alert('Nenhum documento encontrado neste procedimento.');
+      return;
+    }
+
+    for (const doc of data.documentos) {
+      if (!doc.downloadUrl) continue;
+
+      const resp = await fetch(
+        `${doc.downloadUrl}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}`,
+        {
+          credentials: 'include',
+          cache: 'no-store'
+        }
+      );
+
+      if (!resp.ok) {
+        throw new Error(`Erro ao baixar: ${doc.titulo || 'documento'}`);
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.nomeArquivo || `${doc.titulo || 'documento'}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+
+      await new Promise(resolve => setTimeout(resolve, 700));
+    }
+
+    alert('Dossiê baixado com sucesso.');
+  } catch (e) {
+    console.error('[DOSSIE_COMPLETO]', e);
+    alert(e.message || 'Erro ao gerar dossiê completo.');
+  }
+}
+
+async function gerarDossiePdf(id) {
+  try {
+    const confirmar = confirm(
+      'Deseja gerar o PDF único do dossiê disciplinar?'
+    );
+
+    if (!confirmar) return;
+
+    const resultado = await fetchJson(
+      `/api/processos-disciplinares/${id}/gerar-dossie-pdf`,
+      {
+        method: 'POST'
+      }
+    );
+
+    if (!resultado?.caminho) {
+      throw new Error('PDF gerado, mas o caminho não foi retornado.');
+    }
+
+    await baixarDocumentoPorCaminho(
+      id,
+      resultado.caminho,
+      resultado.nomeArquivo || 'dossie_disciplinar.pdf'
+    );
+
+    alert('PDF único do dossiê gerado e baixado com sucesso.');
+  } catch (e) {
+    console.error('[DOSSIE_PDF]', e);
+    alert(e.message || 'Erro ao gerar PDF único do dossiê.');
+  }
+}
+async function limparDocumentos(id) {
+  const ok = confirm(
+    'Deseja manter apenas os documentos mais recentes deste procedimento?'
+  );
+
+  if (!ok) return;
+
+  try {
+    const data = await fetchJson(
+      `/api/processos-disciplinares/${id}/limpar-documentos`,
+      {
+        method: 'POST'
+      }
+    );
+
+    alert(
+      `Documentos antigos removidos.\n\nRemovidos: ${data.removidos}\nRestantes: ${data.restantes}`
+    );
+
+    await carregarProcessos();
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Erro ao limpar documentos.');
+  }
+}
+
+    function logout(){
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    busca.addEventListener('input', renderProcessos);
+    filtroStatus.addEventListener('change', renderProcessos);
+    filtroNatureza.addEventListener('change', renderProcessos);
+
+    window.carregarProcessos = carregarProcessos;
+    window.toggleProcesso = toggleProcesso;
+    window.abrirModalObs = abrirModalObs;
+    window.fecharModalObs = fecharModalObs;
+    window.salvarObservacao = salvarObservacao;
+    window.abrirModalResponsavel = abrirModalResponsavel;
+    window.fecharModalResponsavel = fecharModalResponsavel;
+    window.salvarResponsavelNotificado = salvarResponsavelNotificado;
+    window.abrirModalComparecimento = abrirModalComparecimento;
+    window.fecharModalComparecimento = fecharModalComparecimento;
+    window.salvarComparecimento = salvarComparecimento;
+    window.abrirModalCiencia = abrirModalCiencia;
+    window.fecharModalCiencia = fecharModalCiencia;
+    window.salvarCiencia = salvarCiencia;
+    window.abrirModalArquivar = abrirModalArquivar;
+    window.fecharModalArquivar = fecharModalArquivar;
+    window.salvarArquivamento = salvarArquivamento;
+    window.gerarDocumento = gerarDocumento;
+    window.baixarDocumentoSalvo = baixarDocumentoSalvo;
+    window.cancelarProcedimento = cancelarProcedimento;
+    window.gerarDossieCompleto = gerarDossieCompleto;
+    window.gerarDossiePdf = gerarDossiePdf;
+    window.limparDocumentos = limparDocumentos;
+    window.mudarPaginaProcessos = mudarPaginaProcessos;
+    window.gerarPortariaInstauracao = gerarPortariaInstauracao;
+    window.gerarRemessaConselhoTutelar = gerarRemessaConselhoTutelar;
+    window.gerarOficioMinisterioPublico = gerarOficioMinisterioPublico;
+    window.gerarOficioDelegacia = gerarOficioDelegacia;
+    window.gerarOficioJudiciario = gerarOficioJudiciario;
+    window.gerarRelatorioFinal = gerarRelatorioFinal;
+
+    carregarProcessos();
+  </script>
+
+  <script src="notify.js"></script>
+  <script src="/update-client.js"></script>
+</body>
+</html>

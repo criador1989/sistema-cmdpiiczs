@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Livro Digital de Ocorrências • Axoriin</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+
+    :root{
+      --bg:#071018;
+      --card:#0f1722d8;
+      --card2:#08131de8;
+
+      --border:#1f3b52;
+
+      --text:#d9f3ff;
+      --muted:#8fb6c7;
+
+      --cyan:#33d1ff;
+      --green:#1ee6a5;
+      --yellow:#ffd166;
+      --orange:#ff9f43;
+      --red:#ff5d73;
+
+      --shadow:0 0 30px rgba(0,255,255,.08);
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      font-family:'Rajdhani',sans-serif;
+      background:
+        linear-gradient(rgba(4,10,18,.90),rgba(4,10,18,.94)),
+        url('/img/bg-painel.jpg') center/cover fixed;
+      color:var(--text);
+      min-height:100vh;
+      padding:24px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:18px;
+      flex-wrap:wrap;
+      margin-bottom:24px;
+    }
+
+    .titulo{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .titulo h1{
+      font-family:'Orbitron',sans-serif;
+      font-size:32px;
+      color:var(--cyan);
+      text-shadow:0 0 18px rgba(51,209,255,.30);
+    }
+
+    .titulo p{
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    .painel{
+      background:var(--card);
+      border:1px solid rgba(51,209,255,.14);
+      border-radius:26px;
+      padding:22px;
+      backdrop-filter:blur(16px);
+      box-shadow:var(--shadow);
+      margin-bottom:22px;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+      gap:18px;
+    }
+
+    .card-stat{
+      position:relative;
+      overflow:hidden;
+
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+
+      border-radius:22px;
+      padding:20px;
+    }
+
+    .card-stat::before{
+      content:'';
+
+      position:absolute;
+      inset:0;
+
+      background:
+        linear-gradient(
+          120deg,
+          transparent,
+          rgba(255,255,255,.04),
+          transparent
+        );
+
+      transform:translateX(-100%);
+      animation:shine 6s infinite;
+    }
+
+    @keyframes shine{
+      100%{
+        transform:translateX(220%);
+      }
+    }
+
+    .card-stat h2{
+      font-size:14px;
+      color:var(--muted);
+      margin-bottom:10px;
+      letter-spacing:.5px;
+    }
+
+    .card-stat .valor{
+      font-size:36px;
+      font-weight:700;
+      color:white;
+    }
+
+    .filtros{
+      display:grid;
+      grid-template-columns:
+        2fr
+        repeat(4,1fr);
+
+      gap:14px;
+    }
+
+    .filtros input,
+    .filtros select{
+      width:100%;
+
+      border:none;
+      outline:none;
+
+      border-radius:14px;
+
+      background:#08131dcc;
+
+      color:white;
+
+      padding:14px;
+      font-size:15px;
+
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+
+      border-radius:14px;
+
+      padding:12px 16px;
+
+      font-weight:700;
+      font-size:14px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #0ea5e9,
+          #22d3ee
+        );
+
+      color:#001018;
+
+      transition:.25s;
+    }
+
+    .btn:hover{
+      transform:translateY(-2px);
+
+      box-shadow:
+        0 0 20px rgba(34,211,238,.30);
+    }
+
+    .tabela-wrap{
+      overflow:auto;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1250px;
+    }
+
+    thead{
+      background:rgba(255,255,255,.04);
+    }
+
+    th{
+      text-align:left;
+      padding:16px;
+      color:var(--cyan);
+      font-size:14px;
+      letter-spacing:.4px;
+    }
+
+    td{
+      padding:16px;
+      border-top:1px solid rgba(255,255,255,.05);
+      vertical-align:top;
+    }
+
+    tr:hover{
+      background:rgba(255,255,255,.03);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+
+      padding:7px 12px;
+
+      border-radius:999px;
+
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .leve{
+      background:rgba(30,230,165,.14);
+      color:var(--green);
+    }
+
+    .media{
+      background:rgba(255,209,102,.14);
+      color:var(--yellow);
+    }
+
+    .grave{
+      background:rgba(255,159,67,.14);
+      color:var(--orange);
+    }
+
+    .gravissima{
+      background:rgba(255,93,115,.14);
+      color:var(--red);
+    }
+
+    .status{
+      background:rgba(51,209,255,.12);
+      color:var(--cyan);
+    }
+
+    .empty{
+      text-align:center;
+      padding:60px 20px;
+      color:var(--muted);
+    }
+
+    .timeline{
+      position:relative;
+      padding-left:22px;
+    }
+
+    .timeline::before{
+      content:'';
+
+      position:absolute;
+      left:8px;
+      top:0;
+      bottom:0;
+
+      width:2px;
+
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(51,209,255,.5),
+          rgba(51,209,255,.06)
+        );
+    }
+
+    .timeline-item{
+      position:relative;
+      margin-bottom:16px;
+
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.05);
+
+      border-radius:16px;
+
+      padding:16px;
+    }
+
+    .timeline-item::before{
+      content:'';
+
+      position:absolute;
+
+      left:-19px;
+      top:20px;
+
+      width:12px;
+      height:12px;
+
+      border-radius:50%;
+
+      background:var(--cyan);
+
+      box-shadow:
+        0 0 14px rgba(51,209,255,.5);
+    }
+
+    .doc-card{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      flex-wrap:wrap;
+
+      padding:14px;
+
+      border-radius:14px;
+
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.05);
+
+      margin-bottom:12px;
+    }
+
+    .hash-box{
+      padding:16px;
+      border-radius:16px;
+
+      background:#061018;
+
+      border:1px solid rgba(51,209,255,.12);
+
+      overflow:auto;
+
+      font-family:monospace;
+      font-size:13px;
+
+      color:#8be7ff;
+    }
+
+    @media(max-width:980px){
+
+      body{
+        padding:14px;
+      }
+
+      .titulo h1{
+        font-size:24px;
+      }
+
+      .filtros{
+        grid-template-columns:1fr;
+      }
+
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+
+    <div class="titulo">
+
+      <h1>
+        Livro Digital de Ocorrências
+      </h1>
+
+      <p>
+        Registro institucional oficial dos procedimentos administrativos disciplinares
+      </p>
+
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+  <button
+    class="btn"
+    onclick="exportarLivro()"
+  >
+    Exportar Livro
+  </button>
+
+  <button
+    class="btn"
+    onclick="location.reload()"
+  >
+    Atualizar
+  </button>
+
+</div>
+
+  <section class="painel">
+
+    <div class="stats">
+
+      <div class="card-stat">
+        <h2>Total de Registros</h2>
+        <div class="valor" id="statTotal">0</div>
+      </div>
+
+      <div class="card-stat">
+        <h2>Encaminhados</h2>
+        <div class="valor" id="statEncaminhados">0</div>
+      </div>
+
+      <div class="card-stat">
+        <h2>Arquivados</h2>
+        <div class="valor" id="statArquivados">0</div>
+      </div>
+
+      <div class="card-stat">
+        <h2>Gravíssimos</h2>
+        <div class="valor" id="statGravissimos">0</div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <section class="painel">
+
+    <div class="filtros">
+
+      <input
+        type="text"
+        id="busca"
+        placeholder="Buscar aluno, processo, livro..."
+      />
+
+      <select id="filtroStatus">
+        <option value="">Todos Status</option>
+        <option value="registrado">Registrado</option>
+        <option value="em_acompanhamento">Em acompanhamento</option>
+        <option value="encaminhado">Encaminhado</option>
+        <option value="arquivado">Arquivado</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+
+      <select id="filtroNatureza">
+        <option value="">Todas Naturezas</option>
+        <option value="indisciplina">Indisciplina</option>
+        <option value="ato_infracional">Ato Infracional</option>
+      </select>
+
+      <select id="filtroGravidade">
+        <option value="">Todas Gravidades</option>
+        <option value="leve">Leve</option>
+        <option value="media">Média</option>
+        <option value="grave">Grave</option>
+        <option value="gravissima">Gravíssima</option>
+      </select>
+
+      <button
+        class="btn"
+        onclick="carregarRegistros()"
+      >
+        Filtrar
+      </button>
+
+    </div>
+
+  </section>
+
+  <section class="painel">
+
+    <div class="tabela-wrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Livro</th>
+            <th>Processo</th>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Natureza</th>
+            <th>Gravidade</th>
+            <th>Status</th>
+            <th>Atualização</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+
+        <tbody id="tbodyRegistros">
+
+          <tr>
+            <td colspan="9" class="empty">
+              Carregando registros...
+            </td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+  <script>
+
+    const tbody =
+      document.getElementById(
+        'tbodyRegistros'
+      );
+
+    let modalAtual = null;
+
+    async function carregarEstatisticas(){
+
+      try{
+
+        const res = await fetch(
+          '/api/livro-ocorrencias/estatisticas',
+          {
+            credentials:'include'
+          }
+        );
+
+        const data = await res.json();
+
+        document.getElementById('statTotal').textContent =
+          data.total || 0;
+
+        document.getElementById('statEncaminhados').textContent =
+          data.encaminhados || 0;
+
+        document.getElementById('statArquivados').textContent =
+          data.arquivados || 0;
+
+        document.getElementById('statGravissimos').textContent =
+          data.gravissimos || 0;
+
+      }catch(err){
+
+        console.error(err);
+
+      }
+
+    }
+
+    async function carregarRegistros(){
+
+      try{
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="empty">
+              Carregando registros...
+            </td>
+          </tr>
+        `;
+
+        const busca =
+          document.getElementById('busca').value;
+
+        const status =
+          document.getElementById('filtroStatus').value;
+
+        const natureza =
+          document.getElementById('filtroNatureza').value;
+
+        const gravidade =
+          document.getElementById('filtroGravidade').value;
+
+        const params = new URLSearchParams();
+
+        if(busca) params.append('busca', busca);
+        if(status) params.append('status', status);
+        if(natureza) params.append('natureza', natureza);
+        if(gravidade) params.append('gravidade', gravidade);
+
+        const res = await fetch(
+          `/api/livro-ocorrencias?${params.toString()}`,
+          {
+            credentials:'include'
+          }
+        );
+
+        const registros = await res.json();
+
+        if(!Array.isArray(registros) || !registros.length){
+
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" class="empty">
+                Nenhum registro encontrado.
+              </td>
+            </tr>
+          `;
+
+          return;
+        }
+
+        tbody.innerHTML = registros.map(r => {
+
+          return `
+            <tr>
+
+              <td>
+                <strong>
+                  ${r.numeroLivro || '-'}
+                </strong>
+              </td>
+
+              <td>
+                ${r.numeroProcesso || '-'}
+              </td>
+
+              <td>
+                ${r.aluno?.nome || '-'}
+              </td>
+
+              <td>
+                ${r.aluno?.turma || '-'}
+              </td>
+
+              <td>
+                ${r.natureza || '-'}
+              </td>
+
+              <td>
+                <span class="badge ${r.gravidade}">
+                  ${r.gravidade || '-'}
+                </span>
+              </td>
+
+              <td>
+                <span class="badge status">
+                  ${r.status || '-'}
+                </span>
+              </td>
+
+              <td>
+                ${
+                  r.updatedAt
+                    ? new Date(r.updatedAt)
+                        .toLocaleString('pt-BR')
+                    : '-'
+                }
+              </td>
+
+              <td>
+
+                <button
+                  class="btn"
+                  onclick="abrirRegistro('${r._id}')"
+                >
+                  Visualizar
+                </button>
+
+              </td>
+
+            </tr>
+          `;
+
+        }).join('');
+
+      }catch(err){
+
+        console.error(err);
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="empty">
+              Erro ao carregar registros.
+            </td>
+          </tr>
+        `;
+
+      }
+
+    }
+
+    async function abrirRegistro(id){
+
+      try{
+
+        const res = await fetch(
+          `/api/livro-ocorrencias/${id}`,
+          {
+            credentials:'include'
+          }
+        );
+
+        const r = await res.json();
+
+        if(!r || r.message){
+
+          alert(
+            r?.message ||
+            'Registro não encontrado.'
+          );
+
+          return;
+        }
+
+        if(modalAtual){
+          modalAtual.remove();
+        }
+
+        const overlay =
+          document.createElement('div');
+
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.background = 'rgba(0,0,0,.72)';
+        overlay.style.backdropFilter = 'blur(6px)';
+        overlay.style.zIndex = '999999';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.padding = '20px';
+
+        const modal =
+          document.createElement('div');
+
+        modal.style.width = '100%';
+        modal.style.maxWidth = '1250px';
+        modal.style.maxHeight = '92vh';
+        modal.style.overflow = 'auto';
+        modal.style.background = '#08131de8';
+        modal.style.border =
+          '1px solid rgba(51,209,255,.18)';
+        modal.style.borderRadius = '26px';
+        modal.style.padding = '26px';
+        modal.style.boxShadow =
+          '0 0 40px rgba(0,255,255,.15)';
+
+        modal.innerHTML = `
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            gap:18px;
+            flex-wrap:wrap;
+            margin-bottom:26px;
+          ">
+
+            <div>
+
+              <h2 style="
+                font-family:Orbitron;
+                color:var(--cyan);
+                margin-bottom:8px;
+              ">
+                ${r.numeroLivro || '-'}
+              </h2>
+
+              <div style="color:var(--muted)">
+                Processo:
+                <strong>
+                  ${r.numeroProcesso || '-'}
+                </strong>
+              </div>
+
+            </div>
+
+            <button
+              class="btn"
+              onclick="fecharModalLivro()"
+            >
+              Fechar
+            </button>
+
+          </div>
+
+          <div style="
+            display:grid;
+            grid-template-columns:
+              repeat(auto-fit,minmax(280px,1fr));
+            gap:18px;
+            margin-bottom:24px;
+          ">
+
+            <div class="painel">
+
+              <h3 style="
+                color:var(--cyan);
+                margin-bottom:14px;
+              ">
+                Aluno
+              </h3>
+
+              <div>
+                <strong>Nome:</strong>
+                ${r.aluno?.nome || '-'}
+              </div>
+
+              <div>
+                <strong>Turma:</strong>
+                ${r.aluno?.turma || '-'}
+              </div>
+
+              <div>
+                <strong>Matrícula:</strong>
+                ${r.aluno?.matricula || '-'}
+              </div>
+
+            </div>
+
+            <div class="painel">
+
+              <h3 style="
+                color:var(--cyan);
+                margin-bottom:14px;
+              ">
+                Processo
+              </h3>
+
+              <div>
+                <strong>Status:</strong>
+                ${r.status || '-'}
+              </div>
+
+              <div>
+                <strong>Natureza:</strong>
+                ${r.natureza || '-'}
+              </div>
+
+              <div>
+                <strong>Gravidade:</strong>
+                ${r.gravidade || '-'}
+              </div>
+
+            </div>
+
+            <div class="painel">
+
+              <h3 style="
+                color:var(--cyan);
+                margin-bottom:14px;
+              ">
+                Responsável
+              </h3>
+
+              <div>
+                <strong>Nome:</strong>
+                ${r.responsavel?.nome || '-'}
+              </div>
+
+              <div>
+                <strong>Telefone:</strong>
+                ${r.responsavel?.telefone || '-'}
+              </div>
+
+              <div>
+                <strong>E-mail:</strong>
+                ${r.responsavel?.email || '-'}
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="painel">
+
+  <h3 style="
+    color:var(--cyan);
+    margin-bottom:14px;
+  ">
+    Homologação Institucional
+  </h3>
+
+  ${
+    r.homologacao?.homologado
+
+    ? `
+
+      <div style="
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+
+        padding:10px 16px;
+
+        border-radius:999px;
+
+        background:
+          rgba(30,230,165,.14);
+
+        color:var(--green);
+
+        font-weight:700;
+
+        margin-bottom:18px;
+      ">
+        REGISTRO HOMOLOGADO
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <strong>Homologado por:</strong>
+        ${r.homologacao?.homologadoPorNome || '-'}
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <strong>Data:</strong>
+        ${
+          r.homologacao?.homologadoEm
+            ? new Date(r.homologacao.homologadoEm)
+                .toLocaleString('pt-BR')
+            : '-'
+        }
+      </div>
+
+      <div>
+        <strong>Observação:</strong><br>
+        ${
+          r.homologacao?.observacao ||
+          'Sem observações.'
+        }
+      </div>
+
+    `
+
+    : `
+
+      <div style="
+        color:var(--muted);
+        margin-bottom:18px;
+      ">
+        Este registro ainda não foi homologado institucionalmente.
+      </div>
+
+      <button
+        class="btn"
+        onclick="homologarRegistro('${r._id}')"
+      >
+        Homologar Registro
+      </button>
+
+    `
+  }
+
+</div>
+
+          <div class="painel">
+
+            <h3 style="
+             color:var(--cyan);
+             margin-bottom:14px;"> Auditoria </h3>
+
+  <div style="margin-bottom:8px;">
+    <strong>Criado por:</strong>
+    ${r.criadoPorNome || 'Sistema'}
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <strong>Última atualização:</strong><br>
+    ${
+      r.updatedAt
+        ? new Date(r.updatedAt)
+            .toLocaleString('pt-BR')
+        : '-'
+    }
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <strong>Movimentações:</strong>
+    ${
+      Array.isArray(r.movimentacoes)
+        ? r.movimentacoes.length
+        : 0
+    }
+  </div>
+
+  <div>
+    <strong>Documentos:</strong>
+    ${
+      Array.isArray(r.documentos)
+        ? r.documentos.length
+        : 0
+    }
+  </div>
+
+</div>
+
+          <div class="painel">
+
+            <h3 style="
+              color:var(--cyan);
+              margin-bottom:14px;
+            ">
+              Descrição do Fato
+            </h3>
+
+            <div style="
+              line-height:1.7;
+              white-space:pre-wrap;
+            ">
+              ${r.fato?.descricao || '-'}
+            </div>
+
+          </div>
+
+          <div class="painel">
+
+            <h3 style="
+              color:var(--cyan);
+              margin-bottom:16px;
+            ">
+              Timeline Processual
+            </h3>
+
+            <div class="timeline">
+
+              ${
+                Array.isArray(r.movimentacoes) &&
+                r.movimentacoes.length
+
+                ? r.movimentacoes
+                    .slice()
+                    .reverse()
+                    .map(m => `
+
+                      <div class="timeline-item">
+
+                        <div style="
+                          display:flex;
+                          justify-content:space-between;
+                          gap:14px;
+                          flex-wrap:wrap;
+                          margin-bottom:8px;
+                        ">
+
+                          <strong style="
+                            color:var(--cyan);
+                          ">
+                            ${m.titulo || '-'}
+                          </strong>
+
+                          <span style="
+                            color:var(--muted);
+                          ">
+                            ${
+                              m.registradoEm
+                                ? new Date(m.registradoEm)
+                                    .toLocaleString('pt-BR')
+                                : '-'
+                            }
+                          </span>
+
+                        </div>
+
+                        <div style="
+                          line-height:1.7;
+                          margin-bottom:8px;
+                        ">
+                          ${m.descricao || '-'}
+                        </div>
+
+                        <div style="
+                          color:var(--muted);
+                          font-size:13px;
+                        ">
+                          ${m.registradoPorNome || 'Sistema'}
+                        </div>
+
+                      </div>
+
+                    `).join('')
+
+                : `
+                  <div style="
+                    color:var(--muted);
+                  ">
+                    Nenhuma movimentação registrada.
+                  </div>
+                `
+              }
+
+            </div>
+
+          </div>
+
+          <div class="painel">
+
+            <h3 style="
+              color:var(--cyan);
+              margin-bottom:16px;
+            ">
+              Documentos Vinculados
+            </h3>
+
+            ${
+              Array.isArray(r.documentos) &&
+              r.documentos.length
+
+              ? r.documentos
+                  .slice()
+                  .reverse()
+                  .map(d => `
+
+                    <div class="doc-card">
+
+                      <div>
+
+                        <div style="
+                          font-weight:700;
+                          margin-bottom:4px;
+                        ">
+                          ${
+                            d.titulo ||
+                            d.tipo ||
+                            'Documento'
+                          }
+                        </div>
+
+                        <div style="
+                          color:var(--muted);
+                          font-size:13px;
+                        ">
+                          ${d.tipo || '-'}
+                        </div>
+
+                      </div>
+
+                      <div style="
+                        display:flex;
+                        gap:10px;
+                        flex-wrap:wrap;
+                      ">
+
+                        ${
+                          d.caminhoLocal
+
+                          ? `
+                            <button
+                              class="btn"
+                              onclick="baixarDocumentoLivro(
+                                '${r.processo}',
+                                '${encodeURIComponent(d.caminhoLocal)}',
+                                '${encodeURIComponent(d.titulo || d.tipo || 'documento')}.docx'
+                              )"
+                            >
+                              Abrir
+                            </button>
+                          `
+
+                          : ''
+                        }
+
+                      </div>
+
+                    </div>
+
+                  `).join('')
+
+              : `
+                <div style="
+                  color:var(--muted);
+                ">
+                  Nenhum documento vinculado.
+                </div>
+              `
+            }
+
+          </div>
+
+          <div class="painel">
+
+  <h3 style="
+    color:var(--cyan);
+    margin-bottom:14px;
+  ">
+    Validação Institucional
+  </h3>
+
+  <div style="
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:16px;
+    margin-bottom:16px;
+  ">
+
+    <div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:6px;">
+        Número do Livro
+      </div>
+
+      <div style="font-size:20px;font-weight:800;">
+        ${r.numeroLivro || '-'}
+      </div>
+    </div>
+
+    <div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:6px;">
+        Procedimento Vinculado
+      </div>
+
+      <div style="font-size:20px;font-weight:800;">
+        ${r.numeroProcesso || '-'}
+      </div>
+    </div>
+
+  </div>
+
+  <div style="color:var(--muted);font-size:13px;margin-bottom:8px;">
+    Hash documental do dossiê
+  </div>
+
+  <div class="hash-box" style="margin-bottom:16px;">
+    ${r.hashDossieAtual || 'Não disponível'}
+  </div>
+
+  ${
+    r.hashDossieAtual
+      ? `
+        <button
+          class="btn"
+          onclick="window.open('/verificar-livro-digital.html?hash=${r.hashDossieAtual}', '_blank')"
+        >
+          Validar autenticidade
+        </button>
+      `
+      : `
+        <div style="color:var(--muted);">
+          Nenhum dossiê final com hash foi localizado para validação pública.
+        </div>
+      `
+  }
+
+</div>
+
+        `;
+
+        overlay.appendChild(modal);
+
+        document.body.appendChild(overlay);
+
+        modalAtual = overlay;
+
+      }catch(err){
+
+        console.error(err);
+
+        alert(
+          'Erro ao abrir registro.'
+        );
+
+      }
+
+    }
+
+    async function baixarDocumentoLivro(
+      processoId,
+      caminhoEncoded,
+      nomeEncoded
+    ){
+
+      try{
+
+        const caminho =
+          decodeURIComponent(caminhoEncoded);
+
+        const nome =
+          decodeURIComponent(
+            nomeEncoded || 'documento.docx'
+          );
+
+        const params = new URLSearchParams({
+          caminho,
+          nome
+        });
+
+        const res = await fetch(
+          `/api/processos-disciplinares/${processoId}/baixar-documento?${params.toString()}`,
+          {
+            credentials:'include',
+            cache:'no-store'
+          }
+        );
+
+        if(!res.ok){
+          throw new Error(
+            'Erro ao abrir documento.'
+          );
+        }
+
+        const blob = await res.blob();
+
+        const url =
+          URL.createObjectURL(blob);
+
+        window.open(url, '_blank');
+
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 30000);
+
+      }catch(err){
+
+        console.error(err);
+
+        alert(
+          'Não foi possível abrir o documento.'
+        );
+
+      }
+
+    }
+async function homologarRegistro(id){
+
+  try{
+
+    const observacao =
+      prompt(
+        'Observação da homologação (opcional):'
+      ) || '';
+
+    const res = await fetch(
+      `/api/livro-ocorrencias/${id}/homologar`,
+      {
+        method:'POST',
+
+        credentials:'include',
+
+        headers:{
+          'Content-Type':'application/json'
+        },
+
+        body:JSON.stringify({
+          observacao
+        })
+      }
+    );
+
+    const data =
+      await res.json();
+
+    if(!data.ok){
+
+      alert(
+        data.message ||
+        'Erro ao homologar.'
+      );
+
+      return;
+    }
+
+    alert(
+      'Registro homologado com sucesso.'
+    );
+
+    fecharModalLivro();
+
+    carregarRegistros();
+    carregarEstatisticas();
+
+  }catch(err){
+
+    console.error(err);
+
+    alert(
+      'Erro ao homologar registro.'
+    );
+
+  }
+
+}
+
+    function fecharModalLivro(){
+
+      if(modalAtual){
+
+        modalAtual.remove();
+        modalAtual = null;
+
+      }
+
+    }
+
+function exportarLivro(){
+
+  const status =
+    document.getElementById('filtroStatus').value;
+
+  const natureza =
+    document.getElementById('filtroNatureza').value;
+
+  const gravidade =
+    document.getElementById('filtroGravidade').value;
+
+  const params = new URLSearchParams();
+
+  if(status) params.append('status', status);
+  if(natureza) params.append('natureza', natureza);
+  if(gravidade) params.append('gravidade', gravidade);
+
+  window.open(
+  `/api/livro-ocorrencias/exportar-pdf?${params.toString()}`,
+  '_blank'
+);
+
+}
+
+    carregarEstatisticas();
+    carregarRegistros();
+
+  </script>
+
+</body>
+</html>

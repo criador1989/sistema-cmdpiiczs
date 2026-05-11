@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+<meta charset="UTF-8" />
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
+
+<title>
+Validação Documental • Axoriin
+</title>
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+
+:root{
+  --bg:#071018;
+  --card:#0f1722d9;
+
+  --cyan:#33d1ff;
+  --green:#1ee6a5;
+  --red:#ff5d73;
+
+  --text:#d9f3ff;
+  --muted:#8fb6c7;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+
+  font-family:'Rajdhani',sans-serif;
+
+  background:
+    linear-gradient(
+      rgba(4,10,18,.92),
+      rgba(4,10,18,.96)
+    ),
+    url('/img/bg-painel.jpg')
+    center/cover fixed;
+
+  min-height:100vh;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  padding:20px;
+
+  color:var(--text);
+
+}
+
+.card{
+
+  width:100%;
+  max-width:820px;
+
+  background:var(--card);
+
+  border:
+    1px solid rgba(51,209,255,.14);
+
+  border-radius:28px;
+
+  padding:34px;
+
+  backdrop-filter:blur(16px);
+
+  box-shadow:
+    0 0 40px rgba(0,255,255,.08);
+
+}
+
+.topo{
+  margin-bottom:26px;
+}
+
+.topo h1{
+
+  font-family:'Orbitron',sans-serif;
+
+  color:var(--cyan);
+
+  font-size:32px;
+
+  margin-bottom:8px;
+}
+
+.topo p{
+  color:var(--muted);
+}
+
+.busca{
+  display:flex;
+  gap:12px;
+  margin-bottom:24px;
+  flex-wrap:wrap;
+}
+
+.busca input{
+
+  flex:1;
+
+  min-width:240px;
+
+  border:none;
+  outline:none;
+
+  border-radius:16px;
+
+  background:#08131dcc;
+
+  color:white;
+
+  padding:16px;
+
+  font-size:15px;
+
+  border:
+    1px solid rgba(255,255,255,.06);
+
+}
+
+.btn{
+
+  border:none;
+  cursor:pointer;
+
+  border-radius:14px;
+
+  padding:14px 20px;
+
+  font-weight:700;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0ea5e9,
+      #22d3ee
+    );
+
+  color:#001018;
+
+}
+
+.resultado{
+
+  border-radius:22px;
+
+  padding:24px;
+
+  background:
+    rgba(255,255,255,.03);
+
+  border:
+    1px solid rgba(255,255,255,.05);
+
+}
+
+.valido{
+  border-color:
+    rgba(30,230,165,.3);
+}
+
+.invalido{
+  border-color:
+    rgba(255,93,115,.3);
+}
+
+.status{
+
+  display:inline-flex;
+
+  align-items:center;
+  justify-content:center;
+
+  padding:8px 14px;
+
+  border-radius:999px;
+
+  font-size:14px;
+  font-weight:700;
+
+  margin-bottom:18px;
+
+}
+
+.status-ok{
+  background:
+    rgba(30,230,165,.14);
+
+  color:var(--green);
+}
+
+.status-bad{
+  background:
+    rgba(255,93,115,.14);
+
+  color:var(--red);
+}
+
+.grid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(auto-fit,minmax(220px,1fr));
+
+  gap:18px;
+
+}
+
+.box{
+
+  background:
+    rgba(255,255,255,.03);
+
+  border:
+    1px solid rgba(255,255,255,.05);
+
+  border-radius:16px;
+
+  padding:16px;
+
+}
+
+.label{
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:6px;
+}
+
+.valor{
+  font-size:18px;
+  font-weight:700;
+}
+
+.hash{
+
+  margin-top:18px;
+
+  background:#061018;
+
+  border-radius:16px;
+
+  padding:16px;
+
+  overflow:auto;
+
+  font-family:monospace;
+
+  font-size:13px;
+
+  color:#8be7ff;
+}
+
+@media(max-width:780px){
+
+  .topo h1{
+    font-size:24px;
+  }
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="topo">
+
+    <h1>
+      Validação Documental
+    </h1>
+
+    <p>
+      Verificação pública de autenticidade documental institucional
+    </p>
+
+  </div>
+
+  <div class="busca">
+
+    <input
+      type="text"
+      id="campoHash"
+      placeholder="Cole o hash documental..."
+    />
+
+    <button
+      class="btn"
+      onclick="validarDocumento()"
+    >
+      Validar
+    </button>
+
+  </div>
+
+  <div id="resultado"></div>
+
+</div>
+
+<script>
+
+async function validarDocumento(){
+
+  const hash =
+    document.getElementById(
+      'campoHash'
+    ).value.trim();
+
+  if(!hash){
+
+    alert(
+      'Informe o hash documental.'
+    );
+
+    return;
+  }
+
+  const resultado =
+    document.getElementById(
+      'resultado'
+    );
+
+  resultado.innerHTML = `
+    <div class="resultado">
+      Validando documento...
+    </div>
+  `;
+
+  try{
+
+    const res = await fetch(
+      `/api/livro-ocorrencias/validar-hash?hash=${encodeURIComponent(hash)}`
+    );
+
+    const data = await res.json();
+
+    if(!data.ok || !data.valido){
+
+      resultado.innerHTML = `
+
+        <div class="resultado invalido">
+
+          <div class="
+            status
+            status-bad
+          ">
+            DOCUMENTO NÃO VALIDADO
+          </div>
+
+          <div>
+            ${
+              data.message ||
+              'Documento não localizado.'
+            }
+          </div>
+
+        </div>
+
+      `;
+
+      return;
+    }
+
+    const r = data.registro;
+
+    resultado.innerHTML = `
+
+      <div class="resultado valido">
+
+        <div class="
+          status
+          status-ok
+        ">
+          DOCUMENTO AUTÊNTICO
+        </div>
+
+        <div class="grid">
+
+          <div class="box">
+            <div class="label">
+              Livro Digital
+            </div>
+
+            <div class="valor">
+              ${r.numeroLivro || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Processo
+            </div>
+
+            <div class="valor">
+              ${r.numeroProcesso || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Aluno
+            </div>
+
+            <div class="valor">
+              ${r.aluno || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Turma
+            </div>
+
+            <div class="valor">
+              ${r.turma || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Natureza
+            </div>
+
+            <div class="valor">
+              ${r.natureza || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Gravidade
+            </div>
+
+            <div class="valor">
+              ${r.gravidade || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Status
+            </div>
+
+            <div class="valor">
+              ${r.status || '-'}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              Atualização
+            </div>
+
+            <div class="valor">
+              ${
+                r.atualizadoEm
+                  ? new Date(r.atualizadoEm)
+                      .toLocaleString('pt-BR')
+                  : '-'
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <div class="hash">
+          ${r.hash}
+        </div>
+
+      </div>
+
+    `;
+
+  }catch(err){
+
+    console.error(err);
+
+    resultado.innerHTML = `
+
+      <div class="resultado invalido">
+
+        <div class="
+          status
+          status-bad
+        ">
+          ERRO
+        </div>
+
+        <div>
+          Falha ao validar documento.
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+(function(){
+
+  const url =
+    new URL(window.location.href);
+
+  const hash =
+    url.searchParams.get('hash');
+
+  if(hash){
+
+    document.getElementById(
+      'campoHash'
+    ).value = hash;
+
+    validarDocumento();
+  }
+
+})();
+
+</script>
+
+</body>
+</html>

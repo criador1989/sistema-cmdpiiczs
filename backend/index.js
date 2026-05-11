@@ -122,7 +122,10 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'CampanhaRifa',
   'RifaNumero',
   'BaileContrato',
-  'BaileMesa'
+  'BaileMesa',
+  'ProcessoDisciplinar',
+  'LivroOcorrencia',
+  'LivroOcorrenciaExportacao'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -235,6 +238,8 @@ const chamadasRoutes = require('./routes/api/chamadas');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
+const processosDisciplinaresRoutes = require('./routes/api/processosDisciplinares');
+const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -379,7 +384,8 @@ function buildProfessorGuard(publicRoot) {
     '/monitor-ficha.html',
     '/ranking-alunos.html',
     '/master-instituicoes.html',
-    '/rifas.html'
+    '/rifas.html',
+    '/livro-ocorrencias.html'
   ]);
 
   const blockedPrefixes = [
@@ -629,6 +635,17 @@ mountIf('/api/baile-contratos', baileContratosRoutes, autenticar);
 mountIf('/api/baile-mesas', baileMesasRoutes, autenticar);
 
 /* =========================
+   🚀 PROCESSOS DISCIPLINARES (NOVO MÓDULO)
+   ========================= */
+
+mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes, autenticar);
+
+/* =========================
+   🚀 LIVRO DE OCORRENCIAS (NOVO MÓDULO)
+   ========================= */
+mountIf('/api/livro-ocorrencias', livroOcorrenciasRoutes, autenticar);
+
+/* =========================
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
    ========================= */
 mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
@@ -778,6 +795,7 @@ app.get('/lista-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(
 app.get('/ranking-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
 app.get('/monitores.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
 app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
+app.get('/livro-ocorrencias.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'livro-ocorrencias.html')));
 
 /* =========================
    DIAGNÓSTICOS / ERRORS
