@@ -9,6 +9,9 @@ const Aluno = require('../../models/Aluno');
 const Counter = require('../../models/Counter'); // pode ficar aqui, mesmo sem uso direto
 
 const calcularNotaTSMD = require('../../utils/calculoNota');
+const {
+  recalcularHistoricoComportamentoAluno
+} = require('../../utils/recalculoHistoricoComportamento');
 
 let enviarWhatsapp = null;
 try {
@@ -1420,12 +1423,16 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     await nova.save();
 
-    const enrichedBefore = await enriquecerClassificacao(nova.toObject(), inst);
+    const recalculoHistorico = await recalcularHistoricoComportamentoAluno({
+  alunoId: nova.aluno,
+  instituicao: inst
+});
 
-    await recomputarCamposNotaDaNotificacao(nova, inst);
-    await recomputarSnapshotsPosterioresDoAluno(nova.aluno, inst);
+const alunoAtualizado = recalculoHistorico.aluno;
 
-    const alunoAtualizado = await recomputarResumoAlunoAteAgora(nova.aluno, inst);
+const itemRecalculado = (recalculoHistorico.historico || []).find(
+  (h) => String(h._id) === String(nova._id)
+);
 
     await verificarEnvioNP(alunoAtualizado, inst);
 
@@ -1444,8 +1451,8 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
     valor,
     quantidadeDias: dias,
     numeroSequencial: nova.numeroSequencial,
-    notaAnterior: enrichedBefore.notaAnterior,
-    notaAtual: enrichedBefore.notaAtual,
+    notaAnterior: itemRecalculado?.notaAnterior ?? null,
+notaAtual: itemRecalculado?.notaAtual ?? null,
     artigo: dadosRegulamento.artigo,
     paragrafo: dadosRegulamento.paragrafo,
     inciso: dadosRegulamento.inciso,
@@ -1493,8 +1500,12 @@ router.delete('/:id', autenticar, requireTenant, attachActor, async (req, res) =
       ...buildInstMatch(inst)
     });
 
-    await recomputarSnapshotsPosterioresDoAluno(alunoId, inst);
-    const alunoAtualizado = await recomputarResumoAlunoAteAgora(alunoId, inst);
+    const recalculoHistorico = await recalcularHistoricoComportamentoAluno({
+  alunoId,
+  instituicao: inst
+});
+
+const alunoAtualizado = recalculoHistorico.aluno;
 
     await verificarEnvioNP(alunoAtualizado, inst);
 
@@ -1639,6 +1650,7 @@ router.put('/:id',
       if (!notif) {
         return res.status(404).json({ message: 'Notificação não encontrada.' });
       }
+      const alunoAnteriorId = notif.aluno;
 
       // 🔥 Atualiza campos permitidos
       const campos = [
@@ -1672,10 +1684,30 @@ router.put('/:id',
 
       await notif.save();
 
-      return res.json({
-        message: 'Notificação atualizada com sucesso.',
-        notificacao: notif
-      });
+await recalcularHistoricoComportamentoAluno({
+  alunoId: notif.aluno,
+  instituicao: inst
+});
+
+if (
+  alunoAnteriorId &&
+  String(alunoAnteriorId) !== String(notif.aluno)
+) {
+  await recalcularHistoricoComportamentoAluno({
+    alunoId: alunoAnteriorId,
+    instituicao: inst
+  });
+}
+
+const notificacaoAtualizada = await Notificacao.findOne({
+  _id: id,
+  ...buildTenantMatch(inst)
+}).lean();
+
+return res.json({
+  message: 'Notificação atualizada com sucesso.',
+  notificacao: notificacaoAtualizada
+});
 
     } catch (err) {
       console.error('[NOTIFICACOES][UPDATE]', err);

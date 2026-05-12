@@ -1162,6 +1162,10 @@
           const classificacao = n.classificacaoRegulamento || '—';
           const valorCorrigido = calcValorExibicao(n);
           const valor = fmtValor(valorCorrigido);
+          const notaAnterior = typeof n.notaAnterior === 'number' ? n.notaAnterior.toFixed(2) : '—';
+          const notaAtual = typeof n.notaAtual === 'number' ? n.notaAtual.toFixed(2) : '—';
+          const classAnterior = n.classificacaoAnterior || '—';
+          const classAtual = n.classificacaoAtual || '—';
           const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + escapeHtml(n.observacoes) + '</div>' : '';
           const idN = n._id || '';
           const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
@@ -1182,10 +1186,12 @@
               '</div>' +
               '<div style="margin-top:6px"><b>Motivo:</b> ' + escapeHtml(motivo) + '</div>' +
               '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">' +
-                '<div><b>Valor</b>: ' + escapeHtml(valor) + '</div>' +
-                '<div><b>Classificação</b>: ' + escapeHtml(classificacao) + '</div>' +
-                '<div><b>Artigo</b>: ' + escapeHtml(artigo) + '</div>' +
-                '<div><b>Inciso</b>: ' + escapeHtml(inciso) + '</div>' +
+                '<div><b>Valor aplicado</b>: ' + escapeHtml(valor) + '</div>' +
+              '<div><b>Nota</b>: ' + escapeHtml(notaAnterior + ' → ' + notaAtual) + '</div>' +
+              '<div><b>Classificação</b>: ' + escapeHtml(classAnterior + ' → ' + classAtual) + '</div>' +
+              '<div><b>Regulamento</b>: ' + escapeHtml(classificacao) + '</div>' +
+              '<div><b>Artigo</b>: ' + escapeHtml(artigo) + '</div>' +
+              '<div><b>Inciso</b>: ' + escapeHtml(inciso) + '</div>' +
               '</div>' +
               obsN +
               notifActions +

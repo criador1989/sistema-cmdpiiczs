@@ -861,6 +861,7 @@
         <a href="painel.html">🏠 Painel</a>
         <a href="lista-alunos.html">👥 Alunos</a>
         <a class="active" href="notificacoes.html">🔔 Notificações</a>
+        <a href="processos-disciplinares.html">⚖️ Procedimentos</a>
         <a href="estatisticas.html">📉 Relatórios</a>
         <a href="mensagens.html">✉️ Mensagens</a>
         <a href="usuarios.html">⚙️ Administração</a>
@@ -1084,6 +1085,7 @@
       let paginaAntigas = 1;
 
       let datasetAtual = [];
+      let notificacaoProcedimentoAtual = null;
 
       function atualizarAbas() {
         [tabPrincipal, tabPendentes, tabArquivadas, tabAntigas].forEach(btn => {
@@ -1330,7 +1332,10 @@ body.innerHTML = `
     <button class="delete-btn" onclick="excluirNotificacao('${det._id}')">Excluir</button>
     ${det.status === 'revisao_solicitada' ? `<button class="reenviar-btn" onclick="reenviarNotificacao('${det._id}')">Reenviar</button>` : ''}
     ${showCom ? `<button class="comunicacao-btn" onclick="abrirComunicacao('${det._id}')">Comunicação aos Pais</button>` : ''}
-  </div>
+    <button class="comunicacao-btn" style="background:#7c3aed" onclick="abrirProcessoDisciplinar('${det._id}')">
+      ⚖️ Abrir Procedimento
+    </button>
+    </div>
 
   ${devolucaoActions}
 `;
@@ -1780,6 +1785,229 @@ body.innerHTML = `
       window.abrirComunicacao = abrirComunicacao;
       window.marcarEntregue = marcarEntregue;
       window.marcarDevolvida = marcarDevolvida;
+      async function abrirProcessoDisciplinar(notificacaoId) {
+  try {
+    const det = await fetchJson(`/api/notificacoes/${notificacaoId}`);
+
+    if (!det?.aluno?._id) {
+      showError('Aluno não encontrado na notificação.');
+      return;
+    }
+
+    if (det.processoInstaurado && det.processoDisciplinar) {
+      showToast('Esta notificação já possui procedimento disciplinar.');
+      return;
+    }
+
+    abrirModalProcedimento(det);
+return;
+
+    const payload = {
+      notificacaoId: det._id,
+      aluno: det.aluno._id,
+      natureza:
+        det.classificacaoOcorrencia === 'ato_infracional'
+          ? 'ato_infracional'
+          : 'indisciplina',
+
+      classificacaoOcorrencia:
+        det.classificacaoOcorrencia || 'indisciplina_leve',
+
+      gravidade:
+        det.classificacaoOcorrencia === 'ato_infracional'
+          ? 'grave'
+          : 'media',
+
+      dataFato: det.data || new Date(),
+
+      descricaoFato:
+        det.motivo ||
+        det.observacao ||
+        'Ocorrência registrada via notificação.',
+
+      providenciasImediatas:
+        det.observacao || '',
+
+      possuiViolencia: !!det.possuiViolencia,
+      possuiLesao: !!det.possuiLesao,
+      possuiDanoPatrimonial: !!det.possuiDanoPatrimonial,
+      possuiSubstanciaIlicita: !!det.possuiSubstanciaIlicita,
+      possuiArmaOuObjetoPerigoso:
+        !!det.possuiArmaOuObjetoPerigoso,
+
+      exigeEncaminhamentoExterno:
+        !!det.exigeEncaminhamentoExterno,
+
+      orgaoEncaminhamento:
+        det.orgaoEncaminhamento || null
+    };
+
+    const processo = await fetchJson(
+      '/api/processos-disciplinares',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    showToast(
+  `Procedimento ${processo.numeroProcesso} criado com sucesso.`
+);
+
+const destino = new URL('/processos-disciplinares.html', window.location.origin);
+if (tenant) destino.searchParams.set('t', tenant);
+destino.searchParams.set('processo', processo._id);
+
+window.location.href = destino.toString();
+
+  } catch (e) {
+    console.error(e);
+    showError(
+      e.message || 'Erro ao abrir procedimento disciplinar.'
+    );
+  }
+}
+
+function abrirModalProcedimento(det) {
+  notificacaoProcedimentoAtual = det;
+
+  document.getElementById('procAlunoInfo').textContent =
+    `${det.aluno?.nome || 'Aluno'} • ${det.aluno?.turma || 'Turma não informada'}`;
+
+  document.getElementById('procLocalFato').value = '';
+  document.getElementById('procHoraFato').value = '';
+  document.getElementById('procNatureza').value =
+    det.classificacaoOcorrencia === 'ato_infracional' ? 'ato_infracional' : 'indisciplina';
+  document.getElementById('procGravidade').value =
+    det.classificacaoOcorrencia === 'ato_infracional' ? 'grave' : 'media';
+  document.getElementById('procComplemento').value = '';
+
+  document.getElementById('procViolencia').checked = !!det.possuiViolencia;
+  document.getElementById('procLesao').checked = !!det.possuiLesao;
+  document.getElementById('procDano').checked = !!det.possuiDanoPatrimonial;
+  document.getElementById('procSubstancia').checked = !!det.possuiSubstanciaIlicita;
+  document.getElementById('procObjeto').checked = !!det.possuiArmaOuObjetoPerigoso;
+  document.getElementById('procEncaminhamento').checked = !!det.exigeEncaminhamentoExterno;
+
+  document.getElementById('procOrgao').style.display =
+    det.exigeEncaminhamentoExterno ? 'block' : 'none';
+
+  document.getElementById('procOrgao').value = det.orgaoEncaminhamento || '';
+
+  document.getElementById('procedimentoModal').classList.add('is-open');
+  document.getElementById('procedimentoModal').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharModalProcedimento() {
+  document.getElementById('procedimentoModal').classList.remove('is-open');
+  document.getElementById('procedimentoModal').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  notificacaoProcedimentoAtual = null;
+}
+
+async function confirmarAberturaProcedimento() {
+  try {
+    const det = notificacaoProcedimentoAtual;
+    if (!det) return;
+
+    if (!det?.aluno?._id) {
+      showError('Aluno não encontrado na notificação.');
+      return;
+    }
+
+    const localFato = document.getElementById('procLocalFato').value.trim();
+    const horaFato = document.getElementById('procHoraFato').value.trim();
+    const natureza = document.getElementById('procNatureza').value;
+    const gravidade = document.getElementById('procGravidade').value;
+    const complemento = document.getElementById('procComplemento').value.trim();
+
+    const possuiViolencia = document.getElementById('procViolencia').checked;
+    const possuiLesao = document.getElementById('procLesao').checked;
+    const possuiDanoPatrimonial = document.getElementById('procDano').checked;
+    const possuiSubstanciaIlicita = document.getElementById('procSubstancia').checked;
+    const possuiArmaOuObjetoPerigoso = document.getElementById('procObjeto').checked;
+    const exigeEncaminhamentoExterno = document.getElementById('procEncaminhamento').checked;
+    const orgaoEncaminhamento = document.getElementById('procOrgao').value || null;
+
+    if (!localFato) {
+      showError('Informe o local do fato.');
+      return;
+    }
+
+    if (exigeEncaminhamentoExterno && !orgaoEncaminhamento) {
+      showError('Selecione o órgão de encaminhamento externo.');
+      return;
+    }
+
+    const classificacaoOcorrencia =
+      natureza === 'ato_infracional'
+        ? 'ato_infracional'
+        : gravidade === 'grave' || gravidade === 'gravissima'
+          ? 'indisciplina_grave'
+          : gravidade === 'media'
+            ? 'indisciplina_media'
+            : 'indisciplina_leve';
+
+    const payload = {
+      notificacaoId: det._id,
+      aluno: det.aluno._id,
+      natureza,
+      classificacaoOcorrencia,
+      gravidade,
+      dataFato: det.data || new Date(),
+      horaFato,
+      localFato,
+      descricaoFato:
+        det.motivo ||
+        det.observacao ||
+        'Ocorrência registrada via notificação.',
+      providenciasImediatas:
+        complemento || det.observacao || '',
+      possuiViolencia,
+      possuiLesao,
+      possuiDanoPatrimonial,
+      possuiSubstanciaIlicita,
+      possuiArmaOuObjetoPerigoso,
+      exigeEncaminhamentoExterno,
+      orgaoEncaminhamento
+    };
+
+    const processo = await fetchJson('/api/processos-disciplinares', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    fecharModalProcedimento();
+
+    showToast(`Procedimento ${processo.numeroProcesso} criado com sucesso.`);
+
+    const destino = new URL('/processos-disciplinares.html', window.location.origin);
+    if (tenant) destino.searchParams.set('t', tenant);
+    destino.searchParams.set('processo', processo._id);
+
+    window.location.href = destino.toString();
+
+  } catch (e) {
+    console.error(e);
+    showError(e.message || 'Erro ao abrir procedimento disciplinar.');
+  }
+}
+
+document.getElementById('procEncaminhamento')?.addEventListener('change', () => {
+  const checked = document.getElementById('procEncaminhamento').checked;
+  document.getElementById('procOrgao').style.display = checked ? 'block' : 'none';
+});
+
+window.abrirModalProcedimento = abrirModalProcedimento;
+window.fecharModalProcedimento = fecharModalProcedimento;
+window.confirmarAberturaProcedimento = confirmarAberturaProcedimento;
+
+window.abrirProcessoDisciplinar = abrirProcessoDisciplinar;
 
       carregarModoAtual();
     });
@@ -1812,6 +2040,56 @@ document.getElementById('reviewModal')?.addEventListener('click', (e) => {
   <!-- =========================
      MODAL PREMIUM - MOTIVO DA REVISÃO
 ========================= -->
+<div id="procedimentoModal" class="review-modal" aria-hidden="true">
+  <div class="review-modal-card">
+    <div class="review-modal-head">
+      <div class="review-modal-title">⚖️ Abrir procedimento disciplinar</div>
+      <button type="button" class="review-modal-close" onclick="fecharModalProcedimento()">✕</button>
+    </div>
+
+    <div class="review-modal-body">
+      <div class="review-modal-note" id="procAlunoInfo">—</div>
+
+      <input id="procLocalFato" placeholder="Local do fato: sala, pátio, corredor, quadra..." />
+      <input id="procHoraFato" placeholder="Horário aproximado. Ex.: 09:30" />
+
+      <select id="procNatureza">
+        <option value="indisciplina">Indisciplina escolar</option>
+        <option value="ato_infracional">Possível ato infracional</option>
+      </select>
+
+      <select id="procGravidade">
+        <option value="leve">Leve</option>
+        <option value="media" selected>Média</option>
+        <option value="grave">Grave</option>
+        <option value="gravissima">Gravíssima</option>
+      </select>
+
+      <textarea id="procComplemento" placeholder="Complemento técnico da coordenação, se necessário"></textarea>
+
+      <label><input type="checkbox" id="procViolencia"> Houve violência</label>
+      <label><input type="checkbox" id="procLesao"> Houve lesão</label>
+      <label><input type="checkbox" id="procDano"> Houve dano patrimonial</label>
+      <label><input type="checkbox" id="procSubstancia"> Envolveu substância ilícita</label>
+      <label><input type="checkbox" id="procObjeto"> Envolveu arma ou objeto perigoso</label>
+
+      <label><input type="checkbox" id="procEncaminhamento"> Exige encaminhamento externo</label>
+
+      <select id="procOrgao" style="display:none">
+        <option value="">Selecione o órgão</option>
+        <option value="conselho_tutelar">Conselho Tutelar</option>
+        <option value="delegacia">Delegacia</option>
+        <option value="ministerio_publico">Ministério Público</option>
+        <option value="judiciario">Judiciário</option>
+      </select>
+
+      <button class="btn-review primary" onclick="confirmarAberturaProcedimento()">
+        Instaurar procedimento
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="reviewModal" class="review-modal" aria-hidden="true">
   <div class="review-modal-card">
     <div class="review-modal-head">

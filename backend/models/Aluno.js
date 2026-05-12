@@ -118,7 +118,7 @@ const fotoMetaSchema = new Schema({
 const alunoSchema = new Schema({
   nome:           { type: String, required: true, trim: true },
   turma:          { type: String, required: true, trim: true },
-  comportamento:  { type: Number, default: 8.00, min: 0, max: 10 },
+  comportamento:  { type: Number, default: 8.00, min: -10, max: 10 },  
   dataEntrada:    { type: Date, required: true },
   nascimento:     { type: Date },
 
@@ -192,6 +192,8 @@ const alunoSchema = new Schema({
 
   // 🔐 multi-tenant (ObjectId da Instituicao) - campo atual/legado
   instituicao: { type: Schema.Types.ObjectId, ref: 'Instituicao', required: true, index: true },
+  
+  usuarioId: { type: Schema.Types.ObjectId, ref: 'Usuario', default: null, index: true },
 
   // 🔐 novo padrão SaaS (mantido sincronizado com instituicao)
   tenantId: { type: Schema.Types.ObjectId, ref: 'Instituicao', default: null, index: true },

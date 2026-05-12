@@ -121,9 +121,13 @@ function getSafeConfig(config) {
 
 function clampNota(n, limiteMaximo = 10) {
   const max = Number.isFinite(Number(limiteMaximo)) ? Number(limiteMaximo) : 10;
-  if (n > max) return +Number(max).toFixed(2);
-  if (n < 0) return 0;
-  return +Number(n).toFixed(2);
+  const valor = Number(n);
+
+  if (!Number.isFinite(valor)) return 0;
+  if (valor > max) return +Number(max).toFixed(2);
+
+  // Permite nota negativa
+  return +Number(valor).toFixed(2);
 }
 
 /**

@@ -59,7 +59,7 @@ const PROJ_ALUNO =
   'nome turma dataEntrada nascimento nomePai nomeMae telefone endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta fotoCaminho instituicao updatedAt createdAt codigoAcesso comportamento contatos';
 
 const PROJ_NOTIF =
-  '_id data tipo tipoMedida natureza motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt ativo arquivada status';
+  '_id data tipo tipoMedida natureza motivo valorNumerico artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt ativo arquivada status notaAnterior notaAtual classificacaoAnterior classificacaoAtual numeroSequencial';
 
 const PROJ_OBS =
   '_id texto autor criadoEm createdAt anexos attachments files';

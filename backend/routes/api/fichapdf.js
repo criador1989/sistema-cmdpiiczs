@@ -79,16 +79,33 @@ router.get('/ficha/:codigoOuId', autenticar, attachActor, async (req, res) => {
     }
 
     const notificacoes = await Notificacao.find({
-      aluno: aluno._id,
-      instituicao
-    }).sort({ data: -1, createdAt: -1 });
+  aluno: aluno._id,
+  instituicao,
+  ativo: { $ne: false },
+  arquivada: { $ne: true }
+})
+  .sort({ data: 1, createdAt: 1, _id: 1 })
+  .lean();
 
     const observacoes = await Observacao.find({
       aluno: aluno._id,
       instituicao: String(instituicao)
     }).sort({ criadoEm: -1, createdAt: -1 });
 
-    const notaAtual = calcularNotaTSMD(aluno.dataEntrada, new Date(), notificacoes);
+    const eventosCalculo = (notificacoes || []).map((n) => ({
+  data: n.data || null,
+  createdAt: n.createdAt || null,
+  valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
+  quantidadeDias: n.quantidadeDias ?? 1,
+  tipoMedida: n.tipoMedida || n.tipo || '',
+  natureza: n.natureza || ''
+}));
+
+const notaAtual = calcularNotaTSMD(
+  aluno.dataEntrada ? new Date(aluno.dataEntrada) : null,
+  new Date(),
+  eventosCalculo
+);
 
     await safeAudit({
       req: buildForcedReq(req),
@@ -106,77 +123,269 @@ router.get('/ficha/:codigoOuId', autenticar, attachActor, async (req, res) => {
     });
 
     const doc = new PDFDocument({
-      margin: 50,
-      size: 'A4'
-    });
+  margin: 45,
+  size: 'A4',
+  bufferPages: true
+});
 
-    const nomeArquivo = `ficha_aluno_${aluno._id}.pdf`;
-    const pastaUploads = path.join(__dirname, '../../public/uploads');
-    fs.mkdirSync(pastaUploads, { recursive: true });
+const nomeArquivo = `ficha_aluno_${aluno._id}.pdf`;
 
-    const caminho = path.join(pastaUploads, nomeArquivo);
-    const stream = fs.createWriteStream(caminho);
-    doc.pipe(stream);
+const pastaUploads = path.join(__dirname, '../../public/uploads');
+fs.mkdirSync(pastaUploads, { recursive: true });
 
-    const logoPath = path.join(__dirname, '../../public/uploads/logo-cmdp.jpg');
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, { width: 100, align: 'center' });
-    }
+const caminho = path.join(pastaUploads, nomeArquivo);
 
-    doc.moveDown();
-    doc
-      .fontSize(20)
-      .fillColor('#d82327')
-      .text('Ficha Comportamental do Aluno', { align: 'center' });
+const stream = fs.createWriteStream(caminho);
 
-    doc.moveDown();
-    doc.fontSize(12).fillColor('black');
-    doc.text(`Nome: ${aluno.nome || '—'}`);
-    doc.text(`Turma: ${aluno.turma || '—'}`);
-    doc.text(`Data de Entrada: ${aluno.dataEntrada?.toLocaleDateString('pt-BR') || '—'}`);
-    doc.text(`Comportamento Atual: ${Number(notaAtual || 0).toFixed(2)}`);
-    doc.text(`Código de Acesso: ${aluno.codigoAcesso || '—'}`);
+doc.pipe(stream);
 
-    doc.moveDown();
-    doc
-      .fontSize(14)
-      .fillColor('#d82327')
-      .text('Observações', { underline: true });
+/* =========================================================
+   LOGO
+========================================================= */
 
-    if (!observacoes.length) {
-      doc.fontSize(12).fillColor('black').text('Nenhuma observação registrada.');
-    } else {
-      observacoes.forEach((obs) => {
-        const dataObs = obs.criadoEm || obs.createdAt;
-        doc
-          .fontSize(12)
-          .fillColor('black')
-          .text(`• ${dataObs ? new Date(dataObs).toLocaleDateString('pt-BR') : '—'} - ${obs.autor || '—'}: ${obs.texto || ''}`);
+const logoPath = path.join(
+  __dirname,
+  '../../public/uploads/logo-cmdp.png'
+);
+
+if (fs.existsSync(logoPath)) {
+  doc.image(logoPath, 50, 35, {
+    width: 82
+  });
+}
+
+/* =========================================================
+   CABEÇALHO
+========================================================= */
+
+doc
+  .fontSize(20)
+  .fillColor('#0b1f3a')
+  .font('Helvetica-Bold')
+  .text('COLÉGIO MILITAR DOM PEDRO II', 145, 42);
+
+doc
+  .fontSize(11)
+  .fillColor('#444')
+  .font('Helvetica')
+  .text('Ficha Comportamental Individual do Aluno', 145, 68);
+
+doc
+  .moveTo(45, 115)
+  .lineTo(550, 115)
+  .strokeColor('#d82327')
+  .lineWidth(2)
+  .stroke();
+
+doc.moveDown(4);
+
+/* =========================================================
+   DADOS DO ALUNO
+========================================================= */
+
+doc
+  .fontSize(15)
+  .fillColor('#d82327')
+  .font('Helvetica-Bold')
+  .text('1. IDENTIFICAÇÃO DO ALUNO');
+
+doc.moveDown(0.8);
+
+const notaFormatada = Number(notaAtual || 0).toFixed(2);
+
+doc
+  .fontSize(11)
+  .fillColor('black')
+  .font('Helvetica');
+
+doc.text(`Nome Completo: ${aluno.nome || '—'}`);
+doc.text(`Turma: ${aluno.turma || '—'}`);
+doc.text(`Código de Acesso: ${aluno.codigoAcesso || '—'}`);
+doc.text(`Data de Entrada: ${
+  aluno.dataEntrada
+    ? new Date(aluno.dataEntrada).toLocaleDateString('pt-BR')
+    : '—'
+}`);
+
+doc.text(`Data de Nascimento: ${
+  aluno.nascimento
+    ? new Date(aluno.nascimento).toLocaleDateString('pt-BR')
+    : '—'
+}`);
+
+doc.text(`Responsável (Pai): ${aluno.nomePai || '—'}`);
+doc.text(`Responsável (Mãe): ${aluno.nomeMae || '—'}`);
+doc.text(`Telefone: ${aluno.telefone || '—'}`);
+doc.text(`Endereço: ${aluno.endereco || '—'}`);
+
+doc.moveDown(1.2);
+
+/* =========================================================
+   COMPORTAMENTO
+========================================================= */
+
+doc
+  .fontSize(15)
+  .fillColor('#d82327')
+  .font('Helvetica-Bold')
+  .text('2. SITUAÇÃO COMPORTAMENTAL');
+
+doc.moveDown(0.8);
+
+let classificacao = 'Regular';
+
+if (notaAtual >= 9.01) classificacao = 'Excepcional';
+else if (notaAtual >= 8.01) classificacao = 'Ótimo';
+else if (notaAtual >= 7.0) classificacao = 'Bom';
+else if (notaAtual < 5.0) classificacao = 'Incompatível';
+
+doc
+  .fontSize(12)
+  .fillColor('black')
+  .font('Helvetica-Bold')
+  .text(`Nota Atual de Comportamento: ${notaFormatada}`);
+
+doc
+  .fontSize(11)
+  .font('Helvetica')
+  .text(`Classificação: ${classificacao}`);
+
+doc.moveDown(1.2);
+
+/* =========================================================
+   OBSERVAÇÕES
+========================================================= */
+
+doc
+  .fontSize(15)
+  .fillColor('#d82327')
+  .font('Helvetica-Bold')
+  .text('3. OBSERVAÇÕES REGISTRADAS');
+
+doc.moveDown(0.8);
+
+if (!observacoes.length) {
+  doc.fontSize(11).fillColor('black').font('Helvetica')
+    .text('Nenhuma observação registrada.');
+} else {
+  observacoes.forEach((obs, index) => {
+    const dataObs = obs.criadoEm || obs.createdAt;
+
+    doc.moveDown(0.5);
+
+    doc.fontSize(10).fillColor('#0b1f3a').font('Helvetica-Bold')
+      .text(`${index + 1}. ${dataObs ? new Date(dataObs).toLocaleDateString('pt-BR') : '—'} - ${obs.autor || 'Não informado'}`);
+
+    doc.fontSize(10).fillColor('black').font('Helvetica')
+      .text(obs.texto || '—', {
+        width: 500,
+        align: 'justify'
       });
-    }
 
-    doc.moveDown();
-    doc
-      .fontSize(14)
-      .fillColor('#d82327')
-      .text('Notificações Disciplinares', { underline: true });
+    doc.moveDown(0.6);
+    doc.moveTo(45, doc.y)
+      .lineTo(550, doc.y)
+      .strokeColor('#ddd')
+      .lineWidth(0.5)
+      .stroke();
+  });
+}
+/* =========================================================
+   NOTIFICAÇÕES
+========================================================= */
 
-    if (!notificacoes.length) {
-      doc.fontSize(12).fillColor('black').text('Nenhuma notificação registrada.');
-    } else {
-      notificacoes.forEach((n) => {
-        const dataNotif = n.data || n.createdAt;
-        doc
-          .fontSize(12)
-          .fillColor('black')
-          .text(`• ${dataNotif ? new Date(dataNotif).toLocaleDateString('pt-BR') : '—'} - ${n.tipoMedida || '—'}: ${n.motivo || '—'}`);
-        doc.text(`  Tipo: ${n.tipo || '—'} | Valor: ${n.valorNumerico ?? '—'} | Dias: ${n.quantidadeDias ?? '—'}`);
-        doc.text(`  Nota: ${n.notaAnterior?.toFixed?.(2) || '—'} → ${n.notaAtual?.toFixed?.(2) || '—'}`);
-        doc.text(`  Observação: ${n.observacao || n.observacoes || '—'}`).moveDown(0.5);
+doc.moveDown(0.8);
+
+doc
+  .fontSize(15)
+  .fillColor('#d82327')
+  .font('Helvetica-Bold')
+  .text('4. NOTIFICAÇÕES DISCIPLINARES');
+
+doc.moveDown(0.8);
+
+if (!notificacoes.length) {
+  doc.fontSize(11).fillColor('black').font('Helvetica')
+    .text('Nenhuma notificação disciplinar registrada.');
+} else {
+  notificacoes.forEach((n, index) => {
+    const dataNotif = n.data || n.createdAt;
+
+    doc.moveDown(0.6);
+
+    doc.fontSize(10).fillColor('#7a0000').font('Helvetica-Bold')
+      .text(`${index + 1}. ${dataNotif ? new Date(dataNotif).toLocaleDateString('pt-BR') : '—'} - ${n.tipoMedida || '—'}`);
+
+    doc.fontSize(10).fillColor('black').font('Helvetica')
+      .text(`Motivo: ${n.motivo || '—'}`, {
+        width: 500,
+        align: 'justify'
       });
-    }
 
-    doc.end();
+    const valorAplicado = typeof n.valorNumerico === 'number'
+  ? n.valorNumerico.toFixed(2)
+  : '—';
+
+const notaAntes = typeof n.notaAnterior === 'number'
+  ? n.notaAnterior.toFixed(2)
+  : '—';
+
+const notaDepois = typeof n.notaAtual === 'number'
+  ? n.notaAtual.toFixed(2)
+  : '—';
+
+doc.text(`Tipo: ${n.tipo || '—'} | Valor aplicado: ${valorAplicado} | Dias: ${n.quantidadeDias ?? '—'}`);
+doc.text(`Nota antes: ${notaAntes} → Nota após: ${notaDepois}`);
+doc.text(`Classificação: ${n.classificacaoAnterior || '—'} → ${n.classificacaoAtual || '—'}`);
+doc.text(`Artigo: ${n.artigo || '—'} | Inciso: ${n.inciso || '—'}`);
+doc.text(`Classificação no regulamento: ${n.classificacaoRegulamento || '—'}`);
+
+    doc.moveDown(0.6);
+    doc.moveTo(45, doc.y)
+      .lineTo(550, doc.y)
+      .strokeColor('#ddd')
+      .lineWidth(0.5)
+      .stroke();
+  });
+}
+
+/* =========================================================
+   RODAPÉ
+========================================================= */
+
+const paginas = doc.bufferedPageRange();
+
+for (let i = 0; i < paginas.count; i++) {
+
+  doc.switchToPage(i);
+
+  doc
+    .fontSize(8)
+    .fillColor('#666')
+    .text(
+      `Documento gerado automaticamente pelo Sistema Axoriin em ${new Date().toLocaleString('pt-BR')}`,
+      45,
+      770,
+      {
+        align: 'center',
+        width: 500
+      }
+    );
+
+  doc
+    .fontSize(8)
+    .text(
+      `Página ${i + 1} de ${paginas.count}`,
+      45,
+      785,
+      {
+        align: 'center',
+        width: 500
+      }
+    );
+}
+
+doc.end();
 
     stream.on('finish', () => {
       res.download(caminho, nomeArquivo, (err) => {
