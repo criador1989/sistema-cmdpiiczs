@@ -11,6 +11,16 @@ const Observacao = require('../../models/Observacao');
 const { autenticar } = require('../../middleware/autenticacao');
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const { logAction, attachActor } = require('../../utils/audit');
+const crypto = require('crypto');
+const QRCode = require('qrcode');
+
+const {
+  PDFDocument: PDFLibDocument,
+  StandardFonts,
+  rgb
+} = require('pdf-lib');
+
+const DocumentoVerificavel = require('../../models/DocumentoVerificavel');
 
 function getInstituicao(req) {
   return (
@@ -42,6 +52,293 @@ function buildForcedReq(req) {
     }
   };
 }
+
+function getBaseUrl(req) {
+  return `${req.protocol}://${req.get('host')}`;
+}
+
+function gerarHashFichaAluno({ aluno, instituicao, totalNotificacoes, notaAtual }) {
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify({
+      tipo: 'ficha_comportamental_aluno',
+      alunoId: String(aluno._id),
+      alunoNome: aluno.nome || '',
+      turma: aluno.turma || '',
+      instituicao: String(instituicao),
+      totalNotificacoes,
+      notaAtual,
+      geradoEm: new Date().toISOString()
+    }))
+    .digest('hex');
+}
+
+async function registrarDocumentoFichaAluno({
+  req,
+  aluno,
+  instituicao,
+  caminho,
+  hash,
+  notaAtual,
+  totalNotificacoes
+}) {
+  const urlValidacao =
+    `${getBaseUrl(req)}/verificar-documento.html?hash=${hash}`;
+
+  await DocumentoVerificavel.findOneAndUpdate(
+    { hash },
+    {
+      $set: {
+        tipo: 'ficha_comportamental_aluno',
+        titulo: 'Ficha Comportamental Individual do Aluno',
+        hash,
+        aluno: aluno._id,
+        alunoNome: aluno.nome || '',
+        alunoTurma: aluno.turma || '',
+        caminhoLocal: caminho,
+        urlValidacao,
+        instituicao,
+        tenantId: instituicao,
+        geradoPor: req.actor?.nome || req.usuario?.nome || 'Sistema',
+        metadados: {
+  notaAtual,
+  totalNotificacoes,
+  assinadoPor: req.actor?.nome || req.usuario?.nome || 'Sistema',
+  cargo: req.usuario?.cargo || req.usuario?.funcao || req.usuario?.tipo || 'Usuário institucional',
+  assinadoEm: new Date()
+}
+      }
+    },
+    {
+      upsert: true,
+      new: true
+    }
+  );
+
+  return urlValidacao;
+}
+
+async function inserirQrAutenticidadeFichaNoPdf({
+  pdfPath,
+  hash,
+  urlValidacao,
+  assinadoPor = 'Sistema',
+  cargo = 'Usuário institucional'
+}) {
+  if (!pdfPath || !fs.existsSync(pdfPath)) return;
+
+  const qrPath = pdfPath.replace(/\.pdf$/i, '_qrcode.png');
+
+  await QRCode.toFile(qrPath, urlValidacao, {
+    width: 300,
+    margin: 2
+  });
+
+  const pdfBytes = fs.readFileSync(pdfPath);
+  const pdfDoc = await PDFLibDocument.load(pdfBytes);
+
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const qrBytes = fs.readFileSync(qrPath);
+  const qrImage = await pdfDoc.embedPng(qrBytes);
+
+  const pages = pdfDoc.getPages();
+  const totalPaginas = pages.length;
+
+  pages.forEach((page, index) => {
+  const pageWidth = page.getWidth();
+  const pageHeight = page.getHeight();
+
+  if (index === 0) {
+    const qrSize = 82;
+
+    page.drawImage(qrImage, {
+      x: pageWidth - 118,
+      y: pageHeight - 128,
+      width: qrSize,
+      height: qrSize
+    });
+
+    page.drawText(
+      'Validar documento',
+      {
+        x: pageWidth - 119,
+        y: pageHeight - 142,
+        size: 8,
+        font: fontBold,
+        color: rgb(0.05, 0.05, 0.05)
+      }
+    );
+  }
+
+  page.drawText(
+    `Página ${index + 1} de ${totalPaginas}`,
+    {
+      x: pageWidth / 2 - 45,
+      y: 22,
+      size: 8,
+      font,
+      color: rgb(0.35, 0.35, 0.35)
+    }
+  );
+
+  page.drawText(
+    'Axoriin • Documento institucional verificável',
+    {
+      x: 40,
+      y: 22,
+      size: 7,
+      font,
+      color: rgb(0.45, 0.45, 0.45)
+    }
+  );
+});
+
+  const ultimaPagina = pages[pages.length - 1];
+
+  ultimaPagina.drawRectangle({
+    x: 40,
+    y: 48,
+    width: ultimaPagina.getWidth() - 80,
+    height: 72,
+    color: rgb(0.94, 0.97, 1)
+  });
+
+ultimaPagina.drawRectangle({
+  x: 40,
+  y: 126,
+  width: ultimaPagina.getWidth() - 80,
+  height: 42,
+  color: rgb(0.06, 0.12, 0.22)
+});
+
+ultimaPagina.drawText(
+  'DOCUMENTO OFICIAL INSTITUCIONAL',
+  {
+    x: 55,
+    y: 142,
+    size: 14,
+    font: fontBold,
+    color: rgb(1, 1, 1)
+  }
+);
+
+  ultimaPagina.drawText('DOCUMENTO VERIFICÁVEL DIGITALMENTE', {
+    x: 52,
+    y: 102,
+    size: 9,
+    font: fontBold,
+    color: rgb(0.05, 0.12, 0.20)
+  });
+
+  ultimaPagina.drawText(
+  `Hash SHA-256 documental: ${hash}`,
+  {
+    x: 52,
+    y: 84,
+    size: 6,
+    font,
+    color: rgb(0.20, 0.25, 0.32)
+  }
+);
+
+ultimaPagina.drawText(
+  `Emitido em: ${new Date().toLocaleString('pt-BR')}`,
+  {
+    x: 52,
+    y: 72,
+    size: 7,
+    font,
+    color: rgb(0.20, 0.25, 0.32)
+  }
+);
+ultimaPagina.drawText(
+  `Assinado eletronicamente por: ${assinadoPor}`,
+  {
+    x: 52,
+    y: 58,
+    size: 7,
+    font: fontBold,
+    color: rgb(0.05, 0.12, 0.20)
+  }
+);
+
+ultimaPagina.drawText(
+  `Cargo/Função: ${cargo}`,
+  {
+    x: 52,
+    y: 48,
+    size: 7,
+    font,
+    color: rgb(0.20, 0.25, 0.32)
+  }
+);
+
+  ultimaPagina.drawText('Este documento possui autenticidade digital verificável via QR Code institucional e hash criptográfica SHA-256.', {
+    x: 52,
+    y: 68,
+    size: 7,
+    font,
+    color: rgb(0.20, 0.25, 0.32)
+  });
+
+  const finalBytes = await pdfDoc.save();
+  fs.writeFileSync(pdfPath, finalBytes);
+}
+
+router.get('/ficha/verificar-documento/:hash', async (req, res) => {
+  try {
+    const { hash } = req.params;
+
+    if (!hash || String(hash).length < 20) {
+      return res.status(400).json({
+        ok: false,
+        autenticidade: false,
+        message: 'Hash inválido.'
+      });
+    }
+
+    const documento = await DocumentoVerificavel.findOne({
+      hash,
+      tipo: 'ficha_comportamental_aluno'
+    }).lean();
+
+    if (!documento) {
+      return res.status(404).json({
+        ok: false,
+        autenticidade: false,
+        message: 'Documento não encontrado.'
+      });
+    }
+
+    return res.json({
+      ok: true,
+      autenticidade: true,
+      documento: {
+        titulo: documento.titulo,
+        tipo: documento.tipo,
+        hash: documento.hash,
+        geradoEm: documento.createdAt,
+        geradoPor: documento.geradoPor,
+        metadados: documento.metadados || {}
+      },
+      aluno: {
+        nome: documento.alunoNome || '',
+        turma: documento.alunoTurma || ''
+      }
+    });
+
+  } catch (err) {
+    console.error('[FICHA_PDF][VERIFICAR_DOCUMENTO]', err);
+
+    return res.status(500).json({
+      ok: false,
+      autenticidade: false,
+      message: 'Erro ao verificar documento.'
+    });
+  }
+});
 
 // Gera PDF da ficha do aluno com base em ID ou código de acesso
 router.get('/ficha/:codigoOuId', autenticar, attachActor, async (req, res) => {
@@ -123,7 +420,12 @@ const notaAtual = calcularNotaTSMD(
     });
 
     const doc = new PDFDocument({
-  margin: 45,
+  margins: {
+    top: 45,
+    left: 45,
+    right: 45,
+    bottom: 110
+  },
   size: 'A4',
   bufferPages: true
 });
@@ -274,13 +576,25 @@ if (!observacoes.length) {
     doc.moveDown(0.5);
 
     doc.fontSize(10).fillColor('#0b1f3a').font('Helvetica-Bold')
-      .text(`${index + 1}. ${dataObs ? new Date(dataObs).toLocaleDateString('pt-BR') : '—'} - ${obs.autor || 'Não informado'}`);
+  .text(
+    `${index + 1}. ${dataObs ? new Date(dataObs).toLocaleDateString('pt-BR') : '—'} - ${obs.autor || 'Não informado'}`,
+    45,
+    doc.y,
+    {
+      width: 500
+    }
+  );
 
-    doc.fontSize(10).fillColor('black').font('Helvetica')
-      .text(obs.texto || '—', {
-        width: 500,
-        align: 'justify'
-      });
+doc.fontSize(10).fillColor('black').font('Helvetica')
+  .text(
+    obs.texto || '—',
+    45,
+    doc.y,
+    {
+      width: 500,
+      align: 'justify'
+    }
+  );
 
     doc.moveDown(0.6);
     doc.moveTo(45, doc.y)
@@ -314,13 +628,25 @@ if (!notificacoes.length) {
     doc.moveDown(0.6);
 
     doc.fontSize(10).fillColor('#7a0000').font('Helvetica-Bold')
-      .text(`${index + 1}. ${dataNotif ? new Date(dataNotif).toLocaleDateString('pt-BR') : '—'} - ${n.tipoMedida || '—'}`);
+  .text(
+    `${index + 1}. ${dataNotif ? new Date(dataNotif).toLocaleDateString('pt-BR') : '—'} - ${n.tipoMedida || '—'}`,
+    45,
+    doc.y,
+    {
+      width: 500
+    }
+  );
 
-    doc.fontSize(10).fillColor('black').font('Helvetica')
-      .text(`Motivo: ${n.motivo || '—'}`, {
-        width: 500,
-        align: 'justify'
-      });
+doc.fontSize(10).fillColor('black').font('Helvetica')
+  .text(
+    `Motivo: ${n.motivo || '—'}`,
+    45,
+    doc.y,
+    {
+      width: 500,
+      align: 'justify'
+    }
+  );
 
     const valorAplicado = typeof n.valorNumerico === 'number'
   ? n.valorNumerico.toFixed(2)
@@ -335,8 +661,8 @@ const notaDepois = typeof n.notaAtual === 'number'
   : '—';
 
 doc.text(`Tipo: ${n.tipo || '—'} | Valor aplicado: ${valorAplicado} | Dias: ${n.quantidadeDias ?? '—'}`);
-doc.text(`Nota antes: ${notaAntes} → Nota após: ${notaDepois}`);
-doc.text(`Classificação: ${n.classificacaoAnterior || '—'} → ${n.classificacaoAtual || '—'}`);
+doc.text(`Nota antes: ${notaAntes} | Nota após: ${notaDepois}`);
+doc.text(`Classificação: ${n.classificacaoAnterior || '—'} | ${n.classificacaoAtual || '—'}`);
 doc.text(`Artigo: ${n.artigo || '—'} | Inciso: ${n.inciso || '—'}`);
 doc.text(`Classificação no regulamento: ${n.classificacaoRegulamento || '—'}`);
 
@@ -349,65 +675,58 @@ doc.text(`Classificação no regulamento: ${n.classificacaoRegulamento || '—'}
   });
 }
 
-/* =========================================================
-   RODAPÉ
-========================================================= */
-
-const paginas = doc.bufferedPageRange();
-
-for (let i = 0; i < paginas.count; i++) {
-
-  doc.switchToPage(i);
-
-  doc
-    .fontSize(8)
-    .fillColor('#666')
-    .text(
-      `Documento gerado automaticamente pelo Sistema Axoriin em ${new Date().toLocaleString('pt-BR')}`,
-      45,
-      770,
-      {
-        align: 'center',
-        width: 500
-      }
-    );
-
-  doc
-    .fontSize(8)
-    .text(
-      `Página ${i + 1} de ${paginas.count}`,
-      45,
-      785,
-      {
-        align: 'center',
-        width: 500
-      }
-    );
-}
-
 doc.end();
 
-    stream.on('finish', () => {
-      res.download(caminho, nomeArquivo, (err) => {
-        try {
-          if (fs.existsSync(caminho)) fs.unlinkSync(caminho);
-        } catch {}
-
-        if (err && !res.headersSent) {
-          return res.status(500).send('Erro ao enviar PDF');
-        }
-      });
+stream.on('finish', async () => {
+  try {
+    const hashFicha = gerarHashFichaAluno({
+      aluno,
+      instituicao,
+      totalNotificacoes: notificacoes.length,
+      notaAtual
     });
 
-    stream.on('error', (err) => {
-      console.error('Erro ao gerar stream do PDF:', err);
-      if (!res.headersSent) {
-        return res.status(500).send('Erro ao gerar ficha do aluno');
-      }
+    const urlValidacao = await registrarDocumentoFichaAluno({
+      req,
+      aluno,
+      instituicao,
+      caminho,
+      hash: hashFicha,
+      notaAtual,
+      totalNotificacoes: notificacoes.length
     });
-  } catch (erro) {
-    console.error('Erro ao gerar ficha do aluno:', erro);
-    res.status(500).send('Erro ao gerar ficha do aluno');
+
+    await inserirQrAutenticidadeFichaNoPdf({
+  pdfPath: caminho,
+  hash: hashFicha,
+  urlValidacao,
+  assinadoPor: req.actor?.nome || req.usuario?.nome || 'Sistema',
+  cargo: req.usuario?.cargo || req.usuario?.funcao || req.usuario?.tipo || 'Usuário institucional'
+});
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${nomeArquivo}"`
+    );
+
+    return res.sendFile(caminho);
+
+  } catch (err) {
+    console.error('[FICHA_PDF][ASSINATURA_QR]', err);
+
+    return res.status(500).json({
+      erro: 'Erro ao inserir QR Code de autenticidade na ficha.'
+    });
+  }
+});
+
+  } catch (err) {
+    console.error('[FICHA_PDF]', err);
+
+    return res.status(500).json({
+      erro: 'Erro ao gerar PDF da ficha do aluno.'
+    });
   }
 });
 
