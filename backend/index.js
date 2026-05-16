@@ -123,6 +123,7 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'RifaNumero',
   'BaileContrato',
   'BaileMesa',
+  'BaileMovimentoFinanceiro',
   'ProcessoDisciplinar',
   'LivroOcorrencia',
   'LivroOcorrenciaExportacao'
@@ -238,6 +239,7 @@ const chamadasRoutes = require('./routes/api/chamadas');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
+const baileFinanceiroRoutes = require('./routes/api/baileFinanceiro');
 const processosDisciplinaresRoutes = require('./routes/api/processosDisciplinares');
 const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
 
@@ -633,6 +635,8 @@ mountIf('/api/rifas', rifasRoutes, autenticar);
 mountIf('/api/baile-contratos', baileContratosRoutes, autenticar);
 
 mountIf('/api/baile-mesas', baileMesasRoutes, autenticar);
+
+mountIf('/api/baile-financeiro', baileFinanceiroRoutes, autenticar);
 
 /* =========================
    🚀 PROCESSOS DISCIPLINARES (NOVO MÓDULO)

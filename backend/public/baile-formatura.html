@@ -831,14 +831,22 @@
       </div>
 
       <nav class="nav">
-        <a href="painel.html">🏠 Painel</a>
-        <a href="lista-alunos.html">👥 Alunos</a>
-        <a href="notificacoes.html">📄 Notificações</a>
-        <a href="rifas.html">🎟️ Rifas</a>
-        <a class="active" href="baile-formatura.html">💃 Baile de Formatura</a>
-        <a href="aph.html">🚑 APH</a>
-        <a href="logs.html">🛡️ Logs</a>
-      </nav>
+  <a href="painel.html">🏠 Painel</a>
+  <a href="lista-alunos.html">👥 Alunos</a>
+  <a href="notificacoes.html">📄 Notificações</a>
+  <a href="rifas.html">🎟️ Rifas</a>
+
+  <a class="active" href="baile-formatura.html">
+    💃 Baile de Formatura
+  </a>
+
+  <a href="#financeiroBaile" onclick="abrirFinanceiroBaile()">
+    💰 Financeiro do Baile
+  </a>
+
+  <a href="aph.html">🚑 APH</a>
+  <a href="logs.html">🛡️ Logs</a>
+</nav>
     </aside>
 
     <main class="main">
@@ -859,6 +867,154 @@
           <button class="btn-primary" onclick="abrirNovaAdesao()">+ Nova adesão</button>
         </div>
       </section>
+
+      <section
+  id="financeiroBaile"
+  class="panel"
+  style="display:none;"
+>
+  <div class="panel-header">
+    <div>
+      <h3>💰 Centro Financeiro do Baile</h3>
+
+      <p class="muted">
+        Controle completo de entradas, saídas,
+        saldo, prestação de contas e exportações CSV.
+      </p>
+    </div>
+
+    <div
+      style="
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+      "
+    >
+      <button
+        class="btn-ghost"
+        onclick="baixarCsvMovimentos()"
+      >
+        📁 CSV Movimentos
+      </button>
+
+      <button
+        class="btn-ghost"
+        onclick="baixarCsvPagamentosAlunos()"
+      >
+        📁 CSV Pagamentos
+      </button>
+
+      <button
+        class="btn-ghost"
+        onclick="baixarCsvPrestacaoContas()"
+      >
+        📊 Prestação de Contas
+      </button>
+
+      <button
+        class="btn-primary"
+        onclick="abrirNovoMovimentoFinanceiro()"
+      >
+        + Novo Movimento
+      </button>
+    </div>
+  </div>
+
+  <div class="grid-cards">
+    <div class="metric">
+      <small>Saldo Atual</small>
+      <strong id="fSaldoAtual">
+        R$ 0,00
+      </strong>
+
+      <div class="hint">
+        entradas - saídas
+      </div>
+    </div>
+
+    <div class="metric">
+      <small>Receita Recebida</small>
+      <strong id="fReceitaRecebida">
+        R$ 0,00
+      </strong>
+
+      <div class="hint">
+        alunos + entradas avulsas
+      </div>
+    </div>
+
+    <div class="metric">
+      <small>Saídas Pagas</small>
+      <strong id="fSaidasPagas">
+        R$ 0,00
+      </strong>
+
+      <div class="hint">
+        despesas quitadas
+      </div>
+    </div>
+
+    <div class="metric">
+      <small>Entradas Avulsas</small>
+      <strong id="fEntradasAvulsas">
+        0
+      </strong>
+
+      <div class="hint">
+        patrocínios/doações/etc
+      </div>
+    </div>
+
+    <div class="metric">
+      <small>Despesas</small>
+      <strong id="fQuantidadeSaidas">
+        0
+      </strong>
+
+      <div class="hint">
+        fornecedores/serviços
+      </div>
+    </div>
+
+    <div class="metric">
+      <small>Despesas Vencidas</small>
+      <strong id="fDespesasVencidas">
+        0
+      </strong>
+
+      <div class="hint">
+        pagamentos pendentes
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Categoria</th>
+          <th>Descrição</th>
+          <th>Pessoa / Fornecedor</th>
+          <th>Previsto</th>
+          <th>Pago</th>
+          <th>Pendente</th>
+          <th>Status</th>
+          <th>Vencimento</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+
+      <tbody id="financeiroTabelaBody">
+        <tr>
+          <td colspan="10" class="muted">
+            Nenhum movimento financeiro carregado.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
       <section class="grid-cards">
         <div class="metric">
@@ -2838,6 +2994,947 @@
       a.remove();
       URL.revokeObjectURL(url);
     }
+
+// ===============================
+// 💰 FINANCEIRO DO BAILE
+// ===============================
+
+let financeiroBaileVisivel = false;
+let movimentosFinanceiros = [];
+
+function abrirFinanceiroBaile() {
+  financeiroBaileVisivel = !financeiroBaileVisivel;
+
+  const secao = document.getElementById('financeiroBaile');
+
+  if (!secao) return;
+
+  secao.style.display =
+    financeiroBaileVisivel ? 'block' : 'none';
+
+  if (financeiroBaileVisivel) {
+    carregarFinanceiroBaile();
+  }
+}
+
+async function carregarFinanceiroBaile() {
+  try {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('axoriin_token');
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
+    const [dashRes, listaRes] = await Promise.all([
+      fetch('/api/baile-financeiro/dashboard', {
+        headers,
+      }),
+
+      fetch('/api/baile-financeiro', {
+        headers,
+      }),
+    ]);
+
+    const dash = await dashRes.json();
+    const lista = await listaRes.json();
+
+    if (!dash.ok || !lista.ok) {
+      throw new Error(
+        dash.message ||
+        lista.message ||
+        'Erro ao carregar financeiro.'
+      );
+    }
+
+    movimentosFinanceiros =
+      lista.movimentos || [];
+
+    renderizarDashboardFinanceiro(
+      dash.resumo || {}
+    );
+
+    renderizarTabelaFinanceira(
+      movimentosFinanceiros
+    );
+  } catch (err) {
+    console.error(err);
+
+    toast(
+      err.message ||
+      'Erro ao carregar financeiro.'
+    );
+  }
+}
+
+function renderizarDashboardFinanceiro(
+  resumo
+) {
+  setTexto(
+    'fSaldoAtual',
+    dinheiro(resumo.saldoAtual || 0)
+  );
+
+  setTexto(
+    'fReceitaRecebida',
+    dinheiro(
+      resumo.receitaTotalRecebida || 0
+    )
+  );
+
+  setTexto(
+    'fSaidasPagas',
+    dinheiro(
+      resumo.totalSaidasPago || 0
+    )
+  );
+
+  setTexto(
+    'fEntradasAvulsas',
+    resumo.quantidadeEntradasAvulsas || 0
+  );
+
+  setTexto(
+    'fQuantidadeSaidas',
+    resumo.quantidadeSaidas || 0
+  );
+
+  setTexto(
+    'fDespesasVencidas',
+    resumo.despesasVencidas || 0
+  );
+}
+
+function renderizarTabelaFinanceira(
+  lista = []
+) {
+  const body = document.getElementById(
+    'financeiroTabelaBody'
+  );
+
+  if (!body) return;
+
+  if (!lista.length) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="10" class="muted">
+          Nenhum movimento financeiro encontrado.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  body.innerHTML = lista
+    .map((item) => {
+      const badge =
+        item.tipo === 'entrada'
+          ? 'b-quitado'
+          : 'b-atrasado';
+
+      return `
+        <tr>
+          <td>
+            <span class="badge ${badge}">
+              ${
+                item.tipo === 'entrada'
+                  ? '📥 Entrada'
+                  : '📤 Saída'
+              }
+            </span>
+          </td>
+
+          <td>
+            ${item.categoria || '-'}
+          </td>
+
+          <td>
+            <strong>
+              ${item.descricao || '-'}
+            </strong>
+
+            ${
+              item.observacoes
+                ? `
+                  <div class="muted" style="margin-top:6px;">
+                    ${item.observacoes}
+                  </div>
+                `
+                : ''
+            }
+          </td>
+
+          <td>
+            ${
+              item.pessoaNome || '-'
+            }
+          </td>
+
+          <td class="money">
+            ${dinheiro(
+              item.valorPrevisto || 0
+            )}
+          </td>
+
+          <td class="money">
+            ${dinheiro(
+              item.valorPago || 0
+            )}
+          </td>
+
+          <td class="money">
+            ${dinheiro(
+              item.valorPendente || 0
+            )}
+          </td>
+
+          <td>
+            <span class="badge b-em_aberto">
+              ${item.status || '-'}
+            </span>
+          </td>
+
+          <td>
+            ${
+              item.dataVencimento
+                ? dataBR(
+                    item.dataVencimento
+                  )
+                : '-'
+            }
+          </td>
+
+          <td>
+<div class="row-actions">
+  <button
+    class="mini btn-ghost"
+    onclick="verMovimentoFinanceiro('${item._id}')"
+  >
+    👁️ Ver
+  </button>
+
+  <button
+    class="mini"
+    onclick="editarMovimentoFinanceiro('${item._id}')"
+  >
+    ✏️
+  </button>
+
+  <button
+    class="mini btn-danger"
+    onclick="removerMovimentoFinanceiro('${item._id}')"
+  >
+    🗑️
+  </button>
+</div>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+function baixarCsvMovimentos() {
+  window.open(
+    '/api/baile-financeiro/csv/movimentos',
+    '_blank'
+  );
+}
+
+function baixarCsvPagamentosAlunos() {
+  window.open(
+    '/api/baile-financeiro/csv/pagamentos-alunos',
+    '_blank'
+  );
+}
+
+function baixarCsvPrestacaoContas() {
+  window.open(
+    '/api/baile-financeiro/csv/prestacao-contas',
+    '_blank'
+  );
+}
+
+function abrirNovoMovimentoFinanceiro() {
+  abrirFormularioMovimentoFinanceiro();
+}
+
+function verMovimentoFinanceiro(id) {
+  const item = movimentosFinanceiros.find(
+    (m) => String(m._id) === String(id)
+  );
+
+  if (!item) {
+    toast('Movimento não encontrado.');
+    return;
+  }
+
+  abrirDrawer(
+    'Detalhes do movimento financeiro',
+    item.descricao || 'Registro financeiro do baile',
+    `
+      <div class="item-card">
+        <strong>Resumo</strong>
+        <span>Tipo: ${item.tipo === 'entrada' ? 'Entrada' : 'Saída / Despesa'}</span>
+        <span>Origem: ${escapeHtml(item.origem || '—')}</span>
+        <span>Categoria: ${escapeHtml(item.categoria || '—')}</span>
+        <span>Status: ${escapeHtml(item.status || '—')}</span>
+      </div>
+
+      <div class="item-card">
+        <strong>Descrição</strong>
+        <span>${escapeHtml(item.descricao || '—')}</span>
+      </div>
+
+      <div class="item-card">
+        <strong>Pessoa / fornecedor</strong>
+        <span>Nome: ${escapeHtml(item.pessoaNome || '—')}</span>
+        <span>Telefone: ${escapeHtml(item.pessoaTelefone || '—')}</span>
+      </div>
+
+      <div class="item-card">
+        <strong>Valores</strong>
+        <span>Previsto: ${dinheiro(item.valorPrevisto || 0)}</span>
+        <span>Pago/recebido: ${dinheiro(item.valorPago || 0)}</span>
+        <span>Pendente: ${dinheiro(item.valorPendente || 0)}</span>
+        <span>Forma de pagamento: ${escapeHtml(item.formaPagamento || '—')}</span>
+      </div>
+
+      <div class="item-card">
+        <strong>Datas</strong>
+        <span>Vencimento: ${item.dataVencimento ? dataBR(item.dataVencimento) : '—'}</span>
+        <span>Pagamento/recebimento: ${item.dataPagamento ? dataBR(item.dataPagamento) : '—'}</span>
+      </div>
+
+      <div class="item-card">
+        <strong>Documentos</strong>
+
+        ${
+          item.comprovanteUrl
+            ? `<a class="btn" href="${escapeHtml(item.comprovanteUrl)}" target="_blank" rel="noopener">📎 Abrir comprovante</a>`
+            : '<span class="muted">Nenhum comprovante anexado.</span>'
+        }
+
+        ${
+          item.contratoUrl
+            ? `<a class="btn" href="${escapeHtml(item.contratoUrl)}" target="_blank" rel="noopener">📄 Abrir contrato/documento</a>`
+            : '<span class="muted">Nenhum contrato/documento anexado.</span>'
+        }
+      </div>
+
+      <div class="item-card">
+        <strong>Observações</strong>
+        <span>${escapeHtml(item.observacoes || 'Sem observações.')}</span>
+      </div>
+
+      <div class="actions" style="justify-content:flex-start;">
+        <button class="btn-primary" onclick="editarMovimentoFinanceiro('${item._id}')">
+          Editar movimento
+        </button>
+      </div>
+    `
+  );
+}
+
+function editarMovimentoFinanceiro(id) {
+  const item = movimentosFinanceiros.find(
+    (m) => String(m._id) === String(id)
+  );
+
+  if (!item) {
+    toast('Movimento não encontrado.');
+    return;
+  }
+
+  abrirFormularioMovimentoFinanceiro(item);
+}
+
+function abrirFormularioMovimentoFinanceiro(item = null) {
+  const editando = !!item;
+
+  abrirDrawer(
+    editando
+      ? 'Editar movimento financeiro'
+      : 'Novo movimento financeiro',
+
+    'Cadastre entradas avulsas, patrocínios, despesas e fornecedores do baile.',
+
+    `
+      <div class="form-grid">
+
+        <div class="half">
+          <label>Tipo</label>
+
+          <select id="finTipo">
+            <option value="entrada"
+              ${
+                item?.tipo === 'entrada'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Entrada
+            </option>
+
+            <option value="saida"
+              ${
+                item?.tipo === 'saida'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Saída / Despesa
+            </option>
+          </select>
+        </div>
+
+        <div class="half">
+          <label>Origem</label>
+
+          <select id="finOrigem">
+
+            <option value="entrada_avulsa"
+              ${
+                item?.origem === 'entrada_avulsa'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Entrada avulsa
+            </option>
+
+            <option value="patrocinio"
+              ${
+                item?.origem === 'patrocinio'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Patrocínio
+            </option>
+
+            <option value="doacao"
+              ${
+                item?.origem === 'doacao'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Doação
+            </option>
+
+            <option value="rifa"
+              ${
+                item?.origem === 'rifa'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Rifa
+            </option>
+
+            <option value="fornecedor"
+              ${
+                item?.origem === 'fornecedor'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Fornecedor
+            </option>
+
+            <option value="ajuste"
+              ${
+                item?.origem === 'ajuste'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Ajuste
+            </option>
+
+            <option value="outro"
+              ${
+                !item ||
+                item?.origem === 'outro'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Outro
+            </option>
+
+          </select>
+        </div>
+
+        <div class="half">
+          <label>Categoria</label>
+
+          <input
+            id="finCategoria"
+            value="${escapeHtml(
+              item?.categoria || ''
+            )}"
+
+            placeholder="Ex.: DJ, ornamentação..."
+          />
+        </div>
+
+        <div class="half">
+          <label>Pessoa / fornecedor</label>
+
+          <input
+            id="finPessoaNome"
+
+            value="${escapeHtml(
+              item?.pessoaNome || ''
+            )}"
+
+            placeholder="Nome do fornecedor"
+          />
+        </div>
+
+        <div class="half">
+          <label>Telefone</label>
+
+          <input
+            id="finPessoaTelefone"
+
+            value="${escapeHtml(
+              item?.pessoaTelefone || ''
+            )}"
+
+            placeholder="Contato"
+          />
+        </div>
+
+        <div class="half">
+          <label>Forma de pagamento</label>
+
+          <select id="finFormaPagamento">
+
+            <option value="pix"
+              ${
+                item?.formaPagamento === 'pix'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              PIX
+            </option>
+
+            <option value="dinheiro"
+              ${
+                item?.formaPagamento === 'dinheiro'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Dinheiro
+            </option>
+
+            <option value="transferencia"
+              ${
+                item?.formaPagamento === 'transferencia'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Transferência
+            </option>
+
+            <option value="misto"
+              ${
+                item?.formaPagamento === 'misto'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Misto
+            </option>
+
+          </select>
+        </div>
+
+        <div class="full">
+          <label>Descrição</label>
+
+          <input
+            id="finDescricao"
+
+            value="${escapeHtml(
+              item?.descricao || ''
+            )}"
+
+            placeholder="Descrição do movimento financeiro"
+          />
+        </div>
+
+        <div class="half">
+          <label>Valor previsto</label>
+
+          <input
+            id="finValorPrevisto"
+            type="number"
+            min="0"
+            step="0.01"
+
+            value="${Number(
+              item?.valorPrevisto || 0
+            )}"
+          />
+        </div>
+
+        <div class="half">
+          <label>Valor pago / recebido</label>
+
+          <input
+            id="finValorPago"
+            type="number"
+            min="0"
+            step="0.01"
+
+            value="${Number(
+              item?.valorPago || 0
+            )}"
+          />
+        </div>
+
+        <div class="half">
+          <label>Data vencimento</label>
+
+          <input
+            id="finDataVencimento"
+            type="date"
+
+            value="${
+              item?.dataVencimento
+                ? new Date(
+                    item.dataVencimento
+                  )
+                    .toISOString()
+                    .slice(0, 10)
+                : ''
+            }"
+          />
+        </div>
+
+        <div class="half">
+          <label>Data pagamento</label>
+
+          <input
+            id="finDataPagamento"
+            type="date"
+
+            value="${
+              item?.dataPagamento
+                ? new Date(
+                    item.dataPagamento
+                  )
+                    .toISOString()
+                    .slice(0, 10)
+                : new Date()
+                    .toISOString()
+                    .slice(0, 10)
+            }"
+          />
+        </div>
+
+        <div class="half">
+          <label>Comprovante</label>
+
+          <input
+            id="finComprovante"
+            type="file"
+
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+          />
+        </div>
+
+        <div class="half">
+          <label>Contrato / documento</label>
+
+          <input
+            id="finContrato"
+            type="file"
+
+            accept=".pdf,.doc,.docx,.jpg,.png"
+          />
+        </div>
+
+        <div class="full">
+          <label>Observações</label>
+
+          <textarea
+            id="finObservacoes"
+
+            placeholder="Observações internas"
+          >${escapeHtml(
+            item?.observacoes || ''
+          )}</textarea>
+        </div>
+
+        <div class="full">
+          <button
+            class="btn-primary"
+
+            onclick="${
+              editando
+                ? `salvarMovimentoFinanceiro('${item._id}')`
+                : 'salvarMovimentoFinanceiro()'
+            }"
+          >
+            ${
+              editando
+                ? 'Salvar alterações'
+                : 'Cadastrar movimento'
+            }
+          </button>
+        </div>
+
+      </div>
+    `
+  );
+}
+
+async function salvarMovimentoFinanceiro(id = null) {
+  try {
+    const descricao =
+      document
+        .getElementById('finDescricao')
+        .value
+        .trim();
+
+    if (!descricao) {
+      toast(
+        'Informe a descrição do movimento.'
+      );
+
+      return;
+    }
+
+    const fd = new FormData();
+
+    fd.append(
+      'anoLetivo',
+      document.getElementById('fAno')
+        ?.value || '2026'
+    );
+
+    fd.append(
+      'tipo',
+      document.getElementById('finTipo')
+        .value
+    );
+
+    fd.append(
+      'origem',
+      document.getElementById('finOrigem')
+        .value
+    );
+
+    fd.append(
+      'categoria',
+      document
+        .getElementById('finCategoria')
+        .value
+        .trim()
+    );
+
+    fd.append('descricao', descricao);
+
+    fd.append(
+      'pessoaNome',
+      document
+        .getElementById('finPessoaNome')
+        .value
+        .trim()
+    );
+
+    fd.append(
+      'pessoaTelefone',
+      document
+        .getElementById(
+          'finPessoaTelefone'
+        )
+        .value
+        .trim()
+    );
+
+    fd.append(
+      'valorPrevisto',
+      document.getElementById(
+        'finValorPrevisto'
+      ).value || 0
+    );
+
+    fd.append(
+      'valorPago',
+      document.getElementById(
+        'finValorPago'
+      ).value || 0
+    );
+
+    fd.append(
+      'dataVencimento',
+      document.getElementById(
+        'finDataVencimento'
+      ).value
+    );
+
+    fd.append(
+      'dataPagamento',
+      document.getElementById(
+        'finDataPagamento'
+      ).value
+    );
+
+    fd.append(
+      'formaPagamento',
+      document.getElementById(
+        'finFormaPagamento'
+      ).value
+    );
+
+    fd.append(
+      'observacoes',
+      document
+        .getElementById(
+          'finObservacoes'
+        )
+        .value
+        .trim()
+    );
+
+    const comprovante =
+      document.getElementById(
+        'finComprovante'
+      ).files[0];
+
+    const contrato =
+      document.getElementById(
+        'finContrato'
+      ).files[0];
+
+    if (comprovante) {
+      fd.append(
+        'comprovante',
+        comprovante
+      );
+    }
+
+    if (contrato) {
+      fd.append(
+        'contrato',
+        contrato
+      );
+    }
+
+    const url = id
+      ? `/api/baile-financeiro/${id}`
+      : '/api/baile-financeiro';
+
+    const method = id
+      ? 'PUT'
+      : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: headersForm(),
+      body: fd,
+    });
+
+    const data =
+      await res.json().catch(() => ({}));
+
+    if (!res.ok || data.ok === false) {
+      throw new Error(
+        data.message ||
+          'Erro ao salvar movimento.'
+      );
+    }
+
+    toast(
+      id
+        ? 'Movimento atualizado.'
+        : 'Movimento cadastrado.'
+    );
+
+    fecharDrawer();
+
+    await carregarFinanceiroBaile();
+  } catch (err) {
+    console.error(err);
+
+    toast(
+      err.message ||
+        'Erro ao salvar movimento.'
+    );
+  }
+}
+
+async function removerMovimentoFinanceiro(
+  id
+) {
+  const confirmar = confirm(
+    'Deseja cancelar este movimento financeiro?'
+  );
+
+  if (!confirmar) return;
+
+  try {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('axoriin_token');
+
+    const res = await fetch(
+      `/api/baile-financeiro/${id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.ok) {
+      throw new Error(
+        data.message ||
+        'Erro ao remover movimento.'
+      );
+    }
+
+    toast('Movimento cancelado.');
+
+    carregarFinanceiroBaile();
+  } catch (err) {
+    console.error(err);
+
+    toast(
+      err.message ||
+      'Erro ao remover movimento.'
+    );
+  }
+}
+
+function setTexto(id, valor) {
+  const el = document.getElementById(id);
+
+  if (el) {
+    el.textContent = valor;
+  }
+}
+function formatarMoeda(valor) {
+  return dinheiro(valor);
+}
+
+function formatarData(valor) {
+  return dataBR(valor);
+}
 
     document.addEventListener('DOMContentLoaded', carregarTudo);
   </script>

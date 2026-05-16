@@ -41,8 +41,10 @@ function gerarKeyBaile({ instituicaoId, alunoId, tipo, originalname }) {
 }
 
 function montarUrlPublica(key) {
-  if (AWS_CDN_URL) return `${AWS_CDN_URL}/${key}`;
-  if (AWS_S3_BASE_URL) return `${AWS_S3_BASE_URL}/${key}`;
+  if (AWS_S3_BASE_URL) {
+    return `${AWS_S3_BASE_URL}/${key}`;
+  }
+
   return `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`;
 }
 
