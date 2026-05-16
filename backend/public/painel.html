@@ -4015,7 +4015,7 @@ document.addEventListener('click', (ev) => {
 
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(235,255,255,.64)';
-      ctx.fillText(`${item.value} • ${pct}`, W - 26, legendY + 3);
+      ctx.fillText(pct, W - 26, legendY + 3);
       ctx.restore();
 
       legendY += 36;
