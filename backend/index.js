@@ -240,6 +240,7 @@ const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
 const baileFinanceiroRoutes = require('./routes/api/baileFinanceiro');
+const baileControleRoutes = require('./routes/api/baileControle');
 const processosDisciplinaresRoutes = require('./routes/api/processosDisciplinares');
 const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
 
@@ -638,6 +639,7 @@ mountIf('/api/baile-mesas', baileMesasRoutes, autenticar);
 
 mountIf('/api/baile-financeiro', baileFinanceiroRoutes, autenticar);
 
+mountIf('/api/baile-controle', baileControleRoutes);
 /* =========================
    🚀 PROCESSOS DISCIPLINARES (NOVO MÓDULO)
    ========================= */

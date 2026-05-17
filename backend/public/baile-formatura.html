@@ -861,6 +861,7 @@
 
         <div class="actions">
           <button class="btn-ghost" onclick="carregarTudo()">Atualizar</button>
+          <button class="btn-ghost" onclick="abrirControleAnualBaile()">Controle anual</button>
           <button class="btn-ghost" onclick="exportarExcel()">Exportar Excel</button>
           <button class="btn-ghost" onclick="abrirListasParticipacao()">Listas</button>
           <button class="btn-ghost" onclick="abrirMapaMesas()">Mapa de Mesas</button>
@@ -1031,8 +1032,8 @@
 
         <div class="metric">
           <small>Cadeiras disponíveis</small>
-          <strong id="mCadeirasDisponiveis">600</strong>
-          <div class="hint">limite atual: 600</div>
+          <strong id="mCadeirasDisponiveis">700</strong>
+          <div class="hint">limite atual: 700</div>
         </div>
 
         <div class="metric">
@@ -1163,7 +1164,7 @@
           </div>
 
           <div class="alert-card cyan">
-            <strong id="aCadeiras">0 de 600 cadeiras</strong>
+            <strong id="aCadeiras">0 de 700 cadeiras</strong>
             <span>Controle de capacidade máxima do evento.</span>
           </div>
         </div>
@@ -1255,7 +1256,8 @@
   <script>
     const API_BASE = '/api/baile-contratos';
     const API_MESAS = '/api/baile-mesas';
-    const CAPACIDADE_CADEIRAS = 600;
+    const API_CONTROLE_BAILE = '/api/baile-controle';
+    const CAPACIDADE_CADEIRAS = 700;
 
     let alunosTerceiros = [];
     let contratos = [];
@@ -1558,7 +1560,13 @@
         `${Number(t.quitados || 0)} contratos quitados`;
 
       document.getElementById('aCadeiras').textContent =
-        `${Number(t.cadeirasSolicitadas || 0)} de ${Number(t.capacidadeMaximaCadeiras || CAPACIDADE_CADEIRAS)} cadeiras`;
+  `${Number(t.cadeirasSolicitadas || 0)} de ${Number(t.capacidadeMaximaCadeiras || CAPACIDADE_CADEIRAS)} cadeiras`;
+
+const hintDisponiveis = document.querySelector('#mCadeirasDisponiveis')?.parentElement?.querySelector('.hint');
+if (hintDisponiveis) {
+  hintDisponiveis.textContent =
+    `limite atual: ${Number(t.capacidadeMaximaCadeiras || CAPACIDADE_CADEIRAS)}`;
+}
     }
 
     function renderTabela() {
@@ -2361,6 +2369,7 @@
             <button onclick="sortearMesas()">Sortear automático</button>
             <button onclick="baixarImagemMapa()">Gerar imagem</button>
             <button class="btn-danger" onclick="limparMapaMesas()">Limpar mapa</button>
+            <button class="btn-danger" onclick="limparTodasMesas()">🗑️ Apagar todas as mesas</button>
           </div>
 
           <div class="mapa-resumo">
@@ -2450,6 +2459,7 @@
 
           <div class="mesa-actions">
             <button class="mini" onclick="abrirAlocarManual('${mesa._id}')">Adicionar aluno</button>
+            <button class="mini btn-primary" onclick="abrirOcupanteExtra('${mesa._id}')">+ Ocupante extra</button>
             <button class="mini btn-ghost" onclick="abrirEditarMesa('${mesa._id}')">Editar</button>
             <button class="mini btn-danger" onclick="excluirMesa('${mesa._id}')">Excluir mesa</button>
           </div>
@@ -2744,6 +2754,124 @@
       }
     }
 
+function abrirOcupanteExtra(mesaId) {
+  const mesa = (ultimoMapaMesas?.mesas || []).find(
+    (m) => String(m._id) === String(mesaId)
+  );
+
+  if (!mesa) {
+    toast('Mesa não encontrada.');
+    return;
+  }
+
+  abrirDrawer(
+    'Adicionar ocupante extra',
+    mesa.numeroMesa,
+    `
+      <div class="form-grid">
+        <div class="half">
+          <label>Tipo de ocupante</label>
+          <select id="oeTipo">
+            <option value="convidado_extra">Convidado extra</option>
+            <option value="funcionario">Funcionário</option>
+            <option value="autoridade">Autoridade</option>
+            <option value="comissao">Comissão organizadora</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="half">
+          <label>Quantidade de lugares</label>
+          <input id="oeLugares" type="number" min="1" value="1" />
+        </div>
+
+        <div class="full">
+          <label>Nome / identificação</label>
+          <input
+            id="oeNome"
+            placeholder="Ex.: Autoridades convidadas, servidores, equipe de apoio..."
+          />
+        </div>
+
+        <div class="half">
+          <label>Origem / grupo</label>
+          <input
+            id="oeOrigem"
+            placeholder="Ex.: Direção, CBMAC, convidados institucionais..."
+          />
+        </div>
+
+        <div class="half">
+          <label>Turma / referência</label>
+          <input
+            id="oeTurma"
+            placeholder="Opcional"
+          />
+        </div>
+
+        <div class="full">
+          <label>Mesa</label>
+          <input
+            value="${escapeHtml(mesa.numeroMesa)} — ${Number(mesa.lugaresOcupados || 0)}/${Number(mesa.capacidade || 0)} lugares"
+            disabled
+          />
+        </div>
+
+        <div class="full">
+          <label>Observação</label>
+          <textarea
+            id="oeObs"
+            placeholder="Ex.: reserva de cadeiras para convidados extras do cerimonial."
+          ></textarea>
+        </div>
+
+        <div class="full">
+          <button class="btn-primary" onclick="salvarOcupanteExtra('${mesa._id}')">
+            Adicionar ocupante extra
+          </button>
+        </div>
+      </div>
+    `
+  );
+}
+
+async function salvarOcupanteExtra(mesaId) {
+  try {
+    const alunoNome = document.getElementById('oeNome').value.trim();
+
+    if (!alunoNome) {
+      toast('Informe o nome ou identificação do ocupante extra.');
+      return;
+    }
+
+    const quantidadeLugares = Number(
+      document.getElementById('oeLugares').value || 1
+    );
+
+    if (quantidadeLugares <= 0) {
+      toast('Informe uma quantidade válida de lugares.');
+      return;
+    }
+
+    await apiPost(`${API_MESAS}/${mesaId}/ocupantes`, {
+      tipoOcupante: document.getElementById('oeTipo').value,
+      origem: document.getElementById('oeOrigem').value.trim(),
+      alunoNome,
+      turma: document.getElementById('oeTurma').value.trim(),
+      quantidadeLugares,
+      observacao: document.getElementById('oeObs').value.trim()
+    });
+
+    toast('Ocupante extra adicionado à mesa.');
+
+    await abrirMapaMesas();
+    await carregarContratos();
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'Erro ao adicionar ocupante extra.');
+  }
+}
+
     async function removerOcupanteMesa(mesaId, ocupanteId) {
       try {
         const ok = confirm('Remover este participante da mesa?');
@@ -2775,6 +2903,73 @@
         toast(err.message);
       }
     }
+
+    async function limparTodasMesas() {
+  const ano = document.getElementById('fAno')?.value || '2026';
+
+  const confirmar1 = confirm(
+    `Tem certeza que deseja apagar TODAS as mesas do baile ${ano}?\n\n` +
+    'Isso também removerá todos os ocupantes das mesas e limpará a mesa vinculada aos alunos.'
+  );
+
+  if (!confirmar1) return;
+
+  const confirmar2 = confirm(
+    'Confirma novamente?\n\n' +
+    'Essa ação não apaga os contratos dos alunos, mas remove toda a organização das mesas.'
+  );
+
+  if (!confirmar2) return;
+
+  try {
+    const data = await apiDelete(
+      `${API_MESAS}/limpar/todas?anoLetivo=${ano}`
+    );
+
+    toast(data.message || 'Mesas removidas com sucesso.');
+
+    ultimoMapaMesas = {
+      resumo: {
+        mesas: 0,
+        capacidadeTotal: 0,
+        lugaresOcupados: 0,
+        lugaresDisponiveis: 0,
+        participantes: 0,
+        naoAlocados: 0,
+      },
+      mesas: [],
+      naoAlocados: [],
+    };
+
+    const mapaGrid =
+      document.getElementById('mapaMesasGrid');
+
+    if (mapaGrid) {
+      mapaGrid.innerHTML = `
+        <p class="muted">
+          Nenhuma mesa cadastrada.
+        </p>
+      `;
+    }
+
+    const mapaResumo =
+      document.getElementById('mapaMesasResumo');
+
+    if (mapaResumo) {
+      mapaResumo.innerHTML = '';
+    }
+
+    await abrirMapaMesas();
+    await carregarContratos();
+  } catch (err) {
+    console.error(err);
+
+    toast(
+      err.message ||
+      'Erro ao apagar todas as mesas.'
+    );
+  }
+}
 
     async function sortearMesas() {
       try {
@@ -3934,6 +4129,248 @@ function formatarMoeda(valor) {
 
 function formatarData(valor) {
   return dataBR(valor);
+}
+
+function abrirDrawerHtml(html) {
+  const drawer = document.getElementById('drawer');
+  const conteudo = document.getElementById('drawerConteudo');
+
+  if (!drawer || !conteudo) {
+    toast('Não foi possível abrir o painel lateral.');
+    return;
+  }
+
+  conteudo.innerHTML = html;
+  drawer.classList.add('open');
+}
+
+async function buscarControleAnualBaile() {
+  const ano = document.getElementById('fAno')?.value || '2026';
+  const data = await apiGet(`${API_CONTROLE_BAILE}?anoLetivo=${ano}`);
+  return data.controle || null;
+}
+
+async function abrirControleAnualBaile() {
+  try {
+    const anoAtual = document.getElementById('fAno')?.value || '2026';
+    const controle = await buscarControleAnualBaile();
+
+    const capacidadeBaseAtual = Number(controle?.capacidadeBase ?? CAPACIDADE_CADEIRAS);
+    const extrasAtual = Number(controle?.cadeirasExtrasConvidados || 0);
+    const eventoAtual = controle?.evento || 'Baile de Formatura 3ª Série do Ensino Médio';
+    const observacoesAtual = controle?.observacoes || '';
+
+    abrirDrawerHtml(`
+      <div class="tabs">
+        <button class="tab active" onclick="trocarTabDrawer(event, 'tabControleAtual')">
+          Controle atual
+        </button>
+        <button class="tab" onclick="trocarTabDrawer(event, 'tabNovoAnoBaile')">
+          Novo ano
+        </button>
+      </div>
+
+      <div id="tabControleAtual" class="tab-content active">
+        <div class="panel" style="box-shadow:none;">
+          <div class="panel-header">
+            <div>
+              <h3>Controle anual do baile ${escapeHtml(anoAtual)}</h3>
+              <p class="muted">
+                Configure a capacidade geral do evento sem precisar lançar convidados um por um no mapa de mesas.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="half">
+              <label>Evento</label>
+              <input id="ctrlEvento" value="${escapeHtml(eventoAtual)}" />
+            </div>
+
+            <div>
+              <label>Ano letivo</label>
+              <input id="ctrlAnoLetivo" type="number" value="${escapeHtml(anoAtual)}" readonly />
+            </div>
+
+            <div>
+              <label>Capacidade base</label>
+              <input id="ctrlCapacidadeBase" type="number" min="0" value="${capacidadeBaseAtual}" />
+            </div>
+
+            <div>
+              <label>Cadeiras extras para convidados</label>
+              <input id="ctrlCadeirasExtras" type="number" min="0" value="${extrasAtual}" />
+            </div>
+
+            <div>
+              <label>Capacidade total</label>
+              <input
+                id="ctrlCapacidadeTotal"
+                type="number"
+                value="${capacidadeBaseAtual + extrasAtual}"
+                readonly
+              />
+            </div>
+
+            <div class="full">
+              <label>Observações</label>
+              <textarea id="ctrlObservacoes">${escapeHtml(observacoesAtual)}</textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="salvarControleAnualBaile()">
+                Salvar controle anual
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tabNovoAnoBaile" class="tab-content">
+        <div class="panel" style="box-shadow:none;">
+          <div class="panel-header">
+            <div>
+              <h3>Iniciar novo controle de baile</h3>
+              <p class="muted">
+                Cria um novo ano independente, sem misturar contratos, mesas e financeiro do ano anterior.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label>Novo ano letivo</label>
+              <input id="novoAnoLetivoBaile" type="number" min="2020" max="2100" value="${Number(anoAtual) + 1}" />
+            </div>
+
+            <div class="half">
+              <label>Nome do evento</label>
+              <input id="novoEventoBaile" value="Baile de Formatura 3ª Série do Ensino Médio" />
+            </div>
+
+            <div>
+              <label>Capacidade base</label>
+              <input id="novoCapacidadeBaseBaile" type="number" min="0" value="700" />
+            </div>
+
+            <div>
+              <label>Cadeiras extras para convidados</label>
+              <input id="novoExtrasBaile" type="number" min="0" value="0" />
+            </div>
+
+            <div class="full">
+              <label>Observações</label>
+              <textarea id="novoObservacoesBaile"></textarea>
+            </div>
+
+            <div class="full">
+              <button class="btn-primary" onclick="criarNovoAnoBaile()">
+                Criar novo controle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    document.getElementById('drawerTitulo').textContent = 'Controle anual do baile';
+    document.getElementById('drawerSub').textContent =
+      'Capacidade geral, cadeiras extras para convidados e abertura de novo ano.';
+
+    atualizarPreviewControleBaile();
+
+    ['ctrlCapacidadeBase', 'ctrlCadeirasExtras'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', atualizarPreviewControleBaile);
+    });
+  } catch (err) {
+    console.error(err);
+    toast(err.message);
+  }
+}
+
+function atualizarPreviewControleBaile() {
+  const base = Number(document.getElementById('ctrlCapacidadeBase')?.value || 0);
+  const extras = Number(document.getElementById('ctrlCadeirasExtras')?.value || 0);
+  const total = document.getElementById('ctrlCapacidadeTotal');
+
+  if (total) {
+    total.value = Math.max(base, 0) + Math.max(extras, 0);
+  }
+}
+
+async function salvarControleAnualBaile() {
+  try {
+    const anoLetivo = document.getElementById('ctrlAnoLetivo')?.value || document.getElementById('fAno')?.value || '2026';
+
+    const payload = {
+      anoLetivo: Number(anoLetivo),
+      evento: document.getElementById('ctrlEvento')?.value || '',
+      capacidadeBase: Number(document.getElementById('ctrlCapacidadeBase')?.value || 0),
+      cadeirasExtrasConvidados: Number(document.getElementById('ctrlCadeirasExtras')?.value || 0),
+      observacoes: document.getElementById('ctrlObservacoes')?.value || '',
+    };
+
+    const data = await apiPut(API_CONTROLE_BAILE, payload);
+
+    toast(data.message || 'Controle anual atualizado com sucesso.');
+
+    fecharDrawer();
+    await carregarContratos();
+  } catch (err) {
+    console.error(err);
+    toast(err.message);
+  }
+}
+
+async function criarNovoAnoBaile() {
+  try {
+    const anoLetivo = Number(document.getElementById('novoAnoLetivoBaile')?.value || 0);
+
+    if (!anoLetivo) {
+      toast('Informe o novo ano letivo.');
+      return;
+    }
+
+    const confirmar = confirm(
+      `Deseja criar um novo controle para o baile ${anoLetivo}?\n\n` +
+      'Esse processo não apaga os dados dos anos anteriores.'
+    );
+
+    if (!confirmar) return;
+
+    const payload = {
+      anoLetivo,
+      evento: document.getElementById('novoEventoBaile')?.value || 'Baile de Formatura 3ª Série do Ensino Médio',
+      capacidadeBase: Number(document.getElementById('novoCapacidadeBaseBaile')?.value || 700),
+      cadeirasExtrasConvidados: Number(document.getElementById('novoExtrasBaile')?.value || 0),
+      observacoes: document.getElementById('novoObservacoesBaile')?.value || '',
+    };
+
+    const data = await apiPost(`${API_CONTROLE_BAILE}/novo-ano`, payload);
+
+    toast(data.message || 'Novo controle anual criado com sucesso.');
+
+    const fAno = document.getElementById('fAno');
+
+    if (fAno) {
+      const jaExiste = [...fAno.options].some(opt => String(opt.value) === String(anoLetivo));
+
+      if (!jaExiste) {
+        const opt = document.createElement('option');
+        opt.value = String(anoLetivo);
+        opt.textContent = String(anoLetivo);
+        fAno.appendChild(opt);
+      }
+
+      fAno.value = String(anoLetivo);
+    }
+
+    fecharDrawer();
+    await carregarTudo();
+  } catch (err) {
+    console.error(err);
+    toast(err.message);
+  }
 }
 
     document.addEventListener('DOMContentLoaded', carregarTudo);

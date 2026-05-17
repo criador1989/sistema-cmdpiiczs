@@ -333,6 +333,57 @@ router.put('/:id', autenticar, requireTenant, async (req, res) => {
   }
 });
 
+router.delete('/limpar/todas', autenticar, requireTenant, async (req, res) => {
+  try {
+    const instituicao = getInstituicaoId(req);
+    const anoLetivo = Number(req.query.anoLetivo || 2026);
+
+    const resultado = await BaileMesa.updateMany(
+      {
+        instituicao,
+        anoLetivo,
+        ativa: { $ne: false },
+      },
+      {
+        $set: {
+          ativa: false,
+          ocupantes: [],
+          atualizadaPor: getUsuarioId(req),
+          atualizadaPorNome: getUsuarioNome(req),
+        },
+      }
+    );
+
+    await BaileContrato.updateMany(
+      {
+        instituicao,
+        anoLetivo,
+      },
+      {
+        $set: {
+          mesaNumero: '',
+          cadeiraNumero: '',
+          atualizadoPor: getUsuarioId(req),
+          atualizadoPorNome: getUsuarioNome(req),
+        },
+      }
+    );
+
+    res.json({
+      ok: true,
+      message: 'Todas as mesas foram removidas com sucesso.',
+      total: resultado.modifiedCount || 0,
+    });
+  } catch (err) {
+    console.error('[BAILE_MESAS][LIMPAR_TODAS]', err);
+
+    res.status(500).json({
+      ok: false,
+      message: 'Erro ao remover todas as mesas.',
+    });
+  }
+});
+
 router.delete('/:id', autenticar, requireTenant, async (req, res) => {
   try {
     const instituicao = getInstituicaoId(req);
@@ -375,6 +426,10 @@ router.post('/:id/ocupantes', autenticar, requireTenant, async (req, res) => {
 
     const {
       contratoId,
+      tipoOcupante = 'aluno',
+      origem = '',
+      alunoNome = '',
+      turma = '',
       quantidadeLugares,
       observacao = '',
     } = req.body;
@@ -392,49 +447,79 @@ router.post('/:id/ocupantes', autenticar, requireTenant, async (req, res) => {
       });
     }
 
-    const contrato = await BaileContrato.findOne({
-      _id: contratoId,
-      instituicao,
-    });
+    const tiposPermitidos = [
+      'aluno',
+      'convidado_extra',
+      'funcionario',
+      'autoridade',
+      'comissao',
+      'outro',
+    ];
 
-    if (!contrato) {
-      return res.status(404).json({
-        ok: false,
-        message: 'Participante não encontrado.',
+    const tipoFinal = tiposPermitidos.includes(tipoOcupante)
+      ? tipoOcupante
+      : 'outro';
+
+    let contrato = null;
+
+    if (contratoId) {
+      contrato = await BaileContrato.findOne({
+        _id: contratoId,
+        instituicao,
       });
+
+      if (!contrato) {
+        return res.status(404).json({
+          ok: false,
+          message: 'Participante não encontrado.',
+        });
+      }
+
+      const jaExisteNaMesa = mesa.ocupantes.some(
+        (o) => String(o.contrato || '') === String(contrato._id)
+      );
+
+      if (jaExisteNaMesa) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Este participante já está nesta mesa.',
+        });
+      }
+
+      const mesasDoAno = await BaileMesa.find({
+        instituicao,
+        anoLetivo: mesa.anoLetivo,
+        ativa: { $ne: false },
+      });
+
+      const jaAlocado = mesasDoAno.some((m) =>
+        (m.ocupantes || []).some(
+          (o) => String(o.contrato || '') === String(contrato._id)
+        )
+      );
+
+      if (jaAlocado) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Este participante já está alocado em outra mesa.',
+        });
+      }
     }
 
-    const jaExisteNaMesa = mesa.ocupantes.some(
-      (o) => String(o.contrato) === String(contrato._id)
-    );
-
-    if (jaExisteNaMesa) {
+    if (!contrato && !String(alunoNome || '').trim()) {
       return res.status(400).json({
         ok: false,
-        message: 'Este participante já está nesta mesa.',
-      });
-    }
-
-    const mesasDoAno = await BaileMesa.find({
-      instituicao,
-      anoLetivo: mesa.anoLetivo,
-      ativa: { $ne: false },
-    });
-
-    const jaAlocado = mesasDoAno.some((m) =>
-      (m.ocupantes || []).some((o) => String(o.contrato) === String(contrato._id))
-    );
-
-    if (jaAlocado) {
-      return res.status(400).json({
-        ok: false,
-        message: 'Este participante já está alocado em outra mesa.',
+        message: 'Informe o nome do convidado, servidor, autoridade ou ocupante extra.',
       });
     }
 
     const lugares = Math.max(
       1,
-      Number(quantidadeLugares || contrato.quantidadeIngressos || 1)
+      Number(
+        quantidadeLugares ||
+          contrato?.quantidadeIngressos ||
+          1
+      )
     );
 
     const ocupados = (mesa.ocupantes || []).reduce((acc, ocupante) => {
@@ -449,10 +534,12 @@ router.post('/:id/ocupantes', autenticar, requireTenant, async (req, res) => {
     }
 
     mesa.ocupantes.push({
-      contrato: contrato._id,
-      aluno: contrato.aluno,
-      alunoNome: contrato.alunoNome,
-      turma: contrato.turma,
+      tipoOcupante: contrato ? 'aluno' : tipoFinal,
+      origem: contrato ? 'contrato_aluno' : origem,
+      contrato: contrato ? contrato._id : null,
+      aluno: contrato ? contrato.aluno : null,
+      alunoNome: contrato ? contrato.alunoNome : String(alunoNome || '').trim(),
+      turma: contrato ? contrato.turma : String(turma || '').trim(),
       quantidadeLugares: lugares,
       observacao,
     });
@@ -460,24 +547,29 @@ router.post('/:id/ocupantes', autenticar, requireTenant, async (req, res) => {
     mesa.atualizadaPor = usuarioId;
     mesa.atualizadaPorNome = usuarioNome;
 
-    contrato.mesaNumero = mesa.numeroMesa;
-    contrato.cadeiraNumero = `${lugares} lugar(es)`;
-    contrato.atualizadoPor = usuarioId;
-    contrato.atualizadoPorNome = usuarioNome;
+    if (contrato) {
+      contrato.mesaNumero = mesa.numeroMesa;
+      contrato.cadeiraNumero = `${lugares} lugar(es)`;
+      contrato.atualizadoPor = usuarioId;
+      contrato.atualizadoPorNome = usuarioNome;
+
+      await contrato.save();
+    }
 
     await mesa.save();
-    await contrato.save();
 
     res.json({
       ok: true,
-      message: 'Participante alocado na mesa com sucesso.',
+      message: contrato
+        ? 'Participante alocado na mesa com sucesso.'
+        : 'Ocupante extra alocado na mesa com sucesso.',
       mesa: resumoMesa(mesa),
     });
   } catch (err) {
     console.error('[BAILE_MESAS][ADICIONAR_OCUPANTE]', err);
     res.status(500).json({
       ok: false,
-      message: 'Erro ao adicionar participante na mesa.',
+      message: 'Erro ao adicionar ocupante na mesa.',
     });
   }
 });

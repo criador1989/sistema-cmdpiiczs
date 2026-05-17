@@ -2,6 +2,18 @@ const mongoose = require('mongoose');
 
 const baileMesaOcupanteSchema = new mongoose.Schema(
   {
+        tipoOcupante: {
+      type: String,
+      enum: ['aluno', 'convidado_extra', 'funcionario', 'autoridade', 'comissao', 'outro'],
+      default: 'aluno',
+      index: true,
+    },
+
+    origem: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     contrato: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BaileContrato',

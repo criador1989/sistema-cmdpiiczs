@@ -5,6 +5,7 @@ const multer = require('multer');
 
 const BaileContrato = require('../../models/BaileContrato');
 const Aluno = require('../../models/Aluno');
+const BaileControle = require('../../models/BaileControle');
 
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
@@ -12,7 +13,7 @@ const { uploadArquivoBaile, deletarArquivoBaile } = require('../../utils/s3Baile
 
 const router = express.Router();
 
-const CAPACIDADE_PADRAO_CADEIRAS = 600;
+const CAPACIDADE_PADRAO_CADEIRAS = 700;
 const VALOR_UNITARIO_PADRAO = 150;
 const LIMITE_PARCELAS_PADRAO = 12;
 
@@ -68,6 +69,37 @@ function inteiroSeguro(valor, padrao = 0, minimo = 0, maximo = 9999) {
   if (!Number.isFinite(n)) return padrao;
 
   return Math.max(minimo, Math.min(Math.floor(n), maximo));
+}
+
+async function obterControleBaile(instituicao, anoLetivo) {
+  const ano = Number(anoLetivo || new Date().getFullYear());
+
+  let controle = await BaileControle.findOne({
+    instituicao,
+    anoLetivo: ano,
+  }).lean();
+
+  if (!controle) {
+    controle = {
+      capacidadeBase: CAPACIDADE_PADRAO_CADEIRAS,
+      cadeirasExtrasConvidados: 0,
+    };
+  }
+
+  const capacidadeBase = Number(
+    controle.capacidadeBase ?? CAPACIDADE_PADRAO_CADEIRAS
+  );
+
+  const cadeirasExtrasConvidados = Number(
+    controle.cadeirasExtrasConvidados || 0
+  );
+
+  return {
+    ...controle,
+    capacidadeBase,
+    cadeirasExtrasConvidados,
+    capacidadeTotal: capacidadeBase + cadeirasExtrasConvidados,
+  };
 }
 
 function gerarParcelas({ valorTotal, quantidadeParcelas, dataInicial }) {
@@ -241,6 +273,8 @@ router.get('/', autenticar, requireTenant, async (req, res) => {
       alunoNome: 1,
     });
 
+    const controleBaile = await obterControleBaile(instituicao, Number(anoLetivo));
+
     for (const contrato of contratos) {
       recalcularParcelasComPagamentos(contrato);
       await contrato.save();
@@ -294,9 +328,11 @@ router.get('/', autenticar, requireTenant, async (req, res) => {
         quitados: 0,
         atrasados: 0,
         semContrato: 0,
-        capacidadeMaximaCadeiras: CAPACIDADE_PADRAO_CADEIRAS,
+        capacidadeBase: Number(controleBaile.capacidadeBase || CAPACIDADE_PADRAO_CADEIRAS),
+        cadeirasExtrasConvidados: Number(controleBaile.cadeirasExtrasConvidados || 0),
+        capacidadeMaximaCadeiras: Number(controleBaile.capacidadeTotal || CAPACIDADE_PADRAO_CADEIRAS),
         cadeirasSolicitadas: 0,
-        cadeirasDisponiveis: CAPACIDADE_PADRAO_CADEIRAS,
+        cadeirasDisponiveis: Number(controleBaile.capacidadeTotal || CAPACIDADE_PADRAO_CADEIRAS),
         ingressosIniciais: 0,
         ingressosAdicionais: 0,
       }
