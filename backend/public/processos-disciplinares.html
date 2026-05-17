@@ -1174,6 +1174,7 @@
 >
   ✍️ Assinar
 </button>
+
 ${
   d.hash
     ? `
@@ -1287,7 +1288,25 @@ ${
 >
   ✍️ Assinar
 </button>
-                        `
+
+${
+  d.hash
+    ? `
+      <button
+        class="btn primary"
+        onclick="
+          window.open(
+            '/api/processos-disciplinares/${p._id}/documento-assinado-pdf?hash=${d.hash}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}',
+            '_blank'
+          )
+        "
+      >
+        📄 Baixar assinado
+      </button>
+    `
+    : ''
+}
+                           `
                         : `
                           <span class="badge">
                             Sem caminho
@@ -2199,28 +2218,45 @@ async function gerarRelatorioFinal(id) {
   }
 }
     async function baixarDocumentoPorCaminho(id, caminho, nomeArquivo) {
-      const resp = await fetch(`/api/processos-disciplinares/${id}/baixar-documento?caminho=${encodeURIComponent(caminho)}&nome=${encodeURIComponent(nomeArquivo)}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}`, {
-        credentials: 'include',
-        cache: 'no-store'
-      });
+  const token =
+    localStorage.getItem('token') ||
+    localStorage.getItem('axoriin_token') ||
+    localStorage.getItem('smartclass_token');
 
-      if (!resp.ok) {
-        throw new Error('Houve erro no download do documento.');
-      }
+  const url =
+    `/api/processos-disciplinares/${id}/baixar-documento` +
+    `?caminho=${encodeURIComponent(caminho)}` +
+    `&nome=${encodeURIComponent(nomeArquivo)}` +
+    `${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}`;
 
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
+  const resp = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: token
+      ? { Authorization: `Bearer ${token}` }
+      : {}
+  });
 
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = nomeArquivo;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => '');
+    throw new Error(
+      txt || `Houve erro no download do documento. HTTP ${resp.status}`
+    );
+  }
 
-      URL.revokeObjectURL(url);
-    }
+  const blob = await resp.blob();
+  const downloadUrl = URL.createObjectURL(blob);
 
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = nomeArquivo || 'documento.docx';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(downloadUrl);
+}
     async function baixarDocumentoSalvo(id, caminhoEncoded, nomeEncoded) {
       try {
         const caminho = decodeURIComponent(caminhoEncoded);

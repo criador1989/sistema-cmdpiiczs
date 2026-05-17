@@ -3587,17 +3587,23 @@ router.get('/:id/baixar-documento',
       }
 
       const outputDir = path.resolve(process.cwd(), 'pdf', 'output');
-      const arquivo = path.resolve(caminho);
 
-      if (!arquivo.startsWith(outputDir)) {
-        return res.status(403).json({ message: 'Caminho de documento não permitido.' });
-      }
+const nomeArquivoSeguro = path.basename(caminho);
+const arquivo = path.resolve(outputDir, nomeArquivoSeguro);
 
-      if (!fs.existsSync(arquivo)) {
-        return res.status(404).json({ message: 'Arquivo não encontrado.' });
-      }
+if (!arquivo.startsWith(outputDir + path.sep)) {
+  return res.status(403).json({
+    message: 'Caminho de documento não permitido.'
+  });
+}
 
-      return res.download(arquivo, nome);
+if (!fs.existsSync(arquivo)) {
+  return res.status(404).json({
+    message: 'Arquivo não encontrado.'
+  });
+}
+
+return res.download(arquivo, nome || nomeArquivoSeguro);
 
     } catch (err) {
       console.error('[PROCESSO][BAIXAR_DOCUMENTO]', err);
@@ -4428,16 +4434,25 @@ router.get(
         });
       }
 
-      const caminhoOriginal =
-        documento.caminhoLocal || documento.url || '';
+      const outputDir = path.resolve(process.cwd(), 'pdf', 'output');
 
-      if (!caminhoOriginal || !fs.existsSync(caminhoOriginal)) {
-        return res.status(404).json({
-          message: 'Arquivo original do documento não localizado.'
-        });
-      }
+const caminhoSalvo =
+  documento.caminhoLocal || documento.url || '';
 
-      let pdfBasePath = caminhoOriginal;
+const nomeArquivoOriginal =
+  path.basename(caminhoSalvo);
+
+const caminhoOriginal =
+  path.resolve(outputDir, nomeArquivoOriginal);
+
+if (!nomeArquivoOriginal || !fs.existsSync(caminhoOriginal)) {
+  return res.status(404).json({
+    message: 'Arquivo original do documento não localizado.',
+    detalhe: nomeArquivoOriginal
+  });
+}
+
+let pdfBasePath = caminhoOriginal;
 
       if (/\.docx$/i.test(caminhoOriginal)) {
         pdfBasePath = await converterDocxParaPdf(caminhoOriginal);
