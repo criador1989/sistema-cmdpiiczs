@@ -1147,19 +1147,50 @@
                         d.caminhoLocal
                           ? `
                             <button
-                              class="btn blue"
-                              onclick="
-                                baixarDocumentoSalvo(
-                                  '${p._id}',
-                                  '${encodeURIComponent(d.caminhoLocal)}',
-                                  '${encodeURIComponent(
-                                    (d.titulo || 'dossie.pdf')
-                                  )}'
-                                )
-                              "
-                            >
-                              ⬇️ Baixar PDF
-                            </button>
+  class="btn blue"
+  onclick="
+    baixarDocumentoSalvo(
+      '${p._id}',
+      '${encodeURIComponent(d.caminhoLocal)}',
+      '${encodeURIComponent(
+        (d.titulo || d.tipo || 'documento')
+      )}'
+    )
+  "
+>
+  Baixar
+</button>
+
+<button
+  class="btn ok"
+  onclick="
+    assinarDocumentoProcesso(
+      '${p._id}',
+      '${d.tipo || ''}',
+      '${d.hash || ''}',
+      '${d.titulo || d.tipo || 'Documento'}'
+    )
+  "
+>
+  ✍️ Assinar
+</button>
+${
+  d.hash
+    ? `
+      <button
+        class="btn primary"
+        onclick="
+          window.open(
+            '/api/processos-disciplinares/${p._id}/documento-assinado-pdf?hash=${d.hash}${tenant ? `&t=${encodeURIComponent(tenant)}` : ''}',
+            '_blank'
+          )
+        "
+      >
+        📄 Baixar assinado
+      </button>
+    `
+    : ''
+}
                           `
                           : `
                             <span class="badge">
@@ -1243,6 +1274,19 @@
                           >
                             Baixar
                           </button>
+                          <button
+  class="btn ok"
+  onclick="
+    assinarDocumentoProcesso(
+      '${p._id}',
+      '${d.tipo || ''}',
+      '${d.hash || ''}',
+      '${d.titulo || d.tipo || 'Documento'}'
+    )
+  "
+>
+  ✍️ Assinar
+</button>
                         `
                         : `
                           <span class="badge">
@@ -2339,6 +2383,72 @@ async function limparDocumentos(id) {
     window.gerarOficioJudiciario = gerarOficioJudiciario;
     window.gerarRelatorioFinal = gerarRelatorioFinal;
 
+    async function assinarDocumentoProcesso(
+  processoId,
+  documentoTipo,
+  documentoHash,
+  documentoTitulo
+) {
+  try {
+    const tipo =
+      prompt(
+        'Tipo da assinatura: coordenacao, direcao, comando, secretaria, responsavel, aluno ou outro',
+        'coordenacao'
+      ) || 'outro';
+
+    const cargo =
+      prompt(
+        'Cargo/Função que aparecerá na assinatura:',
+        'Coordenação Pedagógica'
+      ) || '';
+
+    const observacao =
+      prompt(
+        `Observação da assinatura para "${documentoTitulo}" (opcional):`
+      ) || '';
+
+    const senha =
+      prompt(
+        'Digite sua senha de acesso para confirmar a assinatura:'
+      );
+
+    if (!senha) {
+      alert('Assinatura cancelada.');
+      return;
+    }
+
+    const data = await fetchJson(
+      `/api/processos-disciplinares/${processoId}/assinar`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          senha,
+          tipo,
+          cargo,
+          observacao,
+          documentoTipo,
+          documentoHash
+        })
+      }
+    );
+
+    if (!data?.ok) {
+      alert(data?.message || 'Erro ao assinar documento.');
+      return;
+    }
+
+    alert('Documento assinado eletronicamente com sucesso.');
+
+    await carregarProcessos();
+
+  } catch (err) {
+    console.error('[ASSINAR_DOCUMENTO_PROCESSO]', err);
+    alert(err.message || 'Erro ao assinar documento.');
+  }
+}
     carregarProcessos();
   </script>
 

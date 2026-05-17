@@ -356,6 +356,72 @@ const LivroOcorrenciaSchema = new mongoose.Schema(
   },
 },
 
+assinaturas: [
+  {
+    tipo: {
+      type: String,
+      enum: [
+        "coordenacao",
+        "direcao",
+        "comando",
+        "secretaria",
+        "outro",
+      ],
+      default: "outro",
+      index: true,
+    },
+
+    assinadoPor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Usuario",
+      default: null,
+    },
+
+    assinadoPorNome: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    cargo: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    observacao: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    hashRegistro: {
+      type: String,
+      trim: true,
+      default: "",
+      index: true,
+    },
+
+    ip: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    userAgent: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    assinadoEm: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+  },
+],
+
     criadoPor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Usuario",

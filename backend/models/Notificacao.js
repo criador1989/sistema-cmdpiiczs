@@ -283,7 +283,80 @@ const notificacaoSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
     index: true
+  },
+
+  /* =========================
+     NOVO FLUXO DISCIPLINAR
+  ========================= */
+
+  classificacaoOcorrencia: {
+    type: String,
+    enum: [
+      'indisciplina_leve',
+      'indisciplina_media',
+      'indisciplina_grave',
+      'ato_infracional'
+    ],
+    default: 'indisciplina_leve',
+    index: true
+  },
+
+  possuiViolencia: {
+    type: Boolean,
+    default: false
+  },
+
+  possuiLesao: {
+    type: Boolean,
+    default: false
+  },
+
+  possuiDanoPatrimonial: {
+    type: Boolean,
+    default: false
+  },
+
+  possuiSubstanciaIlicita: {
+    type: Boolean,
+    default: false
+  },
+
+  possuiArmaOuObjetoPerigoso: {
+    type: Boolean,
+    default: false
+  },
+
+  exigeEncaminhamentoExterno: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+
+  orgaoEncaminhamento: {
+    type: String,
+    enum: [
+      null,
+      'conselho_tutelar',
+      'ministerio_publico',
+      'delegacia',
+      'judiciario'
+    ],
+    default: null
+  },
+
+  processoDisciplinar: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ProcessoDisciplinar',
+    default: null,
+    index: true
+  },
+
+  processoInstaurado: {
+    type: Boolean,
+    default: false,
+    index: true
   }
+
 }, {
   timestamps: true
 });

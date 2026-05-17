@@ -895,18 +895,11 @@
         display:inline-flex;
         align-items:center;
         justify-content:center;
-
         padding:10px 16px;
-
         border-radius:999px;
-
-        background:
-          rgba(30,230,165,.14);
-
+        background:rgba(30,230,165,.14);
         color:var(--green);
-
         font-weight:700;
-
         margin-bottom:18px;
       ">
         REGISTRO HOMOLOGADO
@@ -921,18 +914,14 @@
         <strong>Data:</strong>
         ${
           r.homologacao?.homologadoEm
-            ? new Date(r.homologacao.homologadoEm)
-                .toLocaleString('pt-BR')
+            ? new Date(r.homologacao.homologadoEm).toLocaleString('pt-BR')
             : '-'
         }
       </div>
 
       <div>
         <strong>Observação:</strong><br>
-        ${
-          r.homologacao?.observacao ||
-          'Sem observações.'
-        }
+        ${r.homologacao?.observacao || 'Sem observações.'}
       </div>
 
     `
@@ -958,11 +947,90 @@
 
 </div>
 
-          <div class="painel">
+<div class="painel">
 
-            <h3 style="
-             color:var(--cyan);
-             margin-bottom:14px;"> Auditoria </h3>
+  <h3 style="
+    color:var(--cyan);
+    margin-bottom:14px;
+  ">
+    Assinatura Eletrônica Institucional
+  </h3>
+
+  ${
+    Array.isArray(r.assinaturas) &&
+    r.assinaturas.length
+
+    ? r.assinaturas
+        .slice()
+        .reverse()
+        .map(a => `
+
+          <div style="
+            padding:14px;
+            border-radius:16px;
+            background:rgba(30,230,165,.10);
+            border:1px solid rgba(30,230,165,.22);
+            margin-bottom:12px;
+          ">
+
+            <div style="
+              font-weight:800;
+              color:var(--green);
+              margin-bottom:8px;
+            ">
+              DOCUMENTO ASSINADO ELETRONICAMENTE
+            </div>
+
+            <div>
+              <strong>Assinado por:</strong>
+              ${a.assinadoPorNome || '-'}
+            </div>
+
+            <div>
+              <strong>Cargo/Função:</strong>
+              ${a.cargo || '-'}
+            </div>
+
+            <div>
+              <strong>Data:</strong>
+              ${
+                a.assinadoEm
+                  ? new Date(a.assinadoEm).toLocaleString('pt-BR')
+                  : '-'
+              }
+            </div>
+
+            <div style="
+              margin-top:8px;
+              color:var(--muted);
+              font-size:13px;
+              word-break:break-all;
+            ">
+              Hash: ${a.hashRegistro || '-'}
+            </div>
+
+          </div>
+
+        `).join('')
+
+    : `
+      <div style="
+        color:var(--muted);
+        margin-bottom:18px;
+      ">
+        Nenhuma assinatura eletrônica registrada.
+      </div>
+    `
+  }
+
+  <button
+    class="btn"
+    onclick="abrirModalAssinatura('${r._id}')"
+  >
+    Assinar Registro
+  </button>
+
+</div>
 
   <div style="margin-bottom:8px;">
     <strong>Criado por:</strong>
@@ -1382,7 +1450,76 @@ async function homologarRegistro(id){
   }
 
 }
+async function abrirModalAssinatura(id){
 
+  const tipo =
+    prompt(
+      'Tipo da assinatura: coordenacao, direcao, comando, secretaria ou outro',
+      'coordenacao'
+    ) || 'outro';
+
+  const cargo =
+    prompt(
+      'Cargo/Função que aparecerá na assinatura:',
+      'Coordenação Pedagógica'
+    ) || '';
+
+  const observacao =
+    prompt(
+      'Observação da assinatura (opcional):'
+    ) || '';
+
+  const senha =
+    prompt(
+      'Digite sua senha para confirmar a assinatura:'
+    );
+
+  if(!senha){
+    alert('Assinatura cancelada.');
+    return;
+  }
+
+  try{
+
+    const res = await fetch(
+      `/api/livro-ocorrencias/${id}/assinar`,
+      {
+        method:'POST',
+        credentials:'include',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({
+          senha,
+          tipo,
+          cargo,
+          observacao
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(!data.ok){
+      alert(data.message || 'Erro ao assinar.');
+      return;
+    }
+
+    alert('Registro assinado eletronicamente com sucesso.');
+
+    fecharModalLivro();
+
+    carregarRegistros();
+    carregarEstatisticas();
+
+  }catch(err){
+
+    console.error(err);
+    alert('Erro ao assinar registro.');
+
+  }
+
+}
     function fecharModalLivro(){
 
       if(modalAtual){

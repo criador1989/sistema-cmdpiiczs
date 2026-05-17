@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const {PDFDocument, StandardFonts, rgb} = require('pdf-lib');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const Usuario = require('../../models/Usuario');
 
 const router = express.Router();
 
@@ -1007,130 +1009,135 @@ await LivroOcorrenciaExportacao.create({
 
       for (const r of registros) {
 
-        if (y < 160) {
+  if (y < 160) {
+    novaPagina();
+    desenharHeaderTabela();
+  }
 
-          novaPagina();
+  page.drawLine({
+    start: { x: 36, y: y - 7 },
+    end: { x: 559, y: y - 7 },
+    thickness: 0.5,
+    color: rgb(0.82, 0.86, 0.90)
+  });
 
-          desenharHeaderTabela();
+  drawText(cortar(r.numeroLivro, 14), 42, y, 7.5);
+  drawText(cortar(r.numeroProcesso, 18), 118, y, 7.5);
+  drawText(cortar(r.aluno?.nome, 24), 196, y, 7.5);
+  drawText(cortar(r.aluno?.turma, 8), 335, y, 7.5);
+  drawText(cortar(r.gravidade, 12), 385, y, 7.5);
+  drawText(cortar(r.status, 14), 435, y, 7.5);
 
-        }
+  drawText(
+    r.updatedAt
+      ? new Date(r.updatedAt).toLocaleDateString('pt-BR')
+      : '-',
+    500,
+    y,
+    7.5
+  );
 
-        page.drawLine({
-          start: { x: 36, y: y - 7 },
-          end: { x: 559, y: y - 7 },
-          thickness: 0.5,
-          color:
-            rgb(0.82, 0.86, 0.90)
-        });
+  y -= 18;
 
-        drawText(
-          cortar(r.numeroLivro, 14),
-          42,
-          y,
-          7.5
-        );
+  if (r.homologacao?.homologado) {
 
-        drawText(
-          cortar(r.numeroProcesso, 18),
-          118,
-          y,
-          7.5
-        );
+    page.drawRectangle({
+      x: 42,
+      y: y - 4,
+      width: 500,
+      height: 42,
+      color: rgb(0.93, 0.98, 0.94)
+    });
 
-        drawText(
-          cortar(r.aluno?.nome, 24),
-          196,
-          y,
-          7.5
-        );
+    drawText(
+      'REGISTRO HOMOLOGADO INSTITUCIONALMENTE',
+      52,
+      y + 24,
+      7,
+      true
+    );
 
-        drawText(
-          cortar(r.aluno?.turma, 8),
-          335,
-          y,
-          7.5
-        );
+    drawText(
+      `Por: ${cortar(r.homologacao?.homologadoPorNome, 35)}`,
+      52,
+      y + 12,
+      6.5
+    );
 
-        drawText(
-          cortar(r.gravidade, 12),
-          385,
-          y,
-          7.5
-        );
+    if (r.homologacao?.observacao) {
+      drawText(
+        `Obs: ${cortar(r.homologacao.observacao, 60)}`,
+        52,
+        y,
+        6.5
+      );
+    }
 
-        drawText(
-          cortar(r.status, 14),
-          435,
-          y,
-          7.5
-        );
+    y -= 50;
+  }
 
-        drawText(
-          r.updatedAt
-            ? new Date(r.updatedAt)
-                .toLocaleDateString('pt-BR')
-            : '-',
-          500,
-          y,
-          7.5
-        );
+  if (
+    Array.isArray(r.assinaturas) &&
+    r.assinaturas.length
+  ) {
 
-        y -= 18;
+    for (const assinatura of r.assinaturas) {
 
-        if (r.homologacao?.homologado) {
-
-          page.drawRectangle({
-            x: 42,
-            y: y - 4,
-            width: 500,
-            height: 42,
-            color:
-              rgb(0.93, 0.98, 0.94)
-          });
-
-          drawText(
-            'REGISTRO HOMOLOGADO INSTITUCIONALMENTE',
-            52,
-            y + 24,
-            7,
-            true
-          );
-
-          drawText(
-            `Por: ${
-              cortar(
-                r.homologacao?.homologadoPorNome,
-                35
-              )
-            }`,
-            52,
-            y + 12,
-            6.5
-          );
-
-          if (
-            r.homologacao?.observacao
-          ) {
-
-            drawText(
-              `Obs: ${
-                cortar(
-                  r.homologacao.observacao,
-                  60
-                )
-              }`,
-              52,
-              y,
-              6.5
-            );
-
-          }
-
-          y -= 50;
-
-        }
-
+      if (y < 130) {
+        novaPagina();
+        desenharHeaderTabela();
       }
+
+      page.drawRectangle({
+        x: 42,
+        y: y - 4,
+        width: 500,
+        height: 54,
+        color: rgb(0.90, 0.96, 0.99)
+      });
+
+      drawText(
+        'DOCUMENTO ASSINADO ELETRONICAMENTE',
+        52,
+        y + 36,
+        7,
+        true
+      );
+
+      drawText(
+        `Por: ${cortar(assinatura.assinadoPorNome, 42)}`,
+        52,
+        y + 24,
+        6.5
+      );
+
+      drawText(
+        `Cargo/Função: ${cortar(assinatura.cargo, 42)}`,
+        52,
+        y + 12,
+        6.5
+      );
+
+      drawText(
+        assinatura.assinadoEm
+          ? `Data: ${new Date(assinatura.assinadoEm).toLocaleString('pt-BR')}`
+          : 'Data: -',
+        52,
+        y,
+        6.5
+      );
+
+      drawText(
+        `Hash: ${cortar(assinatura.hashRegistro, 64)}`,
+        260,
+        y,
+        6
+      );
+
+      y -= 64;
+    }
+  }
+}
 
       if (y < 180) {
 
@@ -1568,6 +1575,189 @@ router.post(
 
     }
 
+  }
+);
+
+/* =========================================================
+   ASSINAR REGISTRO DO LIVRO DIGITAL
+========================================================= */
+
+router.post(
+  '/:id/assinar',
+  autenticar,
+  requireTenant,
+  attachActor,
+  async (req, res) => {
+    try {
+      const tenantId = getTenantId(req);
+      const { id } = req.params;
+
+      const {
+        senha = '',
+        tipo = 'outro',
+        cargo = '',
+        observacao = ''
+      } = req.body || {};
+
+      if (!isObjectId(id)) {
+        return res.status(400).json({
+          ok: false,
+          message: 'ID inválido.'
+        });
+      }
+
+      if (!senha) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Informe sua senha para confirmar a assinatura.'
+        });
+      }
+
+      const usuarioReq = req.usuario || req.user || {};
+      const usuarioId = usuarioReq._id || usuarioReq.id;
+
+      if (!usuarioId) {
+        return res.status(401).json({
+          ok: false,
+          message: 'Usuário autenticado não identificado.'
+        });
+      }
+
+      const usuario = await Usuario
+  .findById(usuarioId)
+  .select('+senha')
+  .lean();
+
+      if (!usuario) {
+        return res.status(404).json({
+          ok: false,
+          message: 'Usuário não encontrado.'
+        });
+      }
+
+      const hashSenha =
+  usuario.senha ||
+  usuario.password ||
+  usuario.senhaHash ||
+  usuario.hashSenha ||
+  usuario.passwordHash ||
+  usuario.senha_hash ||
+  usuario.senhaCriptografada ||
+  usuario.credenciais?.senha ||
+  usuario.auth?.senha ||
+  '';
+
+      if (!hashSenha) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Usuário não possui senha válida para assinatura.'
+        });
+      }
+
+      const senhaValida = await bcrypt.compare(
+        senha,
+        hashSenha
+      );
+
+      if (!senhaValida) {
+        return res.status(401).json({
+          ok: false,
+          message: 'Senha inválida. Assinatura não realizada.'
+        });
+      }
+
+      const registro = await LivroOcorrencia.findOne({
+        _id: id,
+        ...buildTenantMatch(tenantId)
+      });
+
+      if (!registro) {
+        return res.status(404).json({
+          ok: false,
+          message: 'Registro não encontrado.'
+        });
+      }
+
+      const hashRegistro = crypto
+        .createHash('sha256')
+        .update(JSON.stringify({
+          registroId: String(registro._id),
+          numeroLivro: registro.numeroLivro,
+          numeroProcesso: registro.numeroProcesso,
+          status: registro.status,
+          documentos: registro.documentos || [],
+          movimentacoes: registro.movimentacoes || [],
+          assinadoPor: String(usuario._id),
+          assinadoEm: new Date().toISOString()
+        }))
+        .digest('hex');
+
+      const assinatura = {
+        tipo,
+        assinadoPor: usuario._id,
+        assinadoPorNome:
+          usuario.nome ||
+          usuario.name ||
+          usuario.email ||
+          'Usuário',
+
+        cargo:
+          cargo ||
+          usuario.cargo ||
+          usuario.funcao ||
+          usuario.perfil ||
+          usuario.tipo ||
+          'Usuário institucional',
+
+        observacao,
+        hashRegistro,
+
+        ip:
+          req.ip ||
+          req.headers['x-forwarded-for'] ||
+          '',
+
+        userAgent:
+          req.headers['user-agent'] ||
+          '',
+
+        assinadoEm:
+          new Date()
+      };
+
+      registro.assinaturas = registro.assinaturas || [];
+      registro.assinaturas.push(assinatura);
+      registro.markModified('assinaturas');
+
+      registro.movimentacoes.push({
+        tipo: 'observacao',
+        titulo: 'Registro assinado eletronicamente',
+        descricao:
+          `Assinatura eletrônica realizada por ${assinatura.assinadoPorNome}.`,
+        registradoPor: usuario._id,
+        registradoPorNome: assinatura.assinadoPorNome,
+        registradoEm: new Date()
+      });
+
+      await registro.save();
+
+      return res.json({
+        ok: true,
+        message: 'Registro assinado eletronicamente com sucesso.',
+        assinatura
+      });
+
+    } catch (err) {
+      console.error(
+        '[LIVRO_OCORRENCIAS][ASSINAR]',
+        err
+      );
+
+      return res.status(500).json({
+        ok: false,
+        message: 'Erro ao assinar registro.'
+      });
+    }
   }
 );
 

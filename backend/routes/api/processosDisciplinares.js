@@ -15,12 +15,15 @@ const { requireTenant } = require('../../middleware/tenantScope');
 const { logAction, attachActor } = require('../../utils/audit');
 const crypto = require('crypto');
 const mailer = require('../../utils/mailer');
+const bcrypt = require('bcryptjs');
+const Usuario = require('../../models/Usuario');
 
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const {
   PDFDocument,
+  StandardFonts,
   rgb
 } = require('pdf-lib');
 const QRCode = require('qrcode');
@@ -227,6 +230,270 @@ async function unirPdfs(pdfPaths, outputFinal) {
   fs.writeFileSync(outputFinal, finalBytes);
 
   return outputFinal;
+}
+
+async function inserirAssinaturasNoPdf(pdfPath, processo) {
+  if (!pdfPath || !fs.existsSync(pdfPath)) return;
+
+  const assinaturas =
+    Array.isArray(processo.assinaturas)
+      ? processo.assinaturas
+      : [];
+
+  if (!assinaturas.length) return;
+
+  const pdfBytes =
+    fs.readFileSync(pdfPath);
+
+  const pdfDoc =
+    await PDFDocument.load(pdfBytes);
+
+  const font =
+    await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const fontBold =
+    await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const page =
+    pdfDoc.addPage([595, 842]);
+
+  const { height } =
+    page.getSize();
+
+  page.drawRectangle({
+    x: 0,
+    y: height - 120,
+    width: 595,
+    height: 120,
+    color: rgb(0.06, 0.12, 0.22)
+  });
+
+  page.drawText(
+    'ASSINATURAS ELETRONICAS INSTITUCIONAIS',
+    {
+      x: 50,
+      y: height - 62,
+      size: 18,
+      font: fontBold,
+      color: rgb(1, 1, 1)
+    }
+  );
+
+  page.drawText(
+    `Procedimento: ${processo.numeroProcesso || '-'}`,
+    {
+      x: 50,
+      y: height - 88,
+      size: 11,
+      font,
+      color: rgb(0.85, 0.90, 1)
+    }
+  );
+
+  let y = height - 160;
+
+  assinaturas.forEach((a, index) => {
+    if (y < 90) return;
+
+    page.drawRectangle({
+      x: 45,
+      y: y - 78,
+      width: 505,
+      height: 88,
+      color: rgb(0.94, 0.97, 1)
+    });
+
+    page.drawText(
+      `${index + 1}. DOCUMENTO ASSINADO ELETRONICAMENTE`,
+      {
+        x: 60,
+        y,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.05, 0.12, 0.20)
+      }
+    );
+
+    page.drawText(
+      `Documento: ${a.documentoTipo || 'Processo/Dossie'}`,
+      {
+        x: 60,
+        y: y - 16,
+        size: 8,
+        font,
+        color: rgb(0.05, 0.12, 0.20)
+      }
+    );
+
+    page.drawText(
+      `Assinado por: ${a.assinadoPorNome || '-'}`,
+      {
+        x: 60,
+        y: y - 30,
+        size: 8,
+        font,
+        color: rgb(0.05, 0.12, 0.20)
+      }
+    );
+
+    page.drawText(
+      `Cargo/Função: ${a.cargo || '-'}`,
+      {
+        x: 60,
+        y: y - 44,
+        size: 8,
+        font,
+        color: rgb(0.05, 0.12, 0.20)
+      }
+    );
+
+    page.drawText(
+      `Data: ${
+        a.assinadoEm
+          ? new Date(a.assinadoEm).toLocaleString('pt-BR')
+          : '-'
+      }`,
+      {
+        x: 60,
+        y: y - 58,
+        size: 8,
+        font,
+        color: rgb(0.05, 0.12, 0.20)
+      }
+    );
+
+    page.drawText(
+      `Hash: ${a.hashAssinatura || '-'}`,
+      {
+        x: 60,
+        y: y - 72,
+        size: 6,
+        font,
+        color: rgb(0.20, 0.25, 0.32)
+      }
+    );
+
+    y -= 104;
+  });
+
+  const finalBytes =
+    await pdfDoc.save();
+
+  fs.writeFileSync(pdfPath, finalBytes);
+}
+
+async function inserirAssinaturaDocumentoNoPdf(
+  pdfPath,
+  assinatura,
+  documento
+) {
+  if (!pdfPath || !fs.existsSync(pdfPath)) return;
+
+  if (!assinatura) return;
+
+  const pdfBytes =
+    fs.readFileSync(pdfPath);
+
+  const pdfDoc =
+    await PDFDocument.load(pdfBytes);
+
+  const font =
+    await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const fontBold =
+    await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const pages =
+    pdfDoc.getPages();
+
+  if (!pages.length) return;
+
+  const page =
+    pages[pages.length - 1];
+
+  const pageWidth =
+    page.getWidth();
+
+  page.drawRectangle({
+    x: 40,
+    y: 48,
+    width: pageWidth - 80,
+    height: 72,
+    color: rgb(0.94, 0.97, 1)
+  });
+
+  page.drawText(
+    'DOCUMENTO ASSINADO ELETRONICAMENTE',
+    {
+      x: 52,
+      y: 102,
+      size: 9,
+      font: fontBold,
+      color: rgb(0.05, 0.12, 0.20)
+    }
+  );
+
+  page.drawText(
+    `Documento: ${documento?.titulo || documento?.tipo || '-'}`,
+    {
+      x: 52,
+      y: 88,
+      size: 7,
+      font,
+      color: rgb(0.05, 0.12, 0.20)
+    }
+  );
+
+  page.drawText(
+    `Assinado por: ${assinatura.assinadoPorNome || '-'}`,
+    {
+      x: 52,
+      y: 76,
+      size: 7,
+      font,
+      color: rgb(0.05, 0.12, 0.20)
+    }
+  );
+
+  page.drawText(
+    `Cargo/Função: ${assinatura.cargo || '-'}`,
+    {
+      x: 52,
+      y: 64,
+      size: 7,
+      font,
+      color: rgb(0.05, 0.12, 0.20)
+    }
+  );
+
+  page.drawText(
+    assinatura.assinadoEm
+      ? `Data: ${new Date(assinatura.assinadoEm).toLocaleString('pt-BR')}`
+      : 'Data: -',
+    {
+      x: 300,
+      y: 76,
+      size: 7,
+      font,
+      color: rgb(0.05, 0.12, 0.20)
+    }
+  );
+
+  page.drawText(
+    `Hash assinatura: ${assinatura.hashAssinatura || '-'}`,
+    {
+      x: 300,
+      y: 64,
+      size: 5.5,
+      font,
+      color: rgb(0.20, 0.25, 0.32)
+    }
+  );
+
+  const finalBytes =
+    await pdfDoc.save();
+
+  fs.writeFileSync(pdfPath, finalBytes);
 }
 
 async function inserirQrNoPdf(pdfPath, qrPath) {
@@ -3583,6 +3850,15 @@ router.post('/:id/gerar-dossie-pdf',
         ],
         outputFinal
       );
+        console.log(
+        '[DOSSIÊ][ASSINATURAS]',
+        processo.assinaturas?.length,
+        processo.assinaturas
+      );
+      await inserirAssinaturasNoPdf(
+        outputFinal,
+        processo
+      );
 
       const hashDossie = crypto
         .createHash('sha256')
@@ -3839,6 +4115,374 @@ router.get('/verificar-documento/:hash',
       return res.status(500).json({
         ok: false,
         message: 'Erro ao verificar documento.'
+      });
+    }
+  }
+);
+/* =========================================================
+   ASSINATURA ELETRÔNICA DO PROCESSO DISCIPLINAR
+========================================================= */
+
+router.post(
+  '/:id/assinar',
+  autenticar,
+  async (req, res) => {
+
+    try {
+
+      const { id } = req.params;
+
+      const {
+        senha = '',
+        tipo = 'outro',
+        cargo = '',
+        observacao = '',
+        documentoTipo = '',
+        documentoHash = ''
+      } = req.body || {};
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+
+        return res.status(400).json({
+          ok: false,
+          message: 'ID inválido.'
+        });
+
+      }
+
+      if (!senha) {
+
+        return res.status(400).json({
+          ok: false,
+          message:
+            'Informe sua senha para confirmar a assinatura.'
+        });
+
+      }
+
+      const usuarioReq =
+        req.usuario ||
+        req.user ||
+        {};
+
+      const usuarioId =
+        usuarioReq._id ||
+        usuarioReq.id;
+
+      if (!usuarioId) {
+
+        return res.status(401).json({
+          ok: false,
+          message:
+            'Usuário autenticado não identificado.'
+        });
+
+      }
+
+      const usuario =
+        await Usuario
+          .findById(usuarioId)
+          .select('+senha')
+          .lean();
+
+      if (!usuario) {
+
+        return res.status(404).json({
+          ok: false,
+          message:
+            'Usuário não encontrado.'
+        });
+
+      }
+
+      const hashSenha =
+        usuario.senha || '';
+
+      if (!hashSenha) {
+
+        return res.status(400).json({
+          ok: false,
+          message:
+            'Usuário sem senha válida.'
+        });
+
+      }
+
+      const senhaValida =
+        await bcrypt.compare(
+          senha,
+          hashSenha
+        );
+
+      if (!senhaValida) {
+
+        return res.status(401).json({
+          ok: false,
+          message:
+            'Senha inválida.'
+        });
+
+      }
+
+      const processo =
+        await ProcessoDisciplinar.findById(id);
+
+      if (!processo) {
+
+        return res.status(404).json({
+          ok: false,
+          message:
+            'Processo não encontrado.'
+        });
+
+      }
+
+      const hashAssinatura =
+        crypto
+          .createHash('sha256')
+          .update(JSON.stringify({
+
+            processoId:
+              String(processo._id),
+
+            numeroProcesso:
+              processo.numeroProcesso,
+
+            status:
+              processo.status,
+
+            documentoTipo,
+            documentoHash,
+
+            assinadoPor:
+              String(usuario._id),
+
+            assinadoEm:
+              new Date().toISOString()
+
+          }))
+          .digest('hex');
+
+      const assinatura = {
+
+        tipo,
+
+        documentoTipo,
+        documentoHash,
+
+        assinadoPor:
+          usuario._id,
+
+        assinadoPorNome:
+          usuario.nome ||
+          usuario.name ||
+          usuario.email ||
+          'Usuário',
+
+        cargo:
+          cargo ||
+          usuario.cargo ||
+          usuario.funcao ||
+          usuario.tipo ||
+          'Usuário institucional',
+
+        observacao,
+
+        hashAssinatura,
+
+        ip:
+          req.ip ||
+          req.headers['x-forwarded-for'] ||
+          '',
+
+        userAgent:
+          req.headers['user-agent'] ||
+          '',
+
+        assinadoEm:
+          new Date()
+
+      };
+
+      processo.assinaturas =
+        processo.assinaturas || [];
+
+      processo.assinaturas.push(
+        assinatura
+      );
+
+      processo.markModified(
+        'assinaturas'
+      );
+
+      processo.timeline.push({
+
+        tipo:
+          'observacao',
+
+        titulo:
+          'Processo assinado eletronicamente',
+
+        descricao:
+          `Assinatura eletrônica realizada por ${assinatura.assinadoPorNome}.`,
+
+        usuario:
+          usuario._id,
+
+        criadoEm:
+          new Date(),
+
+        metadados: {
+          assinatura:
+            hashAssinatura
+        }
+
+      });
+
+      await processo.save();
+
+      return res.json({
+
+        ok: true,
+
+        message:
+          'Processo assinado eletronicamente com sucesso.',
+
+        assinatura
+
+      });
+
+    } catch (err) {
+
+      console.error(
+        '[PROCESSO_DISCIPLINAR][ASSINAR]',
+        err
+      );
+
+      return res.status(500).json({
+        ok: false,
+        message:
+          'Erro ao assinar processo.'
+      });
+
+    }
+
+  }
+);
+/* =========================================================
+   BAIXAR DOCUMENTO INDIVIDUAL ASSINADO EM PDF
+========================================================= */
+
+router.get(
+  '/:id/documento-assinado-pdf',
+  autenticar,
+  requireTenant,
+  attachActor,
+  async (req, res) => {
+    try {
+      const tenantId = getTenantId(req);
+      const { id } = req.params;
+      const { hash = '' } = req.query || {};
+
+      if (!isObjectId(id)) {
+        return res.status(400).json({
+          message: 'ID inválido.'
+        });
+      }
+
+      if (!hash) {
+        return res.status(400).json({
+          message: 'Hash do documento não informado.'
+        });
+      }
+
+      const processo = await ProcessoDisciplinar.findOne({
+        _id: id,
+        ...buildTenantMatch(tenantId),
+        ativo: { $ne: false }
+      });
+
+      if (!processo) {
+        return res.status(404).json({
+          message: 'Processo não encontrado.'
+        });
+      }
+
+      const documento = (processo.documentos || [])
+        .find(d => d.hash === hash);
+
+      if (!documento) {
+        return res.status(404).json({
+          message: 'Documento não encontrado neste processo.'
+        });
+      }
+
+      const assinatura = (processo.assinaturas || [])
+        .slice()
+        .reverse()
+        .find(a => a.documentoHash === hash);
+
+      if (!assinatura) {
+        return res.status(404).json({
+          message: 'Este documento ainda não possui assinatura eletrônica.'
+        });
+      }
+
+      const caminhoOriginal =
+        documento.caminhoLocal || documento.url || '';
+
+      if (!caminhoOriginal || !fs.existsSync(caminhoOriginal)) {
+        return res.status(404).json({
+          message: 'Arquivo original do documento não localizado.'
+        });
+      }
+
+      let pdfBasePath = caminhoOriginal;
+
+      if (/\.docx$/i.test(caminhoOriginal)) {
+        pdfBasePath = await converterDocxParaPdf(caminhoOriginal);
+      }
+
+      const nomeAssinado =
+        `assinado_${path.basename(pdfBasePath)}`;
+
+      const outputAssinado =
+        path.join(
+          path.dirname(pdfBasePath),
+          nomeAssinado
+        );
+
+      fs.copyFileSync(
+        pdfBasePath,
+        outputAssinado
+      );
+
+      await inserirAssinaturaDocumentoNoPdf(
+        outputAssinado,
+        assinatura,
+        documento
+      );
+
+      res.setHeader(
+        'Content-Type',
+        'application/pdf'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="${nomeAssinado}"`
+      );
+
+      return res.sendFile(outputAssinado);
+
+    } catch (err) {
+      console.error(
+        '[PROCESSO][DOCUMENTO_ASSINADO_PDF]',
+        err
+      );
+
+      return res.status(500).json({
+        message: 'Erro ao gerar PDF assinado do documento.'
       });
     }
   }

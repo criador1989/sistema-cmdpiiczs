@@ -13,9 +13,9 @@ async function gerarPdfComunicacao(doc = {}) {
   const instituicao = doc.instituicao || 'Colégio Militar Dom Pedro II — CZS';
   const tipoMedida = doc.tipoMedida || 'Medida Disciplinar';
   const numeroSeq = doc.numeroSequencial || '—';
-  const dataNotif = formatarData(doc.dataNotificacao);
-  const dataInicio = formatarData(doc.dataInicio);
-  const dataFim = formatarData(doc.dataFim);
+  const dataNotif = dataBR(doc.dataNotificacao);
+  const dataInicio = dataBR(doc.dataInicio);
+  const dataFim = dataBR(doc.dataFim);
   const horaApresentacao = doc.horaApresentacao || '14:00';
   const horaSaida = doc.horaSaida || '18:00';
   const observacao = doc.observacao || '—';
@@ -128,7 +128,7 @@ async function gerarPdfComunicacao(doc = {}) {
 
 /* ===== helpers ===== */
 
-function formatarData(d) {
+function dataBR(d) {
   if (!d) return '—';
   try {
     return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'America/Rio_Branco' });

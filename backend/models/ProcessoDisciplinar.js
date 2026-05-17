@@ -576,15 +576,97 @@ const processoDisciplinarSchema = new mongoose.Schema({
   },
 
   documentos: {
-    type: [documentoSchema],
-    default: []
-  },
+  type: [documentoSchema],
+  default: []
+},
 
-  ativo: {
-    type: Boolean,
-    default: true,
-    index: true
+assinaturas: [
+  {
+    tipo: {
+      type: String,
+      enum: [
+        'coordenacao',
+        'direcao',
+        'comando',
+        'secretaria',
+        'responsavel',
+        'aluno',
+        'outro'
+      ],
+      default: 'outro',
+      index: true
+    },
+
+    documentoTipo: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true
+    },
+
+    documentoHash: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true
+    },
+
+    assinadoPor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Usuario',
+      default: null
+    },
+
+    assinadoPorNome: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    cargo: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    observacao: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    hashAssinatura: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true
+    },
+
+    ip: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    userAgent: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
+    assinadoEm: {
+      type: Date,
+      default: Date.now,
+      index: true
+    }
   }
+],
+
+ativo: {
+  type: Boolean,
+  default: true,
+  index: true
+}
 }, {
   timestamps: true
 });
