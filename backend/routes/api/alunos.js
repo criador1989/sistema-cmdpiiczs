@@ -791,7 +791,72 @@ router.get('/:id/detalhes', autenticar, requireTenant, async (req, res) => {
 });
 
 // PUT - Atualizar foto
-router.put('/:id/foto', autenticar, requireTenant, apenasMonitorOuAdmin, upload.single('foto'), async (req, res) => {
+router.put(
+  '/:id/foto',
+  autenticar,
+  requireTenant,
+
+  async (req, res, next) => {
+
+    try {
+
+      const tipoUsuario = String(
+        req.usuario?.tipo ||
+        req.user?.tipo ||
+        ''
+      ).toLowerCase();
+
+      const usuarioId = String(
+        req.usuario?.id ||
+        req.usuario?._id ||
+        req.user?.id ||
+        req.user?._id ||
+        ''
+      );
+
+      const alunoIdToken = String(
+        req.usuario?.alunoId ||
+        req.user?.alunoId ||
+        ''
+      );
+
+      const alunoIdParam = String(req.params.id || '');
+
+      // ADMIN / MONITOR
+      if (
+        tipoUsuario === 'admin' ||
+        tipoUsuario === 'monitor'
+      ) {
+        return next();
+      }
+
+      // ALUNO
+      if (
+        tipoUsuario === 'aluno' &&
+        alunoIdToken === alunoIdParam
+      ) {
+        return next();
+      }
+
+      return res.status(403).json({
+        message: 'Você não possui permissão para alterar esta foto.'
+      });
+
+    } catch (err) {
+
+      console.error(err);
+
+      return res.status(500).json({
+        message: 'Erro de autenticação.'
+      });
+
+    }
+
+  },
+
+  upload.single('foto'),
+
+  async (req, res) => {
   try {
     const { id } = req.params;
 

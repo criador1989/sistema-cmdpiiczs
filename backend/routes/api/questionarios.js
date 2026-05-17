@@ -391,17 +391,52 @@ router.get('/resumo', async (req, res) => {
   try {
     const instituicaoRaw = getInstituicaoRaw(req);
     const alunoId = getAlunoId(req);
+    const usuarioId = getUsuarioId(req);
 
     if (!instituicaoRaw) return respostaErro(res, 400, 'Instituição não identificada.');
-    if (!alunoId) return respostaErro(res, 400, 'Aluno não identificado.');
+    if (!alunoId && !usuarioId) return respostaErro(res, 400, 'Aluno não identificado.');
 
-    const matchInstituicao = buildTentativaInstituicaoMatch(instituicaoRaw);
-    if (!matchInstituicao) return respostaErro(res, 400, 'Instituição inválida.');
+    const instValor = getInstituicaoRawValue(instituicaoRaw);
+    const instTexto = String(instValor || '').trim();
+
+    const instituicoesPossiveis = [];
+
+    if (instTexto) instituicoesPossiveis.push(instTexto);
+    if (mongoose.Types.ObjectId.isValid(instTexto)) {
+      instituicoesPossiveis.push(new mongoose.Types.ObjectId(instTexto));
+    }
+
+    if (req.query?.t) {
+      const tenantQuery = String(req.query.t).trim();
+      if (tenantQuery) instituicoesPossiveis.push(tenantQuery);
+    }
+
+    if (req.tenantSlug) {
+      instituicoesPossiveis.push(String(req.tenantSlug).trim());
+    }
+
+    const idsPossiveis = [];
+
+    for (const id of [alunoId, usuarioId]) {
+      if (!id) continue;
+
+      const texto = String(id).trim();
+      if (!texto) continue;
+
+      idsPossiveis.push(texto);
+
+      if (mongoose.Types.ObjectId.isValid(texto)) {
+        idsPossiveis.push(new mongoose.Types.ObjectId(texto));
+      }
+    }
 
     const tentativas = await QuestionarioTentativa.find({
-      ...matchInstituicao,
-      aluno: toObjectIdSeValido(alunoId),
-      status: 'finalizado'
+      instituicao: { $in: instituicoesPossiveis },
+      status: { $in: ['finalizado', 'em_andamento'] },
+      $or: [
+        { aluno: { $in: idsPossiveis } },
+        { usuarioAluno: { $in: idsPossiveis } }
+      ]
     })
       .sort({ createdAt: -1 })
       .limit(20)

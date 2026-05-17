@@ -81,12 +81,33 @@
     btnAbrirQuestionarios: document.getElementById('btnAbrirQuestionarios'),
 
     menuButtons: Array.from(document.querySelectorAll('.menu-btn')),
-    fadeItems: Array.from(document.querySelectorAll('.fade-up'))
+    fadeItems: Array.from(document.querySelectorAll('.fade-up')),
+
+inputTrocarFoto: document.getElementById('inputTrocarFoto'),
+fotoAlunoSidebar: document.getElementById('fotoAlunoSidebar')
   };
 
   function setText(element, value) {
     if (element) element.textContent = value ?? '--';
   }
+  function cacheBustUrl(url) {
+  if (!url) return '';
+
+  const texto = String(url);
+
+  if (
+    texto.includes('cloudfront.net') ||
+    texto.includes('amazonaws.com') ||
+    texto.includes('Signature=') ||
+    texto.includes('Key-Pair-Id=') ||
+    texto.includes('Expires=')
+  ) {
+    return texto;
+  }
+
+  const sep = texto.includes('?') ? '&' : '?';
+  return `${texto}${sep}v=${Date.now()}`;
+}
 
   function getTenantFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -231,14 +252,22 @@
   }
 
   async function loadQuestionarioResumo() {
-    try {
-      const { resumo } = await apiFetch(buildUrl('/api/questionarios/resumo'));
-      state.questionarioResumo = resumo || null;
-    } catch (error) {
-      console.warn('Resumo de questionários não carregado:', error?.message || error);
-      state.questionarioResumo = null;
-    }
+  try {
+    const payload = await apiFetch(buildUrl('/api/questionarios/resumo'));
+
+    console.log('[ALUNO][QUESTIONARIO_RESUMO]', payload);
+
+    state.questionarioResumo =
+      payload?.resumo ||
+      payload?.data ||
+      payload ||
+      null;
+
+  } catch (error) {
+    console.warn('Resumo de questionários não carregado:', error?.message || error);
+    state.questionarioResumo = null;
   }
+}
 
   function getInitials(name) {
     const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -338,7 +367,9 @@
     notaSimulada = Math.round(mediaQuestionarios * 9);
     evolucaoSemanal = 0;
     percentil = Math.max(1, Math.min(100, Math.round(mediaQuestionarios)));
-    foco = resumoQuestionario.focoRecomendado || resumoQuestionario.areaMaisFraca || 'Questionários';
+    foco = resumoQuestionario.areaMaisFraca
+  ? resumoQuestionario.areaMaisFraca
+  : 'Treino contínuo';
   }
 
   if (temRedacao && Number.isFinite(notaRedacao)) {
@@ -349,7 +380,7 @@
     foco = historicoRedacao[0]?.focoPrincipal || foco || 'Redação';
   }
 
-  const statCards = Array.from(document.querySelectorAll('.stats-grid .stat-card'));
+  const statCards = Array.from(document.querySelectorAll('.stats-grid .paper-card, .stats-grid .stat-card'));
 
   if (statCards[0]) {
     statCards[0].querySelector('.stat-value').textContent = String(notaSimulada);
@@ -373,8 +404,8 @@
   if (statCards[3]) {
     statCards[3].querySelector('.stat-value').textContent = foco;
     statCards[3].querySelector('.stat-help').textContent = temQuestionario || temRedacao
-      ? 'Área indicada pelos dados atuais.'
-      : 'Faça uma atividade para gerar recomendação.';
+  ? (resumoQuestionario.focoRecomendado || 'Mantenha a rotina de treino.')
+  : 'Faça uma atividade para gerar recomendação.';
   }
 }
 
@@ -509,9 +540,27 @@ function renderActivityList() {
       'Instituição';
 
     const initials = getInitials(nome);
-    const imageUrl = aluno.fotoUrl || aluno.fotoThumbUrl || '';
+    const imageUrl =
+  aluno.fotoUrl ||
+  aluno.fotoOriginal ||
+  aluno.foto ||
+  (
+    aluno.fotoThumbUrl && !String(aluno.fotoThumbUrl).includes('/api/imagens/thumb/')
+      ? aluno.fotoThumbUrl
+      : ''
+  );
+    if (el.fotoAlunoSidebar) {
+  if (imageUrl) {
+    el.fotoAlunoSidebar.src = cacheBustUrl(imageUrl);
+    el.fotoAlunoSidebar.style.display = 'block';
+  } else {
+    el.fotoAlunoSidebar.removeAttribute('src');
+    el.fotoAlunoSidebar.style.display = 'none';
+  }
+}
 
-    fillAvatar(el.sidebarAvatar, imageUrl, initials);
+    if (el.sidebarAvatar && !el.fotoAlunoSidebar) {
+}
     fillAvatar(el.mobileAvatar, imageUrl, initials);
 
     setText(el.sidebarNome, nome);
@@ -624,7 +673,7 @@ function renderActivityList() {
 
   function setupSoftInteractions() {
     const cards = document.querySelectorAll(
-      '.stat-card, .panel, .mission-card, .activity-item, .diagnostic-item'
+      '.paper-card, .stat-card, .panel, .mission-card, .activity-item, .diagnostic-item'
     );
 
     cards.forEach((card) => {
@@ -684,6 +733,95 @@ function renderActivityList() {
   el.btnLogoutSidebar?.addEventListener('click', logout);
   el.btnLogoutMobile?.addEventListener('click', logout);
   el.btnAtualizarSidebar?.addEventListener('click', boot);
+
+  el.inputTrocarFoto?.addEventListener(
+  'change',
+  async (e) => {
+
+    const arquivo = e.target.files?.[0];
+
+    if (!arquivo) return;
+
+    try {
+
+      const formData = new FormData();
+
+      formData.append('foto', arquivo);
+
+      const alunoId =
+        state.aluno?._id ||
+        state.usuario?.alunoId;
+
+      if (!alunoId) {
+        throw new Error(
+          'Aluno não identificado.'
+        );
+      }
+
+      const response = await fetch(
+        buildUrl(`/api/alunos/${alunoId}/foto`),
+        {
+          method: 'PUT',
+
+          headers: {
+            Authorization:
+              'Bearer ' + state.token
+          },
+
+          body: formData
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+          'Erro ao atualizar foto.'
+        );
+      }
+
+      const novaFoto =
+        data?.fotoUrl ||
+        data?.aluno?.fotoUrl ||
+        '';
+
+      if (novaFoto) {
+
+        if (el.fotoAlunoSidebar) {
+          el.fotoAlunoSidebar.src = cacheBustUrl(novaFoto);
+el.fotoAlunoSidebar.style.display = 'block';
+        }
+
+        if (state.aluno) {
+          state.aluno.fotoUrl = novaFoto;
+                  }
+
+        localStorage.setItem(
+          STORAGE.aluno,
+          JSON.stringify(state.aluno)
+        );
+
+      }
+await loadAlunoDetails(alunoId);
+renderData();
+      alert(
+        'Foto atualizada com sucesso.'
+      );
+
+    } catch (err) {
+
+      console.error(err);
+
+      alert(
+        err.message ||
+        'Erro ao enviar foto.'
+      );
+
+    }
+
+  }
+);
 
   setupMenu();
   boot();
