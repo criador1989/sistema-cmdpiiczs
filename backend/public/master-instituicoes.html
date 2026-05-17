@@ -1379,9 +1379,37 @@
 
         renderResultadoAcessos(data);
 
-        if (turmaAcesso.value) {
-          await btnCarregarAlunosTurma.click();
-        }
+// Atualiza visualmente a lista sem apagar o resultado gerado
+const atualizados = [
+  ...(Array.isArray(data?.acessos) ? data.acessos : []),
+  ...(Array.isArray(data?.reutilizados) ? data.reutilizados : [])
+];
+
+if (atualizados.length) {
+  const mapa = new Map(atualizados.map(item => [String(item.alunoId), item]));
+
+  alunosTurmaAtual = alunosTurmaAtual.map(aluno => {
+    const id = String(aluno?._id || aluno?.id || '');
+    const info = mapa.get(id);
+
+    if (!info) return aluno;
+
+    return {
+      ...aluno,
+      usuarioId: info.usuarioId || aluno.usuarioId,
+      temAcesso: true,
+      acessoCriado: true,
+      codigoAcesso: info.codigoAcesso || aluno.codigoAcesso,
+      senhaGerada: info.senha || aluno.senhaGerada,
+      contatos: {
+        ...(aluno.contatos || {}),
+        emailResponsavel: info.email || aluno?.contatos?.emailResponsavel || ''
+      }
+    };
+  });
+
+  renderListaAlunosAcesso();
+}
       } catch (err) {
         showMsg(msgAcessoLote, 'err', 'Erro de conexão ao gerar acessos.');
       } finally {

@@ -8,6 +8,36 @@ const Aluno = require("../../models/Aluno");
 
 const { requireTenant } = require("../../middleware/tenantScope");
 
+// 🔽 ORDEM PERSONALIZADA DAS TURMAS (IMPORTANTE)
+const ordemTurmasRifa = [
+  "6ºA", "6ºB", "6ºC", "6ºD",
+  "7ºA", "7ºB", "7ºC", "7ºD",
+  "8ºA", "8ºB", "8ºC", "8ºD",
+  "9ºA", "9ºB", "9ºC", "9ºD",
+
+  "1ºA", "1ºB", "1ºC", "1ºD",
+  "2ºA", "2ºB", "2ºC", "2ºD",
+  "3ºA", "3ºB", "3ºC", "3ºD",
+];
+
+function normalizarTurmaRifa(turma) {
+  return String(turma || "")
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/-/g, "")
+    .replace(/[ª°º]/g, "º")
+    .replace("ANO", "")
+    .replace("SERIE", "");
+}
+
+function indiceTurmaRifaBackend(turma) {
+  const t = normalizarTurmaRifa(turma);
+  const i = ordemTurmasRifa.findIndex(x => normalizarTurmaRifa(x) === t);
+  return i >= 0 ? i : 999;
+}
+
 function getUsuarioReq(req) {
   return req.usuario || req.user || {};
 }
@@ -1209,11 +1239,22 @@ router.get(
             data: "$dataDistribuicao",
           },
         },
-        { $sort: { nome: 1 } },
+        { $sort: { turma: 1, nome: 1 } },
       ]);
 
       // Monta estrutura pronta para impressão
-      const lista = dados.map((d, i) => ({
+      const lista = dados
+  .sort((a, b) => {
+    const turmaA = indiceTurmaRifaBackend(a.turma);
+    const turmaB = indiceTurmaRifaBackend(b.turma);
+
+    if (turmaA !== turmaB) return turmaA - turmaB;
+
+    return String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR", {
+      sensitivity: "base",
+    });
+  })
+  .map((d, i) => ({
         ordem: i + 1,
         nome: d.nome,
         tipo: d.tipo,

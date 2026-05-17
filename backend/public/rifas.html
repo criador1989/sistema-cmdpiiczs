@@ -1898,14 +1898,15 @@
 
 
     const ordemTurmasRifa = [
-      "6ºA", "6ºB",
-      "7ºA", "7ºB",
-      "8ºA", "8ºB",
-      "9ºA", "9ºB",
-      "1ºA", "1ºB",
-      "2ºA", "2ºB",
-      "3ºA", "3ºB"
-    ];
+  "6ºA", "6ºB", "6ºC", "6ºD",
+  "7ºA", "7ºB", "7ºC", "7ºD",
+  "8ºA", "8ºB", "8ºC", "8ºD",
+  "9ºA", "9ºB", "9ºC", "9ºD",
+
+  "1ºA", "1ºB", "1ºC", "1ºD",
+  "2ºA", "2ºB", "2ºC", "2ºD",
+  "3ºA", "3ºB", "3ºC", "3ºD",
+];
 
     function normalizarTurmaRifa(turma) {
       return String(turma || "")
@@ -2006,14 +2007,18 @@
         }
 
         autoAlunos = alunos
-          .filter(a => a && a._id && a.nome)
-          .filter(a => !alunoDeTesteRifa(a))
-          .sort((a, b) => {
-            const turmaA = indiceTurmaRifa(a.turma);
-            const turmaB = indiceTurmaRifa(b.turma);
-            if (turmaA !== turmaB) return turmaA - turmaB;
-            return String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR");
-          });
+  .filter(a => a && a._id && a.nome)
+  .filter(a => !alunoDeTesteRifa(a))
+  .sort((a, b) => {
+    const turmaA = indiceTurmaRifa(a.turma);
+    const turmaB = indiceTurmaRifa(b.turma);
+
+    if (turmaA !== turmaB) return turmaA - turmaB;
+
+    return String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR", {
+      sensitivity: "base",
+    });
+  });
 
         renderizarListaAlunosAuto();
       } catch (e) {

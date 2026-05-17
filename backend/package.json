@@ -18,10 +18,10 @@
   "author": "Colégio Militar Dom Pedro II - Cruzeiro do Sul",
   "license": "ISC",
   "engines": {
-    "node": "20.x"
+    "node": ">=20"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1008.0",
+    "@aws-sdk/client-s3": "^3.1038.0",
     "@aws-sdk/cloudfront-signer": "^3.1005.0",
     "@aws-sdk/lib-storage": "^3.1004.0",
     "axios": "^1.9.0",
@@ -34,6 +34,7 @@
     "date-fns": "^4.1.0",
     "docx": "^9.5.0",
     "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.7.2",

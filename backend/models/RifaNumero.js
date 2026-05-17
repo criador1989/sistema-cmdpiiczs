@@ -38,7 +38,7 @@ const RifaNumeroSchema = new mongoose.Schema(
 
     responsavelTipo: {
       type: String,
-      enum: ["aluno", "servidor", "externo", "outro", ""],
+      enum: ["aluno", "professor", "servidor", "externo", "outro", ""],
       default: "",
     },
 

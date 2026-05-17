@@ -70,9 +70,30 @@ const CampanhaRifaSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["ativa", "encerrada", "cancelada"],
+      enum: ["ativa", "encerrada", "cancelada", "arquivada"],
       default: "ativa",
       index: true,
+    },
+
+    motivoCancelamento: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    canceladaEm: {
+      type: Date,
+      default: null,
+    },
+
+    encerradaEm: {
+      type: Date,
+      default: null,
+    },
+
+    arquivadaEm: {
+      type: Date,
+      default: null,
     },
 
     criadoPor: {
