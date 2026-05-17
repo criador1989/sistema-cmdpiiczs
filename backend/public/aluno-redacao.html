@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin • Redação ENEM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-1:#07111f;
+      --bg-2:#0b1b31;
+      --glass:rgba(255,255,255,.08);
+      --glass-strong:rgba(255,255,255,.12);
+      --line:rgba(122,198,255,.22);
+      --text:#e8f3ff;
+      --muted:#93a8c7;
+      --cyan:#58d7ff;
+      --blue:#4c82ff;
+      --green:#35d28a;
+      --yellow:#f8d26a;
+      --red:#ff6b6b;
+      --shadow:0 10px 40px rgba(0,0,0,.35);
+      --radius:22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body{
+      margin:0;
+      font-family:'Rajdhani', sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(88,215,255,.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(76,130,255,.14), transparent 24%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-2));
+      min-height:100vh;
+    }
+
+    .page{
+      max-width:1400px;
+      margin:0 auto;
+      padding:22px;
+    }
+
+    .hero{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:20px;
+      margin-bottom:22px;
+      padding:24px;
+      border:1px solid var(--line);
+      border-radius:28px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero h1{
+      margin:0 0 8px;
+      font-family:'Orbitron', sans-serif;
+      letter-spacing:.04em;
+      font-size:clamp(1.4rem, 3vw, 2.4rem);
+    }
+
+    .hero p{
+      margin:0;
+      color:var(--muted);
+      font-size:1.05rem;
+    }
+
+    .hero-badges{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .badge{
+      padding:10px 14px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      color:#dff6ff;
+      font-weight:700;
+      font-size:.96rem;
+    }
+
+    .badge.warn {
+      color:#fff0c7;
+      border-color:rgba(248,210,106,.25);
+      background:rgba(248,210,106,.10);
+    }
+
+    .badge.good {
+      color:#cffff0;
+      border-color:rgba(53,210,138,.25);
+      background:rgba(53,210,138,.10);
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:22px;
+    }
+
+    .card{
+      background:var(--glass);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .card-header{
+      padding:18px 20px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .card-header h2{
+      margin:0;
+      font-size:1.35rem;
+    }
+
+    .card-body{
+      padding:20px;
+    }
+
+    .meta-grid{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .mini{
+      padding:14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .mini .label{
+      color:var(--muted);
+      font-size:.92rem;
+      margin-bottom:6px;
+    }
+
+    .mini .value{
+      font-size:1.3rem;
+      font-weight:700;
+    }
+
+    .tema-titulo{
+      margin:0 0 12px;
+      font-size:1.6rem;
+      color:#ffffff;
+    }
+
+    .tema-proposta{
+      margin:0;
+      color:#d9ebff;
+      white-space:pre-wrap;
+      line-height:1.5;
+      font-size:1.02rem;
+    }
+
+    .motivadores{
+      display:grid;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .motivador{
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      border-radius:18px;
+      padding:14px;
+    }
+
+    .motivador h4{
+      margin:0 0 8px;
+      font-size:1.05rem;
+      color:#cfefff;
+    }
+
+    .motivador p{
+      margin:0;
+      color:#dcecff;
+      white-space:pre-wrap;
+      line-height:1.45;
+    }
+
+    .motivador small{
+      display:block;
+      margin-top:8px;
+      color:var(--muted);
+    }
+
+    textarea{
+      width:100%;
+      min-height:440px;
+      resize:vertical;
+      padding:18px;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(6,15,28,.65);
+      color:#f0f7ff;
+      font:600 1.04rem/1.55 'Rajdhani', sans-serif;
+      outline:none;
+    }
+
+    textarea:focus{
+      border-color:rgba(88,215,255,.55);
+      box-shadow:0 0 0 4px rgba(88,215,255,.08);
+    }
+
+    .tools{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin:16px 0;
+    }
+
+    button{
+      border:none;
+      cursor:pointer;
+      border-radius:14px;
+      padding:12px 18px;
+      font-family:'Rajdhani', sans-serif;
+      font-weight:700;
+      font-size:1rem;
+      transition:.2s ease;
+    }
+
+    .btn-primary{
+      background:linear-gradient(135deg, var(--cyan), var(--blue));
+      color:#02111f;
+    }
+
+    .btn-secondary{
+      background:rgba(255,255,255,.08);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .btn-danger{
+      background:rgba(255,107,107,.12);
+      color:#ffd0d0;
+      border:1px solid rgba(255,107,107,.24);
+    }
+
+    button:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.06);
+    }
+
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .status{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+
+    .historico-lista{
+      display:grid;
+      gap:12px;
+    }
+
+    .hist-item{
+      padding:14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+      cursor:pointer;
+    }
+
+    .hist-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      margin-bottom:8px;
+    }
+
+    .hist-top strong{
+      font-size:1.02rem;
+    }
+
+    .hist-tags{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .tag{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:.88rem;
+      font-weight:700;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      color:#dff4ff;
+    }
+
+    .resultado{
+      display:none;
+      margin-top:18px;
+      padding:18px;
+      border-radius:20px;
+      border:1px solid rgba(53,210,138,.24);
+      background:rgba(53,210,138,.08);
+    }
+
+    .resultado.visible{
+      display:block;
+    }
+
+    .nota-total{
+      font-family:'Orbitron', sans-serif;
+      font-size:2rem;
+      margin:0 0 12px;
+      color:#b8ffe1;
+    }
+
+    .comp-grid{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap:10px;
+      margin-bottom:16px;
+    }
+
+    .comp{
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      text-align:center;
+    }
+
+    .comp .c{
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .comp .n{
+      font-size:1.25rem;
+      font-weight:700;
+    }
+
+    .block{
+      margin-top:14px;
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .block h4{
+      margin:0 0 8px;
+      color:#dff5ff;
+    }
+
+    .block p, .block li{
+      color:#e4f0ff;
+      line-height:1.45;
+    }
+
+    .block ul{
+      margin:0;
+      padding-left:18px;
+    }
+
+    .apoio-box{
+      display:none;
+      margin-top:16px;
+      padding:16px;
+      border-radius:18px;
+      border:1px solid rgba(248,210,106,.24);
+      background:rgba(248,210,106,.08);
+    }
+
+    .apoio-box.visible{
+      display:block;
+    }
+
+    .apoio-box textarea{
+      min-height:120px;
+      margin-top:10px;
+    }
+
+    .empty{
+      color:var(--muted);
+      text-align:center;
+      padding:24px 14px;
+    }
+
+    .muted{
+      color:var(--muted);
+    }
+
+    @media (max-width: 1080px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .meta-grid,
+      .comp-grid{
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 640px){
+      .page{ padding:14px; }
+      .hero{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .meta-grid,
+      .comp-grid{
+        grid-template-columns:1fr;
+      }
+      textarea{
+        min-height:320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <h1>Redação ENEM</h1>
+        <p>Escreva, envie, receba devolutiva da IA e foque na sua melhoria de forma prática.</p>
+      </div>
+      <div class="hero-badges">
+        <div class="badge" id="badgeTimer">Tempo: 00:00:00</div>
+        <div class="badge" id="badgePalavras">Palavras: 0</div>
+        <div class="badge warn" id="badgeLimiteMensal">Redações no mês: --/2</div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <div class="card-header">
+          <h2>Produção textual</h2>
+          <span class="muted" id="temaStatus">Carregando tema...</span>
+        </div>
+
+        <div class="card-body">
+          <div class="meta-grid">
+            <div class="mini">
+              <div class="label">Tempo sugerido</div>
+              <div class="value" id="tempoSugerido">--</div>
+            </div>
+            <div class="mini">
+              <div class="label">Mínimo de palavras</div>
+              <div class="value" id="minPalavras">--</div>
+            </div>
+            <div class="mini">
+              <div class="label">Máximo sugerido</div>
+              <div class="value" id="maxPalavras">--</div>
+            </div>
+            <div class="mini">
+              <div class="label">Rascunho local</div>
+              <div class="value" id="rascunhoStatus">Vazio</div>
+            </div>
+            <div class="mini">
+              <div class="label">Restantes no mês</div>
+              <div class="value" id="restantesMes">--</div>
+            </div>
+          </div>
+
+          <h3 class="tema-titulo" id="temaTitulo">Tema indisponível</h3>
+          <p class="tema-proposta" id="temaProposta">Nenhum tema ativo foi encontrado no momento.</p>
+
+          <div class="motivadores" id="motivadores"></div>
+
+          <div class="tools">
+            <button class="btn-secondary" id="btnTimer">Iniciar cronômetro</button>
+            <button class="btn-secondary" id="btnSalvarLocal">Salvar rascunho</button>
+            <button class="btn-danger" id="btnLimpar">Limpar texto</button>
+          </div>
+
+          <textarea id="redacaoTexto" placeholder="Escreva sua redação aqui..."></textarea>
+
+          <div class="tools">
+            <button class="btn-primary" id="btnEnviar">Enviar redação</button>
+          </div>
+
+          <div class="status" id="statusMensagem">Digite sua redação. O rascunho será salvo localmente.</div>
+
+          <div class="resultado" id="resultadoBox">
+            <h3 class="nota-total" id="notaTotal">Nota: 0</h3>
+
+            <div class="comp-grid">
+              <div class="comp"><div class="c">C1</div><div class="n" id="c1">0</div></div>
+              <div class="comp"><div class="c">C2</div><div class="n" id="c2">0</div></div>
+              <div class="comp"><div class="c">C3</div><div class="n" id="c3">0</div></div>
+              <div class="comp"><div class="c">C4</div><div class="n" id="c4">0</div></div>
+              <div class="comp"><div class="c">C5</div><div class="n" id="c5">0</div></div>
+            </div>
+
+            <div class="block">
+              <h4>Resumo da avaliação</h4>
+              <p id="resumoAvaliacao">-</p>
+            </div>
+
+            <div class="block">
+              <h4>Foco principal de melhoria</h4>
+              <p id="focoPrincipal">-</p>
+            </div>
+
+            <div class="block">
+              <h4>Plano de estudo sugerido</h4>
+              <ul id="planoEstudoSugerido"></ul>
+            </div>
+
+            <div class="block">
+              <h4>Pontos fortes</h4>
+              <ul id="pontosFortes"></ul>
+            </div>
+
+            <div class="block">
+              <h4>Pontos a melhorar</h4>
+              <ul id="pontosMelhorar"></ul>
+            </div>
+
+            <div class="block">
+              <h4>Recomendações</h4>
+              <ul id="recomendacoes"></ul>
+            </div>
+
+            <div class="block">
+              <h4>Proposta de intervenção</h4>
+              <p id="propostaIntervencao">-</p>
+            </div>
+
+            <div class="block">
+              <h4>Observações técnicas</h4>
+              <p id="observacoesTecnicas">-</p>
+            </div>
+
+            <div class="apoio-box" id="apoioBox">
+              <h4>Apoio pontual do professor</h4>
+              <p class="muted">
+                Se você quiser, pode solicitar uma orientação breve sobre o principal ponto que a IA identificou.
+                Isso não bloqueia seu fluxo e não impede novas redações quando disponíveis.
+              </p>
+              <textarea id="apoioFocoTema" placeholder="Ex.: preciso melhorar conectivos, repertório ou conclusão"></textarea>
+              <div class="tools">
+                <button class="btn-secondary" id="btnSolicitarApoio">Solicitar apoio</button>
+              </div>
+              <div class="status" id="apoioStatusMensagem"></div>
+            </div>
+
+            <div class="block" id="respostaProfessorBlock" style="display:none;">
+              <h4>Orientação do professor</h4>
+              <p id="respostaProfessorTexto">-</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="card-header">
+          <h2>Histórico</h2>
+          <span class="muted">Últimas submissões</span>
+        </div>
+        <div class="card-body">
+          <div class="historico-lista" id="historicoLista">
+            <div class="empty">Carregando histórico...</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/aluno-redacao.js"></script>
+</body>
+</html>

@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin • Painel do Aluno</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    :root {
+      --paper: #fbfaf6;
+      --paper-2: #fffdf8;
+      --ink: #11223b;
+      --muted: #6d7890;
+      --line: rgba(38, 88, 155, 0.12);
+      --blue: #2563eb;
+      --blue-soft: #eaf1ff;
+      --green: #16a34a;
+      --green-soft: #e9f8ef;
+      --orange: #f97316;
+      --orange-soft: #fff1e7;
+      --purple: #7c3aed;
+      --purple-soft: #f1eaff;
+      --danger: #ef4444;
+      --danger-soft: #fff0f0;
+      --shadow: 0 16px 40px rgba(17, 34, 59, 0.08);
+      --shadow-soft: 0 8px 22px rgba(17, 34, 59, 0.06);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --sidebar-w: 280px;
+      --transition: 180ms ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      background:
+        linear-gradient(90deg, rgba(37, 99, 235, 0.045) 1px, transparent 1px),
+        linear-gradient(rgba(37, 99, 235, 0.08) 1px, transparent 1px),
+        var(--paper);
+      background-size: 100% 34px, 100% 34px, auto;
+      color: var(--ink);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      max-height: 100vh;
+      padding: 18px 16px;
+      background: rgba(255, 253, 248, 0.92);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(37, 99, 235, 0.18);
+      border-radius: 999px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 12px;
+      width: 32px;
+      height: 100%;
+      background:
+        radial-gradient(circle, rgba(17, 34, 59, 0.22) 2px, transparent 3px) center top / 32px 34px repeat-y;
+      opacity: 0.28;
+      pointer-events: none;
+    }
+
+    .brand-card,
+    .profile-card,
+    .side-panel,
+    .panel,
+    .stat-card,
+    .mission-card,
+    .diagnostic-item,
+    .activity-item,
+    .access-item {
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .brand-card {
+      border-radius: var(--radius-xl);
+      padding: 14px 14px;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .brand-sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .profile-card {
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      background: var(--blue-soft);
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-weight: 800;
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .profile-name {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .profile-sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .side-panel {
+      border-radius: var(--radius-xl);
+      padding: 12px;
+      flex-shrink: 0;
+    }
+
+    .side-title {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin: 6px 8px 10px;
+    }
+
+    .menu {
+      display: grid;
+      gap: 8px;
+    }
+
+    .menu-btn {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      border-radius: 15px;
+      padding: 13px 12px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: var(--transition);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .menu-btn small {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .menu-btn:hover,
+    .menu-btn.active {
+      background: var(--blue-soft);
+      border-color: rgba(37, 99, 235, 0.12);
+      color: var(--blue);
+    }
+
+    .sidebar-actions {
+      display: grid;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      min-height: 46px;
+      border-radius: 14px;
+      border: 0;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 14px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .content {
+      min-width: 0;
+      padding: 28px 32px;
+    }
+
+    .mobile-topbar {
+      display: none;
+      margin-bottom: 16px;
+    }
+
+    .mobile-shell {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 12px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .mobile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .mobile-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .top-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .hand-title {
+      font-family: 'Caveat', cursive;
+      font-size: clamp(42px, 5vw, 62px);
+      line-height: 0.95;
+      color: var(--ink);
+    }
+
+    .hand-sub {
+      font-family: 'Caveat', cursive;
+      font-size: 24px;
+      color: var(--ink);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    .date-card {
+      background: #fff8cc;
+      border: 1px solid rgba(224, 188, 74, 0.35);
+      border-radius: 16px;
+      padding: 14px 16px;
+      min-width: 165px;
+      box-shadow: var(--shadow-soft);
+      transform: rotate(0.5deg);
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .bell-card {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      position: relative;
+    }
+
+    .bell-card::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--blue);
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .dashboard {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      min-height: 150px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .stat-value {
+      font-size: clamp(32px, 3vw, 46px);
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 10px;
+      letter-spacing: -0.04em;
+    }
+
+    .stat-help {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .note-success { color: var(--green); }
+    .note-warning { color: var(--purple); }
+    .note-danger { color: var(--orange); }
+    .note-neutral { color: var(--blue); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border-radius: var(--radius-xl);
+      padding: 22px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Caveat', cursive;
+      font-size: 36px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .section-sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .head-tag {
+      border-radius: 999px;
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      background: var(--blue-soft);
+      padding: 8px 12px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .score-shell {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.58);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .score-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    .score-top strong {
+      font-size: 14px;
+    }
+
+    .score-top span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .score-track {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: #ecf0f6;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: var(--blue);
+      transition: width 400ms ease;
+    }
+
+    .projection-box {
+      margin-top: 16px;
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      background: var(--blue-soft);
+      border-radius: 16px;
+      padding: 15px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .projection-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 22px;
+      flex: 0 0 auto;
+    }
+
+    .projection-box strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .projection-box p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .diagnostic-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .diagnostic-item {
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .diagnostic-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+    }
+
+    .diagnostic-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .diagnostic-item p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .diag-green { background: var(--green-soft); }
+    .diag-green .diagnostic-icon { color: var(--green); background: #fff; }
+
+    .diag-orange { background: var(--orange-soft); }
+    .diag-orange .diagnostic-icon { color: var(--orange); background: #fff; }
+
+    .diag-blue { background: var(--blue-soft); }
+    .diag-blue .diagnostic-icon { color: var(--blue); background: #fff; }
+
+    .mission-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mission-card {
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .mission-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    .mission-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+    }
+
+    .mission-title {
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .mission-sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .mission-status {
+      border-radius: 999px;
+      background: #fff6d9;
+      color: #946200;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 7px 10px;
+      white-space: nowrap;
+    }
+
+    .activity-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .activity-item {
+      border-radius: 16px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .activity-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .activity-title {
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .activity-sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .activity-score {
+      text-align: right;
+      font-weight: 800;
+      color: var(--green);
+      font-size: 20px;
+    }
+
+    .activity-score span {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .redacao-grid,
+    .questionario-grid,
+    .access-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .redacao-item,
+    .questionario-item,
+    .access-item {
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .redacao-item span,
+    .questionario-item span,
+    .access-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .redacao-item strong,
+    .questionario-item strong,
+    .access-item strong {
+      font-size: 16px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .redacao-open-wrap,
+    .questionario-open-wrap {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .access-panel {
+      opacity: 0.86;
+    }
+
+    .access-panel .section-title {
+      font-size: 30px;
+    }
+
+    .access-panel .access-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .loader-wrap,
+    .error-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 26px;
+    }
+
+    .loader-box,
+    .error-box {
+      width: min(720px, 100%);
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .loader-spinner {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      margin: 0 auto 18px;
+      border: 3px solid rgba(37, 99, 235, 0.12);
+      border-top-color: var(--blue);
+      animation: spin 0.9s linear infinite;
+    }
+
+    .loader-box h2,
+    .error-box h2 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .loader-box p,
+    .error-box p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .error-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .fade-up {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 450ms ease, transform 450ms ease;
+    }
+
+    .fade-up.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 1280px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1040px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .mobile-topbar {
+        display: block;
+      }
+
+      .top-header {
+        flex-direction: column;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .content {
+        padding: 14px;
+      }
+
+      .stats-grid,
+      .redacao-grid,
+      .questionario-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .hand-title {
+        font-size: 42px;
+      }
+
+      .hand-sub {
+        font-size: 22px;
+      }
+
+      .mission-card,
+      .activity-item {
+        grid-template-columns: 42px 1fr;
+      }
+
+      .mission-status,
+      .activity-score {
+        grid-column: 2;
+        text-align: left;
+        width: fit-content;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loadingState" class="loader-wrap">
+    <div class="loader-box">
+      <div class="loader-spinner"></div>
+      <h2>Carregando seu portal</h2>
+      <p>Estamos preparando sua área individual de aprendizagem dentro do Axoriin.</p>
+    </div>
+  </div>
+
+  <div id="errorState" class="error-wrap hidden">
+    <div class="error-box">
+      <h2>Não foi possível abrir o painel</h2>
+      <p id="errorMessage">Ocorreu um problema ao carregar seus dados.</p>
+      <div class="error-actions">
+        <button class="btn btn-primary" id="btnReload">Tentar novamente</button>
+        <button class="btn btn-secondary" id="btnBackLogin">Voltar ao login</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand-card">
+        <div class="brand-name">AXORIIN</div>
+        <div class="brand-sub">
+          Seu caderno digital de evolução, redação ENEM, questionários e missões de aprendizagem.
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <div class="side-title">Navegação</div>
+        <div class="menu">
+          <button class="menu-btn active" data-target="sec-overview">
+            <span>Visão geral</span>
+            <small>01</small>
+          </button>
+
+          <button class="menu-btn" data-target="sec-profile">
+            <span>Rumo aos 900+</span>
+            <small>02</small>
+          </button>
+
+          <button class="menu-btn" data-target="sec-redacao">
+            <span>Redação ENEM</span>
+            <small>03</small>
+          </button>
+
+          <button class="menu-btn" data-target="sec-questionarios">
+            <span>Questionários</span>
+            <small>04</small>
+          </button>
+
+          <button class="menu-btn" data-target="sec-future">
+            <span>Missões</span>
+            <small>05</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="btn btn-secondary" id="btnAtualizarSidebar">Atualizar dados</button>
+        <button class="btn btn-primary" id="btnLogoutSidebar">Sair do portal</button>
+      </div>
+
+      <div class="profile-card">
+        <div class="avatar" id="sidebarAvatar">AL</div>
+        <div>
+          <div class="profile-name" id="sidebarNome">Aluno</div>
+          <div class="profile-sub" id="sidebarTurma">Turma não informada</div>
+        </div>
+      </div>
+
+      <div style="display:none">
+        <div id="sidebarCodigo">--</div>
+        <div id="sidebarInstituicao">Axoriin</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="mobile-topbar">
+        <div class="mobile-shell">
+          <div class="mobile-row">
+            <div class="mobile-user">
+              <div class="avatar" id="mobileAvatar">AL</div>
+              <div>
+                <div class="profile-name" id="mobileNome">Aluno</div>
+                <div class="profile-sub" id="mobileTurma">Turma</div>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btnLogoutMobile">Sair</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="sec-overview" class="fade-up">
+        <div class="top-header">
+          <div>
+            <h1 class="hand-title" id="heroTitle">Boa tarde, aluno!</h1>
+            <p class="hand-sub" id="heroSubtitle">
+              Cada passo te aproxima do seu objetivo. Continue assim!
+            </p>
+          </div>
+
+          <div class="header-actions">
+            <div class="bell-card">🔔</div>
+            <div class="date-card">
+              <strong>Portal ENEM</strong><br>
+              Área individual de aprendizagem
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <div class="stats-grid fade-up">
+          <article class="stat-card">
+            <span class="stat-label">Nota simulada ENEM</span>
+            <div class="stat-value note-neutral">0</div>
+            <div class="stat-help">Aguardando atividades para calcular.</div>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Evolução semanal</span>
+            <div class="stat-value note-success">+0</div>
+            <div class="stat-help">Será calculada após novas atividades.</div>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Percentil</span>
+            <div class="stat-value note-warning">0%</div>
+            <div class="stat-help">Aguardando dados reais.</div>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Foco atual</span>
+            <div class="stat-value note-danger">Aguardando</div>
+            <div class="stat-help">Faça uma atividade para gerar recomendação.</div>
+          </article>
+        </div>
+
+        <div style="display:none">
+          <div id="statNomeCurto">--</div>
+          <div id="statTurma">--</div>
+          <div id="statRedacoes">--</div>
+          <div id="statQuestionarios">--</div>
+          <div id="statQuestionariosTexto">Média geral.</div>
+          <div id="heroInstituicao">Instituição</div>
+          <div id="heroTurma">Turma</div>
+          <div id="heroPortal">Portal aluno</div>
+          <div id="quickStatusText">Acompanhamento ativo.</div>
+          <div id="quickStatusPill">Ativo</div>
+        </div>
+
+        <div class="main-grid">
+          <section class="panel fade-up" id="sec-profile">
+            <div class="section-head">
+              <div>
+                <div class="section-title">Rumo aos 900+</div>
+                <div class="section-sub">
+                  Seu desempenho atual e projeção de crescimento no ENEM.
+                </div>
+              </div>
+              <div class="head-tag">Aprendizagem</div>
+            </div>
+
+            <div class="score-shell">
+              <div class="score-top">
+                <strong>Você já alcançou</strong>
+                <span id="progressLabel">0 / 900</span>
+              </div>
+
+              <div class="score-track">
+                <div class="score-fill" id="progressFill"></div>
+              </div>
+
+              <div class="projection-box">
+                <div class="projection-icon">🚀</div>
+                <div>
+                  <strong>Complete atividades para liberar sua projeção.</strong>
+                  <p>
+                    Quando você responder questionários ou enviar redações, o sistema passará a estimar sua evolução.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel fade-up">
+            <div class="section-head">
+              <div>
+                <div class="section-title">Seu diagnóstico</div>
+                <div class="section-sub">
+                  Feedback inteligente para orientar sua próxima ação.
+                </div>
+              </div>
+            </div>
+
+            <div class="diagnostic-list">
+              <div class="diagnostic-item diag-blue">
+                <div class="diagnostic-icon">💡</div>
+                <div>
+                  <strong>Aguardando mais dados.</strong>
+                  <p>Responda questionários e envie redações para gerar um diagnóstico mais preciso.</p>
+                </div>
+              </div>
+
+              <div class="diagnostic-item diag-green">
+                <div class="diagnostic-icon">↗</div>
+                <div>
+                  <strong>Questionários já ajudam na análise.</strong>
+                  <p>Seu desempenho nos treinos será usado para indicar o próximo foco de estudo.</p>
+                </div>
+              </div>
+
+              <div class="diagnostic-item diag-orange">
+                <div class="diagnostic-icon">⚠</div>
+                <div>
+                  <strong>Redação ainda sem histórico.</strong>
+                  <p>Ao enviar sua primeira redação, o painel mostrará nota, tema e foco principal.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="main-grid">
+          <section class="panel fade-up" id="sec-future">
+            <div class="section-head">
+              <div>
+                <div class="section-title">Suas missões</div>
+                <div class="section-sub">
+                  Complete suas tarefas e avance cada vez mais.
+                </div>
+              </div>
+              <div class="head-tag">Missões</div>
+            </div>
+
+            <div class="mission-list">
+              <article class="mission-card">
+                <div class="mission-icon">✎</div>
+                <div>
+                  <div class="mission-title">Missão 1: Fazer redação</div>
+                  <div class="mission-sub"><span id="redacaoRestantesMes">--</span> redações restantes</div>
+                </div>
+                <div class="mission-status">Disponível</div>
+              </article>
+
+              <article class="mission-card">
+                <div class="mission-icon">?</div>
+                <div>
+                  <div class="mission-title">Missão 2: Questionários</div>
+                  <div class="mission-sub">Treinos disponíveis para responder</div>
+                </div>
+                <div class="mission-status">Disponível</div>
+              </article>
+
+              <article class="mission-card">
+                <div class="mission-icon">📘</div>
+                <div>
+                  <div class="mission-title">Missão 3: Estudar módulo</div>
+                  <div class="mission-sub">Conteúdos liberados conforme evolução</div>
+                </div>
+                <div class="mission-status">Em breve</div>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel fade-up">
+            <div class="section-head">
+              <div>
+                <div class="section-title">Atividade recente</div>
+                <div class="section-sub">
+                  Seu desempenho nas últimas atividades.
+                </div>
+              </div>
+              <a href="aluno-questionarios.html" class="head-tag">Ver todas</a>
+            </div>
+
+            <div class="activity-list" id="activityList">
+              <div class="activity-item">
+                <div class="activity-icon">📘</div>
+                <div>
+                  <div class="activity-title">Nenhuma atividade recente ainda</div>
+                  <div class="activity-sub">Quando você fizer redações ou questionários, elas aparecerão aqui.</div>
+                </div>
+                <div class="activity-score">--<span>Aguardando</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel fade-up" id="sec-redacao">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Redação ENEM</div>
+              <div class="section-sub">
+                Produções, devolutivas da IA e foco de melhoria.
+              </div>
+            </div>
+            <div class="head-tag">IA + evolução</div>
+          </div>
+
+          <div class="redacao-grid">
+            <div class="redacao-item">
+              <span>Redações restantes no mês</span>
+              <strong id="redacaoRestantesMesBackup">--</strong>
+            </div>
+
+            <div class="redacao-item">
+              <span>Última nota</span>
+              <strong id="redacaoUltimaNota">--</strong>
+            </div>
+
+            <div class="redacao-item">
+              <span>Último tema</span>
+              <strong id="redacaoUltimoTema">Nenhuma redação enviada</strong>
+            </div>
+
+            <div class="redacao-item">
+              <span>Foco principal atual</span>
+              <strong id="redacaoFocoPrincipal">Envie sua primeira redação</strong>
+            </div>
+          </div>
+
+          <div class="redacao-open-wrap">
+            <a class="btn btn-primary" id="btnAbrirRedacao" href="aluno-redacao.html">Abrir módulo de redação</a>
+          </div>
+        </section>
+
+        <section class="panel fade-up" id="sec-questionarios">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Questionários</div>
+              <div class="section-sub">
+                Treinos com feedback imediato e foco por habilidade.
+              </div>
+            </div>
+            <div class="head-tag">Aprendizagem ativa</div>
+          </div>
+
+          <div class="questionario-grid">
+            <div class="questionario-item">
+              <span>Questionários feitos</span>
+              <strong id="questionarioTotal">--</strong>
+            </div>
+
+            <div class="questionario-item">
+              <span>Média geral</span>
+              <strong id="questionarioMedia">--</strong>
+            </div>
+
+            <div class="questionario-item">
+              <span>Último desempenho</span>
+              <strong id="questionarioUltimo">--</strong>
+            </div>
+
+            <div class="questionario-item">
+              <span>Foco recomendado</span>
+              <strong id="questionarioFoco">--</strong>
+            </div>
+          </div>
+
+          <div class="questionario-open-wrap">
+            <a class="btn btn-primary" id="btnAbrirQuestionarios" href="aluno-questionarios.html">
+              Abrir questionários
+            </a>
+          </div>
+        </section>
+
+        <section class="panel fade-up access-panel">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Acesso individual</div>
+              <div class="section-sub">
+                Dados técnicos do portal, mantidos em área secundária.
+              </div>
+            </div>
+            <div class="head-tag">Login</div>
+          </div>
+
+          <div class="access-grid">
+            <div class="access-item">
+              <span>Código de acesso</span>
+              <strong id="accessCodigo">--</strong>
+            </div>
+
+            <div class="access-item">
+              <span>E-mail vinculado</span>
+              <strong id="accessEmail">--</strong>
+            </div>
+
+            <div class="access-item">
+              <span>Portal</span>
+              <strong id="accessPortal">Aluno</strong>
+            </div>
+
+            <div class="access-item">
+              <span>Instituição</span>
+              <strong id="accessInstituicao">--</strong>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="painel-aluno.js"></script>
+</body>
+</html>

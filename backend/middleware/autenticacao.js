@@ -51,7 +51,7 @@ async function autenticar(req, res, next) {
 
     if (Usuario?.findById) {
       const usuarioDb = await Usuario.findById(id)
-        .select('email tipo instituicao nome turmas')
+        .select('email tipo instituicao nome turmas alunoId portal')
         .lean()
         .catch(() => null);
 
@@ -80,7 +80,9 @@ async function autenticar(req, res, next) {
       tipo: String(payload.tipo || tipo || '').trim().toLowerCase(),
       instituicao: String(payload.instituicao || instituicao || '').trim(),
       email: email ? String(email).toLowerCase() : null,
-      turmas: Array.isArray(turmas) ? turmas : []
+      turmas: Array.isArray(turmas) ? turmas : [],
+      alunoId: payload.alunoId ? String(payload.alunoId) : null,
+      portal: payload.portal || (String(payload.tipo || tipo || '').toLowerCase() === 'aluno' ? 'aluno' : null),
     };
 
     if (!req.usuario.instituicao) {

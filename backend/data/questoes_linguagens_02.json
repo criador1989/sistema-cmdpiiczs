@@ -1,0 +1,191 @@
+[
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação de texto",
+    "tema": "Ideia principal",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A ideia principal de um texto corresponde:",
+    "alternativas": [
+      { "letra": "A", "texto": "Aos detalhes menos importantes." },
+      { "letra": "B", "texto": "Ao tema central abordado." },
+      { "letra": "C", "texto": "Aos exemplos citados." },
+      { "letra": "D", "texto": "À opinião do leitor." },
+      { "letra": "E", "texto": "À introdução apenas." }
+    ],
+    "gabarito": "B",
+    "explicacao": "A ideia principal é o núcleo do texto, aquilo que ele pretende comunicar."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Verbos",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Os verbos indicam:",
+    "alternativas": [
+      { "letra": "A", "texto": "Seres e objetos." },
+      { "letra": "B", "texto": "Ações, estados ou fenômenos." },
+      { "letra": "C", "texto": "Qualidades." },
+      { "letra": "D", "texto": "Ligações entre frases." },
+      { "letra": "E", "texto": "Nomes próprios." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Verbos expressam ações, estados ou fenômenos da natureza."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Antônimos",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A palavra 'claro' tem como antônimo:",
+    "alternativas": [
+      { "letra": "A", "texto": "Brilhante" },
+      { "letra": "B", "texto": "Escuro" },
+      { "letra": "C", "texto": "Azul" },
+      { "letra": "D", "texto": "Leve" },
+      { "letra": "E", "texto": "Curto" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Antônimos são palavras com sentidos opostos."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Coesão textual",
+    "tema": "Pronomes",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Os pronomes são usados para:",
+    "alternativas": [
+      { "letra": "A", "texto": "Substituir ou acompanhar substantivos." },
+      { "letra": "B", "texto": "Indicar ações." },
+      { "letra": "C", "texto": "Criar frases interrogativas." },
+      { "letra": "D", "texto": "Separar orações." },
+      { "letra": "E", "texto": "Indicar tempo." }
+    ],
+    "gabarito": "A",
+    "explicacao": "Pronomes substituem ou acompanham substantivos, evitando repetições."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Texto informativo",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "O texto informativo tem como objetivo principal:",
+    "alternativas": [
+      { "letra": "A", "texto": "Entreter o leitor." },
+      { "letra": "B", "texto": "Convencer o leitor." },
+      { "letra": "C", "texto": "Transmitir informações." },
+      { "letra": "D", "texto": "Criar suspense." },
+      { "letra": "E", "texto": "Expressar emoções." }
+    ],
+    "gabarito": "C",
+    "explicacao": "Textos informativos têm como função principal transmitir conhecimento."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Inglês",
+    "habilidade": "Vocabulário",
+    "tema": "Tradução",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A palavra 'house' significa:",
+    "alternativas": [
+      { "letra": "A", "texto": "Casa" },
+      { "letra": "B", "texto": "Carro" },
+      { "letra": "C", "texto": "Rua" },
+      { "letra": "D", "texto": "Escola" },
+      { "letra": "E", "texto": "Livro" }
+    ],
+    "gabarito": "A",
+    "explicacao": "'House' significa casa em inglês."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Adjetivos",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Os adjetivos indicam:",
+    "alternativas": [
+      { "letra": "A", "texto": "Ações." },
+      { "letra": "B", "texto": "Qualidades ou características." },
+      { "letra": "C", "texto": "Nomes." },
+      { "letra": "D", "texto": "Tempos verbais." },
+      { "letra": "E", "texto": "Conectivos." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Adjetivos caracterizam os substantivos."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Inferência",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "Quando o leitor deduz algo não explícito, ele está:",
+    "alternativas": [
+      { "letra": "A", "texto": "Interpretando literalmente." },
+      { "letra": "B", "texto": "Inferindo informações." },
+      { "letra": "C", "texto": "Repetindo ideias." },
+      { "letra": "D", "texto": "Ignorando o texto." },
+      { "letra": "E", "texto": "Decorando o texto." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Inferência é compreender informações implícitas."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Polissemia",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "Polissemia ocorre quando:",
+    "alternativas": [
+      { "letra": "A", "texto": "Uma palavra tem vários significados." },
+      { "letra": "B", "texto": "Uma palavra tem um único sentido." },
+      { "letra": "C", "texto": "Duas palavras são iguais." },
+      { "letra": "D", "texto": "Uma frase é longa." },
+      { "letra": "E", "texto": "Um texto é curto." }
+    ],
+    "gabarito": "A",
+    "explicacao": "Polissemia é a multiplicidade de sentidos de uma palavra."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gêneros textuais",
+    "tema": "Narrativo",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "Textos narrativos apresentam:",
+    "alternativas": [
+      { "letra": "A", "texto": "Argumentos." },
+      { "letra": "B", "texto": "Sequência de acontecimentos." },
+      { "letra": "C", "texto": "Explicações científicas." },
+      { "letra": "D", "texto": "Dados estatísticos." },
+      { "letra": "E", "texto": "Instruções." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Narrativas contam histórias com eventos organizados."
+  }
+]

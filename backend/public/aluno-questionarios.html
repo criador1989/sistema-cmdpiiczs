@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin • Questionários Inteligentes</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-1:#050d18;
+      --bg-2:#0a1626;
+      --bg-3:#0e2037;
+      --panel:rgba(9,18,31,.82);
+      --panel-2:rgba(255,255,255,.035);
+      --line:rgba(106,205,255,.16);
+      --line-strong:rgba(106,205,255,.28);
+      --text:#edf8ff;
+      --muted:#8ea8bf;
+      --primary:#66d1ff;
+      --primary-2:#2ea8ff;
+      --success:#58e7a6;
+      --warning:#ffd166;
+      --danger:#ff7584;
+      --purple:#b78cff;
+      --shadow:0 22px 60px rgba(0,0,0,.38);
+      --radius-xl:28px;
+      --radius-lg:22px;
+      --radius-md:18px;
+      --transition:220ms ease;
+    }
+
+    * { box-sizing:border-box; margin:0; padding:0; }
+
+    html, body {
+      min-height:100%;
+      background:
+        radial-gradient(circle at top left, rgba(102,209,255,.13), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(183,140,255,.08), transparent 22%),
+        radial-gradient(circle at 70% 85%, rgba(88,231,166,.06), transparent 24%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2) 50%, var(--bg-3));
+      color:var(--text);
+      font-family:'Rajdhani', sans-serif;
+      overflow-x:hidden;
+    }
+
+    body::before {
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(102,209,255,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102,209,255,.028) 1px, transparent 1px);
+      background-size:34px 34px;
+      mask-image:linear-gradient(to bottom, rgba(255,255,255,.42), transparent 92%);
+      z-index:0;
+    }
+
+    button, select {
+      font-family:'Rajdhani', sans-serif;
+    }
+
+    a {
+      color:inherit;
+      text-decoration:none;
+    }
+
+    .hidden { display:none !important; }
+
+    .page {
+      position:relative;
+      z-index:1;
+      max-width:1420px;
+      margin:0 auto;
+      padding:22px;
+    }
+
+    .hero {
+      display:grid;
+      grid-template-columns:1.25fr .75fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .hero-card,
+    .panel,
+    .question-card,
+    .result-card {
+      border:1px solid var(--line);
+      background:var(--panel);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius-xl);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero-card::before,
+    .panel::before,
+    .question-card::before,
+    .result-card::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(135deg, rgba(102,209,255,.06), transparent 36%, transparent 72%, rgba(88,231,166,.035));
+      pointer-events:none;
+    }
+
+    .hero-card > *,
+    .panel > *,
+    .question-card > *,
+    .result-card > * {
+      position:relative;
+      z-index:1;
+    }
+
+    .hero-card {
+      padding:26px;
+      min-height:230px;
+    }
+
+    .eyebrow {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(102,209,255,.18);
+      background:rgba(102,209,255,.08);
+      color:#dff5ff;
+      font-family:'Orbitron', sans-serif;
+      font-size:12px;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+      margin-bottom:14px;
+    }
+
+    .eyebrow::before {
+      content:"";
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--success);
+      box-shadow:0 0 12px rgba(88,231,166,.8);
+    }
+
+    .hero h1 {
+      font-family:'Orbitron', sans-serif;
+      font-size:clamp(28px,4vw,44px);
+      letter-spacing:.04em;
+      line-height:1.08;
+      margin-bottom:12px;
+    }
+
+    .hero p {
+      color:var(--muted);
+      font-size:18px;
+      line-height:1.45;
+      max-width:760px;
+    }
+
+    .hero-actions {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:18px;
+    }
+
+    .chip {
+      border:1px solid rgba(102,209,255,.14);
+      background:rgba(255,255,255,.035);
+      border-radius:999px;
+      padding:9px 13px;
+      color:#dff5ff;
+      font-weight:700;
+      font-size:15px;
+    }
+
+    .focus-card {
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:18px;
+    }
+
+    .focus-title {
+      font-family:'Orbitron', sans-serif;
+      font-size:18px;
+      letter-spacing:.04em;
+      margin-bottom:8px;
+    }
+
+    .focus-text {
+      color:var(--muted);
+      font-size:17px;
+      line-height:1.45;
+    }
+
+    .focus-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      width:fit-content;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(88,231,166,.22);
+      background:rgba(88,231,166,.10);
+      color:#dfffee;
+      font-weight:700;
+    }
+
+    .layout {
+      display:grid;
+      grid-template-columns:390px 1fr;
+      gap:18px;
+    }
+
+    .panel {
+      padding:20px;
+    }
+
+    .section-title {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .section-title h2 {
+      font-family:'Orbitron', sans-serif;
+      font-size:18px;
+      letter-spacing:.04em;
+    }
+
+    .section-title p {
+      color:var(--muted);
+      font-size:15px;
+      margin-top:4px;
+      line-height:1.35;
+    }
+
+    .head-tag {
+      white-space:nowrap;
+      border-radius:999px;
+      border:1px solid rgba(102,209,255,.14);
+      background:rgba(102,209,255,.06);
+      padding:8px 12px;
+      color:#dff5ff;
+      font-weight:700;
+      font-size:13px;
+    }
+
+    .field {
+      margin-bottom:14px;
+    }
+
+    .field label {
+      display:block;
+      color:#dff5ff;
+      font-weight:700;
+      font-size:16px;
+      margin-bottom:7px;
+    }
+
+    .field select {
+      width:100%;
+      min-height:50px;
+      border-radius:15px;
+      border:1px solid rgba(102,209,255,.16);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:0 13px;
+      outline:none;
+      font-size:17px;
+      font-weight:600;
+    }
+
+    .field select:focus {
+      border-color:rgba(102,209,255,.46);
+      box-shadow:0 0 0 4px rgba(102,209,255,.07);
+    }
+
+    .btn {
+      min-height:50px;
+      border:0;
+      border-radius:16px;
+      cursor:pointer;
+      padding:0 16px;
+      font-weight:800;
+      font-size:17px;
+      transition:var(--transition);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform:translateY(-1px);
+      filter:brightness(1.05);
+    }
+
+    .btn:disabled {
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    .btn-primary {
+      background:linear-gradient(135deg, var(--primary), var(--primary-2));
+      color:#03101d;
+      box-shadow:0 14px 28px rgba(46,168,255,.22);
+    }
+
+    .btn-secondary {
+      background:rgba(255,255,255,.045);
+      border:1px solid rgba(102,209,255,.14);
+      color:var(--text);
+    }
+
+    .btn-success {
+      background:linear-gradient(135deg, var(--success), #33c983);
+      color:#04140d;
+    }
+
+    .btn-danger {
+      background:rgba(255,117,132,.13);
+      border:1px solid rgba(255,117,132,.24);
+      color:#ffdce1;
+    }
+
+    .button-grid {
+      display:grid;
+      gap:10px;
+      margin-top:16px;
+    }
+
+    .mini-stats {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin:16px 0;
+    }
+
+    .mini {
+      border:1px solid rgba(102,209,255,.10);
+      background:rgba(255,255,255,.035);
+      border-radius:16px;
+      padding:13px;
+    }
+
+    .mini span {
+      display:block;
+      color:var(--primary);
+      font-family:'Orbitron', sans-serif;
+      font-size:11px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:5px;
+    }
+
+    .mini strong {
+      display:block;
+      font-size:23px;
+      line-height:1;
+    }
+
+    .study-note {
+      border:1px solid rgba(255,209,102,.18);
+      background:rgba(255,209,102,.08);
+      border-radius:18px;
+      padding:14px;
+      color:#fff3cc;
+      font-size:16px;
+      line-height:1.42;
+      margin-top:14px;
+    }
+
+    .main {
+      display:grid;
+      gap:18px;
+    }
+
+    .learning-map {
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+    }
+
+    .map-card {
+      border:1px solid rgba(102,209,255,.10);
+      background:rgba(255,255,255,.035);
+      border-radius:18px;
+      padding:15px;
+      min-height:110px;
+    }
+
+    .map-card span {
+      display:block;
+      color:var(--primary);
+      font-family:'Orbitron', sans-serif;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin-bottom:8px;
+    }
+
+    .map-card strong {
+      font-size:22px;
+      display:block;
+      margin-bottom:6px;
+    }
+
+    .map-card p {
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.3;
+    }
+
+    .progress-shell {
+      border:1px solid rgba(102,209,255,.12);
+      background:rgba(255,255,255,.035);
+      border-radius:18px;
+      padding:14px;
+      margin-bottom:16px;
+    }
+
+    .progress-top {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+      color:#dff5ff;
+      font-weight:700;
+      font-size:16px;
+    }
+
+    .progress-track {
+      height:13px;
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(102,209,255,.10);
+    }
+
+    .progress-fill {
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg, var(--primary), var(--success));
+      transition:width .25s ease;
+    }
+
+    .question-card {
+      padding:20px;
+      margin-bottom:14px;
+      border-radius:24px;
+    }
+
+    .question-meta {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag {
+      border:1px solid rgba(102,209,255,.13);
+      background:rgba(255,255,255,.035);
+      color:#dff5ff;
+      border-radius:999px;
+      padding:7px 11px;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .question-text {
+      font-size:20px;
+      line-height:1.45;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+
+    .support-text {
+      border-left:3px solid rgba(102,209,255,.5);
+      padding:12px 14px;
+      background:rgba(102,209,255,.055);
+      border-radius:14px;
+      color:#dcefff;
+      margin-bottom:14px;
+      white-space:pre-wrap;
+      line-height:1.45;
+    }
+
+    .alternatives {
+      display:grid;
+      gap:10px;
+    }
+
+    .alternative {
+      border:1px solid rgba(102,209,255,.13);
+      background:rgba(255,255,255,.035);
+      border-radius:17px;
+      padding:13px 14px;
+      cursor:pointer;
+      transition:var(--transition);
+      display:grid;
+      grid-template-columns:38px 1fr;
+      gap:10px;
+      align-items:flex-start;
+    }
+
+    .alternative:hover {
+      transform:translateY(-1px);
+      border-color:rgba(102,209,255,.3);
+      background:rgba(102,209,255,.07);
+    }
+
+    .alternative.selected {
+      border-color:rgba(102,209,255,.55);
+      background:rgba(102,209,255,.14);
+      box-shadow:0 0 0 4px rgba(102,209,255,.06);
+    }
+
+    .alternative.correct {
+      border-color:rgba(88,231,166,.55);
+      background:rgba(88,231,166,.14);
+    }
+
+    .alternative.wrong {
+      border-color:rgba(255,117,132,.55);
+      background:rgba(255,117,132,.13);
+    }
+
+    .letter {
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,.06);
+      color:#dff5ff;
+      font-family:'Orbitron', sans-serif;
+      font-weight:700;
+      font-size:13px;
+      border:1px solid rgba(102,209,255,.14);
+    }
+
+    .feedback-box {
+      display:none;
+      margin-top:12px;
+      border-radius:18px;
+      padding:14px;
+      border:1px solid rgba(102,209,255,.13);
+      background:rgba(255,255,255,.035);
+      color:#dcefff;
+      line-height:1.45;
+    }
+
+    .feedback-box.visible {
+      display:block;
+    }
+
+    .feedback-box.good {
+      border-color:rgba(88,231,166,.24);
+      background:rgba(88,231,166,.08);
+    }
+
+    .feedback-box.bad {
+      border-color:rgba(255,117,132,.24);
+      background:rgba(255,117,132,.08);
+    }
+
+    .question-actions {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    .result-card {
+      padding:24px;
+    }
+
+    .result-title {
+      font-family:'Orbitron', sans-serif;
+      font-size:28px;
+      margin-bottom:12px;
+    }
+
+    .result-grid {
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin:16px 0;
+    }
+
+    .result-mini {
+      border:1px solid rgba(102,209,255,.12);
+      background:rgba(255,255,255,.035);
+      border-radius:18px;
+      padding:15px;
+    }
+
+    .result-mini span {
+      display:block;
+      color:var(--primary);
+      font-family:'Orbitron', sans-serif;
+      font-size:11px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:6px;
+    }
+
+    .result-mini strong {
+      font-size:28px;
+      line-height:1;
+    }
+
+    .explain-list {
+      display:grid;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .explain-item {
+      border:1px solid rgba(102,209,255,.10);
+      background:rgba(255,255,255,.03);
+      border-radius:16px;
+      padding:13px;
+    }
+
+    .explain-item strong {
+      display:block;
+      margin-bottom:6px;
+      color:#fff;
+    }
+
+    .explain-item p {
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    .history-list {
+      display:grid;
+      gap:10px;
+      max-height:520px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .history-item {
+      border:1px solid rgba(102,209,255,.10);
+      background:rgba(255,255,255,.03);
+      border-radius:16px;
+      padding:13px;
+      cursor:pointer;
+      transition:var(--transition);
+    }
+
+    .history-item:hover {
+      border-color:rgba(102,209,255,.25);
+      transform:translateY(-1px);
+    }
+
+    .history-item strong {
+      display:block;
+      margin-bottom:5px;
+      font-size:17px;
+    }
+
+    .history-item p {
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.35;
+    }
+
+    .history-tags {
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px;
+      margin-top:9px;
+    }
+
+    .empty {
+      border:1px dashed rgba(102,209,255,.18);
+      background:rgba(255,255,255,.025);
+      color:var(--muted);
+      border-radius:18px;
+      padding:24px;
+      text-align:center;
+      line-height:1.45;
+    }
+
+    .status {
+      margin-top:12px;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.35;
+    }
+
+    .status.good { color:#bfffe2; }
+    .status.bad { color:#ffd7dd; }
+    .status.warn { color:#fff1c7; }
+
+    @media (max-width:1180px) {
+      .hero,
+      .layout {
+        grid-template-columns:1fr;
+      }
+
+      .learning-map,
+      .result-grid {
+        grid-template-columns:repeat(2, minmax(0,1fr));
+      }
+    }
+
+    @media (max-width:680px) {
+      .page { padding:14px; }
+      .hero-card, .panel, .question-card, .result-card { border-radius:22px; }
+      .hero-card, .panel, .question-card, .result-card { padding:17px; }
+      .learning-map, .result-grid, .mini-stats { grid-template-columns:1fr; }
+      .alternative { grid-template-columns:32px 1fr; }
+      .question-actions { flex-direction:column; }
+      .btn { width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Aprendizagem inteligente</div>
+        <h1>Questionários Axoriin</h1>
+        <p>
+          Estude com questões dinâmicas, feedback imediato e foco personalizado.
+          A ideia não é decorar: é entender, corrigir rota e evoluir de verdade.
+        </p>
+        <div class="hero-actions">
+          <span class="chip">ENEM</span>
+          <span class="chip">Treino por habilidade</span>
+          <span class="chip">Correção imediata</span>
+          <span class="chip">Trilha personalizada</span>
+        </div>
+      </div>
+
+      <div class="panel focus-card">
+        <div>
+          <div class="focus-title">Seu foco de estudo</div>
+          <div class="focus-text" id="focusText">
+            Carregando seu desempenho...
+          </div>
+        </div>
+        <div class="focus-pill" id="focusPill">Modo aprendizagem</div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="section-title">
+          <div>
+            <h2>Montar treino</h2>
+            <p>Escolha o tipo de estudo. O sistema seleciona questões do banco e evita repetição recente.</p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="tipo">Tipo de questionário</label>
+          <select id="tipo">
+            <option value="treino">Treino rápido</option>
+            <option value="diagnostico">Diagnóstico</option>
+            <option value="revisao">Revisão inteligente</option>
+            <option value="pre_simulado">Pré-simulado</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="area">Área</label>
+          <select id="area">
+            <option value="">Todas as áreas</option>
+            <option value="Linguagens">Linguagens</option>
+            <option value="Matemática">Matemática</option>
+            <option value="Humanas">Ciências Humanas</option>
+            <option value="Natureza">Ciências da Natureza</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="dificuldade">Dificuldade</label>
+          <select id="dificuldade">
+            <option value="">Mista</option>
+            <option value="facil">Fácil</option>
+            <option value="medio">Média</option>
+            <option value="dificil">Difícil</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="quantidade">Quantidade</label>
+          <select id="quantidade">
+            <option value="5">5 questões</option>
+            <option value="8">8 questões</option>
+            <option value="10">10 questões</option>
+            <option value="12">12 questões</option>
+            <option value="15">15 questões</option>
+          </select>
+        </div>
+
+        <div class="mini-stats">
+          <div class="mini">
+            <span>Treinos feitos</span>
+            <strong id="statTotal">--</strong>
+          </div>
+          <div class="mini">
+            <span>Média geral</span>
+            <strong id="statMedia">--</strong>
+          </div>
+          <div class="mini">
+            <span>Último desempenho</span>
+            <strong id="statUltimo">--</strong>
+          </div>
+          <div class="mini">
+            <span>Área de atenção</span>
+            <strong id="statAreaFraca">--</strong>
+          </div>
+        </div>
+
+        <div class="button-grid">
+          <button class="btn btn-primary" id="btnIniciar">Iniciar estudo</button>
+          <button class="btn btn-secondary" id="btnHistorico">Atualizar histórico</button>
+          <a class="btn btn-secondary" id="btnVoltarPainel" href="painel-aluno.html">Voltar ao painel</a>
+        </div>
+
+        <div class="study-note">
+          Estudar bem não é responder muito de uma vez. É responder, receber feedback, entender o erro e tentar novamente com foco.
+        </div>
+
+        <div class="status" id="statusMensagem"></div>
+      </aside>
+
+      <section class="main">
+        <div class="panel">
+          <div class="section-title">
+            <div>
+              <h2>Mapa de aprendizagem</h2>
+              <p>Resumo rápido do seu caminho atual.</p>
+            </div>
+            <span class="head-tag">aprendizagem real</span>
+          </div>
+
+          <div class="learning-map">
+            <div class="map-card">
+              <span>Etapa 1</span>
+              <strong>Recuperar</strong>
+              <p>Responder sem olhar resposta ajuda a fixar melhor.</p>
+            </div>
+            <div class="map-card">
+              <span>Etapa 2</span>
+              <strong>Entender</strong>
+              <p>Veja por que errou ou acertou cada questão.</p>
+            </div>
+            <div class="map-card">
+              <span>Etapa 3</span>
+              <strong>Focar</strong>
+              <p>O sistema aponta sua habilidade mais fraca.</p>
+            </div>
+            <div class="map-card">
+              <span>Etapa 4</span>
+              <strong>Repetir</strong>
+              <p>Treinos curtos e frequentes geram evolução.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="quizPanel">
+          <div class="section-title">
+            <div>
+              <h2 id="quizTitulo">Questionário</h2>
+              <p id="quizSubtitulo">Responda com atenção. Você verá feedback ao finalizar.</p>
+            </div>
+            <span class="head-tag" id="timerQuiz">00:00</span>
+          </div>
+
+          <div class="progress-shell">
+            <div class="progress-top">
+              <span id="progressText">0 de 0 respondidas</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div id="questoesContainer"></div>
+
+          <div class="question-actions">
+            <button class="btn btn-danger" id="btnCancelar">Cancelar treino</button>
+            <button class="btn btn-success" id="btnFinalizar">Finalizar e ver análise</button>
+          </div>
+        </div>
+
+        <div class="result-card hidden" id="resultadoPanel">
+          <div class="result-title" id="resultadoTitulo">Resultado</div>
+          <p class="focus-text" id="resultadoMensagem">Seu desempenho será exibido aqui.</p>
+
+          <div class="result-grid">
+            <div class="result-mini">
+              <span>Nota</span>
+              <strong id="resultadoNota">--</strong>
+            </div>
+            <div class="result-mini">
+              <span>Acertos</span>
+              <strong id="resultadoAcertos">--</strong>
+            </div>
+            <div class="result-mini">
+              <span>Percentual</span>
+              <strong id="resultadoPercentual">--</strong>
+            </div>
+            <div class="result-mini">
+              <span>Foco recomendado</span>
+              <strong id="resultadoFoco">--</strong>
+            </div>
+          </div>
+
+          <div class="section-title">
+            <div>
+              <h2>Aprenda com cada questão</h2>
+              <p>Revise os erros e entenda o raciocínio.</p>
+            </div>
+          </div>
+
+          <div class="explain-list" id="explicacoesLista"></div>
+
+          <div class="question-actions">
+            <button class="btn btn-primary" id="btnNovoTreino">Fazer novo treino</button>
+            <button class="btn btn-secondary" id="btnRevisaoFoco">Treinar meu foco</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-title">
+            <div>
+              <h2>Histórico</h2>
+              <p>Veja seus treinos recentes e acompanhe sua evolução.</p>
+            </div>
+            <span class="head-tag">últimos 30</span>
+          </div>
+
+          <div class="history-list" id="historicoLista">
+            <div class="empty">Carregando histórico...</div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/aluno-questionarios.js"></script>
+</body>
+</html>

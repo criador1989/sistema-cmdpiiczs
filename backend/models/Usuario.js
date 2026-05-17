@@ -67,8 +67,27 @@ const usuarioSchema = new Schema(
 
     tipo: {
       type: String,
-      enum: ['admin', 'monitor', 'professor'],
+      enum: ['admin', 'monitor', 'professor', 'aluno'],
       default: 'monitor',
+      index: true,
+    },
+
+    /**
+     * CAMPOS DE VÍNCULO COM O ALUNO
+     * - alunoId: vínculo principal com o documento Aluno
+     * - portal: ajuda o sistema a diferenciar acesso institucional vs aluno
+     */
+    alunoId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Aluno',
+      default: null,
+      index: true,
+    },
+
+    portal: {
+      type: String,
+      enum: ['institucional', 'aluno'],
+      default: 'institucional',
       index: true,
     },
 
@@ -154,6 +173,10 @@ usuarioSchema.index({ tenantId: 1, email: 1 }, { sparse: true });
 usuarioSchema.index({ tokenVerificacaoHash: 1, tokenVerificacaoExpiraEm: 1 });
 usuarioSchema.index({ instituicao: 1, tipo: 1, turmas: 1 });
 usuarioSchema.index({ tenantId: 1, tipo: 1, turmas: 1 });
+usuarioSchema.index({ instituicao: 1, portal: 1, tipo: 1 });
+usuarioSchema.index({ tenantId: 1, portal: 1, tipo: 1 });
+usuarioSchema.index({ instituicao: 1, alunoId: 1 }, { sparse: true });
+usuarioSchema.index({ tenantId: 1, alunoId: 1 }, { sparse: true });
 
 /* =========================
    SINCRONIZAÇÃO tenantId <-> instituicao
@@ -201,12 +224,42 @@ function sincronizarTenantNoUpdate(update) {
   }
 }
 
+function sincronizarPortalETipo(doc) {
+  const tipo = String(doc.tipo || '').trim().toLowerCase();
+
+  if (tipo === 'aluno') {
+    doc.portal = 'aluno';
+    doc.turmas = [];
+    doc.tokenAcesso = undefined;
+  } else {
+    doc.portal = 'institucional';
+  }
+}
+
+function sincronizarPortalETipoNoUpdate(update) {
+  if (!update || typeof update !== 'object') return;
+
+  const alvo = update.$set || update;
+  const tipo = String(alvo.tipo || '').trim().toLowerCase();
+
+  if (!tipo) return;
+
+  if (tipo === 'aluno') {
+    alvo.portal = 'aluno';
+    alvo.turmas = [];
+    alvo.tokenAcesso = undefined;
+  } else {
+    alvo.portal = 'institucional';
+  }
+}
+
 /* =========================
    MIDDLEWARES
 ========================= */
 usuarioSchema.pre('validate', function (next) {
   try {
     sincronizarTenant(this);
+    sincronizarPortalETipo(this);
     next();
   } catch (err) {
     next(err);
@@ -224,6 +277,7 @@ usuarioSchema.pre('save', async function (next) {
     }
 
     sincronizarTenant(this);
+    sincronizarPortalETipo(this);
 
     if (this.isModified('senha')) {
       this.senha = await gerarHash(this.senha);
@@ -231,6 +285,10 @@ usuarioSchema.pre('save', async function (next) {
 
     if (this.tipo === 'professor' && !this.tokenAcesso) {
       this.tokenAcesso = gerarTokenProfessor();
+    }
+
+    if (this.tipo !== 'professor') {
+      this.tokenAcesso = undefined;
     }
 
     next();
@@ -271,6 +329,7 @@ usuarioSchema.pre('findOneAndUpdate', async function (next) {
     }
 
     sincronizarTenantNoUpdate(update);
+    sincronizarPortalETipoNoUpdate(update);
     this.setUpdate(update);
 
     next();

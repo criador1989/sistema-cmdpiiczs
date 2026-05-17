@@ -58,10 +58,7 @@
       padding: 18px;
     }
 
-    .wrap{
-      max-width: 1260px;
-      margin: 0 auto;
-    }
+    .wrap{ max-width: 1440px; margin: 0 auto; }
 
     header{
       display:flex;
@@ -72,11 +69,7 @@
       flex-wrap: wrap;
     }
 
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
+    .brand{ display:flex; align-items:center; gap:12px; }
 
     .logo{
       width:46px;
@@ -95,11 +88,7 @@
       font-size: 1.05rem;
       letter-spacing: .6px;
     }
-    .sub{
-      margin:2px 0 0;
-      color: var(--muted);
-      font-size: .95rem;
-    }
+    .sub{ margin:2px 0 0; color: var(--muted); font-size: .95rem; }
 
     .top-actions{
       display:flex;
@@ -154,19 +143,14 @@
 
     .layout{
       display:grid;
-      grid-template-columns: 390px 1fr;
+      grid-template-columns: 430px 1fr;
       gap: 14px;
       align-items:start;
     }
 
-    @media (max-width: 1080px){
-      .layout{ grid-template-columns: 1fr; }
-    }
+    @media (max-width: 1180px){ .layout{ grid-template-columns: 1fr; } }
 
-    .left-col{
-      display:grid;
-      gap:14px;
-    }
+    .left-col{ display:grid; gap:14px; }
 
     .card{
       background: linear-gradient(180deg, rgba(21,40,76,.62), rgba(13,28,54,.74));
@@ -206,9 +190,7 @@
       letter-spacing: .2px;
     }
 
-    .card-body{
-      padding: 14px;
-    }
+    .card-body{ padding: 14px; }
 
     label{
       display:block;
@@ -233,21 +215,8 @@
         0 8px 18px rgba(0,0,0,.45);
     }
 
-    select{
-      appearance:none;
-      -webkit-appearance:none;
-      -moz-appearance:none;
-    }
-    select option{
-  color: #ecf2ff;
-  background: #0f1b33;
-}
-
-select optgroup{
-  color: #ecf2ff;
-  background: #0f1b33;
-}
-
+    select{ appearance:none; -webkit-appearance:none; -moz-appearance:none; }
+    select option, select optgroup{ color: #ecf2ff; background: #0f1b33; }
     input::placeholder{ color: rgba(236,242,255,.55); }
 
     input:focus, select:focus{
@@ -255,15 +224,8 @@ select optgroup{
       box-shadow: 0 0 0 2px rgba(0,209,255,.35), 0 10px 28px rgba(0,0,0,.65);
     }
 
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    @media (max-width: 560px){
-      .row{ grid-template-columns: 1fr; }
-    }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 560px){ .row{ grid-template-columns: 1fr; } }
 
     .hint{
       margin-top: 8px;
@@ -318,11 +280,7 @@ select optgroup{
       border: 1px solid rgba(170,200,240,.28);
     }
 
-    table{
-      width:100%;
-      border-collapse: collapse;
-      font-size: 15px;
-    }
+    table{ width:100%; border-collapse: collapse; font-size: 15px; }
 
     th, td{
       padding: 12px 14px;
@@ -369,11 +327,7 @@ select optgroup{
       box-shadow: 0 0 12px rgba(255,70,90,.35);
     }
 
-    .actions{
-      display:flex;
-      gap:8px;
-      flex-wrap: wrap;
-    }
+    .actions{ display:flex; gap:8px; flex-wrap: wrap; }
 
     .mini{
       padding: 8px 10px;
@@ -386,31 +340,16 @@ select optgroup{
       cursor:pointer;
     }
 
-    .mini:hover{
-      filter:brightness(1.06);
-      background: rgba(10,19,34,.36);
-    }
-
+    .mini:hover{ filter:brightness(1.06); background: rgba(10,19,34,.36); }
     .mini.danger{ border-color: rgba(255,70,90,.35); }
     .mini.ok{ border-color: rgba(0,255,140,.35); }
-    .mini.primary{
-      color:#071018;
-      border:none;
-      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
-    }
+    .mini.primary{ color:#071018; border:none; background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary)); }
+    .mini.aluno{ border-color: rgba(255,226,154,.35); background: rgba(255,226,154,.08); color: #fff0c7; }
+    .mini.remove{ border-color: rgba(255,70,90,.35); background: rgba(255,70,90,.08); color: #ffd1d7; }
 
-    .links{
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-    }
+    .links{ display:flex; flex-direction:column; gap: 8px; }
 
-    .linkrow{
-      display:flex;
-      gap: 8px;
-      align-items:center;
-      flex-wrap: wrap;
-    }
+    .linkrow{ display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
 
     .linkrow input{
       flex: 1 1 260px;
@@ -419,10 +358,7 @@ select optgroup{
       border: 1px solid rgba(170,200,240,.28);
     }
 
-    .small{
-      font-size: 12px;
-      color: rgba(236,242,255,.70);
-    }
+    .small{ font-size: 12px; color: rgba(236,242,255,.70); }
 
     .spinner{
       display:inline-block;
@@ -436,9 +372,7 @@ select optgroup{
       animation: spin .7s linear infinite;
     }
 
-    @keyframes spin{
-      to{ transform: rotate(360deg); }
-    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
 
     .selected-inst{
       padding: 10px 12px;
@@ -451,28 +385,134 @@ select optgroup{
       margin-bottom: 10px;
     }
 
-    .selected-inst .name{
-      font-size: 1rem;
-      font-weight: 900;
-      color: #fff;
-    }
+    .selected-inst .name{ font-size: 1rem; font-weight: 900; color: #fff; }
+    .selected-inst .slug{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; opacity: .9; }
 
-    .selected-inst .slug{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      opacity: .9;
-    }
-
-    .empty-note{
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.3;
-    }
+    .empty-note{ color: var(--muted); font-size: 13px; line-height: 1.3; }
 
     .divider{
       height:1px;
       background: linear-gradient(90deg, transparent, rgba(170,200,240,.28), transparent);
       margin: 14px 0;
+    }
+
+    .student-note{
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,226,154,.22);
+      background: rgba(255,226,154,.08);
+      color: #fff0c7;
+      line-height: 1.35;
+      font-size: 13px;
+    }
+
+    .student-note b{ color:#fff7db; }
+    .select-card{ display:grid; gap:10px; }
+
+    .list-box{
+      max-height: 340px;
+      overflow:auto;
+      border-radius: 14px;
+      border:1px solid rgba(170,200,240,.18);
+      background: rgba(8,18,36,.45);
+      padding: 8px;
+    }
+
+    .student-item{
+      display:grid;
+      grid-template-columns: auto 1fr;
+      gap:10px;
+      align-items:start;
+      padding:10px;
+      border-radius:12px;
+      border:1px solid rgba(170,200,240,.12);
+      background: rgba(10,19,34,.18);
+      margin-bottom:8px;
+    }
+
+    .student-item:last-child{ margin-bottom:0; }
+    .student-main{ display:grid; gap:4px; }
+    .student-name{ font-weight:900; color:#fff; }
+    .student-meta{ color: rgba(236,242,255,.76); font-size:13px; line-height:1.25; }
+    .student-email{ margin-top:8px; }
+    .student-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+
+    .senha-gerada-box{
+      margin-top: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 9px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,255,140,.28);
+      background: rgba(0,255,140,.10);
+      color: #d6ffe9;
+      font-weight: 900;
+    }
+
+    .senha-gerada-box code{
+      color: #ffffff;
+      background: rgba(10,19,34,.38);
+      border: 1px solid rgba(170,200,240,.18);
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .result-box{
+      max-height: 320px;
+      overflow:auto;
+      border-radius: 14px;
+      border:1px solid rgba(170,200,240,.18);
+      background: rgba(8,18,36,.45);
+      padding: 8px;
+    }
+
+    .result-summary{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    @media (max-width:560px){ .result-summary{ grid-template-columns:1fr; } }
+
+    .result-kpi{
+      border-radius: 12px;
+      border:1px solid rgba(170,200,240,.16);
+      background: rgba(10,19,34,.24);
+      padding:9px 10px;
+    }
+
+    .result-kpi b{ display:block; color:#fff; font-size:18px; }
+    .result-kpi span{ color:rgba(236,242,255,.72); font-size:12px; }
+
+    .result-item{
+      padding:10px;
+      border-radius:12px;
+      border:1px solid rgba(0,255,140,.16);
+      background: rgba(0,255,140,.06);
+      margin-bottom:8px;
+    }
+
+    .result-item.reutilizado{
+      border-color: rgba(255,226,154,.22);
+      background: rgba(255,226,154,.07);
+    }
+
+    .result-item.ignorado{
+      border-color: rgba(255,70,90,.22);
+      background: rgba(255,70,90,.07);
+    }
+
+    .result-item:last-child{ margin-bottom:0; }
+    .result-item .title{ font-weight:900; color:#fff; }
+    .result-item .meta{ font-size:13px; color: rgba(236,242,255,.8); margin-top:4px; line-height:1.35; }
+
+    .copy-access{
+      margin-top:8px;
+      width:100%;
+      text-align:left;
     }
   </style>
 </head>
@@ -484,7 +524,7 @@ select optgroup{
         <img class="logo" src="/assets/smartclass-coruja.png" alt="SmartClass" onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
         <div>
           <h1>Painel Master • Instituições</h1>
-          <div class="sub">Cadastro e gestão de colégios (tenants) • criação de usuários por instituição</div>
+          <div class="sub">Cadastro e gestão de colégios (tenants) • criação de usuários por instituição • preparação do portal do aluno</div>
         </div>
       </div>
 
@@ -518,27 +558,27 @@ select optgroup{
             </div>
 
             <div style="margin-top:10px;">
-  <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
-  <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
+              <label for="slug">Slug (link) (ex.: xabc-rbr)</label>
+              <input id="slug" placeholder="xabc-rbr" autocomplete="off" />
 
-  <div class="hint">
-    Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
-    O link fica: <code>/login.html?t=SEU-SLUG</code>
-  </div>
-</div>
+              <div class="hint">
+                Se deixar em branco, o sistema tenta gerar a partir da <b>sigla</b> ou <b>nome</b>.
+                O link fica: <code>/login.html?t=SEU-SLUG</code>
+              </div>
+            </div>
 
-<div style="margin-top:10px;">
-  <label for="preset">Modelo disciplinar</label>
-  <select id="preset">
-    <option value="militar">Militar (CBMAC)</option>
-    <option value="particular">Particular (pedagógico)</option>
-    <option value="personalizado">Personalizado (flexível)</option>
-  </select>
+            <div style="margin-top:10px;">
+              <label for="preset">Modelo disciplinar</label>
+              <select id="preset">
+                <option value="militar">Militar (CBMAC)</option>
+                <option value="particular">Particular (pedagógico)</option>
+                <option value="personalizado">Personalizado (flexível)</option>
+              </select>
 
-  <div class="hint" id="presetHint">
-    Modelo rígido com regulamento disciplinar militar.
-  </div>
-</div>
+              <div class="hint" id="presetHint">
+                Modelo rígido com regulamento disciplinar militar.
+              </div>
+            </div>
 
             <button class="btn btn-primary" id="btnCriar" style="margin-top:12px; width:100%;">Criar instituição</button>
 
@@ -557,8 +597,13 @@ select optgroup{
                 <button class="mini" data-copy="#linkCadastro">Copiar cadastro</button>
               </div>
 
+              <div class="linkrow">
+                <input id="linkLoginAluno" readonly />
+                <button class="mini aluno" data-copy="#linkLoginAluno">Copiar portal do aluno</button>
+              </div>
+
               <div class="small">
-                Envie esses links para o colégio comprador. Assim, o login/cadastro já abre no ambiente correto.
+                Envie esses links para o colégio comprador. Assim, o login/cadastro já abre no ambiente correto. O portal do aluno já fica preparado para a próxima etapa.
               </div>
             </div>
           </div>
@@ -625,12 +670,66 @@ select optgroup{
                 <button class="mini" data-copy="#userLoginLink">Copiar login</button>
               </div>
 
+              <div class="linkrow">
+                <input id="userAlunoPortalLink" readonly />
+                <button class="mini aluno" data-copy="#userAlunoPortalLink">Copiar portal do aluno</button>
+              </div>
+
               <div class="small">
                 Você pode enviar esse link para o usuário já entrar no ambiente correto da instituição.
               </div>
             </div>
           </div>
         </section>
+
+        <!-- Geração de acessos dos alunos -->
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Gerar acessos dos alunos</div>
+            <div class="small">Fundamental e médio</div>
+          </div>
+
+          <div class="card-body">
+            <div class="selected-inst" id="selectedInstStudentBox">
+              <div class="empty-note">
+                Selecione uma instituição na tabela ao lado clicando em <b>“Acessos dos alunos”</b>.
+              </div>
+            </div>
+
+            <div class="select-card">
+              <div>
+                <label for="turmaAcesso">Turma</label>
+                <select id="turmaAcesso">
+                  <option value="">Selecione a turma</option>
+                </select>
+              </div>
+
+              <div class="student-note">
+                <b>Como funciona:</b> selecione os alunos interessados, complete o e-mail do responsável quando faltar e gere os acessos em lote. O sistema criará o código do aluno e uma senha inicial simples. Quando o aluno já tiver usuário, ele será reaproveitado sem alterar a senha anterior.
+              </div>
+
+              <div class="student-actions">
+                <button class="mini" id="btnCarregarAlunosTurma" type="button">Carregar alunos</button>
+                <button class="mini aluno" id="btnMarcarTodos" type="button">Marcar todos</button>
+                <button class="mini remove" id="btnDesmarcarTodos" type="button">Desmarcar todos</button>
+              </div>
+
+              <div class="list-box" id="listaAlunosAcesso">
+                <div class="empty-note">Nenhuma turma carregada.</div>
+              </div>
+
+              <button class="btn btn-primary" id="btnGerarAcessosLote" style="width:100%;">
+                Gerar acessos automaticamente
+              </button>
+
+              <div class="msg" id="msgAcessoLote"></div>
+
+              <div class="result-box" id="resultadoAcessos" style="display:none;"></div>
+            </div>
+          </div>
+        </section>
+
+
       </div>
 
       <!-- Lista -->
@@ -655,7 +754,7 @@ select optgroup{
                 <th>Sigla</th>
                 <th>Slug</th>
                 <th>Status</th>
-                <th style="width:320px;">Ações</th>
+                <th style="width:520px;">Ações</th>
               </tr>
             </thead>
             <tbody id="tbody">
@@ -672,6 +771,7 @@ select optgroup{
   <script>
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
     const MASTER_BASE = `${API_BASE}/api/master/instituicoes/instituicoes`;
+    const ALUNOS_BASE = `${API_BASE}/api/alunos`;
 
     const tbody = document.getElementById('tbody');
     const msgList = document.getElementById('msgList');
@@ -684,11 +784,12 @@ select optgroup{
     const btnCriar = document.getElementById('btnCriar');
     const msgCreate = document.getElementById('msgCreate');
     const inputPreset = document.getElementById('preset');
-const presetHint = document.getElementById('presetHint');
+    const presetHint = document.getElementById('presetHint');
 
     const createdLinks = document.getElementById('createdLinks');
     const linkLogin = document.getElementById('linkLogin');
     const linkCadastro = document.getElementById('linkCadastro');
+    const linkLoginAluno = document.getElementById('linkLoginAluno');
 
     const q = document.getElementById('q');
     const btnRefresh = document.getElementById('btnRefresh');
@@ -704,23 +805,38 @@ const presetHint = document.getElementById('presetHint');
     const msgUser = document.getElementById('msgUser');
     const userLinks = document.getElementById('userLinks');
     const userLoginLink = document.getElementById('userLoginLink');
+    const userAlunoPortalLink = document.getElementById('userAlunoPortalLink');
 
-    inputPreset.addEventListener('change', () => {
-  const p = inputPreset.value;
-
-  if (p === 'militar') {
-    presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
-  } else if (p === 'particular') {
-    presetHint.textContent = 'Modelo pedagógico com foco em acompanhamento escolar.';
-  } else {
-    presetHint.textContent = 'Modelo flexível totalmente personalizável pela instituição.';
-  }
-});
+    const selectedInstStudentBox = document.getElementById('selectedInstStudentBox');
+    const turmaAcesso = document.getElementById('turmaAcesso');
+    const btnCarregarAlunosTurma = document.getElementById('btnCarregarAlunosTurma');
+    const btnMarcarTodos = document.getElementById('btnMarcarTodos');
+    const btnDesmarcarTodos = document.getElementById('btnDesmarcarTodos');
+    const listaAlunosAcesso = document.getElementById('listaAlunosAcesso');
+    const btnGerarAcessosLote = document.getElementById('btnGerarAcessosLote');
+    const msgAcessoLote = document.getElementById('msgAcessoLote');
+    const resultadoAcessos = document.getElementById('resultadoAcessos');
 
     let all = [];
     let selectedInst = null;
+    let selectedStudentInst = null;
+    let alunosTurmaAtual = [];
+    const senhasRedefinidasPorAluno = new Map();
+
+    inputPreset.addEventListener('change', () => {
+      const p = inputPreset.value;
+
+      if (p === 'militar') {
+        presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
+      } else if (p === 'particular') {
+        presetHint.textContent = 'Modelo pedagógico com foco em acompanhamento escolar.';
+      } else {
+        presetHint.textContent = 'Modelo flexível totalmente personalizável pela instituição.';
+      }
+    });
 
     function showMsg(el, type, text){
+      if (!el) return;
       el.className = 'msg ' + (type || '');
       el.textContent = text || '';
       el.style.display = text ? 'block' : 'none';
@@ -738,6 +854,14 @@ const presetHint = document.getElementById('presetHint');
     function absUrl(path){
       const base = location.origin.replace(/\/+$/, '');
       return base + (String(path || '').startsWith('/') ? path : '/' + path);
+    }
+
+    function normalizarEmail(email){
+      return String(email || '').trim().toLowerCase();
+    }
+
+    function isEmailBasico(email){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
     }
 
     async function copyFromSelector(sel){
@@ -774,12 +898,12 @@ const presetHint = document.getElementById('presetHint');
     btnSair.addEventListener('click', async () => {
       btnSair.disabled = true;
       try{
-        await fetch(`${API_BASE}/auth/logout`, {
+        await fetch(`${API_BASE}/api/superadmin/logout`, {
           method:'POST',
           credentials:'include'
         });
       }catch{}
-      location.href = '/login.html';
+      location.href = '/superadmin-login.html';
     });
 
     function renderSelectedInst(){
@@ -799,124 +923,333 @@ const presetHint = document.getElementById('presetHint');
       `;
     }
 
-    function clearUserForm(keepInstitution = true){
+    function renderSelectedStudentInst(){
+      if (!selectedStudentInst) {
+        selectedInstStudentBox.innerHTML = `
+          <div class="empty-note">
+            Selecione uma instituição na tabela ao lado clicando em <b>“Acessos dos alunos”</b>.
+          </div>
+        `;
+        return;
+      }
+
+      selectedInstStudentBox.innerHTML = `
+        <div class="name">${escapeHtml(selectedStudentInst.nome || 'Instituição')}</div>
+        <div>${escapeHtml(selectedStudentInst.sigla || 'Sem sigla')}</div>
+        <div class="slug">slug: ${escapeHtml(selectedStudentInst.slug || '—')}</div>
+      `;
+    }
+
+    function clearUserForm(keepInst = true){
       uNome.value = '';
       uEmail.value = '';
       uSenha.value = '';
       uTipo.value = '';
-      showMsg(msgUser, '', '');
-      userLinks.style.display = 'none';
-
-      if (!keepInstitution) {
+      if (!keepInst) {
         selectedInst = null;
         renderSelectedInst();
       }
     }
 
-    btnCriar.addEventListener('click', async () => {
-
-  showMsg(msgCreate, '', '');
-  createdLinks.style.display = 'none';
-
-  const nome = inputNome.value.trim();
-  const sigla = inputSigla.value.trim();
-  const slug = inputSlug.value.trim();
-
-  if (!nome || nome.length < 3) {
-    showMsg(msgCreate, 'err', 'Informe um nome válido (mín. 3 caracteres).');
-    return;
-  }
-
-  btnCriar.disabled = true;
-  btnCriar.innerHTML = '<span class="spinner"></span>Criando…';
-
-  try {
-
-    const r = await fetch(MASTER_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        nome,
-        sigla,
-        slug,
-        preset: inputPreset ? inputPreset.value : 'militar'
-      })
-    });
-
-    const data = await r.json().catch(() => ({}));
-
-    if (!r.ok) {
-      showMsg(msgCreate, 'err', data?.mensagem || 'Erro ao criar instituição.');
-      return;
+    function clearStudentAccessArea(){
+      turmaAcesso.innerHTML = `<option value="">Selecione a turma</option>`;
+      listaAlunosAcesso.innerHTML = `<div class="empty-note">Nenhuma turma carregada.</div>`;
+      alunosTurmaAtual = [];
+      showMsg(msgAcessoLote, '', '');
+      renderResultadoAcessos();
     }
 
-    showMsg(msgCreate, 'ok', data?.mensagem || 'Instituição criada!');
+    async function carregarTurmasAcesso(){
+      if (!selectedStudentInst?.slug) {
+        turmaAcesso.innerHTML = `<option value="">Selecione a turma</option>`;
+        return;
+      }
 
-    const slugFinal = data?.instituicao?.slug || slug;
+      turmaAcesso.innerHTML = `<option value="">Carregando turmas...</option>`;
 
-    linkLogin.value = absUrl(`/login.html?t=${encodeURIComponent(slugFinal)}`);
-    linkCadastro.value = absUrl(`/cadastro-usuario.html?t=${encodeURIComponent(slugFinal)}`);
+      try {
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/turmas`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
 
-    createdLinks.style.display = 'block';
+        const data = await r.json().catch(() => ({}));
+        let turmas = [];
 
-    // limpar campos
-    inputNome.value = '';
-inputSigla.value = '';
-inputSlug.value = '';
+        if (Array.isArray(data)) {
+          turmas = data;
+        } else if (Array.isArray(data?.turmas)) {
+          turmas = data.turmas;
+        } else if (Array.isArray(data?.items)) {
+          turmas = data.items;
+        }
 
-if (inputPreset) {
-  inputPreset.value = 'militar';
-}
-if (presetHint) {
-  presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
-}
-    await loadList();
+        turmas = [...new Set(turmas.map(t => String(t || '').trim()).filter(Boolean))]
+          .sort((a,b) => a.localeCompare(b, 'pt-BR', { numeric:true, sensitivity:'base' }));
 
-  } catch (err) {
-    showMsg(msgCreate, 'err', 'Erro de conexão com o servidor.');
-  } finally {
-    btnCriar.disabled = false;
-    btnCriar.textContent = 'Criar instituição';
-  }
+        turmaAcesso.innerHTML = `<option value="">Selecione a turma</option>` +
+          turmas.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
 
-});
+        if (!turmas.length) {
+          turmaAcesso.innerHTML = `<option value="">Nenhuma turma encontrada</option>`;
+        }
+      } catch (err) {
+        turmaAcesso.innerHTML = `<option value="">Falha ao carregar</option>`;
+      }
+    }
+
+    function obterIdAluno(aluno){
+      return String(aluno?._id || aluno?.id || '');
+    }
+
+    function alunoTemAcesso(aluno){
+      return !!(aluno?.temAcesso || aluno?.usuarioId || aluno?.usuario || aluno?.alunoId);
+    }
+
+    function renderListaAlunosAcesso() {
+      if (!Array.isArray(alunosTurmaAtual) || !alunosTurmaAtual.length) {
+        listaAlunosAcesso.innerHTML = `<div class="empty-note">Nenhum aluno encontrado para essa turma.</div>`;
+        return;
+      }
+
+      alunosTurmaAtual.sort((a,b) => String(a?.nome || '').localeCompare(String(b?.nome || ''), 'pt-BR', { sensitivity:'base' }));
+
+      listaAlunosAcesso.innerHTML = alunosTurmaAtual.map(aluno => {
+        const alunoId = obterIdAluno(aluno);
+        const emailResponsavel =
+          aluno?.contatos?.emailResponsavel ||
+          aluno?.emailResponsavel ||
+          '';
+
+        const temAcesso = alunoTemAcesso(aluno);
+        const codigo = aluno?.codigoAcesso || aluno?.codigo || '';
+        const senhaRedefinida = senhasRedefinidasPorAluno.get(alunoId) || aluno?.senhaGerada || '';
+
+        return `
+          <div class="student-item">
+            <div>
+              <input type="checkbox" class="chk-aluno-acesso" data-id="${escapeHtml(alunoId)}" ${temAcesso ? 'disabled' : ''}>
+            </div>
+            <div class="student-main">
+              <div class="student-name">${escapeHtml(aluno.nome || 'Aluno')}</div>
+              <div class="student-meta">
+                Turma: ${escapeHtml(aluno.turma || '—')}<br>
+                Código atual: ${escapeHtml(codigo || 'será gerado')}<br>
+                Acesso já criado: ${temAcesso ? 'sim' : 'não'}<br>
+                ${senhaRedefinida ? `<span class="senha-gerada-box">Senha atual gerada: <code>${escapeHtml(senhaRedefinida)}</code></span><br>` : ''}
+              </div>
+              <div class="student-email">
+                <label for="email-resp-${escapeHtml(alunoId)}">E-mail do responsável</label>
+                <input
+                  id="email-resp-${escapeHtml(alunoId)}"
+                  class="input-email-resp"
+                  data-id="${escapeHtml(alunoId)}"
+                  type="email"
+                  placeholder="responsavel@exemplo.com"
+                  value="${escapeHtml(emailResponsavel)}"
+                  ${temAcesso ? 'disabled' : ''}
+                />
+              </div>
+
+              <div class="student-actions">
+                ${temAcesso ? `<button class="mini aluno" type="button" onclick="window.__redefinirSenhaAluno('${escapeHtml(alunoId)}', this)">Redefinir senha</button>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getSelecionadosParaGerar() {
+      const marcados = Array.from(document.querySelectorAll('.chk-aluno-acesso:checked'));
+
+      return marcados.map(chk => {
+        const id = chk.getAttribute('data-id');
+        const inputEmail = document.querySelector(`.input-email-resp[data-id="${CSS.escape(id)}"]`);
+        return {
+          alunoId: id,
+          emailResponsavel: normalizarEmail(inputEmail?.value || '')
+        };
+      });
+    }
+
+    function montarTextoAcesso(item){
+      const portal = selectedStudentInst?.slug
+        ? absUrl(`/login-aluno.html?t=${encodeURIComponent(selectedStudentInst.slug)}`)
+        : absUrl('/login-aluno.html');
+
+      const linhas = [
+        `Portal do aluno: ${portal}`,
+        `Aluno: ${item?.nome || 'Aluno'}`,
+        `E-mail: ${item?.email || '—'}`,
+        `Código: ${item?.codigoAcesso || '—'}`,
+      ];
+
+      if (item?.senha) {
+        linhas.push(`Senha inicial: ${item.senha}`);
+      } else {
+        linhas.push('Senha: já existente / não alterada');
+      }
+
+      return linhas.join('\n');
+    }
+
+    function renderResultadoAcessos(dataOuAcessos = null) {
+      let acessos = [];
+      let reutilizados = [];
+      let ignorados = [];
+
+      if (Array.isArray(dataOuAcessos)) {
+        acessos = dataOuAcessos;
+      } else if (dataOuAcessos && typeof dataOuAcessos === 'object') {
+        acessos = Array.isArray(dataOuAcessos.acessos) ? dataOuAcessos.acessos : [];
+        reutilizados = Array.isArray(dataOuAcessos.reutilizados) ? dataOuAcessos.reutilizados : [];
+        ignorados = Array.isArray(dataOuAcessos.ignorados) ? dataOuAcessos.ignorados : [];
+      }
+
+      if (!acessos.length && !reutilizados.length && !ignorados.length) {
+        resultadoAcessos.style.display = 'none';
+        resultadoAcessos.innerHTML = '';
+        return;
+      }
+
+      const resumo = `
+        <div class="result-summary">
+          <div class="result-kpi"><b>${acessos.length}</b><span>Criados agora</span></div>
+          <div class="result-kpi"><b>${reutilizados.length}</b><span>Reutilizados</span></div>
+          <div class="result-kpi"><b>${ignorados.length}</b><span>Ignorados</span></div>
+        </div>
+      `;
+
+      const renderItem = (item, status) => {
+        const statusReal = item?.status === 'senha_redefinida' ? 'senha_redefinida' : status;
+        const cls = statusReal === 'criado' ? '' : (statusReal === 'senha_redefinida' ? 'reutilizado' : statusReal);
+        const statusLabel = statusReal === 'senha_redefinida' ? 'SENHA REDEFINIDA' : statusReal.toUpperCase();
+        const senhaLinha = item?.senha
+          ? `Senha inicial: <b>${escapeHtml(item.senha)}</b><br>`
+          : `Senha: <b>já existente / não alterada</b><br>`;
+
+        const obs = item?.observacao || item?.motivo || '';
+        const textoCopiar = escapeHtml(montarTextoAcesso(item));
+
+        return `
+          <div class="result-item ${escapeHtml(cls)}">
+            <div class="title">${escapeHtml(item.nome || 'Aluno')} • ${escapeHtml(statusLabel)}</div>
+            <div class="meta">
+              Turma: ${escapeHtml(item.turma || '—')}<br>
+              E-mail: <b>${escapeHtml(item.email || '—')}</b><br>
+              Código: <b>${escapeHtml(item.codigoAcesso || '—')}</b><br>
+              ${status === 'ignorado' ? '' : senhaLinha}
+              ${obs ? `Observação: ${escapeHtml(obs)}<br>` : ''}
+            </div>
+            ${status === 'ignorado' ? '' : `<button class="mini copy-access" onclick="window.__copyText('${textoCopiar.replaceAll('\n', '\\n')}', this)">Copiar dados deste acesso</button>`}
+          </div>
+        `;
+      };
+
+      resultadoAcessos.innerHTML = resumo +
+        acessos.map(item => renderItem(item, 'criado')).join('') +
+        reutilizados.map(item => renderItem(item, 'reutilizado')).join('') +
+        ignorados.map(item => renderItem(item, 'ignorado')).join('');
+
+      resultadoAcessos.style.display = 'block';
+    }
+
+    async function criarInstituicao(){
+      showMsg(msgCreate, '', '');
+      createdLinks.style.display = 'none';
+
+      const nome = String(inputNome.value || '').trim();
+      const sigla = String(inputSigla.value || '').trim();
+      const slug = String(inputSlug.value || '').trim();
+      const preset = String(inputPreset.value || 'militar').trim();
+
+      if (!nome || nome.length < 3) {
+        showMsg(msgCreate, 'warn', 'Informe o nome da instituição.');
+        return;
+      }
+
+      btnCriar.disabled = true;
+      btnCriar.innerHTML = '<span class="spinner"></span>Criando...';
+
+      try{
+        const r = await fetch(MASTER_BASE, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify({ nome, sigla, slug, preset })
+        });
+
+        const data = await r.json().catch(()=> ({}));
+
+        if (!r.ok) {
+          showMsg(msgCreate, 'err', data?.mensagem || 'Erro ao criar instituição.');
+          return;
+        }
+
+        const inst = data?.instituicao || {};
+        const safeSlug = inst.slug || slug || '';
+
+        showMsg(msgCreate, 'ok', data?.mensagem || 'Instituição criada com sucesso.');
+
+        linkLogin.value = absUrl(data?.links?.login || `/login.html?t=${encodeURIComponent(safeSlug)}`);
+        linkCadastro.value = absUrl(data?.links?.cadastro || `/cadastro-usuario.html?t=${encodeURIComponent(safeSlug)}`);
+        linkLoginAluno.value = absUrl(data?.links?.loginAluno || `/login-aluno.html?t=${encodeURIComponent(safeSlug)}`);
+        createdLinks.style.display = 'flex';
+
+        inputNome.value = '';
+        inputSigla.value = '';
+        inputSlug.value = '';
+        inputPreset.value = 'militar';
+        presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
+
+        await loadList();
+      }catch(err){
+        showMsg(msgCreate, 'err', 'Erro de conexão com o servidor.');
+      }finally{
+        btnCriar.disabled = false;
+        btnCriar.textContent = 'Criar instituição';
+      }
+    }
+
+    btnCriar.addEventListener('click', criarInstituicao);
+
     btnCriarUsuario.addEventListener('click', async () => {
       showMsg(msgUser, '', '');
       userLinks.style.display = 'none';
 
       if (!selectedInst?.id) {
-        showMsg(msgUser, 'warn', 'Selecione primeiro uma instituição na tabela.');
+        showMsg(msgUser, 'warn', 'Selecione uma instituição clicando em “Novo usuário”.');
         return;
       }
 
       const nome = String(uNome.value || '').trim();
-      const email = String(uEmail.value || '').trim().toLowerCase();
+      const email = normalizarEmail(uEmail.value);
       const senha = String(uSenha.value || '');
       const tipo = String(uTipo.value || '').trim().toLowerCase();
 
       if (!nome || nome.length < 3) {
-        showMsg(msgUser, 'err', 'Informe um nome válido.');
+        showMsg(msgUser, 'warn', 'Informe um nome válido.');
         return;
       }
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showMsg(msgUser, 'err', 'Informe um e-mail válido.');
+      if (!isEmailBasico(email)) {
+        showMsg(msgUser, 'warn', 'Informe um e-mail válido.');
         return;
       }
 
       if (!senha || senha.length < 6) {
-        showMsg(msgUser, 'err', 'A senha deve ter pelo menos 6 caracteres.');
+        showMsg(msgUser, 'warn', 'A senha deve ter pelo menos 6 caracteres.');
         return;
       }
 
-      if (!['admin', 'monitor', 'professor'].includes(tipo)) {
-        showMsg(msgUser, 'err', 'Selecione o tipo do usuário.');
+      if (!['admin','monitor','professor'].includes(tipo)) {
+        showMsg(msgUser, 'warn', 'Selecione o tipo de usuário.');
         return;
       }
 
       btnCriarUsuario.disabled = true;
-      btnCriarUsuario.innerHTML = '<span class="spinner"></span>Criando usuário…';
+      btnCriarUsuario.innerHTML = '<span class="spinner"></span>Criando usuário...';
 
       try{
         const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedInst.id)}/usuarios`, {
@@ -933,14 +1266,9 @@ if (presetHint) {
           return;
         }
 
-        showMsg(
-          msgUser,
-          'ok',
-          `Usuário criado com sucesso em ${selectedInst.nome}.\nTipo: ${tipo}\nE-mail: ${email}`
-        );
-
-        const slug = selectedInst.slug || '';
-        userLoginLink.value = absUrl(`/login.html?t=${encodeURIComponent(slug)}`);
+        const slug = selectedInst.slug || data?.usuario?.instituicao?.slug || '';
+        userLoginLink.value = absUrl(data?.links?.login || `/login.html?t=${encodeURIComponent(slug)}`);
+        userAlunoPortalLink.value = absUrl(data?.links?.loginAluno || `/login-aluno.html?t=${encodeURIComponent(slug)}`);
         userLinks.style.display = 'block';
 
         clearUserForm(true);
@@ -950,12 +1278,115 @@ if (presetHint) {
           'ok',
           `Usuário criado com sucesso em ${selectedInst.nome}.\nTipo: ${tipo}\nE-mail: ${email}`
         );
-
       }catch(err){
         showMsg(msgUser, 'err', 'Erro de conexão com o servidor.');
       }finally{
         btnCriarUsuario.disabled = false;
         btnCriarUsuario.textContent = 'Criar usuário nesta instituição';
+      }
+    });
+
+    btnCarregarAlunosTurma.addEventListener('click', async () => {
+      showMsg(msgAcessoLote, '', '');
+      renderResultadoAcessos();
+
+      if (!selectedStudentInst?.slug) {
+        showMsg(msgAcessoLote, 'warn', 'Selecione primeiro uma instituição para trabalhar os acessos dos alunos.');
+        return;
+      }
+
+      const turma = String(turmaAcesso.value || '').trim();
+      if (!turma) {
+        showMsg(msgAcessoLote, 'warn', 'Selecione uma turma.');
+        return;
+      }
+
+      listaAlunosAcesso.innerHTML = `<div class="empty-note">Carregando alunos da turma...</div>`;
+
+      try {
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/turma/${encodeURIComponent(turma)}`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+
+        const data = await r.json().catch(() => []);
+        alunosTurmaAtual = Array.isArray(data) ? data : (Array.isArray(data?.alunos) ? data.alunos : []);
+
+        renderListaAlunosAcesso();
+      } catch (err) {
+        listaAlunosAcesso.innerHTML = `<div class="empty-note">Falha ao carregar alunos.</div>`;
+      }
+    });
+
+    btnMarcarTodos.addEventListener('click', () => {
+      document.querySelectorAll('.chk-aluno-acesso:not(:disabled)').forEach(el => {
+        el.checked = true;
+      });
+    });
+
+    btnDesmarcarTodos.addEventListener('click', () => {
+      document.querySelectorAll('.chk-aluno-acesso:not(:disabled)').forEach(el => {
+        el.checked = false;
+      });
+    });
+
+    btnGerarAcessosLote.addEventListener('click', async () => {
+      showMsg(msgAcessoLote, '', '');
+      renderResultadoAcessos();
+
+      if (!selectedStudentInst?.slug || !selectedStudentInst?.id) {
+        showMsg(msgAcessoLote, 'warn', 'Selecione primeiro a instituição.');
+        return;
+      }
+
+      const selecionados = getSelecionadosParaGerar();
+
+      if (!selecionados.length) {
+        showMsg(msgAcessoLote, 'warn', 'Selecione ao menos um aluno.');
+        return;
+      }
+
+      const semEmail = selecionados.filter(item => !item.emailResponsavel || !isEmailBasico(item.emailResponsavel));
+      if (semEmail.length) {
+        showMsg(msgAcessoLote, 'warn', 'Preencha um e-mail válido para todos os alunos selecionados.');
+        return;
+      }
+
+      btnGerarAcessosLote.disabled = true;
+      btnGerarAcessosLote.innerHTML = '<span class="spinner"></span>Gerando acessos...';
+
+      try {
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/gerar-acessos-alunos`, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ alunos: selecionados })
+        });
+
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+          showMsg(msgAcessoLote, 'err', data?.mensagem || 'Erro ao gerar acessos.');
+          if (data?.erro) console.error('[gerar-acessos-alunos]', data.erro);
+          return;
+        }
+
+        showMsg(
+          msgAcessoLote,
+          'ok',
+          data?.mensagem || `Processamento concluído. Criados: ${data?.totalCriados || data?.total || 0}. Reutilizados: ${data?.totalReutilizados || 0}. Ignorados: ${data?.totalIgnorados || 0}.`
+        );
+
+        renderResultadoAcessos(data);
+
+        if (turmaAcesso.value) {
+          await btnCarregarAlunosTurma.click();
+        }
+      } catch (err) {
+        showMsg(msgAcessoLote, 'err', 'Erro de conexão ao gerar acessos.');
+      } finally {
+        btnGerarAcessosLote.disabled = false;
+        btnGerarAcessosLote.textContent = 'Gerar acessos automaticamente';
       }
     });
 
@@ -973,9 +1404,7 @@ if (presetHint) {
       const term = (q.value || '').trim().toLowerCase();
 
       const list = !term ? all : all.filter(i => {
-        const hay = [
-          i?.nome, i?.sigla, i?.slug, i?._id
-        ].filter(Boolean).join(' ').toLowerCase();
+        const hay = [i?.nome, i?.sigla, i?.slug, i?._id].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(term);
       });
 
@@ -991,10 +1420,11 @@ if (presetHint) {
         const nome = inst?.nome || '—';
         const sigla = inst?.sigla || '—';
         const slug = inst?.slug || '—';
-        const ativo = !!inst?.ativo;
+        const ativo = (inst?.ativo !== false && inst?.ativa !== false);
 
         const loginUrl = `/login.html?t=${encodeURIComponent(slug)}`;
         const cadUrl = `/cadastro-usuario.html?t=${encodeURIComponent(slug)}`;
+        const alunoUrl = `/login-aluno.html?t=${encodeURIComponent(slug)}`;
 
         return `
           <tr>
@@ -1009,29 +1439,13 @@ if (presetHint) {
             </td>
             <td>
               <div class="actions">
-                <button
-                  class="mini primary"
-                  onclick="window.__selectInst('${escapeHtml(id)}')">
-                  Novo usuário
-                </button>
-
-                <button
-                  class="mini"
-                  onclick="window.__copyText('${escapeHtml(absUrl(loginUrl))}', this)">
-                  Copiar login
-                </button>
-
-                <button
-                  class="mini"
-                  onclick="window.__copyText('${escapeHtml(absUrl(cadUrl))}', this)">
-                  Copiar cadastro
-                </button>
-
-                <button
-                  class="mini ${ativo ? 'danger' : 'ok'}"
-                  onclick="window.__toggleAtivo('${id}', ${ativo ? 'false' : 'true'}, this)">
-                  ${ativo ? 'Desativar' : 'Ativar'}
-                </button>
+                <button class="mini primary" onclick="window.__selectInst('${escapeHtml(id)}')">Novo usuário</button>
+                <button class="mini aluno" onclick="window.__selectStudentInst('${escapeHtml(id)}')">Acessos dos alunos</button>
+                <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(loginUrl))}', this)">Copiar login</button>
+                <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(cadUrl))}', this)">Copiar cadastro</button>
+                <button class="mini aluno" onclick="window.__copyText('${escapeHtml(absUrl(alunoUrl))}', this)">Portal do aluno</button>
+                <button class="mini ${ativo ? 'danger' : 'ok'}" onclick="window.__toggleAtivo('${escapeHtml(id)}', ${ativo ? 'false' : 'true'}, this)">${ativo ? 'Desativar' : 'Ativar'}</button>
+                <button class="mini remove" onclick="window.__deleteInstituicao('${escapeHtml(id)}', '${escapeHtml(nome)}', this)">Excluir</button>
               </div>
             </td>
           </tr>
@@ -1046,7 +1460,7 @@ if (presetHint) {
       apiInfo.textContent = API_BASE ? 'DEV (API local)' : 'PROD';
 
       try{
-        const r = await fetch(MASTER_BASE, { credentials:'include' });
+        const r = await fetch(MASTER_BASE, { credentials:'include', cache:'no-store' });
         const data = await r.json().catch(()=> ({}));
 
         if (!r.ok) {
@@ -1056,10 +1470,9 @@ if (presetHint) {
           return;
         }
 
-        all = data?.instituicoes || [];
+        all = Array.isArray(data?.instituicoes) ? data.instituicoes : [];
         countInfo.textContent = `${all.length} instituição(ões)`;
         renderFiltered();
-
       }catch(err){
         showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
         tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
@@ -1067,22 +1480,88 @@ if (presetHint) {
     }
 
     window.__copyText = async (text, btn) => {
+      const valor = String(text || '').replaceAll('\\n', '\n');
       try{
-        await navigator.clipboard.writeText(String(text));
-        const old = btn.textContent;
-        btn.textContent = 'Copiado!';
-        setTimeout(()=> btn.textContent = old, 900);
+        await navigator.clipboard.writeText(valor);
+        const old = btn?.textContent || '';
+        if (btn) {
+          btn.textContent = 'Copiado!';
+          setTimeout(()=> btn.textContent = old, 900);
+        }
       }catch{
         const ta = document.createElement('textarea');
-        ta.value = String(text);
+        ta.value = valor;
         document.body.appendChild(ta);
         ta.select();
         try { document.execCommand('copy'); } catch {}
         ta.remove();
 
-        const old = btn.textContent;
-        btn.textContent = 'Copiado!';
-        setTimeout(()=> btn.textContent = old, 900);
+        const old = btn?.textContent || '';
+        if (btn) {
+          btn.textContent = 'Copiado!';
+          setTimeout(()=> btn.textContent = old, 900);
+        }
+      }
+    };
+
+    window.__redefinirSenhaAluno = async (alunoId, btn) => {
+      showMsg(msgAcessoLote, '', '');
+
+      if (!selectedStudentInst?.id) {
+        showMsg(msgAcessoLote, 'warn', 'Selecione primeiro a instituição.');
+        return;
+      }
+
+      const id = String(alunoId || '').trim();
+      if (!id) {
+        showMsg(msgAcessoLote, 'warn', 'Aluno inválido para redefinição de senha.');
+        return;
+      }
+
+      const confirmar = confirm('Deseja redefinir a senha deste aluno? A senha anterior deixará de funcionar.');
+      if (!confirmar) return;
+
+      const old = btn?.textContent || 'Redefinir senha';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Redefinindo...';
+      }
+
+      try {
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/${encodeURIComponent(id)}/redefinir-senha`, {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store'
+        });
+
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+          showMsg(msgAcessoLote, 'err', data?.mensagem || 'Erro ao redefinir senha do aluno.');
+          if (data?.erro) console.error('[redefinir-senha-aluno]', data.erro);
+          return;
+        }
+
+        showMsg(msgAcessoLote, 'ok', data?.mensagem || 'Senha redefinida com sucesso.');
+
+        if (data?.acesso?.senha) {
+          senhasRedefinidasPorAluno.set(id, data.acesso.senha);
+        }
+
+        renderListaAlunosAcesso();
+
+        renderResultadoAcessos({
+          acessos: data?.acesso ? [data.acesso] : [],
+          reutilizados: [],
+          ignorados: []
+        });
+      } catch (err) {
+        showMsg(msgAcessoLote, 'err', 'Erro de conexão ao redefinir senha do aluno.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = old;
+        }
       }
     };
 
@@ -1100,23 +1579,40 @@ if (presetHint) {
       renderSelectedInst();
       showMsg(msgUser, '', '');
       userLinks.style.display = 'none';
+      selectedInstBox.scrollIntoView({ behavior:'smooth', block:'center' });
+    };
 
-      setTimeout(() => {
-        uNome.focus();
-      }, 80);
+    window.__selectStudentInst = async (id) => {
+      const inst = all.find(x => String(x?._id || x?.id) === String(id));
+      if (!inst) return;
+
+      selectedStudentInst = {
+        id: String(inst._id || inst.id || ''),
+        nome: String(inst.nome || ''),
+        sigla: String(inst.sigla || ''),
+        slug: String(inst.slug || '')
+      };
+
+      renderSelectedStudentInst();
+      clearStudentAccessArea();
+      selectedInstStudentBox.scrollIntoView({ behavior:'smooth', block:'center' });
+      await carregarTurmasAcesso();
     };
 
     window.__toggleAtivo = async (id, ativo, btn) => {
-      const old = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'Salvando…';
+      const desejaAtivar = String(ativo) === 'true';
+      const old = btn?.textContent || '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = desejaAtivar ? 'Ativando...' : 'Desativando...';
+      }
 
       try{
         const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(id)}`, {
           method:'PATCH',
           headers:{ 'Content-Type':'application/json' },
           credentials:'include',
-          body: JSON.stringify({ ativo })
+          body: JSON.stringify({ ativo: desejaAtivar })
         });
 
         const data = await r.json().catch(()=> ({}));
@@ -1126,25 +1622,78 @@ if (presetHint) {
           return;
         }
 
-        showMsg(msgList, 'ok', 'Status atualizado.');
-
-        const idx = all.findIndex(x => String(x?._id || x?.id) === String(id));
-        if (idx >= 0) all[idx].ativo = !!ativo;
-
-        renderFiltered();
-
+        showMsg(msgList, 'ok', data?.mensagem || 'Instituição atualizada.');
+        await loadList();
       }catch(err){
-        showMsg(msgList, 'err', 'Erro de conexão ao atualizar.');
+        showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
       }finally{
-        btn.disabled = false;
-        btn.textContent = old;
-        setTimeout(()=> showMsg(msgList, '', ''), 1200);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = old;
+        }
       }
     };
 
-    renderSelectedInst();
-    loadList();
+    window.__deleteInstituicao = async (id, nome, btn) => {
+      const conf = prompt(
+        `⚠️ Esta ação é irreversível.\n\nVocê está prestes a excluir a instituição:\n${nome}\n\nDigite EXCLUIR para confirmar:`
+      );
+
+      if (conf !== 'EXCLUIR') {
+        showMsg(msgList, 'warn', 'Exclusão cancelada.');
+        return;
+      }
+
+      const old = btn?.textContent || '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Excluindo...';
+      }
+
+      try{
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(id)}`, {
+          method:'DELETE',
+          credentials:'include'
+        });
+
+        const data = await r.json().catch(()=> ({}));
+
+        if (!r.ok) {
+          showMsg(msgList, 'err', data?.mensagem || 'Erro ao excluir instituição.');
+          return;
+        }
+
+        showMsg(msgList, 'ok', data?.mensagem || 'Instituição excluída com sucesso.');
+
+        if (selectedInst?.id === id) {
+          selectedInst = null;
+          renderSelectedInst();
+        }
+
+        if (selectedStudentInst?.id === id) {
+          selectedStudentInst = null;
+          renderSelectedStudentInst();
+          clearStudentAccessArea();
+        }
+
+        await loadList();
+      }catch(err){
+        showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
+      }finally{
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = old;
+        }
+      }
+    };
+
+    (async function init(){
+      renderSelectedInst();
+      renderSelectedStudentInst();
+      await loadList();
+    })();
   </script>
+  <script src="notify.js"></script>
   <script src="/update-client.js"></script>
 </body>
 </html>

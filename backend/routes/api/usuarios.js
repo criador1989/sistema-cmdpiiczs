@@ -14,6 +14,12 @@ const {
   assertSameInstitution
 } = require('../../middleware/tenantScope');
 
+/** =========================
+ *  CONFIG DE TIPOS
+ *  ========================= */
+const ALLOWED_CREATE_TYPES = ['admin', 'monitor', 'professor', 'aluno'];
+const ALLOWED_FILTER_TYPES = ['admin', 'monitor', 'professor', 'aluno'];
+
 /** Somente ADMIN */
 function verificarAdmin(req, res, next) {
   if (req.usuario?.tipo !== 'admin' && !isMasterLike(req)) {
@@ -28,6 +34,51 @@ function normalizaEmail(e) {
 
 function escapeRx(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeTipo(tipo) {
+  return String(tipo || '').trim().toLowerCase();
+}
+
+function normalizePortal(portal) {
+  const p = String(portal || '').trim().toLowerCase();
+  if (p === 'aluno') return 'aluno';
+  return 'institucional';
+}
+
+function limparSenha(v) {
+  return String(v || '').trim();
+}
+
+function usuarioToResponse(usuario) {
+  if (!usuario) return null;
+
+  const instituicao = usuario.instituicao?._id
+    ? {
+        id: String(usuario.instituicao._id),
+        nome: usuario.instituicao.nome || null,
+        sigla: usuario.instituicao.sigla || null,
+        slug: usuario.instituicao.slug || null
+      }
+    : usuario.instituicao
+      ? String(usuario.instituicao)
+      : null;
+
+  return {
+    _id: usuario._id,
+    id: usuario._id,
+    nome: usuario.nome,
+    email: usuario.email,
+    tipo: usuario.tipo,
+    portal: usuario.portal || (usuario.tipo === 'aluno' ? 'aluno' : 'institucional'),
+    instituicao,
+    tokenAcesso: usuario.tokenAcesso || null,
+    alunoId: usuario.alunoId ? String(usuario.alunoId) : null,
+    turmas: Array.isArray(usuario.turmas) ? usuario.turmas : [],
+    ativo: typeof usuario.ativo === 'boolean' ? usuario.ativo : true,
+    createdAt: usuario.createdAt || null,
+    updatedAt: usuario.updatedAt || null
+  };
 }
 
 /** Resolve instituição: aceita _id (24 hex) ou nome/sigla (case-insensitive) */
@@ -63,10 +114,25 @@ function mapErro(res, err, defMsg) {
 /** POST /api/usuarios  (cria usuário) */
 router.post('/', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
-    const { nome, email, senha, tipo, instituicao } = req.body;
+    const { nome, email, senha, tipo, instituicao, alunoId } = req.body;
 
     if (!nome || !email || !senha || !tipo) {
       return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
+    }
+
+    const tipoNorm = normalizeTipo(tipo);
+    const senhaLimpa = limparSenha(senha);
+
+    if (!ALLOWED_CREATE_TYPES.includes(tipoNorm)) {
+      return res.status(400).json({
+        mensagem: `Tipo inválido. Use: ${ALLOWED_CREATE_TYPES.join(', ')}.`
+      });
+    }
+
+    if (senhaLimpa.length < 6) {
+      return res.status(400).json({
+        mensagem: 'A senha deve ter pelo menos 6 caracteres.'
+      });
     }
 
     let instId = null;
@@ -92,25 +158,60 @@ router.post('/', autenticar, requireTenant, verificarAdmin, async (req, res) => 
       return res.status(409).json({ mensagem: 'E-mail já cadastrado nesta instituição.' });
     }
 
+    let alunoRef = null;
+
+    if (tipoNorm === 'aluno') {
+      if (!alunoId || !mongoose.isValidObjectId(alunoId)) {
+        return res.status(400).json({ mensagem: 'Para criar usuário do tipo aluno, informe um aluno válido.' });
+      }
+
+      const aluno = await Aluno.findOne({
+        _id: alunoId,
+        instituicao: instId
+      }).select('_id nome usuarioId instituicao').lean();
+
+      if (!aluno) {
+        return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
+      }
+
+      if (aluno.usuarioId) {
+        return res.status(409).json({ mensagem: 'Este aluno já possui um usuário vinculado.' });
+      }
+
+      alunoRef = aluno;
+    }
+
     const novoUsuario = new Usuario({
       nome,
       email: emailNorm,
-      senha,
-      tipo,
-      instituicao: instId
+      senha: senhaLimpa,
+      tipo: tipoNorm,
+      portal: tipoNorm === 'aluno' ? 'aluno' : 'institucional',
+      instituicao: instId,
+      alunoId: alunoRef ? alunoRef._id : null
     });
 
     await novoUsuario.save();
+
+    if (alunoRef) {
+      await Aluno.updateOne(
+        { _id: alunoRef._id, instituicao: instId },
+        { $set: { usuarioId: novoUsuario._id } }
+      );
+    }
 
     res.status(201).json({
       mensagem: 'Usuário criado com sucesso.',
       usuario: {
         _id: novoUsuario._id,
+        id: novoUsuario._id,
         nome: novoUsuario.nome,
         email: novoUsuario.email,
         tipo: novoUsuario.tipo,
+        portal: novoUsuario.portal,
         instituicao: novoUsuario.instituicao,
         tokenAcesso: novoUsuario.tokenAcesso || null,
+        alunoId: novoUsuario.alunoId ? String(novoUsuario.alunoId) : null,
       },
     });
   } catch (err) {
@@ -139,7 +240,19 @@ router.get('/', autenticar, requireTenant, verificarAdmin, async (req, res) => {
 
     const filtro = tenantFilter(req, {}, instituicaoFiltro);
 
-    if (req.query.tipo) filtro.tipo = req.query.tipo;
+    const tipoNorm = normalizeTipo(req.query.tipo);
+    if (tipoNorm && ALLOWED_FILTER_TYPES.includes(tipoNorm)) {
+      filtro.tipo = tipoNorm;
+    }
+
+    const portal = normalizePortal(req.query.portal);
+    if (!req.query.tipo && portal === 'institucional') {
+      filtro.tipo = { $in: ['admin', 'monitor', 'professor'] };
+    }
+
+    if (!req.query.tipo && portal === 'aluno') {
+      filtro.tipo = 'aluno';
+    }
 
     const q = String(req.query.q || '').trim();
     if (q) {
@@ -159,7 +272,7 @@ router.get('/', autenticar, requireTenant, verificarAdmin, async (req, res) => {
     ]);
 
     res.json({
-      items,
+      items: Array.isArray(items) ? items.map(usuarioToResponse) : [],
       pagina,
       limite,
       total,
@@ -180,7 +293,12 @@ router.get('/contatos', autenticar, requireTenant, async (req, res) => {
       _id: { $ne: req.usuario.id }
     });
 
-    if (tipo) where.tipo = tipo;
+    const tipoNorm = normalizeTipo(tipo);
+    if (tipoNorm && ALLOWED_FILTER_TYPES.includes(tipoNorm)) {
+      where.tipo = tipoNorm;
+    } else {
+      where.tipo = { $in: ['admin', 'monitor', 'professor'] };
+    }
 
     if (q && String(q).trim()) {
       const rx = new RegExp(String(q).trim(), 'i');
@@ -188,10 +306,22 @@ router.get('/contatos', autenticar, requireTenant, async (req, res) => {
     }
 
     const contatos = await Usuario.find(where)
-      .select('_id nome tipo email')
+      .select('_id nome tipo portal email alunoId')
       .sort({ nome: 1 });
 
-    res.json(contatos);
+    res.json(
+      Array.isArray(contatos)
+        ? contatos.map((c) => ({
+            _id: c._id,
+            id: c._id,
+            nome: c.nome,
+            tipo: c.tipo,
+            portal: c.portal || (c.tipo === 'aluno' ? 'aluno' : 'institucional'),
+            email: c.email,
+            alunoId: c.alunoId ? String(c.alunoId) : null
+          }))
+        : []
+    );
   } catch (err) {
     console.error('Erro ao listar contatos:', err);
     return mapErro(res, err, 'Erro ao listar contatos.');
@@ -213,7 +343,7 @@ router.get('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) =
       return res.status(403).json({ mensagem: 'Sem permissão para acessar usuário de outra instituição.' });
     }
 
-    res.json(usuario);
+    res.json(usuarioToResponse(usuario));
   } catch (err) {
     console.error('Erro ao buscar usuário:', err);
     return mapErro(res, err, 'Erro ao buscar usuário.');
@@ -223,10 +353,18 @@ router.get('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) =
 /** PUT /api/usuarios/:id */
 router.put('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
-    const { nome, tipo, instituicao, senha } = req.body;
+    const { nome, tipo, instituicao, senha, alunoId, ativo } = req.body;
 
     if (!nome || !tipo) {
       return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios.' });
+    }
+
+    const tipoNorm = normalizeTipo(tipo);
+
+    if (!ALLOWED_CREATE_TYPES.includes(tipoNorm)) {
+      return res.status(400).json({
+        mensagem: `Tipo inválido. Use: ${ALLOWED_CREATE_TYPES.join(', ')}.`
+      });
     }
 
     const usuario = await Usuario.findById(req.params.id).select('+senha');
@@ -248,21 +386,70 @@ router.put('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) =
       instId = resolved;
     }
 
-    usuario.nome = nome;
-    usuario.tipo = tipo;
-    usuario.instituicao = instId;
+    let alunoRef = null;
 
-    if (typeof senha === 'string' && senha.trim() !== '') {
-      usuario.senha = senha;
+    if (tipoNorm === 'aluno') {
+      const alunoDestino = alunoId || usuario.alunoId;
+
+      if (!alunoDestino || !mongoose.isValidObjectId(alunoDestino)) {
+        return res.status(400).json({ mensagem: 'Usuário do tipo aluno precisa estar vinculado a um aluno válido.' });
+      }
+
+      const aluno = await Aluno.findOne({
+        _id: alunoDestino,
+        instituicao: instId
+      }).select('_id nome usuarioId').lean();
+
+      if (!aluno) {
+        return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
+      }
+
+      if (aluno.usuarioId && String(aluno.usuarioId) !== String(usuario._id)) {
+        return res.status(409).json({ mensagem: 'Este aluno já está vinculado a outro usuário.' });
+      }
+
+      alunoRef = aluno;
+    }
+
+    usuario.nome = nome;
+    usuario.tipo = tipoNorm;
+    usuario.portal = tipoNorm === 'aluno' ? 'aluno' : 'institucional';
+    usuario.instituicao = instId;
+    usuario.alunoId = alunoRef ? alunoRef._id : null;
+
+    if (typeof ativo === 'boolean') {
+      usuario.ativo = ativo;
+    }
+
+    const senhaLimpa = limparSenha(senha);
+    if (senhaLimpa) {
+      if (senhaLimpa.length < 6) {
+        return res.status(400).json({ mensagem: 'A senha deve ter pelo menos 6 caracteres.' });
+      }
+      usuario.senha = senhaLimpa;
     }
 
     await usuario.save();
+
+    if (tipoNorm === 'aluno' && alunoRef) {
+      await Aluno.updateOne(
+        { _id: alunoRef._id, instituicao: instId },
+        { $set: { usuarioId: usuario._id } }
+      );
+    }
+
+    if (tipoNorm !== 'aluno') {
+      await Aluno.updateMany(
+        { usuarioId: usuario._id },
+        { $set: { usuarioId: null } }
+      );
+    }
 
     const usuarioLimpo = await Usuario.findById(usuario._id)
       .select('-senha')
       .populate('instituicao', 'nome sigla slug');
 
-    res.json({ mensagem: 'Usuário atualizado com sucesso.', usuario: usuarioLimpo });
+    res.json({ mensagem: 'Usuário atualizado com sucesso.', usuario: usuarioToResponse(usuarioLimpo) });
   } catch (err) {
     console.error('Erro ao atualizar usuário:', err);
     return mapErro(res, err, 'Erro ao atualizar usuário.');
@@ -272,7 +459,7 @@ router.put('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) =
 /** DELETE /api/usuarios/:id */
 router.delete('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) => {
   try {
-    const usuario = await Usuario.findById(req.params.id).select('_id instituicao');
+    const usuario = await Usuario.findById(req.params.id).select('_id instituicao tipo alunoId');
 
     if (!usuario) {
       return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
@@ -280,6 +467,13 @@ router.delete('/:id', autenticar, requireTenant, verificarAdmin, async (req, res
 
     if (!assertSameInstitution(req, usuario.instituicao)) {
       return res.status(403).json({ mensagem: 'Sem permissão para excluir usuário de outra instituição.' });
+    }
+
+    if (usuario.alunoId) {
+      await Aluno.updateMany(
+        { usuarioId: usuario._id },
+        { $set: { usuarioId: null } }
+      );
     }
 
     await Usuario.findByIdAndDelete(req.params.id);

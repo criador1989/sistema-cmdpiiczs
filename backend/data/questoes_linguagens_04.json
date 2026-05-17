@@ -1,0 +1,361 @@
+[
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Texto publicitário",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "O uso de linguagem persuasiva na publicidade tem como objetivo principal:",
+    "alternativas": [
+      { "letra": "A", "texto": "Informar dados técnicos." },
+      { "letra": "B", "texto": "Narrar uma história." },
+      { "letra": "C", "texto": "Convencer o consumidor." },
+      { "letra": "D", "texto": "Descrever fatos históricos." },
+      { "letra": "E", "texto": "Explicar conceitos." }
+    ],
+    "gabarito": "C",
+    "explicacao": "A publicidade busca persuadir o leitor a consumir um produto ou ideia."
+  },
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Ironia",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "A ironia ocorre quando:",
+    "alternativas": [
+      { "letra": "A", "texto": "O sentido literal é mantido." },
+      { "letra": "B", "texto": "O autor expressa o contrário do que pensa." },
+      { "letra": "C", "texto": "Há repetição de ideias." },
+      { "letra": "D", "texto": "O texto é técnico." },
+      { "letra": "E", "texto": "O texto é objetivo." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Ironia envolve contraste entre o que se diz e o que se quer dizer."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Funções da linguagem",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "A função referencial da linguagem está associada:",
+    "alternativas": [
+      { "letra": "A", "texto": "À emoção." },
+      { "letra": "B", "texto": "À informação objetiva." },
+      { "letra": "C", "texto": "À estética." },
+      { "letra": "D", "texto": "Ao canal." },
+      { "letra": "E", "texto": "À persuasão." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Função referencial foca na transmissão objetiva de informações."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Ambiguidade",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "A ambiguidade ocorre quando:",
+    "alternativas": [
+      { "letra": "A", "texto": "Há apenas um sentido." },
+      { "letra": "B", "texto": "Há múltiplos sentidos possíveis." },
+      { "letra": "C", "texto": "Há repetição." },
+      { "letra": "D", "texto": "O texto é longo." },
+      { "letra": "E", "texto": "Há erros." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Ambiguidade ocorre quando há mais de uma interpretação."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Charge",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "Charges utilizam humor para:",
+    "alternativas": [
+      { "letra": "A", "texto": "Ensinar regras." },
+      { "letra": "B", "texto": "Criticar a sociedade." },
+      { "letra": "C", "texto": "Narrar histórias." },
+      { "letra": "D", "texto": "Explicar conceitos." },
+      { "letra": "E", "texto": "Descrever objetos." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Charges fazem crítica social por meio do humor."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Inglês",
+    "habilidade": "Leitura",
+    "tema": "Tempo verbal",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "In 'She is studying', the action is:",
+    "alternativas": [
+      { "letra": "A", "texto": "Past" },
+      { "letra": "B", "texto": "Future" },
+      { "letra": "C", "texto": "Present continuous" },
+      { "letra": "D", "texto": "Habitual" },
+      { "letra": "E", "texto": "Finished" }
+    ],
+    "gabarito": "C",
+    "explicacao": "Indica ação em andamento."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Argumentação",
+    "tema": "Tese",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "A tese é:",
+    "alternativas": [
+      { "letra": "A", "texto": "Um exemplo." },
+      { "letra": "B", "texto": "A ideia defendida." },
+      { "letra": "C", "texto": "A conclusão." },
+      { "letra": "D", "texto": "O título." },
+      { "letra": "E", "texto": "Um detalhe." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Tese é a ideia central defendida."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Denotação",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Denotação é:",
+    "alternativas": [
+      { "letra": "A", "texto": "Sentido figurado." },
+      { "letra": "B", "texto": "Sentido literal." },
+      { "letra": "C", "texto": "Duplo sentido." },
+      { "letra": "D", "texto": "Ironia." },
+      { "letra": "E", "texto": "Ambiguidade." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Denotação é o sentido literal da palavra."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Conjunções",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "A conjunção 'porque' indica:",
+    "alternativas": [
+      { "letra": "A", "texto": "Tempo" },
+      { "letra": "B", "texto": "Causa" },
+      { "letra": "C", "texto": "Conclusão" },
+      { "letra": "D", "texto": "Adição" },
+      { "letra": "E", "texto": "Condição" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Indica relação de causa."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Texto jornalístico",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Texto jornalístico tem função:",
+    "alternativas": [
+      { "letra": "A", "texto": "Convencer." },
+      { "letra": "B", "texto": "Informar." },
+      { "letra": "C", "texto": "Narrar ficção." },
+      { "letra": "D", "texto": "Descrever emoções." },
+      { "letra": "E", "texto": "Ensinar regras." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Ele informa fatos reais."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Texto poético",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Textos poéticos priorizam:",
+    "alternativas": [
+      { "letra": "A", "texto": "Informação." },
+      { "letra": "B", "texto": "Estética e emoção." },
+      { "letra": "C", "texto": "Dados." },
+      { "letra": "D", "texto": "Explicação." },
+      { "letra": "E", "texto": "Argumentação." }
+    ],
+    "gabarito": "B",
+    "explicacao": "A poesia valoriza estética e subjetividade."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Polissemia",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Polissemia significa:",
+    "alternativas": [
+      { "letra": "A", "texto": "Vários sentidos." },
+      { "letra": "B", "texto": "Um sentido." },
+      { "letra": "C", "texto": "Erro." },
+      { "letra": "D", "texto": "Repetição." },
+      { "letra": "E", "texto": "Ausência." }
+    ],
+    "gabarito": "A",
+    "explicacao": "Uma palavra com múltiplos significados."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Conclusão",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A conclusão serve para:",
+    "alternativas": [
+      { "letra": "A", "texto": "Abrir o tema." },
+      { "letra": "B", "texto": "Finalizar a ideia." },
+      { "letra": "C", "texto": "Narrar fatos." },
+      { "letra": "D", "texto": "Criar conflito." },
+      { "letra": "E", "texto": "Explicar dados." }
+    ],
+    "gabarito": "B",
+    "explicacao": "A conclusão fecha o raciocínio."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Pontuação",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "O ponto final indica:",
+    "alternativas": [
+      { "letra": "A", "texto": "Pergunta" },
+      { "letra": "B", "texto": "Fim de ideia" },
+      { "letra": "C", "texto": "Dúvida" },
+      { "letra": "D", "texto": "Surpresa" },
+      { "letra": "E", "texto": "Explicação" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Finaliza a frase."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Narrador",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "O narrador é:",
+    "alternativas": [
+      { "letra": "A", "texto": "Autor real." },
+      { "letra": "B", "texto": "Quem conta a história." },
+      { "letra": "C", "texto": "Personagem secundário." },
+      { "letra": "D", "texto": "Leitor." },
+      { "letra": "E", "texto": "Tema." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Narrador é quem conta a história."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Coerência",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Coerência textual está relacionada:",
+    "alternativas": [
+      { "letra": "A", "texto": "À ligação lógica das ideias." },
+      { "letra": "B", "texto": "À pontuação." },
+      { "letra": "C", "texto": "À ortografia." },
+      { "letra": "D", "texto": "Ao tamanho do texto." },
+      { "letra": "E", "texto": "À estética." }
+    ],
+    "gabarito": "A",
+    "explicacao": "Coerência garante sentido lógico."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Conotação",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Conotação é:",
+    "alternativas": [
+      { "letra": "A", "texto": "Sentido literal." },
+      { "letra": "B", "texto": "Sentido figurado." },
+      { "letra": "C", "texto": "Erro." },
+      { "letra": "D", "texto": "Repetição." },
+      { "letra": "E", "texto": "Falta de sentido." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Conotação é linguagem figurada."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Resumo",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "Resumo é:",
+    "alternativas": [
+      { "letra": "A", "texto": "Texto completo." },
+      { "letra": "B", "texto": "Versão reduzida." },
+      { "letra": "C", "texto": "Texto longo." },
+      { "letra": "D", "texto": "Texto técnico." },
+      { "letra": "E", "texto": "Texto figurado." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Resumo reduz o conteúdo mantendo o essencial."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Leitura crítica",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "Leitura crítica significa:",
+    "alternativas": [
+      { "letra": "A", "texto": "Aceitar tudo." },
+      { "letra": "B", "texto": "Analisar e questionar o texto." },
+      { "letra": "C", "texto": "Ignorar ideias." },
+      { "letra": "D", "texto": "Memorizar." },
+      { "letra": "E", "texto": "Traduzir." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Leitura crítica envolve análise e reflexão."
+  }
+]

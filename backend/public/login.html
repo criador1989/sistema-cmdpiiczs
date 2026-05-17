@@ -52,12 +52,7 @@
     }
 
     *{box-sizing:border-box}
-
-    html,body{
-      height:100%;
-      margin:0;
-      padding:0;
-    }
+    html,body{ height:100%; margin:0; padding:0; }
 
     body{
       font-family: "Rajdhani", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -227,7 +222,7 @@
     }
 
     .subtitle{
-      margin: 6px 0 18px;
+      margin: 6px 0 8px;
       font-size: .95rem;
       color: rgba(235,245,255,.70);
       position: relative;
@@ -238,6 +233,14 @@
     .subtitle strong{
       color: rgba(236,242,255,.95);
       font-weight: 700;
+    }
+
+    .portal-hint{
+      margin: 0 0 18px;
+      font-size: 14px;
+      color: rgba(235,245,255,.64);
+      position: relative;
+      z-index: 1;
     }
 
     form{
@@ -368,7 +371,7 @@
     input{
       width:100%;
       padding:12px 14px;
-      border-radius: var(--field-radius);
+      border-radius: 14px;
       border:1px solid rgba(255,255,255,.12);
       font-size:15px;
       background: rgba(255,255,255,.05);
@@ -385,7 +388,7 @@
     input:focus{
       border-color: rgba(0,194,255,.65);
       box-shadow:
-        0 0 0 2px var(--ax-focus),
+        0 0 0 2px rgba(0, 194, 255, .38),
         0 14px 28px rgba(0,0,0,.60);
     }
 
@@ -422,7 +425,7 @@
       width:100%;
       padding:13px 14px;
       border:none;
-      border-radius: var(--btn-radius);
+      border-radius: 16px;
       font-size:16px;
       font-weight:900;
       cursor:pointer;
@@ -439,10 +442,6 @@
     button[type="submit"]:hover{
       filter: brightness(1.05);
       transform: translateY(-2px);
-      box-shadow:
-        0 24px 52px rgba(0, 194, 255, .24),
-        0 26px 58px rgba(122, 92, 255, .20),
-        inset 0 1px 0 rgba(255,255,255,.18);
     }
 
     button[type="submit"]:disabled{
@@ -450,6 +449,39 @@
       filter: grayscale(.15) brightness(.9);
       opacity: .9;
       transform: none;
+    }
+
+    .portal-actions{
+      margin-top: 14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .portal-btn{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(170,200,240,.20);
+      background: rgba(255,255,255,.05);
+      color: rgba(236,242,255,.95);
+      font-family:"Rajdhani", system-ui, sans-serif;
+      font-size:15px;
+      font-weight:800;
+      text-decoration:none;
+      text-align:center;
+      transition:.18s ease;
+      display:block;
+    }
+
+    .portal-btn:hover{
+      background: rgba(255,255,255,.08);
+      transform: translateY(-1px);
+    }
+
+    .portal-btn.aluno{
+      border-color: rgba(255,226,154,.22);
+      background: rgba(255,226,154,.06);
+      color: #fff0c7;
     }
 
     .btn-sub{
@@ -515,7 +547,11 @@
     <div class="brand"><span>Axoriin</span></div>
 
     <div class="subtitle">
-      <strong id="nome-colegio">Instituição</strong> • Acesso ao sistema
+      <strong id="nome-colegio">Instituição</strong> • Portal institucional
+    </div>
+
+    <div class="portal-hint">
+      Professores, monitores e administradores entram por aqui.
     </div>
 
     <form id="login-form">
@@ -638,6 +674,12 @@
       const a = document.getElementById('link-cadastro');
       if (!a) return;
       a.href = `/cadastro-usuario.html?t=${encodeURIComponent(TENANT)}`;
+    })();
+
+    (function () {
+      const a = document.getElementById('btn-portal-aluno');
+      if (!a) return;
+      a.href = `/login-aluno.html?t=${encodeURIComponent(TENANT)}`;
     })();
 
     (async () => {

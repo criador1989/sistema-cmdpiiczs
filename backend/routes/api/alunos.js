@@ -12,6 +12,7 @@ const { getSignedUrl } = require('@aws-sdk/cloudfront-signer');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
+const Usuario = require('../../models/Usuario');
 
 const { autenticar, apenasLeitura, apenasMonitorOuAdmin } = require('../../middleware/autenticacao');
 const { requireTenant, tenantFilter } = require('../../middleware/tenantScope');
@@ -274,6 +275,14 @@ function anexarThumb(alunoDoc) {
   return anexarThumbNaPlain(obj);
 }
 
+function normalizaEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
 async function apagarFotoAntigaSeForS3(url) {
   if (!s3Enabled || !url || !isManagedAssetUrl(url)) return;
 
@@ -453,8 +462,6 @@ function setCached(inst, id, payload) {
 
 /* ===================== ROTAS ===================== */
 
-/* ===================== ROTAS ===================== */
-
 // GET - Listar turmas
 router.get('/turmas', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
@@ -518,7 +525,8 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
         fotoThumb: thumb || '',
         fotoUrl: fotoUrl || '',
         fotoThumbUrl: fotoThumbUrlPublica || (a?._id ? `/api/imagens/thumb/${a._id}` : ''),
-        comportamento: Number.isFinite(nota) ? nota : 8.0
+        comportamento: Number.isFinite(nota) ? nota : 8.0,
+        temAcesso: !!a?.usuarioId
       };
     };
 
@@ -531,7 +539,7 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
     }
 
     const alunos = await Aluno.find(filtro)
-      .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento')
+      .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento usuarioId')
       .sort({ nome: 1 })
       .limit(120)
       .lean();
@@ -577,14 +585,18 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
 
     if (semNota) {
       const alunos = await Aluno.find(filtro)
-        .select('nome turma foto fotoThumb fotoOriginal')
+        .select('nome turma foto fotoThumb fotoOriginal usuarioId')
         .lean();
-      return res.json(alunos.map(anexarThumbNaPlain));
+
+      return res.json(alunos.map((aluno) => ({
+        ...anexarThumbNaPlain(aluno),
+        temAcesso: !!aluno.usuarioId
+      })));
     }
 
     if (painel) {
       const alunos = await Aluno.find(filtro)
-        .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento')
+        .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento usuarioId')
         .lean();
 
       const alunosComNota = alunos.map((aluno) => {
@@ -595,6 +607,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
         return {
           ...anexarThumbNaPlain(aluno),
           comportamento: Number.isFinite(nota) ? nota : 8.0,
+          temAcesso: !!aluno.usuarioId
         };
       });
 
@@ -602,7 +615,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
     }
 
     const alunos = await Aluno.find(filtro)
-      .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento')
+      .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento usuarioId')
       .lean();
 
     const alunosComNota = alunos.map((aluno) => {
@@ -612,7 +625,8 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
 
       return {
         ...anexarThumbNaPlain(aluno),
-        comportamento: Number.isFinite(nota) ? nota : 8.0
+        comportamento: Number.isFinite(nota) ? nota : 8.0,
+        temAcesso: !!aluno.usuarioId
       };
     });
 
@@ -662,18 +676,18 @@ router.post(
       console.log('[ALUNOS][CRIAR] actor=', req.actor);
       console.log('[ALUNOS][CRIAR] usuario=', req.usuario);
       console.log('[ALUNOS][CRIAR] tenant=', getTenantId(req));
-      
-    await safeAudit({
+
+      await safeAudit({
         req: {
-    ...req,
-    actor: req.actor || {
-      id: req.usuario?.id || req.user?.id || req.usuario?._id || req.user?._id,
-      nome: req.usuario?.nome || req.user?.nome || null,
-      tipo: req.usuario?.tipo || req.user?.tipo || null,
-      email: req.usuario?.email || req.user?.email || null,
-      instituicao: req.usuario?.instituicao || req.user?.instituicao || getTenantId(req)
-    }
-  },
+          ...req,
+          actor: req.actor || {
+            id: req.usuario?.id || req.user?.id || req.usuario?._id || req.user?._id,
+            nome: req.usuario?.nome || req.user?.nome || null,
+            tipo: req.usuario?.tipo || req.user?.tipo || null,
+            email: req.usuario?.email || req.user?.email || null,
+            instituicao: req.usuario?.instituicao || req.user?.instituicao || getTenantId(req)
+          }
+        },
         event: 'ALUNO_CRIADO',
         targetType: 'Aluno',
         targetId: novoAluno._id,
@@ -693,10 +707,44 @@ router.post(
 );
 
 // GET - Detalhes do aluno
-router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req, res) => {
+router.get('/:id/detalhes', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = getTenantId(req);
-    const id = String(req.params.id);
+    const id = String(req.params.id || '').trim();
+
+    const tipoUsuario = String(req.usuario?.tipo || req.user?.tipo || '').toLowerCase();
+    const usuarioId = String(
+      req.usuario?.id ||
+      req.usuario?._id ||
+      req.user?.id ||
+      req.user?._id ||
+      ''
+    );
+
+    if (!['admin', 'monitor', 'professor', 'aluno'].includes(tipoUsuario)) {
+      return res.status(403).json({
+        message: 'Acesso não autorizado aos detalhes do aluno.'
+      });
+    }
+
+    if (tipoUsuario === 'aluno') {
+      let alunoIdVinculado = String(req.usuario?.alunoId || req.user?.alunoId || '');
+
+      if (!alunoIdVinculado && usuarioId) {
+        const usuarioAluno = await Usuario.findById(usuarioId)
+          .select('_id tipo portal alunoId instituicao tenantId')
+          .lean();
+
+        alunoIdVinculado = String(usuarioAluno?.alunoId || '');
+      }
+
+      if (alunoIdVinculado !== id) {
+        return res.status(403).json({
+          message: 'Acesso negado. Este aluno só pode visualizar o próprio painel.'
+        });
+      }
+    }
+
     const hit = getCached(inst, id);
 
     if (hit) {
@@ -705,14 +753,17 @@ router.get('/:id/detalhes', autenticar, requireTenant, apenasLeitura, async (req
     }
 
     const alunoRaw = await Aluno.findOne(tenantFilter(req, { _id: id }))
-      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao tenantId updatedAt createdAt codigoAcesso comportamento')
+      .select('nome turma dataEntrada nomePai nomeMae telefone nascimento endereco foto fotoOriginal fotoMedium fotoThumb fotoMeta instituicao tenantId updatedAt createdAt codigoAcesso comportamento usuarioId')
       .lean();
 
     if (!alunoRaw) {
       return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
 
-    const aluno = anexarThumbNaPlain(alunoRaw);
+    const aluno = {
+      ...anexarThumbNaPlain(alunoRaw),
+      temAcesso: !!alunoRaw.usuarioId
+    };
 
     const notificacoes = await Notificacao.find(tenantFilter(req, { aluno: id }))
       .select('data tipo tipoMedida motivo valorNumerico valorTotal artigo inciso classificacaoRegulamento quantidadeDias observacoes createdAt natureza')
@@ -844,7 +895,10 @@ router.get('/:id', autenticar, requireTenant, apenasLeitura, async (req, res) =>
 
     if (!aluno) return res.status(404).json({ message: 'Aluno não encontrado' });
 
-    res.json(anexarThumb(aluno));
+    res.json({
+      ...anexarThumb(aluno),
+      temAcesso: !!aluno.usuarioId
+    });
   } catch (error) {
     console.error('Erro GET /api/alunos/:id:', error);
     res.status(500).json({ message: 'Erro ao buscar aluno', error });
@@ -1047,15 +1101,15 @@ router.delete('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdm
 
     await safeAudit({
       req: {
-    ...req,
-    actor: req.actor || {
-      id: req.usuario?.id || req.user?.id || req.usuario?._id || req.user?._id,
-      nome: req.usuario?.nome || req.user?.nome || null,
-      tipo: req.usuario?.tipo || req.user?.tipo || null,
-      email: req.usuario?.email || req.user?.email || null,
-      instituicao: req.usuario?.instituicao || req.user?.instituicao || getTenantId(req)
-    }
-  },
+        ...req,
+        actor: req.actor || {
+          id: req.usuario?.id || req.user?.id || req.usuario?._id || req.user?._id,
+          nome: req.usuario?.nome || req.user?.nome || null,
+          tipo: req.usuario?.tipo || req.user?.tipo || null,
+          email: req.usuario?.email || req.user?.email || null,
+          instituicao: req.usuario?.instituicao || req.user?.instituicao || getTenantId(req)
+        }
+      },
       event: 'ALUNO_EXCLUIDO',
       targetType: 'Aluno',
       targetId: aluno._id,
@@ -1098,7 +1152,6 @@ router.post(
         { turma: normalizaTurma(novaTurma) }
       );
 
-      // 🔥 LOG CORRIGIDO
       await safeAudit({
         req,
         event: 'ALUNO_TRANSFERIDO',
@@ -1154,7 +1207,6 @@ router.post(
 
       await enviarTelegram(chatId, mensagem);
 
-      // 🔥 LOG CORRIGIDO
       await safeAudit({
         req,
         event: 'ALUNO_TELEGRAM_ENVIADO',
@@ -1175,100 +1227,212 @@ router.post(
   }
 );
 
-// GET - Detalhes do aluno (com cache leve)
-router.get(
-  '/:id/detalhes',
-  autenticar,
-  requireTenant,
-  apenasLeitura,
-  async (req, res) => {
-    try {
-      const inst = getTenantId(req);
-      if (!inst) return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+// POST - Vincular/criar acesso do aluno
+router.post('/:id/vincular-usuario', autenticar, requireTenant, attachActor, apenasMonitorOuAdmin, async (req, res) => {
+  try {
+    const aluno = await Aluno.findOne(tenantFilter(req, { _id: req.params.id }));
 
-      const cached = getCached(inst, req.params.id);
-      if (cached) return res.json(cached);
-
-      const aluno = await Aluno.findOne(
-        tenantLegacyMatch(req, { _id: req.params.id })
-      );
-
-      if (!aluno) return res.status(404).json({ mensagem: 'Aluno não encontrado.' });
-
-      const notificacoes = await Notificacao.find(
-        tenantFilter(req, { aluno: aluno._id })
-      ).lean();
-
-      const observacoes = await Observacao.find(
-        tenantFilter(req, { aluno: aluno._id })
-      ).lean();
-
-      const config = await getConfigDisciplinar(inst);
-
-      const nota = calcularNotaTSMD(notificacoes, config);
-
-      const payload = {
-        aluno: anexarThumb(aluno),
-        notificacoes,
-        observacoes,
-        nota
-      };
-
-      setCached(inst, req.params.id, payload);
-
-      res.json(payload);
-    } catch (erro) {
-      console.error('Erro ao buscar detalhes do aluno:', erro);
-      res.status(500).json({ mensagem: 'Erro ao buscar detalhes do aluno.' });
+    if (!aluno) {
+      return res.status(404).json({ message: 'Aluno não encontrado.' });
     }
+
+    if (aluno.usuarioId) {
+      const usuarioJaVinculado = await Usuario.findById(aluno.usuarioId)
+        .select('_id nome email tipo portal alunoId')
+        .lean()
+        .catch(() => null);
+
+      return res.status(409).json({
+        ok: false,
+        message: 'Este aluno já possui acesso vinculado.',
+        usuario: usuarioJaVinculado || { _id: aluno.usuarioId }
+      });
+    }
+
+    const email = normalizaEmail(req.body?.email);
+    const senha = String(req.body?.senha || '').trim();
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: 'Informe um e-mail válido para o acesso do aluno.' });
+    }
+
+    if (!senha || senha.length < 6) {
+      return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
+    }
+
+    const instituicaoId = aluno.instituicao || aluno.tenantId || getTenantId(req);
+
+    const usuarioExistente = await Usuario.findOne({
+      email,
+      instituicao: instituicaoId
+    }).select('_id nome email tipo instituicao alunoId portal');
+
+    if (usuarioExistente) {
+      return res.status(409).json({
+        message: 'Já existe um usuário com este e-mail nesta instituição.'
+      });
+    }
+
+    const usuarioComMesmoAluno = await Usuario.findOne({
+      alunoId: aluno._id,
+      instituicao: instituicaoId
+    }).select('_id nome email tipo instituicao alunoId portal');
+
+    if (usuarioComMesmoAluno) {
+      aluno.usuarioId = usuarioComMesmoAluno._id;
+      await aluno.save();
+
+      return res.status(409).json({
+        ok: false,
+        message: 'Este aluno já possui um usuário cadastrado nesta instituição.',
+        usuario: {
+          _id: usuarioComMesmoAluno._id,
+          nome: usuarioComMesmoAluno.nome,
+          email: usuarioComMesmoAluno.email,
+          tipo: usuarioComMesmoAluno.tipo,
+          portal: usuarioComMesmoAluno.portal || null
+        }
+      });
+    }
+
+    const novoUsuario = new Usuario({
+      nome: aluno.nome,
+      email,
+      senha,
+      tipo: 'aluno',
+      portal: 'aluno',
+      alunoId: aluno._id,
+      instituicao: instituicaoId,
+      emailVerificado: true,
+      emailVerificadoEm: new Date(),
+      tokenVerificacaoHash: null,
+      tokenVerificacaoExpiraEm: null,
+    });
+
+    await novoUsuario.save();
+
+    aluno.usuarioId = novoUsuario._id;
+    await aluno.save();
+
+    await safeAudit({
+      req,
+      event: 'ALUNO_USUARIO_VINCULADO',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: aluno.nome,
+      alunoNome: aluno.nome,
+      meta: {
+        usuarioId: novoUsuario._id,
+        email: novoUsuario.email
+      }
+    });
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Acesso do aluno criado com sucesso.',
+      aluno: {
+        _id: aluno._id,
+        nome: aluno.nome,
+        turma: aluno.turma,
+        usuarioId: aluno.usuarioId,
+        temAcesso: true
+      },
+      usuario: {
+        _id: novoUsuario._id,
+        nome: novoUsuario.nome,
+        email: novoUsuario.email,
+        tipo: novoUsuario.tipo,
+        portal: novoUsuario.portal,
+        alunoId: novoUsuario.alunoId
+      }
+    });
+  } catch (error) {
+    console.error('Erro POST /api/alunos/:id/vincular-usuario:', error);
+    return res.status(500).json({
+      message: 'Erro ao criar acesso do aluno.',
+      error: error?.message || error
+    });
   }
-);
-// ===============================
-// 🚀 NOVA ROTA - TRANSFERÊNCIA POR IDS
-// ===============================
-router.put(
-  '/transferir',
+});
+router.post(
+  '/gerar-acessos-lote',
   autenticar,
   requireTenant,
-  attachActor,
   apenasMonitorOuAdmin,
   async (req, res) => {
     try {
-      const inst = getTenantId(req);
-      if (!inst) {
-        return res.status(400).json({ mensagem: 'Tenant não identificado.' });
+      const { alunosIds } = req.body;
+
+      if (!Array.isArray(alunosIds) || !alunosIds.length) {
+        return res.status(400).json({ message: 'Selecione alunos.' });
       }
 
-      const { alunosIds, novaTurma } = req.body;
+      const alunos = await Aluno.find({
+        _id: { $in: alunosIds },
+        instituicao: req.usuario.instituicao
+      });
 
-      if (!Array.isArray(alunosIds) || !alunosIds.length || !novaTurma) {
-        return res.status(400).json({ mensagem: 'Dados inválidos.' });
-      }
+      const resultado = [];
 
-      const result = await Aluno.updateMany(
-        tenantFilter(req, { _id: { $in: alunosIds } }),
-        { turma: normalizaTurma(novaTurma) }
-      );
+      for (const aluno of alunos) {
+        if (aluno.usuarioId) continue;
 
-      await safeAudit({
-        req,
-        event: 'ALUNO_TRANSFERIDO_LOTE',
-        targetType: 'Aluno',
-        targetId: null,
-        meta: {
-          novaTurma,
-          quantidade: result.modifiedCount
+        let codigo = aluno.codigoAcesso;
+
+        if (!codigo) {
+          codigo = 'AXR-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+          aluno.codigoAcesso = codigo;
         }
+
+        const senha = String(Math.floor(100000 + Math.random() * 900000));
+
+        const email =
+          aluno.contatos?.emailResponsavel ||
+          `aluno_${aluno._id}@axoriin.local`;
+
+        const usuarioExistente = await Usuario.findOne({
+          alunoId: aluno._id,
+          instituicao: aluno.instituicao
+        });
+
+        if (usuarioExistente) {
+          aluno.usuarioId = usuarioExistente._id;
+          await aluno.save();
+          continue;
+        }
+
+        const novoUsuario = new Usuario({
+          nome: aluno.nome,
+          email,
+          senha,
+          tipo: 'aluno',
+          portal: 'aluno',
+          alunoId: aluno._id,
+          instituicao: aluno.instituicao,
+          emailVerificado: true
+        });
+
+        await novoUsuario.save();
+
+        aluno.usuarioId = novoUsuario._id;
+        await aluno.save();
+
+        resultado.push({
+          nome: aluno.nome,
+          codigoAcesso: codigo,
+          senha
+        });
+      }
+
+      return res.json({
+        ok: true,
+        total: resultado.length,
+        acessos: resultado
       });
 
-      res.json({
-        mensagem: 'Transferência realizada com sucesso.',
-        quantidade: result.modifiedCount
-      });
-
-    } catch (erro) {
-      console.error('Erro ao transferir alunos:', erro);
-      res.status(500).json({ mensagem: 'Erro ao transferir alunos.' });
+    } catch (error) {
+      console.error('Erro gerar acessos lote:', error);
+      return res.status(500).json({ message: 'Erro ao gerar acessos' });
     }
   }
 );

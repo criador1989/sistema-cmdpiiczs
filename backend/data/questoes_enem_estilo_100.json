@@ -1,0 +1,182 @@
+[
+    {
+  "escopo": "global",
+  "area": "Linguagens",
+  "disciplina": "Língua Portuguesa",
+  "habilidade": "Interpretação de texto",
+  "tema": "Tecnologia",
+  "dificuldade": "medio",
+  "enunciado": "Em um artigo, o autor afirma que a tecnologia aproxima pessoas distantes, mas também pode afastar indivíduos próximos. A ideia central do texto é:",
+  "alternativas": [
+    {"letra": "A", "texto": "A tecnologia elimina relações sociais."},
+    {"letra": "B", "texto": "A tecnologia tem efeitos contraditórios nas relações humanas."},
+    {"letra": "C", "texto": "A tecnologia é sempre positiva."},
+    {"letra": "D", "texto": "A tecnologia não influencia a sociedade."},
+    {"letra": "E", "texto": "A tecnologia deve ser proibida."}
+  ],
+  "gabarito": "B",
+  "explicacao": "O texto mostra dois efeitos opostos da tecnologia, caracterizando contradição."
+},
+{
+  "escopo": "global",
+  "area": "Matemática",
+  "disciplina": "Matemática",
+  "habilidade": "Porcentagem",
+  "tema": "Desconto",
+  "dificuldade": "medio",
+  "enunciado": "Um produto custa R$ 200 e recebe desconto de 25%. O valor final é:",
+  "alternativas": [
+    {"letra": "A", "texto": "R$ 150"},
+    {"letra": "B", "texto": "R$ 175"},
+    {"letra": "C", "texto": "R$ 125"},
+    {"letra": "D", "texto": "R$ 180"},
+    {"letra": "E", "texto": "R$ 160"}
+  ],
+  "gabarito": "A",
+  "explicacao": "25% de 200 = 50. 200 - 50 = 150."
+},
+{
+  "escopo": "global",
+  "area": "Natureza",
+  "disciplina": "Biologia",
+  "habilidade": "Ecologia",
+  "tema": "Cadeia alimentar",
+  "dificuldade": "medio",
+  "enunciado": "Na cadeia alimentar, organismos produtores são responsáveis por:",
+  "alternativas": [
+    {"letra": "A", "texto": "Consumir energia."},
+    {"letra": "B", "texto": "Produzir seu próprio alimento."},
+    {"letra": "C", "texto": "Decompor matéria orgânica."},
+    {"letra": "D", "texto": "Caçar outros seres vivos."},
+    {"letra": "E", "texto": "Paralisar predadores."}
+  ],
+  "gabarito": "B",
+  "explicacao": "Produtores realizam fotossíntese e produzem seu próprio alimento."
+},
+{
+  "escopo": "global",
+  "area": "Humanas",
+  "disciplina": "Geografia",
+  "habilidade": "Urbanização",
+  "tema": "Cidades",
+  "dificuldade": "medio",
+  "enunciado": "A expansão desordenada das cidades está associada a:",
+  "alternativas": [
+    {"letra": "A", "texto": "Maior qualidade de vida."},
+    {"letra": "B", "texto": "Segregação socioespacial."},
+    {"letra": "C", "texto": "Redução populacional."},
+    {"letra": "D", "texto": "Aumento de áreas verdes."},
+    {"letra": "E", "texto": "Menor desigualdade."}
+  ],
+  "gabarito": "B",
+  "explicacao": "Expansão desordenada gera desigualdade e segregação."
+},
+{
+  "escopo": "global",
+  "area": "Linguagens",
+  "disciplina": "Língua Portuguesa",
+  "habilidade": "Coesão",
+  "tema": "Conectivos",
+  "dificuldade": "facil",
+  "enunciado": "A palavra 'porém' indica:",
+  "alternativas": [
+    {"letra": "A", "texto": "Adição"},
+    {"letra": "B", "texto": "Conclusão"},
+    {"letra": "C", "texto": "Oposição"},
+    {"letra": "D", "texto": "Causa"},
+    {"letra": "E", "texto": "Tempo"}
+  ],
+  "gabarito": "C",
+  "explicacao": "“Porém” é conectivo adversativo (oposição)."
+},
+{
+  "escopo": "global",
+  "area": "Matemática",
+  "disciplina": "Matemática",
+  "habilidade": "Equação",
+  "tema": "1º grau",
+  "dificuldade": "medio",
+  "enunciado": "Resolva: 2x + 4 = 10",
+  "alternativas": [
+    {"letra": "A", "texto": "2"},
+    {"letra": "B", "texto": "3"},
+    {"letra": "C", "texto": "4"},
+    {"letra": "D", "texto": "5"},
+    {"letra": "E", "texto": "6"}
+  ],
+  "gabarito": "B",
+  "explicacao": "2x = 6 → x = 3."
+},
+{
+  "escopo": "global",
+  "area": "Natureza",
+  "disciplina": "Química",
+  "habilidade": "pH",
+  "tema": "Ácido-base",
+  "dificuldade": "facil",
+  "enunciado": "Uma solução com pH 2 é:",
+  "alternativas": [
+    {"letra": "A", "texto": "Básica"},
+    {"letra": "B", "texto": "Neutra"},
+    {"letra": "C", "texto": "Ácida"},
+    {"letra": "D", "texto": "Salina"},
+    {"letra": "E", "texto": "Orgânica"}
+  ],
+  "gabarito": "C",
+  "explicacao": "pH < 7 indica acidez."
+},
+{
+  "escopo": "global",
+  "area": "Humanas",
+  "disciplina": "História",
+  "habilidade": "Cidadania",
+  "tema": "Direitos",
+  "dificuldade": "facil",
+  "enunciado": "Direitos sociais incluem:",
+  "alternativas": [
+    {"letra": "A", "texto": "Saúde e educação"},
+    {"letra": "B", "texto": "Censura"},
+    {"letra": "C", "texto": "Ditadura"},
+    {"letra": "D", "texto": "Exclusão"},
+    {"letra": "E", "texto": "Monarquia"}
+  ],
+  "gabarito": "A",
+  "explicacao": "São direitos garantidos pelo Estado."
+},
+{
+  "escopo": "global",
+  "area": "Linguagens",
+  "disciplina": "Língua Portuguesa",
+  "habilidade": "Inferência",
+  "tema": "Publicidade",
+  "dificuldade": "medio",
+  "enunciado": "Uma propaganda associa produto à felicidade. Isso indica:",
+  "alternativas": [
+    {"letra": "A", "texto": "Informação técnica"},
+    {"letra": "B", "texto": "Persuasão"},
+    {"letra": "C", "texto": "Negação"},
+    {"letra": "D", "texto": "Erro lógico"},
+    {"letra": "E", "texto": "Neutralidade"}
+  ],
+  "gabarito": "B",
+  "explicacao": "Publicidade usa persuasão emocional."
+},
+{
+  "escopo": "global",
+  "area": "Matemática",
+  "disciplina": "Matemática",
+  "habilidade": "Média",
+  "tema": "Estatística",
+  "dificuldade": "facil",
+  "enunciado": "Média de 4, 6 e 8:",
+  "alternativas": [
+    {"letra": "A", "texto": "5"},
+    {"letra": "B", "texto": "6"},
+    {"letra": "C", "texto": "7"},
+    {"letra": "D", "texto": "8"},
+    {"letra": "E", "texto": "9"}
+  ],
+  "gabarito": "B",
+  "explicacao": "(4+6+8)/3 = 6."
+}
+]

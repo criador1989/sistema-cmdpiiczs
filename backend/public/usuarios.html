@@ -23,6 +23,8 @@
 
       --good:#21a67a;
       --bad:#e55353;
+      --warn:#f59e0b;
+      --student:#ffe29a;
 
       --radius:16px;
     }
@@ -30,7 +32,6 @@
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
 
-    /* ===== BODY NO MESMO ESTILO DO PAINEL (WALLPAPER) ===== */
     body{
       margin:0;
       font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -46,7 +47,7 @@
 
     .container{
       width:100%;
-      max-width:1100px;
+      max-width:1180px;
       margin:0 auto;
       background:linear-gradient(180deg, rgba(15,18,25,.94), rgba(9,11,18,.9));
       border:1px solid rgba(255,255,255,.14);
@@ -176,6 +177,7 @@
       padding:10px 12px;
       text-align:left;
       border-bottom:1px solid rgba(255,255,255,.04);
+      vertical-align:middle;
     }
 
     th{
@@ -199,6 +201,26 @@
       background:rgba(15,23,42,.9);
       font-size:.83rem;
       color:var(--muted);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .pill.aluno{
+      border-color: rgba(255,226,154,.45);
+      background: rgba(255,226,154,.08);
+      color: var(--student);
+    }
+
+    .pill.portal-aluno{
+      border-color: rgba(255,226,154,.35);
+      background: rgba(255,226,154,.06);
+      color: var(--student);
+    }
+
+    .pill.portal-inst{
+      border-color: rgba(56,189,248,.35);
+      color: #bfeeff;
     }
 
     .empty{
@@ -234,6 +256,17 @@
       background:rgba(15,23,42,.9);
     }
 
+    .hint-box{
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,226,154,.22);
+      background: rgba(255,226,154,.08);
+      color: #fff0c7;
+      line-height: 1.35;
+      font-size: 13px;
+    }
+
     @keyframes rise{
       from{opacity:0; transform: translateY(12px);}
       to{opacity:1; transform: translateY(0);}
@@ -244,6 +277,10 @@
   <div class="container">
     <h2>Gerenciar Usuários</h2>
 
+    <div class="hint-box">
+      Esta tela agora também exibe <b>usuários do aluno</b>. Você poderá localizar, editar e redefinir acessos do portal do aluno junto com os demais usuários do sistema.
+    </div>
+
     <div class="toolbar">
       <div class="search">
         <input id="q" type="search" placeholder="Buscar por nome ou e-mail" />
@@ -252,6 +289,12 @@
           <option value="admin">Administrador</option>
           <option value="monitor">Monitor</option>
           <option value="professor">Professor</option>
+          <option value="aluno">Aluno</option>
+        </select>
+        <select id="filtroPortal">
+          <option value="">Todos os portais</option>
+          <option value="institucional">Portal institucional</option>
+          <option value="aluno">Portal do aluno</option>
         </select>
         <button class="btn btn-prim" id="btnBuscar">Buscar</button>
       </div>
@@ -267,12 +310,13 @@
             <th>Nome</th>
             <th>Email</th>
             <th>Tipo</th>
+            <th>Portal</th>
             <th>Instituição</th>
-            <th style="width:180px">Ações</th>
+            <th style="width:190px">Ações</th>
           </tr>
         </thead>
         <tbody id="tabelaUsuarios">
-          <tr><td class="empty" colspan="5">Carregando…</td></tr>
+          <tr><td class="empty" colspan="6">Carregando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -285,7 +329,6 @@
   </div>
 
   <script>
-    // DEV: limpar SW/caches para não travar cookies em localhost
     if (['localhost','127.0.0.1'].includes(location.hostname)) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
@@ -295,17 +338,15 @@
       }
     }
 
-    // Base (Vite 5173 -> API 5000; produção mesma origem)
     const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
     const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
     const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
     const $ = (id) => document.getElementById(id);
-    let pagina = 1, paginas = 1, limite = 20, termo = '', tipo = '';
+    let pagina = 1, paginas = 1, limite = 20, termo = '', tipo = '', portal = '';
 
     async function garantirAdmin(){
       try{
-        // tenta /auth/usuario-logado e cai para /auth/me
         let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
         if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
         if(!r.ok) throw 0;
@@ -325,16 +366,42 @@
       el.textContent = msg || '';
     }
 
+    function escapeHtml(value){
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function renderTipo(tipo){
+      const t = String(tipo || '').toLowerCase();
+      const klass = t === 'aluno' ? 'pill aluno' : 'pill';
+      const label = t ? t.charAt(0).toUpperCase() + t.slice(1) : '—';
+      return `<span class="${klass}">${escapeHtml(label)}</span>`;
+    }
+
+    function renderPortal(portal, tipo){
+      const p = String(portal || (tipo === 'aluno' ? 'aluno' : 'institucional')).toLowerCase();
+      if (p === 'aluno') {
+        return `<span class="pill portal-aluno">Aluno</span>`;
+      }
+      return `<span class="pill portal-inst">Institucional</span>`;
+    }
+
     function linhaUsuario(u){
       const inst = typeof u.instituicao === 'object'
         ? (u.instituicao?.nome || u.instituicao?._id || '—')
         : (u.instituicao || '—');
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.nome || '—'}</td>
-        <td>${u.email || '—'}</td>
-        <td><span class="pill">${u.tipo || '—'}</span></td>
-        <td>${inst}</td>
+        <td>${escapeHtml(u.nome || '—')}</td>
+        <td>${escapeHtml(u.email || '—')}</td>
+        <td>${renderTipo(u.tipo)}</td>
+        <td>${renderPortal(u.portal, u.tipo)}</td>
+        <td>${escapeHtml(inst)}</td>
         <td class="acoes">
           <button class="btn btn-prim" onclick="editarUsuario('${u._id}')">Editar</button>
           <button class="btn btn-warn" onclick="excluirUsuario('${u._id}')">Excluir</button>
@@ -345,44 +412,45 @@
 
     async function carregarUsuarios(){
       const tbody = $('tabelaUsuarios');
-      tbody.innerHTML = `<tr><td class="empty" colspan="5">Carregando…</td></tr>`;
+      tbody.innerHTML = `<tr><td class="empty" colspan="6">Carregando…</td></tr>`;
+
       try{
         const qs = new URLSearchParams();
         qs.set('pagina', String(pagina));
         qs.set('limite', String(limite));
         if (termo) qs.set('q', termo);
         if (tipo) qs.set('tipo', tipo);
+        if (portal) qs.set('portal', portal);
 
         const r = await fetch(API(`/usuarios?${qs.toString()}`), { credentials:'include', cache:'no-store' });
         if(!r.ok){
           const j = await r.json().catch(()=>({}));
           setStatus(j?.mensagem || 'Erro ao buscar usuários.');
-          tbody.innerHTML = `<tr><td class="empty" colspan="5">Falha ao carregar.</td></tr>`;
+          tbody.innerHTML = `<tr><td class="empty" colspan="6">Falha ao carregar.</td></tr>`;
           return;
         }
+
         const data = await r.json();
         const itens = Array.isArray(data?.items) ? data.items : [];
         paginas = Number(data?.paginas || 1);
         pagina  = Math.min(Math.max(1, Number(data?.pagina || 1)), paginas);
 
         if (itens.length === 0){
-          tbody.innerHTML = `<tr><td class="empty" colspan="5">Nenhum usuário encontrado.</td></tr>`;
+          tbody.innerHTML = `<tr><td class="empty" colspan="6">Nenhum usuário encontrado.</td></tr>`;
         } else {
           tbody.innerHTML = '';
           itens.forEach(u => tbody.appendChild(linhaUsuario(u)));
         }
 
-        // pager
         $('pager').hidden = paginas <= 1;
         $('pageInfo').textContent = `Página ${pagina}/${paginas}`;
       }catch(e){
         console.error(e);
         setStatus('Erro de conexão com o servidor.');
-        tbody.innerHTML = `<tr><td class="empty" colspan="5">Erro de conexão.</td></tr>`;
+        tbody.innerHTML = `<tr><td class="empty" colspan="6">Erro de conexão.</td></tr>`;
       }
     }
 
-    // Ações
     function editarUsuario(id){
       location.href = `editar-usuario.html?id=${id}`;
     }
@@ -390,6 +458,7 @@
     async function excluirUsuario(id){
       const conf = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
       if (conf !== 'CONFIRMAR') return alert('Exclusão cancelada.');
+
       try{
         const r = await fetch(API(`/usuarios/${id}`), { method:'DELETE', credentials:'include' });
         if(r.ok){
@@ -405,17 +474,28 @@
       }
     }
 
-    // Filtros e paginação
     $('btnBuscar').addEventListener('click', () => {
       termo = $('q').value.trim();
       tipo  = $('filtroTipo').value;
+      portal = $('filtroPortal').value;
       pagina = 1;
       carregarUsuarios();
     });
-    $('prev').addEventListener('click', () => { if(pagina>1){ pagina--; carregarUsuarios(); } });
-    $('next').addEventListener('click', () => { if(pagina<paginas){ pagina++; carregarUsuarios(); } });
 
-    // Boot
+    $('prev').addEventListener('click', () => {
+      if(pagina>1){
+        pagina--;
+        carregarUsuarios();
+      }
+    });
+
+    $('next').addEventListener('click', () => {
+      if(pagina<paginas){
+        pagina++;
+        carregarUsuarios();
+      }
+    });
+
     (async function(){
       await garantirAdmin();
       await carregarUsuarios();

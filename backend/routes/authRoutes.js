@@ -1,4 +1,5 @@
-// backend/routes/authRoutes.js
+'use strict';
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -8,7 +9,10 @@ const router = express.Router();
 
 const Usuario = require('../models/Usuario');
 let Instituicao = null;
-try { Instituicao = require('../models/Instituicao'); } catch { /* ok */ }
+let Aluno = null;
+
+try { Instituicao = require('../models/Instituicao'); } catch {}
+try { Aluno = require('../models/Aluno'); } catch {}
 
 const { autenticar } = require('../middleware/autenticacao');
 
@@ -31,6 +35,16 @@ function setAuthCookie(res, token) {
   });
 }
 
+function setTenantCookie(res, tenantCookie) {
+  res.cookie('tenant', tenantCookie, {
+    httpOnly: false,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+}
+
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
@@ -47,9 +61,14 @@ function isObjectIdLike(v) {
   return /^[a-f\d]{24}$/i.test(String(v || '').trim());
 }
 
-/**
- * Base URL do BACKEND (para o link /auth/confirmar-email)
- */
+function normalizeLoginIdentifier(value) {
+  return String(value || '').trim();
+}
+
+function normalizeCodigoAcesso(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function pickBackendBaseUrl(req) {
   const env =
     process.env.PUBLIC_API_URL ||
@@ -65,9 +84,6 @@ function pickBackendBaseUrl(req) {
   return `${proto}://${host}`.replace(/\/+$/, '');
 }
 
-/**
- * Base URL do FRONTEND (para redirecionar ao /login.html após confirmar)
- */
 function pickFrontendBaseUrl(_req) {
   const site = process.env.PUBLIC_SITE_URL;
   if (site) return String(site).replace(/\/+$/, '');
@@ -158,57 +174,259 @@ function getTenantFromReqOrDefault(req) {
   return t || DEFAULT_TENANT_SLUG;
 }
 
-async function resolveInstituicaoFromReq(req) {
-  const tenant = getTenantFromReqOrDefault(req);
-  const inst = await findInstituicaoByTenant(tenant);
-  if (inst) return inst;
-  return await getDefaultInstituicao();
-}
-
 async function resolveInstituicaoOnlyIfTenantProvided(req) {
   const t = String(getTenantFromReq(req) || '').trim();
   if (!t) return null;
   return await findInstituicaoByTenant(t);
 }
 
-async function findUsuarioByEmailAndInstituicao(email, instituicaoId) {
-  if (!email || !instituicaoId) return null;
+function buildJwtPayload(usuario) {
+  const payload = {
+    id: String(usuario._id),
+    tipo: usuario.tipo,
+    nome: usuario.nome,
+    instituicao: String(usuario.instituicao || ''),
+    email: String(usuario.email || '').toLowerCase(),
+  };
 
-  return await Usuario.findOne({
-    email,
-    instituicao: String(instituicaoId),
-    $or: [{ ativo: true }, { ativo: { $exists: false } }],
-  });
+  if (usuario.alunoId) {
+    payload.alunoId = String(usuario.alunoId);
+  }
+
+  if (usuario.portal) {
+    payload.portal = String(usuario.portal);
+  } else if (usuario.tipo === 'aluno') {
+    payload.portal = 'aluno';
+  }
+
+  return payload;
 }
 
-// tenta usar mensageria/mailer; se não existir, não quebra
-async function sendEmailBestEffort({ to, subject, html, text }) {
-  try {
-    const m = global.mensageria;
-    if (m) {
-      if (typeof m.sendEmail === 'function') return await m.sendEmail({ to, subject, html, text });
-      if (m.email && typeof m.email.send === 'function') return await m.email.send({ to, subject, html, text });
-      if (m.email && typeof m.email.sendMail === 'function') return await m.email.sendMail({ to, subject, html, text });
-    }
-  } catch (e) {
-    console.warn('[MAIL] falha via mensageria:', e?.message || e);
+function buildAlunoPublicData(aluno) {
+  if (!aluno) return null;
+
+  return {
+    _id: String(aluno._id),
+    nome: aluno.nome || '',
+    turma: aluno.turma || '',
+    codigoAcesso: aluno.codigoAcesso || '',
+    usuarioId: aluno.usuarioId ? String(aluno.usuarioId) : null
+  };
+}
+
+function buildLoginResponse({ usuario, inst, token, aluno = null }) {
+  const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
+
+  let redirecionar = '/painel.html';
+  if (usuario.tipo === 'professor') redirecionar = '/painel-professor.html';
+  if (usuario.tipo === 'aluno') redirecionar = '/painel-aluno.html';
+
+  return {
+    mensagem: 'Login realizado com sucesso.',
+    redirecionar,
+    token,
+    usuario: {
+      id: String(usuario._id),
+      tipo: usuario.tipo,
+      nome: usuario.nome,
+      instituicao: String(usuario.instituicao || ''),
+      email: String(usuario.email || '').toLowerCase(),
+      alunoId: usuario.alunoId ? String(usuario.alunoId) : null,
+      portal: usuario.portal || (usuario.tipo === 'aluno' ? 'aluno' : 'institucional')
+    },
+    aluno: buildAlunoPublicData(aluno),
+    instituicao: inst ? {
+      id: String(inst._id),
+      nome: inst.nome,
+      sigla: inst.sigla,
+      slug: inst.slug
+    } : undefined,
+    tenant: tenantCookie,
+    portal: usuario.portal || (usuario.tipo === 'aluno' ? 'aluno' : 'institucional')
+  };
+}
+
+async function doLoginForInstituicao(req, res, { email, senha, inst, portal = 'institucional' }) {
+  const instituicaoId = inst?._id ? String(inst._id) : null;
+
+  const filtrosBase = {
+    email,
+    ...(instituicaoId ? { instituicao: instituicaoId } : {}),
+    $or: [{ ativo: true }, { ativo: { $exists: false } }],
+  };
+
+  if (portal === 'aluno') {
+    filtrosBase.tipo = 'aluno';
+  } else {
+    filtrosBase.tipo = { $in: ['admin', 'monitor', 'professor'] };
   }
 
-  try {
-    const mailer = require('../utils/mailer');
-    if (mailer) {
-      if (typeof mailer.sendMail === 'function') return await mailer.sendMail({ to, subject, html, text });
-      if (typeof mailer.send === 'function') return await mailer.send({ to, subject, html, text });
-      if (typeof mailer.sendEmail === 'function') return await mailer.sendEmail({ to, subject, html, text });
+  const usuario = await Usuario.findOne(filtrosBase)
+    .select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+
+  if (!usuario) {
+    if (portal === 'aluno') {
+      return res.status(401).json({
+        mensagem: 'Acesso do aluno não encontrado nesta instituição.',
+      });
     }
-  } catch (e) {
-    console.warn('[MAIL] utils/mailer indisponível ou sem função de envio:', e?.message || e);
+
+    if (instituicaoId) {
+      return res.status(401).json({
+        mensagem: 'Usuário não encontrado nesta instituição. Verifique se você está no link correto (instituição).',
+      });
+    }
+
+    return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
   }
 
-  console.log('📨 [MAIL-FALLBACK] To:', to);
-  console.log('📨 [MAIL-FALLBACK] Subject:', subject);
-  console.log('📨 [MAIL-FALLBACK] HTML:', html?.slice?.(0, 900) || '');
-  return { ok: false, fallback: true };
+  if (usuario.emailVerificado === false) {
+    return res.status(403).json({
+      code: 'EMAIL_NOT_VERIFIED',
+      mensagem: 'Conta não confirmada. Verifique seu e-mail para liberar o acesso.',
+    });
+  }
+
+  const senhaValida = await bcrypt.compare(String(senha || ''), usuario.senha);
+  if (!senhaValida) {
+    return res.status(401).json({ mensagem: 'Senha incorreta.' });
+  }
+
+  const token = jwt.sign(buildJwtPayload(usuario), process.env.JWT_SECRET, { expiresIn: '2h' });
+  setAuthCookie(res, token);
+
+  const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
+  setTenantCookie(res, tenantCookie);
+
+  let aluno = null;
+  if (usuario.tipo === 'aluno' && Aluno && usuario.alunoId) {
+    aluno = await Aluno.findOne({
+      _id: usuario.alunoId,
+      instituicao: instituicaoId
+    })
+      .select('_id nome turma codigoAcesso usuarioId')
+      .lean()
+      .catch(() => null);
+  }
+
+  return res.json(buildLoginResponse({ usuario, inst, token, aluno }));
+}
+
+async function doLoginAluno(req, res, { login, senha, inst }) {
+  const instituicaoId = inst?._id ? String(inst._id) : null;
+
+  if (!instituicaoId) {
+    return res.status(400).json({
+      mensagem: 'Instituição não encontrada para o portal do aluno.'
+    });
+  }
+
+  const loginNormalizado = normalizeLoginIdentifier(login);
+  const email = isValidEmail(loginNormalizado) ? normalizeEmail(loginNormalizado) : null;
+  const codigoAcesso = email ? null : normalizeCodigoAcesso(loginNormalizado);
+
+  let usuario = null;
+  let aluno = null;
+
+  if (email) {
+    usuario = await Usuario.findOne({
+      email,
+      instituicao: instituicaoId,
+      tipo: 'aluno',
+      $or: [{ ativo: true }, { ativo: { $exists: false } }]
+    }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+  } else {
+    if (!Aluno || typeof Aluno.findOne !== 'function') {
+      return res.status(500).json({
+        mensagem: 'Model de aluno não disponível para login por código de acesso.'
+      });
+    }
+
+    aluno = await Aluno.findOne({
+      instituicao: instituicaoId,
+      codigoAcesso
+    }).select('_id nome turma codigoAcesso usuarioId instituicao tenantId').lean();
+
+    if (!aluno) {
+      return res.status(401).json({
+        mensagem: 'Código de acesso não encontrado nesta instituição.'
+      });
+    }
+
+    if (aluno.usuarioId) {
+      usuario = await Usuario.findOne({
+        _id: aluno.usuarioId,
+        instituicao: instituicaoId,
+        tipo: 'aluno',
+        $or: [{ ativo: true }, { ativo: { $exists: false } }]
+      }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+    }
+
+    if (!usuario) {
+      usuario = await Usuario.findOne({
+        alunoId: aluno._id,
+        instituicao: instituicaoId,
+        tipo: 'aluno',
+        $or: [{ ativo: true }, { ativo: { $exists: false } }]
+      }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+    }
+
+    if (!usuario) {
+      return res.status(401).json({
+        mensagem: 'Acesso do aluno não vinculado corretamente. Procure a administração da instituição.'
+      });
+    }
+  }
+
+  if (!usuario) {
+    return res.status(401).json({
+      mensagem: 'Acesso do aluno não encontrado nesta instituição.'
+    });
+  }
+
+  if (usuario.emailVerificado === false) {
+    return res.status(403).json({
+      code: 'EMAIL_NOT_VERIFIED',
+      mensagem: 'Conta não confirmada. Verifique seu e-mail para liberar o acesso.',
+    });
+  }
+
+  const senhaValida = await bcrypt.compare(String(senha || ''), usuario.senha);
+  if (!senhaValida) {
+    return res.status(401).json({ mensagem: 'Senha incorreta.' });
+  }
+
+  if (!aluno && Aluno && usuario.alunoId) {
+    aluno = await Aluno.findOne({
+      _id: usuario.alunoId,
+      instituicao: instituicaoId
+    }).select('_id nome turma codigoAcesso usuarioId').lean().catch(() => null);
+  }
+
+  const token = jwt.sign(
+    {
+      ...buildJwtPayload(usuario),
+      portal: 'aluno',
+      alunoId: usuario.alunoId ? String(usuario.alunoId) : (aluno?._id ? String(aluno._id) : null)
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+
+  setAuthCookie(res, token);
+
+  const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
+  setTenantCookie(res, tenantCookie);
+
+  return res.json(buildLoginResponse({
+    usuario: {
+      ...usuario.toObject(),
+      portal: 'aluno'
+    },
+    inst,
+    token,
+    aluno
+  }));
 }
 
 /**
@@ -221,11 +439,34 @@ router.get('/me', autenticar, (req, res) => {
     tipo: req.usuario.tipo,
     instituicao: req.usuario.instituicao,
     email: req.usuario.email || null,
+    alunoId: req.usuario.alunoId || null,
+    portal: req.usuario.portal || null
+  });
+});
+
+/**
+ * GET /auth/portais
+ * Apenas para o front saber quais botões/telas mostrar
+ */
+router.get('/portais', async (_req, res) => {
+  return res.json({
+    ok: true,
+    portais: {
+      institucional: {
+        ativo: true,
+        loginUrl: '/login.html'
+      },
+      aluno: {
+        ativo: true,
+        loginUrl: '/login-aluno.html'
+      }
+    }
   });
 });
 
 /**
  * POST /auth/login
+ * Login institucional
  */
 router.post('/login', async (req, res) => {
   const email = normalizeEmail(req.body?.email);
@@ -248,6 +489,7 @@ router.post('/login', async (req, res) => {
         const usuarioDefault = await Usuario.findOne({
           email,
           instituicao: String(defaultInst._id),
+          tipo: { $in: ['admin', 'monitor', 'professor'] },
           $or: [{ ativo: true }, { ativo: { $exists: false } }],
         }).select('_id');
 
@@ -256,12 +498,14 @@ router.post('/login', async (req, res) => {
             email,
             senha,
             inst: defaultInst,
+            portal: 'institucional'
           });
         }
       }
 
       const encontrados = await Usuario.find({
         email,
+        tipo: { $in: ['admin', 'monitor', 'professor'] },
         $or: [{ ativo: true }, { ativo: { $exists: false } }],
       }).select('_id instituicao emailVerificado tipo nome').lean();
 
@@ -300,10 +544,20 @@ router.post('/login', async (req, res) => {
         instLoaded = await Instituicao.findOne({ _id: onlyId }).select('_id nome sigla slug').lean().catch(() => null);
       }
 
-      return await doLoginForInstituicao(req, res, { email, senha, inst: instLoaded || { _id: onlyId } });
+      return await doLoginForInstituicao(req, res, {
+        email,
+        senha,
+        inst: instLoaded || { _id: onlyId },
+        portal: 'institucional'
+      });
     }
 
-    return await doLoginForInstituicao(req, res, { email, senha, inst: instFromTenant });
+    return await doLoginForInstituicao(req, res, {
+      email,
+      senha,
+      inst: instFromTenant,
+      portal: 'institucional'
+    });
 
   } catch (error) {
     console.error('Erro /auth/login:', error);
@@ -311,70 +565,48 @@ router.post('/login', async (req, res) => {
   }
 });
 
-async function doLoginForInstituicao(req, res, { email, senha, inst }) {
-  const instituicaoId = inst?._id ? String(inst._id) : null;
+/**
+ * POST /auth/login-aluno
+ * Login do aluno por código de acesso OU e-mail + senha
+ */
+router.post('/login-aluno', async (req, res) => {
+  const login =
+    normalizeLoginIdentifier(
+      req.body?.login ||
+      req.body?.email ||
+      req.body?.codigoAcesso
+    );
 
-  const usuario = await Usuario.findOne({
-    email,
-    ...(instituicaoId ? { instituicao: instituicaoId } : {}),
-    $or: [{ ativo: true }, { ativo: { $exists: false } }],
-  }).select('+senha nome email tipo instituicao emailVerificado');
+  const senha = String(req.body?.senha || '');
 
-  if (!usuario) {
-    if (instituicaoId) {
-      return res.status(401).json({
-        mensagem: 'Usuário não encontrado nesta instituição. Verifique se você está no link correto (instituição).',
-      });
+  if (!login) {
+    return res.status(400).json({ mensagem: 'Informe o código de acesso ou e-mail do aluno.' });
+  }
+
+  if (!senha) {
+    return res.status(400).json({ mensagem: 'Informe a senha.' });
+  }
+
+  try {
+    const inst =
+      await resolveInstituicaoOnlyIfTenantProvided(req) ||
+      await findInstituicaoByTenant(DEFAULT_TENANT_SLUG) ||
+      await getDefaultInstituicao();
+
+    if (!inst?._id) {
+      return res.status(400).json({ mensagem: 'Instituição não encontrada para o portal do aluno.' });
     }
-    return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
-  }
 
-  if (usuario.emailVerificado === false) {
-    return res.status(403).json({
-      code: 'EMAIL_NOT_VERIFIED',
-      mensagem: 'Conta não confirmada. Verifique seu e-mail para liberar o acesso.',
+    return await doLoginAluno(req, res, {
+      login,
+      senha,
+      inst
     });
+  } catch (error) {
+    console.error('Erro /auth/login-aluno:', error);
+    return res.status(500).json({ mensagem: 'Erro interno ao fazer login do aluno.', erro: error.message });
   }
-
-  const senhaValida = await bcrypt.compare(String(senha || ''), usuario.senha);
-  if (!senhaValida) {
-    return res.status(401).json({ mensagem: 'Senha incorreta.' });
-  }
-
-  const payload = {
-    id: String(usuario._id),
-    tipo: usuario.tipo,
-    nome: usuario.nome,
-    instituicao: String(usuario.instituicao || ''),
-    email: String(usuario.email || '').toLowerCase(),
-  };
-
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '2h' });
-  setAuthCookie(res, token);
-
-  const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
-  res.cookie('tenant', tenantCookie, {
-    httpOnly: false,
-    secure: isProd,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-
-  const redirecionar =
-    usuario.tipo === 'professor'
-      ? '/painel-professor.html'
-      : '/painel.html';
-
-  return res.json({
-    mensagem: 'Login realizado com sucesso.',
-    redirecionar,
-    token,
-    usuario: payload,
-    instituicao: inst ? { id: String(inst._id), nome: inst.nome, sigla: inst.sigla, slug: inst.slug } : undefined,
-    tenant: tenantCookie,
-  });
-}
+});
 
 /**
  * GET /auth/usuario-logado
@@ -540,13 +772,7 @@ router.get('/confirmar-email', async (req, res) => {
       tenantParam = DEFAULT_TENANT_SLUG;
     }
 
-    res.cookie('tenant', tenantParam, {
-      httpOnly: false,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    setTenantCookie(res, tenantParam);
 
     const qs = `?t=${encodeURIComponent(tenantParam)}&verified=1`;
 
@@ -676,7 +902,6 @@ router.post('/cadastrar', autenticar, async (req, res) => {
       senha,
       tipo,
       instituicao: instituicaoId,
-
       emailVerificado: true,
       emailVerificadoEm: new Date(),
       tokenVerificacaoHash: null,
@@ -712,5 +937,34 @@ router.post('/logout', (req, res) => {
 
   res.json({ mensagem: 'Logout realizado com sucesso.' });
 });
+
+async function sendEmailBestEffort({ to, subject, html, text }) {
+  try {
+    const m = global.mensageria;
+    if (m) {
+      if (typeof m.sendEmail === 'function') return await m.sendEmail({ to, subject, html, text });
+      if (m.email && typeof m.email.send === 'function') return await m.email.send({ to, subject, html, text });
+      if (m.email && typeof m.email.sendMail === 'function') return await m.email.sendMail({ to, subject, html, text });
+    }
+  } catch (e) {
+    console.warn('[MAIL] falha via mensageria:', e?.message || e);
+  }
+
+  try {
+    const mailer = require('../utils/mailer');
+    if (mailer) {
+      if (typeof mailer.sendMail === 'function') return await mailer.sendMail({ to, subject, html, text });
+      if (typeof mailer.send === 'function') return await mailer.send({ to, subject, html, text });
+      if (typeof mailer.sendEmail === 'function') return await mailer.sendEmail({ to, subject, html, text });
+    }
+  } catch (e) {
+    console.warn('[MAIL] utils/mailer indisponível ou sem função de envio:', e?.message || e);
+  }
+
+  console.log('📨 [MAIL-FALLBACK] To:', to);
+  console.log('📨 [MAIL-FALLBACK] Subject:', subject);
+  console.log('📨 [MAIL-FALLBACK] HTML:', html?.slice?.(0, 900) || '');
+  return { ok: false, fallback: true };
+}
 
 module.exports = router;
