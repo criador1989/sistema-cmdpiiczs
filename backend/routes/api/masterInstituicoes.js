@@ -729,74 +729,29 @@ router.post('/instituicoes/:id/gerar-acessos-alunos', requireSuperAdmin, async (
       }
 
       const usuarioComMesmoEmail = await Usuario.findOne({
-        email: emailResponsavel
-      })
-        .select('_id nome email tipo portal alunoId instituicao')
-        .lean();
+  email: emailResponsavel,
+  instituicao: instituicaoId
+})
+  .select('_id nome email tipo portal alunoId instituicao')
+  .lean();
 
-      if (usuarioComMesmoEmail) {
-        const mesmoTenant = String(usuarioComMesmoEmail.instituicao || '') === String(instituicaoId);
-        const semAlunoVinculado = !usuarioComMesmoEmail.alunoId;
-        const podeConverterParaAluno = mesmoTenant && semAlunoVinculado;
+let emailUsuarioAcesso = emailResponsavel;
 
-        if (podeConverterParaAluno) {
-          await Usuario.updateOne(
-            { _id: usuarioComMesmoEmail._id, instituicao: instituicaoId },
-            {
-              $set: {
-                nome: usuarioComMesmoEmail.nome || aluno.nome,
-                tipo: 'aluno',
-                portal: 'aluno',
-                alunoId: aluno._id,
-                ativo: true,
-                emailVerificado: true,
-                emailVerificadoEm: new Date()
-              }
-            }
-          );
+if (usuarioComMesmoEmail && String(usuarioComMesmoEmail.alunoId || '') !== alunoId) {
+  const baseTecnica = String(codigoAcesso || gerarCodigoAcesso())
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
 
-          await Aluno.updateOne(
-            { _id: aluno._id, instituicao: instituicaoId },
-            {
-              $set: {
-                usuarioId: usuarioComMesmoEmail._id,
-                codigoAcesso,
-                'contatos.emailResponsavel': emailResponsavel
-              }
-            }
-          );
-
-          reutilizados.push({
-            alunoId,
-            usuarioId: String(usuarioComMesmoEmail._id),
-            nome: aluno.nome,
-            turma: normalizarTurma(aluno.turma),
-            email: emailResponsavel,
-            codigoAcesso,
-            senha: null,
-            status: 'reutilizado',
-            observacao: 'Já existia um usuário com este e-mail. Ele foi convertido/vinculado ao portal do aluno. A senha anterior foi mantida.'
-          });
-
-          continue;
-        }
-
-        ignorados.push({
-          alunoId,
-          nome: aluno.nome,
-          turma: normalizarTurma(aluno.turma),
-          email: emailResponsavel,
-          motivo: 'Este e-mail já está em uso por outro usuário/aluno. Informe outro e-mail para este aluno ou redefina manualmente o usuário existente.'
-        });
-
-        continue;
-      }
+  emailUsuarioAcesso = `${baseTecnica}.${alunoId.slice(-6)}@aluno.axoriin.local`;
+}
 
       const senha = gerarSenhaSimples();
 
-      const novoUsuario = new Usuario({
-        nome: aluno.nome,
-        email: emailResponsavel,
+      const emailUnicoUsuario = `${String(codigoAcesso).toLowerCase().replace(/[^a-z0-9]/g, '')}.${alunoId.slice(-6)}@aluno.axoriin.local`;
+
+const novoUsuario = new Usuario({
+  nome: aluno.nome,
+  email: emailUnicoUsuario,
         senha,
         tipo: 'aluno',
         portal: 'aluno',
