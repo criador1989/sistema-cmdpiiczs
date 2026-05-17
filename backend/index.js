@@ -108,6 +108,7 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'Log',
   'Instituicao',
   'ConfiguracaoDisciplinar',
+  'ConfiguracaoDocumentos',
   'ComportamentoSnapshot',
   'AphAtendimento',
   'Counter',
@@ -217,6 +218,7 @@ const metricsRoutes = require('./routes/api/metrics');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
 const instituicoesRoutes = require('./routes/api/instituicoes');
 const configuracaoDisciplinarRoutes = require('./routes/api/configuracaoDisciplinar');
+const configuracaoDocumentosRoutes = require('./routes/api/configuracaoDocumentos');
 const notificacoesViewRoutes = require('./routes/views/notificacoes');
 const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores');
 const professoresRoute = require('./routes/api/professores');
@@ -234,8 +236,8 @@ const rankingAlunosRouter = require('./routes/api/rankingAlunos');
 const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
 const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
 const chamadasRoutes = require('./routes/api/chamadas');
-// const redacaoRoutes = require('./routes/api/redacao');
-// const questionariosRoutes = require('./routes/api/questionarios');
+const redacaoRoutes = require('./routes/api/redacao');
+const questionariosRoutes = require('./routes/api/questionarios');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
@@ -388,7 +390,8 @@ function buildProfessorGuard(publicRoot) {
     '/ranking-alunos.html',
     '/master-instituicoes.html',
     '/rifas.html',
-    '/livro-ocorrencias.html'
+    '/livro-ocorrencias.html',
+    '/configuracao-documentos.html'
   ]);
 
   const blockedPrefixes = [
@@ -408,7 +411,9 @@ function buildProfessorGuard(publicRoot) {
     '/api/controle-notificacoes',
     '/api/master',
     '/rifas',
-    '/api/rifas'
+    '/api/rifas',
+    '/configuracao-documentos',
+    '/api/configuracao-documentos'
   ];
 
   const alwaysPublic = new Set([
@@ -601,6 +606,7 @@ mountIf('/api/diagnostico', diagnosticoNotaRoutes);
 mountIf('/api/metrics', metricsRoutes);
 mountIf('/api/instituicoes', instituicoesRoutes);
 mountIf('/api/configuracao-disciplinar', configuracaoDisciplinarRoutes, autenticar);
+mountIf('/api/configuracao-documentos', configuracaoDocumentosRoutes, autenticar);
 mountIf('/api/alertas', alertasRoutes);
 mountIf('/api/ranking-alunos', rankingAlunosRouter, autenticar);
 mountIf('/api/fix-recalculo-comportamento', fixRecalculoComportamento, autenticar);
@@ -618,12 +624,12 @@ mountIf('/api/aph', aphPdfRoutes);
 /* =========================
    ✅ NOVA ROTA: REDAÇÃO ENEM
    ========================= */
-//mountIf('/api/redacao', redacaoRoutes);
+mountIf('/api/redacao', redacaoRoutes);
 
 /* =========================
    ✅ NOVA ROTA: QUESTIONÁRIOS
    ========================= */
-//mountIf('/api/questionarios', questionariosRoutes);
+mountIf('/api/questionarios', questionariosRoutes);
 
 /* =========================
    🚀 RIFAS (NOVO MÓDULO)
@@ -802,6 +808,7 @@ app.get('/ranking-alunos.html', autenticar, (_req, res) => res.sendFile(path.joi
 app.get('/monitores.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
 app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
 app.get('/livro-ocorrencias.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'livro-ocorrencias.html')));
+app.get('/configuracao-documentos.html', autenticar, exigirAdmin, (_req, res) => { return res.sendFile(path.join(publicRoot, 'configuracao-documentos.html'));});
 
 /* =========================
    DIAGNÓSTICOS / ERRORS

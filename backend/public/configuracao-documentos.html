@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuração de Documentos | Axoriin</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: #e5e7eb;
+      background:
+        radial-gradient(circle at top left, rgba(14,165,233,.22), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(34,197,94,.14), transparent 35%),
+        #020617;
+      padding: 24px;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    .muted {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 16px;
+      cursor: pointer;
+      color: white;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0284c7, #22c55e);
+      box-shadow: 0 12px 30px rgba(14,165,233,.25);
+    }
+
+    .btn.secondary {
+      background: rgba(15,23,42,.9);
+      border: 1px solid rgba(148,163,184,.35);
+      box-shadow: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: rgba(15,23,42,.78);
+      border: 1px solid rgba(148,163,184,.22);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      backdrop-filter: blur(14px);
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #cbd5e1;
+      margin: 13px 0 6px;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid rgba(148,163,184,.28);
+      background: rgba(2,6,23,.75);
+      color: #e5e7eb;
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .checks {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .check input {
+      width: auto;
+    }
+
+    .preview {
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 14px;
+      padding: 18px;
+      min-height: 320px;
+    }
+
+    .doc-head {
+      display: grid;
+      grid-template-columns: 76px 1fr 76px;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+    }
+
+    .seal {
+      width: 70px;
+      height: 70px;
+      border: 1px dashed #94a3b8;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-size: 10px;
+      color: #64748b;
+      text-align: center;
+      background: white;
+    }
+
+    .seal img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .doc-title {
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .doc-title .orgao {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .doc-title .nome {
+      font-size: 15px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .doc-title .sub {
+      font-size: 12px;
+    }
+
+    .doc-body {
+      margin-top: 26px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #334155;
+    }
+
+    .doc-footer {
+      border-top: 1px solid #94a3b8;
+      margin-top: 34px;
+      padding-top: 8px;
+      text-align: center;
+      font-size: 11px;
+      color: #475569;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #86efac;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 14px; }
+      .grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1>Configuração de Documentos</h1>
+        <div class="muted">
+          Defina cabeçalho, brasões, dados institucionais e rodapé dos documentos gerados.
+        </div>
+      </div>
+
+      <div>
+        <button class="btn secondary" onclick="history.back()">Voltar</button>
+        <button class="btn" onclick="salvar()">Salvar configuração</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Dados institucionais</h2>
+
+        <label>Órgão superior</label>
+        <input id="orgaoSuperior" placeholder="Ex: ESTADO DO ACRE / CORPO DE BOMBEIROS MILITAR DO ACRE" />
+
+        <label>Nome da instituição</label>
+        <input id="nomeInstituicao" placeholder="Ex: COLÉGIO MILITAR DOM PEDRO II - CZS" />
+
+        <label>Subtítulo / setor</label>
+        <input id="subtitulo" placeholder="Ex: Coordenação de Ensino / Secretaria Escolar" />
+
+        <div class="row">
+          <div>
+            <label>Cidade/UF</label>
+            <input id="cidadeUf" placeholder="Ex: Cruzeiro do Sul - AC" />
+          </div>
+          <div>
+            <label>Telefone</label>
+            <input id="telefone" placeholder="Ex: (68) 99999-9999" />
+          </div>
+        </div>
+
+        <label>E-mail institucional</label>
+        <input id="email" placeholder="Ex: escola@email.com" />
+
+        <label>Endereço</label>
+        <input id="endereco" placeholder="Endereço completo da instituição" />
+
+        <label>Rodapé padrão</label>
+        <textarea id="rodapePadrao" placeholder="Texto que aparecerá no rodapé dos documentos"></textarea>
+
+        <h2 style="margin-top:22px;">Brasões / logos</h2>
+
+        <label>Brasão esquerdo - URL</label>
+        <input id="brasaoEsquerdoUrl" placeholder="URL do brasão esquerdo, ex: CBMAC" />
+
+        <label>Brasão direito - URL</label>
+        <input id="brasaoDireitoUrl" placeholder="URL do brasão direito, ex: Colégio" />
+
+        <label>Logo central - URL opcional</label>
+        <input id="logoCentralUrl" placeholder="URL de logo central, se desejar" />
+
+        <div class="checks">
+          <label class="check">
+            <input type="checkbox" id="mostrarBrasaoEsquerdo" checked />
+            Mostrar brasão esquerdo
+          </label>
+
+          <label class="check">
+            <input type="checkbox" id="mostrarBrasaoDireito" checked />
+            Mostrar brasão direito
+          </label>
+
+          <label class="check">
+            <input type="checkbox" id="mostrarLogoCentral" />
+            Mostrar logo central
+          </label>
+
+          <label class="check">
+            <input type="checkbox" id="mostrarRodape" checked />
+            Mostrar rodapé
+          </label>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>Prévia do cabeçalho</h2>
+
+        <div class="preview">
+          <div class="doc-head">
+            <div class="seal" id="prevEsq">Brasão<br>esquerdo</div>
+
+            <div class="doc-title">
+              <div class="orgao" id="prevOrgao">ESTADO DO ACRE</div>
+              <div class="nome" id="prevNome">COLÉGIO MILITAR DOM PEDRO II</div>
+              <div class="sub" id="prevSub">Coordenação / Setor</div>
+            </div>
+
+            <div class="seal" id="prevDir">Brasão<br>direito</div>
+          </div>
+
+          <div class="doc-body">
+            <p><strong>DOCUMENTO INSTITUCIONAL</strong></p>
+            <p>
+              Esta é apenas uma prévia visual. Os documentos gerados pelo sistema
+              utilizarão estes dados institucionais no cabeçalho e rodapé.
+            </p>
+            <p id="prevContato"></p>
+          </div>
+
+          <div class="doc-footer" id="prevRodape">
+            Rodapé padrão da instituição
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/configuracao-documentos';
+
+    function token() {
+      return (
+        localStorage.getItem('token') ||
+        localStorage.getItem('authToken') ||
+        localStorage.getItem('axoriin_token') ||
+        ''
+      );
+    }
+
+    function tenant() {
+      return (
+        localStorage.getItem('axoriin_tenant') ||
+        localStorage.getItem('smartclass_tenant') ||
+        localStorage.getItem('tenant') ||
+        ''
+      );
+    }
+
+    function headers() {
+      const h = { 'Content-Type': 'application/json' };
+
+      const tk = token();
+      if (tk) h.Authorization = `Bearer ${tk}`;
+
+      const t = tenant();
+      if (t) {
+        h['x-tenant'] = t;
+        h['x-tenant-slug'] = t;
+      }
+
+      return h;
+    }
+
+    function valor(id) {
+      return document.getElementById(id)?.value || '';
+    }
+
+    function marcado(id) {
+      return !!document.getElementById(id)?.checked;
+    }
+
+    function setValor(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value || '';
+    }
+
+    function setMarcado(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.checked = value !== false;
+    }
+
+    function imgOrText(el, url, texto) {
+      if (!el) return;
+
+      if (url) {
+        el.innerHTML = `<img src="${url}" alt="${texto}" onerror="this.remove()">`;
+      } else {
+        el.innerHTML = texto;
+      }
+    }
+
+    function atualizarPreview() {
+      document.getElementById('prevOrgao').textContent =
+        valor('orgaoSuperior') || 'ESTADO DO ACRE';
+
+      document.getElementById('prevNome').textContent =
+        valor('nomeInstituicao') || 'COLÉGIO MILITAR DOM PEDRO II';
+
+      document.getElementById('prevSub').textContent =
+        valor('subtitulo') || 'Coordenação / Setor';
+
+      const contato = [
+        valor('endereco'),
+        valor('telefone'),
+        valor('email'),
+        valor('cidadeUf')
+      ].filter(Boolean).join(' • ');
+
+      document.getElementById('prevContato').textContent = contato;
+
+      const esq = document.getElementById('prevEsq');
+      const dir = document.getElementById('prevDir');
+
+      esq.style.visibility = marcado('mostrarBrasaoEsquerdo') ? 'visible' : 'hidden';
+      dir.style.visibility = marcado('mostrarBrasaoDireito') ? 'visible' : 'hidden';
+
+      imgOrText(esq, valor('brasaoEsquerdoUrl'), 'Brasão esquerdo');
+      imgOrText(dir, valor('brasaoDireitoUrl'), 'Brasão direito');
+
+      const rodape = document.getElementById('prevRodape');
+      rodape.style.display = marcado('mostrarRodape') ? 'block' : 'none';
+      rodape.textContent = valor('rodapePadrao') || 'Rodapé padrão da instituição';
+    }
+
+    async function carregar() {
+      try {
+        const res = await fetch(API, {
+          method: 'GET',
+          headers: headers()
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.message || 'Não foi possível carregar.');
+        }
+
+        const c = data.config || {};
+
+        setValor('orgaoSuperior', c.orgaoSuperior);
+        setValor('nomeInstituicao', c.nomeInstituicao);
+        setValor('subtitulo', c.subtitulo);
+        setValor('cidadeUf', c.cidadeUf);
+        setValor('telefone', c.telefone);
+        setValor('email', c.email);
+        setValor('endereco', c.endereco);
+        setValor('rodapePadrao', c.rodapePadrao);
+
+        setValor('brasaoEsquerdoUrl', c.brasaoEsquerdoUrl);
+        setValor('brasaoDireitoUrl', c.brasaoDireitoUrl);
+        setValor('logoCentralUrl', c.logoCentralUrl);
+
+        setMarcado('mostrarBrasaoEsquerdo', c.mostrarBrasaoEsquerdo);
+        setMarcado('mostrarBrasaoDireito', c.mostrarBrasaoDireito);
+        setMarcado('mostrarLogoCentral', c.mostrarLogoCentral === true);
+        setMarcado('mostrarRodape', c.mostrarRodape);
+
+        atualizarPreview();
+      } catch (err) {
+        document.getElementById('status').textContent =
+          'Erro ao carregar: ' + err.message;
+      }
+    }
+
+    async function salvar() {
+      try {
+        const payload = {
+          orgaoSuperior: valor('orgaoSuperior'),
+          nomeInstituicao: valor('nomeInstituicao'),
+          subtitulo: valor('subtitulo'),
+          cidadeUf: valor('cidadeUf'),
+          telefone: valor('telefone'),
+          email: valor('email'),
+          endereco: valor('endereco'),
+          rodapePadrao: valor('rodapePadrao'),
+
+          brasaoEsquerdoUrl: valor('brasaoEsquerdoUrl'),
+          brasaoDireitoUrl: valor('brasaoDireitoUrl'),
+          logoCentralUrl: valor('logoCentralUrl'),
+
+          mostrarBrasaoEsquerdo: marcado('mostrarBrasaoEsquerdo'),
+          mostrarBrasaoDireito: marcado('mostrarBrasaoDireito'),
+          mostrarLogoCentral: marcado('mostrarLogoCentral'),
+          mostrarRodape: marcado('mostrarRodape')
+        };
+
+        const res = await fetch(API, {
+          method: 'PUT',
+          headers: headers(),
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.message || 'Não foi possível salvar.');
+        }
+
+        document.getElementById('status').textContent =
+          'Configuração salva com sucesso.';
+
+        atualizarPreview();
+      } catch (err) {
+        document.getElementById('status').textContent =
+          'Erro ao salvar: ' + err.message;
+      }
+    }
+
+    document.querySelectorAll('input, textarea').forEach(el => {
+      el.addEventListener('input', atualizarPreview);
+      el.addEventListener('change', atualizarPreview);
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

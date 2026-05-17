@@ -539,8 +539,131 @@
       display:block;
     }
 
+    .doc-header-print{
+  display:none;
+  margin:0 0 8px;
+  padding:8px 12px;
+  border-radius:18px;
+  background:#ffffff;
+  color:#0f172a;
+  border:1px solid #d1d5db;
+  grid-template-columns:54px 1fr 54px;
+  align-items:center;
+  gap:14px;
+}
+
+.doc-brasao{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:#fff;
+}
+
+.doc-brasao img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+.doc-header-center{
+  text-align:center;
+  line-height:1.25;
+}
+
+.doc-orgao{
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.doc-instituicao{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  margin-top:1px;
+}
+
+.doc-subtitulo{
+  font-size:9px;
+  margin-top:1px;
+}
+
+body.pdf-mode .doc-header-print{
+  display:grid;
+}
+.doc-footer-print{
+  display:none;
+  background:#ffffff;
+  color:#334155;
+  border-top:1px solid #94a3b8;
+  text-align:center;
+  font-size:9px;
+  line-height:1.25;
+  padding:4px 12px;
+}
+
+body.pdf-mode .doc-footer-print{
+  display:block;
+}
+
     @media print{
-      @page{
+  .title-area{
+  margin-bottom:6px !important;
+}
+
+.title-area h1{
+  font-size:20px !important;
+}
+
+.title-area .sub{
+  font-size:11px !important;
+  margin-top:2px !important;
+}
+
+.filters{
+  margin-bottom:8px !important;
+}
+
+.filters .field{
+  min-height:38px !important;
+  padding:6px 8px !important;
+}
+
+.section-title{
+  margin:8px 4px 6px !important;
+  font-size:17px !important;
+}
+
+#cardParecerIA{
+  min-height:auto !important;
+}
+  .doc-header-print{
+    display:grid !important;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+
+  .doc-header-print,
+  .doc-header-print *{
+    color:#0f172a !important;
+  }
+
+  .doc-footer-print{
+  display:block !important;
+  color:#334155 !important;
+  break-inside:avoid;
+  page-break-inside:avoid;
+}
+
+  .doc-footer-print *{
+    color:#334155 !important;
+  }
+
+  @page{
         size:A4 portrait;
         margin:10mm;
       }
@@ -573,16 +696,25 @@
         padding:0 !important;
       }
 
-      .card,
-      .chart-card{
-        background:#fff !important;
-        color:#000 !important;
-        box-shadow:none !important;
-        border:1px solid #d1d5db !important;
-        backdrop-filter:none !important;
-        break-inside:avoid;
-        page-break-inside:avoid;
-      }
+      .card{
+  background:#fff !important;
+  color:#000 !important;
+  box-shadow:none !important;
+  border:1px solid #d1d5db !important;
+  backdrop-filter:none !important;
+  break-inside:auto !important;
+  page-break-inside:auto !important;
+}
+
+.chart-card{
+  background:#fff !important;
+  color:#000 !important;
+  box-shadow:none !important;
+  border:1px solid #d1d5db !important;
+  backdrop-filter:none !important;
+  break-inside:avoid !important;
+  page-break-inside:avoid !important;
+}
 
       .title-area h1,
       .section-title,
@@ -660,13 +792,26 @@
 
     <main class="content">
       <div class="wrap" id="printRoot">
-        <div class="title-area">
-          <div>
-            <h1>Relatórios e Estatísticas</h1>
-            <div class="sub">Colégio Militar Dom Pedro II • Unidade Cruzeiro do Sul</div>
-          </div>
-          <a href="painel.html" class="btn-secondary">← Voltar</a>
-        </div>
+        <div class="doc-header-print" id="docHeaderPrint">
+  <div class="doc-brasao" id="docBrasaoEsq"></div>
+
+  <div class="doc-header-center">
+    <div class="doc-orgao" id="docOrgaoSuperior">ESTADO DO ACRE</div>
+    <div class="doc-instituicao" id="docNomeInstituicao">COLÉGIO MILITAR DOM PEDRO II - CZS</div>
+    <div class="doc-subtitulo" id="docSubtitulo">Relatórios e Estatísticas</div>
+  </div>
+
+  <div class="doc-brasao" id="docBrasaoDir"></div>
+</div>
+
+
+<div class="title-area">
+  <div>
+    <h1>Relatórios e Estatísticas</h1>
+    <div class="sub" id="subInstituicaoRelatorio">Carregando dados institucionais...</div>
+  </div>
+  <a href="painel.html" class="btn-secondary">← Voltar</a>
+</div>
 
         <section class="card" aria-label="Relatórios de Notificações">
           <div class="filters">
@@ -868,6 +1013,9 @@
             <button class="btn-secondary" onclick="gerarPdfConsolidadoAPH()">📄 PDF Consolidado (APH)</button>
           </div>
         </section>
+        <div class="doc-footer-print" id="docFooterPrint">
+  <span id="docRodapeTexto"></span>
+</div>
       </div>
     </main>
   </div>
@@ -901,6 +1049,104 @@
 
     const chartMeta = {};
     let activeTooltip = null;
+
+    let identidadeDocumentos = null;
+
+function tenantAtual(){
+  const params = new URLSearchParams(location.search);
+  return (
+    params.get('t') ||
+    localStorage.getItem('axoriin_tenant') ||
+    localStorage.getItem('smartclass_tenant') ||
+    localStorage.getItem('tenant') ||
+    ''
+  );
+}
+
+function aplicarIdentidadeNoRelatorio(config = {}){
+  identidadeDocumentos = config || {};
+
+  const orgao = config.orgaoSuperior || 'ESTADO DO ACRE';
+  const nome = config.nomeInstituicao || 'COLÉGIO MILITAR DOM PEDRO II - CZS';
+  const subtitulo = config.subtitulo || 'Relatórios e Estatísticas';
+
+  const elOrgao = document.getElementById('docOrgaoSuperior');
+  const elNome = document.getElementById('docNomeInstituicao');
+  const elSub = document.getElementById('docSubtitulo');
+  const elSubTela = document.getElementById('subInstituicaoRelatorio');
+
+  if (elOrgao) elOrgao.textContent = orgao;
+  if (elNome) elNome.textContent = nome;
+  if (elSub) elSub.textContent = subtitulo;
+  if (elSubTela) elSubTela.textContent = `${nome}${config.cidadeUf ? ' • ' + config.cidadeUf : ''}`;
+  const rodape = document.getElementById('docRodapeTexto');
+const rodapeBox = document.getElementById('docFooterPrint');
+
+if (rodape) {
+  rodape.textContent = config.rodapePadrao || '';
+}
+
+if (rodapeBox) {
+  rodapeBox.style.display =
+    config.mostrarRodape === false || !config.rodapePadrao
+      ? 'none'
+      : '';
+}  
+
+  const esq = document.getElementById('docBrasaoEsq');
+  const dir = document.getElementById('docBrasaoDir');
+
+  if (esq) {
+    esq.innerHTML = '';
+    esq.style.visibility = config.mostrarBrasaoEsquerdo === false ? 'hidden' : 'visible';
+
+    if (config.brasaoEsquerdoUrl) {
+      const img = document.createElement('img');
+      img.src = config.brasaoEsquerdoUrl;
+      img.alt = 'Brasão esquerdo';
+      esq.appendChild(img);
+    }
+  }
+
+  if (dir) {
+    dir.innerHTML = '';
+    dir.style.visibility = config.mostrarBrasaoDireito === false ? 'hidden' : 'visible';
+
+    if (config.brasaoDireitoUrl) {
+      const img = document.createElement('img');
+      img.src = config.brasaoDireitoUrl;
+      img.alt = 'Brasão direito';
+      dir.appendChild(img);
+    }
+  }
+}
+
+async function carregarIdentidadeDocumentos(){
+  try {
+    const t = tenantAtual();
+    const qs = t ? `?t=${encodeURIComponent(t)}` : '';
+
+    const r = await fetch(`/api/configuracao-documentos${qs}`, {
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+        ...(t ? { 'x-tenant': t, 'x-tenant-slug': t } : {})
+      }
+    });
+
+    const data = await r.json().catch(() => ({}));
+
+    if (r.ok && data?.ok && data?.config) {
+      aplicarIdentidadeNoRelatorio(data.config);
+      return;
+    }
+  } catch (e) {
+    console.warn('[estatisticas][identidade-documentos]', e);
+  }
+
+  aplicarIdentidadeNoRelatorio({});
+}
 
     function isoToBR(iso){
       if(!iso) return '';
@@ -2408,6 +2654,34 @@
           heightLeft -= pageH;
         }
 
+        const rodapeTexto =
+  identidadeDocumentos?.rodapePadrao ||
+  document.getElementById('docRodapeTexto')?.textContent ||
+  '';
+
+const totalPages = pdf.getNumberOfPages();
+
+if (rodapeTexto) {
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+
+    pdf.setDrawColor(148, 163, 184);
+    pdf.setLineWidth(0.2);
+    pdf.line(10, pageH - 12, pageW - 10, pageH - 12);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(51, 65, 85);
+
+    const linhasRodape = pdf.splitTextToSize(rodapeTexto, pageW - 24);
+
+    pdf.text(linhasRodape, pageW / 2, pageH - 8, {
+      align: 'center',
+      maxWidth: pageW - 24,
+    });
+  }
+}
+
         pdf.save('relatorios.pdf');
       }catch(e){
         console.error(e);
@@ -2544,6 +2818,7 @@
     (async () => {
       const ok = await checarSessaoEPing();
       if(!ok) return;
+      carregarIdentidadeDocumentos();
       await carregarTurmas();
       await aplicarFiltros();
     })();

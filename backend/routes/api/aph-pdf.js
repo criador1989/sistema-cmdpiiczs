@@ -6,6 +6,14 @@ const router = express.Router();
 const PDFDocument = require('pdfkit');
 const mongoose = require('mongoose');
 const AphAtendimento = require('../../models/AphAtendimento');
+const {
+  obterIdentidadeInstitucional,
+} = require('../../utils/documentos/identidadeInstitucional');
+
+const {
+  desenharCabecalhoPdf,
+  desenharRodapePdf,
+} = require('../../utils/documentos/cabecalhoPdf');
 
 let Aluno = null;
 try { Aluno = require('../../models/Aluno'); } catch {}
@@ -15,7 +23,6 @@ const DOURADO = '#C9A227';
 const CINZA_TEXTO = '#333333';
 const CINZA_CLARO = '#f7f7f7';
 const PRETO = '#111111';
-const INSTITUICAO_NOME = 'Colégio Militar Dom Pedro II • Unidade Cruzeiro do Sul';
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 
@@ -125,69 +132,50 @@ function valorMeiosComunicacao(item){
   return texto(item?.meioComunicacao);
 }
 
-function headerTema(doc, titulo, subtitulo){
-  const W = doc.page.width;
-  doc.save().rect(0, 0, W, 76).fill(RUBI).restore();
-  doc.save().rect(0, 74, W, 2).fill(DOURADO).restore();
+function headerTema(doc, identidade, titulo, subtitulo){
+  const linhaY = desenharCabecalhoPdf(doc, identidade, {
+    topo: 18,
+    imgTam: 54,
+    margemEsq: 36,
+    margemDir: 36,
+  });
 
-  const m = doc.page.margins.left;
+  doc.y = linhaY;
 
-  doc.fillColor('#ffffff')
+  doc
     .font('Helvetica-Bold')
-    .fontSize(13)
-    .text(INSTITUICAO_NOME, m, 16, {
-      width: W - m * 2,
+    .fontSize(15)
+    .fillColor(RUBI)
+    .text(titulo || '', {
       align: 'center',
-      lineBreak: false
-    });
-
-  doc.font('Helvetica-Bold')
-    .fontSize(16)
-    .text(titulo || '', m, 36, {
-      width: W - m * 2,
-      align: 'center',
-      lineBreak: false
     });
 
   if (subtitulo) {
-    doc.font('Helvetica')
+    doc.moveDown(0.2);
+
+    doc
+      .font('Helvetica')
       .fontSize(9)
-      .text(subtitulo, m, 58, {
-        width: W - m * 2,
+      .fillColor(CINZA_TEXTO)
+      .text(subtitulo, {
         align: 'center',
-        lineBreak: false
       });
   }
 
-  doc.y = 94;
+  doc.moveDown(0.6);
 }
 
-function footerTema(doc){
+function footerTema(doc, identidade){
+  desenharRodapePdf(doc, identidade, {
+    margemEsq: 32,
+    margemDir: 32,
+  });
+
   const W = doc.page.width;
   const H = doc.page.height;
   const bottom = doc.page.margins.bottom || 40;
 
-  // mantém o rodapé dentro da área segura da página
-  const lineY = H - bottom + 10;
   const textY = H - bottom + 16;
-
-  doc.save();
-
-  doc.strokeColor('#dddddd')
-    .lineWidth(0.5)
-    .moveTo(32, lineY)
-    .lineTo(W - 32, lineY)
-    .stroke();
-
-  doc.fillColor(CINZA_TEXTO)
-    .font('Helvetica')
-    .fontSize(8)
-    .text(INSTITUICAO_NOME, 32, textY, {
-      width: W - 130,
-      align: 'left',
-      lineBreak: false,
-      height: 10
-    });
 
   doc.fillColor(CINZA_TEXTO)
     .font('Helvetica')
@@ -198,29 +186,21 @@ function footerTema(doc){
       lineBreak: false,
       height: 10
     });
-
-  doc.restore();
 }
 
-function safeAddPage(doc, titulo, subtitulo){
-  footerTema(doc);
+function safeAddPage(doc, identidade, titulo, subtitulo){
+  footerTema(doc, identidade);
   doc.addPage();
-  headerTema(doc, titulo, subtitulo);
+  headerTema(doc, identidade, titulo, subtitulo);
 }
 
-function safeAddPage(doc, titulo, subtitulo){
-  footerTema(doc);
-  doc.addPage();
-  headerTema(doc, titulo, subtitulo);
-}
-
-function sectionTitle(doc, title, opts = {}){
+function sectionTitle(doc, identidade, title, opts = {}){
   const mL = doc.page.margins.left;
   const mR = doc.page.margins.right;
   const usableW = doc.page.width - (mL + mR);
 
   if (doc.y > doc.page.height - 80) {
-    safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+    safeAddPage(doc, identidade, opts.headerTitle, opts.headerSubtitle);
   }
 
   doc.moveDown(0.45);
@@ -243,7 +223,7 @@ function sectionTitle(doc, title, opts = {}){
   doc.y = y + 28;
 }
 
-function writePairs(doc, pairs, opts = {}){
+function writePairs(doc, identidade, pairs, opts = {}){
   const mL = doc.page.margins.left;
   const mR = doc.page.margins.right;
   const usableW = doc.page.width - (mL + mR);
@@ -254,7 +234,7 @@ function writePairs(doc, pairs, opts = {}){
   const linePadY = opts.linePadY ?? 4;
 
   if (opts.title) {
-    sectionTitle(doc, opts.title, opts);
+    sectionTitle(doc, identidade, opts.title, opts);
   }
 
   pairs.forEach(({ k, v }) => {
@@ -265,7 +245,7 @@ function writePairs(doc, pairs, opts = {}){
     const rowH = Math.max(12, hVal) + linePadY * 2;
 
     if (doc.y + rowH > doc.page.height - doc.page.margins.bottom - 20) {
-      safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+      safeAddPage(doc, identidade, opts.headerTitle, opts.headerSubtitle);
     }
 
     const baseY = doc.y;
@@ -291,7 +271,7 @@ function writePairs(doc, pairs, opts = {}){
   });
 }
 
-function writeBlock(doc, title, value, opts = {}){
+function writeBlock(doc, identidade, title, value, opts = {}){
   const mL = doc.page.margins.left;
   const mR = doc.page.margins.right;
   const usableW = doc.page.width - (mL + mR);
@@ -299,11 +279,11 @@ function writeBlock(doc, title, value, opts = {}){
   const val = texto(value);
 
   if (doc.y > doc.page.height - 105) {
-    safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+    safeAddPage(doc, identidade, opts.headerTitle, opts.headerSubtitle);
   }
 
   if (title) {
-    sectionTitle(doc, title, opts);
+    sectionTitle(doc, identidade, title, opts);
   }
 
   doc.fillColor(CINZA_TEXTO)
@@ -317,12 +297,12 @@ function writeBlock(doc, title, value, opts = {}){
   doc.moveDown(0.5);
 }
 
-function assinaturaLinha(doc, label, nome = '', funcao = '', opts = {}){
+function assinaturaLinha(doc, identidade, label, nome = '', funcao = '', opts = {}){
   const mL = doc.page.margins.left;
   const usableW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
   if (doc.y > doc.page.height - 110) {
-    safeAddPage(doc, opts.headerTitle, opts.headerSubtitle);
+    safeAddPage(doc, identidade, opts.headerTitle, opts.headerSubtitle);
   }
 
   doc.moveDown(1.6);
@@ -371,6 +351,9 @@ router.get('/pdf/:id', async (req, res) => {
 
     const item = await q.lean();
 
+    const identidade =
+  await obterIdentidadeInstitucional(req);
+
     if (!item) {
       return res.status(404).send('Atendimento não encontrado.');
     }
@@ -390,9 +373,9 @@ router.get('/pdf/:id', async (req, res) => {
     const titulo = 'RELATÓRIO DE OCORRÊNCIA / INTERCORRÊNCIA COM ALUNO';
     const subtitulo = `Registro: ${texto(item.numeroRegistro)} • Gerado em ${dtBR(new Date())}`;
 
-    headerTema(doc, titulo, subtitulo);
+    headerTema(doc, identidade, titulo, subtitulo);
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Número do registro', v: item.numeroRegistro },
       { k: 'Data', v: dtBR(item.data, false) },
       { k: 'Horário do início', v: item.horaInicioAtendimento || item.hora },
@@ -405,7 +388,7 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 190
     });
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Nome completo', v: pickAlunoNome(item) },
       { k: 'Ano/Série/Turma', v: pickTurma(item) },
       { k: 'Matrícula', v: pickMatricula(item) },
@@ -417,7 +400,7 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 160
     });
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Nome do responsável', v: item.responsavelContato?.nome },
       { k: 'Grau de parentesco/vínculo', v: item.responsavelContato?.vinculo },
       { k: 'Telefone principal', v: item.responsavelContato?.telefonePrincipal },
@@ -429,23 +412,23 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 190
     });
 
-    writeBlock(doc, '4. CLASSIFICAÇÃO DA OCORRÊNCIA/INTERCORRÊNCIA', valorClassificacoes(item), {
+   writeBlock(doc, identidade,  '4. CLASSIFICAÇÃO DA OCORRÊNCIA/INTERCORRÊNCIA', valorClassificacoes(item), {
       headerTitle: titulo,
       headerSubtitle: subtitulo
     });
 
-    writeBlock(doc, '5. DESCRIÇÃO OBJETIVA DOS FATOS', item.descricaoFatos || item.observacoes, {
+    writeBlock(doc, identidade, '5. DESCRIÇÃO OBJETIVA DOS FATOS', item.descricaoFatos || item.observacoes, {
       headerTitle: titulo,
       headerSubtitle: subtitulo
     });
 
-    writeBlock(doc, '6. SINAIS OBSERVADOS E/OU QUEIXA APRESENTADA PELO ALUNO',
+    writeBlock(doc, identidade, '6. SINAIS OBSERVADOS E/OU QUEIXA APRESENTADA PELO ALUNO',
       item.sinaisESintomas || item.queixaAluno, {
       headerTitle: titulo,
       headerSubtitle: subtitulo
     });
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Providências adotadas', v: valorProvidencias(item) },
       { k: 'Descrição das providências', v: item.descricaoProvidencias || item.procedimentos },
       { k: 'Materiais/recursos utilizados', v: joinArr(item.materiais) },
@@ -456,7 +439,7 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 190
     });
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Tempo de observação', v: item.tempoObservacao },
       { k: 'Evolução observada', v: valorEvolucao(item) },
       { k: 'Descrição complementar', v: item.descricaoEvolucao },
@@ -467,7 +450,7 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 190
     });
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Houve comunicação', v: item.comunicacaoPais?.houveComunicacao || item.responsaveisInformados },
       { k: 'Data do contato', v: dtBR(item.comunicacaoPais?.dataContato, false) },
       { k: 'Horário do contato', v: item.comunicacaoPais?.horaContato },
@@ -485,7 +468,7 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 190
     });
 
-    writePairs(doc, [
+    writePairs(doc, identidade, [
       { k: 'Desfecho', v: valorDesfecho(item) },
       { k: 'Descrição do desfecho', v: item.descricaoDesfecho || item.encaminhamento },
       { k: 'Houve encaminhamento', v: item.houveEncaminhamento ? 'Sim' : 'Não' },
@@ -497,12 +480,12 @@ router.get('/pdf/:id', async (req, res) => {
       labelW: 190
     });
 
-    writeBlock(doc, '11. OBSERVAÇÕES COMPLEMENTARES', item.observacoes || item.observacao, {
+    writeBlock(doc, identidade, '11. OBSERVAÇÕES COMPLEMENTARES', item.observacoes || item.observacao, {
       headerTitle: titulo,
       headerSubtitle: subtitulo
     });
 
-    sectionTitle(doc, '12. ASSINATURAS', {
+    sectionTitle(doc, identidade, '12. ASSINATURAS', {
       headerTitle: titulo,
       headerSubtitle: subtitulo
     });
@@ -584,7 +567,7 @@ router.get('/pdf-consolidado', async (req, res) => {
     const titulo = 'RELATÓRIO CONSOLIDADO DE ATENDIMENTOS APH';
     const subtitulo = `Período: ${from || 'início'} até ${to || 'atual'} • Gerado em ${dtBR(new Date())}`;
 
-    headerTema(doc, titulo, subtitulo);
+    headerTema(doc, identidade, titulo, subtitulo);
 
     const usableW = doc.page.width - (doc.page.margins.left + doc.page.margins.right);
 
@@ -717,7 +700,7 @@ router.get('/pdf-consolidado', async (req, res) => {
         { width: usableW, align: 'justify' }
       );
 
-    footerTema(doc);
+   footerTema(doc, identidade);
     doc.end();
 
   } catch (err) {
