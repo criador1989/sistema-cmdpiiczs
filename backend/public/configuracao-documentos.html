@@ -268,14 +268,83 @@
 
         <h2 style="margin-top:22px;">Brasões / logos</h2>
 
-        <label>Brasão esquerdo - URL</label>
-        <input id="brasaoEsquerdoUrl" placeholder="URL do brasão esquerdo, ex: CBMAC" />
+        <label>Brasão esquerdo</label>
 
-        <label>Brasão direito - URL</label>
-        <input id="brasaoDireitoUrl" placeholder="URL do brasão direito, ex: Colégio" />
+<div class="row">
+  <input
+    id="brasaoEsquerdoUrl"
+    placeholder="URL automática do brasão esquerdo"
+    readonly
+  />
 
-        <label>Logo central - URL opcional</label>
-        <input id="logoCentralUrl" placeholder="URL de logo central, se desejar" />
+  <button
+    type="button"
+    class="btn secondary"
+    onclick="document.getElementById('fileBrasaoEsquerdo').click()"
+  >
+    Enviar
+  </button>
+</div>
+
+<input
+  type="file"
+  id="fileBrasaoEsquerdo"
+  accept=".png,.jpg,.jpeg,.webp"
+  style="display:none"
+  onchange="uploadBrasao(this.files[0], 'brasaoEsquerdo')"
+/>
+
+<label>Brasão direito</label>
+
+<div class="row">
+  <input
+    id="brasaoDireitoUrl"
+    placeholder="URL automática do brasão direito"
+    readonly
+  />
+
+  <button
+    type="button"
+    class="btn secondary"
+    onclick="document.getElementById('fileBrasaoDireito').click()"
+  >
+    Enviar
+  </button>
+</div>
+
+<input
+  type="file"
+  id="fileBrasaoDireito"
+  accept=".png,.jpg,.jpeg,.webp"
+  style="display:none"
+  onchange="uploadBrasao(this.files[0], 'brasaoDireito')"
+/>
+
+<label>Logo central</label>
+
+<div class="row">
+  <input
+    id="logoCentralUrl"
+    placeholder="URL automática da logo central"
+    readonly
+  />
+
+  <button
+    type="button"
+    class="btn secondary"
+    onclick="document.getElementById('fileLogoCentral').click()"
+  >
+    Enviar
+  </button>
+</div>
+
+<input
+  type="file"
+  id="fileLogoCentral"
+  accept=".png,.jpg,.jpeg,.webp"
+  style="display:none"
+  onchange="uploadBrasao(this.files[0], 'logoCentral')"
+/>
 
         <div class="checks">
           <label class="check">
@@ -431,6 +500,72 @@
       rodape.style.display = marcado('mostrarRodape') ? 'block' : 'none';
       rodape.textContent = valor('rodapePadrao') || 'Rodapé padrão da instituição';
     }
+
+    async function uploadBrasao(file, tipo) {
+  if (!file) return;
+
+  try {
+    const form = new FormData();
+
+    form.append('arquivo', file);
+    form.append('tipo', tipo);
+
+    const h = {};
+
+    const tk = token();
+    if (tk) {
+      h.Authorization = `Bearer ${tk}`;
+    }
+
+    const t = tenant();
+
+    let url = `${API}/upload`;
+
+    if (t) {
+      url += `?t=${encodeURIComponent(t)}`;
+      h['x-tenant'] = t;
+      h['x-tenant-slug'] = t;
+    }
+
+    document.getElementById('status').textContent =
+      'Enviando imagem...';
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: h,
+      body: form
+    });
+
+    const data = await res.json();
+
+    if (!data.ok) {
+      throw new Error(data.message || 'Erro no upload.');
+    }
+
+    if (tipo === 'brasaoEsquerdo') {
+      setValor('brasaoEsquerdoUrl', data.url);
+      setMarcado('mostrarBrasaoEsquerdo', true);
+    }
+
+    if (tipo === 'brasaoDireito') {
+      setValor('brasaoDireitoUrl', data.url);
+      setMarcado('mostrarBrasaoDireito', true);
+    }
+
+    if (tipo === 'logoCentral') {
+      setValor('logoCentralUrl', data.url);
+      setMarcado('mostrarLogoCentral', true);
+    }
+
+    atualizarPreview();
+
+    document.getElementById('status').textContent =
+      'Imagem enviada com sucesso.';
+  } catch (err) {
+    document.getElementById('status').textContent =
+      'Erro no upload: ' + err.message;
+  }
+}
 
     async function carregar() {
       try {
