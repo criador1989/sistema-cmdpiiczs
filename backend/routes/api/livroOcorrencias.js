@@ -3,6 +3,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const {PDFDocument, StandardFonts, rgb} = require('pdf-lib');
+const {obterIdentidadeInstitucional} = require('../../utils/documentos/identidadeInstitucional');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -550,6 +551,20 @@ router.get(
     try {
 
       const tenantId = getTenantId(req);
+      const identidade =
+  await obterIdentidadeInstitucional(req);
+
+const nomeInstituicao =
+  identidade.nomeInstituicao ||
+  'Instituição';
+
+const orgaoSuperior =
+  identidade.orgaoSuperior || '';
+
+const rodapeInstitucional =
+  identidade.rodapeInstitucional ||
+  identidade.rodapePadrao ||
+  'Documento institucional gerado eletronicamente pela plataforma Axoriin.';
 
       const {
         ano = '',
@@ -813,9 +828,9 @@ await LivroOcorrenciaExportacao.create({
 
       }
 
-      function desenharCabecalho(
-        capa = false
-      ) {
+      function desenharCabecalho() {
+  // cabeçalho institucional desenhado manualmente abaixo
+} {
 
         page.drawRectangle({
           x: 0,
@@ -843,8 +858,7 @@ await LivroOcorrenciaExportacao.create({
           {
             x: 42,
             y: 785,
-            size:
-              capa ? 22 : 15,
+            size: 15,
 
             font: fontBold,
 
@@ -895,15 +909,56 @@ await LivroOcorrenciaExportacao.create({
         true
       );
 
-      y = 720;
+      page.drawRectangle({
+  x: 0,
+  y: 748,
+  width: 595,
+  height: 82,
+  color: rgb(0.06, 0.12, 0.22)
+});
 
-      drawText(
-        'Exportação oficial do Livro Digital de Ocorrências',
-        42,
-        y,
-        13,
-        true
-      );
+page.drawText(
+  String(orgaoSuperior).toUpperCase(),
+  {
+    x: 42,
+    y: 805,
+    size: 8,
+    font: fontBold,
+    color: rgb(0.92, 0.96, 1)
+  }
+);
+
+page.drawText(
+  String(nomeInstituicao).toUpperCase(),
+  {
+    x: 42,
+    y: 787,
+    size: 11,
+    font: fontBold,
+    color: rgb(1, 1, 1)
+  }
+);
+
+page.drawText(
+  'LIVRO DIGITAL DE OCORRÊNCIAS',
+  {
+    x: 42,
+    y: 765,
+    size: 15,
+    font: fontBold,
+    color: rgb(1, 1, 1)
+  }
+);
+
+y = 720;
+
+drawText(
+  'Exportação oficial dos registros institucionais',
+  42,
+  y,
+  13,
+  true
+);
 
       y -= 24;
 

@@ -28,6 +28,14 @@ const {
 } = require('pdf-lib');
 const QRCode = require('qrcode');
 const {
+  obterIdentidadeInstitucional
+} = require('../../utils/documentos/identidadeInstitucional');
+
+const {
+  desenharCabecalhoPdf,
+  desenharRodapePdf
+} = require('../../utils/documentos/cabecalhoPdf');
+const {
   registrarProcessoNoLivro,
   atualizarLivroPorProcesso,
   registrarDocumentoNoLivro,
@@ -590,7 +598,8 @@ async function inserirQrNoPdf(pdfPath, qrPath) {
 async function criarPaginaIndiceDossie({
   outputPath,
   processo,
-  documentos = []
+  documentos = [],
+  identidade = {}
 }) {
   const pdfDoc = await PDFDocument.create();
 
@@ -598,34 +607,68 @@ async function criarPaginaIndiceDossie({
 
   const { width, height } = page.getSize();
 
-  page.drawRectangle({
-    x: 0,
-    y: height - 145,
-    width,
-    height: 145,
-    color: rgb(0.06, 0.12, 0.22)
-  });
+  const nomeInstituicao =
+  identidade.nomeInstituicao ||
+  'Instituição';
 
-  page.drawText('COLÉGIO MILITAR DOM PEDRO II', {
+const orgaoSuperior =
+  identidade.orgaoSuperior || '';
+
+page.drawRectangle({
+  x: 0,
+  y: height - 125,
+  width,
+  height: 125,
+  color: rgb(0.06, 0.12, 0.22)
+});
+
+page.drawText(
+  String(orgaoSuperior).toUpperCase(),
+  {
     x: 50,
-    y: height - 45,
-    size: 11,
-    color: rgb(0.9, 0.93, 0.98)
-  });
+    y: height - 38,
+    size: 10,
+    color: rgb(0.88, 0.92, 1),
+    width: width - 100,
+    align: 'center'
+  }
+);
 
-  page.drawText('DOSSIÊ DISCIPLINAR', {
+page.drawText(
+  String(nomeInstituicao).toUpperCase(),
+  {
     x: 50,
-    y: height - 82,
-    size: 26,
-    color: rgb(1, 1, 1)
-  });
+    y: height - 58,
+    size: 13,
+    color: rgb(1, 1, 1),
+    width: width - 100,
+    align: 'center'
+  }
+);
 
-  page.drawText(`Procedimento nº ${processo.numeroProcesso || '-'}`, {
+page.drawText(
+  'DOSSIÊ DISCIPLINAR',
+  {
+    x: 50,
+    y: height - 88,
+    size: 24,
+    color: rgb(1, 1, 1),
+    width: width - 100,
+    align: 'center'
+  }
+);
+
+page.drawText(
+  `Procedimento nº ${processo.numeroProcesso || '-'}`,
+  {
     x: 50,
     y: height - 110,
-    size: 14,
-    color: rgb(0.85, 0.9, 1)
-  });
+    size: 12,
+    color: rgb(0.85, 0.90, 1),
+    width: width - 100,
+    align: 'center'
+  }
+);
 
   page.drawText('ÍNDICE DOCUMENTAL', {
     x: 50,
@@ -634,7 +677,7 @@ async function criarPaginaIndiceDossie({
     color: rgb(0.05, 0.08, 0.12)
   });
 
-  let y = height - 235;
+  let y = height - 205;
 
   documentos.forEach((doc, index) => {
     const titulo =
@@ -667,6 +710,22 @@ async function criarPaginaIndiceDossie({
     size: 12,
     color: rgb(0.15, 0.18, 0.25)
   });
+
+  if (identidade?.rodapeInstitucional) {
+
+  page.drawText(
+    identidade.rodapeInstitucional,
+    {
+      x: 50,
+      y: 48,
+      size: 9,
+      color: rgb(0.35, 0.38, 0.45),
+      width: width - 100,
+      align: 'center'
+    }
+  );
+
+}
 
   page.drawText('A validação deste documento pode ser realizada pelo QR Code constante nesta página.', {
     x: 50,
@@ -3329,12 +3388,15 @@ router.post('/:id/gerar-documento',
         );
 
       if (!fs.existsSync(templatePath)) {
-        return res.status(404).json({
-          message: `Template não encontrado: ${tipoDocumento}.docx`
-        });
-      }
+  return res.status(404).json({
+    message: `Template não encontrado: ${tipoDocumento}.docx`
+  });
+}
 
-      const payload = {
+const identidade =
+  await obterIdentidadeInstitucional(req);
+
+const payload = {
 
         templatePath,
         outputPath,
@@ -3342,15 +3404,58 @@ router.post('/:id/gerar-documento',
         instituicaoNome:
           instituicao.nome || 'Instituição',
 
-        cabecalho:
-          instituicao.nome ||
-          'COLÉGIO MILITAR',
+        identidadeInstitucional: identidade,
 
-        cidade:
-          instituicao.cidade || 'Cruzeiro do Sul',
+orgaoSuperior:
+  identidade.orgaoSuperior || '',
 
-        estado:
-          instituicao.estado || 'AC',
+cabecalho:
+  identidade.nomeInstituicao ||
+  instituicao.nome ||
+  'Instituição',
+
+subtituloInstitucional:
+  identidade.subtituloInstitucional || '',
+
+enderecoInstitucional:
+  identidade.endereco || '',
+
+telefoneInstitucional:
+  identidade.telefone || '',
+
+emailInstitucional:
+  identidade.email || '',
+
+cidade:
+  identidade.cidade ||
+  instituicao.cidade ||
+  'Cruzeiro do Sul',
+
+estado:
+  identidade.uf ||
+  instituicao.estado ||
+  'AC',
+
+rodapeInstitucional:
+  identidade.rodapeInstitucional || '',
+
+brasaoEsquerdoUrl:
+  identidade.brasaoEsquerdoUrl || '',
+
+brasaoDireitoUrl:
+  identidade.brasaoDireitoUrl || '',
+
+logoCentralUrl:
+  identidade.logoCentralUrl || '',
+
+mostrarBrasaoEsquerdo:
+  identidade.mostrarBrasaoEsquerdo !== false,
+
+mostrarBrasaoDireito:
+  identidade.mostrarBrasaoDireito !== false,
+
+mostrarRodape:
+  identidade.mostrarRodape !== false,
 
         numeroProcesso:
           processo.numeroProcesso || '',
@@ -3815,10 +3920,14 @@ router.post('/:id/gerar-dossie-pdf',
             .replace(/[^\w.-]/g, '_')
         );
 
+        const identidade =
+      await obterIdentidadeInstitucional(req);
+
       await criarPaginaIndiceDossie({
         outputPath: indicePdfPath,
         processo,
-        documentos
+        documentos,
+        identidade
       });
 
       const pdfsGerados = [];
