@@ -7,6 +7,7 @@ const path = require('path');
 const Notificacao = require('../../models/Notificacao');
 const Instituicao = require('../../models/Instituicao');
 const { autenticar } = require('../../middleware/autenticacao');
+const { obterIdentidadeInstitucional} = require('../../utils/documentos/identidadeInstitucional');
 
 const {
   getConfigDisciplinar,
@@ -82,8 +83,9 @@ function toFixed2(x) {
 }
 
 /* ============ Rota: gerar DOCX da notificação ============ */
-router.post('/pdf/:id', autenticar, async (req, res) => {
-  try {
+async function gerarDocxNotificacao(req, res) {
+  
+    try {
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
@@ -96,6 +98,7 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     const aluno = notificacao.aluno;
 
     const instituicao = await Instituicao.findById(req.usuario.instituicao).lean();
+    const identidadeInstitucional = await obterIdentidadeInstitucional(req);
 
     const config = await getConfigDisciplinar(req.usuario.instituicao);
     const regulamento = getTextoRegulamento(config);
@@ -123,15 +126,7 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       classificacao: notificacao.classificacaoRegulamento || ''
     });
 
-    console.log('📄 DEBUG PDF:', {
-      artigo: notificacao.artigo,
-      paragrafo: notificacao.paragrafo,
-      inciso: notificacao.inciso,
-      classificacaoRegulamento: notificacao.classificacaoRegulamento,
-      motivo: notificacao.motivo,
-      descricaoInfracao
-    });
-
+    
     const textoCabecalho = regulamento?.textos?.cabecalho || '';
     const textoNotificacao = regulamento?.textos?.notificacao || '';
     const nomeRegulamento = regulamento?.nome || 'Regulamento Disciplinar';
@@ -165,6 +160,33 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
       }),
 
       logoUrl: instituicao?.logoUrl || '',
+            orgaoSuperior:
+        identidadeInstitucional.orgaoSuperior || '',
+
+      nomeInstituicao:
+        identidadeInstitucional.nomeInstituicao || '',
+
+      subtituloInstitucional:
+        identidadeInstitucional.subtitulo || '',
+
+      rodapeInstitucional:
+        identidadeInstitucional.rodapePadrao || '',
+
+      mostrarRodape:
+        identidadeInstitucional.mostrarRodape !== false,
+
+      mostrarBrasaoEsquerdo:
+  identidadeInstitucional.mostrarBrasaoEsquerdo !== false,
+
+mostrarBrasaoDireito:
+  identidadeInstitucional.mostrarBrasaoDireito !== false,
+
+brasaoEsquerdoUrl:
+  identidadeInstitucional.brasaoEsquerdoUrl || '',
+
+brasaoDireitoUrl:
+  identidadeInstitucional.brasaoDireitoUrl || '',
+
       cidade: instituicao?.municipio || '—',
       estado: instituicao?.estado || '—'
     };
@@ -202,6 +224,8 @@ router.post('/pdf/:id', autenticar, async (req, res) => {
     console.error('❌ Erro ao gerar notificação:', err);
     res.status(500).json({ error: 'Erro ao gerar notificação' });
   }
-});
+}
+router.get('/pdf/:id', autenticar, gerarDocxNotificacao);
+router.post('/pdf/:id', autenticar, gerarDocxNotificacao);
 
 module.exports = router;

@@ -199,7 +199,13 @@ const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const alertasRoutes = require('./routes/api/alunos-alertas');
 const dashboardFastRoutes = require('./routes/api/dashboard-fast');
 
-const pdfRoutes = require('./routes/api/pdf');
+const pdfRoutes = require('./routes/api/pdf.js');
+
+console.log(
+  '[INDEX][PDFROUTES]',
+  typeof pdfRoutes,
+  pdfRoutes
+);
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
 const fichaAlunoRoutes = require('./routes/api/fichaAluno');
@@ -254,6 +260,8 @@ try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } c
    ========================= */
 const authRoutes = require('./routes/authRoutes');
 app.use('/auth', authRoutes);
+
+app.use('/api', pdfRoutes);
 
 // ✅ AUTH SEPARADA DO SUPERADMIN
 app.use('/api/superadmin', superadminAuthRoutes);/* ==========================================================
@@ -585,7 +593,7 @@ mountIf('/api', fichaTesteRoute);
 mountIf('/api', publicAlunoRoutes);
 mountIf('/api/alunos', alunoRoutes);
 
-mountIf('/api', pdfRoutes);
+// mountIf('/api', pdfRoutes);
 mountIf('/api', fichaPdfRoutes);
 mountIf('/notificacoes', notificacoesViewRoutes);
 mountIf('/api/responsavel', responsavelRoutes);

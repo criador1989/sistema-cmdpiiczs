@@ -1520,6 +1520,7 @@ body.innerHTML = `
 
       async function gerarPDF(id) {
         try {
+          console.log('[FRONT][GERAR PDF]', apiUrl(`/api/pdf/${id}`));
           const resp = await fetch(apiUrl(`/api/pdf/${id}`), {
             method: 'POST',
             credentials: 'include',

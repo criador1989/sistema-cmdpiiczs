@@ -21,6 +21,14 @@ const {
 } = require('pdf-lib');
 
 const DocumentoVerificavel = require('../../models/DocumentoVerificavel');
+const {
+  obterIdentidadeInstitucional
+} = require('../../utils/documentos/identidadeInstitucional');
+
+const {
+  desenharCabecalhoPdf,
+  desenharRodapePdf
+} = require('../../utils/documentos/cabecalhoPdf');
 
 function getInstituicao(req) {
   return (
@@ -123,7 +131,8 @@ async function inserirQrAutenticidadeFichaNoPdf({
   hash,
   urlValidacao,
   assinadoPor = 'Sistema',
-  cargo = 'Usuário institucional'
+  cargo = 'Usuário institucional',
+  identidadeInstitucional = {}
 }) {
   if (!pdfPath || !fs.existsSync(pdfPath)) return;
 
@@ -148,35 +157,12 @@ async function inserirQrAutenticidadeFichaNoPdf({
 
   pages.forEach((page, index) => {
   const pageWidth = page.getWidth();
-  const pageHeight = page.getHeight();
-
-  if (index === 0) {
-    const qrSize = 82;
-
-    page.drawImage(qrImage, {
-      x: pageWidth - 118,
-      y: pageHeight - 128,
-      width: qrSize,
-      height: qrSize
-    });
-
-    page.drawText(
-      'Validar documento',
-      {
-        x: pageWidth - 119,
-        y: pageHeight - 142,
-        size: 8,
-        font: fontBold,
-        color: rgb(0.05, 0.05, 0.05)
-      }
-    );
-  }
 
   page.drawText(
     `Página ${index + 1} de ${totalPaginas}`,
     {
       x: pageWidth / 2 - 45,
-      y: 22,
+      y: 16,
       size: 8,
       font,
       color: rgb(0.35, 0.35, 0.35)
@@ -187,12 +173,41 @@ async function inserirQrAutenticidadeFichaNoPdf({
     'Axoriin • Documento institucional verificável',
     {
       x: 40,
-      y: 22,
+      y: 16,
       size: 7,
       font,
       color: rgb(0.45, 0.45, 0.45)
     }
   );
+
+  const rodapeInstitucional = String(
+    identidadeInstitucional?.rodapePadrao || ''
+  ).trim();
+
+  if (
+    identidadeInstitucional?.mostrarRodape !== false &&
+    rodapeInstitucional
+  ) {
+    page.drawLine({
+      start: { x: 40, y: 42 },
+      end: { x: pageWidth - 40, y: 42 },
+      thickness: 0.5,
+      color: rgb(0.72, 0.72, 0.72)
+    });
+
+    page.drawText(
+      rodapeInstitucional.length > 135
+        ? rodapeInstitucional.slice(0, 132) + '...'
+        : rodapeInstitucional,
+      {
+        x: 40,
+        y: 31,
+        size: 6,
+        font,
+        color: rgb(0.35, 0.35, 0.35)
+      }
+    );
+  }
 });
 
   const ultimaPagina = pages[pages.length - 1];
@@ -274,6 +289,28 @@ ultimaPagina.drawText(
     color: rgb(0.20, 0.25, 0.32)
   }
 );
+
+  const qrSizeFinal = 58;
+  const qrXFinal = ultimaPagina.getWidth() - 112;
+  const qrYFinal = 56;
+
+  ultimaPagina.drawImage(qrImage, {
+    x: qrXFinal,
+    y: qrYFinal,
+    width: qrSizeFinal,
+    height: qrSizeFinal
+  });
+
+  ultimaPagina.drawText(
+    'Validar documento',
+    {
+      x: qrXFinal - 2,
+      y: qrYFinal - 12,
+      size: 7,
+      font: fontBold,
+      color: rgb(0.05, 0.12, 0.20)
+    }
+  );
 
   ultimaPagina.drawText('Este documento possui autenticidade digital verificável via QR Code institucional e hash criptográfica SHA-256.', {
     x: 52,
@@ -442,44 +479,40 @@ const stream = fs.createWriteStream(caminho);
 doc.pipe(stream);
 
 /* =========================================================
-   LOGO
+   CABEÇALHO INSTITUCIONAL MULTITENANT
 ========================================================= */
 
-const logoPath = path.join(
-  __dirname,
-  '../../public/uploads/logo-cmdp.png'
+const identidadeInstitucional = await obterIdentidadeInstitucional(req);
+console.log('[DOCX][IDENTIDADE]', {
+  orgaoSuperior: identidadeInstitucional?.orgaoSuperior,
+  nomeInstituicao: identidadeInstitucional?.nomeInstituicao,
+  subtitulo: identidadeInstitucional?.subtitulo,
+  rodapePadrao: identidadeInstitucional?.rodapePadrao,
+  mostrarRodape: identidadeInstitucional?.mostrarRodape
+});
+
+const inicioConteudoY = desenharCabecalhoPdf(
+  doc,
+  identidadeInstitucional,
+  {
+    margemEsq: 45,
+    margemDir: 45,
+    topo: 32,
+    imgTam: 58
+  }
 );
 
-if (fs.existsSync(logoPath)) {
-  doc.image(logoPath, 50, 35, {
-    width: 82
-  });
-}
-
-/* =========================================================
-   CABEÇALHO
-========================================================= */
+doc.y = inicioConteudoY;
 
 doc
-  .fontSize(20)
-  .fillColor('#0b1f3a')
+  .fontSize(15)
+  .fillColor('#d82327')
   .font('Helvetica-Bold')
-  .text('COLÉGIO MILITAR DOM PEDRO II', 145, 42);
+  .text('Ficha Comportamental Individual do Aluno', 45, doc.y, {
+    align: 'center'
+  });
 
-doc
-  .fontSize(11)
-  .fillColor('#444')
-  .font('Helvetica')
-  .text('Ficha Comportamental Individual do Aluno', 145, 68);
-
-doc
-  .moveTo(45, 115)
-  .lineTo(550, 115)
-  .strokeColor('#d82327')
-  .lineWidth(2)
-  .stroke();
-
-doc.moveDown(4);
+doc.moveDown(1.2);
 
 /* =========================================================
    DADOS DO ALUNO
@@ -675,6 +708,7 @@ doc.text(`Classificação no regulamento: ${n.classificacaoRegulamento || '—'}
   });
 }
 
+
 doc.end();
 
 stream.on('finish', async () => {
@@ -701,7 +735,8 @@ stream.on('finish', async () => {
   hash: hashFicha,
   urlValidacao,
   assinadoPor: req.actor?.nome || req.usuario?.nome || 'Sistema',
-  cargo: req.usuario?.cargo || req.usuario?.funcao || req.usuario?.tipo || 'Usuário institucional'
+  cargo: req.usuario?.cargo || req.usuario?.funcao || req.usuario?.tipo || 'Usuário institucional',
+  identidadeInstitucional
 });
 
     res.setHeader('Content-Type', 'application/pdf');
