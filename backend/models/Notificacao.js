@@ -355,7 +355,15 @@ const notificacaoSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
     index: true
-  }
+  },
+
+  documentoDigital: {
+  tipo: String,
+  hash: String,
+  hashAssinatura: String,
+  assinadoPorNome: String,
+  assinadoEm: Date
+}
 
 }, {
   timestamps: true

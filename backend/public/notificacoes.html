@@ -1407,48 +1407,39 @@ body.innerHTML = `
       }
 
       async function buscarModo(modo) {
-        const baseParams = {
-          modo,
-          limit: 200,
-          turma: filtroTurma.value || '',
-          q: pesquisaNome.value.trim() || '',
-          from: dataDe.value || '',
-          to: dataAte.value || ''
-        };
+  const pageMap = {
+    principal: paginaDef,
+    pendentes: paginaPendentesModo,
+    arquivadas: paginaArquivadas,
+    antigas: paginaAntigas
+  };
 
-        let page = 1;
-        let totalPages = 1;
-        let total = 0;
-        const acumulado = [];
+  const j = await fetchJson('/api/notificacoes', {}, {
+    modo,
+    limit: porPagina,
+    page: pageMap[modo] || 1,
+    turma: filtroTurma.value || '',
+    q: pesquisaNome.value.trim() || '',
+    from: dataDe.value || '',
+    to: dataAte.value || ''
+  });
 
-        do {
-          const j = await fetchJson('/api/notificacoes', {}, {
-            ...baseParams,
-            page
-          });
-
-          total = Number(j.total || 0);
-          totalPages = Number(j.totalPages || 1);
-
-          if (Array.isArray(j.data)) acumulado.push(...j.data);
-
-          page++;
-        } while (page <= totalPages && page <= 50);
-
-        return { total, data: acumulado };
-      }
-
-      function refreshPrincipal() {
-        const p = paginar(datasetAtual, paginaDef, porPagina);
-        countDeferidas.textContent = `(${datasetAtual.length})`;
-        renderLista(p.slice, listaDeferidas);
-        resumoDef.textContent = `${p.total} item(ns)`;
-        buildPager(pagDef, paginaDef, p.totalPages, (g) => {
-          paginaDef = g;
-          refreshPrincipal();
-        });
-        resumoResultados.textContent = `${datasetAtual.length} resultado(s) carregados em notificações ativas`;
-      }
+  return {
+    total: Number(j.total || 0),
+    totalPages: Number(j.totalPages || 1),
+    data: Array.isArray(j.data) ? j.data : []
+  };
+}
+      function refreshPrincipal(total = datasetAtual.length, totalPages = 1) {
+  countDeferidas.textContent = `(${total})`;
+  renderLista(datasetAtual, listaDeferidas);
+  resumoDef.textContent = `${total} item(ns)`;
+  buildPager(pagDef, paginaDef, totalPages, async (g) => {
+    paginaDef = g;
+    await carregarModoAtual(false);
+  });
+  resumoResultados.textContent = `${total} resultado(s) em notificações ativas`;
+}
 
       function refreshPendentes() {
         const p = paginar(datasetAtual, paginaPendentesModo, porPagina);
@@ -1486,67 +1477,100 @@ body.innerHTML = `
         resumoResultados.textContent = `${datasetAtual.length} resultado(s) carregados em notificações antigas`;
       }
 
-      async function carregarModoAtual() {
-        limparListasComLoading();
-        atualizarAbas();
+      async function carregarModoAtual(resetPage = true) {
+  limparListasComLoading();
+  atualizarAbas();
 
-        try {
-          const { data } = await buscarModo(modoAtual);
-          datasetAtual = data;
-          renderTurmas(data);
+  try {
+    if (resetPage) {
+      if (modoAtual === 'principal') paginaDef = 1;
+      if (modoAtual === 'pendentes') paginaPendentesModo = 1;
+      if (modoAtual === 'arquivadas') paginaArquivadas = 1;
+      if (modoAtual === 'antigas') paginaAntigas = 1;
+    }
 
-          if (modoAtual === 'principal') {
-            paginaDef = 1;
-            refreshPrincipal();
-          } else if (modoAtual === 'pendentes') {
-            paginaPendentesModo = 1;
-            refreshPendentes();
-          } else if (modoAtual === 'arquivadas') {
-            paginaArquivadas = 1;
-            refreshArquivadas();
-          } else {
-            paginaAntigas = 1;
-            refreshAntigas();
-          }
-        } catch (e) {
-          console.error(e);
-          showError(e.message || 'Falha ao carregar notificações.');
-          listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
-          listaPendentesModo.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
-          listaArquivadas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
-          listaAntigas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
-        }
-      }
+    const { data, total, totalPages } = await buscarModo(modoAtual);
+
+    datasetAtual = data;
+    renderTurmas(data);
+
+    if (modoAtual === 'principal') {
+      refreshPrincipal(total, totalPages);
+    } else if (modoAtual === 'pendentes') {
+      countPendentesModo.textContent = `(${total})`;
+      renderLista(datasetAtual, listaPendentesModo);
+      resumoPendentesModo.textContent = `${total} item(ns)`;
+      buildPager(pagPendentesModo, paginaPendentesModo, totalPages, async (g) => {
+        paginaPendentesModo = g;
+        await carregarModoAtual(false);
+      });
+      resumoResultados.textContent = `${total} resultado(s) em pendentes do coordenador`;
+    } else if (modoAtual === 'arquivadas') {
+      countArquivadas.textContent = `(${total})`;
+      renderLista(datasetAtual, listaArquivadas);
+      resumoArquivadas.textContent = `${total} item(ns)`;
+      buildPager(pagArquivadas, paginaArquivadas, totalPages, async (g) => {
+        paginaArquivadas = g;
+        await carregarModoAtual(false);
+      });
+      resumoResultados.textContent = `${total} resultado(s) em notificações arquivadas`;
+    } else {
+      countAntigas.textContent = `(${total})`;
+      renderLista(datasetAtual, listaAntigas);
+      resumoAntigas.textContent = `${total} item(ns)`;
+      buildPager(pagAntigas, paginaAntigas, totalPages, async (g) => {
+        paginaAntigas = g;
+        await carregarModoAtual(false);
+      });
+      resumoResultados.textContent = `${total} resultado(s) em notificações antigas`;
+    }
+  } catch (e) {
+    console.error(e);
+    showError(e.message || 'Falha ao carregar notificações.');
+    listaDeferidas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+    listaPendentesModo.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+    listaArquivadas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+    listaAntigas.innerHTML = `<div class="empty">Erro ao carregar.</div>`;
+  }
+}
 
       async function gerarPDF(id) {
-        try {
-          console.log('[FRONT][GERAR PDF]', apiUrl(`/api/pdf/${id}`));
-          const resp = await fetch(apiUrl(`/api/pdf/${id}`), {
-            method: 'POST',
-            credentials: 'include',
-            cache: 'no-store'
-          });
+  try {
+    console.log('[FRONT][GERAR DOCX NOTIFICAÇÃO]', apiUrl(`/api/pdf/${id}`));
 
-          if (!resp.ok) throw new Error('Erro ao gerar documento');
+    const resp = await fetch(apiUrl(`/api/pdf/${id}`), {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store'
+    });
 
-          const blob = await resp.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      throw new Error(txt || 'Erro ao gerar documento.');
+    }
 
-          const disp = resp.headers.get('content-disposition') || '';
-          const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disp);
-          const nome = m ? m[1].replace(/['"]/g, '') : `notificacao_${Date.now()}.docx`;
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
 
-          a.download = nome.endsWith('.docx') ? nome : (nome + '.docx');
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-        } catch (e) {
-          showError(e.message || 'Erro ao gerar documento.');
-        }
-      }
+    const a = document.createElement('a');
+    a.href = url;
+
+    const disp = resp.headers.get('content-disposition') || '';
+    const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disp);
+    const nome = m ? m[1].replace(/['"]/g, '') : `notificacao_${Date.now()}.docx`;
+
+    a.download = nome.endsWith('.docx') ? nome : `${nome}.docx`;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('[GERAR_DOCX_NOTIFICACAO]', e);
+    showError(e.message || 'Erro ao gerar documento.');
+  }
+}
 
       async function reenviarNotificacao(id) {
   try {

@@ -284,6 +284,76 @@ def montar_rodape_word(doc, dados):
         run.font.name = "Times New Roman"
         run.font.size = Pt(8)
 
+def adicionar_assinatura_digital_word(doc, dados):
+    assinatura = dados.get("assinaturaDigital") or {}
+
+    if not assinatura:
+        return
+
+    nome = to_s(assinatura.get("assinadoPorNome") or dados.get("assinadoPorNome") or "Usuário institucional")
+    cargo = to_s(assinatura.get("cargo") or dados.get("cargoAssinante") or "Usuário institucional")
+    data = to_s(assinatura.get("assinadoEm") or dados.get("assinadoEm"))
+    hash_assinatura = to_s(assinatura.get("hashAssinatura") or dados.get("hashAssinatura"))
+    hash_documento = to_s(assinatura.get("hashDocumento") or dados.get("hashDocumento"))
+    qr_path = to_s(assinatura.get("qrCodePath") or dados.get("qrCodePath"))
+
+    doc.add_paragraph("")
+
+    p_titulo = doc.add_paragraph()
+    p_titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p_titulo.add_run("DOCUMENTO ASSINADO ELETRONICAMENTE")
+    run.bold = True
+    run.font.name = "Times New Roman"
+    run.font.size = Pt(11)
+
+    table = doc.add_table(rows=1, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = True
+
+    remover_bordas_tabela(table)
+
+    cell_texto = table.cell(0, 0)
+    cell_qr = table.cell(0, 1)
+
+    cell_texto.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+    cell_qr.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+
+    p = cell_texto.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    p.paragraph_format.line_spacing = 1
+
+    linhas = [
+        f"Assinado por: {nome}",
+        f"Cargo/Função: {cargo}",
+        f"Data da assinatura: {data}",
+        f"Hash da assinatura: {hash_assinatura}",
+        f"Hash do documento: {hash_documento}",
+        "A autenticidade deste documento pode ser verificada pelo QR Code ao lado."
+    ]
+
+    for i, linha in enumerate(linhas):
+        if i > 0:
+            p.add_run().add_break()
+
+        r = p.add_run(linha)
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(8)
+
+    if qr_path and os.path.exists(qr_path):
+        p_qr = cell_qr.paragraphs[0]
+        p_qr.clear()
+        p_qr.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        run_qr = p_qr.add_run()
+        run_qr.add_picture(qr_path, width=Cm(2.4))
+
+        p_legenda = cell_qr.add_paragraph()
+        p_legenda.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r_legenda = p_legenda.add_run("Validar documento")
+        r_legenda.font.name = "Times New Roman"
+        r_legenda.font.size = Pt(8)
 
 def main():
     try:
@@ -385,6 +455,8 @@ def main():
         montar_rodape_word(doc, dados)
 
         substituir_em_documento(doc, replacements)
+
+        adicionar_assinatura_digital_word(doc, dados)
 
         doc.save(saida_path)
 

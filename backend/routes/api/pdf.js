@@ -3,6 +3,8 @@ const express = require('express');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const QRCode = require('qrcode');
 
 const Notificacao = require('../../models/Notificacao');
 const Instituicao = require('../../models/Instituicao');
@@ -130,6 +132,40 @@ async function gerarDocxNotificacao(req, res) {
     const textoCabecalho = regulamento?.textos?.cabecalho || '';
     const textoNotificacao = regulamento?.textos?.notificacao || '';
     const nomeRegulamento = regulamento?.nome || 'Regulamento Disciplinar';
+    const hashDocumento = crypto
+  .createHash('sha256')
+  .update(JSON.stringify({
+    notificacao: notificacao._id,
+    numero: notificacao.numeroSequencial,
+    aluno: aluno?.nome,
+    data: Date.now()
+  }))
+  .digest('hex');
+
+const hashAssinatura = crypto
+  .createHash('sha256')
+  .update(`${hashDocumento}-${Date.now()}`)
+  .digest('hex');
+
+const pastaQr = path.join(
+  __dirname,
+  '../../public/uploads/qrcodes'
+);
+
+fs.mkdirSync(pastaQr, { recursive: true });
+
+const qrCodePath = path.join(
+  pastaQr,
+  `notif_${notificacao._id}.png`
+);
+
+const urlValidacao =
+  `${req.protocol}://${req.get('host')}/verificar-documento.html?hash=${hashDocumento}`;
+
+await QRCode.toFile(qrCodePath, urlValidacao, {
+  width: 300,
+  margin: 2
+});
 
     const dados = {
       numero: (notificacao._id || '').toString().slice(-6).toUpperCase(),
@@ -188,7 +224,27 @@ brasaoDireitoUrl:
   identidadeInstitucional.brasaoDireitoUrl || '',
 
       cidade: instituicao?.municipio || '—',
-      estado: instituicao?.estado || '—'
+estado: instituicao?.estado || '—',
+
+assinaturaDigital: {
+  assinadoPorNome:
+    req.actor?.nome ||
+    req.usuario?.nome ||
+    req.user?.nome ||
+    'Usuário institucional',
+
+  cargo:
+    req.usuario?.cargo ||
+    req.usuario?.funcao ||
+    req.usuario?.tipo ||
+    'Usuário institucional',
+
+  assinadoEm: new Date().toLocaleString('pt-BR'),
+
+  hashDocumento,
+  hashAssinatura,
+  qrCodePath
+}
     };
 
     const scriptPath = path.join(__dirname, '../../pdf/generate_notification_docx.py');
