@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Desigualdade social",
+    "tipo": "estatistica",
+    "fonte": "IBGE",
+    "conteudo": "A desigualdade de renda ainda representa um dos maiores desafios sociais do Brasil."
+  },
+  {
+    "titulo": "Combate à fome",
+    "tipo": "reportagem",
+    "fonte": "ONU",
+    "conteudo": "Milhões de pessoas enfrentam insegurança alimentar em diferentes partes do mundo."
+  },
+  {
+    "titulo": "Função da cidadania",
+    "tipo": "citacao",
+    "fonte": "Aristóteles",
+    "conteudo": "O homem é, por natureza, um ser político e social."
+  },
+  {
+    "titulo": "Moradores em situação de rua",
+    "tipo": "reportagem",
+    "fonte": "IPEA",
+    "conteudo": "A vulnerabilidade social contribui para o aumento da população em situação de rua."
+  },
+  {
+    "titulo": "Participação social",
+    "tipo": "citacao",
+    "fonte": "Betinho",
+    "conteudo": "Quem tem fome tem pressa."
+  },
+  {
+    "titulo": "Solidariedade",
+    "tipo": "reportagem",
+    "fonte": "UNESCO",
+    "conteudo": "A cooperação entre sociedade civil e governo é essencial para reduzir desigualdades."
+  }
+]

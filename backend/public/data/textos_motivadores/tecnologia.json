@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Dependência digital",
+    "tipo": "reportagem",
+    "fonte": "OMS",
+    "conteudo": "O uso excessivo de dispositivos digitais pode provocar ansiedade, distúrbios do sono e isolamento social."
+  },
+  {
+    "titulo": "Redes sociais e comportamento",
+    "tipo": "estatistica",
+    "fonte": "UNICEF",
+    "conteudo": "Jovens passam várias horas por dia conectados às redes sociais, influenciando hábitos e relações sociais."
+  },
+  {
+    "titulo": "Sociedade da informação",
+    "tipo": "citacao",
+    "fonte": "Manuel Castells",
+    "conteudo": "A tecnologia redefine as formas de comunicação, trabalho e organização social."
+  },
+  {
+    "titulo": "Marco Civil da Internet",
+    "tipo": "legislacao",
+    "fonte": "Lei nº 12.965/2014",
+    "conteudo": "O uso da internet no Brasil deve respeitar princípios de liberdade, privacidade e proteção de dados."
+  },
+  {
+    "titulo": "Fake news",
+    "tipo": "reportagem",
+    "fonte": "Agência Senado",
+    "conteudo": "A disseminação de notícias falsas compromete a democracia e dificulta o acesso à informação confiável."
+  },
+  {
+    "titulo": "Inclusão digital",
+    "tipo": "estatistica",
+    "fonte": "IBGE",
+    "conteudo": "Milhões de brasileiros ainda enfrentam dificuldades de acesso à internet e ferramentas digitais."
+  }
+]

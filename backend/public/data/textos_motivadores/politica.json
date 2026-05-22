@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Democracia",
+    "tipo": "citacao",
+    "fonte": "Abraham Lincoln",
+    "conteudo": "Democracia é o governo do povo, pelo povo e para o povo."
+  },
+  {
+    "titulo": "Participação política",
+    "tipo": "reportagem",
+    "fonte": "TSE",
+    "conteudo": "A participação dos jovens fortalece os processos democráticos."
+  },
+  {
+    "titulo": "Fake news e democracia",
+    "tipo": "reportagem",
+    "fonte": "Agência Senado",
+    "conteudo": "A desinformação ameaça o debate público e a confiança nas instituições."
+  },
+  {
+    "titulo": "Constituição cidadã",
+    "tipo": "legislacao",
+    "fonte": "Constituição Federal de 1988",
+    "conteudo": "Todo poder emana do povo, que o exerce por meio de representantes eleitos."
+  },
+  {
+    "titulo": "Cidadania",
+    "tipo": "citacao",
+    "fonte": "Ulysses Guimarães",
+    "conteudo": "A cidadania começa no município."
+  },
+  {
+    "titulo": "Ética política",
+    "tipo": "reportagem",
+    "fonte": "Transparência Internacional",
+    "conteudo": "A corrupção compromete investimentos públicos e reduz a confiança social."
+  }
+]

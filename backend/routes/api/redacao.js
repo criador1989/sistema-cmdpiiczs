@@ -7,8 +7,26 @@ const RedacaoTema = require('../../models/RedacaoTema');
 const RedacaoEnem = require('../../models/RedacaoEnem');
 const { limparTexto, contarPalavras, corrigirRedacaoEnem } = require('../../services/redacaoEnemService');
 const { autenticar } = require('../../middleware/autenticacao');
+const multer = require('multer');
+const { uploadFotoRedacao } = require('../../utils/s3RedacaoUpload');
 
 const router = express.Router();
+
+const uploadRedacao = multer({
+  storage: multer.memoryStorage(),
+
+  limits: {
+    fileSize: 8 * 1024 * 1024
+  },
+
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Envie apenas imagens.'));
+    }
+
+    cb(null, true);
+  }
+});
 
 /* =========================
    HELPERS
@@ -47,13 +65,13 @@ function getInstituicaoRaw(req) {
   const u = getUsuarioReq(req);
 
   return (
+    req.query?.t ||
+    req.query?.tenant ||
+    req.tenantSlug ||
     req.instituicaoId ||
     req.tenantId ||
     u?.instituicao ||
     u?.instituicaoId ||
-    req.tenantSlug ||
-    req.query?.t ||
-    req.query?.tenant ||
     null
   );
 }
@@ -375,7 +393,10 @@ router.get('/:id', async (req, res) => {
    Envio da redação + correção IA
    Limite: 2 redações por mês
    ========================= */
-router.post('/enviar', async (req, res) => {
+router.post(
+  '/enviar',
+  uploadRedacao.single('fotoManuscrita'),
+  async (req, res) => {
   try {
     const instituicaoRaw = getInstituicaoRaw(req);
     const alunoId = getAlunoId(req);
@@ -396,6 +417,26 @@ router.post('/enviar', async (req, res) => {
       tempoGastoSegundos = 0,
       cronometroUtilizado = false
     } = req.body || {};
+
+    let fotoManuscrita = null;
+
+if (req.file) {
+  const tenantId =
+    req.instituicaoId ||
+    req.tenantId ||
+    req.usuario?.instituicao ||
+    req.usuario?.instituicaoId ||
+    req.query?.t ||
+    'sem-tenant';
+
+  fotoManuscrita = await uploadFotoRedacao({
+    buffer: req.file.buffer,
+    originalname: req.file.originalname,
+    mimetype: req.file.mimetype,
+    tenantId,
+    alunoId
+  });
+}
 
     if (!temaId || !mongoose.Types.ObjectId.isValid(temaId)) {
       return respostaErro(res, 400, 'Tema inválido.');
@@ -483,6 +524,24 @@ router.post('/enviar', async (req, res) => {
       quantidadePalavras,
       tempoGastoSegundos: Math.max(0, Number(tempoGastoSegundos) || 0),
       cronometroUtilizado: Boolean(cronometroUtilizado),
+      fotoManuscrita: fotoManuscrita ? {
+  key: fotoManuscrita.key,
+  url: fotoManuscrita.url,
+  bucket: fotoManuscrita.bucket,
+  originalname: req.file?.originalname,
+  mimetype: req.file?.mimetype,
+  size: req.file?.size,
+  enviadaEm: new Date()
+} : null,
+
+evidenciaAutoria: {
+  fotoManuscritaInformada: !!fotoManuscrita,
+  colagensDetectadas: Number(req.body.colagensDetectadas || 0),
+  colagemGrandeDetectada:
+    String(req.body.colagemGrandeDetectada) === 'true',
+  cronometroUtilizado:
+    String(req.body.cronometroUtilizado) === 'true'
+},
       status: 'corrigindo_ia',
       tentativa,
       mesReferencia: getMesReferencia()

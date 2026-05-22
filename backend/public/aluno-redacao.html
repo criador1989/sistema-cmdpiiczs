@@ -3,589 +3,2220 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Axoriin • Redação ENEM</title>
+
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+
   <style>
-    :root{
-      --bg-1:#07111f;
-      --bg-2:#0b1b31;
-      --glass:rgba(255,255,255,.08);
-      --glass-strong:rgba(255,255,255,.12);
-      --line:rgba(122,198,255,.22);
-      --text:#e8f3ff;
-      --muted:#93a8c7;
-      --cyan:#58d7ff;
-      --blue:#4c82ff;
-      --green:#35d28a;
-      --yellow:#f8d26a;
-      --red:#ff6b6b;
-      --shadow:0 10px 40px rgba(0,0,0,.35);
-      --radius:22px;
+    :root {
+      --bg-950: #050b14;
+      --bg-900: #081323;
+      --bg-850: #0d1b2f;
+
+      --paper: #fbf5e9;
+      --paper-2: #fff9ee;
+      --paper-line: rgba(53, 85, 126, .15);
+      --paper-red: rgba(239, 68, 68, .10);
+      --paper-shadow:
+        0 22px 42px rgba(0,0,0,.42),
+        0 4px 0 rgba(55, 38, 22, .23);
+
+      --sticky: #ffe48b;
+      --sticky-2: #fff2b9;
+      --sticky-line: rgba(117, 83, 18, .13);
+
+      --ink: #0d1f3b;
+      --ink-soft: #31415e;
+      --muted: #66728c;
+
+      --blue: #2563eb;
+      --blue-2: #60a5fa;
+      --green: #16a34a;
+      --orange: #f97316;
+      --purple: #7c3aed;
+      --danger: #ef4444;
+
+      --radius-xl: 26px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+      --transition: 180ms ease;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    body{
-      margin:0;
-      font-family:'Rajdhani', sans-serif;
-      color:var(--text);
+    html,
+    body {
+      min-height: 100%;
+      color: var(--ink);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
       background:
-        radial-gradient(circle at top left, rgba(88,215,255,.14), transparent 28%),
-        radial-gradient(circle at top right, rgba(76,130,255,.14), transparent 24%),
-        linear-gradient(180deg, var(--bg-1), var(--bg-2));
-      min-height:100vh;
+        radial-gradient(circle at 22% 8%, rgba(37, 99, 235, .26), transparent 24%),
+        radial-gradient(circle at 74% 18%, rgba(59, 130, 246, .17), transparent 21%),
+        radial-gradient(circle at 88% 76%, rgba(124, 58, 237, .13), transparent 28%),
+        linear-gradient(135deg, #050b14 0%, #0b1830 45%, #06101f 100%);
     }
 
-    .page{
-      max-width:1400px;
-      margin:0 auto;
-      padding:22px;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 50% 10%, transparent 0%, rgba(0,0,0,.20) 72%, rgba(0,0,0,.58) 100%),
+        linear-gradient(rgba(255,255,255,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: auto, 70px 70px, 70px 70px;
+      opacity: .95;
     }
 
-    .hero{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:20px;
-      margin-bottom:22px;
-      padding:24px;
-      border:1px solid var(--line);
-      border-radius:28px;
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
-      backdrop-filter: blur(14px);
-      box-shadow: var(--shadow);
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      opacity: .16;
+      background:
+        url("data:image/svg+xml,%3Csvg width='240' height='240' viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' opacity='.55'%3E%3Cpath d='M38 40h42M38 52h60M38 64h48'/%3E%3Cpath d='M168 37c21 6 20 26 3 31-22 6-32-25-9-37 11-6 25-4 36 3'/%3E%3Cpath d='M150 170l19 10 18-11-7 21 16 15-22 0-9 20-7-20-22-2 17-14z'/%3E%3Cpath d='M48 174c22 4 37-6 56-17'/%3E%3C/g%3E%3C/svg%3E") center/320px 320px repeat;
     }
 
-    .hero h1{
-      margin:0 0 8px;
-      font-family:'Orbitron', sans-serif;
-      letter-spacing:.04em;
-      font-size:clamp(1.4rem, 3vw, 2.4rem);
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    .hero p{
-      margin:0;
-      color:var(--muted);
-      font-size:1.05rem;
+    button,
+    input,
+    textarea,
+    select {
+      font-family: inherit;
     }
 
-    .hero-badges{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
+    button {
+      border: 0;
     }
 
-    .badge{
-      padding:10px 14px;
-      border:1px solid var(--line);
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      color:#dff6ff;
-      font-weight:700;
-      font-size:.96rem;
+    .hidden {
+      display: none !important;
+    }
+
+    .page {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      padding: 24px 28px 54px;
+      position: relative;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 26px;
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: #fff;
+    }
+
+    .brand-badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.07)),
+        rgba(8,20,38,.80);
+      border: 1px solid rgba(147,197,253,.22);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.25),
+        0 14px 28px rgba(0,0,0,.32),
+        0 0 30px rgba(37,99,235,.30);
+      font-size: 25px;
+    }
+
+    .brand-mini strong {
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .04em;
+    }
+
+    .brand-mini span {
+      display: block;
+      margin-top: 3px;
+      color: rgba(255,255,255,.70);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 50px;
+      border-radius: 15px;
+      border: 0;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 14px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 18px;
+      text-align: center;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8 78%, #0f3fc2);
+      color: #fff;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.30),
+        inset 0 -1px 0 rgba(0,0,0,.36),
+        0 0 30px rgba(37,99,235,.42),
+        0 14px 28px rgba(37,99,235,.24);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,.58);
+      color: var(--ink);
+      border: 1px solid rgba(52,65,94,.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.70),
+        0 10px 20px rgba(0,0,0,.08);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, rgba(239,68,68,.96), rgba(185,28,28,.92));
+      color: #fff;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.24),
+        0 14px 28px rgba(239,68,68,.18);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #fff;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.28),
+        0 14px 28px rgba(22,163,74,.20);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-main {
+      position: relative;
+      min-height: 260px;
+      color: #fff;
+      border-radius: 30px;
+      padding: 32px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.045)),
+        radial-gradient(circle at 18% 6%, rgba(96,165,250,.38), transparent 28%),
+        radial-gradient(circle at 88% 22%, rgba(124,58,237,.24), transparent 32%),
+        rgba(8,20,38,.72);
+      border: 1px solid rgba(184,218,255,.18);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.20),
+        inset 0 -1px 0 rgba(0,0,0,.30),
+        0 28px 58px rgba(0,0,0,.40),
+        0 0 70px rgba(37,99,235,.20);
+      backdrop-filter: blur(22px) saturate(145%);
+      -webkit-backdrop-filter: blur(22px) saturate(145%);
+    }
+
+    .hero-main::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 24px;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.18), transparent 22%, transparent 70%, rgba(96,165,250,.14)),
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.026) 1px, transparent 1px);
+      background-size: auto, 42px 42px, 42px 42px;
+      border: 1px solid rgba(255,255,255,.08);
+    }    .hero-main::after {
+      content: "✎";
+      position: absolute;
+      right: 34px;
+      top: 28px;
+      color: transparent;
+      -webkit-text-stroke: 2px rgba(96,165,250,.95);
+      font-size: 62px;
+      transform: rotate(14deg);
+      filter: drop-shadow(0 0 12px rgba(37,99,235,.55));
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 13px;
+      margin-bottom: 18px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(147,197,253,.24);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 14px rgba(34,197,94,.85);
+    }
+
+    .hand-title {
+      font-family: 'Caveat', cursive;
+      font-size: clamp(58px, 7vw, 94px);
+      line-height: .86;
+      color: #fff;
+      text-shadow:
+        0 0 24px rgba(255,255,255,.10),
+        0 0 34px rgba(37,99,235,.30);
+      margin-bottom: 18px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .hand-title::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      bottom: -10px;
+      width: min(360px, 76%);
+      height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2563eb, #60a5fa 55%, transparent);
+      transform: rotate(-1.6deg);
+      box-shadow: 0 0 16px rgba(37,99,235,.50);
+    }
+
+    .hero-subtitle {
+      max-width: 760px;
+      margin-top: 20px;
+      color: rgba(255,255,255,.78);
+      font-size: 16px;
+      line-height: 1.7;
+      font-weight: 550;
+    }
+
+    .hero-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      border-radius: 999px;
+      padding: 8px 13px;
+      color: rgba(255,255,255,.88);
+      background: rgba(255,255,255,.075);
+      border: 1px solid rgba(147,197,253,.17);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .focus-card {
+      position: relative;
+      overflow: visible;
+      border-radius: 18px;
+      padding: 26px 24px;
+      min-height: 260px;
+      color: #1d2430;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.06)),
+        repeating-linear-gradient(to bottom, transparent 0 27px, var(--sticky-line) 28px),
+        linear-gradient(180deg, var(--sticky), var(--sticky-2));
+      border: 1px solid rgba(161,108,18,.18);
+      box-shadow:
+        0 24px 48px rgba(0,0,0,.34),
+        inset 0 -2px 0 rgba(111,75,16,.12);
+      transform: rotate(1deg);
+    }
+
+    .focus-card::before {
+      content: "📌";
+      position: absolute;
+      top: -22px;
+      left: 42px;
+      font-size: 36px;
+      transform: rotate(12deg);
+      filter: drop-shadow(0 8px 7px rgba(0,0,0,.20));
+    }
+
+    .focus-title {
+      font-family: 'Caveat', cursive;
+      font-size: 42px;
+      line-height: .95;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 16px;
+    }
+
+    .focus-text {
+      color: var(--ink-soft);
+      font-size: 15px;
+      line-height: 1.72;
+      font-weight: 650;
+      max-width: 95%;
+    }
+
+    .hero-badges {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-radius: 14px;
+      padding: 11px 13px;
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(52,65,94,.12);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.70),
+        0 8px 16px rgba(0,0,0,.08);
     }
 
     .badge.warn {
-      color:#fff0c7;
-      border-color:rgba(248,210,106,.25);
-      background:rgba(248,210,106,.10);
+      background: rgba(255,246,217,.88);
+      color: #946200;
     }
 
     .badge.good {
-      color:#cffff0;
-      border-color:rgba(53,210,138,.25);
-      background:rgba(53,210,138,.10);
+      background: rgba(233,248,239,.88);
+      color: var(--green);
     }
 
-    .layout{
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap:22px;
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) 390px;
+      gap: 22px;
+      align-items: start;
     }
 
-    .card{
-      background:var(--glass);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
+    .main {
+      display: grid;
+      gap: 22px;
+      min-width: 0;
     }
 
-    .card-header{
-      padding:18px 20px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
+    .sidebar {
+      display: grid;
+      gap: 22px;
+      position: sticky;
+      top: 18px;
     }
 
-    .card-header h2{
-      margin:0;
-      font-size:1.35rem;
+    .panel,
+    .card,
+    .result-card {
+      position: relative;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,.24)),
+        repeating-linear-gradient(to bottom, transparent 0 31px, var(--paper-line) 32px),
+        linear-gradient(90deg, transparent 0 34px, var(--paper-red) 35px, transparent 36px),
+        var(--paper);
+      border: 1px solid rgba(68,45,20,.12);
+      box-shadow: var(--paper-shadow);
+      overflow: visible;
+      border-radius: 24px;
     }
 
-    .card-body{
-      padding:20px;
+    .panel::before,
+    .card::before,
+    .result-card::before {
+      content: "";
+      position: absolute;
+      top: -16px;
+      left: 22px;
+      right: 22px;
+      height: 29px;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 5px 7px at 9px 18px, rgba(0,0,0,.68) 0 38%, transparent 40%),
+        radial-gradient(ellipse 5px 7px at 25px 18px, rgba(0,0,0,.68) 0 38%, transparent 40%),
+        radial-gradient(ellipse 7px 12px at 17px 11px, transparent 0 42%, #ececec 44% 54%, #1b1b1b 56% 70%, transparent 72%),
+        linear-gradient(90deg, transparent 0 34px);
+      background-size: 34px 29px;
+      background-repeat: repeat-x;
+      filter: drop-shadow(0 4px 2px rgba(0,0,0,.32));
+      z-index: 3;
     }
 
-    .meta-grid{
-      display:grid;
-      grid-template-columns: repeat(5, minmax(0,1fr));
-      gap:12px;
-      margin-bottom:18px;
+    .panel::after,
+    .card::after,
+    .result-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.72),
+        inset 0 -1px 0 rgba(89,59,29,.12);
     }
 
-    .mini{
-      padding:14px;
-      border-radius:18px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
+    .card-header {
+      position: relative;
+      z-index: 1;
+      padding: 36px 24px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
     }
 
-    .mini .label{
-      color:var(--muted);
-      font-size:.92rem;
-      margin-bottom:6px;
+    .card-body {
+      position: relative;
+      z-index: 1;
+      padding: 20px 24px 24px;
     }
 
-    .mini .value{
-      font-size:1.3rem;
-      font-weight:700;
+    .section-title {
+      font-family: 'Caveat', cursive;
+      font-size: 43px;
+      line-height: .95;
+      font-weight: 700;
+      color: var(--ink);
+      position: relative;
+      display: inline-block;
     }
 
-    .tema-titulo{
-      margin:0 0 12px;
-      font-size:1.6rem;
-      color:#ffffff;
+    .section-title::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -8px;
+      width: 124px;
+      height: 4px;
+      border-radius: 999px;
+      background: #2563eb;
+      transform: rotate(-1.5deg);
+      box-shadow: 0 0 12px rgba(37,99,235,.28);
     }
 
-    .tema-proposta{
-      margin:0;
-      color:#d9ebff;
-      white-space:pre-wrap;
-      line-height:1.5;
-      font-size:1.02rem;
+    .section-sub,
+    .muted {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 600;
     }
 
-    .motivadores{
-      display:grid;
-      gap:12px;
-      margin-top:18px;
+    .head-tag {
+      border-radius: 10px;
+      border: 1px solid rgba(37,99,235,.12);
+      background: linear-gradient(180deg, #dbeafe, #bfdbfe);
+      padding: 9px 13px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      box-shadow: 0 7px 16px rgba(37,99,235,.12);
+      transform: rotate(-1deg);
     }
 
-    .motivador{
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-      border-radius:18px;
-      padding:14px;
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
     }
 
-    .motivador h4{
-      margin:0 0 8px;
-      font-size:1.05rem;
-      color:#cfefff;
+    .mini {
+      border: 1px solid rgba(52,65,94,.10);
+      background: rgba(255,255,255,.55);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow:
+        0 10px 20px rgba(0,0,0,.06),
+        inset 0 1px 0 rgba(255,255,255,.55);
     }
 
-    .motivador p{
-      margin:0;
-      color:#dcecff;
-      white-space:pre-wrap;
-      line-height:1.45;
+    .mini .label {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      margin-bottom: 8px;
     }
 
-    .motivador small{
-      display:block;
-      margin-top:8px;
-      color:var(--muted);
+    .mini .value {
+      display: block;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 900;
+      word-break: break-word;
     }
 
-    textarea{
-      width:100%;
-      min-height:440px;
-      resize:vertical;
-      padding:18px;
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(6,15,28,.65);
-      color:#f0f7ff;
-      font:600 1.04rem/1.55 'Rajdhani', sans-serif;
-      outline:none;
+    .tema-box {
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(232,241,255,.78);
+      border: 1px solid rgba(37,99,235,.13);
+      box-shadow: 0 10px 22px rgba(37,99,235,.08);
+      margin-bottom: 18px;
     }
 
-    textarea:focus{
-      border-color:rgba(88,215,255,.55);
-      box-shadow:0 0 0 4px rgba(88,215,255,.08);
+    .tema-titulo {
+      margin: 0 0 12px;
+      font-family: 'Caveat', cursive;
+      font-size: 42px;
+      line-height: .98;
+      color: var(--ink);
     }
 
-    .tools{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      margin:16px 0;
+    .tema-proposta {
+      margin: 0;
+      color: var(--ink-soft);
+      white-space: pre-wrap;
+      line-height: 1.62;
+      font-size: 14px;
+      font-weight: 600;
     }
 
-    button{
-      border:none;
-      cursor:pointer;
-      border-radius:14px;
-      padding:12px 18px;
-      font-family:'Rajdhani', sans-serif;
-      font-weight:700;
-      font-size:1rem;
-      transition:.2s ease;
+    .motivadores {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
     }
 
-    .btn-primary{
-      background:linear-gradient(135deg, var(--cyan), var(--blue));
-      color:#02111f;
+    .motivador {
+  border: 1px solid rgba(52,65,94,.10);
+  background: rgba(255,255,255,.55);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.045),
+    inset 0 1px 0 rgba(255,255,255,.52);
+}
+
+.motivador-premium {
+  position: relative;
+  overflow: hidden;
+}
+
+.motivador-premium::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 999px;
+  background: rgba(37,99,235,.62);
+}
+
+.motivador-top {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 11px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.motivador-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.motivador-heading {
+  flex: 1;
+}
+
+.motivador-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(37,99,235,.08);
+  color: var(--blue);
+  font-size: 18px;
+  font-weight: 900;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.motivador-toggle.active .motivador-arrow {
+  transform: rotate(180deg);
+  background: rgba(37,99,235,.16);
+}
+
+.motivador-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height .35s ease,
+    opacity .28s ease,
+    margin-top .25s ease;
+}
+
+.motivador-body.open {
+  max-height: 520px;
+  opacity: 1;
+  margin-top: 12px;
+}
+
+.motivador-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #dbeafe, #bfdbfe);
+  border: 1px solid rgba(37,99,235,.13);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.70),
+    0 8px 16px rgba(37,99,235,.12);
+  font-size: 20px;
+}
+
+.motivador-label {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.motivador h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.motivador p {
+  margin: 0;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+  line-height: 1.58;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.motivador-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.motivador-empty {
+  border-style: dashed;
+  background: rgba(255,255,255,.38);
+}
+
+    .authorship-box {
+      border-radius: 16px;
+      padding: 15px;
+      margin-bottom: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.06)),
+        repeating-linear-gradient(to bottom, transparent 0 27px, var(--sticky-line) 28px),
+        linear-gradient(180deg, var(--sticky), var(--sticky-2));
+      border: 1px solid rgba(161,108,18,.16);
+      box-shadow: 0 12px 24px rgba(0,0,0,.10);
+      color: #1d2430;
     }
 
-    .btn-secondary{
-      background:rgba(255,255,255,.08);
-      color:var(--text);
-      border:1px solid rgba(255,255,255,.10);
+    .authorship-box strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 900;
     }
 
-    .btn-danger{
-      background:rgba(255,107,107,.12);
-      color:#ffd0d0;
-      border:1px solid rgba(255,107,107,.24);
+    .authorship-box p {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 650;
+    }    .integrity-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, .95fr) minmax(0, 1.05fr);
+      gap: 16px;
+      align-items: stretch;
+      margin-bottom: 18px;
     }
 
-    button:hover{
-      transform:translateY(-1px);
-      filter:brightness(1.06);
+    .upload-card,
+    .text-card {
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(52,65,94,.10);
+      box-shadow:
+        0 10px 20px rgba(0,0,0,.045),
+        inset 0 1px 0 rgba(255,255,255,.52);
     }
 
-    button:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-      transform:none;
+    .upload-card h3,
+    .text-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--ink);
     }
 
-    .status{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:.95rem;
+    .upload-card p,
+    .text-card p {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 550;
+      margin-bottom: 12px;
     }
 
-    .historico-lista{
-      display:grid;
-      gap:12px;
+    .upload-zone {
+      position: relative;
+      min-height: 300px;
+      border-radius: 18px;
+      border: 2px dashed rgba(37,99,235,.30);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.56), rgba(255,255,255,.34));
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 18px;
+      overflow: hidden;
     }
 
-    .hist-item{
-      padding:14px;
-      border-radius:18px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
-      cursor:pointer;
+    .upload-zone input {
+      display: none;
     }
 
-    .hist-top{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
-      margin-bottom:8px;
+    .upload-placeholder {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 650;
     }
 
-    .hist-top strong{
-      font-size:1.02rem;
+    .upload-placeholder strong {
+      display: block;
+      color: var(--blue);
+      font-size: 15px;
+      margin-bottom: 6px;
     }
 
-    .hist-tags{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
+    .preview-redacao {
+      width: 100%;
+      height: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: #fff;
+      display: none;
+      box-shadow: 0 12px 24px rgba(0,0,0,.10);
     }
 
-    .tag{
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:.88rem;
-      font-weight:700;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      color:#dff4ff;
+    .preview-redacao.visible {
+      display: block;
     }
 
-    .resultado{
-      display:none;
-      margin-top:18px;
-      padding:18px;
-      border-radius:20px;
-      border:1px solid rgba(53,210,138,.24);
-      background:rgba(53,210,138,.08);
+    .upload-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
     }
 
-    .resultado.visible{
-      display:block;
+    .textarea-wrap {
+      position: relative;
     }
 
-    .nota-total{
-      font-family:'Orbitron', sans-serif;
-      font-size:2rem;
-      margin:0 0 12px;
-      color:#b8ffe1;
+    textarea {
+      width: 100%;
+      min-height: 460px;
+      resize: vertical;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(52,65,94,.16);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.50));
+      color: var(--ink);
+      font: 600 15px/1.72 'Inter', sans-serif;
+      outline: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.70),
+        0 10px 18px rgba(0,0,0,.055);
     }
 
-    .comp-grid{
-      display:grid;
-      grid-template-columns: repeat(5, minmax(0,1fr));
-      gap:10px;
-      margin-bottom:16px;
+    textarea:focus {
+      border-color: rgba(37,99,235,.50);
+      box-shadow:
+        0 0 0 4px rgba(37,99,235,.10),
+        inset 0 1px 0 rgba(255,255,255,.70);
     }
 
-    .comp{
-      padding:12px;
-      border-radius:16px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      text-align:center;
+    .textarea-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
     }
 
-    .comp .c{
-      color:var(--muted);
-      margin-bottom:6px;
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 16px 0;
     }
 
-    .comp .n{
-      font-size:1.25rem;
-      font-weight:700;
+    .status {
+      margin-top: 12px;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 650;
     }
 
-    .block{
-      margin-top:14px;
-      padding:14px;
-      border-radius:16px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
+    .status.good {
+      color: var(--green);
     }
 
-    .block h4{
-      margin:0 0 8px;
-      color:#dff5ff;
+    .status.bad {
+      color: var(--danger);
     }
 
-    .block p, .block li{
-      color:#e4f0ff;
-      line-height:1.45;
+    .status.warn {
+      color: #946200;
     }
 
-    .block ul{
-      margin:0;
-      padding-left:18px;
+    .resultado {
+      display: none;
+      margin-top: 22px;
     }
 
-    .apoio-box{
-      display:none;
-      margin-top:16px;
-      padding:16px;
-      border-radius:18px;
-      border:1px solid rgba(248,210,106,.24);
-      background:rgba(248,210,106,.08);
+    .resultado.visible {
+      display: block;
     }
 
-    .apoio-box.visible{
-      display:block;
+    .nota-total {
+      font-family: 'Caveat', cursive;
+      font-size: 52px;
+      line-height: .95;
+      margin: 0 0 16px;
+      color: var(--ink);
     }
 
-    .apoio-box textarea{
-      min-height:120px;
-      margin-top:10px;
+    .score-hero {
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      background: rgba(232,241,255,.78);
+      border: 1px solid rgba(37,99,235,.13);
+      box-shadow: 0 10px 22px rgba(37,99,235,.08);
     }
 
-    .empty{
-      color:var(--muted);
-      text-align:center;
-      padding:24px 14px;
+    .comp-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    .muted{
-      color:var(--muted);
+    .comp {
+      padding: 14px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(52,65,94,.10);
+      text-align: center;
+      box-shadow:
+        0 10px 20px rgba(0,0,0,.045),
+        inset 0 1px 0 rgba(255,255,255,.52);
     }
 
-    @media (max-width: 1080px){
-      .layout{
-        grid-template-columns:1fr;
+    .comp .c {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+
+    .comp .n {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .block {
+      margin-top: 14px;
+      padding: 15px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(52,65,94,.10);
+      box-shadow:
+        0 10px 20px rgba(0,0,0,.045),
+        inset 0 1px 0 rgba(255,255,255,.52);
+    }
+
+    .block h4 {
+      margin: 0 0 8px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .block p,
+    .block li {
+      color: var(--ink-soft);
+      line-height: 1.55;
+      font-size: 13px;
+      font-weight: 550;
+    }
+
+    .block ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .apoio-box {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(161,108,18,.16);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.06)),
+        repeating-linear-gradient(to bottom, transparent 0 27px, var(--sticky-line) 28px),
+        linear-gradient(180deg, var(--sticky), var(--sticky-2));
+      box-shadow: 0 12px 24px rgba(0,0,0,.10);
+    }
+
+    .apoio-box.visible {
+      display: block;
+    }
+
+    .apoio-box textarea {
+      min-height: 120px;
+      margin-top: 10px;
+      background: rgba(255,255,255,.68);
+    }
+
+    .historico-lista {
+      display: grid;
+      gap: 12px;
+      max-height: 690px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .historico-lista::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    .historico-lista::-webkit-scrollbar-thumb {
+      background: rgba(37,99,235,.22);
+      border-radius: 999px;
+    }
+
+    .hist-item {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(52,65,94,.10);
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow:
+        0 10px 20px rgba(0,0,0,.045),
+        inset 0 1px 0 rgba(255,255,255,.52);
+    }
+
+    .hist-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(37,99,235,.24);
+      background: rgba(232,241,255,.78);
+    }
+
+    .hist-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .hist-top strong {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .hist-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #e8f1ff;
+      border: 1px solid rgba(37,99,235,.12);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
+    .integrity-panel {
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(233,248,239,.88);
+      border: 1px solid rgba(22,163,74,.14);
+      box-shadow: 0 10px 22px rgba(22,163,74,.08);
+      margin-bottom: 14px;
+    }
+
+    .integrity-panel strong {
+      display: block;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .integrity-panel p {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 600;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .check-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 650;
+    }
+
+    .check-item span {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--green);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      font-weight: 900;
+      box-shadow: 0 6px 12px rgba(0,0,0,.08);
+    }
+
+    .empty {
+      border: 1px dashed rgba(37,99,235,.22);
+      background: rgba(255,255,255,.42);
+      color: var(--ink-soft);
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      line-height: 1.55;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .apoio-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.apoio-tab {
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 7px 11px;
+  border: 1px solid rgba(37,99,235,.14);
+  background: rgba(255,255,255,.58);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.apoio-tab:hover,
+.apoio-tab.active {
+  background: linear-gradient(180deg, #dbeafe, #bfdbfe);
+  color: var(--blue);
+  box-shadow: 0 8px 16px rgba(37,99,235,.12);
+}
+
+.apoio-content {
+  display: grid;
+  gap: 10px;
+}
+
+.apoio-item {
+  border-radius: 15px;
+  padding: 13px;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(52,65,94,.10);
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.045),
+    inset 0 1px 0 rgba(255,255,255,.52);
+}
+
+.apoio-item strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.apoio-item p,
+.apoio-item li {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.apoio-item ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.apoio-alerta {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,246,217,.88);
+  border: 1px solid rgba(161,108,18,.16);
+  color: #946200;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 750;
+}
+
+.conectivo-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.conectivo-chip {
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #e8f1ff;
+  border: 1px solid rgba(37,99,235,.12);
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 900;
+}
+body.modo-foco-ativo .hero {
+  grid-template-columns: 1fr;
+}
+
+body.modo-foco-ativo .focus-card,
+body.modo-foco-ativo .sidebar {
+  display: none;
+}
+
+body.modo-foco-ativo .layout {
+  grid-template-columns: 1fr;
+}
+
+body.modo-foco-ativo .page {
+  width: min(1180px, 100%);
+}
+
+body.modo-foco-ativo .integrity-grid {
+  grid-template-columns: .9fr 1.1fr;
+}
+
+body.modo-foco-ativo .hero-main {
+  min-height: 190px;
+}
+
+body.modo-foco-ativo .hero-subtitle {
+  max-width: 920px;
+}
+
+body.modo-foco-ativo textarea {
+  min-height: 560px;
+}
+
+body.modo-foco-ativo .card {
+  box-shadow:
+    0 28px 58px rgba(0,0,0,.46),
+    0 4px 0 rgba(55, 38, 22, .23);
+}
+
+body.modo-foco-ativo .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 10px 0;
+  backdrop-filter: blur(12px);
+}
+
+.modo-foco-alerta {
+  display: none;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(233,248,239,.88);
+  border: 1px solid rgba(22,163,74,.14);
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 650;
+  box-shadow: 0 10px 22px rgba(22,163,74,.08);
+}
+
+body.modo-foco-ativo .modo-foco-alerta {
+  display: block;
+}
+
+.modo-foco-alerta strong {
+  display: block;
+  color: var(--green);
+  font-weight: 900;
+  margin-bottom: 5px;
+}
+    @media (max-width: 1180px) {
+      .hero,
+      .layout,
+      .integrity-grid {
+        grid-template-columns: 1fr;
       }
+
+      .sidebar {
+        position: relative;
+        top: auto;
+      }
+
       .meta-grid,
-      .comp-grid{
-        grid-template-columns: repeat(2, minmax(0,1fr));
+      .comp-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 640px){
-      .page{ padding:14px; }
-      .hero{
-        flex-direction:column;
-        align-items:flex-start;
-      }
-      .meta-grid,
-      .comp-grid{
-        grid-template-columns:1fr;
-      }
-      textarea{
-        min-height:320px;
-      }
-    }
+    .estrutura-map {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 10px;
+}
+
+.estrutura-step {
+  position: relative;
+  border-radius: 16px;
+  padding: 13px 12px;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(52,65,94,.10);
+  box-shadow:
+    0 10px 20px rgba(0,0,0,.045),
+    inset 0 1px 0 rgba(255,255,255,.52);
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.estrutura-step:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37,99,235,.22);
+}
+
+.estrutura-step span {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #e8f1ff;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.estrutura-step strong {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.estrutura-step small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 7px;
+}
+
+.estrutura-step em {
+  display: block;
+  font-style: normal;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.estrutura-step.done {
+  background: rgba(233,248,239,.88);
+  border-color: rgba(22,163,74,.18);
+}
+
+.estrutura-step.done span {
+  background: #dcfce7;
+  color: var(--green);
+}
+
+.estrutura-step.done small {
+  color: var(--green);
+}
+
+.estrutura-step.warn {
+  background: rgba(255,246,217,.88);
+  border-color: rgba(161,108,18,.18);
+}
+
+.estrutura-step.warn span {
+  background: #fff6d9;
+  color: #946200;
+}
+
+.estrutura-step.warn small {
+  color: #946200;
+}
+
+.estrutura-step.bad {
+  background: rgba(254,226,226,.92);
+  border-color: rgba(239,68,68,.18);
+}
+
+.estrutura-step.bad span {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.estrutura-step.bad small {
+  color: var(--danger);
+}
+
+.estrutura-dica {
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: rgba(232,241,255,.72);
+  border: 1px solid rgba(37,99,235,.12);
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.competencias-live {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.competencia-live {
+  border-radius: 14px;
+  padding: 11px;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(52,65,94,.10);
+  text-align: center;
+  transition: var(--transition);
+}
+
+.competencia-live strong {
+  display: block;
+  font-size: 18px;
+  color: var(--ink);
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.competencia-live span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 900;
+}
+
+.competencia-live.active {
+  background: rgba(233,248,239,.88);
+  border-color: rgba(22,163,74,.18);
+}
+
+.competencia-live.active strong,
+.competencia-live.active span {
+  color: var(--green);
+}
+
+.competencia-live.warn {
+  background: rgba(255,246,217,.88);
+  border-color: rgba(161,108,18,.18);
+}
+
+.competencia-live.warn strong,
+.competencia-live.warn span {
+  color: #946200;
+}
+
+.alertas-redacao {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.alerta-redacao {
+  border-radius: 13px;
+  padding: 10px 12px;
+  background: rgba(255,246,217,.88);
+  border: 1px solid rgba(161,108,18,.18);
+  color: #946200;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 750;
+}
+
+.alerta-redacao.bad {
+  background: rgba(254,226,226,.92);
+  border-color: rgba(239,68,68,.18);
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .estrutura-map,
+  .competencias-live {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page {
+    padding: 16px 14px 40px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .top-actions,
+  .tools,
+  .upload-actions {
+    width: 100%;
+  }
+
+  .top-actions .btn,
+  .tools .btn,
+  .upload-actions .btn {
+    flex: 1;
+    width: 100%;
+  }
+
+  .hero-main {
+    min-height: auto;
+    padding: 24px 20px;
+    border-radius: 24px;
+  }
+
+  .hand-title {
+    font-size: 64px;
+  }
+
+  .focus-card {
+    min-height: auto;
+  }
+
+  .panel,
+  .card,
+  .result-card {
+    border-radius: 20px;
+  }
+
+  .card-header {
+    padding: 34px 18px 0;
+  }
+
+  .card-body {
+    padding: 18px;
+  }
+
+  .meta-grid,
+  .comp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  textarea {
+    min-height: 340px;
+  }
+
+  .upload-zone {
+    min-height: 240px;
+  }
+
+  .section-title {
+    font-size: 40px;
+  }
+
+  .tema-titulo {
+    font-size: 38px;
+  }
+}
   </style>
 </head>
+
 <body>
-  <div class="page">
+  <main class="page">
+    <header class="topbar">
+      <div class="brand-mini">
+        <div class="brand-badge">✎</div>
+        <div>
+          <strong>Axoriin</strong>
+          <span>Portal do aluno • redação ENEM</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+  <button class="btn btn-primary" id="btnModoFoco" type="button">
+    Entrar em modo foco
+  </button>
+
+  <a class="btn btn-secondary" href="painel-aluno.html">
+    Voltar ao painel
+  </a>
+</div>
+    </header>
+
     <section class="hero">
-      <div>
-        <h1>Redação ENEM</h1>
-        <p>Escreva, envie, receba devolutiva da IA e foque na sua melhoria de forma prática.</p>
+      <div class="hero-main">
+        <div class="hero-content">
+          <div class="eyebrow">Produção textual</div>
+
+          <h1 class="hand-title">Redação ENEM</h1>
+
+          <p class="hero-subtitle">
+            Escreva com foco, envie sua produção e receba uma devolutiva organizada por competências.
+            O objetivo é acompanhar sua evolução com clareza, responsabilidade e autoria.
+          </p>
+
+          <div class="hero-chips">
+            <span class="chip">C1 a C5</span>
+            <span class="chip">Feedback da IA</span>
+            <span class="chip">Plano de melhoria</span>
+            <span class="chip">Autoria acompanhada</span>
+          </div>
+        </div>
       </div>
-      <div class="hero-badges">
-        <div class="badge" id="badgeTimer">Tempo: 00:00:00</div>
-        <div class="badge" id="badgePalavras">Palavras: 0</div>
-        <div class="badge warn" id="badgeLimiteMensal">Redações no mês: --/2</div>
-      </div>
-    </section>
 
-    <div class="layout">
-      <section class="card">
-        <div class="card-header">
-          <h2>Produção textual</h2>
-          <span class="muted" id="temaStatus">Carregando tema...</span>
+      <aside class="focus-card">
+        <div class="focus-title">Controle de escrita</div>
+
+        <div class="focus-text">
+          Use esta tela para registrar sua produção com atenção. A imagem manuscrita ajuda o professor a conferir autoria,
+          enquanto o texto digitado permite a correção pedagógica pela IA.
         </div>
 
-        <div class="card-body">
-          <div class="meta-grid">
-            <div class="mini">
-              <div class="label">Tempo sugerido</div>
-              <div class="value" id="tempoSugerido">--</div>
-            </div>
-            <div class="mini">
-              <div class="label">Mínimo de palavras</div>
-              <div class="value" id="minPalavras">--</div>
-            </div>
-            <div class="mini">
-              <div class="label">Máximo sugerido</div>
-              <div class="value" id="maxPalavras">--</div>
-            </div>
-            <div class="mini">
-              <div class="label">Rascunho local</div>
-              <div class="value" id="rascunhoStatus">Vazio</div>
-            </div>
-            <div class="mini">
-              <div class="label">Restantes no mês</div>
-              <div class="value" id="restantesMes">--</div>
-            </div>
-          </div>
-
-          <h3 class="tema-titulo" id="temaTitulo">Tema indisponível</h3>
-          <p class="tema-proposta" id="temaProposta">Nenhum tema ativo foi encontrado no momento.</p>
-
-          <div class="motivadores" id="motivadores"></div>
-
-          <div class="tools">
-            <button class="btn-secondary" id="btnTimer">Iniciar cronômetro</button>
-            <button class="btn-secondary" id="btnSalvarLocal">Salvar rascunho</button>
-            <button class="btn-danger" id="btnLimpar">Limpar texto</button>
-          </div>
-
-          <textarea id="redacaoTexto" placeholder="Escreva sua redação aqui..."></textarea>
-
-          <div class="tools">
-            <button class="btn-primary" id="btnEnviar">Enviar redação</button>
-          </div>
-
-          <div class="status" id="statusMensagem">Digite sua redação. O rascunho será salvo localmente.</div>
-
-          <div class="resultado" id="resultadoBox">
-            <h3 class="nota-total" id="notaTotal">Nota: 0</h3>
-
-            <div class="comp-grid">
-              <div class="comp"><div class="c">C1</div><div class="n" id="c1">0</div></div>
-              <div class="comp"><div class="c">C2</div><div class="n" id="c2">0</div></div>
-              <div class="comp"><div class="c">C3</div><div class="n" id="c3">0</div></div>
-              <div class="comp"><div class="c">C4</div><div class="n" id="c4">0</div></div>
-              <div class="comp"><div class="c">C5</div><div class="n" id="c5">0</div></div>
-            </div>
-
-            <div class="block">
-              <h4>Resumo da avaliação</h4>
-              <p id="resumoAvaliacao">-</p>
-            </div>
-
-            <div class="block">
-              <h4>Foco principal de melhoria</h4>
-              <p id="focoPrincipal">-</p>
-            </div>
-
-            <div class="block">
-              <h4>Plano de estudo sugerido</h4>
-              <ul id="planoEstudoSugerido"></ul>
-            </div>
-
-            <div class="block">
-              <h4>Pontos fortes</h4>
-              <ul id="pontosFortes"></ul>
-            </div>
-
-            <div class="block">
-              <h4>Pontos a melhorar</h4>
-              <ul id="pontosMelhorar"></ul>
-            </div>
-
-            <div class="block">
-              <h4>Recomendações</h4>
-              <ul id="recomendacoes"></ul>
-            </div>
-
-            <div class="block">
-              <h4>Proposta de intervenção</h4>
-              <p id="propostaIntervencao">-</p>
-            </div>
-
-            <div class="block">
-              <h4>Observações técnicas</h4>
-              <p id="observacoesTecnicas">-</p>
-            </div>
-
-            <div class="apoio-box" id="apoioBox">
-              <h4>Apoio pontual do professor</h4>
-              <p class="muted">
-                Se você quiser, pode solicitar uma orientação breve sobre o principal ponto que a IA identificou.
-                Isso não bloqueia seu fluxo e não impede novas redações quando disponíveis.
-              </p>
-              <textarea id="apoioFocoTema" placeholder="Ex.: preciso melhorar conectivos, repertório ou conclusão"></textarea>
-              <div class="tools">
-                <button class="btn-secondary" id="btnSolicitarApoio">Solicitar apoio</button>
-              </div>
-              <div class="status" id="apoioStatusMensagem"></div>
-            </div>
-
-            <div class="block" id="respostaProfessorBlock" style="display:none;">
-              <h4>Orientação do professor</h4>
-              <p id="respostaProfessorTexto">-</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <aside class="card">
-        <div class="card-header">
-          <h2>Histórico</h2>
-          <span class="muted">Últimas submissões</span>
-        </div>
-        <div class="card-body">
-          <div class="historico-lista" id="historicoLista">
-            <div class="empty">Carregando histórico...</div>
-          </div>
+        <div class="hero-badges">
+          <div class="badge good" id="badgeTimer">Tempo: 00:00:00</div>
+          <div class="badge" id="badgePalavras">Palavras: 0</div>
+          <div class="badge warn" id="badgeLimiteMensal">Redações no mês: --/2</div>
         </div>
       </aside>
+    </section>    <div class="layout">
+      <section class="main">
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="section-title">Produção textual</h2>
+              <p class="section-sub" id="temaStatus">Carregando tema...</p>
+            </div>
+
+            <span class="head-tag">modo foco</span>
+          </div>
+
+          <div class="card-body">
+            <div class="modo-foco-alerta" id="modoFocoAlerta">
+  <strong>Modo foco ativado</strong>
+  Agora a tela está concentrada na produção textual. A sidebar foi ocultada para reduzir distrações.
+</div>
+            <div class="meta-grid">
+              <div class="mini">
+                <div class="label">Tempo sugerido</div>
+                <div class="value" id="tempoSugerido">--</div>
+              </div>
+
+              <div class="mini">
+                <div class="label">Mínimo de palavras</div>
+                <div class="value" id="minPalavras">--</div>
+              </div>
+
+              <div class="mini">
+                <div class="label">Máximo sugerido</div>
+                <div class="value" id="maxPalavras">--</div>
+              </div>
+
+              <div class="mini">
+                <div class="label">Rascunho local</div>
+                <div class="value" id="rascunhoStatus">Vazio</div>
+              </div>
+
+              <div class="mini">
+                <div class="label">Restantes no mês</div>
+                <div class="value" id="restantesMes">--</div>
+              </div>
+            </div>
+
+            <div class="tema-box">
+              <h3 class="tema-titulo" id="temaTitulo">Tema indisponível</h3>
+              <p class="tema-proposta" id="temaProposta">Nenhum tema ativo foi encontrado no momento.</p>
+
+              <div class="motivadores" id="motivadores"></div>
+            </div>
+
+            <div class="authorship-box">
+              <strong>Declaração de autoria</strong>
+              <p>
+                Antes de enviar, confirme que o texto digitado corresponde à redação manuscrita enviada em imagem.
+                O professor poderá comparar rapidamente a foto com o texto digitado.
+              </p>
+            </div>
+
+            <div class="integrity-grid">
+              <section class="upload-card">
+                <h3>1. Foto da redação manuscrita</h3>
+                <p>
+                  Envie uma foto nítida da redação feita à mão. Ela serve como apoio de conferência para o professor.
+                </p>
+
+                <label class="upload-zone" for="fotoRedacaoInput">
+                  <input
+                    type="file"
+                    id="fotoRedacaoInput"
+                    accept="image/*"
+                    capture="environment"
+                  >
+
+                  <img
+                    id="previewFotoRedacao"
+                    class="preview-redacao"
+                    alt="Pré-visualização da redação manuscrita"
+                  >
+
+                  <div class="upload-placeholder" id="uploadPlaceholder">
+                    <strong>Toque para enviar a foto</strong>
+                    A imagem aparecerá aqui para conferência antes do envio.
+                  </div>
+                </label>
+
+                <div class="upload-actions">
+                  <button class="btn btn-secondary" type="button" id="btnTrocarFoto">
+                    Trocar foto
+                  </button>
+
+                  <button class="btn btn-danger" type="button" id="btnRemoverFoto">
+                    Remover foto
+                  </button>
+                </div>
+              </section>
+
+              <section class="text-card">
+                <h3>2. Digitação do mesmo texto</h3>
+                <p>
+                  Digite aqui exatamente o texto que você escreveu à mão. Evite colar textos prontos.
+                </p>
+
+                <div class="estrutura-map estrutura-map-inteligente" id="estruturaMap">
+  <button class="estrutura-step" type="button" data-estrutura-step="intro">
+    <span>1</span>
+    <strong>Introdução</strong>
+    <small>Aguardando</small>
+    <em>Apresente tema + tese</em>
+  </button>
+
+  <button class="estrutura-step" type="button" data-estrutura-step="d1">
+    <span>2</span>
+    <strong>Desenv. 1</strong>
+    <small>Aguardando</small>
+    <em>1º argumento</em>
+  </button>
+
+  <button class="estrutura-step" type="button" data-estrutura-step="d2">
+    <span>3</span>
+    <strong>Desenv. 2</strong>
+    <small>Aguardando</small>
+    <em>2º argumento</em>
+  </button>
+
+  <button class="estrutura-step" type="button" data-estrutura-step="conc">
+    <span>4</span>
+    <strong>Conclusão</strong>
+    <small>Aguardando</small>
+    <em>Intervenção completa</em>
+  </button>
+</div>
+
+<div class="estrutura-dica" id="estruturaDica">
+  Clique em uma parte do mapa para ver uma dica rápida.
+</div>
+
+<div class="competencias-live" id="competenciasLive">
+  <div class="competencia-live" data-comp="c2">
+    <strong>C2</strong>
+    <span>Repertório</span>
+  </div>
+
+  <div class="competencia-live" data-comp="c3">
+    <strong>C3</strong>
+    <span>Argumentação</span>
+  </div>
+
+  <div class="competencia-live" data-comp="c4">
+    <strong>C4</strong>
+    <span>Coesão</span>
+  </div>
+
+  <div class="competencia-live" data-comp="c5">
+    <strong>C5</strong>
+    <span>Intervenção</span>
+  </div>
+</div>
+
+<div class="alertas-redacao" id="alertasRedacao"></div>
+
+                <div class="textarea-wrap">
+                  <textarea
+                    id="redacaoTexto"
+                    placeholder="Digite aqui sua redação..."
+                    spellcheck="true"
+                  ></textarea>
+
+                  <div class="textarea-footer">
+                    <span id="textoAutoriaStatus">Aguardando escrita do aluno</span>
+                    <span>Use este espaço apenas para transcrever sua redação.</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="tools">
+              <button class="btn btn-secondary" id="btnTimer" type="button">
+                Iniciar cronômetro
+              </button>
+
+              <button class="btn btn-secondary" id="btnSalvarLocal" type="button">
+                Salvar rascunho
+              </button>
+
+              <button class="btn btn-danger" id="btnLimpar" type="button">
+                Limpar texto
+              </button>
+
+              <button class="btn btn-primary" id="btnEnviar" type="button">
+                Enviar redação
+              </button>
+            </div>
+
+            <div class="status" id="statusMensagem">
+              Digite sua redação. O rascunho será salvo localmente.
+            </div>
+
+            <div class="resultado" id="resultadoBox">
+              <div class="score-hero">
+                <h3 class="nota-total" id="notaTotal">Nota: 0</h3>
+
+                <div class="comp-grid">
+                  <div class="comp">
+                    <div class="c">C1</div>
+                    <div class="n" id="c1">0</div>
+                  </div>
+
+                  <div class="comp">
+                    <div class="c">C2</div>
+                    <div class="n" id="c2">0</div>
+                  </div>
+
+                  <div class="comp">
+                    <div class="c">C3</div>
+                    <div class="n" id="c3">0</div>
+                  </div>
+
+                  <div class="comp">
+                    <div class="c">C4</div>
+                    <div class="n" id="c4">0</div>
+                  </div>
+
+                  <div class="comp">
+                    <div class="c">C5</div>
+                    <div class="n" id="c5">0</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="block">
+                <h4>Resumo da avaliação</h4>
+                <p id="resumoAvaliacao">-</p>
+              </div>
+
+              <div class="block">
+                <h4>Foco principal de melhoria</h4>
+                <p id="focoPrincipal">-</p>
+              </div>
+
+              <div class="block">
+                <h4>Plano de estudo sugerido</h4>
+                <ul id="planoEstudoSugerido"></ul>
+              </div>
+
+              <div class="block">
+                <h4>Pontos fortes</h4>
+                <ul id="pontosFortes"></ul>
+              </div>
+
+              <div class="block">
+                <h4>Pontos a melhorar</h4>
+                <ul id="pontosMelhorar"></ul>
+              </div>
+
+              <div class="block">
+                <h4>Recomendações</h4>
+                <ul id="recomendacoes"></ul>
+              </div>
+
+              <div class="block">
+                <h4>Proposta de intervenção</h4>
+                <p id="propostaIntervencao">-</p>
+              </div>
+
+              <div class="block">
+                <h4>Observações técnicas</h4>
+                <p id="observacoesTecnicas">-</p>
+              </div>
+
+              <div class="apoio-box" id="apoioBox">
+                <h4>Apoio pontual do professor</h4>
+
+                <p class="muted">
+                  Se você quiser, pode solicitar uma orientação breve sobre o principal ponto que a IA identificou.
+                  Isso não bloqueia seu fluxo e não impede novas redações quando disponíveis.
+                </p>
+
+                <textarea
+                  id="apoioFocoTema"
+                  placeholder="Ex.: preciso melhorar conectivos, repertório ou conclusão"
+                ></textarea>
+
+                <div class="tools">
+                  <button class="btn btn-secondary" id="btnSolicitarApoio" type="button">
+                    Solicitar apoio
+                  </button>
+                </div>
+
+                <div class="status" id="apoioStatusMensagem"></div>
+              </div>
+
+              <div class="block" id="respostaProfessorBlock" style="display:none;">
+                <h4>Orientação do professor</h4>
+                <p id="respostaProfessorTexto">-</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="sidebar">
+        <section class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="section-title">Apoio à escrita</h2>
+      <p class="section-sub">Use apenas como guia. A redação precisa ser sua.</p>
     </div>
   </div>
+
+  <div class="card-body">
+    <div class="apoio-tabs">
+      <button class="apoio-tab active" type="button" data-apoio-tab="estrutura">
+        Estrutura
+      </button>
+
+      <button class="apoio-tab" type="button" data-apoio-tab="conectivos">
+        Conectivos
+      </button>
+
+      <button class="apoio-tab" type="button" data-apoio-tab="intervencao">
+        Intervenção
+      </button>
+
+      <button class="apoio-tab" type="button" data-apoio-tab="repertorios">
+        Repertórios
+      </button>
+
+      <button class="apoio-tab" type="button" data-apoio-tab="checklist">
+        Revisão
+      </button>
+    </div>
+
+    <div class="apoio-content" id="apoioEscritaContent">
+      <div class="empty">Carregando apoio de escrita...</div>
+    </div>
+  </div>
+</section>
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="section-title">Orientações</h2>
+              <p class="section-sub">Recursos para auxiliar sua organização e produção textual.</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="integrity-panel">
+  <strong>Como aproveitar melhor sua redação?</strong>
+  <p>
+    Use este espaço para organizar sua produção com calma, revisar seu texto e acompanhar sua evolução.
+  </p>
+
+  <div class="checklist">
+    <div class="check-item">
+      <span>✓</span>
+      <div>Leia atentamente o tema e os textos motivadores.</div>
+    </div>
+
+    <div class="check-item">
+      <span>✓</span>
+      <div>Planeje seus argumentos antes de começar a escrever.</div>
+    </div>
+
+    <div class="check-item">
+      <span>✓</span>
+      <div>Revise conectivos, pontuação e repetição de palavras.</div>
+    </div>
+
+    <div class="check-item">
+      <span>✓</span>
+      <div>Confira se a conclusão apresenta uma intervenção completa.</div>
+    </div>
+  </div>
+</div>
+
+            <div class="authorship-box">
+              <strong>Dica final</strong>
+<p>
+  Antes de enviar, releia sua redação e confira se sua tese, seus argumentos e sua proposta de intervenção estão claros.
+</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="section-title">Histórico</h2>
+              <p class="section-sub">Últimas submissões e evolução.</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="historico-lista" id="historicoLista">
+              <div class="empty">Carregando histórico...</div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (function prepararPreviewFotoRedacao() {
+      const input = document.getElementById('fotoRedacaoInput');
+      const preview = document.getElementById('previewFotoRedacao');
+      const placeholder = document.getElementById('uploadPlaceholder');
+      const btnTrocar = document.getElementById('btnTrocarFoto');
+      const btnRemover = document.getElementById('btnRemoverFoto');
+      const texto = document.getElementById('redacaoTexto');
+      const autoriaStatus = document.getElementById('textoAutoriaStatus');
+
+      if (!input || !preview || !placeholder) return;
+
+      function limparPreview() {
+        input.value = '';
+        preview.removeAttribute('src');
+        preview.classList.remove('visible');
+        placeholder.style.display = 'block';
+      }
+
+      input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+
+        if (!file) {
+          limparPreview();
+          return;
+        }
+
+        const url = URL.createObjectURL(file);
+        preview.src = url;
+        preview.classList.add('visible');
+        placeholder.style.display = 'none';
+      });
+
+      if (btnTrocar) {
+        btnTrocar.addEventListener('click', () => input.click());
+      }
+
+      if (btnRemover) {
+        btnRemover.addEventListener('click', limparPreview);
+      }
+
+      if (texto && autoriaStatus) {
+        texto.addEventListener('paste', (event) => {
+          const pasted = event.clipboardData?.getData('text') || '';
+
+          if (pasted.length > 600) {
+            autoriaStatus.textContent = 'Atenção: foi detectado um texto grande colado.';
+            autoriaStatus.style.color = '#ef4444';
+          } else {
+            autoriaStatus.textContent = 'Pequena colagem detectada.';
+            autoriaStatus.style.color = '#946200';
+          }
+        });
+
+        texto.addEventListener('input', () => {
+          if (!texto.value.trim()) {
+            autoriaStatus.textContent = 'Aguardando escrita do aluno';
+            autoriaStatus.style.color = '';
+            return;
+          }
+
+          if (texto.value.trim().length < 300) {
+            autoriaStatus.textContent = 'Texto em desenvolvimento';
+            autoriaStatus.style.color = '';
+            return;
+          }
+
+          autoriaStatus.textContent = 'Texto digitado registrado';
+          autoriaStatus.style.color = '#16a34a';
+        });
+      }
+    })();
+  </script>
 
   <script src="/aluno-redacao.js"></script>
 </body>

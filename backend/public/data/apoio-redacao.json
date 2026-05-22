@@ -1,0 +1,160 @@
+{
+  "estrutura": [
+    {
+      "titulo": "Introdução",
+      "descricao": "Apresente o tema, mostre que existe um problema e indique os dois caminhos que você vai desenvolver.",
+      "modelo": [
+        "Contextualização do tema",
+        "Apresentação do problema",
+        "Tese/opinião principal",
+        "Dois argumentos que serão desenvolvidos"
+      ],
+      "alerta": "Evite começar copiando literalmente o tema. Mostre que você entendeu o assunto."
+    },
+    {
+      "titulo": "Desenvolvimento 1",
+      "descricao": "Explique o primeiro argumento com clareza, usando exemplo, repertório ou causa do problema.",
+      "modelo": [
+        "Tópico frasal",
+        "Explicação do argumento",
+        "Exemplo ou repertório",
+        "Fechamento ligando ao tema"
+      ],
+      "alerta": "Não apenas cite um problema. Explique por que ele acontece."
+    },
+    {
+      "titulo": "Desenvolvimento 2",
+      "descricao": "Apresente outro argumento, diferente do primeiro, para ampliar a discussão.",
+      "modelo": [
+        "Novo tópico frasal",
+        "Causa ou consequência",
+        "Exemplo social, histórico ou cultural",
+        "Fechamento crítico"
+      ],
+      "alerta": "Evite repetir a mesma ideia do desenvolvimento 1 com outras palavras."
+    },
+    {
+      "titulo": "Conclusão",
+      "descricao": "Apresente uma proposta de intervenção completa, respeitando os direitos humanos.",
+      "modelo": [
+        "Agente",
+        "Ação",
+        "Meio/modo",
+        "Finalidade",
+        "Detalhamento"
+      ],
+      "alerta": "A conclusão precisa resolver ou amenizar o problema discutido no texto."
+    }
+  ],
+  "conectivos": [
+    {
+      "uso": "Iniciar argumento",
+      "itens": ["Em primeiro lugar", "Inicialmente", "Sob essa perspectiva", "Nesse contexto"]
+    },
+    {
+      "uso": "Adicionar ideia",
+      "itens": ["Além disso", "Ademais", "Outrossim", "Somado a isso"]
+    },
+    {
+      "uso": "Contrapor ideia",
+      "itens": ["Entretanto", "Todavia", "No entanto", "Apesar disso"]
+    },
+    {
+      "uso": "Explicar",
+      "itens": ["Isso ocorre porque", "Dessa forma", "Nesse sentido", "Tal situação evidencia que"]
+    },
+    {
+      "uso": "Concluir",
+      "itens": ["Portanto", "Logo", "Assim", "Diante disso"]
+    },
+    {
+      "uso": "Propor intervenção",
+      "itens": ["Cabe ao Estado", "Compete à escola", "É necessário que", "Deve-se promover"]
+    }
+  ],
+  "intervencao": {
+    "titulo": "Checklist da proposta de intervenção",
+    "itens": [
+      "Quem fará a ação?",
+      "O que será feito?",
+      "Como será feito?",
+      "Para quê será feito?",
+      "Há detalhamento suficiente?"
+    ],
+    "exemploSeguro": "Portanto, cabe ao Ministério da Educação, em parceria com as escolas, promover campanhas e projetos pedagógicos sobre o tema, por meio de palestras, oficinas e materiais digitais, a fim de conscientizar os estudantes e reduzir o problema social apresentado."
+  },
+  "repertorios": [
+    {
+      "area": "Educação",
+      "itens": [
+        {
+          "titulo": "Paulo Freire",
+          "uso": "Pode ser usado para defender a educação como instrumento de transformação social."
+        },
+        {
+          "titulo": "Constituição Federal de 1988",
+          "uso": "Pode ser usada para afirmar que a educação é um direito social."
+        }
+      ]
+    },
+    {
+      "area": "Saúde",
+      "itens": [
+        {
+          "titulo": "Organização Mundial da Saúde",
+          "uso": "Pode ser usada para tratar de saúde física, mental e bem-estar."
+        },
+        {
+          "titulo": "Sistema Único de Saúde",
+          "uso": "Pode ser citado em temas sobre acesso à saúde pública no Brasil."
+        }
+      ]
+    },
+    {
+      "area": "Tecnologia",
+      "itens": [
+        {
+          "titulo": "Sociedade da informação",
+          "uso": "Pode ser usada para discutir impactos da internet, redes sociais e acesso digital."
+        },
+        {
+          "titulo": "Marco Civil da Internet",
+          "uso": "Pode ser citado em temas sobre direitos, deveres e segurança no ambiente digital."
+        }
+      ]
+    },
+    {
+      "area": "Meio Ambiente",
+      "itens": [
+        {
+          "titulo": "Desenvolvimento sustentável",
+          "uso": "Pode ser usado para defender equilíbrio entre crescimento econômico e preservação ambiental."
+        },
+        {
+          "titulo": "Agenda 2030 da ONU",
+          "uso": "Pode ser citada em temas relacionados à sustentabilidade, pobreza, educação e meio ambiente."
+        }
+      ]
+    },
+    {
+      "area": "Direitos Humanos",
+      "itens": [
+        {
+          "titulo": "Declaração Universal dos Direitos Humanos",
+          "uso": "Pode ser usada para defender igualdade, dignidade e combate a violações de direitos."
+        },
+        {
+          "titulo": "Artigo 5º da Constituição",
+          "uso": "Pode ser citado em temas sobre igualdade, liberdade e direitos fundamentais."
+        }
+      ]
+    }
+  ],
+  "checklistFinal": [
+    "Minha introdução apresenta o tema e uma tese?",
+    "Meus dois desenvolvimentos têm argumentos diferentes?",
+    "Usei conectivos para ligar as ideias?",
+    "Minha conclusão tem agente, ação, meio e finalidade?",
+    "Revisei ortografia, pontuação e repetições?"
+  ]
+}

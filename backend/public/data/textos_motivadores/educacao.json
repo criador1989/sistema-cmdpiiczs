@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Educação e transformação social",
+    "tipo": "citacao",
+    "fonte": "Paulo Freire",
+    "conteudo": "A educação não transforma o mundo. Educação muda as pessoas. Pessoas transformam o mundo."
+  },
+  {
+    "titulo": "Direito à educação",
+    "tipo": "legislacao",
+    "fonte": "Constituição Federal de 1988",
+    "conteudo": "A educação é direito de todos e dever do Estado e da família."
+  },
+  {
+    "titulo": "Dados sobre evasão escolar",
+    "tipo": "estatistica",
+    "fonte": "IBGE",
+    "conteudo": "Milhares de estudantes brasileiros deixam a escola antes da conclusão da educação básica."
+  },
+  {
+    "titulo": "Educação e desigualdade",
+    "tipo": "reportagem",
+    "fonte": "UNESCO",
+    "conteudo": "A falta de acesso à educação de qualidade contribui diretamente para a ampliação das desigualdades sociais."
+  },
+  {
+    "titulo": "Alfabetização infantil",
+    "tipo": "estatistica",
+    "fonte": "INEP",
+    "conteudo": "A alfabetização adequada nos primeiros anos escolares influencia diretamente o desempenho acadêmico futuro."
+  },
+  {
+    "titulo": "Função social da escola",
+    "tipo": "citacao",
+    "fonte": "Dermeval Saviani",
+    "conteudo": "A escola tem papel essencial na formação crítica e cidadã do indivíduo."
+  }
+]
