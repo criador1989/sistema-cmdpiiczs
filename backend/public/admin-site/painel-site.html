@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Admin do Site | CMDPII-CZS</title>
+
+  <link rel="stylesheet" href="./admin-site.css" />
+  <script defer src="./admin-site.js"></script>
+</head>
+
+<body>
+
+<div class="admin-shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="seal">⚜</div>
+      <div>
+        <strong>CMS Site</strong>
+        <span>CMDPII-CZS</span>
+      </div>
+    </div>
+
+    <nav>
+      <button class="side-btn active" data-section="painel">🏠 Painel</button>
+      <button class="side-btn" data-section="editor">🧱 Construtor de Página</button>
+      <button class="side-btn" data-section="midias">🖼️ Mídias</button>
+      <button class="side-btn" data-section="noticias">📰 Notícias</button>
+      <button class="side-btn" data-section="patrocinadores">🤝 Patrocinadores</button>
+      <button class="side-btn" data-section="visitas">📊 Visitas</button>
+      <button class="side-btn" data-section="identidade">🎨 Identidade Visual</button>
+      <button class="side-btn" data-section="config">⚙️ Configurações</button>
+    </nav>
+
+      <button class="logout-btn" id="btn-logout" type="button">🚪 Sair do CMS</button>
+
+    <a class="back-link" href="/site-cmdpii/" target="_blank">
+      Ver site público
+    </a>
+  </aside>
+
+  <main class="main">
+
+    <header class="top">
+      <div>
+        <h1 id="page-title">Painel do Site Institucional</h1>
+        <p id="page-subtitle">Edite blocos e visualize o resultado em tempo real antes de publicar.</p>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn ghost" id="btn-preview">Atualizar prévia</button>
+        <button class="btn primary" id="btn-publicar">Publicar alterações</button>
+      </div>
+   </header>
+
+<section class="global-preview-card">
+  <div class="preview-toolbar">
+    <strong>Prévia real da página</strong>
+
+    <div>
+      <button id="view-desktop" class="active">Desktop</button>
+      <button id="view-mobile">Mobile</button>
+    </div>
+  </div>
+
+  <div class="preview-frame desktop" id="preview-frame">
+    <iframe
+      id="live-preview"
+      src="/site-cmdpii/index.html"
+      title="Prévia do site"
+    ></iframe>
+  </div>
+</section>
+
+<!-- PAINEL -->
+<section class="admin-section active" id="section-painel">
+      <div class="dashboard-grid">
+
+        <article class="dash-card">
+          <span>👁️</span>
+          <strong id="dash-visitas">0</strong>
+          <small>Visitas registradas</small>
+        </article>
+
+        <article class="dash-card">
+          <span>🧩</span>
+          <strong>8</strong>
+          <small>Páginas principais</small>
+        </article>
+
+        <article class="dash-card">
+          <span>🖼️</span>
+          <strong id="dash-midias">0</strong>
+          <small>Mídias cadastradas</small>
+        </article>
+
+        <article class="dash-card">
+          <span>📰</span>
+          <strong>4</strong>
+          <small>Notícias em destaque</small>
+        </article>
+
+      </div>
+
+      <div class="welcome-card">
+        <h2>Central de controle do site</h2>
+        <p>
+          Aqui você poderá editar páginas, banners, imagens, notícias, links,
+          patrocinadores, arquivos e acompanhar a prévia antes de publicar.
+        </p>
+      </div>
+    </section>
+
+    <!-- EDITOR -->
+    <!-- CONSTRUTOR -->
+<section class="admin-section" id="section-editor">
+
+  <div class="builder-layout">
+
+    <!-- COLUNA ESQUERDA -->
+    <aside class="builder-sidebar">
+
+      <div class="builder-head">
+        <h2>Página</h2>
+
+        <select id="builder-page-select">
+          <option value="home">Página Inicial</option>
+          <option value="historia">História</option>
+          <option value="direcao">Direção</option>
+          <option value="corpo-alunos">Corpo de Alunos</option>
+          <option value="processo-seletivo">Processo Seletivo</option>
+          <option value="noticias">Notícias</option>
+          <option value="galeria">Galeria</option>
+          <option value="contato">Contato</option>
+        </select>
+      </div>
+
+      <div class="builder-blocks" id="builder-blocks">
+
+        <article class="builder-block active">
+          <div>
+            <strong>Banner Principal</strong>
+            <small>Hero institucional</small>
+          </div>
+
+          <div class="block-actions-mini">
+            <button>⚙</button>
+            <button>↑</button>
+            <button>↓</button>
+            <button>👁</button>
+            <button>🗑</button>
+          </div>
+        </article>
+
+        <article class="builder-block">
+          <div>
+            <strong>Cards Institucionais</strong>
+            <small>3 colunas</small>
+          </div>
+
+          <div class="block-actions-mini">
+            <button>⚙</button>
+            <button>↑</button>
+            <button>↓</button>
+            <button>👁</button>
+            <button>🗑</button>
+          </div>
+        </article>
+
+        <article class="builder-block">
+          <div>
+            <strong>Galeria</strong>
+            <small>Imagens</small>
+          </div>
+
+          <div class="block-actions-mini">
+            <button>⚙</button>
+            <button>↑</button>
+            <button>↓</button>
+            <button>👁</button>
+            <button>🗑</button>
+          </div>
+        </article>
+
+      </div>
+
+      <button class="btn primary full" id="btn-new-block">
+        + Adicionar bloco
+      </button>
+
+      <div class="block-picker" id="block-picker">
+  <h3>Adicionar novo bloco</h3>
+
+  <button type="button" data-type="botao">🔘 Botão / Link</button>
+  <button type="button" data-type="card">🧱 Card</button>
+  <button type="button" data-type="banner">🖼️ Banner</button>
+  <button type="button" data-type="video">🎬 Vídeo</button>
+  <button type="button" data-type="galeria">🖼️ Galeria</button>
+  <button type="button" data-type="documento">📄 Documento / Edital</button>
+  <button type="button" data-type="formulario">📝 Formulário</button>
+  <button type="button" data-type="patrocinador">🤝 Patrocinador</button>
+</div>
+
+    </aside>
+
+    <!-- PROPRIEDADES -->
+    <section class="builder-properties">
+
+      <div class="properties-head">
+        <h2>Propriedades do bloco</h2>
+        <span>Banner Principal</span>
+      </div>
+
+      <label>Título principal</label>
+      <input id="hero-title" value="Disciplina, educação e valores para a vida.">
+
+      <label>Texto</label>
+      <textarea id="hero-text">Formando cidadãos conscientes, preparados para o futuro e comprometidos com a sociedade.</textarea>
+
+      <label>Texto do botão</label>
+      <input id="button-text" value="Conheça nossa história">
+
+      <label>Link do botão</label>
+      <input id="button-link" value="./historia.html">
+
+      <label>Imagem de fundo</label>
+      <input id="image-url">
+
+      <input type="file" id="upload-file" hidden>
+
+      <button class="btn upload" id="btn-upload" type="button">
+        Enviar imagem / arquivo
+      </button>
+
+      <label>Layout do bloco</label>
+
+      <select>
+        <option>Banner Largo</option>
+        <option>Texto + Imagem</option>
+        <option>Cards</option>
+        <option>Galeria</option>
+        <option>Vídeo</option>
+      </select>
+
+      <label>Visibilidade</label>
+
+      <select>
+        <option>Publicado</option>
+        <option>Oculto</option>
+        <option>Rascunho</option>
+      </select>
+
+      <div class="builder-actions">
+        <button class="btn ghost">
+          Duplicar bloco
+        </button>
+
+        <button class="btn primary">
+          Salvar bloco
+        </button>
+      </div>
+
+    </section>
+
+  </div>
+
+</section>
+
+    <!-- MÍDIAS -->
+    <section class="admin-section" id="section-midias">
+      <div class="content-card">
+        <div class="section-header">
+          <div>
+            <h2>Biblioteca de Mídias</h2>
+            <p>Envie imagens, vídeos, PDFs e documentos para usar no site.</p>
+          </div>
+
+          <button class="btn primary" id="btn-upload-midia">Enviar mídia</button>
+        </div>
+
+        <div class="media-grid" id="media-grid">
+          <div class="empty-state">Nenhuma mídia carregada ainda.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOTÍCIAS -->
+    <section class="admin-section" id="section-noticias">
+  <div class="content-card">
+    <div class="section-header">
+      <div>
+        <h2>Notícias</h2>
+        <p>Cadastre, edite, publique e destaque notícias institucionais.</p>
+      </div>
+
+      <button class="btn primary" id="btn-add-news" type="button">
+        Nova notícia
+      </button>
+    </div>
+
+    <div class="news-cms-layout">
+
+      <div class="news-cms-list" id="cms-news-list">
+        <div class="empty-state">Carregando notícias...</div>
+      </div>
+
+      <form class="news-cms-editor" id="cms-news-form">
+        <input type="hidden" id="cms-news-id">
+
+        <h3 id="cms-news-form-title">Nova notícia</h3>
+
+        <label>Título</label>
+        <input id="cms-news-title" required placeholder="Título da notícia">
+
+        <label>Slug</label>
+        <input id="cms-news-slug" placeholder="gerado-automaticamente">
+
+        <div class="cms-field-row">
+          <div>
+            <label>Categoria</label>
+            <input id="cms-news-category" value="Comunicado">
+          </div>
+
+          <div>
+            <label>Autor</label>
+            <input id="cms-news-author" value="Comunicação CMDPII">
+          </div>
+        </div>
+
+        <label>Resumo</label>
+        <textarea id="cms-news-summary" placeholder="Resumo curto da notícia"></textarea>
+
+        <label>Conteúdo</label>
+        <textarea id="cms-news-content" placeholder="Texto completo da notícia"></textarea>
+
+        <label>Imagem</label>
+        <div class="upload-field">
+          <input id="cms-news-image" placeholder="/uploads/site/noticia.png">
+
+          <button
+            class="btn ghost btn-open-media-picker"
+            type="button"
+            data-target="cms-news-image"
+          >
+            Biblioteca
+          </button>
+        </div>
+
+        <div class="cms-field-row">
+          <label>
+            <input type="checkbox" id="cms-news-featured">
+            Notícia em destaque
+          </label>
+
+          <label>
+            <input type="checkbox" id="cms-news-published">
+            Publicada
+          </label>
+        </div>
+
+        <label>SEO título</label>
+        <input id="cms-news-seo-title">
+
+        <label>SEO descrição</label>
+        <textarea id="cms-news-seo-description"></textarea>
+
+        <div class="builder-actions">
+          <button class="btn ghost" type="button" id="btn-clear-news-form">
+            Limpar
+          </button>
+
+          <button class="btn primary" type="submit">
+            Salvar notícia
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</section>
+
+    <!-- PATROCINADORES -->
+    <!-- PATROCINADORES -->
+<section class="admin-section" id="section-patrocinadores">
+
+  <div class="content-card">
+
+    <div class="section-header">
+      <div>
+        <h2>Parceiros</h2>
+
+        <p>
+          Gerencie parceiros institucionais, campanhas,
+          banners clicáveis e atalhos do site.
+        </p>
+      </div>
+
+      <button
+        class="btn primary"
+        id="btn-add-sponsor"
+        type="button"
+      >
+        Novo patrocinador
+      </button>
+    </div>
+
+    <div class="news-cms-layout">
+
+      <!-- LISTA -->
+      <div
+        class="news-cms-list"
+        id="cms-sponsor-list"
+      >
+        <div class="empty-state">
+          Carregando patrocinadores...
+        </div>
+      </div>
+
+      <!-- FORM -->
+      <form
+        class="news-cms-editor"
+        id="cms-sponsor-form"
+      >
+
+        <input
+          type="hidden"
+          id="cms-sponsor-id"
+        >
+
+        <h3 id="cms-sponsor-form-title">
+          Novo patrocinador
+        </h3>
+
+        <label>Nome</label>
+
+        <input
+          id="cms-sponsor-name"
+          required
+          placeholder="Nome do parceiro"
+        >
+
+        <label>Descrição</label>
+
+        <textarea
+          id="cms-sponsor-description"
+          placeholder="Descrição institucional"
+        ></textarea>
+
+        <label>URL de destino</label>
+
+        <input
+          id="cms-sponsor-url"
+          placeholder="https://..."
+        >
+
+        <label>Imagem / Banner</label>
+
+        <div class="upload-field">
+
+          <input
+            id="cms-sponsor-image"
+            placeholder="/uploads/site/banner.png"
+          >
+
+          <button
+            class="btn ghost btn-open-media-picker"
+            type="button"
+            data-target="cms-sponsor-image"
+          >
+            Biblioteca
+          </button>
+
+        </div>
+
+        <div class="cms-field-row">
+
+          <div>
+            <label>Tipo</label>
+
+            <select id="cms-sponsor-type">
+              <option value="patrocinador">
+                Patrocinador
+              </option>
+
+              <option value="parceiro">
+                Parceiro
+              </option>
+
+              <option value="atalho">
+                Atalho
+              </option>
+
+              <option value="campanha">
+                Campanha
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label>Ordem</label>
+
+            <input
+              id="cms-sponsor-order"
+              type="number"
+              value="0"
+            >
+          </div>
+
+        </div>
+
+        <div class="cms-field-row">
+
+          <label>
+            <input
+              type="checkbox"
+              id="cms-sponsor-featured"
+            >
+
+            Em destaque
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              id="cms-sponsor-active"
+              checked
+            >
+
+            Ativo
+          </label>
+
+        </div>
+
+        <div class="builder-actions">
+
+          <button
+            class="btn ghost"
+            type="button"
+            id="btn-clear-sponsor-form"
+          >
+            Limpar
+          </button>
+
+          <button
+            class="btn primary"
+            type="submit"
+          >
+            Salvar patrocinador
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</section>
+
+    <!-- VISITAS -->
+    <section class="admin-section" id="section-visitas">
+      <div class="content-card">
+        <h2>Estatísticas de Visitas</h2>
+        <p>Acompanhamento inicial de acessos do site institucional.</p>
+
+        <div class="dashboard-grid inside">
+          <article class="dash-card">
+            <span>👁️</span>
+            <strong id="visitas-total">0</strong>
+            <small>Total de visitas</small>
+          </article>
+
+          <article class="dash-card">
+            <span>📅</span>
+            <strong id="visitas-hoje">0</strong>
+            <small>Visitas hoje</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- IDENTIDADE VISUAL -->
+<section class="admin-section" id="section-identidade">
+  <div class="content-card">
+    <div class="section-header">
+      <div>
+        <h2>Identidade Visual</h2>
+        <p>Configure logos, brasões, cores institucionais e elementos globais do site.</p>
+      </div>
+
+      <button class="btn primary" id="btn-save-identidade">Salvar identidade</button>
+    </div>
+
+    <div class="config-grid">
+
+      <label>Logo principal do header</label>
+<div class="upload-field">
+  <input id="ident-logo-header" placeholder="/uploads/site/logo-header.png">
+  <button class="btn upload identity-upload-btn" type="button" data-target="ident-logo-header">
+    Enviar
+  </button>
+</div>
+
+<label>Brasão / Selo institucional</label>
+<div class="upload-field">
+  <input id="ident-brasao" placeholder="/uploads/site/brasao.png">
+  <button class="btn upload identity-upload-btn" type="button" data-target="ident-brasao">
+    Enviar
+  </button>
+</div>
+
+<label>Logo do rodapé</label>
+<div class="upload-field">
+  <input id="ident-logo-footer" placeholder="/uploads/site/logo-footer.png">
+  <button class="btn upload identity-upload-btn" type="button" data-target="ident-logo-footer">
+    Enviar
+  </button>
+</div>
+
+<label>Favicon</label>
+<div class="upload-field">
+  <input id="ident-favicon" placeholder="/uploads/site/favicon.png">
+  <button class="btn upload identity-upload-btn" type="button" data-target="ident-favicon">
+    Enviar
+  </button>
+</div>
+
+<input type="file" id="upload-identidade-file" hidden>
+
+      <label>Cor primária</label>
+      <input id="ident-cor-primaria" type="color" value="#061a35">
+
+      <label>Cor secundária</label>
+      <input id="ident-cor-secundaria" type="color" value="#b9151b">
+
+      <label>Cor de destaque</label>
+      <input id="ident-cor-destaque" type="color" value="#f5b51b">
+
+      <!-- =========================
+HEADER GLOBAL
+========================= -->
+
+<div class="config-divider">
+  <h3>Header Global</h3>
+  <p>
+    Configurações da barra superior do site.
+  </p>
+</div>
+
+<label>Nome do Colégio</label>
+<input id="global-header-title" value="COLÉGIO DOM PEDRO II">
+
+<label>Subtítulo</label>
+<input id="global-header-subtitle" value="CAMPUS CZS SUL">
+
+<label>Descrição pequena</label>
+<input id="global-header-small" value="Unidade de Ensino do CBMAC">
+
+<label>Texto do botão principal</label>
+<input id="global-header-button-text" value="Acesso Axoriin">
+
+<label>Link do botão principal</label>
+<input id="global-header-button-link" value="https://axoriin.com.br">
+
+<label>Logo / Brasão</label>
+
+<div class="upload-field">
+  <input
+    id="global-header-logo"
+    placeholder="/uploads/site/logo-topbar.png"
+  >
+
+  <button
+    class="btn upload btn-upload-global-header-logo"
+    type="button"
+    data-target="global-header-logo"
+  >
+    Enviar logo
+  </button>
+</div>
+
+<input type="file" id="upload-file" hidden accept="image/*">
+
+<!-- =========================
+MENU GLOBAL
+========================= -->
+
+<div class="config-divider">
+  <h3>Menu Superior</h3>
+  <p>
+    Links exibidos na barra superior do site.
+  </p>
+</div>
+
+<div id="global-menu-items">
+
+  <div class="global-menu-item">
+    <div class="news-editor-top">
+      <strong>Item do menu</strong>
+
+      <div class="quick-item-controls">
+        <button type="button" class="btn-global-menu-up">↑</button>
+        <button type="button" class="btn-global-menu-down">↓</button>
+      </div>
+    </div>
+
+    <label>Texto</label>
+    <input class="global-menu-text" value="Início">
+
+    <label>Link</label>
+    <input class="global-menu-link" value="./index.html">
+
+    <div class="cms-field-row">
+      <label>
+        <input type="checkbox" class="global-menu-featured">
+        Botão destaque
+      </label>
+
+      <label>
+        <input type="checkbox" class="global-menu-blank">
+        Abrir em nova aba
+      </label>
+    </div>
+
+    <button class="btn ghost btn-remove-global-menu" type="button">
+      Remover item
+    </button>
+  </div>
+
+  <div class="global-menu-item">
+    <div class="news-editor-top">
+      <strong>Item do menu</strong>
+
+      <div class="quick-item-controls">
+        <button type="button" class="btn-global-menu-up">↑</button>
+        <button type="button" class="btn-global-menu-down">↓</button>
+      </div>
+    </div>
+
+    <label>Texto</label>
+    <input class="global-menu-text" value="História">
+
+    <label>Link</label>
+    <input class="global-menu-link" value="./historia.html">
+
+    <div class="cms-field-row">
+      <label>
+        <input type="checkbox" class="global-menu-featured">
+        Botão destaque
+      </label>
+
+      <label>
+        <input type="checkbox" class="global-menu-blank">
+        Abrir em nova aba
+      </label>
+    </div>
+
+    <button class="btn ghost btn-remove-global-menu" type="button">
+      Remover item
+    </button>
+  </div>
+
+  <div class="global-menu-item">
+    <div class="news-editor-top">
+      <strong>Item do menu</strong>
+
+      <div class="quick-item-controls">
+        <button type="button" class="btn-global-menu-up">↑</button>
+        <button type="button" class="btn-global-menu-down">↓</button>
+      </div>
+    </div>
+
+    <label>Texto</label>
+    <input class="global-menu-text" value="Direção">
+
+    <label>Link</label>
+    <input class="global-menu-link" value="./direcao.html">
+
+    <div class="cms-field-row">
+      <label>
+        <input type="checkbox" class="global-menu-featured">
+        Botão destaque
+      </label>
+
+      <label>
+        <input type="checkbox" class="global-menu-blank">
+        Abrir em nova aba
+      </label>
+    </div>
+
+    <button class="btn ghost btn-remove-global-menu" type="button">
+      Remover item
+    </button>
+  </div>
+
+</div>
+
+<button class="btn ghost full" id="btn-add-global-menu-item" type="button">
+  + Adicionar item no menu
+</button>
+
+<!-- =========================
+FOOTER GLOBAL
+========================= -->
+
+<div class="config-divider">
+  <h3>Footer Global</h3>
+  <p>
+    Rodapé exibido em todas as páginas.
+  </p>
+</div>
+
+<label>Título do Footer</label>
+<input id="global-footer-title" value="Colégio Dom Pedro II">
+
+<label>Subtítulo</label>
+<input id="global-footer-subtitle" value="Campus CZS Sul">
+
+<label>Descrição institucional</label>
+
+<textarea id="global-footer-description">
+Excelência em ensino público, formando cidadãos conscientes e preparados para o futuro.
+</textarea>
+
+<label>Telefone</label>
+<input id="global-footer-phone" value="(68) 0000-0000">
+
+<label>Email</label>
+<input id="global-footer-email" value="contato@colegiodompedro2czs.com.br">
+
+<label>Endereço</label>
+<input id="global-footer-address" value="Cruzeiro do Sul - AC">
+
+<label>Texto copyright</label>
+<input
+  id="global-footer-copyright"
+  value="© 2026 Colégio Dom Pedro II - Campus CZS. Todos os direitos reservados."
+>
+
+<div class="config-divider">
+  <h3>Links do Rodapé</h3>
+  <p>Links rápidos exibidos no footer do site.</p>
+</div>
+
+<div id="global-footer-links">
+
+  <div class="global-footer-link-item">
+    <div class="news-editor-top">
+      <strong>Link do rodapé</strong>
+
+      <div class="quick-item-controls">
+        <button type="button" class="btn-footer-link-up">↑</button>
+        <button type="button" class="btn-footer-link-down">↓</button>
+      </div>
+    </div>
+
+    <label>Texto</label>
+    <input class="global-footer-link-text" value="Início">
+
+    <label>Link</label>
+    <input class="global-footer-link-url" value="./index.html">
+
+    <button class="btn ghost btn-remove-footer-link" type="button">
+      Remover link
+    </button>
+  </div>
+
+  <div class="global-footer-link-item">
+    <div class="news-editor-top">
+      <strong>Link do rodapé</strong>
+
+      <div class="quick-item-controls">
+        <button type="button" class="btn-footer-link-up">↑</button>
+        <button type="button" class="btn-footer-link-down">↓</button>
+      </div>
+    </div>
+
+    <label>Texto</label>
+    <input class="global-footer-link-text" value="História">
+
+    <label>Link</label>
+    <input class="global-footer-link-url" value="./historia.html">
+
+    <button class="btn ghost btn-remove-footer-link" type="button">
+      Remover link
+    </button>
+  </div>
+
+  <div class="global-footer-link-item">
+    <div class="news-editor-top">
+      <strong>Link do rodapé</strong>
+
+      <div class="quick-item-controls">
+        <button type="button" class="btn-footer-link-up">↑</button>
+        <button type="button" class="btn-footer-link-down">↓</button>
+      </div>
+    </div>
+
+    <label>Texto</label>
+    <input class="global-footer-link-text" value="Contato">
+
+    <label>Link</label>
+    <input class="global-footer-link-url" value="./contato.html">
+
+    <button class="btn ghost btn-remove-footer-link" type="button">
+      Remover link
+    </button>
+  </div>
+
+</div>
+
+<button class="btn ghost full" id="btn-add-global-footer-link" type="button">
+  + Adicionar link no rodapé
+</button>
+      
+    </div>
+  </div>
+</section>
+
+    <!-- CONFIG -->
+    <section class="admin-section" id="section-config">
+  <div class="content-card">
+    <div class="section-header">
+      <div>
+        <h2>Configurações Gerais</h2>
+        <p>Dados institucionais usados no site, rodapé, contato e SEO básico.</p>
+      </div>
+
+      <button class="btn primary" id="btn-save-config" type="button">
+        Salvar configurações
+      </button>
+    </div>
+
+    <div class="config-grid">
+
+      <div class="config-divider">
+        <h3>Identificação institucional</h3>
+        <p>Informações principais da unidade.</p>
+      </div>
+
+      <label>Nome do site</label>
+      <input id="config-nome" placeholder="Colégio Dom Pedro II - Campus CZS">
+
+      <label>Sigla</label>
+      <input id="config-sigla" placeholder="CMDPII-CZS">
+
+      <label>Descrição institucional</label>
+      <textarea id="config-descricao" placeholder="Texto institucional curto"></textarea>
+
+      <div class="config-divider">
+        <h3>Contato</h3>
+        <p>Dados exibidos na página de contato e rodapé.</p>
+      </div>
+
+      <label>Email</label>
+      <input id="config-email" placeholder="contato@colegiodompedro2czs.com.br">
+
+      <label>Telefone</label>
+      <input id="config-telefone" placeholder="(68) 0000-0000">
+
+      <label>WhatsApp</label>
+      <input id="config-whatsapp" placeholder="5568999999999">
+
+      <label>Endereço</label>
+      <textarea id="config-endereco" placeholder="Endereço completo"></textarea>
+
+      <div class="config-divider">
+        <h3>Redes sociais</h3>
+        <p>Links oficiais da instituição.</p>
+      </div>
+
+      <label>Facebook</label>
+      <input id="config-facebook" placeholder="https://facebook.com/...">
+
+      <label>Instagram</label>
+      <input id="config-instagram" placeholder="https://instagram.com/...">
+
+      <label>YouTube</label>
+      <input id="config-youtube" placeholder="https://youtube.com/...">
+
+      <div class="config-divider">
+        <h3>SEO básico</h3>
+        <p>Textos usados por mecanismos de busca e compartilhamento.</p>
+      </div>
+
+      <label>Título SEO padrão</label>
+      <input id="config-seo-title" placeholder="Colégio Dom Pedro II - Campus CZS">
+
+      <label>Descrição SEO padrão</label>
+      <textarea id="config-seo-description" placeholder="Descrição curta para buscadores"></textarea>
+
+    </div>
+  </div>
+</section>
+
+  </main>
+
+</div>
+
+<!-- =========================
+MEDIA LIBRARY MODAL
+========================= -->
+
+<div class="media-picker-overlay" id="media-picker-overlay">
+
+  <div class="media-picker-modal">
+
+    <div class="media-picker-head">
+      <div>
+        <h3>Biblioteca de Mídias</h3>
+        <p>Selecione uma imagem da biblioteca.</p>
+      </div>
+
+      <button
+        type="button"
+        id="btn-close-media-picker"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div
+      class="media-picker-grid"
+      id="media-picker-grid"
+    >
+      <div class="empty-state">
+        Nenhuma mídia encontrada.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Ação realizada.</div>
+
+</body>
+</html>
