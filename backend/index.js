@@ -201,11 +201,6 @@ const dashboardFastRoutes = require('./routes/api/dashboard-fast');
 
 const pdfRoutes = require('./routes/api/pdf.js');
 
-console.log(
-  '[INDEX][PDFROUTES]',
-  typeof pdfRoutes,
-  pdfRoutes
-);
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
 const fichaAlunoRoutes = require('./routes/api/fichaAluno');
@@ -251,6 +246,8 @@ const baileFinanceiroRoutes = require('./routes/api/baileFinanceiro');
 const baileControleRoutes = require('./routes/api/baileControle');
 const processosDisciplinaresRoutes = require('./routes/api/processosDisciplinares');
 const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
+const siteAdminRoutes = require('./routes/api/siteAdmin');
+const sitePublicoRoutes = require('./routes/api/sitePublico');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -403,6 +400,8 @@ function buildProfessorGuard(publicRoot) {
   ]);
 
   const blockedPrefixes = [
+    '/admin-site',
+    '/api/site-admin',
     '/notificacoes',
     '/ver-notificacoes',
     '/usuarios',
@@ -421,10 +420,17 @@ function buildProfessorGuard(publicRoot) {
     '/rifas',
     '/api/rifas',
     '/configuracao-documentos',
-    '/api/configuracao-documentos'
+    '/api/configuracao-documentos',
   ];
 
   const alwaysPublic = new Set([
+    '/admin-site/login.html',
+    '/admin-site/painel-site.html',
+    '/admin-site/admin-site.css',
+    '/admin-site/admin-site.js',
+    '/site-cmdpii',
+    '/site-cmdpii/',
+    '/api/site-publico',
     '/login.html',
     '/login-aluno.html',
     '/painel-aluno.html',
@@ -460,11 +466,12 @@ function buildProfessorGuard(publicRoot) {
     const p = req.path;
 
     if (
-      p.startsWith('/assets/') ||
-      p.startsWith('/icons/') ||
-      p.startsWith('/img/') ||
-      p.startsWith('/uploads/')
-    ) return next();
+  p.startsWith('/site-cmdpii/') ||
+  p.startsWith('/assets/') ||
+  p.startsWith('/icons/') ||
+  p.startsWith('/img/') ||
+  p.startsWith('/uploads/')
+) return next();
 
     if (alwaysPublic.has(p)) return next();
 
@@ -664,6 +671,16 @@ mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes, autenticar
    🚀 LIVRO DE OCORRENCIAS (NOVO MÓDULO)
    ========================= */
 mountIf('/api/livro-ocorrencias', livroOcorrenciasRoutes, autenticar);
+
+/* =========================
+   🌐 CMS SITE INSTITUCIONAL
+   ========================= */
+
+// ADMIN DO SITE
+mountIf('/api/site-admin', siteAdminRoutes, autenticar);
+
+// API PÚBLICA DO SITE
+mountIf('/api/site-publico', sitePublicoRoutes);
 
 /* =========================
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
