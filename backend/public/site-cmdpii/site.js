@@ -741,9 +741,32 @@ async function carregarHomeDoMongo() {
     const main = document.querySelector('main');
     if (!main) return;
 
-    const blocos = data.blocos
-      .filter(bloco => bloco.ativo !== false)
-      .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
+    const ordemHome = [
+  'home-banner',
+  'home-menu',
+  'home-patrocinadores',
+  'home-noticias',
+  'home-associacao',
+  'home-estatisticas',
+  'home-documentos',
+  'home-galeria',
+  'home-video'
+];
+
+const blocos = data.blocos
+  .filter(bloco => bloco.ativo !== false)
+  .sort((a, b) => {
+    const idA = a.configuracao?.cmsBlockId || a.id || '';
+    const idB = b.configuracao?.cmsBlockId || b.id || '';
+
+    const posA = ordemHome.indexOf(idA);
+    const posB = ordemHome.indexOf(idB);
+
+    const ordemA = posA >= 0 ? posA : 999;
+    const ordemB = posB >= 0 ? posB : 999;
+
+    return ordemA - ordemB;
+  });
 
     main.innerHTML = '';
 
@@ -758,8 +781,17 @@ async function carregarHomeDoMongo() {
         main.insertAdjacentHTML('beforeend', renderHomeMenu(bloco));
       }
 
+       if (id === 'home-patrocinadores') {
+        await renderHomePatrocinadores(main, bloco);
+      }
+
       if (id === 'home-noticias') {
         await renderHomeNoticias(main, bloco);
+      }
+
+      if (id === 'home-associacao') {
+        main.insertAdjacentHTML('beforeend', renderHomeAssociacao(bloco));
+        inicializarHomeAssociacaoModal();
       }
 
       if (id === 'home-estatisticas') {
@@ -767,17 +799,20 @@ async function carregarHomeDoMongo() {
         atualizarEstatisticasPublicas();
       }
 
+      if (id === 'home-documentos') {
+        main.insertAdjacentHTML('beforeend', renderHomeDocumentos(bloco));
+        inicializarHomeDocumentosModal();
+      }
+
       if (id === 'home-galeria') {
         main.insertAdjacentHTML('beforeend', renderHomeGaleria(bloco));
       }
 
-      if (id === 'home-patrocinadores') {
-        await renderHomePatrocinadores(main, bloco);
-      }
-
+      
       if (id === 'home-video') {
         main.insertAdjacentHTML('beforeend', renderHomeVideo(bloco));
       }
+
     }
 
   } catch (err) {
@@ -1035,6 +1070,13 @@ function inferirTipoRenderBlocoCms(bloco = {}) {
 }
 
 function renderBlocoHeroInterno(bloco = {}) {
+  const cmsBlockId =
+    bloco.configuracao?.cmsBlockId || '';
+
+  if (cmsBlockId === 'processo-banner') {
+    return renderBlocoProcessoBanner(bloco);
+  }
+
   const overlay =
     Number(bloco.configuracao?.overlay || 0.94);
 
@@ -1073,19 +1115,137 @@ function renderBlocoHeroInterno(bloco = {}) {
         <p>${escaparHtml(bloco.texto || '')}</p>
 
         ${
+  bloco.link?.url || Array.isArray(bloco.itens)
+    ? `
+      <div class="hero-actions">
+        ${
           bloco.link?.url
             ? `
-              <div class="hero-actions">
-                <a
-                  class="btn primary"
-                  href="${escaparHtml(bloco.link.url)}"
-                >
-                  ${escaparHtml(bloco.link.texto || 'Saiba mais')}
-                </a>
+              <a
+                class="btn primary"
+                href="${escaparHtml(bloco.link.url)}"
+              >
+                ${escaparHtml(bloco.link.texto || 'Saiba mais')}
+              </a>
+            `
+            : ''
+        }
+
+        ${
+          Array.isArray(bloco.itens)
+            ? bloco.itens
+                .filter(item => item.tipo === 'botao-secundario' && item.link)
+                .map(item => `
+                  <a
+                    class="btn secondary"
+                    href="${escaparHtml(item.link)}"
+                  >
+                    ${escaparHtml(item.texto || 'Acessar')}
+                  </a>
+                `).join('')
+            : ''
+        }
+      </div>
+    `
+    : ''
+}
+      </div>
+    </section>
+  `;
+}
+
+function renderBlocoProcessoBanner(bloco = {}) {
+  const overlay =
+    Number(bloco.configuracao?.overlay || 0.90);
+
+  const overlaySeguro =
+    Number.isFinite(overlay) ? overlay : 0.90;
+
+  const badges = Array.isArray(bloco.itens)
+    ? bloco.itens.filter(item => !item.tipo)
+    : [];
+
+  const botaoSecundario = Array.isArray(bloco.itens)
+    ? bloco.itens.find(item => item.tipo === 'botao-secundario')
+    : null;
+
+  return `
+    <section
+      class="selection-hero cms-processo-banner"
+      data-cms-block-id="${escaparHtml(bloco.configuracao?.cmsBlockId || '')}"
+      style="
+        ${
+          bloco.imagemUrl
+            ? `
+              background:
+                linear-gradient(
+                  90deg,
+                  rgba(6,26,53,${overlaySeguro}),
+                  rgba(6,26,53,.78),
+                  rgba(185,21,27,.30)
+                ),
+                url('${escaparHtml(bloco.imagemUrl)}');
+              background-size: cover;
+              background-position: center;
+            `
+            : ''
+        }
+      "
+    >
+      <div class="selection-content">
+        ${
+          badges.length
+            ? `
+              <div class="selection-badges">
+                ${badges.map((item, index) => `
+                  <span class="mini-badge ${index === 0 ? 'gold' : ''}">
+                    ${escaparHtml(item.texto || '')}
+                  </span>
+                `).join('')}
               </div>
             `
             : ''
         }
+
+        <span class="selection-tag">
+          ${escaparHtml(bloco.subtitulo || bloco.configuracao?.breadcrumb || 'Processo Seletivo')}
+        </span>
+
+        <h1>${escaparHtml(bloco.titulo || '')}</h1>
+
+        ${
+          bloco.texto
+            ? `<p>${escaparHtml(bloco.texto)}</p>`
+            : ''
+        }
+
+        <div class="selection-buttons">
+          ${
+            bloco.link?.url
+              ? `
+                <a
+                  class="btn primary"
+                  href="${escaparHtml(bloco.link.url)}"
+                >
+                  ${escaparHtml(bloco.link.texto || 'Baixar edital')}
+                </a>
+              `
+              : ''
+          }
+
+          ${
+            botaoSecundario?.link
+              ? `
+                <a
+                  class="btn secondary"
+                  href="${escaparHtml(botaoSecundario.link)}"
+                >
+                  ${escaparHtml(botaoSecundario.texto || 'Inscrição online')}
+                </a>
+              `
+              : ''
+          }
+        </div>
       </div>
     </section>
   `;
@@ -3169,3 +3329,335 @@ window.AxoriinCmsRenderer = {
   renderBlocoNumeros,
   renderBlocoCards
 };
+function renderHomeAssociacao(bloco = {}) {
+  const projetos =
+    Array.isArray(bloco.configuracao?.projetos)
+      ? bloco.configuracao.projetos
+      : [];
+
+  return `
+    <section
+      class="section home-assoc-section"
+      data-cms-block-id="${escaparHtml(bloco.configuracao?.cmsBlockId || 'home-associacao')}"
+    >
+      <article class="home-assoc-card">
+        <div class="home-assoc-icon">🤝</div>
+
+        <div class="home-assoc-content">
+          <span>Comunidade escolar</span>
+
+          <h2>${escaparHtml(bloco.titulo || 'Associação de Pais')}</h2>
+
+          <p>
+            ${escaparHtml(bloco.texto || 'Conheça as ações da Associação de Pais e participe das iniciativas que fortalecem nossa comunidade escolar.')}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="home-assoc-open"
+          data-assoc-title="${escaparHtml(bloco.configuracao?.modalTitulo || bloco.titulo || 'Associação de Pais')}"
+          data-assoc-text="${escaparHtml(bloco.configuracao?.modalTexto || bloco.texto || '')}"
+          data-assoc-button="${escaparHtml(bloco.link?.texto || 'Quero participar')}"
+          data-assoc-link="${escaparHtml(bloco.link?.url || '#')}"
+          data-assoc-projects="${escaparHtml(JSON.stringify(projetos))}"
+        >
+          Saiba mais
+        </button>
+      </article>
+    </section>
+  `;
+}
+
+function renderHomeDocumentos(bloco = {}) {
+  const itens = Array.isArray(bloco.itens) ? bloco.itens : [];
+
+  return `
+    <section
+      class="section home-docs-section"
+      data-cms-block-id="${escaparHtml(bloco.configuracao?.cmsBlockId || 'home-documentos')}"
+    >
+      <div class="section-head">
+        <h2>${escaparHtml(bloco.titulo || 'Documentos e Informações')}</h2>
+      </div>
+
+      ${
+        bloco.texto
+          ? `<div class="page-intro">${formatarTextoCms(bloco.texto)}</div>`
+          : ''
+      }
+
+      <div class="home-docs-grid">
+        ${
+          itens.length
+            ? itens.map(item => `
+              <button
+                type="button"
+                class="home-doc-card"
+                data-doc-title="${escaparHtml(item.titulo || 'Documento')}"
+                data-doc-text="${escaparHtml(item.texto || '')}"
+                data-doc-icon="${escaparHtml(item.icone || item.icon || '📄')}"
+                data-doc-files="${escaparHtml(JSON.stringify(Array.isArray(item.documentos) ? item.documentos : []))}"
+              >
+                <span>${escaparHtml(item.icone || item.icon || '📄')}</span>
+
+                <div>
+                  <h3>${escaparHtml(item.titulo || 'Documento')}</h3>
+                  <p>${escaparHtml(item.texto || item.descricao || '')}</p>
+                </div>
+
+                <strong>Ver arquivos →</strong>
+              </button>
+            `).join('')
+            : ''
+        }
+      </div>
+    </section>
+  `;
+}
+
+function inicializarHomeAssociacaoModal() {
+  if (document.body.dataset.assocModalReady === 'true') return;
+
+  document.body.dataset.assocModalReady = 'true';
+
+  document.addEventListener('click', event => {
+    const btn = event.target.closest('.home-assoc-open');
+    if (!btn) return;
+
+    let projetos = [];
+
+    try {
+      projetos = JSON.parse(btn.dataset.assocProjects || '[]');
+    } catch {
+      projetos = [];
+    }
+
+    const modalAntigo = document.querySelector('.home-assoc-modal');
+    modalAntigo?.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'home-assoc-modal';
+
+    modal.innerHTML = `
+      <div class="home-assoc-modal-backdrop"></div>
+
+      <div class="home-assoc-modal-dialog home-assoc-modal-wide" role="dialog" aria-modal="true">
+        <button type="button" class="home-assoc-modal-close" aria-label="Fechar">×</button>
+
+        <div class="home-assoc-modal-grid">
+          <div class="home-assoc-modal-info">
+            <span>Associação de Pais</span>
+
+            <h2>${escaparHtml(btn.dataset.assocTitle || 'Associação de Pais')}</h2>
+
+            <div class="home-assoc-modal-text">
+              ${formatarTextoCms(btn.dataset.assocText || '')}
+            </div>
+
+            ${
+              btn.dataset.assocLink && btn.dataset.assocLink !== '#'
+                ? `
+                  <a
+                    class="btn primary home-assoc-join-btn"
+                    href="${escaparHtml(btn.dataset.assocLink)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    ${escaparHtml(btn.dataset.assocButton || 'Quero participar')}
+                  </a>
+                `
+                : ''
+            }
+          </div>
+
+          <div class="home-assoc-projects">
+            ${
+              projetos.length
+                ? `
+                  <div class="home-assoc-slider" data-assoc-slider>
+                    <button type="button" class="home-assoc-slide-nav prev" data-assoc-prev>‹</button>
+
+                    <div class="home-assoc-slides">
+                      ${projetos.map((item, index) => `
+                        <article class="home-assoc-slide ${index === 0 ? 'active' : ''}">
+                          ${
+                            item.imagem
+                              ? `<img src="${escaparHtml(item.imagem)}" alt="${escaparHtml(item.titulo || 'Projeto da Associação')}">`
+                              : `<div class="home-assoc-slide-empty">Sem imagem</div>`
+                          }
+
+                          <div class="home-assoc-slide-caption">
+                            <strong>${escaparHtml(item.titulo || 'Projeto apoiado pela Associação')}</strong>
+                            <p>${escaparHtml(item.texto || '')}</p>
+                          </div>
+                        </article>
+                      `).join('')}
+                    </div>
+
+                    <button type="button" class="home-assoc-slide-nav next" data-assoc-next>›</button>
+
+                    <div class="home-assoc-dots">
+                      ${projetos.map((_, index) => `
+                        <button
+                          type="button"
+                          class="${index === 0 ? 'active' : ''}"
+                          data-assoc-dot="${index}"
+                          aria-label="Ir para imagem ${index + 1}"
+                        ></button>
+                      `).join('')}
+                    </div>
+                  </div>
+                `
+                : `
+                  <div class="home-assoc-projects-empty">
+                    Adicione imagens dos projetos pelo CMS para exibi-las aqui.
+                  </div>
+                `
+            }
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.body.classList.add('home-assoc-modal-open');
+
+    let slideAtual = 0;
+
+    const slides = [...modal.querySelectorAll('.home-assoc-slide')];
+    const dots = [...modal.querySelectorAll('[data-assoc-dot]')];
+
+    const irParaSlide = index => {
+      if (!slides.length) return;
+
+      slideAtual = (index + slides.length) % slides.length;
+
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === slideAtual);
+      });
+
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === slideAtual);
+      });
+    };
+
+    modal.querySelector('[data-assoc-prev]')?.addEventListener('click', () => {
+      irParaSlide(slideAtual - 1);
+    });
+
+    modal.querySelector('[data-assoc-next]')?.addEventListener('click', () => {
+      irParaSlide(slideAtual + 1);
+    });
+
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        irParaSlide(Number(dot.dataset.assocDot || 0));
+      });
+    });
+
+    let autoplay = null;
+
+    if (slides.length > 1) {
+      autoplay = setInterval(() => {
+        irParaSlide(slideAtual + 1);
+      }, 5000);
+    }
+
+    const fechar = () => {
+      if (autoplay) clearInterval(autoplay);
+
+      modal.remove();
+      document.body.classList.remove('home-assoc-modal-open');
+    };
+
+    modal.querySelector('.home-assoc-modal-close')?.addEventListener('click', fechar);
+    modal.querySelector('.home-assoc-modal-backdrop')?.addEventListener('click', fechar);
+  });
+}
+
+function inicializarHomeDocumentosModal() {
+  if (document.body.dataset.homeDocsModalReady === 'true') return;
+
+  document.body.dataset.homeDocsModalReady = 'true';
+
+  document.addEventListener('click', event => {
+    const card = event.target.closest('.home-doc-card');
+    if (!card) return;
+
+    let arquivos = [];
+
+    try {
+      arquivos = JSON.parse(card.dataset.docFiles || '[]');
+    } catch {
+      arquivos = [];
+    }
+
+    const modalAntigo = document.querySelector('.home-doc-modal');
+    modalAntigo?.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'home-doc-modal';
+
+    modal.innerHTML = `
+      <div class="home-doc-modal-backdrop"></div>
+
+      <div class="home-doc-modal-dialog" role="dialog" aria-modal="true">
+        <button
+          type="button"
+          class="home-doc-modal-close"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+
+        <div class="home-doc-modal-head">
+          <span>${escaparHtml(card.dataset.docIcon || '📄')}</span>
+
+          <div>
+            <small>Documentos e informações</small>
+            <h2>${escaparHtml(card.dataset.docTitle || 'Documento')}</h2>
+            <p>${escaparHtml(card.dataset.docText || '')}</p>
+          </div>
+        </div>
+
+        <div class="home-doc-modal-list">
+          ${
+            arquivos.length
+              ? arquivos.map(arquivo => `
+                <a
+                  class="home-doc-modal-item"
+                  href="${escaparHtml(arquivo.url || arquivo.link || '#')}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div>
+                    <strong>${escaparHtml(arquivo.titulo || 'Documento')}</strong>
+                    <small>${escaparHtml(arquivo.texto || 'Baixar arquivo')}</small>
+                  </div>
+
+                  <em>Baixar</em>
+                </a>
+              `).join('')
+              : `
+                <div class="home-doc-modal-empty">
+                  Nenhum documento cadastrado neste card.
+                </div>
+              `
+          }
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.body.classList.add('home-doc-modal-open');
+
+    const fechar = () => {
+      modal.remove();
+      document.body.classList.remove('home-doc-modal-open');
+    };
+
+    modal.querySelector('.home-doc-modal-close')?.addEventListener('click', fechar);
+    modal.querySelector('.home-doc-modal-backdrop')?.addEventListener('click', fechar);
+  });
+}

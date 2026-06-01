@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const Aluno = require('../models/Aluno');
 const Notificacao = require('../models/Notificacao');
 const ComportamentoSnapshot = require('../models/ComportamentoSnapshot');
+const Instituicao = require('../models/Instituicao');
 
 function inicioDoDia(data = new Date()) {
   const d = new Date(data);
@@ -261,8 +262,6 @@ async function gerarSnapshotsTodasInstituicoes({
   data = new Date(),
   origem = 'automatico',
 } = {}) {
-  const Instituicao = require('../models/Instituicao');
-
   const instituicoes = await Instituicao.find({})
     .select('_id nome slug ativo')
     .lean();

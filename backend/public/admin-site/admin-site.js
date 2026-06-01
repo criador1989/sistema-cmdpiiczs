@@ -117,14 +117,16 @@ const pagePreviewMap = {
 
 const pageBlocksMap = {
   home: [
-    { id: 'home-banner', nome: 'Banner Principal', tipo: 'Hero institucional' },
-    { id: 'home-menu', nome: 'Menu Rápido', tipo: 'Atalhos' },
-    { id: 'home-noticias', nome: 'Notícias em Destaque', tipo: 'Cards' },
-    { id: 'home-estatisticas', nome: 'Estatísticas', tipo: 'Contadores' },
-    { id: 'home-galeria', nome: 'Galeria de Fotos', tipo: 'Imagens' },
-    { id: 'home-patrocinadores', nome: 'Parceiros', tipo: 'Banners' },
-{ id: 'home-video', nome: 'Vídeo Institucional', tipo: 'Vídeo' }
-  ],
+  { id: 'home-banner', nome: 'Banner Principal', tipo: 'Hero institucional' },
+  { id: 'home-menu', nome: 'Menu Rápido', tipo: 'Atalhos' },
+  { id: 'home-patrocinadores', nome: 'Parceiros', tipo: 'Banners' },
+  { id: 'home-noticias', nome: 'Notícias em Destaque', tipo: 'Cards' },
+  { id: 'home-associacao', nome: 'Associação de Pais', tipo: 'Card institucional' },
+  { id: 'home-estatisticas', nome: 'Estatísticas', tipo: 'Contadores' },
+  { id: 'home-documentos', nome: 'Documentos e Informações', tipo: 'Cards' },
+  { id: 'home-galeria', nome: 'Galeria de Fotos', tipo: 'Imagens' },
+  { id: 'home-video', nome: 'Vídeo Institucional', tipo: 'Vídeo' }
+],
 
   historia: [
     { id: 'historia-banner', nome: 'Banner da História', tipo: 'Hero da página' },
@@ -920,6 +922,338 @@ function montarCamposHomeNoticias(nome) {
       <button class="btn primary" type="button" data-action="save">Salvar bloco</button>
     </div>
   `;
+}
+
+function montarCamposHomeAssociacao(nome) {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-associacao');
+
+  const mongo = blocoAtual?.mongo || {};
+
+  const projetos =
+    Array.isArray(mongo.configuracao?.projetos) && mongo.configuracao.projetos.length
+      ? mongo.configuracao.projetos
+      : [
+          {
+            imagem: '',
+            titulo: 'Projeto apoiado pela Associação',
+            texto: 'Descreva aqui uma ação desenvolvida com apoio da Associação de Pais.'
+          }
+        ];
+
+  return `
+    <div class="properties-head">
+      <h2>Associação de Pais</h2>
+      <span>${nome}</span>
+    </div>
+
+    <label>Título do card</label>
+    <input id="home-assoc-title" value="${mongo.titulo || 'Associação de Pais'}">
+
+    <label>Texto curto do card</label>
+    <textarea id="home-assoc-text">${mongo.texto || 'Conheça as ações da Associação de Pais e participe das iniciativas que fortalecem nossa comunidade escolar.'}</textarea>
+
+    <label>Título do modal</label>
+    <input id="home-assoc-modal-title" value="${mongo.configuracao?.modalTitulo || 'Associação de Pais do Colégio'}">
+
+    <label>Texto completo do modal</label>
+    <textarea id="home-assoc-modal-text">${mongo.configuracao?.modalTexto || 'A Associação de Pais atua em parceria com a escola, apoiando ações pedagógicas, projetos institucionais, eventos, melhorias e iniciativas voltadas ao fortalecimento da comunidade escolar.'}</textarea>
+
+    <label>Texto do botão</label>
+    <input id="home-assoc-button-text" value="${mongo.link?.texto || 'Quero participar'}">
+
+    <label>Link do formulário</label>
+    <input id="home-assoc-button-link" value="${mongo.link?.url || '#'}">
+
+    <div class="cms-alert-info">
+      Imagens/projetos exibidos no modal da Associação
+    </div>
+
+    <div id="home-assoc-projects-fields">
+      ${projetos.map((item, index) =>
+        montarItemProjetoAssociacao(index + 1, item)
+      ).join('')}
+    </div>
+
+    <input type="file" id="upload-file" hidden accept="image/*">
+
+    <button class="btn ghost full" id="btn-add-home-assoc-project" type="button">
+      + Adicionar imagem/projeto
+    </button>
+
+    <div class="builder-actions">
+      <button class="btn ghost" type="button" data-action="duplicate">Duplicar bloco</button>
+      <button class="btn primary" type="button" data-action="save">Salvar bloco</button>
+    </div>
+  `;
+}
+
+function montarItemProjetoAssociacao(n, item = {}) {
+  return `
+    <div class="home-assoc-project-editor" data-home-assoc-project-index="${n}">
+      <div class="news-editor-top">
+        <strong>Imagem/Projeto ${n}</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-home-assoc-project-up">↑</button>
+          <button type="button" class="btn-home-assoc-project-down">↓</button>
+        </div>
+      </div>
+
+      <label>Imagem</label>
+      <div class="upload-field">
+        <input
+          id="home-assoc-project-image-${n}"
+          value="${item.imagem || ''}"
+          placeholder="/uploads/site/projeto-associacao.jpg"
+        >
+
+        <button
+          class="btn upload btn-upload-home-assoc-project"
+          type="button"
+          data-target="home-assoc-project-image-${n}"
+        >
+          Enviar
+        </button>
+
+        <button
+          class="btn ghost btn-open-media-picker"
+          type="button"
+          data-target="home-assoc-project-image-${n}"
+        >
+          Biblioteca
+        </button>
+      </div>
+
+      <label>Título da imagem/projeto</label>
+      <input
+        id="home-assoc-project-title-${n}"
+        value="${item.titulo || ''}"
+        placeholder="Ex.: Apoio em projeto pedagógico"
+      >
+
+      <label>Descrição</label>
+      <textarea
+        id="home-assoc-project-text-${n}"
+        placeholder="Descreva brevemente a ação realizada."
+      >${item.texto || ''}</textarea>
+
+      <button class="btn ghost btn-remove-home-assoc-project" type="button">
+        Remover imagem/projeto
+      </button>
+    </div>
+  `;
+}
+
+function coletarProjetosAssociacaoHome() {
+  const campos = [...document.querySelectorAll('.home-assoc-project-editor')];
+
+  return campos.map((box, index) => {
+    const i = box.dataset.homeAssocProjectIndex;
+
+    return {
+      ordem: index,
+      imagem: getInput(`home-assoc-project-image-${i}`)?.value || '',
+      titulo: getInput(`home-assoc-project-title-${i}`)?.value || '',
+      texto: getInput(`home-assoc-project-text-${i}`)?.value || ''
+    };
+  }).filter(item => item.imagem.trim() || item.titulo.trim() || item.texto.trim());
+}
+
+
+
+function montarCamposHomeDocumentos(nome) {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-documentos');
+
+  const mongo = blocoAtual?.mongo || {};
+
+  const itensSalvos =
+    Array.isArray(mongo?.itens)
+      ? mongo.itens
+      : [];
+
+  const itens = itensSalvos.length
+    ? itensSalvos
+    : [
+        { icone: '📜', titulo: 'Regulamentos', texto: 'Normas e documentos institucionais.', link: '#' },
+        { icone: '📚', titulo: 'Ensino Fundamental II', texto: 'Materiais e informações do Fundamental II.', link: '#' },
+        { icone: '🎓', titulo: 'Ensino Médio', texto: 'Materiais e informações do Ensino Médio.', link: '#' },
+        { icone: '📅', titulo: 'Calendário Escolar', texto: 'Acesse o calendário letivo.', link: '#' },
+        { icone: '⏰', titulo: 'Horários das Disciplinas', texto: 'Consulte os horários das turmas.', link: '#' },
+        { icone: '🚌', titulo: 'Rotas de Ônibus', texto: 'Informações sobre transporte escolar.', link: '#' }
+      ];
+
+  return `
+    <div class="properties-head">
+      <h2>Documentos e Informações</h2>
+      <span>${nome}</span>
+    </div>
+
+    <label>Título da seção</label>
+    <input id="home-docs-title" value="${mongo?.titulo || 'Documentos e Informações'}">
+
+    <label>Descrição</label>
+    <textarea id="home-docs-text">${mongo?.texto || 'Acesse rapidamente documentos, materiais e informações importantes para alunos e famílias.'}</textarea>
+
+    <div id="home-docs-fields">
+      ${itens.map((item, index) => montarItemHomeDocumento(index + 1, item)).join('')}
+    </div>
+
+    <button class="btn ghost full" id="btn-add-home-doc" type="button">
+      + Adicionar card
+    </button>
+
+    <div class="builder-actions">
+      <button class="btn ghost" type="button" data-action="duplicate">Duplicar bloco</button>
+      <button class="btn primary" type="button" data-action="save">Salvar bloco</button>
+    </div>
+  `;
+}
+
+function montarItemHomeDocumento(n, item = {}) {
+  const documentos =
+    Array.isArray(item.documentos) && item.documentos.length
+      ? item.documentos
+      : [
+          {
+            titulo: 'Novo documento',
+            texto: 'Baixar arquivo',
+            url: item.link || item.url || '#'
+          }
+        ];
+
+  return `
+    <div class="home-doc-editor" data-home-doc-index="${n}">
+      <div class="news-editor-top">
+        <strong>Card ${n}</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-home-doc-up">↑</button>
+          <button type="button" class="btn-home-doc-down">↓</button>
+        </div>
+      </div>
+
+      <label>Ícone</label>
+      <input id="home-doc-icon-${n}" value="${item.icone || item.icon || '📄'}">
+
+      <label>Título</label>
+      <input id="home-doc-title-${n}" value="${item.titulo || ''}">
+
+      <label>Descrição</label>
+      <textarea id="home-doc-text-${n}">${item.texto || item.descricao || ''}</textarea>
+
+      <div class="cms-alert-info">
+        Documentos dentro deste card
+      </div>
+
+      <div id="home-doc-files-${n}" class="home-doc-files-list">
+        ${documentos.map((doc, index) =>
+          montarArquivoHomeDocumento(n, index + 1, doc)
+        ).join('')}
+      </div>
+
+      <button
+        class="btn ghost full btn-add-home-doc-file"
+        type="button"
+        data-card-index="${n}"
+      >
+        + Adicionar documento neste card
+      </button>
+
+      <button class="btn ghost btn-remove-home-doc" type="button">
+        Remover card
+      </button>
+    </div>
+  `;
+}
+
+function montarArquivoHomeDocumento(cardIndex, fileIndex, doc = {}) {
+  return `
+    <div
+      class="home-doc-file-editor"
+      data-card-index="${cardIndex}"
+      data-file-index="${fileIndex}"
+    >
+      <div class="news-editor-top">
+        <strong>Documento ${fileIndex}</strong>
+
+        <button
+          class="btn ghost btn-remove-home-doc-file"
+          type="button"
+        >
+          Remover
+        </button>
+      </div>
+
+      <label>Título do documento</label>
+      <input
+        id="home-doc-file-title-${cardIndex}-${fileIndex}"
+        value="${doc.titulo || ''}"
+        placeholder="Ex.: Material Escolar"
+      >
+
+      <label>Descrição / texto do botão</label>
+      <input
+        id="home-doc-file-text-${cardIndex}-${fileIndex}"
+        value="${doc.texto || 'Baixar arquivo'}"
+        placeholder="Ex.: Baixar PDF"
+      >
+
+      <label>Link / arquivo</label>
+      <div class="upload-field">
+        <input
+          id="home-doc-file-url-${cardIndex}-${fileIndex}"
+          value="${doc.url || doc.link || '#'}"
+          placeholder="/uploads/site/documento.pdf"
+        >
+
+        <button
+          class="btn upload btn-upload-home-doc-file"
+          type="button"
+          data-target="home-doc-file-url-${cardIndex}-${fileIndex}"
+        >
+          Enviar
+        </button>
+
+        <button
+          class="btn ghost btn-open-media-picker"
+          type="button"
+          data-target="home-doc-file-url-${cardIndex}-${fileIndex}"
+        >
+          Biblioteca
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function coletarHomeDocumentos() {
+  const cards = [...document.querySelectorAll('.home-doc-editor')];
+
+  return cards.map((box, index) => {
+    const i = box.dataset.homeDocIndex;
+
+    const documentos =
+      [...box.querySelectorAll('.home-doc-file-editor')].map((docBox, docIndex) => {
+        const fileIndex = docBox.dataset.fileIndex;
+
+        return {
+          ordem: docIndex,
+          titulo: getInput(`home-doc-file-title-${i}-${fileIndex}`)?.value || '',
+          texto: getInput(`home-doc-file-text-${i}-${fileIndex}`)?.value || 'Baixar arquivo',
+          url: getInput(`home-doc-file-url-${i}-${fileIndex}`)?.value || '#'
+        };
+      }).filter(doc => doc.titulo.trim() || doc.url.trim());
+
+    return {
+      ordem: index,
+      icone: getInput(`home-doc-icon-${i}`)?.value || '📄',
+      titulo: getInput(`home-doc-title-${i}`)?.value || '',
+      texto: getInput(`home-doc-text-${i}`)?.value || '',
+      documentos
+    };
+  }).filter(item => item.titulo.trim() || item.texto.trim() || item.documentos.length);
 }
 
 function coletarNoticiasHome() {
@@ -4535,12 +4869,49 @@ function adicionarEtapaProcesso() {
     texto: 'Descrição da nova etapa do processo seletivo.'
   });
 
-  container.appendChild(wrap.firstElementChild);
+  const novoItem = wrap.firstElementChild;
 
-  ligarEventosCamposDinamicos();
+  container.appendChild(novoItem);
+
+  ligarEventosProcessoEtapasDoNovoItem(novoItem);
   atualizarPreview();
 
   showToast('Etapa adicionada.');
+}
+
+function ligarEventosProcessoEtapasDoNovoItem(item) {
+  if (!item) return;
+
+  item
+    .querySelectorAll('input, textarea, select')
+    .forEach(el => {
+      el.addEventListener('input', atualizarPreview);
+      el.addEventListener('change', atualizarPreview);
+    });
+
+  item.querySelector('.btn-remove-process-step')?.addEventListener('click', () => {
+    item.remove();
+    atualizarPreview();
+    showToast('Etapa removida.');
+  });
+
+  item.querySelector('.btn-process-step-up')?.addEventListener('click', () => {
+    const prev = item.previousElementSibling;
+
+    if (prev) {
+      item.parentNode.insertBefore(item, prev);
+      atualizarPreview();
+    }
+  });
+
+  item.querySelector('.btn-process-step-down')?.addEventListener('click', () => {
+    const next = item.nextElementSibling;
+
+    if (next) {
+      item.parentNode.insertBefore(next, item);
+      atualizarPreview();
+    }
+  });
 }
 
 function atualizarProcessoEtapasNaPreview() {
@@ -4834,12 +5205,54 @@ function adicionarEditalProcesso() {
     link: '#'
   });
 
-  container.appendChild(wrap.firstElementChild);
+  const novoItem = wrap.firstElementChild;
 
-  ligarEventosCamposDinamicos();
+  container.appendChild(novoItem);
+
+  ligarEventosProcessoEditalDoNovoItem(novoItem);
   atualizarPreview();
 
   showToast('Edital adicionado.');
+}
+
+function ligarEventosProcessoEditalDoNovoItem(item) {
+  if (!item) return;
+
+  item
+    .querySelectorAll('input, textarea, select')
+    .forEach(el => {
+      el.addEventListener('input', atualizarPreview);
+      el.addEventListener('change', atualizarPreview);
+    });
+
+  item.querySelector('.btn-upload-process-edital')?.addEventListener('click', () => {
+    cmsUploadTarget = item.querySelector('.btn-upload-process-edital')?.dataset.target;
+    document.getElementById('upload-file')?.click();
+  });
+
+  item.querySelector('.btn-remove-process-edital')?.addEventListener('click', () => {
+    item.remove();
+    atualizarPreview();
+    showToast('Edital removido.');
+  });
+
+  item.querySelector('.btn-process-edital-up')?.addEventListener('click', () => {
+    const prev = item.previousElementSibling;
+
+    if (prev) {
+      item.parentNode.insertBefore(item, prev);
+      atualizarPreview();
+    }
+  });
+
+  item.querySelector('.btn-process-edital-down')?.addEventListener('click', () => {
+    const next = item.nextElementSibling;
+
+    if (next) {
+      item.parentNode.insertBefore(next, item);
+      atualizarPreview();
+    }
+  });
 }
 
 function atualizarProcessoEditaisNaPreview() {
@@ -5857,6 +6270,12 @@ function atualizarNoticiasSuporteNaPreview() {
 }
 
 function montarCamposGaleriaBanner(nome) {
+  const blocoAtual =
+    pageBlocksMap?.galeria?.find(b => b.id === 'galeria-banner');
+
+  const mongo = blocoAtual?.mongo || {};
+  const config = mongo.configuracao || {};
+
   return `
     <div class="properties-head">
       <h2>Banner Galeria</h2>
@@ -5864,18 +6283,22 @@ function montarCamposGaleriaBanner(nome) {
     </div>
 
     <label>Breadcrumb</label>
-    <input id="galeria-banner-breadcrumb" value="Início › Galeria">
+    <input id="galeria-banner-breadcrumb" value="${config.breadcrumb || mongo.subtitulo || 'Início › Galeria'}">
 
     <label>Título</label>
-    <input id="galeria-banner-title" value="Galeria Institucional">
+    <input id="galeria-banner-title" value="${mongo.titulo || 'Galeria Institucional'}">
 
     <label>Subtítulo</label>
-    <textarea id="galeria-banner-text">Registros das atividades, eventos, projetos e momentos marcantes da instituição.</textarea>
+    <textarea id="galeria-banner-text">${mongo.texto || 'Registros das atividades, eventos, projetos e momentos marcantes da instituição.'}</textarea>
 
     <label>Imagem de fundo</label>
 
     <div class="upload-field">
-      <input id="galeria-banner-image" placeholder="/uploads/site/banner-galeria.png">
+      <input
+        id="galeria-banner-image"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/banner-galeria.png"
+      >
 
       <button
         class="btn upload btn-upload-galeria-banner"
@@ -5889,19 +6312,19 @@ function montarCamposGaleriaBanner(nome) {
     <label>Intensidade do overlay</label>
 
     <select id="galeria-banner-overlay">
-      <option value="0.92">Forte</option>
-      <option value="0.78">Médio</option>
-      <option value="0.62">Leve</option>
+      <option value="0.92" ${String(config.overlay || '0.92') === '0.92' ? 'selected' : ''}>Forte</option>
+      <option value="0.78" ${String(config.overlay || '') === '0.78' ? 'selected' : ''}>Médio</option>
+      <option value="0.62" ${String(config.overlay || '') === '0.62' ? 'selected' : ''}>Leve</option>
     </select>
 
     <input type="file" id="upload-file" hidden accept="image/*">
 
     <div class="builder-actions">
-      <button class="btn ghost" type="button">
+      <button class="btn ghost" type="button" data-action="duplicate">
         Duplicar bloco
       </button>
 
-      <button class="btn primary" type="button">
+      <button class="btn primary" type="button" data-action="save">
         Salvar bloco
       </button>
     </div>
@@ -6354,15 +6777,36 @@ function coletarGridGaleria() {
   return campos.map((box, index) => {
     const i = box.dataset.galleryGridIndex;
 
+    const imagens = [...box.querySelectorAll('.gallery-event-photo-editor')]
+      .map((fotoBox, fotoIndex) => {
+        const photoIndex = fotoBox.dataset.photoIndex;
+
+        return {
+          ordem: fotoIndex,
+          url:
+            getInput(`gallery-event-photo-${i}-${photoIndex}`)?.value ||
+            '',
+          legenda:
+            fotoBox.querySelector('.gallery-event-photo-caption')?.value ||
+            ''
+        };
+      })
+      .filter(foto => foto.url.trim());
+
     return {
       ordem: index,
       eventIndex: i,
       grande: getInput(`gallery-grid-large-${i}`)?.checked || false,
       imagem: getInput(`gallery-grid-image-${i}`)?.value || '',
       etiqueta: getInput(`gallery-grid-label-${i}`)?.value || '',
-      titulo: getInput(`gallery-grid-title-${i}`)?.value || ''
+      titulo: getInput(`gallery-grid-title-${i}`)?.value || '',
+      imagens
     };
-  }).filter(item => item.titulo.trim() || item.imagem.trim());
+  }).filter(item =>
+    item.titulo.trim() ||
+    item.imagem.trim() ||
+    item.imagens.length
+  );
 }
 
 function adicionarImagemGridGaleria() {
@@ -7551,6 +7995,14 @@ if (id === 'home-patrocinadores') {
   return montarCamposHomePatrocinadores(nome);
 }
 
+if (id === 'home-associacao') {
+  return montarCamposHomeAssociacao(nome);
+}
+
+if (id === 'home-documentos') {
+  return montarCamposHomeDocumentos(nome);
+}
+
 if (id === 'home-video') {
   return montarCamposHomeVideo(nome);
 }
@@ -7868,12 +8320,124 @@ function ligarEventosCamposDinamicos() {
   });
 
   document.getElementById('btn-add-home-news')?.addEventListener('click', adicionarCampoHomeNoticia);
-  document.getElementById('btn-add-home-stats')?.addEventListener('click', adicionarCampoHomeEstatistica);
-  document.getElementById('btn-add-home-gallery')?.addEventListener('click', adicionarCampoHomeGaleria);
-  document.getElementById('btn-add-timeline-item')?.addEventListener('click', adicionarMarcoTimelineHistoria);
-  document.getElementById('btn-add-hist-menu-item')?.addEventListener('click', adicionarItemMenuHistoria);
-  document.getElementById('btn-add-hist-paragraph')?.addEventListener('click', adicionarParagrafoHistoria);
-  document.getElementById('btn-add-team-member')?.addEventListener('click', adicionarMembroEquipeDirecao);
+document.getElementById('btn-add-home-stats')?.addEventListener('click', adicionarCampoHomeEstatistica);
+document.getElementById('btn-add-home-gallery')?.addEventListener('click', adicionarCampoHomeGaleria);
+
+document.getElementById('btn-add-home-doc')?.addEventListener('click', adicionarHomeDocumento);
+
+document.querySelectorAll('.btn-add-home-doc-file').forEach(btn => {
+  btn.addEventListener('click', () => {
+    adicionarArquivoHomeDocumento(btn.dataset.cardIndex);
+  });
+});
+
+document.querySelectorAll('.btn-remove-home-doc-file').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-doc-file-editor');
+    if (!item) return;
+
+    item.remove();
+    atualizarPreview();
+
+    showToast('Documento removido.');
+  });
+});
+
+document.querySelectorAll('.btn-upload-home-doc-file').forEach(btn => {
+  btn.addEventListener('click', () => {
+    cmsUploadTarget = btn.dataset.target;
+    document.getElementById('upload-file')?.click();
+  });
+});
+
+document.getElementById('btn-add-home-assoc-project')?.addEventListener('click', adicionarProjetoAssociacaoHome);
+
+document.querySelectorAll('.btn-remove-home-assoc-project').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-assoc-project-editor');
+    if (!item) return;
+
+    item.remove();
+    atualizarPreview();
+
+    showToast('Imagem/projeto removido.');
+  });
+});
+
+document.querySelectorAll('.btn-home-assoc-project-up').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-assoc-project-editor');
+    const prev = item?.previousElementSibling;
+
+    if (item && prev) {
+      item.parentNode.insertBefore(item, prev);
+      atualizarPreview();
+    }
+  });
+});
+
+document.querySelectorAll('.btn-home-assoc-project-down').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-assoc-project-editor');
+    const next = item?.nextElementSibling;
+
+    if (item && next) {
+      item.parentNode.insertBefore(next, item);
+      atualizarPreview();
+    }
+  });
+});
+
+document.querySelectorAll('.btn-upload-home-assoc-project').forEach(btn => {
+  btn.addEventListener('click', () => {
+    cmsUploadTarget = btn.dataset.target;
+    document.getElementById('upload-file')?.click();
+  });
+});
+
+document.getElementById('btn-add-timeline-item')?.addEventListener('click', adicionarMarcoTimelineHistoria);
+document.getElementById('btn-add-hist-menu-item')?.addEventListener('click', adicionarItemMenuHistoria);
+document.getElementById('btn-add-hist-paragraph')?.addEventListener('click', adicionarParagrafoHistoria);
+document.getElementById('btn-add-team-member')?.addEventListener('click', adicionarMembroEquipeDirecao);
+
+document.querySelectorAll('.btn-remove-home-doc').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-doc-editor');
+    if (!item) return;
+
+    item.remove();
+
+    atualizarPreview();
+
+    showToast('Card removido.');
+  });
+});
+
+document.querySelectorAll('.btn-home-doc-up').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-doc-editor');
+    const prev = item?.previousElementSibling;
+
+    if (item && prev) {
+      item.parentNode.insertBefore(item, prev);
+
+      atualizarPreview();
+    }
+  });
+});
+
+document.querySelectorAll('.btn-home-doc-down').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.home-doc-editor');
+    const next = item?.nextElementSibling;
+
+    if (item && next) {
+      item.parentNode.insertBefore(next, item);
+
+      atualizarPreview();
+    }
+  });
+});
 
   document.querySelectorAll('.btn-remove-news').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -8529,30 +9093,7 @@ document.getElementById('btn-add-certame')?.addEventListener('click', () => {
 
 document.querySelectorAll('.btn-add-certame-doc').forEach(btn => {
   btn.addEventListener('click', () => {
-    const certameIndex = btn.dataset.certameIndex;
-
-    const container =
-      document.getElementById(`certame-docs-${certameIndex}`);
-
-    if (!container) return;
-
-    const novo = Date.now();
-
-    const wrap = document.createElement('div');
-
-    wrap.innerHTML = montarDocumentoCertame(certameIndex, novo, {
-      fase: 'Documento',
-      titulo: 'Novo documento',
-      texto: 'Baixar PDF',
-      url: '#'
-    });
-
-    container.appendChild(wrap.firstElementChild);
-
-    ligarEventosCamposDinamicos();
-    atualizarPreview();
-
-    showToast('Documento adicionado.');
+    adicionarDocumentoCertame(btn.dataset.certameIndex);
   });
 });
 
@@ -8611,6 +9152,153 @@ document.querySelectorAll('.btn-certame-down').forEach(btn => {
     }
   });
 });
+}
+
+function adicionarProjetoAssociacaoHome() {
+  const container = document.getElementById('home-assoc-projects-fields');
+  if (!container) return;
+
+  const novo = Date.now();
+
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = montarItemProjetoAssociacao(novo, {
+    imagem: '',
+    titulo: 'Novo projeto',
+    texto: 'Descrição da ação realizada com apoio da Associação.'
+  });
+
+  const novoItem = wrap.firstElementChild;
+
+  container.appendChild(novoItem);
+
+  novoItem.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', atualizarPreview);
+    el.addEventListener('change', atualizarPreview);
+  });
+
+  novoItem.querySelector('.btn-remove-home-assoc-project')?.addEventListener('click', () => {
+    novoItem.remove();
+    atualizarPreview();
+    showToast('Imagem/projeto removido.');
+  });
+
+  novoItem.querySelector('.btn-home-assoc-project-up')?.addEventListener('click', () => {
+    const prev = novoItem.previousElementSibling;
+    if (prev) {
+      novoItem.parentNode.insertBefore(novoItem, prev);
+      atualizarPreview();
+    }
+  });
+
+  novoItem.querySelector('.btn-home-assoc-project-down')?.addEventListener('click', () => {
+    const next = novoItem.nextElementSibling;
+    if (next) {
+      novoItem.parentNode.insertBefore(next, novoItem);
+      atualizarPreview();
+    }
+  });
+
+  novoItem.querySelector('.btn-upload-home-assoc-project')?.addEventListener('click', () => {
+    cmsUploadTarget = novoItem.querySelector('.btn-upload-home-assoc-project')?.dataset.target;
+    document.getElementById('upload-file')?.click();
+  });
+
+  atualizarPreview();
+
+  showToast('Imagem/projeto adicionado.');
+}
+
+function adicionarHomeDocumento() {
+  const container = document.getElementById('home-docs-fields');
+  if (!container) return;
+
+  const novo = Date.now();
+
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = montarItemHomeDocumento(novo, {
+    icone: '📄',
+    titulo: 'Novo documento',
+    texto: 'Descrição do card.',
+    link: '#'
+  });
+
+  const novoItem = wrap.firstElementChild;
+
+  container.appendChild(novoItem);
+
+  novoItem.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', atualizarPreview);
+    el.addEventListener('change', atualizarPreview);
+  });
+
+  novoItem.querySelector('.btn-remove-home-doc')?.addEventListener('click', () => {
+    novoItem.remove();
+    atualizarPreview();
+    showToast('Card removido.');
+  });
+
+  novoItem.querySelector('.btn-home-doc-up')?.addEventListener('click', () => {
+    const prev = novoItem.previousElementSibling;
+
+    if (prev) {
+      novoItem.parentNode.insertBefore(novoItem, prev);
+      atualizarPreview();
+    }
+  });
+
+  novoItem.querySelector('.btn-home-doc-down')?.addEventListener('click', () => {
+    const next = novoItem.nextElementSibling;
+
+    if (next) {
+      novoItem.parentNode.insertBefore(next, novoItem);
+      atualizarPreview();
+    }
+  });
+
+  atualizarPreview();
+
+  showToast('Card adicionado.');
+}
+
+function adicionarArquivoHomeDocumento(cardIndex) {
+  const container = document.getElementById(`home-doc-files-${cardIndex}`);
+  if (!container) return;
+
+  const novo = Date.now();
+
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = montarArquivoHomeDocumento(cardIndex, novo, {
+    titulo: 'Novo documento',
+    texto: 'Baixar arquivo',
+    url: '#'
+  });
+
+  const novoItem = wrap.firstElementChild;
+
+  container.appendChild(novoItem);
+
+  novoItem.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('input', atualizarPreview);
+    el.addEventListener('change', atualizarPreview);
+  });
+
+  novoItem.querySelector('.btn-remove-home-doc-file')?.addEventListener('click', () => {
+    novoItem.remove();
+    atualizarPreview();
+    showToast('Documento removido.');
+  });
+
+  novoItem.querySelector('.btn-upload-home-doc-file')?.addEventListener('click', () => {
+    cmsUploadTarget = novoItem.querySelector('.btn-upload-home-doc-file')?.dataset.target;
+    document.getElementById('upload-file')?.click();
+  });
+
+  atualizarPreview();
+
+  showToast('Documento adicionado ao card.');
 }
 
 /* =========================
@@ -9079,6 +9767,16 @@ if (blocoAtivoId === 'home-patrocinadores') {
   return;
 }
 
+if (blocoAtivoId === 'home-associacao') {
+  atualizarAssociacaoHomeNaPreview();
+  return;
+}
+
+if (blocoAtivoId === 'home-documentos') {
+  atualizarDocumentosHomeNaPreview();
+  return;
+}
+
 if (blocoAtivoId === 'home-video') {
   atualizarVideoHomeNaPreview();
   return;
@@ -9175,6 +9873,89 @@ if (blocoAtivoId === 'historia-video') {
     hero.style.backgroundSize = 'cover';
     hero.style.backgroundPosition = 'center';
   }
+}
+
+function atualizarAssociacaoHomeNaPreview() {
+  const doc = getPreviewDoc();
+  if (!doc) return;
+
+  let section = doc.querySelector('[data-cms-block-id="home-associacao"]');
+
+  if (!section) {
+    const main = doc.querySelector('main') || doc.body;
+    section = doc.createElement('section');
+    section.setAttribute('data-cms-block-id', 'home-associacao');
+    main.appendChild(section);
+  }
+
+  section.outerHTML = `
+    <section class="section home-assoc-section" data-cms-block-id="home-associacao">
+      <article class="home-assoc-card">
+        <div class="home-assoc-icon">🤝</div>
+
+        <div class="home-assoc-content">
+          <span>Comunidade escolar</span>
+          <h2>${getInput('home-assoc-title')?.value || 'Associação de Pais'}</h2>
+          <p>${getInput('home-assoc-text')?.value || ''}</p>
+        </div>
+
+        <button type="button" class="home-assoc-open">
+          Saiba mais
+        </button>
+      </article>
+    </section>
+  `;
+}
+
+function atualizarDocumentosHomeNaPreview() {
+  const doc = getPreviewDoc();
+  if (!doc) return;
+
+  let section = doc.querySelector('[data-cms-block-id="home-documentos"]');
+
+  if (!section) {
+    const main = doc.querySelector('main') || doc.body;
+    section = doc.createElement('section');
+    section.setAttribute('data-cms-block-id', 'home-documentos');
+    main.appendChild(section);
+  }
+
+  const itens =
+    typeof coletarHomeDocumentos === 'function'
+      ? coletarHomeDocumentos()
+      : [];
+
+  section.outerHTML = `
+    <section class="section home-docs-section" data-cms-block-id="home-documentos">
+      <div class="section-head">
+        <h2>${getInput('home-docs-title')?.value || 'Documentos e Informações'}</h2>
+      </div>
+
+      ${
+        getInput('home-docs-text')?.value
+          ? `<div class="page-intro"><p>${getInput('home-docs-text')?.value}</p></div>`
+          : ''
+      }
+
+      <div class="home-docs-grid">
+        ${itens.map(item => `
+          <button
+  type="button"
+  class="home-doc-card"
+>
+  <span>${item.icone || '📄'}</span>
+
+  <div>
+    <h3>${item.titulo || 'Documento'}</h3>
+    <p>${item.texto || ''}</p>
+  </div>
+
+  <strong>Ver arquivos →</strong>
+</button>
+        `).join('')}
+      </div>
+    </section>
+  `;
 }
 
 function encontrarElementoDoBlocoNaPreview(id) {
@@ -10773,7 +11554,75 @@ function coletarCertamesProcesso() {
   }).filter(item => item.titulo.trim());
 }
 
+function adicionarDocumentoCertame(certameIndex) {
+  const container =
+    document.getElementById(`certame-docs-${certameIndex}`);
+
+  if (!container) return;
+
+  const novo = Date.now();
+
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = montarDocumentoCertame(certameIndex, novo, {
+    fase: 'Documento',
+    titulo: 'Novo documento',
+    texto: 'Baixar PDF',
+    url: '#'
+  });
+
+  const novoItem = wrap.firstElementChild;
+
+  container.appendChild(novoItem);
+
+  ligarEventosDocumentoCertame(novoItem);
+
+  atualizarPreview();
+
+  showToast('Documento adicionado.');
+}
+
+function ligarEventosDocumentoCertame(item) {
+  if (!item) return;
+
+  item
+    .querySelectorAll('input, textarea, select')
+    .forEach(el => {
+      el.addEventListener('input', atualizarPreview);
+      el.addEventListener('change', atualizarPreview);
+    });
+
+  item.querySelector('.btn-upload-certame-doc')?.addEventListener('click', () => {
+    cmsUploadTarget =
+      item.querySelector('.btn-upload-certame-doc')?.dataset.target;
+
+    document.getElementById('upload-file')?.click();
+  });
+
+  item.querySelector('.btn-remove-certame-doc')?.addEventListener('click', () => {
+    item.remove();
+
+    atualizarPreview();
+
+    showToast('Documento removido.');
+  });
+}
+
 function montarCamposProcessoCertames(nome) {
+  const blocoAtual =
+    pageBlocksMap?.['processo-seletivo']
+      ?.find(b => b.id === 'processo-certames');
+
+  const certamesSalvos =
+    Array.isArray(blocoAtual?.mongo?.itens)
+      ? blocoAtual.mongo.itens
+      : [];
+
+  const certames =
+    certamesSalvos.length
+      ? certamesSalvos
+      : certamesPadrao;
+
   return `
     <div class="properties-head">
       <h2>Certames / Processos</h2>
@@ -10781,10 +11630,13 @@ function montarCamposProcessoCertames(nome) {
     </div>
 
     <label>Título da seção</label>
-    <input id="certames-section-title" value="Processos Seletivos">
+    <input
+      id="certames-section-title"
+      value="${blocoAtual?.mongo?.titulo || 'Processos Seletivos'}"
+    >
 
     <div id="certames-fields">
-      ${certamesPadrao.map((item, index) =>
+      ${certames.map((item, index) =>
         montarItemCertame(index + 1, item)
       ).join('')}
     </div>
@@ -10866,6 +11718,69 @@ function coletarConteudoBlocoCms(blocoId) {
       destaquesPrimeiro: getInput('home-news-featured-first')?.checked ?? true,
       textoLinkGeral: getInput('home-news-all-text')?.value || 'VER TODAS AS NOTÍCIAS →',
       textoBotao: getInput('home-news-button-text')?.value || 'Leia mais →'
+    }
+  };
+}
+
+if (blocoId === 'home-associacao') {
+  return {
+    ...base,
+
+    titulo:
+      getInput('home-assoc-title')?.value ||
+      'Associação de Pais',
+
+    texto:
+      getInput('home-assoc-text')?.value || '',
+
+    link: {
+      texto:
+        getInput('home-assoc-button-text')?.value ||
+        'Quero participar',
+
+      url:
+        getInput('home-assoc-button-link')?.value ||
+        '#'
+    },
+
+    configuracao: {
+  ...base.configuracao,
+  tipoRender: 'home-associacao',
+
+  modalTitulo:
+    getInput('home-assoc-modal-title')?.value ||
+    'Associação de Pais do Colégio',
+
+  modalTexto:
+    getInput('home-assoc-modal-text')?.value || '',
+
+  projetos:
+    typeof coletarProjetosAssociacaoHome === 'function'
+      ? coletarProjetosAssociacaoHome()
+      : []
+}
+  };
+}
+
+if (blocoId === 'home-documentos') {
+  return {
+    ...base,
+
+    titulo:
+      getInput('home-docs-title')?.value ||
+      'Documentos e Informações',
+
+    texto:
+      getInput('home-docs-text')?.value || '',
+
+    itens:
+      typeof coletarHomeDocumentos === 'function'
+        ? coletarHomeDocumentos()
+        : [],
+
+    configuracao: {
+      ...base.configuracao,
+      tipoRender: 'home-documentos'
     }
   };
 }
@@ -10999,6 +11914,73 @@ if (blocoId === 'processo-editais') {
   };
 }
 
+if (blocoId === 'processo-banner') {
+  const breadcrumb =
+    getInput('processo-banner-tag')?.value ||
+    'Processo de admissão de alunos';
+
+  const overlay =
+    getInput('processo-banner-overlay')?.value ||
+    '0.90';
+
+  return {
+    ...base,
+
+    titulo:
+      getInput('processo-banner-title')?.value ||
+      'Ingresso com disciplina, organização e excelência educacional.',
+
+    subtitulo: breadcrumb,
+
+    texto:
+      getInput('processo-banner-text')?.value || '',
+
+    imagemUrl:
+      getInput('processo-banner-image')?.value || '',
+
+    link: {
+      texto:
+        getInput('processo-banner-btn1-text')?.value ||
+        'Baixar edital',
+
+      url:
+        getInput('processo-banner-btn1-link')?.value ||
+        '#'
+    },
+
+    itens: [
+      {
+        texto:
+          getInput('processo-banner-badge-1')?.value ||
+          'CBMAC'
+      },
+      {
+        texto:
+          getInput('processo-banner-badge-2')?.value ||
+          'CMDPII'
+      },
+      {
+        texto:
+          getInput('processo-banner-btn2-text')?.value ||
+          'Inscrição online',
+
+        link:
+          getInput('processo-banner-btn2-link')?.value ||
+          '#',
+
+        tipo: 'botao-secundario'
+      }
+    ],
+
+    configuracao: {
+      ...base.configuracao,
+      tipoRender: 'hero-interno',
+      breadcrumb,
+      overlay
+    }
+  };
+}
+
 if (blocoId === 'processo-etapas') {
   return {
     ...base,
@@ -11007,6 +11989,7 @@ if (blocoId === 'processo-etapas') {
     itens: typeof coletarEtapasProcesso === 'function'
       ? coletarEtapasProcesso().map(item => ({
           ordem: item.ordem,
+          numero: item.numero || '★',
           icon: item.numero || '★',
           titulo: item.titulo || '',
           texto: item.texto || ''
