@@ -742,31 +742,31 @@ async function carregarHomeDoMongo() {
     if (!main) return;
 
     const ordemHome = [
-  'home-banner',
-  'home-menu',
-  'home-patrocinadores',
-  'home-noticias',
-  'home-associacao',
-  'home-estatisticas',
-  'home-documentos',
-  'home-galeria',
-  'home-video'
-];
+      'home-banner',
+      'home-menu',
+      'home-patrocinadores',
+      'home-noticias',
+      'home-associacao',
+      'home-estatisticas',
+      'home-documentos',
+      'home-galeria',
+      'home-video'
+    ];
 
-const blocos = data.blocos
-  .filter(bloco => bloco.ativo !== false)
-  .sort((a, b) => {
-    const idA = a.configuracao?.cmsBlockId || a.id || '';
-    const idB = b.configuracao?.cmsBlockId || b.id || '';
+    const blocos = data.blocos
+      .filter(bloco => bloco.ativo !== false)
+      .sort((a, b) => {
+        const idA = a.configuracao?.cmsBlockId || a.id || '';
+        const idB = b.configuracao?.cmsBlockId || b.id || '';
 
-    const posA = ordemHome.indexOf(idA);
-    const posB = ordemHome.indexOf(idB);
+        const posA = ordemHome.indexOf(idA);
+        const posB = ordemHome.indexOf(idB);
 
-    const ordemA = posA >= 0 ? posA : 999;
-    const ordemB = posB >= 0 ? posB : 999;
+        const ordemA = posA >= 0 ? posA : 999;
+        const ordemB = posB >= 0 ? posB : 999;
 
-    return ordemA - ordemB;
-  });
+        return ordemA - ordemB;
+      });
 
     main.innerHTML = '';
 
@@ -781,7 +781,7 @@ const blocos = data.blocos
         main.insertAdjacentHTML('beforeend', renderHomeMenu(bloco));
       }
 
-       if (id === 'home-patrocinadores') {
+      if (id === 'home-patrocinadores') {
         await renderHomePatrocinadores(main, bloco);
       }
 
@@ -808,17 +808,18 @@ const blocos = data.blocos
         main.insertAdjacentHTML('beforeend', renderHomeGaleria(bloco));
       }
 
-      
       if (id === 'home-video') {
         main.insertAdjacentHTML('beforeend', renderHomeVideo(bloco));
       }
-
     }
+
+    await montarSidebarParceirosHome(main);
 
   } catch (err) {
     console.error('Erro ao renderizar Home pelo Mongo:', err);
   }
 }
+
 async function carregarPaginaInternaDoMongo() {
   try {
     const path = location.pathname.split('/').pop();
@@ -948,6 +949,126 @@ if (slug === 'contato') {
   return;
 }
 
+if (slug === 'professores') {
+  const getId = b => b.configuracao?.cmsBlockId || b.id || '';
+
+  const banner = blocos.find(b => getId(b) === 'professores-banner');
+  const lista = blocos.find(b => getId(b) === 'professores-lista');
+  const materiais = blocos.find(b => getId(b) === 'professores-materiais');
+
+  if (banner) {
+    main.insertAdjacentHTML('beforeend', renderizarBlocoCms({
+      ...banner,
+      configuracao: {
+        ...banner.configuracao,
+        tipoRender: 'hero-interno',
+        breadcrumb: 'Início › Professores',
+        overlay: banner.configuracao?.overlay || '0.92'
+      }
+    }));
+  }
+
+  if (lista) {
+
+  const professores =
+    Array.isArray(lista.itens)
+      ? lista.itens
+      : [];
+
+  main.insertAdjacentHTML('beforeend', `
+    <section class="section professores-section" data-cms-block-id="professores-lista">
+
+      <div class="section-head">
+        <h2>${escaparHtml(lista.titulo || 'Corpo Docente')}</h2>
+      </div>
+
+      ${
+        lista.texto
+          ? `<div class="page-intro">${formatarTextoCms(lista.texto)}</div>`
+          : ''
+      }
+
+      ${
+        professores.length
+          ? `
+            <div class="professores-grid">
+
+              ${professores.map(prof => `
+
+                <article class="professor-card">
+
+                  <div class="professor-photo">
+                    ${
+                      prof.foto
+                        ? `<img src="${escaparHtml(prof.foto)}" alt="${escaparHtml(prof.nome || 'Professor')}">`
+                        : '<span>👨‍🏫</span>'
+                    }
+                  </div>
+
+                  <div class="professor-info">
+
+                    ${
+                      prof.turno
+                        ? `<span>${escaparHtml(prof.turno)}</span>`
+                        : ''
+                    }
+
+                    <h3>${escaparHtml(prof.nome || 'Professor')}</h3>
+
+                    ${
+                      prof.disciplina
+                        ? `<strong>${escaparHtml(prof.disciplina)}</strong>`
+                        : ''
+                    }
+
+                    ${
+                      prof.formacao
+                        ? `<p>${formatarTextoCms(prof.formacao)}</p>`
+                        : ''
+                    }
+
+                    ${
+                      prof.descricao
+                        ? `<small>${formatarTextoCms(prof.descricao)}</small>`
+                        : ''
+                    }
+
+                  </div>
+
+                </article>
+
+              `).join('')}
+
+            </div>
+          `
+          : `
+            <div class="single-news-loading">
+              Em breve, a equipe de professores será cadastrada.
+            </div>
+          `
+      }
+
+    </section>
+  `);
+}
+
+  if (materiais) {
+  main.insertAdjacentHTML(
+    'beforeend',
+    renderizarBlocoCms({
+      ...materiais,
+      configuracao: {
+        ...(materiais.configuracao || {}),
+        cmsBlockId: 'professores-materiais',
+        tipoRender: 'professores-materiais'
+      }
+    })
+  );
+}
+
+  return;
+}
+
     for (const bloco of blocos) {
       main.insertAdjacentHTML('beforeend', renderizarBlocoCms(bloco));
     }
@@ -1038,6 +1159,10 @@ if (tipoRender === 'downloads-expansivel') {
 
 if (tipoRender === 'destaque') {
   return renderBlocoDestaqueInstitucional(bloco);
+}
+
+if (tipoRender === 'professores-materiais') {
+  return renderBlocoProfessoresMateriais(bloco);
 }
 
     return renderBlocoPadraoCms(bloco);
@@ -1484,6 +1609,53 @@ function renderBlocoGaleriaPremium(bloco = {}) {
           </article>
         `;
       }).join('')}
+    </section>
+  `;
+}
+
+function renderBlocoProfessoresMateriais(bloco = {}) {
+  const materiais = Array.isArray(bloco.itens) ? bloco.itens : [];
+
+  return `
+    <section class="section" data-cms-block-id="professores-materiais">
+      <div class="section-head">
+        <h2>${escaparHtml(bloco.titulo || 'Materiais dos Professores')}</h2>
+      </div>
+
+      ${
+        bloco.texto
+          ? `<div class="page-intro"><p>${escaparHtml(bloco.texto)}</p></div>`
+          : ''
+      }
+
+      ${
+        materiais.length
+          ? `
+            <div class="materials-grid">
+              ${materiais.map(item => `
+                <article class="material-card">
+                  <div>
+                    <span>📄</span>
+                    <h3>${escaparHtml(item.titulo || 'Material')}</h3>
+                    ${item.professor ? `<strong>${escaparHtml(item.professor)}</strong>` : ''}
+                    ${item.texto ? `<p>${escaparHtml(item.texto)}</p>` : ''}
+                  </div>
+
+                  ${
+                    item.url
+                      ? `<a class="btn primary" href="${escaparHtml(item.url)}" target="_blank" rel="noopener noreferrer">Acessar material</a>`
+                      : ''
+                  }
+                </article>
+              `).join('')}
+            </div>
+          `
+          : `
+            <div class="single-news-loading">
+              Nenhum material cadastrado ainda.
+            </div>
+          `
+      }
     </section>
   `;
 }
@@ -3096,45 +3268,155 @@ async function renderHomePatrocinadores(main, bloco) {
     if (!data.ok || !Array.isArray(data.patrocinadores)) return;
 
     const config = bloco.configuracao || {};
+
     let patrocinadores = data.patrocinadores;
+
+    if (config.somenteAtivos !== false) {
+      patrocinadores = patrocinadores.filter(p => p.status !== 'inativo');
+    }
 
     if (config.tipo) {
       patrocinadores = patrocinadores.filter(p => p.tipo === config.tipo);
     }
 
-    patrocinadores = patrocinadores.slice(0, Number(config.limite || 6));
+    patrocinadores = patrocinadores
+      .filter(p => p.destaque === true)
+      .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+      .slice(0, Number(config.limite || 6));
+
+    if (!patrocinadores.length) return;
 
     main.insertAdjacentHTML('beforeend', `
-      <section class="cms-home-sponsors-section">
-        <div class="cms-home-sponsors-head subtle">
-          <span>${bloco.titulo || 'Patrocinadores'}</span>
-        </div>
+      <section
+        class="home-sponsors-feature-section"
+        data-cms-block-id="home-patrocinadores"
+      >
+        <div class="home-sponsors-feature-wrap">
+          <div class="cms-home-sponsors-head subtle">
+            <span>${escaparHtml(bloco.titulo || 'Parceiros Institucionais')}</span>
+          </div>
 
-        <div class="cms-home-sponsors-grid">
-          ${patrocinadores.map(item => `
-            <a class="cms-home-sponsor-card ${item.destaque ? 'featured' : ''}"
-               href="${item.url || '#'}"
-               target="_blank"
-               rel="noopener noreferrer">
+          ${
+            bloco.texto
+              ? `<div class="page-intro">${formatarTextoCms(bloco.texto)}</div>`
+              : ''
+          }
 
-              <div class="cms-home-sponsor-logo">
-                ${item.imagem ? `<img src="${item.imagem}" alt="${item.nome || 'Patrocinador'}">` : '<span>🤝</span>'}
-              </div>
+          <div class="home-sponsors-feature-grid">
+            ${patrocinadores.map(item => `
+              <a
+                class="home-sponsor-feature-card"
+                href="${escaparHtml(item.url || '#')}"
+                target="${item.url ? '_blank' : '_self'}"
+                rel="noopener noreferrer"
+              >
+                <div class="home-sponsor-feature-logo">
+                  ${
+                    item.imagem
+                      ? `<img src="${escaparHtml(item.imagem)}" alt="${escaparHtml(item.nome || 'Parceiro')}">`
+                      : '<span>🤝</span>'
+                  }
+                </div>
 
-              <div>
-                <strong>${item.nome || ''}</strong>
-                ${item.descricao ? `<p>${item.descricao}</p>` : ''}
-                <small>${item.tipo || 'patrocinador'}</small>
-              </div>
-            </a>
-          `).join('')}
+                <div>
+                  <strong>${escaparHtml(item.nome || 'Parceiro')}</strong>
+                  ${item.descricao ? `<p>${escaparHtml(item.descricao)}</p>` : ''}
+                  <small>${escaparHtml(item.tipo || 'Parceiro')}</small>
+                </div>
+              </a>
+            `).join('')}
+          </div>
         </div>
       </section>
     `);
+    
+  } catch (err) {
+    console.error('Erro ao renderizar parceiros principais:', err);
+  }
+}
+
+async function montarSidebarParceirosHome(main) {
+  if (!main) return;
+
+  if (main.querySelector('.home-flow-with-sidebar')) return;
+
+  try {
+    const res = await fetch('/api/site-publico/patrocinadores');
+    const data = await res.json();
+
+    if (!data.ok || !Array.isArray(data.patrocinadores)) return;
+
+    const laterais = data.patrocinadores
+      .filter(p => p.status !== 'inativo')
+      .filter(p => p.destaque !== true)
+      .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
+
+    if (!laterais.length) return;
+
+    const primeiraSecao =
+      main.querySelector('[data-cms-block-id="home-noticias"]');
+
+    if (!primeiraSecao) return;
+
+    const wrapper = document.createElement('section');
+    wrapper.className = 'home-flow-with-sidebar-section';
+
+    wrapper.innerHTML = `
+      <div class="home-flow-with-sidebar">
+        <div class="home-flow-main"></div>
+
+        <aside class="home-flow-sidebar">
+  <div class="home-side-partners simple">
+    <div class="home-side-partners-list simple">
+      ${laterais.map(item => `
+        <a
+          class="home-side-partner-logo-card"
+          href="${escaparHtml(item.url || '#')}"
+          target="${item.url ? '_blank' : '_self'}"
+          rel="noopener noreferrer"
+          title="${escaparHtml(item.nome || 'Parceiro')}"
+        >
+          ${
+            item.imagem
+              ? `<img src="${escaparHtml(item.imagem)}" alt="${escaparHtml(item.nome || 'Parceiro')}">`
+              : '<span>🤝</span>'
+          }
+        </a>
+      `).join('')}
+    </div>
+  </div>
+</aside>
+      </div>
+    `;
+
+    primeiraSecao.parentNode.insertBefore(wrapper, primeiraSecao);
+
+    const colunaPrincipal = wrapper.querySelector('.home-flow-main');
+
+    const idsParaMover = [
+      'home-noticias',
+      'home-associacao',
+      'home-estatisticas',
+      'home-documentos',
+      'home-galeria',
+      'home-video'
+    ];
+
+    idsParaMover.forEach(id => {
+      const bloco = main.querySelector(`[data-cms-block-id="${id}"]`);
+
+      if (bloco) {
+        colunaPrincipal.appendChild(bloco);
+      }
+    });
 
   } catch (err) {
-    console.error('Erro ao renderizar patrocinadores:', err);
+    console.error('Erro ao montar sidebar de parceiros:', err);
   }
+}
+
+async function inserirSidebarParceirosNaHome(main) {
+  return montarSidebarParceirosHome(main);
 }
 
 function renderHomeVideo(bloco) {

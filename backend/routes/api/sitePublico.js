@@ -244,7 +244,9 @@ router.get('/patrocinadores', async (req, res) => {
         ordem: 1,
         createdAt: -1
       })
-      .select('nome descricao imagem url tipo destaque ordem createdAt')
+      .select(
+        'nome descricao imagem url tipo destaque ordem createdAt'
+      )
       .lean();
 
     res.json({

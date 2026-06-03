@@ -108,7 +108,8 @@ const pagePreviewMap = {
   'processo-seletivo': '/site-cmdpii/processo-seletivo.html',
   noticias: '/site-cmdpii/noticias.html',
   galeria: '/site-cmdpii/galeria.html',
-  contato: '/site-cmdpii/contato.html'
+  contato: '/site-cmdpii/contato.html',
+  professores: '/site-cmdpii/professores.html'
 };
 
 /* =========================
@@ -181,7 +182,13 @@ const pageBlocksMap = {
     { id: 'contato-info', nome: 'Informações de Contato', tipo: 'Cards' },
     { id: 'contato-form', nome: 'Formulário', tipo: 'Formulário' },
     { id: 'contato-mapa', nome: 'Localização', tipo: 'Mapa' }
-  ]
+  ],
+
+  professores: [
+  { id: 'professores-banner', nome: 'Banner Professores', tipo: 'Hero da página' },
+  { id: 'professores-lista', nome: 'Lista de Professores', tipo: 'Cards de professores' },
+  { id: 'professores-materiais', nome: 'Materiais dos Professores', tipo: 'Arquivos e links' }
+]
 };
 
 /* =========================
@@ -520,6 +527,24 @@ function hidratarCamposDoBlocoMongo(blocoId) {
   setCampoCms('video-link', mongo.videoUrl || link.url || '');
   setCampoCms('video-button-text', link.texto || 'Assistir vídeo');
 }
+
+if (blocoId === 'professores-banner') {
+  setCampoCms('professores-banner-titulo', mongo.titulo || '');
+  setCampoCms('professores-banner-texto', mongo.texto || '');
+  setCampoCms('professores-banner-imagem', mongo.imagemUrl || '');
+}
+
+if (blocoId === 'professores-lista') {
+  // Depois vamos hidratar aqui os cards dos professores
+  // quando criarmos coletarProfessoresLista() e montarItemProfessor().
+}
+
+
+if (blocoId === 'professores-materiais') {
+  setCampoCms('professores-materiais-titulo', mongo.titulo || '');
+  setCampoCms('professores-materiais-texto', mongo.texto || '');
+}
+
 }
 
 /* =========================
@@ -7608,6 +7633,72 @@ function atualizarContatoMapaNaPreview() {
   }
 }
 
+function atualizarProfessoresListaNaPreview() {
+  const doc = getPreviewDoc();
+  if (!doc) return;
+
+  const section =
+    doc.querySelector('[data-cms-block-id="professores-lista"]');
+
+  if (!section) return;
+
+  const titulo =
+    getInput('professores-lista-titulo')?.value ||
+    'Corpo Docente';
+
+  const texto =
+    getInput('professores-lista-texto')?.value || '';
+
+  const professores =
+    typeof coletarProfessoresLista === 'function'
+      ? coletarProfessoresLista()
+      : [];
+
+  section.innerHTML = `
+    <div class="section-head">
+      <h2>${titulo}</h2>
+    </div>
+
+    ${
+      texto
+        ? `<div class="page-intro"><p>${texto}</p></div>`
+        : ''
+    }
+
+    ${
+      professores.length
+        ? `
+          <div class="professores-grid">
+            ${professores.map(prof => `
+              <article class="professor-card">
+                <div class="professor-photo">
+                  ${
+                    prof.foto
+                      ? `<img src="${prof.foto}" alt="${prof.nome || 'Professor'}">`
+                      : '<span>👨‍🏫</span>'
+                  }
+                </div>
+
+                <div class="professor-info">
+                  ${prof.turno ? `<span>${prof.turno}</span>` : ''}
+                  <h3>${prof.nome || 'Professor'}</h3>
+                  ${prof.disciplina ? `<strong>${prof.disciplina}</strong>` : ''}
+                  ${prof.formacao ? `<p>${prof.formacao}</p>` : ''}
+                  ${prof.descricao ? `<small>${prof.descricao}</small>` : ''}
+                </div>
+              </article>
+            `).join('')}
+          </div>
+        `
+        : `
+          <div class="single-news-loading">
+            Em breve, a equipe de professores será cadastrada.
+          </div>
+        `
+    }
+  `;
+}
+
 function montarCamposHistoriaBanner(nome) {
   return `
     <div class="properties-head">
@@ -7771,6 +7862,416 @@ function montarCamposHistoriaLinha(nome) {
   `;
 }
 
+function montarCamposProfessoresBanner(nome) {
+  return `
+    <div class="properties-head">
+      <h2>Banner Professores</h2>
+      <span>${nome}</span>
+    </div>
+
+    <label>Título</label>
+    <input
+      id="professores-banner-titulo"
+      value="Nossos Professores"
+    >
+
+    <label>Subtítulo</label>
+    <textarea id="professores-banner-texto">Conheça nossa equipe docente e acesse materiais disponibilizados pelos professores.</textarea>
+
+    <label>Imagem de fundo</label>
+
+    <div class="upload-field">
+      <input
+        id="professores-banner-imagem"
+        placeholder="/uploads/site/banner-professores.png"
+      >
+
+      <button
+        class="btn upload btn-upload-professores-banner"
+        type="button"
+        data-target="professores-banner-imagem"
+      >
+        Enviar
+      </button>
+
+      <button
+        class="btn ghost btn-open-media-picker"
+        type="button"
+        data-target="professores-banner-imagem"
+      >
+        Biblioteca
+      </button>
+    </div>
+
+    <input type="file" id="upload-file" hidden accept="image/*">
+
+    <div class="builder-actions">
+      <button class="btn primary" type="button" data-action="save">
+        Salvar bloco
+      </button>
+    </div>
+  `;
+}
+
+function montarItemProfessorLista(n, item = {}) {
+  return `
+    <div class="professor-editor" data-professor-index="${n}">
+      <div class="news-editor-top">
+        <strong>Professor ${n}</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-professor-up">↑</button>
+          <button type="button" class="btn-professor-down">↓</button>
+        </div>
+      </div>
+
+      <label>Foto</label>
+      <div class="upload-field">
+        <input
+          id="professor-foto-${n}"
+          value="${item.foto || item.imagem || ''}"
+          placeholder="/uploads/site/professor.png"
+        >
+
+        <button
+          class="btn upload btn-upload-professores-foto"
+          type="button"
+          data-target="professor-foto-${n}"
+        >
+          Enviar
+        </button>
+
+        <button
+          class="btn ghost btn-open-media-picker"
+          type="button"
+          data-target="professor-foto-${n}"
+        >
+          Biblioteca
+        </button>
+      </div>
+
+      <label>Nome</label>
+      <input id="professor-nome-${n}" value="${item.nome || ''}">
+
+      <label>Disciplina / Área</label>
+      <input id="professor-disciplina-${n}" value="${item.disciplina || ''}">
+
+      <label>Formação</label>
+      <textarea id="professor-formacao-${n}">${item.formacao || ''}</textarea>
+
+      <label>Turno</label>
+      <select id="professor-turno-${n}">
+        <option value="Matutino" ${item.turno === 'Matutino' ? 'selected' : ''}>Matutino</option>
+        <option value="Vespertino" ${item.turno === 'Vespertino' ? 'selected' : ''}>Vespertino</option>
+        <option value="Matutino e Vespertino" ${item.turno === 'Matutino e Vespertino' ? 'selected' : ''}>Matutino e Vespertino</option>
+      </select>
+
+      <label>Descrição</label>
+      <textarea id="professor-descricao-${n}">${item.descricao || item.texto || ''}</textarea>
+
+      <button class="btn ghost btn-remove-professor" type="button">
+        Remover professor
+      </button>
+    </div>
+  `;
+}
+
+function montarCamposProfessoresLista(nome) {
+  const blocoAtual = getBlocoCmsAtual('professores-lista');
+
+  const itensSalvos =
+    Array.isArray(blocoAtual?.mongo?.itens)
+      ? blocoAtual.mongo.itens
+      : [];
+
+  const professores = itensSalvos.length
+    ? itensSalvos
+    : [
+        {
+          foto: '',
+          nome: '',
+          disciplina: '',
+          formacao: '',
+          turno: 'Matutino',
+          descricao: ''
+        }
+      ];
+
+  return `
+    <div class="properties-head">
+      <h2>Lista de Professores</h2>
+      <span>${nome}</span>
+    </div>
+
+    <label>Título da seção</label>
+    <input
+      id="professores-lista-titulo"
+      value="${blocoAtual?.mongo?.titulo || 'Corpo Docente'}"
+    >
+
+    <label>Descrição da seção</label>
+    <textarea id="professores-lista-texto">${blocoAtual?.mongo?.texto || 'Conheça os professores que compõem nossa equipe docente.'}</textarea>
+
+    <div id="professores-lista-fields">
+      ${professores.map((item, index) =>
+        montarItemProfessorLista(index + 1, item)
+      ).join('')}
+    </div>
+
+    <input type="file" id="upload-file" hidden accept="image/*">
+
+    <button class="btn ghost full" id="btn-add-professor-lista" type="button">
+      + Adicionar professor
+    </button>
+
+    <div class="builder-actions">
+      <button class="btn ghost" type="button" data-action="duplicate">Duplicar bloco</button>
+      <button class="btn primary" type="button" data-action="save">Salvar bloco</button>
+    </div>
+  `;
+}
+
+function coletarProfessoresLista() {
+  const campos = [...document.querySelectorAll('.professor-editor')];
+
+  return campos.map((box, index) => {
+    const i = box.dataset.professorIndex;
+
+    return {
+      ordem: index,
+      foto: getInput(`professor-foto-${i}`)?.value || '',
+      nome: getInput(`professor-nome-${i}`)?.value || '',
+      disciplina: getInput(`professor-disciplina-${i}`)?.value || '',
+      formacao: getInput(`professor-formacao-${i}`)?.value || '',
+      turno: getInput(`professor-turno-${i}`)?.value || '',
+      descricao: getInput(`professor-descricao-${i}`)?.value || ''
+    };
+  }).filter(item =>
+    item.nome.trim() ||
+    item.disciplina.trim() ||
+    item.foto.trim()
+  );
+}
+
+function adicionarProfessorLista() {
+  const container = document.getElementById('professores-lista-fields');
+  if (!container) return;
+
+  const novo = Date.now();
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = montarItemProfessorLista(novo, {
+    foto: '',
+    nome: 'Novo professor',
+    disciplina: '',
+    formacao: '',
+    turno: 'Matutino',
+    descricao: ''
+  });
+
+  container.appendChild(wrap.firstElementChild);
+
+  ligarEventosCamposDinamicos();
+  atualizarPreview();
+
+  showToast('Professor adicionado.');
+}
+
+function montarItemMaterialProfessor(n, item = {}) {
+  return `
+    <div class="professor-material-editor" data-material-index="${n}">
+      <div class="news-editor-top">
+        <strong>Material ${n}</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-material-professor-up">↑</button>
+          <button type="button" class="btn-material-professor-down">↓</button>
+        </div>
+      </div>
+
+      <label>Título do material</label>
+      <input id="professor-material-titulo-${n}" value="${item.titulo || ''}">
+
+      <label>Professor / disciplina</label>
+      <input id="professor-material-professor-${n}" value="${item.professor || item.disciplina || ''}">
+
+      <label>Descrição</label>
+      <textarea id="professor-material-texto-${n}">${item.texto || item.descricao || ''}</textarea>
+
+      <label>Arquivo / link</label>
+      <div class="upload-field">
+        <input
+          id="professor-material-url-${n}"
+          value="${item.url || item.link || item.arquivo || ''}"
+          placeholder="/uploads/site/material.pdf"
+        >
+
+        <button
+          class="btn upload btn-upload-professores-material"
+          type="button"
+          data-target="professor-material-url-${n}">
+          Enviar
+        </button>
+
+        <button
+          class="btn ghost btn-open-media-picker"
+          type="button"
+          data-target="professor-material-url-${n}">
+          Biblioteca
+        </button>
+      </div>
+
+      <button class="btn ghost btn-remove-material-professor" type="button">
+        Remover material
+      </button>
+    </div>
+  `;
+}
+
+function montarCamposProfessoresMateriais(nome) {
+  const blocoAtual =
+    pageBlocksMap?.professores?.find(b => b.id === 'professores-materiais');
+
+  const mongo = blocoAtual?.mongo || {};
+
+  const materiais =
+    Array.isArray(mongo.itens) && mongo.itens.length
+      ? mongo.itens
+      : [];
+
+  return `
+    <div class="properties-head">
+      <h2>Materiais dos Professores</h2>
+      <span>${nome}</span>
+    </div>
+
+    <label>Título da seção</label>
+    <input
+      id="professores-materiais-titulo"
+      value="${mongo.titulo || 'Materiais dos Professores'}">
+
+    <label>Descrição</label>
+    <textarea id="professores-materiais-texto">${mongo.texto || ''}</textarea>
+
+    <div id="materiais-professores-container">
+      ${materiais.map((item, index) =>
+        montarItemMaterialProfessor(index + 1, item)
+      ).join('')}
+    </div>
+
+    <button
+      class="btn ghost full"
+      id="btn-add-material-professor"
+      type="button">
+      + Adicionar Material
+    </button>
+
+    <div class="builder-actions">
+      <button class="btn primary" type="button" data-action="save">
+        Salvar bloco
+      </button>
+    </div>
+  `;
+}
+
+function coletarMateriaisProfessores() {
+  const campos = [...document.querySelectorAll('.professor-material-editor')];
+
+  return campos.map((box, index) => {
+    const i = box.dataset.materialIndex;
+
+    return {
+      ordem: index,
+      titulo: getInput(`professor-material-titulo-${i}`)?.value || '',
+      professor: getInput(`professor-material-professor-${i}`)?.value || '',
+      texto: getInput(`professor-material-texto-${i}`)?.value || '',
+      url: getInput(`professor-material-url-${i}`)?.value || ''
+    };
+  }).filter(item =>
+    item.titulo.trim() ||
+    item.professor.trim() ||
+    item.url.trim()
+  );
+}
+
+function adicionarMaterialProfessor() {
+  const container = document.getElementById('materiais-professores-container');
+  if (!container) return;
+
+  const novo = Date.now();
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = montarItemMaterialProfessor(novo, {
+    titulo: 'Novo material',
+    professor: '',
+    texto: '',
+    url: ''
+  });
+
+  container.appendChild(wrap.firstElementChild);
+
+  ligarEventosCamposDinamicos();
+  atualizarPreview();
+
+  showToast('Material adicionado.');
+}
+
+function atualizarProfessoresMateriaisNaPreview() {
+  const doc = getPreviewDoc();
+  if (!doc) return;
+
+  const section =
+    doc.querySelector('[data-cms-block-id="professores-materiais"]');
+
+  if (!section) return;
+
+  const titulo =
+    getInput('professores-materiais-titulo')?.value ||
+    'Materiais dos Professores';
+
+  const texto =
+    getInput('professores-materiais-texto')?.value || '';
+
+  const materiais = coletarMateriaisProfessores();
+
+  section.innerHTML = `
+    <div class="section-head">
+      <h2>${titulo}</h2>
+    </div>
+
+    ${texto ? `<div class="page-intro"><p>${texto}</p></div>` : ''}
+
+    ${
+      materiais.length
+        ? `
+          <div class="materials-grid">
+            ${materiais.map(item => `
+              <article class="material-card">
+                <div>
+                  <span>📄</span>
+                  <h3>${item.titulo || 'Material'}</h3>
+                  ${item.professor ? `<strong>${item.professor}</strong>` : ''}
+                  ${item.texto ? `<p>${item.texto}</p>` : ''}
+                </div>
+
+                ${
+                  item.url
+                    ? `<a class="btn primary" href="${item.url}" target="_blank">Acessar material</a>`
+                    : ''
+                }
+              </article>
+            `).join('')}
+          </div>
+        `
+        : `
+          <div class="single-news-loading">
+            Nenhum material cadastrado ainda.
+          </div>
+        `
+    }
+  `;
+}
+
 function montarCamposDoBloco(id, nome) {
       if (id.includes('-dinamico')) {
     return montarCamposBlocoDinamico(id, nome);
@@ -7890,6 +8391,18 @@ if (id === 'contato-form') {
 
 if (id === 'contato-mapa') {
   return montarCamposContatoMapa(nome);
+}
+
+if (id === 'professores-banner') {
+  return montarCamposProfessoresBanner(nome);
+}
+
+if (id === 'professores-lista') {
+  return montarCamposProfessoresLista(nome);
+}
+
+if (id === 'professores-materiais') {
+  return montarCamposProfessoresMateriais(nome);
 }
 
     /* =========================
@@ -8311,7 +8824,7 @@ function ligarEventosCamposDinamicos() {
   });
 
   document.querySelectorAll(
-    '.btn-upload-news-image, .btn-upload-gallery-image, .btn-upload-video-cover, .btn-upload-hist-video, .btn-upload-hist-banner, .btn-upload-direcao-banner, .btn-upload-team-photo, .btn-upload-direcao-chamada, .btn-upload-alunos-banner, .btn-upload-alunos-destaque, .btn-upload-alunos-chamada, .btn-upload-processo-banner, .btn-upload-process-edital, .btn-upload-processo-chamada, .btn-upload-noticias-banner, .btn-upload-news-list, .btn-upload-recent-news, .btn-upload-galeria-banner, .btn-upload-gallery-grid, .btn-upload-galeria-video, .btn-upload-contato-banner, .btn-upload-contact-map, .btn-upload-certame-doc'
+    '.btn-upload-news-image, .btn-upload-gallery-image, .btn-upload-video-cover, .btn-upload-hist-video, .btn-upload-hist-banner, .btn-upload-direcao-banner, .btn-upload-team-photo, .btn-upload-direcao-chamada, .btn-upload-alunos-banner, .btn-upload-alunos-destaque, .btn-upload-alunos-chamada, .btn-upload-processo-banner, .btn-upload-process-edital, .btn-upload-processo-chamada, .btn-upload-noticias-banner, .btn-upload-news-list, .btn-upload-recent-news, .btn-upload-galeria-banner, .btn-upload-gallery-grid, .btn-upload-galeria-video, .btn-upload-contato-banner, .btn-upload-contact-map, .btn-upload-certame-doc, .btn-upload-professores-banner, .btn-upload-professores-foto, .btn-upload-professores-material'
   ).forEach(btn => {
     btn.addEventListener('click', () => {
       cmsUploadTarget = btn.dataset.target;
@@ -8340,6 +8853,47 @@ document.querySelectorAll('.btn-remove-home-doc-file').forEach(btn => {
     atualizarPreview();
 
     showToast('Documento removido.');
+  });
+});
+
+// ===== PROFESSORES =====
+
+document.getElementById('btn-add-professor-lista')?.addEventListener(
+  'click',
+  adicionarProfessorLista
+);
+
+document.querySelectorAll('.btn-remove-professor').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.professor-editor');
+    if (!item) return;
+
+    item.remove();
+
+    atualizarPreview();
+
+    showToast('Professor removido.');
+  });
+});
+
+document.getElementById('btn-add-material-professor')
+  ?.addEventListener(
+    'click',
+    adicionarMaterialProfessor
+  );
+
+document.querySelectorAll('.btn-remove-material-professor').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item =
+      btn.closest('.professor-material-editor');
+
+    if (!item) return;
+
+    item.remove();
+
+    atualizarPreview();
+
+    showToast('Material removido.');
   });
 });
 
@@ -9578,6 +10132,16 @@ function atualizarPreview() {
 
   if (blocoAtivoId === 'noticias-recentes') {
     atualizarNoticiasRecentesNaPreview();
+    return;
+  }
+
+  if (blocoAtivoId === 'professores-lista') {
+    atualizarProfessoresListaNaPreview();
+    return;
+  }
+
+  if (blocoAtivoId === 'professores-materiais') {
+    atualizarProfessoresMateriaisNaPreview();
     return;
   }
 
@@ -11349,7 +11913,8 @@ function getTituloPaginaCms(slug) {
     'processo-seletivo': 'Processo Seletivo',
     noticias: 'Notícias',
     galeria: 'Galeria',
-    contato: 'Contato'
+    contato: 'Contato',
+    professores: 'Professores'
   };
 
   return map[slug] || slug;
@@ -12649,6 +13214,83 @@ if (blocoId === 'contato-mapa') {
       ...base.configuracao,
       cmsBlockId: 'contato-mapa',
       tipoRender: 'mapa'
+    }
+  };
+}
+
+if (blocoId === 'professores-banner') {
+  return {
+    ...base,
+
+    titulo:
+      getInput('professores-banner-titulo')?.value ||
+      'Nossos Professores',
+
+    texto:
+      getInput('professores-banner-texto')?.value ||
+      '',
+
+    imagemUrl:
+      getInput('professores-banner-imagem')?.value ||
+      '',
+
+    configuracao: {
+      ...base.configuracao,
+      tipoRender: 'professores-banner',
+      cmsBlockId: 'professores-banner',
+      cmsTipo: 'Hero da página'
+    }
+  };
+}
+
+if (blocoId === 'professores-lista') {
+  return {
+    ...base,
+
+    titulo:
+      getInput('professores-lista-titulo')?.value ||
+      'Corpo Docente',
+
+    texto:
+      getInput('professores-lista-texto')?.value ||
+      '',
+
+    itens:
+      typeof coletarProfessoresLista === 'function'
+        ? coletarProfessoresLista()
+        : [],
+
+    configuracao: {
+      ...base.configuracao,
+      tipoRender: 'professores-lista',
+      cmsBlockId: 'professores-lista',
+      cmsTipo: 'Cards de professores'
+    }
+  };
+}
+
+if (blocoId === 'professores-materiais') {
+  return {
+    ...base,
+
+    titulo:
+      getInput('professores-materiais-titulo')?.value ||
+      'Materiais dos Professores',
+
+    texto:
+      getInput('professores-materiais-texto')?.value ||
+      '',
+
+    itens:
+      typeof coletarMateriaisProfessores === 'function'
+        ? coletarMateriaisProfessores()
+        : [],
+
+    configuracao: {
+      ...base.configuracao,
+      tipoRender: 'professores-materiais',
+      cmsBlockId: 'professores-materiais',
+      cmsTipo: 'Arquivos e links'
     }
   };
 }
