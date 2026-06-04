@@ -721,6 +721,12 @@ function atualizarAlunosProjetosNaPreview() {
 }
 
 function montarCamposBlocoDinamico(id, nome) {
+
+  const blocoAtual = getBlocoCmsAtual(id);
+  const mongo = blocoAtual?.mongo || {};
+  const link = mongo.link || {};
+  const config = mongo.configuracao || {};
+
   return `
     <div class="properties-head">
       <h2>${nome}</h2>
@@ -728,56 +734,71 @@ function montarCamposBlocoDinamico(id, nome) {
     </div>
 
     <label>Título</label>
-    <input id="dynamic-title" value="${nome}">
+    <input
+      id="dynamic-title"
+      value="${mongo.titulo || nome}"
+    >
 
     <label>Texto / descrição</label>
-    <textarea id="dynamic-text">Edite aqui o conteúdo deste bloco.</textarea>
+    <textarea id="dynamic-text">${mongo.texto || 'Edite aqui o conteúdo deste bloco.'}</textarea>
 
     <label>Texto do botão</label>
-    <input id="dynamic-button-text" value="Saiba mais">
+    <input
+      id="dynamic-button-text"
+      value="${link.texto || 'Saiba mais'}"
+    >
 
     <label>Link</label>
-    <input id="dynamic-link" value="#">
+    <input
+      id="dynamic-link"
+      value="${link.url || '#'}"
+    >
 
     <label>Imagem / capa</label>
 
-<div class="upload-field">
-  <input id="dynamic-image" placeholder="/uploads/site/imagem.png">
+    <div class="upload-field">
 
-  <button
-    class="btn upload btn-open-media-picker"
-    type="button"
-    data-target="dynamic-image"
-  >
-    Biblioteca
-  </button>
-</div>
+      <input
+        id="dynamic-image"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/imagem.png"
+      >
 
-<input type="file" id="upload-file" hidden>
+      <button
+        class="btn upload btn-open-media-picker"
+        type="button"
+        data-target="dynamic-image"
+      >
+        Biblioteca
+      </button>
 
-<button class="btn upload" id="btn-upload" type="button">
-  Enviar imagem / arquivo
-</button>
+    </div>
+
+    <input type="file" id="upload-file" hidden>
+
+    <button class="btn upload" id="btn-upload" type="button">
+      Enviar imagem / arquivo
+    </button>
 
     <div class="cms-field-row">
       <div>
         <label>Largura</label>
         <select id="dynamic-width">
-          <option value="container">Container</option>
-          <option value="small">Pequena</option>
-          <option value="medium">Média</option>
-          <option value="large">Larga</option>
-          <option value="full">Full hero</option>
+          <option value="container" ${config.width === 'container' ? 'selected' : ''}>Container</option>
+          <option value="small" ${config.width === 'small' ? 'selected' : ''}>Pequena</option>
+          <option value="medium" ${config.width === 'medium' ? 'selected' : ''}>Média</option>
+          <option value="large" ${config.width === 'large' ? 'selected' : ''}>Larga</option>
+          <option value="full" ${config.width === 'full' ? 'selected' : ''}>Full hero</option>
         </select>
       </div>
 
       <div>
         <label>Alinhamento</label>
         <select id="dynamic-align">
-          <option value="center">Centro</option>
-          <option value="left">Esquerda</option>
-          <option value="right">Direita</option>
-          <option value="full">Largura total</option>
+          <option value="center" ${config.align === 'center' ? 'selected' : ''}>Centro</option>
+          <option value="left" ${config.align === 'left' ? 'selected' : ''}>Esquerda</option>
+          <option value="right" ${config.align === 'right' ? 'selected' : ''}>Direita</option>
+          <option value="full" ${config.align === 'full' ? 'selected' : ''}>Largura total</option>
         </select>
       </div>
     </div>
@@ -786,37 +807,50 @@ function montarCamposBlocoDinamico(id, nome) {
       <div>
         <label>Layout</label>
         <select id="dynamic-layout">
-          <option value="section">Dentro de seção</option>
-          <option value="isolated">Bloco isolado</option>
-          <option value="cta">CTA central</option>
+          <option value="section" ${config.layout === 'section' ? 'selected' : ''}>Dentro de seção</option>
+          <option value="isolated" ${config.layout === 'isolated' ? 'selected' : ''}>Bloco isolado</option>
+          <option value="cta" ${config.layout === 'cta' ? 'selected' : ''}>CTA central</option>
         </select>
       </div>
 
       <div>
         <label>Espaçamento</label>
         <select id="dynamic-spacing">
-          <option value="comfortable">Confortável</option>
-          <option value="compact">Compacto</option>
-          <option value="wide">Amplo</option>
+          <option value="comfortable" ${config.spacing === 'comfortable' ? 'selected' : ''}>Confortável</option>
+          <option value="compact" ${config.spacing === 'compact' ? 'selected' : ''}>Compacto</option>
+          <option value="wide" ${config.spacing === 'wide' ? 'selected' : ''}>Amplo</option>
         </select>
       </div>
     </div>
 
     <div class="cms-field-row">
       <label>
-        <input type="checkbox" id="dynamic-hide-mobile">
+        <input
+          type="checkbox"
+          id="dynamic-hide-mobile"
+          ${config.hideMobile ? 'checked' : ''}
+        >
         Ocultar no mobile
       </label>
 
       <label>
-        <input type="checkbox" id="dynamic-hide-desktop">
+        <input
+          type="checkbox"
+          id="dynamic-hide-desktop"
+          ${config.hideDesktop ? 'checked' : ''}
+        >
         Ocultar no desktop
       </label>
     </div>
 
     <div class="builder-actions">
-      <button class="btn ghost" type="button" data-action="duplicate">Duplicar bloco</button>
-      <button class="btn primary" type="button" data-action="save">Salvar bloco</button>
+      <button class="btn ghost" type="button" data-action="duplicate">
+        Duplicar bloco
+      </button>
+
+      <button class="btn primary" type="button" data-action="save">
+        Salvar bloco
+      </button>
     </div>
   `;
 }
@@ -896,6 +930,12 @@ function montarItemNoticiaHome(n, noticia = {}) {
 }
 
 function montarCamposHomeNoticias(nome) {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-noticias');
+
+  const mongo = blocoAtual?.mongo || {};
+  const config = mongo.configuracao || {};
+
   return `
     <div class="properties-head">
       <h2>Notícias em Destaque</h2>
@@ -907,40 +947,40 @@ function montarCamposHomeNoticias(nome) {
     </div>
 
     <label>Título da seção</label>
-    <input id="news-section-title" value="Notícias em Destaque">
+    <input id="news-section-title" value="${mongo.titulo || 'Notícias em Destaque'}">
 
     <label>Descrição da seção</label>
-    <textarea id="news-section-subtitle">Acompanhe os principais comunicados, eventos e informações do Colégio Militar Dom Pedro II.</textarea>
+    <textarea id="news-section-subtitle">${mongo.texto || 'Acompanhe os principais comunicados, eventos e informações do Colégio Militar Dom Pedro II.'}</textarea>
 
     <div class="cms-field-row">
       <div>
         <label>Quantidade</label>
-        <input id="home-news-limit" type="number" min="1" max="6" value="4">
+        <input id="home-news-limit" type="number" min="1" max="6" value="${config.limite ?? 4}">
       </div>
 
       <div>
         <label>Categoria</label>
-        <input id="home-news-category-filter" placeholder="Todas">
+        <input id="home-news-category-filter" value="${config.categoria || ''}" placeholder="Todas">
       </div>
     </div>
 
     <div class="cms-field-row">
       <label>
-        <input type="checkbox" id="home-news-only-published" checked>
+        <input type="checkbox" id="home-news-only-published" ${config.somentePublicadas !== false ? 'checked' : ''}>
         Mostrar somente publicadas
       </label>
 
       <label>
-        <input type="checkbox" id="home-news-featured-first" checked>
+        <input type="checkbox" id="home-news-featured-first" ${config.destaquesPrimeiro !== false ? 'checked' : ''}>
         Destaques primeiro
       </label>
     </div>
 
     <label>Texto do link geral</label>
-    <input id="home-news-all-text" value="VER TODAS AS NOTÍCIAS →">
+    <input id="home-news-all-text" value="${config.textoLinkGeral || 'VER TODAS AS NOTÍCIAS →'}">
 
     <label>Texto do botão da notícia</label>
-    <input id="home-news-button-text" value="Leia mais →">
+    <input id="home-news-button-text" value="${config.textoBotao || 'Leia mais →'}">
 
     <div class="builder-actions">
       <button class="btn ghost" type="button" data-action="duplicate">Duplicar bloco</button>
@@ -1998,6 +2038,15 @@ function montarItemGaleriaHome(n, item = {}) {
 }
 
 function montarCamposHomeGaleria(nome) {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-galeria');
+
+  const mongo = blocoAtual?.mongo || {};
+  const itensSalvos =
+    Array.isArray(mongo.itens) && mongo.itens.length
+      ? mongo.itens
+      : galeriaHomePadrao;
+
   return `
     <div class="properties-head">
       <h2>Galeria de Fotos</h2>
@@ -2005,16 +2054,18 @@ function montarCamposHomeGaleria(nome) {
     </div>
 
     <label>Título da seção</label>
-    <input id="gallery-section-title" value="Galeria de Fotos">
+    <input id="gallery-section-title" value="${mongo.titulo || 'Galeria de Fotos'}">
 
     <label>Texto do botão</label>
-    <input id="gallery-button-text" value="Ver galeria completa →">
+    <input id="gallery-button-text" value="${mongo.link?.texto || 'Ver galeria completa →'}">
 
     <label>Link do botão</label>
-    <input id="gallery-button-link" value="./galeria.html">
+    <input id="gallery-button-link" value="${mongo.link?.url || './galeria.html'}">
 
     <div id="home-gallery-fields">
-      ${galeriaHomePadrao.map((item, index) => montarItemGaleriaHome(index + 1, item)).join('')}
+      ${itensSalvos.map((item, index) =>
+        montarItemGaleriaHome(index + 1, item)
+      ).join('')}
     </div>
 
     <input type="file" id="upload-file" hidden accept="image/*">
@@ -2148,6 +2199,12 @@ function aplicarEstilosGaleriaPreview() {
 }
 
 function montarCamposHomePatrocinadores(nome) {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-patrocinadores');
+
+  const mongo = blocoAtual?.mongo || {};
+  const config = mongo.configuracao || {};
+
   return `
     <div class="properties-head">
       <h2>Parceiros</h2>
@@ -2159,46 +2216,46 @@ function montarCamposHomePatrocinadores(nome) {
     </div>
 
     <label>Título da seção</label>
-    <input id="home-sponsor-section-title" value="Parceiros">
+    <input id="home-sponsor-section-title" value="${mongo.titulo || 'Parceiros'}">
 
     <label>Descrição da seção</label>
-    <textarea id="home-sponsor-section-text">Conheça parceiros e apoiadores das ações institucionais do Colégio.</textarea>
+    <textarea id="home-sponsor-section-text">${mongo.texto || 'Conheça parceiros e apoiadores das ações institucionais do Colégio.'}</textarea>
 
     <div class="cms-field-row">
       <div>
         <label>Quantidade</label>
-        <input id="home-sponsor-limit" type="number" min="1" max="20" value="6">
+        <input id="home-sponsor-limit" type="number" min="1" max="20" value="${config.limite ?? 6}">
       </div>
 
       <div>
         <label>Tipo</label>
         <select id="home-sponsor-type-filter">
-          <option value="">Todos</option>
-          <option value="patrocinador">Patrocinador</option>
-          <option value="parceiro">Parceiro</option>
-          <option value="atalho">Atalho</option>
-          <option value="campanha">Campanha</option>
+          <option value="" ${!config.tipo ? 'selected' : ''}>Todos</option>
+          <option value="patrocinador" ${config.tipo === 'patrocinador' ? 'selected' : ''}>Patrocinador</option>
+          <option value="parceiro" ${config.tipo === 'parceiro' ? 'selected' : ''}>Parceiro</option>
+          <option value="atalho" ${config.tipo === 'atalho' ? 'selected' : ''}>Atalho</option>
+          <option value="campanha" ${config.tipo === 'campanha' ? 'selected' : ''}>Campanha</option>
         </select>
       </div>
     </div>
 
     <div class="cms-field-row">
       <label>
-        <input type="checkbox" id="home-sponsor-only-active" checked>
+        <input type="checkbox" id="home-sponsor-only-active" ${config.somenteAtivos !== false ? 'checked' : ''}>
         Mostrar somente ativos
       </label>
 
       <label>
-        <input type="checkbox" id="home-sponsor-featured-first" checked>
+        <input type="checkbox" id="home-sponsor-featured-first" ${config.destaquesPrimeiro !== false ? 'checked' : ''}>
         Destaques primeiro
       </label>
     </div>
 
     <label>Layout</label>
     <select id="home-sponsor-layout">
-      <option value="grid">Grid de cards</option>
-      <option value="banner">Banners largos</option>
-      <option value="compact">Compacto</option>
+      <option value="grid" ${(config.layout || 'grid') === 'grid' ? 'selected' : ''}>Grid de cards</option>
+      <option value="banner" ${config.layout === 'banner' ? 'selected' : ''}>Banners largos</option>
+      <option value="compact" ${config.layout === 'compact' ? 'selected' : ''}>Compacto</option>
     </select>
 
     <div class="builder-actions">
@@ -2527,6 +2584,11 @@ function aplicarEstilosPatrocinadoresHomePreview() {
 }
 
 function montarCamposHomeVideo(nome) {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-video');
+
+  const mongo = blocoAtual?.mongo || {};
+
   return `
     <div class="properties-head">
       <h2>Vídeo Institucional</h2>
@@ -2534,23 +2596,26 @@ function montarCamposHomeVideo(nome) {
     </div>
 
     <label>Título da seção</label>
-    <input id="video-section-title" value="Conheça nossa instituição">
+    <input id="video-section-title" value="${mongo.titulo || 'Conheça nossa instituição'}">
 
     <label>Descrição</label>
-    <textarea id="video-section-text">
-Assista ao vídeo institucional e conheça mais sobre a estrutura, projetos e valores do Colégio Militar Dom Pedro II.
-    </textarea>
+    <textarea id="video-section-text">${mongo.texto || 'Assista ao vídeo institucional e conheça mais sobre a estrutura, projetos e valores do Colégio Militar Dom Pedro II.'}</textarea>
 
     <label>Texto do botão</label>
-    <input id="video-button-text" value="Assistir vídeo">
+    <input id="video-button-text" value="${mongo.link?.texto || 'Assistir vídeo'}">
 
     <label>Link do vídeo (YouTube/Vimeo)</label>
-    <input id="video-link" value="https://youtube.com">
+    <input id="video-link" value="${mongo.videoUrl || mongo.link?.url || 'https://youtube.com'}">
 
     <label>Imagem de capa</label>
 
     <div class="upload-field">
-      <input id="video-cover-image" placeholder="/uploads/site/video-capa.png">
+      <input
+        id="video-cover-image"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/video-capa.png"
+      >
+
       <button
         class="btn upload btn-upload-video-cover"
         type="button"
@@ -4663,6 +4728,13 @@ function atualizarAlunosChamadaNaPreview() {
 }
 
 function montarCamposProcessoBanner(nome) {
+  const blocoAtual =
+    pageBlocksMap?.['processo-seletivo']?.find(b => b.id === 'processo-banner');
+
+  const mongo = blocoAtual?.mongo || {};
+  const config = mongo.configuracao || {};
+  const itens = Array.isArray(mongo.itens) ? mongo.itens : [];
+
   return `
     <div class="properties-head">
       <h2>Banner Processo Seletivo</h2>
@@ -4670,35 +4742,39 @@ function montarCamposProcessoBanner(nome) {
     </div>
 
     <label>Badge 1</label>
-    <input id="processo-banner-badge-1" value="CBMAC">
+    <input id="processo-banner-badge-1" value="${itens[0]?.texto || 'CBMAC'}">
 
     <label>Badge 2</label>
-    <input id="processo-banner-badge-2" value="CMDPII">
+    <input id="processo-banner-badge-2" value="${itens[1]?.texto || 'CMDPII'}">
 
     <label>Etiqueta superior</label>
-    <input id="processo-banner-tag" value="Processo de admissão de alunos">
+    <input id="processo-banner-tag" value="${config.breadcrumb || mongo.subtitulo || 'Processo de admissão de alunos'}">
 
     <label>Título</label>
-    <textarea id="processo-banner-title">Ingresso com disciplina, organização e excelência educacional.</textarea>
+    <textarea id="processo-banner-title">${mongo.titulo || 'Ingresso com disciplina, organização e excelência educacional.'}</textarea>
 
     <label>Texto</label>
-    <textarea id="processo-banner-text">O processo seletivo do Colégio Dom Pedro II - Campus CZS ocorre de forma transparente e organizada, buscando garantir igualdade de oportunidades aos candidatos.</textarea>
+    <textarea id="processo-banner-text">${mongo.texto || 'O processo seletivo do Colégio Dom Pedro II - Campus CZS ocorre de forma transparente e organizada, buscando garantir igualdade de oportunidades aos candidatos.'}</textarea>
 
     <label>Botão 1</label>
     <div class="cms-field-row">
-      <input id="processo-banner-btn1-text" value="Baixar edital" placeholder="Texto">
-      <input id="processo-banner-btn1-link" value="#" placeholder="Link">
+      <input id="processo-banner-btn1-text" value="${mongo.link?.texto || 'Baixar edital'}" placeholder="Texto">
+      <input id="processo-banner-btn1-link" value="${mongo.link?.url || '#'}" placeholder="Link">
     </div>
 
     <label>Botão 2</label>
     <div class="cms-field-row">
-      <input id="processo-banner-btn2-text" value="Inscrição online" placeholder="Texto">
-      <input id="processo-banner-btn2-link" value="#" placeholder="Link">
+      <input id="processo-banner-btn2-text" value="${itens[2]?.texto || 'Inscrição online'}" placeholder="Texto">
+      <input id="processo-banner-btn2-link" value="${itens[2]?.link || '#'}" placeholder="Link">
     </div>
 
     <label>Imagem de fundo</label>
     <div class="upload-field">
-      <input id="processo-banner-image" placeholder="/uploads/site/banner-processo.png">
+      <input
+        id="processo-banner-image"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/banner-processo.png"
+      >
 
       <button
         class="btn upload btn-upload-processo-banner"
@@ -4711,9 +4787,9 @@ function montarCamposProcessoBanner(nome) {
 
     <label>Intensidade do overlay</label>
     <select id="processo-banner-overlay">
-      <option value="0.90">Forte</option>
-      <option value="0.78">Médio</option>
-      <option value="0.62">Leve</option>
+      <option value="0.90" ${String(config.overlay || '0.90') === '0.90' ? 'selected' : ''}>Forte</option>
+      <option value="0.78" ${String(config.overlay || '') === '0.78' ? 'selected' : ''}>Médio</option>
+      <option value="0.62" ${String(config.overlay || '') === '0.62' ? 'selected' : ''}>Leve</option>
     </select>
 
     <input type="file" id="upload-file" hidden accept="image/*">
@@ -5147,8 +5223,22 @@ function montarItemEditalProcesso(n, item = {}) {
 
       <label>Link do arquivo</label>
       <div class="upload-field">
-        <input id="process-edital-link-${n}" value="${item.link || '#'}" placeholder="/uploads/site/edital.pdf">
 
+  <input
+    id="process-edital-link-${n}"
+    value="${item.link || item.url || '#'}"
+    placeholder="/uploads/site/edital.pdf"
+  >
+
+  <button
+    class="btn upload btn-upload-process-edital"
+    type="button"
+    data-target="process-edital-link-${n}"
+  >
+    Enviar
+  </button>
+
+</div>
         <button
           class="btn upload btn-upload-process-edital"
           type="button"
@@ -5166,12 +5256,25 @@ function montarItemEditalProcesso(n, item = {}) {
 }
 
 function montarCamposProcessoEditais(nome) {
-  const editais = [
-    { icon: '📄', titulo: 'Edital 2025/2026', texto: 'Baixar PDF', link: '#' },
-    { icon: '📄', titulo: 'Edital 2024/2025', texto: 'Baixar PDF', link: '#' },
-    { icon: '📄', titulo: 'Edital 2023/2024', texto: 'Baixar PDF', link: '#' },
-    { icon: '📄', titulo: 'Edital 2022/2023', texto: 'Baixar PDF', link: '#' }
-  ];
+  const blocoAtual =
+    pageBlocksMap?.['processo-seletivo']?.find(b => b.id === 'processo-editais');
+
+  const mongo = blocoAtual?.mongo || {};
+
+  const editais =
+    Array.isArray(mongo.itens) && mongo.itens.length
+      ? mongo.itens.map(item => ({
+          icon: item.icon || item.icone || '📄',
+          titulo: item.titulo || '',
+          texto: item.texto || 'Baixar PDF',
+          link: item.link || item.url || '#'
+        }))
+      : [
+          { icon: '📄', titulo: 'Edital 2025/2026', texto: 'Baixar PDF', link: '#' },
+          { icon: '📄', titulo: 'Edital 2024/2025', texto: 'Baixar PDF', link: '#' },
+          { icon: '📄', titulo: 'Edital 2023/2024', texto: 'Baixar PDF', link: '#' },
+          { icon: '📄', titulo: 'Edital 2022/2023', texto: 'Baixar PDF', link: '#' }
+        ];
 
   return `
     <div class="properties-head">
@@ -5180,10 +5283,12 @@ function montarCamposProcessoEditais(nome) {
     </div>
 
     <label>Título da seção</label>
-    <input id="process-edital-section-title" value="Editais anteriores">
+    <input id="process-edital-section-title" value="${mongo.titulo || 'Editais anteriores'}">
 
     <div id="process-edital-fields">
-      ${editais.map((item, index) => montarItemEditalProcesso(index + 1, item)).join('')}
+      ${editais.map((item, index) =>
+        montarItemEditalProcesso(index + 1, item)
+      ).join('')}
     </div>
 
     <input type="file" id="upload-file" hidden accept=".pdf,.doc,.docx,image/*">
@@ -5316,6 +5421,12 @@ function atualizarProcessoEditaisNaPreview() {
 }
 
 function montarCamposProcessoChamada(nome) {
+  const blocoAtual =
+    pageBlocksMap?.['processo-seletivo']?.find(b => b.id === 'processo-chamada');
+
+  const mongo = blocoAtual?.mongo || {};
+  const config = mongo.configuracao || {};
+
   return `
     <div class="properties-head">
       <h2>Chamada de Inscrição</h2>
@@ -5323,23 +5434,27 @@ function montarCamposProcessoChamada(nome) {
     </div>
 
     <label>Ícone</label>
-    <input id="processo-chamada-icon" value="🎖️">
+    <input id="processo-chamada-icon" value="${config.icone || '🎖️'}">
 
     <label>Título</label>
-    <textarea id="processo-chamada-title">Formação baseada em disciplina, cidadania e excelência.</textarea>
+    <textarea id="processo-chamada-title">${mongo.titulo || 'Formação baseada em disciplina, cidadania e excelência.'}</textarea>
 
     <label>Texto</label>
-    <textarea id="processo-chamada-text">Faça parte de uma instituição comprometida com o futuro educacional e humano dos estudantes.</textarea>
+    <textarea id="processo-chamada-text">${mongo.texto || 'Faça parte de uma instituição comprometida com o futuro educacional e humano dos estudantes.'}</textarea>
 
     <label>Texto do botão</label>
-    <input id="processo-chamada-button" value="Realizar inscrição">
+    <input id="processo-chamada-button" value="${mongo.link?.texto || 'Realizar inscrição'}">
 
     <label>Link do botão</label>
-    <input id="processo-chamada-link" value="#">
+    <input id="processo-chamada-link" value="${mongo.link?.url || '#'}">
 
     <label>Imagem de fundo</label>
     <div class="upload-field">
-      <input id="processo-chamada-bg" placeholder="/uploads/site/chamada-processo.png">
+      <input
+        id="processo-chamada-bg"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/chamada-processo.png"
+      >
 
       <button
         class="btn upload btn-upload-processo-chamada"
@@ -6240,6 +6355,11 @@ function aplicarEstilosNoticiasRecentesPreview() {
 }
 
 function montarCamposNoticiasSuporte(nome) {
+  const blocoAtual =
+    pageBlocksMap?.noticias?.find(b => b.id === 'noticias-suporte');
+
+  const mongo = blocoAtual?.mongo || {};
+
   return `
     <div class="properties-head">
       <h2>Suporte</h2>
@@ -6247,23 +6367,23 @@ function montarCamposNoticiasSuporte(nome) {
     </div>
 
     <label>Título</label>
-    <input id="news-support-title" value="Suporte">
+    <input id="news-support-title" value="${mongo.titulo || 'Suporte'}">
 
     <label>Texto</label>
-    <textarea id="news-support-text">Em caso de dúvidas ou sugestões, entre em contato conosco.</textarea>
+    <textarea id="news-support-text">${mongo.texto || 'Em caso de dúvidas ou sugestões, entre em contato conosco.'}</textarea>
 
     <label>Texto do botão</label>
-    <input id="news-support-button" value="Fale conosco">
+    <input id="news-support-button" value="${mongo.link?.texto || 'Fale conosco'}">
 
     <label>Link do botão</label>
-    <input id="news-support-link" value="./contato.html">
+    <input id="news-support-link" value="${mongo.link?.url || './contato.html'}">
 
     <div class="builder-actions">
-      <button class="btn ghost" type="button">
+      <button class="btn ghost" type="button" data-action="duplicate">
         Duplicar bloco
       </button>
 
-      <button class="btn primary" type="button">
+      <button class="btn primary" type="button" data-action="save">
         Salvar bloco
       </button>
     </div>
@@ -6972,6 +7092,11 @@ function aplicarEstilosGaleriaGridPreview() {
 }
 
 function montarCamposGaleriaVideo(nome) {
+  const blocoAtual =
+    pageBlocksMap?.galeria?.find(b => b.id === 'galeria-video');
+
+  const mongo = blocoAtual?.mongo || {};
+
   return `
     <div class="properties-head">
       <h2>Vídeo Institucional</h2>
@@ -6979,23 +7104,27 @@ function montarCamposGaleriaVideo(nome) {
     </div>
 
     <label>Etiqueta</label>
-    <input id="galeria-video-label" value="Vídeo institucional">
+    <input id="galeria-video-label" value="${mongo.subtitulo || 'Vídeo institucional'}">
 
     <label>Título</label>
-    <textarea id="galeria-video-title">Conheça mais sobre o Colégio Dom Pedro II - Campus CZS</textarea>
+    <textarea id="galeria-video-title">${mongo.titulo || 'Conheça mais sobre o Colégio Dom Pedro II - Campus CZS'}</textarea>
 
     <label>Texto</label>
-    <textarea id="galeria-video-text">Assista ao vídeo institucional e conheça nossa história, projetos, valores e estrutura.</textarea>
+    <textarea id="galeria-video-text">${mongo.texto || 'Assista ao vídeo institucional e conheça nossa história, projetos, valores e estrutura.'}</textarea>
 
     <label>Texto do botão</label>
-    <input id="galeria-video-button" value="Assistir vídeo">
+    <input id="galeria-video-button" value="${mongo.link?.texto || 'Assistir vídeo'}">
 
     <label>Link do vídeo</label>
-    <input id="galeria-video-link" value="https://youtube.com">
+    <input id="galeria-video-link" value="${mongo.videoUrl || mongo.link?.url || 'https://youtube.com'}">
 
     <label>Imagem de capa</label>
     <div class="upload-field">
-      <input id="galeria-video-cover" placeholder="/uploads/site/video-galeria.png">
+      <input
+        id="galeria-video-cover"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/video-galeria.png"
+      >
 
       <button
         class="btn upload btn-upload-galeria-video"
@@ -7008,15 +7137,15 @@ function montarCamposGaleriaVideo(nome) {
 
     <input type="file" id="upload-file" hidden accept="image/*">
 
-   <div class="builder-actions">
-  <button class="btn ghost" type="button" data-action="duplicate">
-    Duplicar bloco
-  </button>
+    <div class="builder-actions">
+      <button class="btn ghost" type="button" data-action="duplicate">
+        Duplicar bloco
+      </button>
 
-  <button class="btn primary" type="button" data-action="save">
-    Salvar bloco
-  </button>
-</div>
+      <button class="btn primary" type="button" data-action="save">
+        Salvar bloco
+      </button>
+    </div>
   `;
 }
 
@@ -7700,6 +7829,12 @@ function atualizarProfessoresListaNaPreview() {
 }
 
 function montarCamposHistoriaBanner(nome) {
+  const blocoAtual =
+    pageBlocksMap?.historia?.find(b => b.id === 'historia-banner');
+
+  const mongo = blocoAtual?.mongo || {};
+  const config = mongo.configuracao || {};
+
   return `
     <div class="properties-head">
       <h2>Banner da História</h2>
@@ -7709,17 +7844,17 @@ function montarCamposHistoriaBanner(nome) {
     <label>Breadcrumb</label>
     <input
       id="hist-banner-breadcrumb"
-      value="Início › História"
+      value="${config.breadcrumb || mongo.subtitulo || 'Início › História'}"
     >
 
     <label>Título</label>
     <input
       id="hist-banner-title"
-      value="Nossa História"
+      value="${mongo.titulo || 'Nossa História'}"
     >
 
     <label>Subtítulo</label>
-    <textarea id="hist-banner-text">Tradição, disciplina e compromisso com a formação cidadã.</textarea>
+    <textarea id="hist-banner-text">${mongo.texto || 'Tradição, disciplina e compromisso com a formação cidadã.'}</textarea>
 
     <label>Imagem de fundo</label>
 
@@ -7727,6 +7862,7 @@ function montarCamposHistoriaBanner(nome) {
 
       <input
         id="hist-banner-image"
+        value="${mongo.imagemUrl || ''}"
         placeholder="/uploads/site/banner-historia.png"
       >
 
@@ -7738,14 +7874,21 @@ function montarCamposHistoriaBanner(nome) {
         Enviar
       </button>
 
+      <button
+        class="btn ghost btn-open-media-picker"
+        type="button"
+        data-target="hist-banner-image"
+      >
+        Biblioteca
+      </button>
     </div>
 
     <label>Intensidade do overlay</label>
 
     <select id="hist-banner-overlay">
-      <option value="0.94">Forte</option>
-      <option value="0.82">Médio</option>
-      <option value="0.68">Leve</option>
+      <option value="0.94" ${String(config.overlay || '0.94') === '0.94' ? 'selected' : ''}>Forte</option>
+      <option value="0.82" ${String(config.overlay || '') === '0.82' ? 'selected' : ''}>Médio</option>
+      <option value="0.68" ${String(config.overlay || '') === '0.68' ? 'selected' : ''}>Leve</option>
     </select>
 
     <input
@@ -7863,6 +8006,11 @@ function montarCamposHistoriaLinha(nome) {
 }
 
 function montarCamposProfessoresBanner(nome) {
+  const blocoAtual =
+    pageBlocksMap?.professores?.find(b => b.id === 'professores-banner');
+
+  const mongo = blocoAtual?.mongo || {};
+
   return `
     <div class="properties-head">
       <h2>Banner Professores</h2>
@@ -7872,17 +8020,18 @@ function montarCamposProfessoresBanner(nome) {
     <label>Título</label>
     <input
       id="professores-banner-titulo"
-      value="Nossos Professores"
+      value="${mongo.titulo || 'Nossos Professores'}"
     >
 
     <label>Subtítulo</label>
-    <textarea id="professores-banner-texto">Conheça nossa equipe docente e acesse materiais disponibilizados pelos professores.</textarea>
+    <textarea id="professores-banner-texto">${mongo.texto || 'Conheça nossa equipe docente e acesse materiais disponibilizados pelos professores.'}</textarea>
 
     <label>Imagem de fundo</label>
 
     <div class="upload-field">
       <input
         id="professores-banner-imagem"
+        value="${mongo.imagemUrl || ''}"
         placeholder="/uploads/site/banner-professores.png"
       >
 
@@ -8412,6 +8561,12 @@ if (id === 'professores-materiais') {
 
    
 if (id === 'home-banner') {
+  const blocoAtual =
+    pageBlocksMap?.home?.find(b => b.id === 'home-banner');
+
+  const mongo = blocoAtual?.mongo || {};
+  const link = mongo.link || {};
+
   return `
     <div class="properties-head">
       <h2>Banner Principal</h2>
@@ -8419,25 +8574,53 @@ if (id === 'home-banner') {
     </div>
 
     <label>Título principal</label>
-    <input id="hero-title" value="Disciplina, educação e valores para a vida.">
+    <input
+      id="hero-title"
+      value="${mongo.titulo || 'Disciplina, educação e valores para a vida.'}"
+    >
 
     <label>Texto</label>
-    <textarea id="hero-text">Formando cidadãos conscientes, preparados para o futuro e comprometidos com a sociedade.</textarea>
+    <textarea id="hero-text">${mongo.texto || 'Formando cidadãos conscientes, preparados para o futuro e comprometidos com a sociedade.'}</textarea>
 
     <label>Texto do botão</label>
-    <input id="button-text" value="Conheça nossa história">
+    <input
+      id="button-text"
+      value="${link.texto || 'Conheça nossa história'}"
+    >
 
     <label>Link do botão</label>
-    <input id="button-link" value="./historia.html">
+    <input
+      id="button-link"
+      value="${link.url || './historia.html'}"
+    >
 
     <label>Imagem de fundo</label>
-    <input id="image-url">
 
-    <input type="file" id="upload-file" hidden>
+    <div class="upload-field">
+      <input
+        id="image-url"
+        value="${mongo.imagemUrl || ''}"
+        placeholder="/uploads/site/banner-home.png"
+      >
 
-    <button class="btn upload" id="btn-upload" type="button">
-      Enviar imagem
-    </button>
+      <button
+        class="btn upload"
+        id="btn-upload"
+        type="button"
+      >
+        Enviar imagem
+      </button>
+
+      <button
+        class="btn ghost btn-open-media-picker"
+        type="button"
+        data-target="image-url"
+      >
+        Biblioteca
+      </button>
+    </div>
+
+    <input type="file" id="upload-file" hidden accept="image/*">
 
     <div class="builder-actions">
       <button class="btn ghost" type="button" data-action="duplicate">Duplicar bloco</button>
@@ -11992,10 +12175,10 @@ function montarDocumentoCertame(certameIndex, docIndex, item = {}) {
       <label>Link / arquivo</label>
       <div class="upload-field">
         <input
-          id="certame-${certameIndex}-doc-url-${docIndex}"
-          value="${item.url || '#'}"
-          placeholder="/uploads/site/edital.pdf"
-        >
+  id="certame-${certameIndex}-doc-url-${docIndex}"
+  value="${item.url || item.link || '#'}"
+  placeholder="/uploads/site/edital.pdf"
+>
 
         <button
           class="btn upload btn-upload-certame-doc"
