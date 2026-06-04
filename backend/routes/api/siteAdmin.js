@@ -1,9 +1,9 @@
 'use strict';
 
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
+
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 const SitePagina = require('../../models/SitePagina');
 const SiteBloco = require('../../models/SiteBloco');
@@ -14,8 +14,6 @@ const SitePatrocinador = require('../../models/SitePatrocinador');
 
 const router = express.Router();
 
-const uploadDir = path.join(__dirname, '../../public/uploads/site');
-fs.mkdirSync(uploadDir, { recursive: true });
 
 function getTenant(req) {
   return req.tenantSlug || req.headers['x-tenant-slug'] || 'cmdpii-czs';
@@ -40,24 +38,8 @@ function detectarTipo(mime = '') {
   return 'outro';
 }
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase();
-    const safe = String(file.originalname || 'arquivo')
-      .replace(ext, '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9_-]/g, '-')
-      .replace(/-+/g, '-')
-      .slice(0, 60);
-
-    cb(null, `${Date.now()}-${safe}${ext}`);
-  }
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 250 * 1024 * 1024
   }
@@ -322,27 +304,70 @@ router.post('/midias/upload', upload.single('arquivo'), async (req, res) => {
     const tenant = getTenant(req);
 
     if (!req.file) {
-      return res.status(400).json({ ok: false, erro: 'Nenhum arquivo enviado.' });
+      return res.status(400).json({
+        ok: false,
+        erro: 'Nenhum arquivo enviado.'
+      });
     }
 
-    const url = `/uploads/site/${req.file.filename}`;
+    const ext = path.extname(req.file.originalname || '').toLowerCase();
+
+    const safe = String(req.file.originalname || 'arquivo')
+      .replace(ext, '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 60);
+
+    const nomeArquivo = `${Date.now()}-${safe}${ext}`;
+
+    const key = `site/${tenant}/${nomeArquivo}`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        CacheControl: 'public, max-age=31536000'
+      })
+    );
+
+    const baseUrl =
+      process.env.AWS_CDN_URL ||
+      process.env.AWS_S3_BASE_URL ||
+      `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+
+    const url =
+      `${baseUrl.replace(/\/$/, '')}/${key}`;
 
     const midia = await SiteMidia.create({
       tenant,
       nomeOriginal: req.file.originalname,
-      nomeArquivo: req.file.filename,
+      nomeArquivo,
       url,
       mimeType: req.file.mimetype,
       tipo: detectarTipo(req.file.mimetype),
       tamanho: req.file.size,
       descricao: req.body.descricao || '',
       alt: req.body.alt || '',
+      usadoEm: [key],
       criadoPor: getUserId(req)
     });
 
-    res.status(201).json({ ok: true, midia });
+    res.status(201).json({
+      ok: true,
+      midia
+    });
+
   } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
+    console.error('Erro upload S3:', err);
+
+    res.status(500).json({
+      ok: false,
+      erro: err.message
+    });
   }
 });
 
