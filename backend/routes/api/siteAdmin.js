@@ -4,7 +4,7 @@ const express = require('express');
 const path = require('path');
 const multer = require('multer');
 
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const SitePagina = require('../../models/SitePagina');
 const SiteBloco = require('../../models/SiteBloco');
@@ -15,6 +15,20 @@ const SitePatrocinador = require('../../models/SitePatrocinador');
 
 const router = express.Router();
 
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'sa-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 250 * 1024 * 1024
+  }
+});
 
 function getTenant(req) {
   return req.tenantSlug || req.headers['x-tenant-slug'] || 'cmdpii-czs';
@@ -39,12 +53,6 @@ function detectarTipo(mime = '') {
   return 'outro';
 }
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 250 * 1024 * 1024
-  }
-});
 
 /* =========================
    CONFIGURAÇÕES DO SITE
