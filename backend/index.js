@@ -738,20 +738,6 @@ app.get('/master-instituicoes.html', requireSuperAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'master-instituicoes.html'));
 });
 
-/* =========================
-   STATIC (HTML)
-   ========================= */
-app.use(express.static(publicRoot, {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
-  }
-}));
-
-app.get('/service-worker.js', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.sendFile(path.join(publicRoot, 'service-worker.js'));
-});
-
 app.get('/', (req, res) => {
   const host = (req.hostname || '').toLowerCase();
 
@@ -764,7 +750,21 @@ app.get('/', (req, res) => {
     );
   }
 
-  return res.redirect('/login.html');
+  return res.sendFile(path.join(publicRoot, 'index.html'));
+});
+
+/* =========================
+   STATIC (HTML)
+   ========================= */
+app.use(express.static(publicRoot, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
+  }
+}));
+
+app.get('/service-worker.js', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(publicRoot, 'service-worker.js'));
 });
 
 /* =========================
