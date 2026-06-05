@@ -752,7 +752,20 @@ app.get('/service-worker.js', (_req, res) => {
   res.sendFile(path.join(publicRoot, 'service-worker.js'));
 });
 
-app.get('/', (_req, res) => res.redirect('/login.html'));
+app.get('/', (req, res) => {
+  const host = (req.hostname || '').toLowerCase();
+
+  if (
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br'
+  ) {
+    return res.sendFile(
+      path.join(publicRoot, 'site-cmdpii', 'index.html')
+    );
+  }
+
+  return res.redirect('/login.html');
+});
 
 /* =========================
    ✅ PUBLIC TENANT
