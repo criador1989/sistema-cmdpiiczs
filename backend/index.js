@@ -377,6 +377,24 @@ function send403(res, publicRoot) {
   return res.status(403).send('403 - Acesso negado');
 }
 
+app.use((req, res, next) => {
+  const host = (req.hostname || '').toLowerCase();
+
+  const isDominioColegio =
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br';
+
+  if (!isDominioColegio) {
+    return next();
+  }
+
+  if (req.path === '/' || req.path === '/index.html') {
+    return res.redirect(301, '/site-cmdpii/index.html');
+  }
+
+  return next();
+});
+
 /* =========================
    ✅ BLOQUEIO REAL POR URL (ANTES DO express.static)
    ========================= */
