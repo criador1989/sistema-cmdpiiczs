@@ -745,9 +745,7 @@ app.get('/', (req, res) => {
     host === 'colegiodompedro2czs.com.br' ||
     host === 'www.colegiodompedro2czs.com.br'
   ) {
-    return res.sendFile(
-      path.join(publicRoot, 'site-cmdpii', 'index.html')
-    );
+    return res.redirect('/site-cmdpii/index.html');
   }
 
   return res.sendFile(path.join(publicRoot, 'index.html'));
