@@ -722,6 +722,21 @@ app.use('/assets', express.static(assetsRoot, {
   immutable: true
 }));
 
+app.use((req, res, next) => {
+  const host = (req.hostname || '').toLowerCase();
+
+  if (
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br'
+  ) {
+    if (req.path === '/' || req.path === '/index.html') {
+      return res.sendFile(path.join(publicRoot, 'site-cmdpii', 'index.html'));
+    }
+  }
+
+  next();
+});
+
 /* =========================
    ✅ GUARD ANTES DO STATIC
    ========================= */
