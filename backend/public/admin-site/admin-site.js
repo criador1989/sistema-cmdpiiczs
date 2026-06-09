@@ -11013,25 +11013,56 @@ function ligarAcoesDosBlocos() {
 }
 
 function salvarBlocoAtualNoEstado() {
-  if (!blocoAtivoId) {
+  const blocoSelecionado = document.querySelector('.builder-block.active');
+  const idAtual = blocoAtivoId || blocoSelecionado?.dataset.blockId;
+
+  if (!idAtual) {
     showToast('Nenhum bloco selecionado.');
     return;
   }
 
+  blocoAtivoId = idAtual;
+
   const slug = builderPageSelect?.value || 'home';
   const blocos = pageBlocksMap[slug] || [];
-  const index = blocos.findIndex(b => b.id === blocoAtivoId);
+
+  let index = blocos.findIndex(b =>
+    b.id === idAtual ||
+    b.mongoId === idAtual ||
+    b.mongo?._id === idAtual ||
+    b.mongo?.configuracao?.cmsBlockId === idAtual
+  );
 
   if (index < 0) {
-    showToast('Bloco não encontrado.');
-    return;
+    const nome =
+      blocoSelecionado?.querySelector('strong')?.textContent ||
+      'Bloco';
+
+    const tipo =
+      blocoSelecionado?.querySelector('small')?.textContent ||
+      'Bloco';
+
+    blocos.push({
+      id: idAtual,
+      nome,
+      tipo,
+      ativo: true,
+      mongo: {
+        configuracao: {
+          cmsBlockId: idAtual,
+          cmsTipo: tipo,
+          origem: 'cms-builder'
+        }
+      }
+    });
+
+    index = blocos.length - 1;
   }
 
-  const conteudo = coletarConteudoBlocoCms(blocoAtivoId);
+  const conteudo = coletarConteudoBlocoCms(idAtual);
 
   blocos[index].mongo = {
     ...(blocos[index].mongo || {}),
-
     titulo: conteudo.titulo || blocos[index].nome || '',
     texto: conteudo.texto || '',
     imagemUrl: conteudo.imagemUrl || '',
@@ -11042,7 +11073,7 @@ function salvarBlocoAtualNoEstado() {
     configuracao: {
       ...(blocos[index].mongo?.configuracao || {}),
       ...(conteudo.configuracao || {}),
-      cmsBlockId: blocoAtivoId,
+      cmsBlockId: idAtual,
       cmsTipo: blocos[index].tipo,
       origem: 'cms-builder'
     }
@@ -13818,6 +13849,10 @@ function getTipoRenderPorBloco(blocoId = '') {
 async function publicarPaginaCms(slug) {
   const blocos = pageBlocksMap[slug] || [];
 
+  if (blocoAtivoId && (pageBlocksMap[slug] || []).some(b => b.id === blocoAtivoId)) {
+  salvarBlocoAtualNoEstado();
+}
+
   const paginaPayload = {
     titulo: getTituloPaginaCms(slug),
     slug,
@@ -13898,7 +13933,7 @@ const conteudo =
     ? coletarConteudoBlocoCms(bloco.id)
     : null;
 
-const fonte = conteudo || salvo || {};
+const fonte = conteudo || bloco.mongo || salvo || {};
 
 const blocoPayload = {
   tipo: 'html-livre',
