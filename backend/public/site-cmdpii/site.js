@@ -226,21 +226,25 @@ async function carregarPaginaNoticia() {
 
                   <div class="single-news-gallery-grid">
                     ${imagensFinal.map((img, index) => `
-                      <figure
-                        class="single-news-gallery-item"
-                        data-gallery-index="${index}"
-                      >
-                        <img
-                          src="${escaparHtml(img.url)}"
-                          alt="${escaparHtml(img.legenda || noticia.titulo || 'Imagem da notícia')}"
-                        >
+                      <figure class="single-news-gallery-item">
+  <button
+    type="button"
+    class="single-news-gallery-open"
+    data-img="${escaparHtml(img.url)}"
+    data-caption="${escaparHtml(img.legenda || noticia.titulo || 'Imagem da notícia')}"
+  >
+    <img
+      src="${escaparHtml(img.url)}"
+      alt="${escaparHtml(img.legenda || noticia.titulo || 'Imagem da notícia')}"
+    >
+  </button>
 
-                        ${
-                          img.legenda
-                            ? `<figcaption>${escaparHtml(img.legenda)}</figcaption>`
-                            : ''
-                        }
-                      </figure>
+  ${
+    img.legenda
+      ? `<figcaption>${escaparHtml(img.legenda)}</figcaption>`
+      : ''
+  }
+</figure>
                     `).join('')}
                   </div>
                 </section>
@@ -266,6 +270,46 @@ async function carregarPaginaNoticia() {
       </section>
     `;
   }
+}
+
+function abrirImagemNoticiaModal(src, caption = '') {
+  let modal = document.getElementById('news-image-lightbox');
+
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'news-image-lightbox';
+    modal.className = 'news-image-lightbox';
+
+    modal.innerHTML = `
+      <div class="news-image-lightbox-backdrop"></div>
+
+      <div class="news-image-lightbox-content">
+        <button
+          type="button"
+          class="news-image-lightbox-close"
+          aria-label="Fechar imagem"
+        >
+          ×
+        </button>
+
+        <img src="" alt="Imagem ampliada da notícia">
+
+        <p></p>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  }
+
+  const img = modal.querySelector('img');
+  const text = modal.querySelector('p');
+
+  img.src = src;
+  img.alt = caption || 'Imagem ampliada da notícia';
+  text.textContent = caption || '';
+
+  modal.classList.add('show');
+  document.body.classList.add('lightbox-open');
 }
 
 async function carregarListaNoticiasPublicas() {
@@ -4018,3 +4062,35 @@ function inicializarHomeDocumentosModal() {
     modal.querySelector('.home-doc-modal-backdrop')?.addEventListener('click', fechar);
   });
 }
+document.addEventListener('click', event => {
+  const openBtn = event.target.closest('.single-news-gallery-open');
+
+  if (openBtn) {
+    abrirImagemNoticiaModal(
+      openBtn.dataset.img,
+      openBtn.dataset.caption || ''
+    );
+    return;
+  }
+
+  if (
+    event.target.closest('.news-image-lightbox-close') ||
+    event.target.classList.contains('news-image-lightbox-backdrop')
+  ) {
+    document
+      .getElementById('news-image-lightbox')
+      ?.classList.remove('show');
+
+    document.body.classList.remove('lightbox-open');
+  }
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    document
+      .getElementById('news-image-lightbox')
+      ?.classList.remove('show');
+
+    document.body.classList.remove('lightbox-open');
+  }
+});

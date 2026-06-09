@@ -1604,6 +1604,67 @@ MEDIA PICKER
   text-transform:
     uppercase;
 }
+
+/* =========================
+   MEDIA PICKER — GRID CORRIGIDO
+   ========================= */
+
+.media-picker-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) !important;
+  gap: 18px !important;
+  padding: 24px !important;
+  max-height: 68vh;
+  overflow-y: auto;
+}
+
+.media-picker-card {
+  min-height: 210px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, .10);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+}
+
+.media-picker-thumb {
+  height: 145px !important;
+  width: 100%;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: #e2e8f0;
+}
+
+.media-picker-body {
+  padding: 12px 14px;
+  min-height: 58px;
+}
+
+.media-picker-body strong {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.media-picker-body small {
+  display: block;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .media-picker-grid {
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)) !important;
+  }
+
+  .media-picker-thumb {
+    height: 120px !important;
+  }
+
+  .media-picker-card {
+    min-height: 180px;
+  }
+}
+
 /* =========================
    CMS NOTÍCIAS - AJUSTE VISUAL
    ========================= */
