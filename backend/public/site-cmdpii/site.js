@@ -1,3 +1,64 @@
+function inicializarMenuMobile() {
+  const mobileToggle = document.getElementById('mobile-menu-toggle');
+  let mobileMenu = document.getElementById('mobile-menu');
+  let mobileOverlay = document.getElementById('mobile-menu-overlay');
+
+  if (!mobileToggle) return;
+
+  if (!mobileOverlay) {
+    mobileOverlay = document.createElement('div');
+    mobileOverlay.id = 'mobile-menu-overlay';
+    mobileOverlay.className = 'mobile-menu-overlay';
+    document.body.appendChild(mobileOverlay);
+  }
+
+  if (!mobileMenu) {
+    mobileMenu = document.createElement('aside');
+    mobileMenu.id = 'mobile-menu';
+    mobileMenu.className = 'mobile-menu';
+
+    mobileMenu.innerHTML = `
+      <button id="mobile-menu-close" class="mobile-menu-close" type="button">×</button>
+
+      <nav class="mobile-nav">
+        <a href="./index.html">Início</a>
+        <a href="./historia.html">História</a>
+        <a href="./direcao.html">Direção</a>
+        <a href="./corpo-alunos.html">Corpo de Alunos</a>
+        <a href="./processo-seletivo.html">Processo Seletivo</a>
+        <a href="./noticias.html">Notícias</a>
+        <a href="./galeria.html">Galeria</a>
+        <a href="./contato.html">Contato</a>
+        <a href="./professores.html">Professores</a>
+      </nav>
+    `;
+
+    document.body.appendChild(mobileMenu);
+  }
+
+  const mobileClose = document.getElementById('mobile-menu-close');
+
+  function abrirMenuMobile() {
+    mobileMenu.classList.add('show');
+    mobileOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fecharMenuMobile() {
+    mobileMenu.classList.remove('show');
+    mobileOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  mobileToggle.onclick = abrirMenuMobile;
+  mobileClose.onclick = fecharMenuMobile;
+  mobileOverlay.onclick = fecharMenuMobile;
+
+  document.querySelectorAll('.mobile-nav a').forEach(link => {
+    link.onclick = fecharMenuMobile;
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
   /* =========================
@@ -11,41 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
      MENU MOBILE
      ========================= */
 
-  const mobileToggle =
-    document.getElementById('mobile-menu-toggle');
-
-  const mobileMenu =
-    document.getElementById('mobile-menu');
-
-  const mobileOverlay =
-    document.getElementById('mobile-menu-overlay');
-
-  const mobileClose =
-    document.getElementById('mobile-menu-close');
-
-  function abrirMenuMobile() {
-    mobileMenu?.classList.add('show');
-    mobileOverlay?.classList.add('show');
-
-    document.body.style.overflow = 'hidden';
-  }
-
-  function fecharMenuMobile() {
-    mobileMenu?.classList.remove('show');
-    mobileOverlay?.classList.remove('show');
-
-    document.body.style.overflow = '';
-  }
-
-  mobileToggle?.addEventListener('click', abrirMenuMobile);
-
-  mobileClose?.addEventListener('click', fecharMenuMobile);
-
-  mobileOverlay?.addEventListener('click', fecharMenuMobile);
-
-  document.querySelectorAll('.mobile-nav a').forEach(link => {
-    link.addEventListener('click', fecharMenuMobile);
-  });
+  inicializarMenuMobile();
 
   /* =========================
      NOTÍCIA INDIVIDUAL / CONFIG / HOME
@@ -613,6 +640,10 @@ async function carregarConfigPublica() {
     if (!data.ok || !data.config) return;
 
     aplicarConfigNoFooter(data.config);
+
+    
+    // REINICIALIZA MENU MOBILE
+    inicializarMenuMobile();
 
   } catch (err) {
     console.error('Erro ao carregar configuração pública:', err);
