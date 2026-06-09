@@ -860,18 +860,7 @@ async function carregarHomeDoMongo() {
     const main = document.querySelector('main');
     if (!main) return;
 
-    const ordemHome = [
-      'home-banner',
-      'home-menu',
-      'home-patrocinadores',
-      'home-noticias',
-      'home-associacao',
-      'home-estatisticas',
-      'home-documentos',
-      'home-galeria',
-      'home-video'
-    ];
-
+    
     const blocos = data.blocos
   .filter(bloco => bloco.ativo !== false)
   .sort((a, b) => {
@@ -936,10 +925,17 @@ async function carregarHomeDoMongo() {
   }
 
   // NOVO
-  main.insertAdjacentHTML(
-    'beforeend',
-    renderizarBlocoCms(bloco)
-  );
+ // NOVO
+main.insertAdjacentHTML(
+  'beforeend',
+  renderBlocoPadraoCms({
+    ...bloco,
+    configuracao: {
+      ...(bloco.configuracao || {}),
+      tipoRender: 'padrao'
+    }
+  })
+);
     }
 
     await montarSidebarParceirosHome(main);
