@@ -873,63 +873,73 @@ async function carregarHomeDoMongo() {
     ];
 
     const blocos = data.blocos
-      .filter(bloco => bloco.ativo !== false)
-      .sort((a, b) => {
-        const idA = a.configuracao?.cmsBlockId || a.id || '';
-        const idB = b.configuracao?.cmsBlockId || b.id || '';
+  .filter(bloco => bloco.ativo !== false)
+  .sort((a, b) => {
+    const ordemA = Number(a.ordem ?? 999);
+    const ordemB = Number(b.ordem ?? 999);
 
-        const posA = ordemHome.indexOf(idA);
-        const posB = ordemHome.indexOf(idB);
-
-        const ordemA = posA >= 0 ? posA : 999;
-        const ordemB = posB >= 0 ? posB : 999;
-
-        return ordemA - ordemB;
-      });
+    return ordemA - ordemB;
+  });
 
     main.innerHTML = '';
 
     for (const bloco of blocos) {
-      const id = bloco.configuracao?.cmsBlockId;
 
-      if (id === 'home-banner') {
-        main.insertAdjacentHTML('beforeend', renderHomeBanner(bloco));
-      }
+  const id = bloco.configuracao?.cmsBlockId;
 
-      if (id === 'home-menu') {
-        main.insertAdjacentHTML('beforeend', renderHomeMenu(bloco));
-      }
+  if (id === 'home-banner') {
+    main.insertAdjacentHTML('beforeend', renderHomeBanner(bloco));
+    continue;
+  }
 
-      if (id === 'home-patrocinadores') {
-        await renderHomePatrocinadores(main, bloco);
-      }
+  if (id === 'home-menu') {
+    main.insertAdjacentHTML('beforeend', renderHomeMenu(bloco));
+    continue;
+  }
 
-      if (id === 'home-noticias') {
-        await renderHomeNoticias(main, bloco);
-      }
+  if (id === 'home-patrocinadores') {
+    await renderHomePatrocinadores(main, bloco);
+    continue;
+  }
 
-      if (id === 'home-associacao') {
-        main.insertAdjacentHTML('beforeend', renderHomeAssociacao(bloco));
-        inicializarHomeAssociacaoModal();
-      }
+  if (id === 'home-noticias') {
+    await renderHomeNoticias(main, bloco);
+    continue;
+  }
 
-      if (id === 'home-estatisticas') {
-        main.insertAdjacentHTML('beforeend', renderHomeEstatisticas(bloco));
-        atualizarEstatisticasPublicas();
-      }
+  if (id === 'home-associacao') {
+    main.insertAdjacentHTML('beforeend', renderHomeAssociacao(bloco));
+    inicializarHomeAssociacaoModal();
+    continue;
+  }
 
-      if (id === 'home-documentos') {
-        main.insertAdjacentHTML('beforeend', renderHomeDocumentos(bloco));
-        inicializarHomeDocumentosModal();
-      }
+  if (id === 'home-estatisticas') {
+    main.insertAdjacentHTML('beforeend', renderHomeEstatisticas(bloco));
+    atualizarEstatisticasPublicas();
+    continue;
+  }
 
-      if (id === 'home-galeria') {
-        main.insertAdjacentHTML('beforeend', renderHomeGaleria(bloco));
-      }
+  if (id === 'home-documentos') {
+    main.insertAdjacentHTML('beforeend', renderHomeDocumentos(bloco));
+    inicializarHomeDocumentosModal();
+    continue;
+  }
 
-      if (id === 'home-video') {
-        main.insertAdjacentHTML('beforeend', renderHomeVideo(bloco));
-      }
+  if (id === 'home-galeria') {
+    main.insertAdjacentHTML('beforeend', renderHomeGaleria(bloco));
+    continue;
+  }
+
+  if (id === 'home-video') {
+    main.insertAdjacentHTML('beforeend', renderHomeVideo(bloco));
+    continue;
+  }
+
+  // NOVO
+  main.insertAdjacentHTML(
+    'beforeend',
+    renderizarBlocoCms(bloco)
+  );
     }
 
     await montarSidebarParceirosHome(main);
