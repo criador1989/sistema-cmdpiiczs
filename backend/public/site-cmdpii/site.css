@@ -5505,3 +5505,43 @@ body.home-doc-modal-open {
 body.lightbox-open {
   overflow: hidden;
 }
+.home-dynamic-banner {
+  width: min(1100px, calc(100% - 48px));
+  min-height: 230px;
+  margin: 48px auto;
+  border-radius: 22px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 24px 70px rgba(6, 26, 53, .20);
+}
+
+.home-dynamic-banner-content {
+  max-width: 560px;
+  padding: 48px;
+  color: #fff;
+}
+
+.home-dynamic-banner-content h2 {
+  font-size: clamp(1.8rem, 4vw, 3.4rem);
+  line-height: 1;
+  margin-bottom: 18px;
+}
+
+.home-dynamic-banner-content p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 768px) {
+  .home-dynamic-banner {
+    width: calc(100% - 28px);
+    min-height: 260px;
+    margin: 32px auto;
+  }
+
+  .home-dynamic-banner-content {
+    padding: 28px;
+  }
+}

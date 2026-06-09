@@ -928,13 +928,7 @@ async function carregarHomeDoMongo() {
  // NOVO
 main.insertAdjacentHTML(
   'beforeend',
-  renderBlocoPadraoCms({
-    ...bloco,
-    configuracao: {
-      ...(bloco.configuracao || {}),
-      tipoRender: 'padrao'
-    }
-  })
+  renderHomeBlocoDinamico(bloco)
 );
     }
 
@@ -1203,6 +1197,45 @@ if (slug === 'professores') {
   } catch (err) {
     console.error('Erro ao carregar página dinâmica:', err);
   }
+}
+
+function renderHomeBlocoDinamico(bloco = {}) {
+  const overlay = Number(bloco.configuracao?.overlay || 0.78);
+
+  return `
+    <section
+      class="home-dynamic-banner"
+      data-cms-block-id="${escaparHtml(bloco.configuracao?.cmsBlockId || '')}"
+      style="
+        ${
+          bloco.imagemUrl
+            ? `
+              background:
+                linear-gradient(
+                  90deg,
+                  rgba(6,26,53,${overlay}),
+                  rgba(6,26,53,.68)
+                ),
+                url('${escaparHtml(bloco.imagemUrl)}');
+              background-size: cover;
+              background-position: center;
+            `
+            : ''
+        }
+      "
+    >
+      <div class="home-dynamic-banner-content">
+        <h2>${escaparHtml(bloco.titulo || '')}</h2>
+        <p>${escaparHtml(bloco.texto || '')}</p>
+
+        ${
+          bloco.link?.url
+            ? `<a class="btn primary" href="${escaparHtml(bloco.link.url)}">${escaparHtml(bloco.link.texto || 'Acessar')}</a>`
+            : ''
+        }
+      </div>
+    </section>
+  `;
 }
 
 function renderizarBlocoCms(bloco = {}) {
