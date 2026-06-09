@@ -743,42 +743,44 @@ function montarCamposBlocoDinamico(id, nome) {
     <textarea id="dynamic-text">${mongo.texto || 'Edite aqui o conteúdo deste bloco.'}</textarea>
 
     <label>Texto do botão</label>
-    <input
-      id="dynamic-button-text"
-      value="${link.texto || 'Saiba mais'}"
-    >
+<input
+  id="dynamic-button-text"
+  value="${link.texto || 'Saiba mais'}"
+>
 
-    <label>Link</label>
-    <input
-      id="dynamic-link"
-      value="${link.url || '#'}"
-    >
+<label>Link</label>
+<input
+  id="dynamic-button-link"
+  value="${link.url || '#'}"
+>
 
-    <label>Imagem / capa</label>
+<label>Imagem / capa</label>
 
-    <div class="upload-field">
+<div class="upload-field">
 
-      <input
-        id="dynamic-image"
-        value="${mongo.imagemUrl || ''}"
-        placeholder="/uploads/site/imagem.png"
-      >
+  <input
+    id="dynamic-image"
+    value="${mongo.imagemUrl || ''}"
+    placeholder="/uploads/site/imagem.png"
+  >
 
-      <button
-        class="btn upload btn-open-media-picker"
-        type="button"
-        data-target="dynamic-image"
-      >
-        Biblioteca
-      </button>
+  <button
+    class="btn upload btn-upload-dynamic-image"
+    type="button"
+    data-target="dynamic-image"
+  >
+    Enviar
+  </button>
 
-    </div>
+  <button
+    class="btn ghost btn-open-media-picker"
+    type="button"
+    data-target="dynamic-image"
+  >
+    Biblioteca
+  </button>
 
-    <input type="file" id="upload-file" hidden>
-
-    <button class="btn upload" id="btn-upload" type="button">
-      Enviar imagem / arquivo
-    </button>
+</div>
 
     <div class="cms-field-row">
       <div>
@@ -9178,7 +9180,7 @@ function ligarEventosCamposDinamicos() {
   });
 
   document.querySelectorAll(
-    '.btn-upload-news-image, .btn-upload-gallery-image, .btn-upload-video-cover, .btn-upload-hist-video, .btn-upload-hist-banner, .btn-upload-direcao-banner, .btn-upload-team-photo, .btn-upload-direcao-chamada, .btn-upload-alunos-banner, .btn-upload-alunos-destaque, .btn-upload-alunos-chamada, .btn-upload-processo-banner, .btn-upload-process-edital, .btn-upload-processo-chamada, .btn-upload-noticias-banner, .btn-upload-news-list, .btn-upload-recent-news, .btn-upload-galeria-banner, .btn-upload-gallery-grid, .btn-upload-galeria-video, .btn-upload-contato-banner, .btn-upload-contact-map, .btn-upload-certame-doc, .btn-upload-professores-banner, .btn-upload-professores-foto, .btn-upload-professores-material'
+    ' .btn-upload-dynamic-image, .btn-upload-news-image, .btn-upload-gallery-image, .btn-upload-video-cover, .btn-upload-hist-video, .btn-upload-hist-banner, .btn-upload-direcao-banner, .btn-upload-team-photo, .btn-upload-direcao-chamada, .btn-upload-alunos-banner, .btn-upload-alunos-destaque, .btn-upload-alunos-chamada, .btn-upload-processo-banner, .btn-upload-process-edital, .btn-upload-processo-chamada, .btn-upload-noticias-banner, .btn-upload-news-list, .btn-upload-recent-news, .btn-upload-galeria-banner, .btn-upload-gallery-grid, .btn-upload-galeria-video, .btn-upload-contato-banner, .btn-upload-contact-map, .btn-upload-certame-doc, .btn-upload-professores-banner, .btn-upload-professores-foto, .btn-upload-professores-material'
   ).forEach(btn => {
     btn.addEventListener('click', () => {
       cmsUploadTarget = btn.dataset.target;
@@ -14115,7 +14117,6 @@ document.getElementById('btn-save-identidade')?.addEventListener('click', async 
 
   aplicarIdentidadeNaPreview();
 
-  const payload = {
 
   const payload = {
   logoUrl:
