@@ -11540,6 +11540,61 @@ async function carregarConfig() {
 
     if (getInput('config-seo-title')) getInput('config-seo-title').value = config.seoTitulo || config.nomeSite || '';
     if (getInput('config-seo-description')) getInput('config-seo-description').value = config.seoDescricao || config.descricao || '';
+    if (getInput('ident-logo-header')) {
+  getInput('ident-logo-header').value = config.logoUrl || '';
+}
+
+if (getInput('ident-brasao')) {
+  getInput('ident-brasao').value = config.brasaoUrl || '';
+}
+
+if (getInput('ident-favicon')) {
+  getInput('ident-favicon').value = config.faviconUrl || '';
+}
+
+if (getInput('ident-cor-primaria')) {
+  getInput('ident-cor-primaria').value = config.corPrimaria || '#061a35';
+}
+
+if (getInput('ident-cor-secundaria')) {
+  getInput('ident-cor-secundaria').value = config.corSecundaria || '#b9151b';
+}
+
+if (getInput('ident-cor-destaque')) {
+  getInput('ident-cor-destaque').value = config.corDestaque || '#f5b51b';
+}
+
+if (getInput('global-header-title')) {
+  getInput('global-header-title').value =
+    config.layoutGlobal?.header?.titulo || 'COLÉGIO DOM PEDRO II';
+}
+
+if (getInput('global-header-subtitle')) {
+  getInput('global-header-subtitle').value =
+    config.layoutGlobal?.header?.subtitulo || 'CAMPUS CZS SUL';
+}
+
+if (getInput('global-header-small')) {
+  getInput('global-header-small').value =
+    config.layoutGlobal?.header?.descricaoPequena || 'Unidade de Ensino do CBMAC';
+}
+
+if (getInput('global-header-logo')) {
+  getInput('global-header-logo').value =
+    config.layoutGlobal?.header?.logo || '';
+}
+
+if (getInput('global-header-button-text')) {
+  getInput('global-header-button-text').value =
+    config.layoutGlobal?.header?.botaoTexto || 'Acesso Axoriin';
+}
+
+if (getInput('global-header-button-link')) {
+  getInput('global-header-button-link').value =
+    config.layoutGlobal?.header?.botaoLink || 'https://axoriin.com.br';
+}
+
+aplicarIdentidadeNaPreview();
   } catch (err) {
     console.error(err);
   }
@@ -14062,6 +14117,7 @@ document.getElementById('btn-save-identidade')?.addEventListener('click', async 
 
   const payload = {
 
+  const payload = {
   logoUrl:
     getInput('ident-logo-header')?.value || '',
 
@@ -14070,6 +14126,15 @@ document.getElementById('btn-save-identidade')?.addEventListener('click', async 
 
   faviconUrl:
     getInput('ident-favicon')?.value || '',
+
+  corPrimaria:
+    getInput('ident-cor-primaria')?.value || '#061a35',
+
+  corSecundaria:
+    getInput('ident-cor-secundaria')?.value || '#b9151b',
+
+  corDestaque:
+    getInput('ident-cor-destaque')?.value || '#f5b51b',
 
   layoutGlobal: {
       header: {
