@@ -10992,23 +10992,40 @@ function ligarAcoesDosBlocos() {
     });
 
     btnDelete?.addEventListener('click', (e) => {
-      e.stopPropagation();
+  e.stopPropagation();
 
-      if (!block.dataset.blockId?.includes('-dinamico')) {
-        showToast('Blocos originais não podem ser excluídos nesta fase.');
-        return;
-      }
+  const blockId = block.dataset.blockId;
 
-      if (!confirm('Deseja excluir este bloco?')) return;
+  if (!blockId?.includes('-dinamico')) {
+    showToast('Blocos originais não podem ser excluídos nesta fase.');
+    return;
+  }
 
-      const doc = getPreviewDoc();
-      const el = doc?.querySelector(`[data-cms-block-id="${block.dataset.blockId}"]`);
-      if (el) el.remove();
+  if (!confirm('Deseja excluir este bloco?')) return;
 
-      block.remove();
+  const slug = builderPageSelect?.value || 'home';
 
-      showToast('Bloco removido.');
-    });
+  if (Array.isArray(pageBlocksMap[slug])) {
+    pageBlocksMap[slug] = pageBlocksMap[slug].filter(b =>
+      b.id !== blockId &&
+      b.mongoId !== blockId &&
+      b.mongo?._id !== blockId &&
+      b.mongo?.configuracao?.cmsBlockId !== blockId
+    );
+  }
+
+  const doc = getPreviewDoc();
+  const el = doc?.querySelector(`[data-cms-block-id="${blockId}"]`);
+  if (el) el.remove();
+
+  block.remove();
+
+  if (blocoAtivoId === blockId) {
+    blocoAtivoId = pageBlocksMap[slug]?.[0]?.id || 'home-banner';
+  }
+
+  showToast('Bloco removido do rascunho. Publique para aplicar no site.');
+});
   });
 }
 
@@ -13846,11 +13863,37 @@ function getTipoRenderPorBloco(blocoId = '') {
 }
 
 async function publicarPaginaCms(slug) {
-  const blocos = pageBlocksMap[slug] || [];
-
   if (blocoAtivoId && (pageBlocksMap[slug] || []).some(b => b.id === blocoAtivoId)) {
-  salvarBlocoAtualNoEstado();
-}
+    salvarBlocoAtualNoEstado();
+  }
+
+  let blocos = pageBlocksMap[slug] || [];
+
+  const mapaBlocos = new Map();
+
+  for (const bloco of blocos) {
+    const id =
+      bloco.id ||
+      bloco.mongo?.configuracao?.cmsBlockId ||
+      bloco.mongoId ||
+      bloco.mongo?._id;
+
+    const titulo =
+      bloco.mongo?.titulo ||
+      bloco.nome ||
+      '';
+
+    const chave = titulo
+      ? `${slug}-${titulo.trim().toLowerCase()}`
+      : id;
+
+    if (!chave) continue;
+
+    mapaBlocos.set(chave, bloco);
+  }
+
+  blocos = Array.from(mapaBlocos.values());
+  pageBlocksMap[slug] = blocos;
 
   const paginaPayload = {
     titulo: getTituloPaginaCms(slug),
@@ -13916,6 +13959,35 @@ async function publicarPaginaCms(slug) {
     blocosExistentesData.ok && Array.isArray(blocosExistentesData.blocos)
       ? blocosExistentesData.blocos
       : [];
+
+      // Remove blocos que existem no Mongo,
+// mas não existem mais no CMS
+
+const idsAtuais = new Set(
+  blocos.map(b => b.id)
+);
+
+for (const blocoExistente of blocosExistentes) {
+
+  const cmsId =
+    blocoExistente.configuracao?.cmsBlockId;
+
+  if (!idsAtuais.has(cmsId)) {
+
+    await fetch(
+      `${API_ADMIN}/blocos/${blocoExistente._id}`,
+      {
+        method: 'DELETE',
+        headers
+      }
+    );
+
+    console.log(
+      '[CMS] Bloco removido do Mongo:',
+      cmsId
+    );
+  }
+}
 
   for (const [index, bloco] of blocos.entries()) {
     const existente = blocosExistentes.find(b =>
