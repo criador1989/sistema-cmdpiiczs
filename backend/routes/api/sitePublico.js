@@ -189,7 +189,7 @@ router.get('/noticias', async (req, res) => {
         destaque: -1,
         dataPublicacao: -1
       })
-      .select('titulo slug resumo conteudo categoria autor imagem destaque dataPublicacao seoTitulo seoDescricao createdAt')
+      .select('titulo slug resumo conteudo categoria autor imagem imagens destaque dataPublicacao seoTitulo seoDescricao createdAt')
       .lean();
 
     res.json({ ok: true, noticias });
@@ -209,7 +209,7 @@ router.get('/noticias/:slug', async (req, res) => {
         slug: String(req.params.slug || '').toLowerCase(),
         status: 'publicada'
       })
-      .select('titulo slug resumo conteudo categoria autor imagem destaque dataPublicacao seoTitulo seoDescricao createdAt')
+      .select('titulo slug resumo conteudo categoria autor imagem imagens destaque dataPublicacao seoTitulo seoDescricao createdAt')
       .lean();
 
     if (!noticia) {

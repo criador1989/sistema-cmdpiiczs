@@ -321,7 +321,24 @@
         <div class="cms-field-row">
           <div>
             <label>Categoria</label>
-            <input id="cms-news-category" value="Comunicado">
+<select id="cms-news-category">
+  <option value="Comunicado">Comunicado</option>
+  <option value="Evento">Evento</option>
+  <option value="Jogos Escolares">Jogos Escolares</option>
+  <option value="Processo Seletivo">Processo Seletivo</option>
+  <option value="Pedagógico">Pedagógico</option>
+  <option value="Institucional">Institucional</option>
+  <option value="Esportivo">Esportivo</option>
+  <option value="Cultural">Cultural</option>
+  <option value="Militar">Militar</option>
+  <option value="Outro">Outro</option>
+</select>
+
+<input
+  id="cms-news-category-custom"
+  placeholder="Digite a categoria"
+  style="display:none;margin-top:8px;"
+>
           </div>
 
           <div>
@@ -336,18 +353,40 @@
         <label>Conteúdo</label>
         <textarea id="cms-news-content" placeholder="Texto completo da notícia"></textarea>
 
-        <label>Imagem</label>
-        <div class="upload-field">
-          <input id="cms-news-image" placeholder="/uploads/site/noticia.png">
+        <label>Imagem de capa</label>
+<div class="upload-field">
+  <input id="cms-news-image" placeholder="/uploads/site/noticia.png">
 
-          <button
-            class="btn ghost btn-open-media-picker"
-            type="button"
-            data-target="cms-news-image"
-          >
-            Biblioteca
-          </button>
-        </div>
+  <button
+    class="btn ghost btn-open-media-picker"
+    type="button"
+    data-target="cms-news-image"
+  >
+    Biblioteca
+  </button>
+</div>
+
+<div class="cms-alert-info">
+  Você pode enviar várias imagens e escolher qual será a capa da notícia.
+</div>
+
+<div id="cms-news-images-list" class="cms-news-images-list"></div>
+
+<input
+  type="file"
+  id="cms-news-images-upload"
+  accept="image/*"
+  multiple
+  hidden
+>
+
+<button
+  class="btn ghost full"
+  id="btn-upload-news-images"
+  type="button"
+>
+  + Enviar várias imagens
+</button>
 
         <div class="cms-field-row">
           <label>

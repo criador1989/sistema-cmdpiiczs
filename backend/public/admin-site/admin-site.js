@@ -1341,6 +1341,175 @@ function coletarNoticiasHome() {
   }).filter(item => item.titulo.trim());
 }
 
+function obterCategoriaNoticia() {
+  const categoria = getInput('cms-news-category')?.value || 'Comunicado';
+
+  if (categoria === 'Outro') {
+    return getInput('cms-news-category-custom')?.value?.trim() || 'Outro';
+  }
+
+  return categoria;
+}
+
+function aplicarCategoriaNoticia(categoria = 'Comunicado') {
+  const select = getInput('cms-news-category');
+  const custom = getInput('cms-news-category-custom');
+
+  if (!select) return;
+
+  const opcoes = [...select.options].map(opt => opt.value);
+
+  if (opcoes.includes(categoria)) {
+    select.value = categoria;
+    if (custom) {
+      custom.style.display = 'none';
+      custom.value = '';
+    }
+  } else {
+    select.value = 'Outro';
+    if (custom) {
+      custom.style.display = 'block';
+      custom.value = categoria;
+    }
+  }
+}
+
+function coletarImagensNoticia() {
+  const itens = [...document.querySelectorAll('.cms-news-image-item')];
+
+  return itens.map((item, index) => {
+    const i = item.dataset.imageIndex;
+
+    return {
+      ordem: index,
+      url: getInput(`cms-news-gallery-url-${i}`)?.value || '',
+      legenda: getInput(`cms-news-gallery-caption-${i}`)?.value || '',
+      posicao: getInput(`cms-news-gallery-position-${i}`)?.value || 'galeria'
+    };
+  }).filter(img => img.url.trim());
+}
+
+function montarImagemNoticiaItem(n, imagem = {}) {
+  const url = imagem.url || imagem.imagem || '';
+  const legenda = imagem.legenda || imagem.alt || '';
+  const posicao = imagem.posicao || 'galeria';
+
+  return `
+    <div class="cms-news-image-item" data-image-index="${n}">
+      <div class="news-editor-top">
+        <strong>Imagem ${n}</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-news-image-cover" data-image-index="${n}">
+            Usar como capa
+          </button>
+
+          <button type="button" class="btn-remove-news-image">
+            Remover
+          </button>
+        </div>
+      </div>
+
+      ${url ? `
+        <div
+          class="cms-news-image-preview"
+          style="background-image:url('${url}')"
+        ></div>
+      ` : ''}
+
+      <label>URL da imagem</label>
+      <input
+        id="cms-news-gallery-url-${n}"
+        value="${url}"
+        placeholder="URL da imagem"
+      >
+
+      <label>Legenda</label>
+      <input
+        id="cms-news-gallery-caption-${n}"
+        value="${legenda}"
+        placeholder="Legenda da imagem"
+      >
+
+      <label>Posição no texto</label>
+      <select id="cms-news-gallery-position-${n}">
+        <option value="galeria" ${posicao === 'galeria' ? 'selected' : ''}>Galeria final</option>
+        <option value="meio-texto" ${posicao === 'meio-texto' ? 'selected' : ''}>Inserir no meio do texto</option>
+      </select>
+    </div>
+  `;
+}
+
+function renderizarImagensNoticia(imagens = []) {
+  const container = document.getElementById('cms-news-images-list');
+  if (!container) return;
+
+  container.innerHTML = imagens.map((img, index) =>
+    montarImagemNoticiaItem(index + 1, img)
+  ).join('');
+}
+
+function adicionarImagemNoticia(imagem = {}) {
+  const container = document.getElementById('cms-news-images-list');
+  if (!container) return;
+
+  const n = Date.now();
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = montarImagemNoticiaItem(n, imagem);
+
+  container.appendChild(wrap.firstElementChild);
+}
+
+async function enviarMultiplasImagensNoticia(files) {
+  const arquivos = Array.from(files || []);
+
+  if (!arquivos.length) return;
+
+  const campoCapa = getInput('cms-news-image');
+
+  for (const file of arquivos) {
+    if (!file.type?.startsWith('image/')) {
+      continue;
+    }
+
+    const formData = new FormData();
+    formData.append('arquivo', file);
+
+    const res = await fetch(`${API_ADMIN}/midias/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('site_cms_token')}`
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!data.ok) {
+      throw new Error(data.erro || 'Erro ao enviar imagem.');
+    }
+
+    const url = data.midia?.url || '';
+
+    if (!url) continue;
+
+    adicionarImagemNoticia({
+      url,
+      legenda: '',
+      posicao: 'galeria'
+    });
+
+    // Define capa apenas no campo da notícia.
+    // Não mexe em image-url, hero-image, banner-home etc.
+    if (campoCapa && !campoCapa.value) {
+      campoCapa.value = url;
+    }
+  }
+
+  showToast('Imagens da notícia enviadas com sucesso.');
+}
+
 function adicionarCampoHomeNoticia() {
   const container = document.getElementById('home-news-fields');
   if (!container) return;
@@ -1366,6 +1535,8 @@ function adicionarCampoHomeNoticia() {
   atualizarPreview();
   showToast('Nova notícia adicionada.');
 }
+
+
 
 function montarItemEstatisticaHome(n, item = {}) {
   return `
@@ -11533,13 +11704,24 @@ if (url) {
   if (cmsUploadTarget && getInput(cmsUploadTarget)) {
     getInput(cmsUploadTarget).value = url;
     cmsUploadTarget = null;
-  } else if (blocoAtivoId.includes('-dinamico') && getInput('dynamic-image')) {
+    atualizarPreview();
+  } else if (
+    blocoAtivoId &&
+    blocoAtivoId.includes('-dinamico') &&
+    getInput('dynamic-image')
+  ) {
     getInput('dynamic-image').value = url;
-  } else if (getInput('image-url')) {
-    getInput('image-url').value = url;
-  }
+    atualizarPreview();
+  } else {
+    console.warn(
+      'Upload concluído, mas nenhum campo alvo válido foi definido.',
+      { url, cmsUploadTarget, blocoAtivoId }
+    );
 
-  atualizarPreview();
+    showToast(
+      'Arquivo enviado para a biblioteca. Selecione o campo correto antes de inserir.'
+    );
+  }
 }
 
     showToast('Arquivo enviado com sucesso.');
@@ -11871,18 +12053,27 @@ function limparFormularioNoticia() {
   getInput('cms-news-id').value = '';
   getInput('cms-news-title').value = '';
   getInput('cms-news-slug').value = '';
-  getInput('cms-news-category').value = 'Comunicado';
+
+  aplicarCategoriaNoticia('Comunicado');
+
   getInput('cms-news-author').value = 'Comunicação CMDPII';
   getInput('cms-news-summary').value = '';
   getInput('cms-news-content').value = '';
   getInput('cms-news-image').value = '';
+
   getInput('cms-news-featured').checked = false;
   getInput('cms-news-published').checked = false;
+
   getInput('cms-news-seo-title').value = '';
   getInput('cms-news-seo-description').value = '';
 
+  renderizarImagensNoticia([]);
+
   const title = document.getElementById('cms-news-form-title');
-  if (title) title.textContent = 'Nova notícia';
+
+  if (title) {
+    title.textContent = 'Nova notícia';
+  }
 }
 
 async function carregarNoticiasCms() {
@@ -11953,11 +12144,16 @@ function preencherFormularioNoticia(noticia) {
   getInput('cms-news-id').value = noticia._id || '';
   getInput('cms-news-title').value = noticia.titulo || '';
   getInput('cms-news-slug').value = noticia.slug || '';
-  getInput('cms-news-category').value = noticia.categoria || 'Comunicado';
+
+  aplicarCategoriaNoticia(noticia.categoria || 'Comunicado');
+
   getInput('cms-news-author').value = noticia.autor || 'Comunicação CMDPII';
   getInput('cms-news-summary').value = noticia.resumo || '';
   getInput('cms-news-content').value = noticia.conteudo || '';
   getInput('cms-news-image').value = noticia.imagem || '';
+
+  renderizarImagensNoticia(noticia.imagens || []);
+
   getInput('cms-news-featured').checked = !!noticia.destaque;
   getInput('cms-news-published').checked = noticia.status === 'publicada';
   getInput('cms-news-seo-title').value = noticia.seoTitulo || '';
@@ -11981,11 +12177,12 @@ async function salvarNoticiaCms(e) {
   const payload = {
     titulo,
     slug: getInput('cms-news-slug')?.value?.trim() || gerarSlugNoticia(titulo),
-    categoria: getInput('cms-news-category')?.value || 'Comunicado',
+    categoria: obterCategoriaNoticia(),
     autor: getInput('cms-news-author')?.value || 'Comunicação CMDPII',
     resumo: getInput('cms-news-summary')?.value || '',
     conteudo: getInput('cms-news-content')?.value || '',
     imagem: getInput('cms-news-image')?.value || '',
+    imagens: coletarImagensNoticia(),
     destaque: getInput('cms-news-featured')?.checked || false,
     status: getInput('cms-news-published')?.checked ? 'publicada' : 'rascunho',
     seoTitulo: getInput('cms-news-seo-title')?.value || '',
@@ -12027,6 +12224,46 @@ document.getElementById('cms-news-form')?.addEventListener('submit', salvarNotic
 document.getElementById('btn-add-news')?.addEventListener('click', () => {
   limparFormularioNoticia();
   showToast('Nova notícia iniciada.');
+});
+
+document.getElementById('cms-news-category')?.addEventListener('change', () => {
+  const custom = getInput('cms-news-category-custom');
+  if (!custom) return;
+
+  custom.style.display =
+    getInput('cms-news-category')?.value === 'Outro'
+      ? 'block'
+      : 'none';
+});
+
+document.getElementById('btn-upload-news-images')?.addEventListener('click', () => {
+  document.getElementById('cms-news-images-upload')?.click();
+});
+
+document.getElementById('cms-news-images-upload')?.addEventListener('change', async e => {
+  try {
+    await enviarMultiplasImagensNoticia(e.target.files);
+    e.target.value = '';
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || 'Erro ao enviar imagens.');
+  }
+});
+
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('btn-remove-news-image')) {
+    e.target.closest('.cms-news-image-item')?.remove();
+  }
+
+  if (e.target.classList.contains('btn-news-image-cover')) {
+    const i = e.target.dataset.imageIndex;
+    const url = getInput(`cms-news-gallery-url-${i}`)?.value || '';
+
+    if (url) {
+      getInput('cms-news-image').value = url;
+      showToast('Imagem de capa definida.');
+    }
+  }
 });
 
 document.getElementById('btn-clear-news-form')?.addEventListener('click', () => {

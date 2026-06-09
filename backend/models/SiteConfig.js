@@ -86,6 +86,7 @@ seoDescricao: {
     whatsapp: { type: String, default: '' }
   },
 
+
 layoutGlobal: {
   header: {
     titulo: { type: String, default: 'COLÉGIO DOM PEDRO II' },

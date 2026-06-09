@@ -344,9 +344,9 @@ router.post('/midias/upload', upload.single('arquivo'), async (req, res) => {
     );
 
     const baseUrl =
-      process.env.AWS_CDN_URL ||
-      process.env.AWS_S3_BASE_URL ||
-      `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+  process.env.SITE_PUBLIC_ASSET_URL ||
+  process.env.AWS_S3_BASE_URL ||
+  `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'sa-east-1'}.amazonaws.com`;
 
     const url =
       `${baseUrl.replace(/\/$/, '')}/${key}`;
@@ -455,6 +455,7 @@ router.post('/noticias', async (req, res) => {
       categoria: req.body.categoria || 'Comunicado',
       autor: req.body.autor || 'Comunicação CMDPII',
       imagem: req.body.imagem || '',
+      imagens: Array.isArray(req.body.imagens) ? req.body.imagens : [],
 
       status: req.body.status || 'rascunho',
 

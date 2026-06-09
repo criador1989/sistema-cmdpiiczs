@@ -5375,3 +5375,49 @@ body.home-doc-modal-open {
   text-align: center;
   text-decoration: none;
 }
+.single-news-inline-image {
+  margin: 34px 0;
+}
+
+.single-news-inline-image img {
+  width: 100%;
+  border-radius: 20px;
+  display: block;
+  object-fit: cover;
+}
+
+.single-news-inline-image figcaption,
+.single-news-gallery-item figcaption {
+  margin-top: 8px;
+  font-size: .85rem;
+  color: #64748b;
+}
+
+.single-news-gallery {
+  margin-top: 42px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(15, 23, 42, .12);
+}
+
+.single-news-gallery h3 {
+  margin-bottom: 18px;
+  color: #061a35;
+}
+
+.single-news-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.single-news-gallery-item {
+  margin: 0;
+}
+
+.single-news-gallery-item img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}

@@ -121,6 +121,26 @@ async function carregarPaginaNoticia() {
 
     const noticia = data.noticia;
 
+    const imagensGaleria = Array.isArray(noticia.imagens)
+  ? noticia.imagens
+      .map(img => ({
+        ...img,
+        url: img.url || img.imagem || img.src || ''
+      }))
+      .filter(img => img.url)
+  : [];
+
+    const imagensMeioTexto =
+      imagensGaleria.filter(img => img.posicao === 'meio-texto');
+
+    const imagensFinal =
+      imagensGaleria.filter(img => img.posicao !== 'meio-texto');
+
+    const imagemMeio = imagensMeioTexto[0];
+
+    const conteudoHtml =
+      formatarConteudoNoticia(noticia.conteudo || noticia.resumo || '');
+
     document.title = `${noticia.seoTitulo || noticia.titulo} | Colégio Dom Pedro II - Campus CZS`;
 
     const descricao =
@@ -146,7 +166,7 @@ async function carregarPaginaNoticia() {
           noticia.imagem
             ? `background-image:
                 linear-gradient(90deg, rgba(6,26,53,.94), rgba(185,21,27,.58)),
-                url('${noticia.imagem}');`
+                url('${escaparHtml(noticia.imagem)}');`
             : ''
         }"
       >
@@ -166,12 +186,67 @@ async function carregarPaginaNoticia() {
 
         ${
           noticia.imagem
-            ? `<img class="single-news-cover" src="${noticia.imagem}" alt="${escaparHtml(noticia.titulo || 'Notícia')}">`
+            ? `
+              <img
+                class="single-news-cover"
+                src="${escaparHtml(noticia.imagem)}"
+                alt="${escaparHtml(noticia.titulo || 'Notícia')}"
+              >
+            `
             : ''
         }
 
         <div class="single-news-content">
-          ${formatarConteudoNoticia(noticia.conteudo || noticia.resumo || '')}
+          ${conteudoHtml}
+
+          ${
+            imagemMeio
+              ? `
+                <figure class="single-news-inline-image">
+                  <img
+                    src="${escaparHtml(imagemMeio.url)}"
+                    alt="${escaparHtml(imagemMeio.legenda || noticia.titulo || 'Imagem da notícia')}"
+                  >
+
+                  ${
+                    imagemMeio.legenda
+                      ? `<figcaption>${escaparHtml(imagemMeio.legenda)}</figcaption>`
+                      : ''
+                  }
+                </figure>
+              `
+              : ''
+          }
+
+          ${
+            imagensFinal.length
+              ? `
+                <section class="single-news-gallery">
+                  <h3>Galeria de Fotos</h3>
+
+                  <div class="single-news-gallery-grid">
+                    ${imagensFinal.map((img, index) => `
+                      <figure
+                        class="single-news-gallery-item"
+                        data-gallery-index="${index}"
+                      >
+                        <img
+                          src="${escaparHtml(img.url)}"
+                          alt="${escaparHtml(img.legenda || noticia.titulo || 'Imagem da notícia')}"
+                        >
+
+                        ${
+                          img.legenda
+                            ? `<figcaption>${escaparHtml(img.legenda)}</figcaption>`
+                            : ''
+                        }
+                      </figure>
+                    `).join('')}
+                  </div>
+                </section>
+              `
+              : ''
+          }
         </div>
 
         <div class="single-news-actions">

@@ -48,6 +48,22 @@ const SiteNoticiaSchema = new mongoose.Schema({
     default: ''
   },
 
+  imagens: {
+  type: [
+    {
+      url: { type: String, default: '' },
+      legenda: { type: String, default: '' },
+      posicao: {
+        type: String,
+        enum: ['capa', 'meio-texto', 'galeria'],
+        default: 'galeria'
+      },
+      ordem: { type: Number, default: 0 }
+    }
+  ],
+  default: []
+},
+
   status: {
     type: String,
     enum: ['rascunho', 'publicada', 'arquivada'],
