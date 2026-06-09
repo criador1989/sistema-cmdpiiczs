@@ -11024,7 +11024,12 @@ function salvarBlocoAtualNoEstado() {
   blocoAtivoId = idAtual;
 
   const slug = builderPageSelect?.value || 'home';
-  const blocos = pageBlocksMap[slug] || [];
+
+  if (!Array.isArray(pageBlocksMap[slug])) {
+    pageBlocksMap[slug] = [];
+  }
+
+  const blocos = pageBlocksMap[slug];
 
   let index = blocos.findIndex(b =>
     b.id === idAtual ||
@@ -11034,13 +11039,8 @@ function salvarBlocoAtualNoEstado() {
   );
 
   if (index < 0) {
-    const nome =
-      blocoSelecionado?.querySelector('strong')?.textContent ||
-      'Bloco';
-
-    const tipo =
-      blocoSelecionado?.querySelector('small')?.textContent ||
-      'Bloco';
+    const nome = blocoSelecionado?.querySelector('strong')?.textContent || 'Bloco';
+    const tipo = blocoSelecionado?.querySelector('small')?.textContent || 'Bloco';
 
     blocos.push({
       id: idAtual,
@@ -11082,7 +11082,6 @@ function salvarBlocoAtualNoEstado() {
   pageBlocksMap[slug] = blocos;
 
   atualizarPreview();
-
   showToast('Bloco salvo no rascunho do CMS.');
 }
 
