@@ -5296,6 +5296,113 @@ function coletarCronogramaProcesso() {
   }).filter(item => item.etapa.trim() || item.data.trim());
 }
 
+function coletarSlidesHomeBanner() {
+
+  const slides = [];
+
+  document
+    .querySelectorAll('.home-banner-slide')
+    .forEach((item, index) => {
+
+      slides.push({
+        ordem: index,
+
+        titulo:
+          item.querySelector('.slide-title')?.value || '',
+
+        texto:
+          item.querySelector('.slide-text')?.value || '',
+
+        imagemUrl:
+          item.querySelector('.slide-image')?.value || '',
+
+        botaoTexto:
+          item.querySelector('.slide-button-text')?.value || '',
+
+        botaoLink:
+          item.querySelector('.slide-button-link')?.value || ''
+      });
+
+    });
+
+  return slides;
+}
+
+function adicionarSlideHomeBanner() {
+  const container = document.getElementById('home-banner-slides');
+  if (!container) return;
+
+  const n = Date.now();
+
+  const wrap = document.createElement('div');
+
+  wrap.innerHTML = `
+    <div class="home-banner-slide" data-slide-index="${n}">
+      <div class="news-editor-top">
+        <strong>Novo slide</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-remove-home-banner-slide">
+            Remover
+          </button>
+        </div>
+      </div>
+
+      <label>Título do slide</label>
+      <input
+        class="slide-title"
+        value="Novo destaque institucional"
+        placeholder="Título do banner"
+      >
+
+      <label>Texto do slide</label>
+      <textarea
+        class="slide-text"
+        placeholder="Texto de apoio do banner"
+      >Descreva aqui a atividade, campanha ou comunicado em destaque.</textarea>
+
+      <label>Texto do botão</label>
+      <input
+        class="slide-button-text"
+        value="Saiba mais"
+        placeholder="Texto do botão"
+      >
+
+      <label>Link do botão</label>
+      <input
+        class="slide-button-link"
+        value="#"
+        placeholder="./noticias.html"
+      >
+
+      <label>Imagem de fundo</label>
+      <div class="upload-field">
+        <input
+          class="slide-image"
+          id="home-banner-slide-image-${n}"
+          value=""
+          placeholder="/uploads/site/banner-home.png"
+        >
+
+        <button
+          class="btn ghost btn-open-media-picker"
+          type="button"
+          data-target="home-banner-slide-image-${n}"
+        >
+          Biblioteca
+        </button>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(wrap.firstElementChild);
+
+  ligarEventosCamposDinamicos();
+  atualizarPreview();
+
+  showToast('Slide adicionado.');
+}
+
 function adicionarCronogramaProcesso() {
   const container = document.getElementById('process-schedule-fields');
   if (!container) return;
@@ -8731,14 +8838,36 @@ if (id === 'professores-materiais') {
    HOME
    ========================= */
 
-
-   
-if (id === 'home-banner') {
+  
+if (
+  id === 'home-banner' ||
+  id === 'saber-honra-disciplina' ||
+  nome?.toLowerCase().includes('saber') ||
+  nome?.toLowerCase().includes('disciplina')
+) {
   const blocoAtual =
-    pageBlocksMap?.home?.find(b => b.id === 'home-banner');
+  pageBlocksMap?.home?.find(b =>
+    b.id === 'home-banner' ||
+    b.id === id ||
+    b.nome?.toLowerCase().includes('saber') ||
+    b.nome?.toLowerCase().includes('disciplina')
+  );
 
   const mongo = blocoAtual?.mongo || {};
   const link = mongo.link || {};
+
+  const slidesSalvos =
+    Array.isArray(mongo.itens) && mongo.itens.length
+      ? mongo.itens
+      : [
+          {
+            titulo: mongo.titulo || 'Disciplina, educação e valores para a vida.',
+            texto: mongo.texto || 'Formando cidadãos conscientes, preparados para o futuro e comprometidos com a sociedade.',
+            imagemUrl: mongo.imagemUrl || '',
+            botaoTexto: link.texto || 'Conheça nossa história',
+            botaoLink: link.url || './historia.html'
+          }
+        ];
 
   return `
     <div class="properties-head">
@@ -8746,52 +8875,80 @@ if (id === 'home-banner') {
       <span>${nome}</span>
     </div>
 
-    <label>Título principal</label>
-    <input
-      id="hero-title"
-      value="${mongo.titulo || 'Disciplina, educação e valores para a vida.'}"
-    >
-
-    <label>Texto</label>
-    <textarea id="hero-text">${mongo.texto || 'Formando cidadãos conscientes, preparados para o futuro e comprometidos com a sociedade.'}</textarea>
-
-    <label>Texto do botão</label>
-    <input
-      id="button-text"
-      value="${link.texto || 'Conheça nossa história'}"
-    >
-
-    <label>Link do botão</label>
-    <input
-      id="button-link"
-      value="${link.url || './historia.html'}"
-    >
-
-    <label>Imagem de fundo</label>
-
-    <div class="upload-field">
-      <input
-        id="image-url"
-        value="${mongo.imagemUrl || ''}"
-        placeholder="/uploads/site/banner-home.png"
-      >
-
-      <button
-        class="btn upload"
-        id="btn-upload"
-        type="button"
-      >
-        Enviar imagem
-      </button>
-
-      <button
-        class="btn ghost btn-open-media-picker"
-        type="button"
-        data-target="image-url"
-      >
-        Biblioteca
-      </button>
+    <div class="cms-alert-info">
+      O primeiro slide será usado também como conteúdo principal do banner.
     </div>
+
+    <div id="home-banner-slides">
+      ${slidesSalvos.map((slide, index) => `
+        <div class="home-banner-slide" data-slide-index="${index + 1}">
+          <div class="news-editor-top">
+            <strong>Slide ${index + 1}</strong>
+
+            <div class="quick-item-controls">
+              <button type="button" class="btn-remove-home-banner-slide">
+                Remover
+              </button>
+            </div>
+          </div>
+
+          <label>Título do slide</label>
+          <input
+            class="slide-title"
+            value="${slide.titulo || ''}"
+            placeholder="Título do banner"
+          >
+
+          <label>Texto do slide</label>
+          <textarea
+            class="slide-text"
+            placeholder="Texto de apoio do banner"
+          >${slide.texto || ''}</textarea>
+
+          <label>Texto do botão</label>
+          <input
+            class="slide-button-text"
+            value="${slide.botaoTexto || 'Conheça nossa história'}"
+            placeholder="Texto do botão"
+          >
+
+          <label>Link do botão</label>
+          <input
+            class="slide-button-link"
+            value="${slide.botaoLink || './historia.html'}"
+            placeholder="./historia.html"
+          >
+
+          <label>Imagem de fundo</label>
+          <div class="upload-field">
+            <input
+              class="slide-image"
+              id="home-banner-slide-image-${index + 1}"
+              value="${slide.imagemUrl || slide.imagem || ''}"
+              placeholder="/uploads/site/banner-home.png"
+            >
+
+            <button
+              class="btn ghost btn-open-media-picker"
+              type="button"
+              data-target="home-banner-slide-image-${index + 1}"
+            >
+              Biblioteca
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <button class="btn ghost full" id="btn-add-home-banner-slide" type="button">
+      + Adicionar slide
+    </button>
+
+    <input type="hidden" id="hero-title" value="${mongo.titulo || ''}">
+    <input type="hidden" id="hero-text" value="${mongo.texto || ''}">
+    <input type="hidden" id="button-text" value="${link.texto || ''}">
+    <input type="hidden" id="button-link" value="${link.url || ''}">
+    <input type="hidden" id="image-url" value="${mongo.imagemUrl || ''}">
 
     <input type="file" id="upload-file" hidden accept="image/*">
 
@@ -9191,6 +9348,46 @@ function ligarEventosCamposDinamicos() {
   document.getElementById('btn-add-home-news')?.addEventListener('click', adicionarCampoHomeNoticia);
 document.getElementById('btn-add-home-stats')?.addEventListener('click', adicionarCampoHomeEstatistica);
 document.getElementById('btn-add-home-gallery')?.addEventListener('click', adicionarCampoHomeGaleria);
+/* =========================
+   HOME BANNER SLIDES
+   ========================= */
+
+document
+  .getElementById('btn-add-home-banner-slide')
+  ?.addEventListener(
+    'click',
+    adicionarSlideHomeBanner
+  );
+
+document
+  .querySelectorAll('.btn-remove-home-banner-slide')
+  .forEach(btn => {
+
+    btn.onclick = () => {
+
+      const slide =
+        btn.closest('.home-banner-slide');
+
+      const total =
+        document.querySelectorAll('.home-banner-slide').length;
+
+      if (total <= 1) {
+
+        showToast(
+          'O banner precisa ter pelo menos um slide.'
+        );
+
+        return;
+      }
+
+      slide?.remove();
+
+      atualizarPreview();
+
+      showToast('Slide removido.');
+    };
+
+  });
 
 document.getElementById('btn-add-home-doc')?.addEventListener('click', adicionarHomeDocumento);
 
@@ -13228,19 +13425,45 @@ if (blocoId === 'galeria-video') {
   };
 }
 
-if (blocoId === 'home-banner') {
+if (
+  blocoId === 'home-banner' ||
+  blocoId === 'saber-honra-disciplina' ||
+  blocoId.includes('saber') ||
+  blocoId.includes('disciplina')
+) {
+
+  const slides =
+    typeof coletarSlidesHomeBanner === 'function'
+      ? coletarSlidesHomeBanner()
+      : [];
+
   return {
     ...base,
-    titulo: getInput('hero-title')?.value || '',
-    texto: getInput('hero-text')?.value || '',
-    imagemUrl: getInput('image-url')?.value || '',
+
+    titulo:
+      getInput('hero-title')?.value || '',
+
+    texto:
+      getInput('hero-text')?.value || '',
+
+    imagemUrl:
+      getInput('image-url')?.value || '',
+
+    itens: slides,
+
     link: {
-      texto: getInput('button-text')?.value || '',
-      url: getInput('button-link')?.value || ''
+      texto:
+        getInput('button-text')?.value || '',
+
+      url:
+        getInput('button-link')?.value || ''
     },
+
     configuracao: {
       ...base.configuracao,
-      tipoRender: 'home-banner'
+      tipoRender: 'home-banner',
+      autoplay: true,
+      intervalo: 4000
     }
   };
 }

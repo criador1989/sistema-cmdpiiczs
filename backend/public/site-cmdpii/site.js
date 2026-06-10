@@ -891,79 +891,79 @@ async function carregarHomeDoMongo() {
     const main = document.querySelector('main');
     if (!main) return;
 
-    
     const blocos = data.blocos
-  .filter(bloco => bloco.ativo !== false)
-  .sort((a, b) => {
-    const ordemA = Number(a.ordem ?? 999);
-    const ordemB = Number(b.ordem ?? 999);
+      .filter(bloco => bloco.ativo !== false)
+      .sort((a, b) => {
+        const ordemA = Number(a.ordem ?? 999);
+        const ordemB = Number(b.ordem ?? 999);
 
-    return ordemA - ordemB;
-  });
+        return ordemA - ordemB;
+      });
 
     main.innerHTML = '';
 
     for (const bloco of blocos) {
+      const id = bloco.configuracao?.cmsBlockId;
 
-  const id = bloco.configuracao?.cmsBlockId;
+      if (id === 'home-banner') {
+        main.insertAdjacentHTML('beforeend', renderHomeBanner(bloco));
+        continue;
+      }
 
-  if (id === 'home-banner') {
-    main.insertAdjacentHTML('beforeend', renderHomeBanner(bloco));
-    continue;
-  }
+      if (id === 'home-menu') {
+        main.insertAdjacentHTML('beforeend', renderHomeMenu(bloco));
+        continue;
+      }
 
-  if (id === 'home-menu') {
-    main.insertAdjacentHTML('beforeend', renderHomeMenu(bloco));
-    continue;
-  }
+      if (id === 'home-patrocinadores') {
+        await renderHomePatrocinadores(main, bloco);
+        continue;
+      }
 
-  if (id === 'home-patrocinadores') {
-    await renderHomePatrocinadores(main, bloco);
-    continue;
-  }
+      if (id === 'home-noticias') {
+        await renderHomeNoticias(main, bloco);
+        continue;
+      }
 
-  if (id === 'home-noticias') {
-    await renderHomeNoticias(main, bloco);
-    continue;
-  }
+      if (id === 'home-associacao') {
+        main.insertAdjacentHTML('beforeend', renderHomeAssociacao(bloco));
+        inicializarHomeAssociacaoModal();
+        continue;
+      }
 
-  if (id === 'home-associacao') {
-    main.insertAdjacentHTML('beforeend', renderHomeAssociacao(bloco));
-    inicializarHomeAssociacaoModal();
-    continue;
-  }
+      if (id === 'home-estatisticas') {
+        main.insertAdjacentHTML('beforeend', renderHomeEstatisticas(bloco));
+        atualizarEstatisticasPublicas();
+        continue;
+      }
 
-  if (id === 'home-estatisticas') {
-    main.insertAdjacentHTML('beforeend', renderHomeEstatisticas(bloco));
-    atualizarEstatisticasPublicas();
-    continue;
-  }
+      if (id === 'home-documentos') {
+        main.insertAdjacentHTML('beforeend', renderHomeDocumentos(bloco));
+        inicializarHomeDocumentosModal();
+        continue;
+      }
 
-  if (id === 'home-documentos') {
-    main.insertAdjacentHTML('beforeend', renderHomeDocumentos(bloco));
-    inicializarHomeDocumentosModal();
-    continue;
-  }
+      if (id === 'home-galeria') {
+        main.insertAdjacentHTML('beforeend', renderHomeGaleria(bloco));
+        continue;
+      }
 
-  if (id === 'home-galeria') {
-    main.insertAdjacentHTML('beforeend', renderHomeGaleria(bloco));
-    continue;
-  }
+      if (id === 'home-video') {
+        main.insertAdjacentHTML('beforeend', renderHomeVideo(bloco));
+        continue;
+      }
 
-  if (id === 'home-video') {
-    main.insertAdjacentHTML('beforeend', renderHomeVideo(bloco));
-    continue;
-  }
-
-  // NOVO
- // NOVO
-main.insertAdjacentHTML(
-  'beforeend',
-  renderHomeBlocoDinamico(bloco)
-);
+      main.insertAdjacentHTML(
+        'beforeend',
+        renderHomeBlocoDinamico(bloco)
+      );
     }
 
     await montarSidebarParceirosHome(main);
+
+    requestAnimationFrame(() => {
+      inicializarHomeHeroSlider();
+    });
 
   } catch (err) {
     console.error('Erro ao renderizar Home pelo Mongo:', err);
@@ -3076,37 +3076,116 @@ function formatarTextoCms(texto = '') {
 }
 
 function renderHomeBanner(bloco) {
-  const bg = bloco.imagemUrl
-    ? `style="background:
-        linear-gradient(90deg, rgba(6,26,53,.95), rgba(6,26,53,.68), rgba(185,21,27,.25)),
-        url('${bloco.imagemUrl}');
-        background-size:cover;
-        background-position:center;"`
-    : '';
+  const slides =
+    Array.isArray(bloco.itens) && bloco.itens.length
+      ? bloco.itens
+      : [
+          {
+            titulo: bloco.titulo || '',
+            texto: bloco.texto || '',
+            imagemUrl: bloco.imagemUrl || '',
+            botaoTexto: bloco.link?.texto || 'Saiba mais',
+            botaoLink: bloco.link?.url || '#'
+          }
+        ];
 
   return `
-    <section class="hero" ${bg}>
-      <div class="hero-content">
-        <span class="tag">Ensino de Excelência</span>
-        <h1>${bloco.titulo || ''}</h1>
-        <p>${bloco.texto || ''}</p>
+    <section class="hero home-hero-slider" data-current="0">
+      ${slides.map((slide, index) => `
+        <div
+          class="home-hero-slide ${index === 0 ? 'active' : ''}"
+          style="
+            background:
+              linear-gradient(90deg, rgba(6,26,53,.95), rgba(6,26,53,.68), rgba(185,21,27,.25)),
+              url('${slide.imagemUrl || slide.imagem || bloco.imagemUrl || ''}');
+            background-size: cover;
+            background-position: center;
+          "
+        >
+          <div class="hero-content">
+            <span class="tag">Ensino de Excelência</span>
 
-        <div class="hero-actions">
-          <a class="btn primary" href="${bloco.link?.url || '#'}">
-            ${bloco.link?.texto || 'Saiba mais'}
-          </a>
-          <a class="btn secondary" href="./processo-seletivo.html">
-            Processo Seletivo
-          </a>
+            <h1>${slide.titulo || ''}</h1>
+
+            <p>${slide.texto || ''}</p>
+
+            <div class="hero-actions">
+              <a class="btn primary" href="${slide.botaoLink || '#'}">
+                ${slide.botaoTexto || 'Saiba mais'}
+              </a>
+
+              <a class="btn secondary" href="./processo-seletivo.html">
+                Processo Seletivo
+              </a>
+            </div>
+          </div>
+
+          <div class="hero-badges">
+            <div class="badge-circle red">CBMAC</div>
+            <div class="badge-circle blue">CMDPII<br>CZS</div>
+          </div>
         </div>
-      </div>
+      `).join('')}
 
-      <div class="hero-badges">
-        <div class="badge-circle red">CBMAC</div>
-        <div class="badge-circle blue">CMDPII<br>CZS</div>
-      </div>
+      ${
+        slides.length > 1
+          ? `
+            <button class="home-hero-arrow prev" type="button">‹</button>
+            <button class="home-hero-arrow next" type="button">›</button>
+
+            <div class="home-hero-dots">
+              ${slides.map((_, index) => `
+                <button
+                  type="button"
+                  class="${index === 0 ? 'active' : ''}"
+                  data-slide="${index}"
+                ></button>
+              `).join('')}
+            </div>
+          `
+          : ''
+      }
     </section>
   `;
+}
+
+function inicializarHomeHeroSlider() {
+  const slider = document.querySelector('.home-hero-slider');
+  if (!slider) return;
+
+  const slides = [...slider.querySelectorAll('.home-hero-slide')];
+  const dots = [...slider.querySelectorAll('.home-hero-dots button')];
+  const prev = slider.querySelector('.home-hero-arrow.prev');
+  const next = slider.querySelector('.home-hero-arrow.next');
+
+  if (slides.length <= 1) return;
+
+  let current = 0;
+
+  function irPara(index) {
+    current = (index + slides.length) % slides.length;
+
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === current);
+    });
+
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === current);
+    });
+  }
+
+  prev?.addEventListener('click', () => irPara(current - 1));
+  next?.addEventListener('click', () => irPara(current + 1));
+
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      irPara(Number(dot.dataset.slide || 0));
+    });
+  });
+
+  setInterval(() => {
+    irPara(current + 1);
+  }, 4000);
 }
 
 function renderHomeMenu(bloco) {
