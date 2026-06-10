@@ -891,19 +891,37 @@ async function carregarHomeDoMongo() {
     const main = document.querySelector('main');
     if (!main) return;
 
+    const prioridadeHome = {
+      'home-banner': 1,
+      'home-menu': 2,
+      'home-patrocinadores': 3,
+      'home-noticias': 4,
+      'home-associacao': 5,
+      'home-estatisticas': 6,
+      'home-documentos': 7,
+      'home-galeria': 8,
+      'home-video': 9
+    };
+
     const blocos = data.blocos
       .filter(bloco => bloco.ativo !== false)
       .sort((a, b) => {
-        const ordemA = Number(a.ordem ?? 999);
-        const ordemB = Number(b.ordem ?? 999);
+        const idA = a.configuracao?.cmsBlockId || a.id || '';
+        const idB = b.configuracao?.cmsBlockId || b.id || '';
 
-        return ordemA - ordemB;
+        const prioridadeA =
+          prioridadeHome[idA] ?? Number(a.ordem ?? 999);
+
+        const prioridadeB =
+          prioridadeHome[idB] ?? Number(b.ordem ?? 999);
+
+        return prioridadeA - prioridadeB;
       });
 
     main.innerHTML = '';
 
     for (const bloco of blocos) {
-      const id = bloco.configuracao?.cmsBlockId;
+      const id = bloco.configuracao?.cmsBlockId || bloco.id || '';
 
       if (id === 'home-banner') {
         main.insertAdjacentHTML('beforeend', renderHomeBanner(bloco));
@@ -3560,10 +3578,7 @@ async function renderHomePatrocinadores(main, bloco) {
         data-cms-block-id="home-patrocinadores"
       >
         <div class="home-sponsors-feature-wrap">
-          <div class="cms-home-sponsors-head subtle">
-            <span>${escaparHtml(bloco.titulo || 'Parceiros Institucionais')}</span>
-          </div>
-
+          
           ${
             bloco.texto
               ? `<div class="page-intro">${formatarTextoCms(bloco.texto)}</div>`
