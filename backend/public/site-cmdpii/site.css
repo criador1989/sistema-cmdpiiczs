@@ -108,7 +108,8 @@ a {
 }
 
 .hero {
-  height: 520px;
+  height: calc(520px + 78px);
+  padding-top: 78px;
   position: relative;
   background:
     linear-gradient(90deg, rgba(6,26,53,.95), rgba(6,26,53,.68), rgba(185,21,27,.25)),
@@ -197,6 +198,7 @@ a {
   position: relative;
   overflow: hidden;
   height: 520px;
+  margin-top: 0;
 }
 
 .home-hero-slide {
@@ -208,8 +210,10 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-size: cover !important;
-  background-position: center !important;
+
+  background-size: contain !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
 }
 
 .home-hero-slide.active {
@@ -5840,4 +5844,60 @@ body.lightbox-open {
     font-size: 10px !important;
     line-height: 1.05 !important;
   }
+}
+/* =========================
+   CORREÇÃO DE LARGURA GLOBAL
+   ========================= */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  position: relative;
+}
+
+main,
+#cms-public-root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.hero,
+.home-hero-slider,
+.home-hero-slide {
+  max-width: 100%;
+  overflow: hidden;
+}
+#cms-public-root > .hero:first-child,
+#cms-public-root > .home-hero-slider:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 980px) {
+  #cms-public-root > .hero:first-child,
+  #cms-public-root > .home-hero-slider:first-child {
+    margin-top: 0;
+  }
+}
+/* =========================
+   FUNDO INSTITUCIONAL CMDPII
+   ========================= */
+
+.hero,
+.page-hero,
+.selection-hero,
+.gallery-hero,
+.news-hero {
+  background-image: none !important;
+  background: linear-gradient(
+    135deg,
+    #082447,
+    #0b2f5f,
+    #123f7a
+  ) !important;
 }
