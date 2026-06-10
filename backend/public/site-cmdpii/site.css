@@ -5958,3 +5958,7 @@ main,
   text-align: center;
   font-weight: 900;
 }
+.hero-badges,
+.badge-circle {
+  display: none !important;
+}
