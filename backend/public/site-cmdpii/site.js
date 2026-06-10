@@ -21,16 +21,25 @@ function inicializarMenuMobile() {
       <button id="mobile-menu-close" class="mobile-menu-close" type="button">×</button>
 
       <nav class="mobile-nav">
-        <a href="./index.html">Início</a>
-        <a href="./historia.html">História</a>
-        <a href="./direcao.html">Direção</a>
-        <a href="./corpo-alunos.html">Corpo de Alunos</a>
-        <a href="./processo-seletivo.html">Processo Seletivo</a>
-        <a href="./noticias.html">Notícias</a>
-        <a href="./galeria.html">Galeria</a>
-        <a href="./contato.html">Contato</a>
-        <a href="./professores.html">Professores</a>
-      </nav>
+  <a href="./index.html">Início</a>
+  <a href="./historia.html">História</a>
+  <a href="./direcao.html">Direção</a>
+  <a href="./corpo-alunos.html">Corpo de Alunos</a>
+  <a href="./processo-seletivo.html">Processo Seletivo</a>
+  <a href="./noticias.html">Notícias</a>
+  <a href="./galeria.html">Galeria</a>
+  <a href="./contato.html">Contato</a>
+  <a href="./professores.html">Professores</a>
+
+  <a
+    href="https://axoriin.com.br"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="mobile-axoriin-link"
+  >
+    Acesso Axoriin
+  </a>
+</nav>
     `;
 
     document.body.appendChild(mobileMenu);
@@ -737,6 +746,20 @@ if (axoriinBtn) {
     axoriinBtn.href =
       header.botaoLink;
   }
+}
+
+const mobileNav = document.querySelector('.mobile-nav');
+
+if (mobileNav && !mobileNav.querySelector('.mobile-axoriin-link')) {
+  const mobileAxoriin = document.createElement('a');
+
+  mobileAxoriin.className = 'mobile-axoriin-link';
+  mobileAxoriin.href = header.botaoLink || axoriinBtn?.href || 'https://axoriin.com.br';
+  mobileAxoriin.textContent = header.botaoTexto || axoriinBtn?.textContent || 'Acesso Axoriin';
+  mobileAxoriin.target = '_blank';
+  mobileAxoriin.rel = 'noopener noreferrer';
+
+  mobileNav.appendChild(mobileAxoriin);
 }
 
   const nome = config.nomeSite || 'Colégio Dom Pedro II';
