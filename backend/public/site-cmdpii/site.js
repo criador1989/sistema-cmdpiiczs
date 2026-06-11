@@ -3136,11 +3136,10 @@ function renderHomeBanner(bloco) {
         <div
           class="home-hero-slide ${index === 0 ? 'active' : ''}"
           style="
-            background:
-              linear-gradient(90deg, rgba(6,26,53,.95), rgba(6,26,53,.68), rgba(185,21,27,.25)),
-              url('${slide.imagemUrl || slide.imagem || bloco.imagemUrl || ''}');
-            background-size: cover;
-            background-position: center;
+            background-image: url('${slide.imagemUrl || slide.imagem || bloco.imagemUrl || ''}');
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
           "
         >
           <div class="hero-content">
@@ -3159,11 +3158,6 @@ function renderHomeBanner(bloco) {
                 Processo Seletivo
               </a>
             </div>
-          </div>
-
-          <div class="hero-badges">
-            <div class="badge-circle red">CBMAC</div>
-            <div class="badge-circle blue">CMDPII<br>CZS</div>
           </div>
         </div>
       `).join('')}
@@ -3254,7 +3248,11 @@ async function renderHomeNoticias(main, bloco) {
       : [];
 
     const config = bloco.configuracao || {};
-    const limite = Number(config.limite || 5);
+
+    const limite = Math.min(
+      Math.max(Number(config.limite || 10), 1),
+      10
+    );
 
     if (config.categoria) {
       noticias = noticias.filter(n =>
@@ -3263,9 +3261,37 @@ async function renderHomeNoticias(main, bloco) {
       );
     }
 
+    if (config.somentePublicadas !== false) {
+      noticias = noticias.filter(n => {
+        const status = String(n.status || '').trim().toLowerCase();
+
+        return (
+          !status ||
+          status === 'publicada' ||
+          status === 'publicado' ||
+          status === 'ativo' ||
+          status === 'aprovada' ||
+          status === 'aprovado' ||
+          n.publicada === true ||
+          n.publicado === true ||
+          n.ativo === true
+        );
+      });
+    }
+
     if (config.destaquesPrimeiro) {
+      noticias = noticias.sort((a, b) => {
+        if (a.destaque === b.destaque) {
+          return new Date(b.dataPublicacao || b.createdAt) -
+                 new Date(a.dataPublicacao || a.createdAt);
+        }
+
+        return a.destaque ? -1 : 1;
+      });
+    } else {
       noticias = noticias.sort((a, b) =>
-        Number(b.destaque || 0) - Number(a.destaque || 0)
+        new Date(b.dataPublicacao || b.createdAt) -
+        new Date(a.dataPublicacao || a.createdAt)
       );
     }
 
@@ -3316,7 +3342,7 @@ async function renderHomeNoticias(main, bloco) {
             ${noticias.map((noticia, index) => `
               <a
                 class="home-news-feature-slide ${index === 0 ? 'active' : ''}"
-                href="./noticias.html"
+                href="./pagina-noticia.html?slug=${escaparHtml(noticia.slug || '')}"
               >
                 <div class="home-news-feature-image">
                   ${

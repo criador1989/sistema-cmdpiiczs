@@ -5962,3 +5962,22 @@ main,
 .badge-circle {
   display: none !important;
 }
+/* =========================
+   REMOVE DEGRADÊ DO BANNER PRINCIPAL
+   ========================= */
+
+.hero::after,
+.home-hero-slider::after,
+.home-hero-slide::before,
+.home-hero-slide::after {
+  display: none !important;
+  content: none !important;
+}
+
+.home-hero-slide {
+  background-blend-mode: normal !important;
+}
+.home-hero-slider,
+.home-hero-slide {
+  background-color: transparent !important;
+}
