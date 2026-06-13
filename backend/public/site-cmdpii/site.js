@@ -750,6 +750,27 @@ if (axoriinBtn) {
   }
 }
 
+const navDesktop = document.querySelector('.nav');
+const menuGlobal = Array.isArray(layout.menu)
+  ? layout.menu
+  : [];
+
+if (navDesktop && menuGlobal.length) {
+  navDesktop.innerHTML = menuGlobal
+    .filter(item => item.texto && item.link)
+    .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+    .map(item => `
+      <a
+        href="${escaparHtml(item.link || '#')}"
+        ${item.novaAba ? 'target="_blank" rel="noopener noreferrer"' : ''}
+        class="${item.destaque ? 'menu-featured' : ''}"
+      >
+        ${escaparHtml(item.texto || '')}
+      </a>
+    `)
+    .join('');
+}
+
 const mobileNav = document.querySelector('.mobile-nav');
 
 if (mobileNav && !mobileNav.querySelector('.mobile-axoriin-link')) {
