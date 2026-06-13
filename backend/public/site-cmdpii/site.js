@@ -1,3 +1,4 @@
+console.log('SITE.JS CARREGADO');
 function inicializarMenuMobile() {
   const mobileToggle = document.getElementById('mobile-menu-toggle');
   let mobileMenu = document.getElementById('mobile-menu');
@@ -25,6 +26,7 @@ function inicializarMenuMobile() {
   <a href="./historia.html">História</a>
   <a href="./direcao.html">Direção</a>
   <a href="./corpo-alunos.html">Corpo de Alunos</a>
+  <a href="./interclasse.html">🏆 Interclasse</a>
   <a href="./processo-seletivo.html">Processo Seletivo</a>
   <a href="./noticias.html">Notícias</a>
   <a href="./galeria.html">Galeria</a>
@@ -1030,6 +1032,13 @@ async function carregarPaginaInternaDoMongo() {
     const res = await fetch(`/api/site-publico/paginas/${slug}`);
     const data = await res.json();
 
+    console.log('[INTERCLASSE DEBUG]', {
+  slug,
+  ok: data.ok,
+  blocos: data.blocos,
+  data
+});
+
     if (!data.ok || !Array.isArray(data.blocos)) {
       return;
     }
@@ -1260,6 +1269,11 @@ if (slug === 'professores') {
   return;
 }
 
+if (slug === 'interclasse') {
+  await carregarInterclassePublico(main, blocos);
+  return;
+}
+
     for (const bloco of blocos) {
       main.insertAdjacentHTML('beforeend', renderizarBlocoCms(bloco));
     }
@@ -1319,83 +1333,36 @@ function renderizarBlocoCms(bloco = {}) {
       : bloco.configuracao?.tipoRender ||
         inferirTipoRenderBlocoCms(bloco);
 
-  if (tipoRender === 'hero-interno') {
-    return renderBlocoHeroInterno(bloco);
-  }
+  if (tipoRender === 'hero-interno') return renderBlocoHeroInterno(bloco);
+  if (tipoRender === 'timeline') return renderBlocoTimeline(bloco);
+  if (tipoRender === 'equipe') return renderBlocoEquipe(bloco);
+  if (tipoRender === 'galeria-filtros') return renderBlocoGaleriaFiltros(bloco);
+  if (tipoRender === 'galeria-premium') return renderBlocoGaleriaPremium(bloco);
+  if (tipoRender === 'galeria') return renderBlocoGaleriaInterna(bloco);
+  if (tipoRender === 'certames') return renderBlocoCertames(bloco);
+  if (tipoRender === 'downloads-expansivel') return renderBlocoDownloadsExpansivel(bloco);
+  if (tipoRender === 'downloads') return renderBlocoDownloads(bloco);
+  if (tipoRender === 'cronograma') return renderBlocoCronograma(bloco);
+  if (tipoRender === 'contato-cards') return renderBlocoContatoCards(bloco);
+  if (tipoRender === 'mapa') return renderBlocoMapa(bloco);
+  if (tipoRender === 'formulario') return renderBlocoFormularioContato(bloco);
+  if (tipoRender === 'cta') return renderBlocoCta(bloco);
+  if (tipoRender === 'video') return renderBlocoVideoInterno(bloco);
+  if (tipoRender === 'numeros') return renderBlocoNumeros(bloco);
+  if (tipoRender === 'cards') return renderBlocoCards(bloco);
+  if (tipoRender === 'destaque') return renderBlocoDestaqueInstitucional(bloco);
+  if (tipoRender === 'professores-materiais') return renderBlocoProfessoresMateriais(bloco);
 
-  if (tipoRender === 'timeline') {
-    return renderBlocoTimeline(bloco);
-  }
+  if (tipoRender === 'interclasse-banner') return renderBlocoHeroInterno(bloco);
+  if (tipoRender === 'interclasse-modalidades') return renderBlocoCards(bloco);
+  if (tipoRender === 'interclasse-equipes') return renderBlocoCards(bloco);
+  if (tipoRender === 'interclasse-jogos') return renderBlocoPadraoCms(bloco);
+  if (tipoRender === 'interclasse-classificacao') return renderBlocoPadraoCms(bloco);
+  if (tipoRender === 'interclasse-chaveamento') return renderBlocoPadraoCms(bloco);
+  if (tipoRender === 'interclasse-galeria') return renderBlocoGaleriaInterna(bloco);
+  if (tipoRender === 'interclasse-inscricoes') return renderBlocoCta(bloco);
 
-  if (tipoRender === 'equipe') {
-    return renderBlocoEquipe(bloco);
-  }
-
-  if (tipoRender === 'galeria-filtros') {
-  return renderBlocoGaleriaFiltros(bloco);
-}
-
-if (tipoRender === 'galeria-premium') {
-  return renderBlocoGaleriaPremium(bloco);
-}
-
-  if (tipoRender === 'galeria') {
-    return renderBlocoGaleriaInterna(bloco);
-  }
-
-  if (tipoRender === 'certames') {
-  return renderBlocoCertames(bloco);
-}
-
-if (tipoRender === 'downloads-expansivel') {
-  return renderBlocoDownloadsExpansivel(bloco);
-}
-
-  if (tipoRender === 'downloads') {
-    return renderBlocoDownloads(bloco);
-  }
-
-  if (tipoRender === 'cronograma') {
-    return renderBlocoCronograma(bloco);
-  }
-
-  if (tipoRender === 'contato-cards') {
-    return renderBlocoContatoCards(bloco);
-  }
-
-  if (tipoRender === 'mapa') {
-    return renderBlocoMapa(bloco);
-  }
-
-  if (tipoRender === 'formulario') {
-    return renderBlocoFormularioContato(bloco);
-  }
-
-  if (tipoRender === 'cta') {
-    return renderBlocoCta(bloco);
-  }
-
-  if (tipoRender === 'video') {
-    return renderBlocoVideoInterno(bloco);
-  }
-
-  if (tipoRender === 'numeros') {
-    return renderBlocoNumeros(bloco);
-  }
-
-  if (tipoRender === 'cards') {
-    return renderBlocoCards(bloco);
-  }
-
-if (tipoRender === 'destaque') {
-  return renderBlocoDestaqueInstitucional(bloco);
-}
-
-if (tipoRender === 'professores-materiais') {
-  return renderBlocoProfessoresMateriais(bloco);
-}
-
-    return renderBlocoPadraoCms(bloco);
+  return renderBlocoPadraoCms(bloco);
 }
 
 function inferirTipoRenderBlocoCms(bloco = {}) {
@@ -4307,3 +4274,1191 @@ document.addEventListener('keydown', event => {
     document.body.classList.remove('lightbox-open');
   }
 });
+function inicializarInterclasseModais() {
+  document.querySelectorAll('[data-open-team-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const equipe = btn.dataset.openTeamModal || 'Equipe';
+
+      alert(`Em breve: modal da equipe ${equipe}`);
+    });
+  });
+}
+
+function renderInterclasseAcessoRapidoPublico(interclasse = {}) {
+  const destaque = interclasse.destaque || {};
+
+  const titulo =
+    destaque.titulo ||
+    'Regulamentos e inscrições';
+
+  const descricao =
+    destaque.descricao ||
+    'Consulte as orientações oficiais do Interclasse CMDPII-CZS e acesse os documentos da competição.';
+
+  const botao =
+    destaque.botao ||
+    'Acesse';
+
+  const url =
+    destaque.url ||
+    interclasse.regulamentoUrl ||
+    interclasse.inscricoes?.url ||
+    '#';
+
+  const tipo =
+    destaque.tipo ||
+    'informativo';
+
+  return `
+    <section class="interclasse-acesso-rapido">
+      <div class="interclasse-acesso-card tipo-${escaparHtml(tipo)}">
+        <span>📌 Documentos oficiais</span>
+
+        <div>
+          <h2>${escaparHtml(titulo)}</h2>
+          <p>${escaparHtml(descricao)}</p>
+        </div>
+
+        <a
+          href="${escaparHtml(url)}"
+          target="_blank"
+          rel="noopener"
+        >
+          ${escaparHtml(botao)}
+        </a>
+      </div>
+    </section>
+  `;
+}
+
+async function carregarInterclassePublico(main, blocos = []) {
+  try {
+    const res = await fetch('/api/site-publico/interclasse');
+    const data = await res.json();
+
+    if (!data.ok || !data.interclasse) {
+      throw new Error(data.erro || 'Interclasse não encontrado.');
+    }
+
+    const interclasse = data.interclasse;
+
+    main.innerHTML = `
+  ${renderInterclasseHeroPublico(interclasse)}
+  ${renderInterclasseAcessoRapidoPublico(interclasse)}
+  ${renderInterclasseModalidadesPublico(interclasse)}
+  ${renderInterclasseEquipesPublico(interclasse)}
+  ${renderInterclasseJogosPublico(interclasse)}
+  ${deveExibirClassificacaoInterclasse(interclasse)
+  ? renderInterclasseClassificacaoPublico(interclasse)
+  : ''}
+  ${renderInterclasseChaveamentoPublico(interclasse)}
+  ${renderInterclasseGaleriaPublico(interclasse)}
+`;
+
+    inicializarInterclassePublicoModais(interclasse);
+
+if (typeof inicializarGaleriaInterclassePublica === 'function') {
+  inicializarGaleriaInterclassePublica(interclasse);
+}
+
+  } catch (err) {
+    console.error('Erro ao carregar Interclasse público:', err);
+
+    main.innerHTML = `
+      <section class="single-news-error">
+        <h1>Interclasse</h1>
+        <p>Não foi possível carregar os dados do Interclasse.</p>
+      </section>
+    `;
+  }
+}
+
+function renderInterclasseHeroPublico(interclasse = {}) {
+  const banner = interclasse.banner || '';
+
+  if (!banner) {
+    return `
+      <section class="interclasse-public-hero">
+        <div>
+          <span>🏆 ${escaparHtml(interclasse.edicao || 'Interclasse')}</span>
+          <h1>${escaparHtml(interclasse.nome || 'Interclasse CMDPII')}</h1>
+          <p>${escaparHtml(interclasse.descricao || '')}</p>
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="interclasse-banner-publico">
+      <img
+        src="${escaparHtml(banner)}"
+        alt="${escaparHtml(interclasse.nome || 'Banner Interclasse')}"
+        loading="lazy"
+      >
+    </section>
+  `;
+}
+
+function renderInterclasseModalidadesPublico(interclasse = {}) {
+  const modalidades = Array.isArray(interclasse.modalidades)
+    ? interclasse.modalidades.filter(item => item.status !== 'Inativa')
+    : [];
+
+  if (!modalidades.length) return '';
+
+  return `
+    <section class="section interclasse-public-section">
+      <div class="section-head">
+        <h2>Modalidades</h2>
+      </div>
+
+      <div class="interclasse-public-modalidades">
+        ${modalidades.map(item => `
+          <article class="interclasse-public-modalidade-card">
+            <span>${escaparHtml(item.icone || '🏆')}</span>
+
+            <strong>
+              ${escaparHtml(item.nome || 'Modalidade')}
+            </strong>
+
+            <small>
+              ${escaparHtml(item.categoria || 'Geral')}
+            </small>
+
+            <small class="interclasse-formato-badge">
+              ${formatarFormatoCompeticaoPublico(
+                item.formatoCompeticao || 'a-definir'
+              )}
+            </small>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function formatarFormatoCompeticaoPublico(formato = 'a-definir') {
+  const map = {
+    'a-definir': 'Formato: A definir',
+    'fase-de-grupos': 'Fase de grupos',
+    'mata-mata': 'Mata-mata',
+    'triangular': 'Triangular',
+    'pontos-corridos': 'Pontos corridos'
+  };
+
+  return map[formato] || map['a-definir'];
+}
+
+function renderInterclasseEquipesPublico(interclasse = {}) {
+  const equipes = Array.isArray(interclasse.equipes)
+    ? interclasse.equipes
+    : [];
+
+  if (!equipes.length) {
+    return `
+      <section class="section interclasse-public-section">
+        <div class="section-head">
+          <h2>Equipes</h2>
+        </div>
+
+        <div class="single-news-loading">
+          Nenhuma equipe cadastrada ainda.
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="section interclasse-public-section">
+      <div class="section-head">
+        <h2>Equipes / Turmas</h2>
+      </div>
+
+      <div class="interclasse-public-teams">
+        ${equipes.map(equipe => `
+          <article class="interclasse-public-team-card">
+            <button
+              type="button"
+              class="interclasse-team-open"
+              data-equipe-id="${escaparHtml(equipe.id || '')}"
+            >
+              <div
+                class="interclasse-public-team-photo"
+                style="${
+                  equipe.fotoEquipe
+                    ? `background-image:url('${escaparHtml(equipe.fotoEquipe)}');`
+                    : ''
+                }"
+              >
+                ${equipe.fotoEquipe ? '' : '<span>Foto da equipe</span>'}
+              </div>
+
+              <div class="interclasse-public-team-body">
+                <small>${escaparHtml(equipe.modalidadeNome || 'Modalidade')}</small>
+                <h3>${escaparHtml(equipe.nome || equipe.turma || 'Equipe')}</h3>
+                <p>${escaparHtml(equipe.status || 'Em disputa')}</p>
+
+                <strong>Ver escalação</strong>
+              </div>
+            </button>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function inicializarInterclassePublicoModais(interclasse = {}) {
+  document.querySelectorAll('.interclasse-team-open').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const equipeId = btn.dataset.equipeId;
+
+      const equipe = (interclasse.equipes || [])
+        .find(item => item.id === equipeId);
+
+      if (!equipe) return;
+
+      abrirModalInterclasseEquipe(equipe);
+    });
+  });
+}
+
+function abrirModalInterclasseEquipe(equipe = {}) {
+  const antigo = document.getElementById('interclasse-public-modal');
+  antigo?.remove();
+
+  const jogadores = Array.isArray(equipe.jogadores)
+    ? equipe.jogadores
+    : [];
+
+  let fundoModal = '/img/interclasse/campo-futebol.jpg';
+
+  const modalidade = String(equipe?.modalidadeNome || '').toLowerCase();
+
+  if (modalidade.includes('futebol') || modalidade.includes('futsal')) {
+    fundoModal = '/img/interclasse/campo-futebol.jpg';
+  }
+
+  if (modalidade.includes('basquete')) {
+    fundoModal = '/img/interclasse/quadra-basquete.jpg';
+  }
+
+  if (modalidade.includes('vôlei') || modalidade.includes('volei')) {
+    fundoModal = '/img/interclasse/quadra-volei.jpg';
+  }
+
+  if (modalidade.includes('handebol')) {
+    fundoModal = '/img/interclasse/quadra-handebol.jpg';
+  }
+
+  if (modalidade.includes('xadrez')) {
+    fundoModal = '/img/interclasse/tabuleiro-xadrez.jpg';
+  }
+
+  if (modalidade.includes('praia')) {
+    fundoModal = '/img/interclasse/quadra-praia.jpg';
+  }
+
+  if (modalidade.includes('futevôlei') || modalidade.includes('futevolei')) {
+    fundoModal = '/img/interclasse/quadra-futevolei.jpg';
+  }
+
+  if (modalidade.includes('badminton')) {
+    fundoModal = '/img/interclasse/quadra-badminton.jpg';
+  }
+
+  if (modalidade.includes('cubo')) {
+    fundoModal = '/img/interclasse/cubo-magico.jpg';
+  }
+
+  if (modalidade.includes('jiu')) {
+    fundoModal = '/img/interclasse/tatame-jiujitsu.jpg';
+  }
+
+  if (modalidade.includes('desenho')) {
+    fundoModal = '/img/interclasse/arte-desenho.jpg';
+  }
+
+  if (modalidade.includes('queimada')) {
+    fundoModal = '/img/interclasse/quadra-escolar.jpg';
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'interclasse-public-modal';
+  modal.className = 'interclasse-public-modal-overlay';
+
+  modal.innerHTML = `
+    <div
+      class="interclasse-public-modal interclasse-public-modal-team"
+      style="
+        background:
+          linear-gradient(rgba(6,26,53,.82), rgba(6,26,53,.92)),
+          url('${fundoModal}');
+        background-size: cover;
+        background-position: center;
+      "
+    >
+      <button
+        type="button"
+        class="interclasse-public-modal-close"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+      <div class="interclasse-public-modal-head">
+        <span>${escaparHtml(equipe.modalidadeNome || 'Modalidade')}</span>
+        <h2>${escaparHtml(equipe.nome || equipe.turma || 'Equipe')}</h2>
+        <p>${escaparHtml(equipe.status || 'Em disputa')}</p>
+      </div>
+
+      ${renderCampoTaticoInterclasse(jogadores)}
+
+      ${
+        jogadores.length
+          ? `
+            <div class="interclasse-public-reservas">
+              <h3>Elenco completo</h3>
+
+              <div>
+                ${jogadores.map(jogador => renderJogadorMiniInterclasse(jogador)).join('')}
+              </div>
+            </div>
+          `
+          : `
+            <div class="single-news-loading">
+              Nenhum jogador cadastrado para esta equipe.
+            </div>
+          `
+      }
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.classList.add('interclasse-modal-open');
+
+  modal.querySelector('.interclasse-public-modal-close')
+    ?.addEventListener('click', () => fecharModalInterclassePublico());
+
+  modal.addEventListener('click', event => {
+    if (event.target === modal) {
+      fecharModalInterclassePublico();
+    }
+  });
+}
+
+function fecharModalInterclassePublico() {
+  document.getElementById('interclasse-public-modal')?.remove();
+  document.body.classList.remove('interclasse-modal-open');
+}
+
+function renderCampoTaticoInterclasse(jogadores = []) {
+  const titulares = jogadores.filter(j =>
+    String(j.posicao || '').toUpperCase() !== 'RES'
+  );
+
+  const porPosicao = pos => titulares.filter(j =>
+    String(j.posicao || '').toUpperCase() === pos
+  );
+
+  return `
+    <div class="interclasse-campo-tatico">
+      <div class="campo-linha ataque">
+        ${['PE', 'ATA', 'PD'].map(pos =>
+          renderPosicaoCampoInterclasse(pos, porPosicao(pos))
+        ).join('')}
+      </div>
+
+      <div class="campo-linha meia">
+        ${['MEI', 'MC', 'VOL'].map(pos =>
+          renderPosicaoCampoInterclasse(pos, porPosicao(pos))
+        ).join('')}
+      </div>
+
+      <div class="campo-linha defesa">
+        ${['LE', 'ZAG', 'LD'].map(pos =>
+          renderPosicaoCampoInterclasse(pos, porPosicao(pos))
+        ).join('')}
+      </div>
+
+      <div class="campo-linha goleiro">
+        ${renderPosicaoCampoInterclasse('GOL', porPosicao('GOL'))}
+      </div>
+    </div>
+  `;
+}
+
+function renderPosicaoCampoInterclasse(posicao, jogadores = []) {
+  const jogador = jogadores[0];
+
+  return `
+    <div class="campo-jogador">
+      <div class="campo-jogador-foto">
+        ${
+          jogador?.foto
+            ? `<img src="${escaparHtml(jogador.foto)}" alt="${escaparHtml(jogador.nome || posicao)}">`
+            : '<span>👤</span>'
+        }
+      </div>
+
+      <strong>${escaparHtml(jogador?.nome || posicao)}</strong>
+      <small>
+        ${jogador?.numero ? `Nº ${escaparHtml(jogador.numero)} • ` : ''}
+        ${escaparHtml(posicao)}
+      </small>
+
+      ${
+        jogador?.capitao
+          ? '<em>Capitão</em>'
+          : ''
+      }
+    </div>
+  `;
+}
+
+function renderJogadorMiniInterclasse(jogador = {}) {
+  return `
+    <article class="interclasse-mini-player">
+      <div>
+        ${
+          jogador.foto
+            ? `<img src="${escaparHtml(jogador.foto)}" alt="${escaparHtml(jogador.nome || 'Jogador')}">`
+            : '<span>👤</span>'
+        }
+      </div>
+
+      <strong>${escaparHtml(jogador.nome || 'Jogador')}</strong>
+      <small>
+        ${jogador.numero ? `Nº ${escaparHtml(jogador.numero)} • ` : ''}
+        ${escaparHtml(jogador.posicao || '')}
+      </small>
+    </article>
+  `;
+}
+function renderInterclasseGaleriaPublico(interclasse = {}) {
+  const galeria = Array.isArray(interclasse.galeria)
+    ? interclasse.galeria
+    : [];
+
+  if (!galeria.length) return '';
+
+  const modalidades = [...new Set(
+    galeria.map(item => item.modalidadeNome || 'Geral')
+  )];
+
+  return `
+    <section class="section interclasse-public-section interclasse-public-gallery-section">
+      <div class="section-head">
+        <h2>Galeria do Interclasse</h2>
+        <p>Registros dos jogos, equipes e momentos especiais da competição.</p>
+      </div>
+
+      <div class="interclasse-gallery-filters">
+        <button type="button" class="active" data-gallery-filter="todos">
+          Todos
+        </button>
+
+        ${modalidades.map(nome => `
+          <button type="button" data-gallery-filter="${escaparHtml(nome)}">
+            ${escaparHtml(nome)}
+          </button>
+        `).join('')}
+      </div>
+
+      <div class="interclasse-public-gallery-grid">
+        ${galeria.map((item, index) => `
+          <article
+            class="interclasse-public-gallery-card"
+            data-gallery-item
+            data-modalidade="${escaparHtml(item.modalidadeNome || 'Geral')}"
+          >
+            <button
+              type="button"
+              class="interclasse-gallery-open"
+              data-index="${index}"
+            >
+              <div class="interclasse-public-gallery-media">
+                ${
+                  item.tipo === 'video'
+                    ? `<video src="${escaparHtml(item.url || '')}" muted playsinline></video>`
+                    : `<img src="${escaparHtml(item.url || '')}" alt="${escaparHtml(item.titulo || 'Galeria Interclasse')}">`
+                }
+              </div>
+
+              <div class="interclasse-public-gallery-info">
+                <span>${item.tipo === 'video' ? '🎬 Vídeo' : '📸 Foto'}</span>
+                <h3>${escaparHtml(item.titulo || 'Momento do Interclasse')}</h3>
+                <p>${escaparHtml(item.modalidadeNome || 'Geral')} • ${escaparHtml(item.fase || 'Geral')}</p>
+              </div>
+            </button>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function inicializarGaleriaInterclassePublica(interclasse = {}) {
+  const galeria = Array.isArray(interclasse.galeria)
+    ? interclasse.galeria
+    : [];
+
+  document.querySelectorAll('.interclasse-gallery-filters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const filtro = btn.dataset.galleryFilter || 'todos';
+
+      document.querySelectorAll('.interclasse-gallery-filters button')
+        .forEach(b => b.classList.remove('active'));
+
+      btn.classList.add('active');
+
+      document.querySelectorAll('[data-gallery-item]').forEach(card => {
+        const modalidade = card.dataset.modalidade || 'Geral';
+
+        card.style.display =
+          filtro === 'todos' || modalidade === filtro
+            ? ''
+            : 'none';
+      });
+    });
+  });
+
+  document.querySelectorAll('.interclasse-gallery-open').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = Number(btn.dataset.index || 0);
+      abrirModalGaleriaInterclassePublica(galeria, index);
+    });
+  });
+}
+
+function abrirModalGaleriaInterclassePublica(galeria = [], indexInicial = 0) {
+  let indexAtual = indexInicial;
+
+  const modalAntigo = document.getElementById('interclasse-gallery-modal');
+  modalAntigo?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'interclasse-gallery-modal';
+  modal.className = 'interclasse-gallery-modal-overlay';
+
+  function render() {
+    const item = galeria[indexAtual];
+
+    modal.innerHTML = `
+      <div class="interclasse-gallery-modal">
+        <button type="button" class="interclasse-gallery-modal-close">
+          ×
+        </button>
+
+        <button type="button" class="interclasse-gallery-nav prev">
+          ‹
+        </button>
+
+        <div class="interclasse-gallery-modal-media">
+          ${
+            item?.tipo === 'video'
+              ? `<video src="${escaparHtml(item.url || '')}" controls autoplay></video>`
+              : `<img src="${escaparHtml(item?.url || '')}" alt="${escaparHtml(item?.titulo || 'Galeria Interclasse')}">`
+          }
+        </div>
+
+        <button type="button" class="interclasse-gallery-nav next">
+          ›
+        </button>
+
+        <div class="interclasse-gallery-modal-info">
+          <span>${escaparHtml(item?.modalidadeNome || 'Geral')} • ${escaparHtml(item?.fase || 'Geral')}</span>
+          <h3>${escaparHtml(item?.titulo || 'Momento do Interclasse')}</h3>
+          ${
+            item?.legenda
+              ? `<p>${escaparHtml(item.legenda)}</p>`
+              : ''
+          }
+          <small>${indexAtual + 1} de ${galeria.length}</small>
+        </div>
+      </div>
+    `;
+
+    modal.querySelector('.interclasse-gallery-modal-close')
+      ?.addEventListener('click', fecharModalGaleriaInterclassePublica);
+
+    modal.querySelector('.prev')
+      ?.addEventListener('click', event => {
+        event.stopPropagation();
+        indexAtual = (indexAtual - 1 + galeria.length) % galeria.length;
+        render();
+      });
+
+    modal.querySelector('.next')
+      ?.addEventListener('click', event => {
+        event.stopPropagation();
+        indexAtual = (indexAtual + 1) % galeria.length;
+        render();
+      });
+  }
+
+  render();
+
+  document.body.appendChild(modal);
+  document.body.classList.add('interclasse-modal-open');
+
+  modal.addEventListener('click', event => {
+    if (event.target === modal) {
+      fecharModalGaleriaInterclassePublica();
+    }
+  });
+
+  document.addEventListener('keydown', controlarTeclasGaleriaInterclasse);
+}
+
+function fecharModalGaleriaInterclassePublica() {
+  document.getElementById('interclasse-gallery-modal')?.remove();
+  document.body.classList.remove('interclasse-modal-open');
+  document.removeEventListener('keydown', controlarTeclasGaleriaInterclasse);
+}
+
+function controlarTeclasGaleriaInterclasse(event) {
+  const modal = document.getElementById('interclasse-gallery-modal');
+
+  if (!modal) return;
+
+  if (event.key === 'Escape') {
+    fecharModalGaleriaInterclassePublica();
+  }
+}
+function calcularClassificacaoPublicaInterclasse(interclasse = {}) {
+  const equipes = Array.isArray(interclasse.equipes) ? interclasse.equipes : [];
+  const jogos = Array.isArray(interclasse.jogos)
+    ? interclasse.jogos.filter(j => String(j.status || '').toLowerCase() === 'finalizado')
+    : [];
+
+  const tabela = {};
+
+  equipes.forEach(equipe => {
+    tabela[equipe.id] = {
+      nome: equipe.nome || equipe.turma || 'Equipe',
+      modalidadeNome: equipe.modalidadeNome || '',
+      jogos: 0,
+      vitorias: 0,
+      empates: 0,
+      derrotas: 0,
+      golsPro: 0,
+      golsContra: 0,
+      saldo: 0,
+      pontos: 0
+    };
+  });
+
+  jogos.forEach(jogo => {
+    const a = tabela[jogo.equipeAId];
+    const b = tabela[jogo.equipeBId];
+    if (!a || !b) return;
+
+    const pa = Number(jogo.placarA || 0);
+    const pb = Number(jogo.placarB || 0);
+
+    a.jogos++;
+    b.jogos++;
+
+    a.golsPro += pa;
+    a.golsContra += pb;
+    b.golsPro += pb;
+    b.golsContra += pa;
+
+    if (pa > pb) {
+      a.vitorias++;
+      a.pontos += 3;
+      b.derrotas++;
+    } else if (pb > pa) {
+      b.vitorias++;
+      b.pontos += 3;
+      a.derrotas++;
+    } else {
+      a.empates++;
+      b.empates++;
+      a.pontos++;
+      b.pontos++;
+    }
+  });
+
+  return Object.values(tabela)
+    .map(item => ({
+      ...item,
+      saldo: item.golsPro - item.golsContra
+    }))
+    .sort((a, b) =>
+      b.pontos - a.pontos ||
+      b.vitorias - a.vitorias ||
+      b.saldo - a.saldo ||
+      b.golsPro - a.golsPro ||
+      a.nome.localeCompare(b.nome)
+    );
+}
+
+function renderInterclasseJogosPublico(interclasse = {}) {
+  const jogos = Array.isArray(interclasse.jogos) ? interclasse.jogos : [];
+
+  if (!jogos.length) return '';
+
+  return `
+    <section class="section interclasse-public-section">
+      <div class="section-head">
+        <h2>Jogos e Resultados</h2>
+        <p>Acompanhe as partidas cadastradas na competição.</p>
+      </div>
+
+      <div class="interclasse-public-games">
+        ${jogos.map(jogo => `
+          <article class="interclasse-public-game-card">
+            <div>
+              <span>${escaparHtml(jogo.fase || 'Fase de grupos')}</span>
+              <strong>${escaparHtml(jogo.modalidadeNome || 'Modalidade')}</strong>
+              <small>
+                ${escaparHtml(jogo.data || '--/--')}
+                ${jogo.horario ? `• ${escaparHtml(jogo.horario)}` : ''}
+                ${jogo.local ? `• ${escaparHtml(jogo.local)}` : ''}
+              </small>
+            </div>
+
+            <div class="interclasse-public-score">
+              <strong>${escaparHtml(jogo.equipeA || 'Equipe A')}</strong>
+              <em>${Number(jogo.placarA || 0)} x ${Number(jogo.placarB || 0)}</em>
+              <strong>${escaparHtml(jogo.equipeB || 'Equipe B')}</strong>
+            </div>
+
+            <span class="interclasse-public-status">
+              ${escaparHtml(jogo.status || 'Agendado')}
+            </span>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderInterclasseClassificacaoPublico(interclasse = {}) {
+  const modalidades = Array.isArray(interclasse.modalidades)
+    ? interclasse.modalidades
+    : [];
+
+  const classificacao = calcularClassificacaoPublicaInterclasse(interclasse)
+    .filter(item => item.jogos > 0);
+
+  if (!classificacao.length) return '';
+
+  const modalidadesComTabela = modalidades.filter(mod => {
+    const formato = mod.formatoCompeticao || 'a-definir';
+
+    return (
+      mod.status !== 'Inativa' &&
+      formato !== 'mata-mata'
+    );
+  });
+
+  const blocos = modalidadesComTabela.map(modalidade => {
+    const tabela = classificacao.filter(item =>
+      item.modalidadeNome === modalidade.nome
+    );
+
+    if (!tabela.length) return '';
+
+    return `
+      <div class="interclasse-classificacao-modalidade">
+        <h3>
+          ${escaparHtml(modalidade.icone || '🏆')}
+          ${escaparHtml(modalidade.nome || 'Modalidade')}
+        </h3>
+
+        <small>
+          ${formatarFormatoCompeticaoPublico(modalidade.formatoCompeticao)}
+        </small>
+
+        <div class="interclasse-public-table-wrap">
+          <table class="interclasse-public-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Equipe</th>
+                <th>J</th>
+                <th>V</th>
+                <th>E</th>
+                <th>D</th>
+                <th>GP</th>
+                <th>GC</th>
+                <th>SG</th>
+                <th>PTS</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${tabela.map((item, index) => `
+                <tr class="${index < 2 ? 'classificado' : ''}">
+                  <td>${index + 1}</td>
+                  <td><strong>${escaparHtml(item.nome)}</strong></td>
+                  <td>${item.jogos}</td>
+                  <td>${item.vitorias}</td>
+                  <td>${item.empates}</td>
+                  <td>${item.derrotas}</td>
+                  <td>${item.golsPro}</td>
+                  <td>${item.golsContra}</td>
+                  <td>${item.saldo}</td>
+                  <td><strong>${item.pontos}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (!blocos.trim()) return '';
+
+  return `
+    <section class="section interclasse-public-section">
+      <div class="section-head">
+        <h2>Classificação</h2>
+        <p>
+          Tabelas exibidas apenas para modalidades com fase de grupos,
+          triangular, pontos corridos ou formato ainda a definir.
+        </p>
+      </div>
+
+      ${blocos}
+    </section>
+  `;
+}
+
+function renderInterclasseInscricoesPublico(interclasse = {}) {
+  const inscricoes = interclasse.inscricoes || {};
+
+  if (!inscricoes.titulo && !inscricoes.url) return '';
+
+  const aberta = inscricoes.status !== 'encerrada';
+
+  return `
+    <section class="section interclasse-public-section">
+      <div class="interclasse-public-inscricoes">
+        <span class="${aberta ? 'aberta' : 'encerrada'}">
+          ${aberta ? 'Inscrições abertas' : 'Inscrições encerradas'}
+        </span>
+
+        <h2>${escaparHtml(inscricoes.titulo || 'Inscrições')}</h2>
+
+        <p>
+          ${escaparHtml(inscricoes.texto || 'Acesse o formulário de inscrição do Interclasse.')}
+        </p>
+
+        ${
+          aberta && inscricoes.url
+            ? `
+              <a
+                href="${escaparHtml(inscricoes.url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="interclasse-public-inscricao-btn"
+              >
+                ${escaparHtml(inscricoes.botao || 'Fazer inscrição')}
+              </a>
+            `
+            : `
+              <button class="interclasse-public-inscricao-btn disabled" disabled>
+                ${escaparHtml(inscricoes.botao || 'Inscrições encerradas')}
+              </button>
+            `
+        }
+      </div>
+    </section>
+  `;
+}
+
+function obterVencedoresSemifinaisPublico(interclasse = {}) {
+  const jogos = Array.isArray(interclasse.jogos) ? interclasse.jogos : [];
+
+  const semifinais = jogos.filter(j =>
+    String(j.fase || '').toLowerCase().includes('semifinal') &&
+    String(j.status || '').toLowerCase() === 'finalizado'
+  );
+
+  function vencedor(jogo, fallback) {
+    if (!jogo) return fallback;
+
+    const placarA = Number(jogo.placarA || 0);
+    const placarB = Number(jogo.placarB || 0);
+
+    if (placarA === placarB) return fallback;
+
+    return placarA > placarB ? jogo.equipeA : jogo.equipeB;
+  }
+
+  return {
+    vencedor1: vencedor(semifinais[0], 'Vencedor semifinal 1'),
+    vencedor2: vencedor(semifinais[1], 'Vencedor semifinal 2')
+  };
+}
+
+function renderCampeaoFinalPublico(interclasse = {}) {
+  const jogos = Array.isArray(interclasse.jogos)
+    ? interclasse.jogos
+    : [];
+
+  const final = jogos.find(j =>
+    String(j.fase || '').toLowerCase() === 'final' &&
+    String(j.status || '').toLowerCase() === 'finalizado'
+  );
+
+  if (!final) {
+    return `<em>🏆 Campeão</em>`;
+  }
+
+  const placarA = Number(final.placarA || 0);
+  const placarB = Number(final.placarB || 0);
+
+  if (placarA === placarB) {
+    return `<em>🏆 Campeão a definir</em>`;
+  }
+
+  const campeao =
+    placarA > placarB
+      ? final.equipeA
+      : final.equipeB;
+
+  const vice =
+    placarA > placarB
+      ? final.equipeB
+      : final.equipeA;
+
+  return `
+    <em>🏆 Campeão: ${escaparHtml(campeao)}</em>
+    <small>🥈 Vice-campeão: ${escaparHtml(vice)}</small>
+  `;
+}
+
+function renderTerceiroLugarPublico(interclasse = {}) {
+  const jogos = Array.isArray(interclasse.jogos)
+    ? interclasse.jogos
+    : [];
+
+  const semifinais = jogos.filter(j =>
+    String(j.fase || '').toLowerCase().includes('semifinal') &&
+    String(j.status || '').toLowerCase() === 'finalizado'
+  );
+
+  function perdedor(jogo, fallback) {
+    if (!jogo) return fallback;
+
+    const placarA = Number(jogo.placarA || 0);
+    const placarB = Number(jogo.placarB || 0);
+
+    if (placarA === placarB) return fallback;
+
+    return placarA < placarB
+      ? jogo.equipeA
+      : jogo.equipeB;
+  }
+
+  const perdedor1 = perdedor(semifinais[0], 'Perdedor semifinal 1');
+  const perdedor2 = perdedor(semifinais[1], 'Perdedor semifinal 2');
+
+  const jogoBronze = jogos.find(j =>
+    (
+      String(j.fase || '').toLowerCase().includes('3º') ||
+      String(j.fase || '').toLowerCase().includes('terceiro') ||
+      String(j.fase || '').toLowerCase().includes('bronze')
+    ) &&
+    String(j.status || '').toLowerCase() === 'finalizado'
+  );
+
+  let terceiro = '';
+
+  if (jogoBronze) {
+    const placarA = Number(jogoBronze.placarA || 0);
+    const placarB = Number(jogoBronze.placarB || 0);
+
+    if (placarA !== placarB) {
+      terceiro =
+        placarA > placarB
+          ? jogoBronze.equipeA
+          : jogoBronze.equipeB;
+    }
+  }
+
+  return `
+    <article class="interclasse-public-bracket-match bronze">
+      <span>Disputa de 3º lugar</span>
+
+      <strong>${escaparHtml(perdedor1)}</strong>
+      <strong>${escaparHtml(perdedor2)}</strong>
+
+      ${
+        terceiro
+          ? `<em>🥉 3º lugar: ${escaparHtml(terceiro)}</em>`
+          : `<em>🥉 3º lugar a definir</em>`
+      }
+    </article>
+  `;
+}
+
+function renderInterclasseChaveamentoPublico(interclasse = {}) {
+  const classificacao = calcularClassificacaoPublicaInterclasse(interclasse)
+    .filter(item => item.jogos > 0)
+    .slice(0, 4);
+
+  if (classificacao.length < 2) {
+    return `
+      <section class="section interclasse-public-section">
+        <div class="section-head">
+          <h2>Chaveamento</h2>
+          <p>O chaveamento será exibido após a definição dos classificados.</p>
+        </div>
+
+        <div class="single-news-loading">
+          Atualmente há ${classificacao.length} equipe(s) classificada(s).
+        </div>
+      </section>
+    `;
+  }
+
+  if (classificacao.length === 2) {
+    return `
+      <section class="section interclasse-public-section">
+        <div class="section-head">
+          <h2>Chaveamento</h2>
+          <p>Final direta gerada automaticamente.</p>
+        </div>
+
+        <div class="interclasse-knockout-simple">
+          <article class="interclasse-knockout-card final">
+            <span>Final</span>
+            <strong>${escaparHtml(classificacao[0].nome)}</strong>
+            <strong>${escaparHtml(classificacao[1].nome)}</strong>
+            ${renderCampeaoFinalPublico(interclasse)}
+          </article>
+        </div>
+      </section>
+    `;
+  }
+
+  if (classificacao.length === 3) {
+    return `
+      <section class="section interclasse-public-section">
+        <div class="section-head">
+          <h2>Chaveamento</h2>
+          <p>Formato triangular sugerido para esta modalidade.</p>
+        </div>
+
+        <div class="interclasse-triangular-publico">
+          ${classificacao.map((item, index) => `
+            <article>
+              <span>${index + 1}º</span>
+              <strong>${escaparHtml(item.nome)}</strong>
+              <small>${item.pontos} pts • SG ${item.saldo}</small>
+            </article>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  const semi1A = classificacao[0];
+  const semi1B = classificacao[3];
+  const semi2A = classificacao[1];
+  const semi2B = classificacao[2];
+
+  const { vencedor1, vencedor2 } =
+    obterVencedoresSemifinaisPublico(interclasse);
+
+  return `
+    <section class="section interclasse-public-section">
+      <div class="section-head">
+        <h2>Chaveamento</h2>
+        <p>Semifinais, final e disputa de 3º lugar geradas automaticamente.</p>
+      </div>
+
+      <div class="interclasse-knockout">
+
+        <div class="interclasse-knockout-col">
+          <h3>Semifinais</h3>
+
+          ${renderInterclasseKnockoutMatchPublico('Semifinal 1', semi1A, semi1B)}
+          ${renderInterclasseKnockoutMatchPublico('Semifinal 2', semi2A, semi2B)}
+        </div>
+
+        <div class="interclasse-knockout-lines" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="interclasse-knockout-col final-col">
+          <h3>Final</h3>
+
+          <article class="interclasse-knockout-card final">
+            <span>Final</span>
+            <strong>${escaparHtml(vencedor1)}</strong>
+            <strong>${escaparHtml(vencedor2)}</strong>
+            ${renderCampeaoFinalPublico(interclasse)}
+          </article>
+
+          ${renderTerceiroLugarPublico(interclasse)}
+        </div>
+
+      </div>
+    </section>
+  `;
+}
+
+function renderInterclasseKnockoutMatchPublico(titulo, equipeA, equipeB) {
+  return `
+    <article class="interclasse-knockout-card">
+      <span>${escaparHtml(titulo)}</span>
+
+      <div>
+        <strong>${escaparHtml(equipeA.nome)}</strong>
+        <small>${equipeA.pontos} pts • SG ${equipeA.saldo}</small>
+      </div>
+
+      <div>
+        <strong>${escaparHtml(equipeB.nome)}</strong>
+        <small>${equipeB.pontos} pts • SG ${equipeB.saldo}</small>
+      </div>
+    </article>
+  `;
+}
+
+function renderInterclasseChavePublicaPartida(titulo, equipeA, equipeB) {
+  return `
+    <article class="interclasse-public-bracket-match">
+      <span>${escaparHtml(titulo)}</span>
+
+      <strong>${escaparHtml(equipeA.nome)}</strong>
+      <small>${equipeA.pontos} pts • SG ${equipeA.saldo}</small>
+
+      <strong>${escaparHtml(equipeB.nome)}</strong>
+      <small>${equipeB.pontos} pts • SG ${equipeB.saldo}</small>
+    </article>
+  `;
+}
+
+function formatarFormatoCompeticaoPublico(formato = 'a-definir') {
+  const map = {
+    'a-definir': 'Formato: A definir',
+    'fase-de-grupos': 'Fase de grupos',
+    'mata-mata': 'Mata-mata',
+    'triangular': 'Triangular',
+    'pontos-corridos': 'Pontos corridos'
+  };
+
+  return map[formato] || map['a-definir'];
+}
+function deveExibirClassificacaoInterclasse(interclasse = {}) {
+  const modalidades = Array.isArray(interclasse.modalidades)
+    ? interclasse.modalidades.filter(item => item.status !== 'Inativa')
+    : [];
+
+  if (!modalidades.length) return true;
+
+  return modalidades.some(mod =>
+    ['fase-de-grupos', 'pontos-corridos', 'triangular', 'a-definir']
+      .includes(mod.formatoCompeticao || 'a-definir')
+  );
+}

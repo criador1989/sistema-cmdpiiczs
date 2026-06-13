@@ -12,6 +12,7 @@ const SiteMidia = require('../../models/SiteMidia');
 const SiteConfig = require('../../models/SiteConfig');
 const SiteNoticia = require('../../models/SiteNoticia');
 const SitePatrocinador = require('../../models/SitePatrocinador');
+const SiteInterclasse = require('../../models/SiteInterclasse');
 
 const router = express.Router();
 
@@ -729,6 +730,72 @@ router.delete('/patrocinadores/:id', async (req, res) => {
       ok: false,
       erro: err.message
     });
+  }
+});
+
+/* =========================
+   INTERCLASSE
+   ========================= */
+
+async function obterInterclasseAtual(tenant) {
+  let interclasse = await SiteInterclasse.findOne({ tenant, ativo: true });
+
+  if (!interclasse) {
+    interclasse = await SiteInterclasse.create({
+      tenant,
+      nome: 'V Interclasse CMDPII',
+      ano: 2026,
+      edicao: '5ª edição',
+      tema: 'copa',
+      descricao: 'Competição esportiva e cultural entre turmas do Colégio Militar Dom Pedro II.',
+      ativo: true,
+      modalidades: [
+        { id: 'futsal', nome: 'Futsal', icone: '⚽', categoria: 'Geral', status: 'Ativa' },
+        { id: 'volei', nome: 'Vôlei', icone: '🏐', categoria: 'Geral', status: 'Ativa' },
+        { id: 'queimada', nome: 'Queimada', icone: '🔥', categoria: 'Geral', status: 'Ativa' },
+        { id: 'xadrez', nome: 'Xadrez', icone: '♟️', categoria: 'Geral', status: 'Ativa' }
+      ],
+      equipes: [],
+      jogos: [],
+      galeria: []
+    });
+  }
+
+  return interclasse;
+}
+
+router.get('/interclasse', async (req, res) => {
+  try {
+    const tenant = getTenant(req);
+    const interclasse = await obterInterclasseAtual(tenant);
+
+    res.json({ ok: true, interclasse });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+router.put('/interclasse', async (req, res) => {
+  try {
+    const tenant = getTenant(req);
+
+    const interclasse = await SiteInterclasse.findOneAndUpdate(
+      { tenant, ativo: true },
+      {
+        ...req.body,
+        tenant,
+        ativo: true,
+        atualizadoPor: getUserId(req)
+      },
+      {
+        new: true,
+        upsert: true
+      }
+    );
+
+    res.json({ ok: true, interclasse });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
   }
 });
 

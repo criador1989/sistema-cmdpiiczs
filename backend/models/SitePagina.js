@@ -29,7 +29,7 @@ const SitePaginaSchema = new mongoose.Schema({
 
   tipo: {
     type: String,
-    enum: ['home', 'pagina', 'noticias', 'galeria', 'contato', 'processo-seletivo'],
+    enum: ['home', 'pagina', 'noticias', 'galeria', 'contato', 'processo-seletivo', 'interclasse'],
     default: 'pagina'
   },
 

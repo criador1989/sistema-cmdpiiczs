@@ -8,6 +8,7 @@ const SiteMidia = require('../../models/SiteMidia');
 const SiteConfig = require('../../models/SiteConfig');
 const SiteNoticia = require('../../models/SiteNoticia');
 const SitePatrocinador = require('../../models/SitePatrocinador');
+const SiteInterclasse = require('../../models/SiteInterclasse');
 
 const router = express.Router();
 
@@ -252,6 +253,34 @@ router.get('/patrocinadores', async (req, res) => {
     res.json({
       ok: true,
       patrocinadores
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      erro: err.message
+    });
+  }
+});
+
+/* =========================
+   INTERCLASSE PÚBLICO
+   ========================= */
+
+router.get('/interclasse', async (req, res) => {
+  try {
+    const tenant = getTenant(req);
+
+    const interclasse = await SiteInterclasse
+      .findOne({
+        tenant,
+        ativo: true
+      })
+      .lean();
+
+    res.json({
+      ok: true,
+      interclasse: interclasse || null
     });
 
   } catch (err) {
