@@ -8077,3 +8077,43 @@ body:has(.interclasse-public-section) {
 .interclasse-public-modalidade-card.no-link em {
   color: #64748b;
 }
+/* AJUSTE — MODALIDADES MAIS COMPACTAS */
+
+.interclasse-public-modalidades {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.interclasse-public-modalidade-card {
+  min-height: 145px !important;
+  padding: 18px !important;
+  border-radius: 22px !important;
+}
+
+.interclasse-public-modalidade-card span:first-child {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 16px !important;
+  font-size: 26px !important;
+  margin-bottom: 14px !important;
+}
+
+.interclasse-public-modalidade-card strong {
+  font-size: 17px !important;
+  margin-bottom: 4px !important;
+}
+
+.interclasse-public-modalidade-card small {
+  font-size: 12px !important;
+}
+
+.interclasse-formato-badge {
+  padding: 5px 9px !important;
+  font-size: 10px !important;
+  margin-top: 6px !important;
+}
+
+.interclasse-public-modalidade-card em {
+  margin-top: 9px !important;
+  font-size: 12px !important;
+}
