@@ -1421,32 +1421,40 @@ function renderBlocoHeroInterno(bloco = {}) {
   }
 
   const overlay =
-    Number(bloco.configuracao?.overlay || 0.94);
+    Number(bloco.configuracao?.overlay ?? 0.45);
 
   const overlaySeguro =
-    Number.isFinite(overlay) ? overlay : 0.94;
+    Number.isFinite(overlay) ? overlay : 0.45;
+
+  const imagem =
+    bloco.imagemUrl ||
+    bloco.imagem ||
+    bloco.src ||
+    bloco.configuracao?.imagemUrl ||
+    bloco.configuracao?.imagem ||
+    bloco.configuracao?.backgroundImage ||
+    bloco.backgroundImage ||
+    '';
+
+  const estiloBackground = imagem
+    ? `
+      background:
+        linear-gradient(
+          90deg,
+          rgba(6,26,53,${overlaySeguro}),
+          rgba(6,26,53,0.35)
+        ),
+        url('${escaparHtml(imagem)}') center / cover no-repeat !important;
+    `
+    : `
+      background: #061a35 !important;
+    `;
 
   return `
     <section
       class="hero internal-page-hero cms-render-hero"
-      data-cms-block-id="${escaparHtml(bloco.configuracao?.cmsBlockId || '')}"
-      style="
-        ${
-          bloco.imagemUrl
-            ? `
-              background:
-              linear-gradient(
-                90deg,
-                rgba(6,26,53,${overlaySeguro}),
-                rgba(6,26,53,.72)
-              ),
-              url('${escaparHtml(bloco.imagemUrl)}');
-              background-size:cover;
-              background-position:center;
-            `
-            : ''
-        }
-      "
+      data-cms-block-id="${escaparHtml(cmsBlockId)}"
+      style="${estiloBackground}"
     >
       <div class="hero-content">
         <span class="tag">
@@ -1458,40 +1466,34 @@ function renderBlocoHeroInterno(bloco = {}) {
         <p>${escaparHtml(bloco.texto || '')}</p>
 
         ${
-  bloco.link?.url || Array.isArray(bloco.itens)
-    ? `
-      <div class="hero-actions">
-        ${
-          bloco.link?.url
+          bloco.link?.url || Array.isArray(bloco.itens)
             ? `
-              <a
-                class="btn primary"
-                href="${escaparHtml(bloco.link.url)}"
-              >
-                ${escaparHtml(bloco.link.texto || 'Saiba mais')}
-              </a>
+              <div class="hero-actions">
+                ${
+                  bloco.link?.url
+                    ? `
+                      <a class="btn primary" href="${escaparHtml(bloco.link.url)}">
+                        ${escaparHtml(bloco.link.texto || 'Saiba mais')}
+                      </a>
+                    `
+                    : ''
+                }
+
+                ${
+                  Array.isArray(bloco.itens)
+                    ? bloco.itens
+                        .filter(item => item.tipo === 'botao-secundario' && item.link)
+                        .map(item => `
+                          <a class="btn secondary" href="${escaparHtml(item.link)}">
+                            ${escaparHtml(item.texto || 'Acessar')}
+                          </a>
+                        `).join('')
+                    : ''
+                }
+              </div>
             `
             : ''
         }
-
-        ${
-          Array.isArray(bloco.itens)
-            ? bloco.itens
-                .filter(item => item.tipo === 'botao-secundario' && item.link)
-                .map(item => `
-                  <a
-                    class="btn secondary"
-                    href="${escaparHtml(item.link)}"
-                  >
-                    ${escaparHtml(item.texto || 'Acessar')}
-                  </a>
-                `).join('')
-            : ''
-        }
-      </div>
-    `
-    : ''
-}
       </div>
     </section>
   `;

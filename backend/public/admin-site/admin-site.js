@@ -14088,6 +14088,42 @@ if (blocoId === 'professores-materiais') {
   };
 }
 
+if (blocoId.endsWith('-banner') && blocoId !== 'home-banner' && blocoId !== 'interclasse-banner') {
+  return {
+    ...base,
+    titulo:
+      getInput(`${blocoId}-title`)?.value ||
+      getInput(`${blocoId.replace('-banner', '')}-banner-title`)?.value ||
+      getInput('hero-title')?.value ||
+      '',
+
+    texto:
+      getInput(`${blocoId}-text`)?.value ||
+      getInput(`${blocoId.replace('-banner', '')}-banner-text`)?.value ||
+      getInput('hero-text')?.value ||
+      '',
+
+    imagemUrl:
+      getInput(`${blocoId}-image`)?.value ||
+      getInput(`${blocoId.replace('-banner', '')}-banner-image`)?.value ||
+      getInput('image-url')?.value ||
+      '',
+
+    configuracao: {
+      ...base.configuracao,
+      tipoRender: 'hero-interno',
+      breadcrumb:
+        getInput(`${blocoId}-breadcrumb`)?.value ||
+        getInput(`${blocoId.replace('-banner', '')}-banner-breadcrumb`)?.value ||
+        'Início',
+      overlay:
+        getInput(`${blocoId}-overlay`)?.value ||
+        getInput(`${blocoId.replace('-banner', '')}-banner-overlay`)?.value ||
+        '0.45'
+    }
+  };
+}
+
 return {
   ...base,
   titulo: getInput('hero-title')?.value || '',
@@ -14155,14 +14191,7 @@ async function publicarPaginaCms(slug) {
       bloco.mongoId ||
       bloco.mongo?._id;
 
-    const titulo =
-      bloco.mongo?.titulo ||
-      bloco.nome ||
-      '';
-
-    const chave = titulo
-      ? `${slug}-${titulo.trim().toLowerCase()}`
-      : id;
+    const chave = id;
 
     if (!chave) continue;
 
@@ -14237,72 +14266,133 @@ async function publicarPaginaCms(slug) {
       ? blocosExistentesData.blocos
       : [];
 
-      // Remove blocos que existem no Mongo,
-// mas não existem mais no CMS
+  const idsAtuais = new Set(
+    blocos.map(b =>
+      b.id ||
+      b.mongo?.configuracao?.cmsBlockId ||
+      b.mongoId ||
+      b.mongo?._id
+    )
+  );
 
-const idsAtuais = new Set(
-  blocos.map(b => b.id)
-);
+  for (const blocoExistente of blocosExistentes) {
+    const cmsId =
+      blocoExistente.configuracao?.cmsBlockId;
 
-for (const blocoExistente of blocosExistentes) {
+    if (!idsAtuais.has(cmsId)) {
+      await fetch(
+        `${API_ADMIN}/blocos/${blocoExistente._id}`,
+        {
+          method: 'DELETE',
+          headers
+        }
+      );
 
-  const cmsId =
-    blocoExistente.configuracao?.cmsBlockId;
-
-  if (!idsAtuais.has(cmsId)) {
-
-    await fetch(
-      `${API_ADMIN}/blocos/${blocoExistente._id}`,
-      {
-        method: 'DELETE',
-        headers
-      }
-    );
-
-    console.log(
-      '[CMS] Bloco removido do Mongo:',
-      cmsId
-    );
+      console.log('[CMS] Bloco removido do Mongo:', cmsId);
+    }
   }
-}
 
   for (const [index, bloco] of blocos.entries()) {
+    const blocoId =
+      bloco.id ||
+      bloco.mongo?.configuracao?.cmsBlockId ||
+      bloco.mongoId ||
+      bloco.mongo?._id;
+
+    if (!blocoId) continue;
+
     const existente = blocosExistentes.find(b =>
-      b.configuracao?.cmsBlockId === bloco.id
+      b.configuracao?.cmsBlockId === blocoId
     );
 
     const salvo =
-  bloco.mongo && bloco.mongo.configuracao?.cmsBlockId === bloco.id
-    ? bloco.mongo
-    : null;
+      bloco.mongo && bloco.mongo.configuracao?.cmsBlockId === blocoId
+        ? bloco.mongo
+        : null;
 
-const conteudo =
-  bloco.id === blocoAtivoId
-    ? coletarConteudoBlocoCms(bloco.id)
-    : null;
+    const conteudo =
+      blocoId === blocoAtivoId
+        ? coletarConteudoBlocoCms(blocoId)
+        : null;
 
-const fonte = conteudo || bloco.mongo || salvo || {};
+    const fonte = {
+      ...(salvo || {}),
+      ...(bloco.mongo || {})
+    };
 
-const blocoPayload = {
-  tipo: 'html-livre',
-  titulo: fonte.titulo || bloco.nome,
-  subtitulo: bloco.tipo || fonte.subtitulo || '',
-  texto: fonte.texto || '',
-  imagemUrl: fonte.imagemUrl || '',
-  videoUrl: fonte.videoUrl || '',
-  arquivoUrl: fonte.arquivoUrl || '',
-  link: fonte.link || {},
-  itens: fonte.itens || [],
-  configuracao: {
-  ...(fonte.configuracao || {}),
-  cmsBlockId: bloco.id,
-  cmsTipo: bloco.tipo,
-  tipoRender: getTipoRenderPorBloco(bloco.id),
-  origem: 'cms-builder'
-},
-  ordem: index,
-  ativo: bloco.ativo !== false
-};
+    if (conteudo) {
+      fonte.titulo =
+        conteudo.titulo ||
+        fonte.titulo ||
+        bloco.nome ||
+        '';
+
+      fonte.subtitulo =
+        conteudo.subtitulo ||
+        fonte.subtitulo ||
+        bloco.tipo ||
+        '';
+
+      fonte.texto =
+        conteudo.texto ||
+        fonte.texto ||
+        '';
+
+      fonte.imagemUrl =
+        conteudo.imagemUrl ||
+        fonte.imagemUrl ||
+        '';
+
+      fonte.videoUrl =
+        conteudo.videoUrl ||
+        fonte.videoUrl ||
+        '';
+
+      fonte.arquivoUrl =
+        conteudo.arquivoUrl ||
+        fonte.arquivoUrl ||
+        '';
+
+      fonte.link =
+        Object.keys(conteudo.link || {}).length
+          ? conteudo.link
+          : fonte.link || {};
+
+      fonte.itens =
+        Array.isArray(conteudo.itens) && conteudo.itens.length
+          ? conteudo.itens
+          : fonte.itens || [];
+
+      fonte.configuracao = {
+        ...(fonte.configuracao || {}),
+        ...(conteudo.configuracao || {})
+      };
+    }
+
+    fonte.configuracao = {
+      ...(fonte.configuracao || {}),
+      cmsBlockId: blocoId,
+      cmsTipo: bloco.tipo || fonte.configuracao?.cmsTipo || '',
+      tipoRender:
+        fonte.configuracao?.tipoRender ||
+        getTipoRenderPorBloco(blocoId),
+      origem: 'cms-builder'
+    };
+
+    const blocoPayload = {
+      tipo: 'html-livre',
+      titulo: fonte.titulo || bloco.nome || '',
+      subtitulo: fonte.subtitulo || bloco.tipo || '',
+      texto: fonte.texto || '',
+      imagemUrl: fonte.imagemUrl || '',
+      videoUrl: fonte.videoUrl || '',
+      arquivoUrl: fonte.arquivoUrl || '',
+      link: fonte.link || {},
+      itens: fonte.itens || [],
+      configuracao: fonte.configuracao,
+      ordem: index,
+      ativo: bloco.ativo !== false
+    };
 
     if (existente) {
       await fetch(`${API_ADMIN}/blocos/${existente._id}`, {
