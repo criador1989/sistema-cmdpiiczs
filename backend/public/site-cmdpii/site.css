@@ -8034,3 +8034,17 @@ body:has(.interclasse-public-section) {
   padding: 7px 12px;
   font-weight: 900;
 }
+/* =========================
+   CORREÇÃO SIDEBAR PATROCINADORES
+   ========================= */
+
+.home-side-partners,
+.home-side-partners.simple {
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.home-flow-sidebar {
+  align-self: start;
+}
