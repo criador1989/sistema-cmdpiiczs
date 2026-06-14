@@ -21,6 +21,11 @@ const ModalidadeSchema = new mongoose.Schema({
   status: { type: String, default: 'Ativa' },
   descricao: { type: String, default: '' },
 
+regulamentoUrl: {
+  type: String,
+  default: ''
+},
+
   formatoCompeticao: {
     type: String,
     enum: [

@@ -8048,3 +8048,32 @@ body:has(.interclasse-public-section) {
 .home-flow-sidebar {
   align-self: start;
 }
+.interclasse-acesso-rapido-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(340px,1fr));
+  gap: 24px;
+  margin: 30px 0 45px;
+}
+.interclasse-public-modalidade-card {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.interclasse-public-modalidade-card em {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 14px;
+  color: #b9151b;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.interclasse-public-modalidade-card.no-link {
+  cursor: default;
+  opacity: .86;
+}
+
+.interclasse-public-modalidade-card.no-link em {
+  color: #64748b;
+}

@@ -4323,15 +4323,18 @@ function renderInterclasseAcessoRapidoPublico(interclasse = {}) {
   const url =
     destaque.url ||
     interclasse.regulamentoUrl ||
-    interclasse.inscricoes?.url ||
     '#';
 
   const tipo =
     destaque.tipo ||
     'informativo';
 
+  const urlInscricao =
+    interclasse.inscricoes?.url || '#';
+
   return `
-    <section class="interclasse-acesso-rapido">
+    <section class="interclasse-acesso-rapido-wrap">
+
       <div class="interclasse-acesso-card tipo-${escaparHtml(tipo)}">
         <span>📌 Documentos oficiais</span>
 
@@ -4348,6 +4351,32 @@ function renderInterclasseAcessoRapidoPublico(interclasse = {}) {
           ${escaparHtml(botao)}
         </a>
       </div>
+
+      <div class="interclasse-acesso-card tipo-informativo">
+        <span>📝 Inscrições de equipes</span>
+
+        <div>
+          <h2>Envie sua inscrição aqui</h2>
+
+          <p>
+            Preencha o formulário oficial do Interclasse CMDPII-CZS para confirmar
+            a participação da sua equipe na competição.
+          </p>
+        </div>
+
+        <a
+          href="${escaparHtml(urlInscricao)}"
+          target="_blank"
+          rel="noopener"
+        >
+          ${
+            interclasse.inscricoes?.url
+              ? 'Enviar inscrição'
+              : 'Em breve'
+          }
+        </a>
+      </div>
+
     </section>
   `;
 }
@@ -4434,25 +4463,42 @@ function renderInterclasseModalidadesPublico(interclasse = {}) {
       </div>
 
       <div class="interclasse-public-modalidades">
-        ${modalidades.map(item => `
-          <article class="interclasse-public-modalidade-card">
-            <span>${escaparHtml(item.icone || '🏆')}</span>
+        ${modalidades.map(item => {
+          const regulamento = item.regulamentoUrl || '#';
+          const temRegulamento = Boolean(item.regulamentoUrl);
 
-            <strong>
-              ${escaparHtml(item.nome || 'Modalidade')}
-            </strong>
+          return `
+            <a
+              class="interclasse-public-modalidade-card ${temRegulamento ? 'has-link' : 'no-link'}"
+              href="${escaparHtml(regulamento)}"
+              ${temRegulamento ? 'target="_blank" rel="noopener noreferrer"' : ''}
+            >
+              <span>${escaparHtml(item.icone || '🏆')}</span>
 
-            <small>
-              ${escaparHtml(item.categoria || 'Geral')}
-            </small>
+              <strong>
+                ${escaparHtml(item.nome || 'Modalidade')}
+              </strong>
 
-            <small class="interclasse-formato-badge">
-              ${formatarFormatoCompeticaoPublico(
-                item.formatoCompeticao || 'a-definir'
-              )}
-            </small>
-          </article>
-        `).join('')}
+              <small>
+                ${escaparHtml(item.categoria || 'Geral')}
+              </small>
+
+              <small class="interclasse-formato-badge">
+                ${formatarFormatoCompeticaoPublico(
+                  item.formatoCompeticao || 'a-definir'
+                )}
+              </small>
+
+              <em>
+                ${
+                  temRegulamento
+                    ? 'Acessar regulamento →'
+                    : 'Regulamento em breve'
+                }
+              </em>
+            </a>
+          `;
+        }).join('')}
       </div>
     </section>
   `;

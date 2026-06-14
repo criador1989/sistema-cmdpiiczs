@@ -15947,6 +15947,8 @@ function renderInterclasseModalidades() {
         </button>
       </div>
 
+      <input type="hidden" id="interclasse-modalidade-edit-id">
+
       <div class="interclasse-form-inline">
         <input id="interclasse-modalidade-icone" placeholder="Ícone" value="⚽">
         <input id="interclasse-modalidade-nome" placeholder="Nome da modalidade">
@@ -15964,6 +15966,11 @@ function renderInterclasseModalidades() {
           <option value="triangular">Triangular</option>
           <option value="pontos-corridos">Pontos corridos</option>
         </select>
+
+        <input
+          id="interclasse-modalidade-regulamento-url"
+          placeholder="Link do regulamento da modalidade"
+        >
       </div>
 
       <div class="interclasse-items-grid" id="interclasse-modalidades-list">
@@ -15991,6 +15998,22 @@ function renderInterclasseModalidades() {
             <small>
               ${formatarFormatoCompeticaoInterclasse(item.formatoCompeticao)}
             </small>
+
+            ${
+              item.regulamentoUrl
+                ? `<small>📄 Regulamento vinculado</small>`
+                : `<small>📄 Sem regulamento</small>`
+            }
+
+            <div class="interclasse-card-actions">
+              <button
+                type="button"
+                class="btn ghost btn-edit-interclasse-modalidade"
+                data-id="${item.id}"
+              >
+                Editar
+              </button>
+            </div>
           </article>
         `).join('')}
       </div>
@@ -16013,28 +16036,67 @@ function formatarFormatoCompeticaoInterclasse(formato = 'a-definir') {
 function inicializarInterclasseModalidadesEventos() {
   const btnAdd = document.getElementById('btn-add-interclasse-modalidade');
 
+  const inputEditId = getInput('interclasse-modalidade-edit-id');
+  const inputIcone = getInput('interclasse-modalidade-icone');
+  const inputNome = getInput('interclasse-modalidade-nome');
+  const inputCategoria = getInput('interclasse-modalidade-categoria');
+  const inputStatus = getInput('interclasse-modalidade-status');
+  const inputFormato = getInput('interclasse-modalidade-formato');
+  const inputRegulamento = getInput('interclasse-modalidade-regulamento-url');
+
+  function limparFormularioModalidade() {
+    if (inputEditId) inputEditId.value = '';
+    if (inputIcone) inputIcone.value = '⚽';
+    if (inputNome) inputNome.value = '';
+    if (inputCategoria) inputCategoria.value = 'Ensino Fundamental';
+    if (inputStatus) inputStatus.value = 'Ativa';
+    if (inputFormato) inputFormato.value = 'a-definir';
+    if (inputRegulamento) inputRegulamento.value = '';
+
+    if (btnAdd) {
+      btnAdd.textContent = 'Nova modalidade';
+      btnAdd.classList.remove('warning');
+    }
+  }
+
   if (btnAdd) {
     btnAdd.onclick = async () => {
       try {
         const modalidades = getInterclasseModalidades();
 
-        const nova = {
-          id: crypto.randomUUID(),
-          icone: getInput('interclasse-modalidade-icone')?.value || '🏆',
-          nome: getInput('interclasse-modalidade-nome')?.value || '',
-          categoria: getInput('interclasse-modalidade-categoria')?.value || 'Geral',
-          status: getInput('interclasse-modalidade-status')?.value || 'Ativa',
-           formatoCompeticao:
-    getInput('interclasse-modalidade-formato')?.value || 'a-definir'
+        const editId = inputEditId?.value || '';
+
+        const dados = {
+          id: editId || crypto.randomUUID(),
+          icone: inputIcone?.value || '🏆',
+          nome: inputNome?.value || '',
+          categoria: inputCategoria?.value || 'Geral',
+          status: inputStatus?.value || 'Ativa',
+          formatoCompeticao: inputFormato?.value || 'a-definir',
+          regulamentoUrl: inputRegulamento?.value || ''
         };
 
-        if (!nova.nome.trim()) {
+        if (!dados.nome.trim()) {
           showToast('Informe o nome da modalidade.');
           return;
         }
 
-        modalidades.push(nova);
-        setInterclasseModalidades(modalidades);
+        let atualizadas;
+
+        if (editId) {
+          atualizadas = modalidades.map(item =>
+            item.id === editId
+              ? {
+                  ...item,
+                  ...dados
+                }
+              : item
+          );
+        } else {
+          atualizadas = [...modalidades, dados];
+        }
+
+        setInterclasseModalidades(atualizadas);
 
         await salvarInterclasseAtual();
 
@@ -16043,13 +16105,46 @@ function inicializarInterclasseModalidadesEventos() {
 
         inicializarInterclasseModalidadesEventos();
 
-        showToast('Modalidade salva no Mongo.');
+        showToast(
+          editId
+            ? 'Modalidade atualizada no Mongo.'
+            : 'Modalidade salva no Mongo.'
+        );
       } catch (err) {
         console.error(err);
         showToast('Erro ao salvar modalidade.');
       }
     };
   }
+
+  document.querySelectorAll('.btn-edit-interclasse-modalidade').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+
+      const modalidade = getInterclasseModalidades()
+        .find(item => item.id === id);
+
+      if (!modalidade) {
+        showToast('Modalidade não encontrada.');
+        return;
+      }
+
+      if (inputEditId) inputEditId.value = modalidade.id || '';
+      if (inputIcone) inputIcone.value = modalidade.icone || '🏆';
+      if (inputNome) inputNome.value = modalidade.nome || '';
+      if (inputCategoria) inputCategoria.value = modalidade.categoria || 'Geral';
+      if (inputStatus) inputStatus.value = modalidade.status || 'Ativa';
+      if (inputFormato) inputFormato.value = modalidade.formatoCompeticao || 'a-definir';
+      if (inputRegulamento) inputRegulamento.value = modalidade.regulamentoUrl || '';
+
+      if (btnAdd) {
+        btnAdd.textContent = 'Salvar alterações';
+        btnAdd.classList.add('warning');
+      }
+
+      showToast('Editando modalidade. Altere os campos e clique em Salvar alterações.');
+    };
+  });
 
   document.querySelectorAll('.btn-remove-interclasse-modalidade').forEach(btn => {
     btn.onclick = async () => {
