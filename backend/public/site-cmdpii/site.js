@@ -3143,7 +3143,6 @@ background-repeat: no-repeat;
               <a class="btn primary" href="${slide.botaoLink || '#'}">
                 ${slide.botaoTexto || 'Saiba mais'}
               </a>
-
             </div>
           </div>
         </div>
