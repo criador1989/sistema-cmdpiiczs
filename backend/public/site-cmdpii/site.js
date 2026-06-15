@@ -3144,9 +3144,6 @@ background-repeat: no-repeat;
                 ${slide.botaoTexto || 'Saiba mais'}
               </a>
 
-              <a class="btn secondary" href="./processo-seletivo.html">
-                Processo Seletivo
-              </a>
             </div>
           </div>
         </div>
