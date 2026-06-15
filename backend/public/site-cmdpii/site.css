@@ -3268,10 +3268,14 @@ a {
 }
 
 .cms-gallery-lightbox img {
-  max-width: min(1000px, 92vw);
-  max-height: 80vh;
+  width: min(1000px, 92vw);
+  height: 80vh;
+  object-fit: contain !important;
+  object-position: center;
+  display: block;
   border-radius: 18px;
   box-shadow: 0 30px 80px rgba(0,0,0,.45);
+  background: #061a35;
 }
 
 .cms-gallery-lightbox strong {
@@ -4371,18 +4375,23 @@ body.gallery-modal-open {
 .gallery-event-slide {
   min-width: 100%;
   margin: 0;
-  height: min(68vh, 620px);
-  display: grid;
-  place-items: center;
+  height: min(72vh, 620px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #020617;
   position: relative;
   overflow: hidden;
+  padding: 12px;
 }
 
 .gallery-event-slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain !important;
+  object-position: center;
   display: block;
 }
 
@@ -8116,4 +8125,10 @@ body:has(.interclasse-public-section) {
 .interclasse-public-modalidade-card em {
   margin-top: 9px !important;
   font-size: 12px !important;
+}
+.internal-page-hero.cms-render-hero {
+  background-color: #061a35;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
