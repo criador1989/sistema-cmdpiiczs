@@ -260,8 +260,14 @@ function abrirSecao(secao) {
 if (secao === 'midias') carregarMidias();
 if (secao === 'noticias') carregarNoticiasCms();
 if (secao === 'interclasse') carregarInterclasseCms();
-if (secao === 'visitas') carregarConfig();
-  
+
+if (
+  secao === 'visitas' ||
+  secao === 'config' ||
+  secao === 'identidade'
+) {
+  carregarConfig();
+}  
 
   const iframe = document.getElementById('live-preview');
 
@@ -9132,29 +9138,6 @@ if (id === 'historia-banner') {
   `;
 }
 
-function coletarMenuGlobal() {
-  const itens = [...document.querySelectorAll('.global-menu-item')];
-
-  return itens.map((item, index) => {
-    const texto =
-      item.querySelector('.global-menu-text')?.value ||
-      item.querySelectorAll('input')[0]?.value ||
-      '';
-
-    const link =
-      item.querySelector('.global-menu-link')?.value ||
-      item.querySelectorAll('input')[1]?.value ||
-      '#';
-
-    return {
-      ordem: index,
-      texto,
-      link,
-      destaque: item.querySelector('.global-menu-featured')?.checked || false,
-      novaAba: item.querySelector('.global-menu-blank')?.checked || false
-    };
-  }).filter(item => item.texto.trim());
-}
 
 function coletarLinksFooterGlobal() {
   const itens = [...document.querySelectorAll('.global-footer-link-item')];
@@ -11800,118 +11783,242 @@ function salvarRascunhoLocalHistoria() {
 
 async function carregarConfig() {
   try {
-    const res = await fetch(`${API_PUBLICA}/config`);
+    const res = await fetch(`${API_ADMIN}/config`, {
+  cache: 'no-store',
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('site_cms_token')}`
+  }
+});
+
     const data = await res.json();
 
     if (!data.ok) return;
 
     const config = data.config || {};
 
+    console.log('[CONFIG CMS]', config);
+
     const dashVisitas = document.getElementById('dash-visitas');
     const visitasTotal = document.getElementById('visitas-total');
     const visitasHoje = document.getElementById('visitas-hoje');
 
-    if (dashVisitas) dashVisitas.textContent = config.analytics?.visitasTotais || 0;
-    if (visitasTotal) visitasTotal.textContent = config.analytics?.visitasTotais || 0;
-    if (visitasHoje) visitasHoje.textContent = config.analytics?.visitasHoje || 0;
+    if (dashVisitas) {
+      dashVisitas.textContent =
+        config.analytics?.visitasTotais || 0;
+    }
 
-    if (getInput('config-nome')) getInput('config-nome').value = config.nomeSite || '';
-    if (getInput('config-sigla')) getInput('config-sigla').value = config.sigla || '';
-    if (getInput('config-descricao')) getInput('config-descricao').value = config.descricao || '';
+    if (visitasTotal) {
+      visitasTotal.textContent =
+        config.analytics?.visitasTotais || 0;
+    }
 
-    if (getInput('config-email')) getInput('config-email').value = config.email || '';
-    if (getInput('config-telefone')) getInput('config-telefone').value = config.telefone || '';
-    if (getInput('config-whatsapp')) getInput('config-whatsapp').value = config.redesSociais?.whatsapp || '';
-    if (getInput('config-endereco')) getInput('config-endereco').value = config.endereco || '';
+    if (visitasHoje) {
+      visitasHoje.textContent =
+        config.analytics?.visitasHoje || 0;
+    }
 
-    if (getInput('config-facebook')) getInput('config-facebook').value = config.redesSociais?.facebook || '';
-    if (getInput('config-instagram')) getInput('config-instagram').value = config.redesSociais?.instagram || '';
-    if (getInput('config-youtube')) getInput('config-youtube').value = config.redesSociais?.youtube || '';
+    // =========================
+    // CONFIGURAÇÕES GERAIS
+    // =========================
 
-    if (getInput('config-seo-title')) getInput('config-seo-title').value = config.seoTitulo || config.nomeSite || '';
-    if (getInput('config-seo-description')) getInput('config-seo-description').value = config.seoDescricao || config.descricao || '';
+    if (getInput('config-nome')) {
+      getInput('config-nome').value =
+        config.nomeSite || '';
+    }
+
+    if (getInput('config-sigla')) {
+      getInput('config-sigla').value =
+        config.sigla || '';
+    }
+
+    if (getInput('config-descricao')) {
+      getInput('config-descricao').value =
+        config.descricao || '';
+    }
+
+    if (getInput('config-email')) {
+      getInput('config-email').value =
+        config.email || '';
+    }
+
+    if (getInput('config-telefone')) {
+      getInput('config-telefone').value =
+        config.telefone || '';
+    }
+
+    if (getInput('config-whatsapp')) {
+      getInput('config-whatsapp').value =
+        config.redesSociais?.whatsapp || '';
+    }
+
+    if (getInput('config-endereco')) {
+      getInput('config-endereco').value =
+        config.endereco || '';
+    }
+
+    if (getInput('config-facebook')) {
+      getInput('config-facebook').value =
+        config.redesSociais?.facebook || '';
+    }
+
+    if (getInput('config-instagram')) {
+      getInput('config-instagram').value =
+        config.redesSociais?.instagram || '';
+    }
+
+    if (getInput('config-youtube')) {
+      getInput('config-youtube').value =
+        config.redesSociais?.youtube || '';
+    }
+
+    if (getInput('config-seo-title')) {
+      getInput('config-seo-title').value =
+        config.seoTitulo || config.nomeSite || '';
+    }
+
+    if (getInput('config-seo-description')) {
+      getInput('config-seo-description').value =
+        config.seoDescricao || config.descricao || '';
+    }
+
+    // =========================
+    // IDENTIDADE VISUAL
+    // =========================
+
     if (getInput('ident-logo-header')) {
-  getInput('ident-logo-header').value = config.logoUrl || '';
+      getInput('ident-logo-header').value =
+        config.logoUrl || '';
+    }
+
+    if (getInput('ident-brasao')) {
+      getInput('ident-brasao').value =
+        config.brasaoUrl || '';
+    }
+
+    if (getInput('ident-logo-footer')) {
+      getInput('ident-logo-footer').value =
+        config.logoFooterUrl || '';
+    }
+
+    if (getInput('ident-favicon')) {
+      getInput('ident-favicon').value =
+        config.faviconUrl || '';
+    }
+
+    if (getInput('ident-cor-primaria')) {
+      getInput('ident-cor-primaria').value =
+        config.corPrimaria || '#061a35';
+    }
+
+    if (getInput('ident-cor-secundaria')) {
+      getInput('ident-cor-secundaria').value =
+        config.corSecundaria || '#b9151b';
+    }
+
+    if (getInput('ident-cor-destaque')) {
+      getInput('ident-cor-destaque').value =
+        config.corDestaque || '#f5b51b';
+    }
+
+    // =========================
+    // HEADER GLOBAL
+    // =========================
+
+    if (getInput('global-header-title')) {
+      getInput('global-header-title').value =
+        config.layoutGlobal?.header?.titulo ||
+        'COLÉGIO DOM PEDRO II';
+    }
+
+    if (getInput('global-header-subtitle')) {
+      getInput('global-header-subtitle').value =
+        config.layoutGlobal?.header?.subtitulo ||
+        'CAMPUS CZS SUL';
+    }
+
+    if (getInput('global-header-small')) {
+      getInput('global-header-small').value =
+        config.layoutGlobal?.header?.descricaoPequena ||
+        'Unidade de Ensino do CBMAC';
+    }
+
+    if (getInput('global-header-logo')) {
+      getInput('global-header-logo').value =
+        config.layoutGlobal?.header?.logo || '';
+    }
+
+    if (getInput('global-header-button-text')) {
+      getInput('global-header-button-text').value =
+        config.layoutGlobal?.header?.botaoTexto ||
+        'Acesso Axoriin';
+    }
+
+    if (getInput('global-header-button-link')) {
+      getInput('global-header-button-link').value =
+        config.layoutGlobal?.header?.botaoLink ||
+        'https://axoriin.com.br';
+    }
+
+    // =========================
+    // MENU E RODAPÉ
+    // =========================
+
+    if (typeof renderizarMenuGlobal === 'function') {
+  renderizarMenuGlobal(config.layoutGlobal?.menu || []);
 }
 
-if (getInput('ident-brasao')) {
-  getInput('ident-brasao').value = config.brasaoUrl || '';
-}
+hidratarMenuGlobalDireto(config.layoutGlobal?.menu || []);
 
-if (getInput('ident-favicon')) {
-  getInput('ident-favicon').value = config.faviconUrl || '';
-}
+    if (typeof renderizarFooterLinksGlobal === 'function') {
+      renderizarFooterLinksGlobal(
+        config.layoutGlobal?.footerLinks || []
+      );
+    }
 
-if (getInput('ident-cor-primaria')) {
-  getInput('ident-cor-primaria').value = config.corPrimaria || '#061a35';
-}
+    aplicarIdentidadeNaPreview();
 
-if (getInput('ident-cor-secundaria')) {
-  getInput('ident-cor-secundaria').value = config.corSecundaria || '#b9151b';
-}
-
-if (getInput('ident-cor-destaque')) {
-  getInput('ident-cor-destaque').value = config.corDestaque || '#f5b51b';
-}
-
-if (getInput('global-header-title')) {
-  getInput('global-header-title').value =
-    config.layoutGlobal?.header?.titulo || 'COLÉGIO DOM PEDRO II';
-}
-
-if (getInput('global-header-subtitle')) {
-  getInput('global-header-subtitle').value =
-    config.layoutGlobal?.header?.subtitulo || 'CAMPUS CZS SUL';
-}
-
-if (getInput('global-header-small')) {
-  getInput('global-header-small').value =
-    config.layoutGlobal?.header?.descricaoPequena || 'Unidade de Ensino do CBMAC';
-}
-
-if (getInput('global-header-logo')) {
-  getInput('global-header-logo').value =
-    config.layoutGlobal?.header?.logo || '';
-}
-
-if (getInput('global-header-button-text')) {
-  getInput('global-header-button-text').value =
-    config.layoutGlobal?.header?.botaoTexto || 'Acesso Axoriin';
-}
-
-if (getInput('global-header-button-link')) {
-  getInput('global-header-button-link').value =
-    config.layoutGlobal?.header?.botaoLink || 'https://axoriin.com.br';
-}
-
-aplicarIdentidadeNaPreview();
   } catch (err) {
     console.error(err);
   }
 }
 
-document.getElementById('btn-save-config')?.addEventListener('click', async () => {
-  const payload = {
-    nomeSite: getInput('config-nome')?.value || '',
-    sigla: getInput('config-sigla')?.value || '',
-    descricao: getInput('config-descricao')?.value || '',
-
-    email: getInput('config-email')?.value || '',
-    telefone: getInput('config-telefone')?.value || '',
-    endereco: getInput('config-endereco')?.value || '',
-
-    redesSociais: {
-      facebook: getInput('config-facebook')?.value || '',
-      instagram: getInput('config-instagram')?.value || '',
-      youtube: getInput('config-youtube')?.value || '',
-      whatsapp: getInput('config-whatsapp')?.value || ''
-    },
-
-    seoTitulo: getInput('config-seo-title')?.value || '',
-    seoDescricao: getInput('config-seo-description')?.value || ''
-  };
+document.getElementById('btn-save-config')?.addEventListener('click', async (event) => {
+  event.preventDefault();
 
   try {
+    const configAtualRes = await fetch(`${API_ADMIN}/config`, {
+      cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('site_cms_token')}`
+      }
+    });
+
+    const configAtualData = await configAtualRes.json();
+    const configAtual = configAtualData?.config || {};
+
+    const payload = {
+      ...configAtual,
+
+      nomeSite: getInput('config-nome')?.value || '',
+      sigla: getInput('config-sigla')?.value || '',
+      descricao: getInput('config-descricao')?.value || '',
+
+      email: getInput('config-email')?.value || '',
+      telefone: getInput('config-telefone')?.value || '',
+      endereco: getInput('config-endereco')?.value || '',
+
+      redesSociais: {
+        ...(configAtual.redesSociais || {}),
+        facebook: getInput('config-facebook')?.value || '',
+        instagram: getInput('config-instagram')?.value || '',
+        youtube: getInput('config-youtube')?.value || '',
+        whatsapp: getInput('config-whatsapp')?.value || ''
+      },
+
+      seoTitulo: getInput('config-seo-title')?.value || '',
+      seoDescricao: getInput('config-seo-description')?.value || ''
+    };
+
     const res = await fetch(`${API_ADMIN}/config`, {
       method: 'PUT',
       headers: {
@@ -11929,80 +12036,96 @@ document.getElementById('btn-save-config')?.addEventListener('click', async () =
     }
 
     showToast('Configurações salvas com sucesso.');
-    carregarConfig();
+
     aplicarLayoutGlobalNaPreview();
+
     const doc = getPreviewDoc();
 
-if (doc) {
-  const footer = doc.querySelector('.footer');
-  const copyright = doc.querySelector('.copyright');
+    if (doc) {
+      const footer = doc.querySelector('.footer');
+      const copyright = doc.querySelector('.copyright');
 
-  const redes = payload.redesSociais || {};
+      const redes = payload.redesSociais || {};
 
-  if (footer) {
-    footer.innerHTML = `
-      <div>
-        <h3>${payload.nomeSite}</h3>
-        <p>${payload.sigla}</p>
-        <small>${payload.descricao}</small>
+      if (footer) {
+        footer.innerHTML = `
+          <div>
+            <h3>${payload.nomeSite}</h3>
+            <p>${payload.sigla}</p>
+            <small>${payload.descricao}</small>
 
-        <div class="footer-socials">
+            <div class="footer-socials">
+              ${
+                redes.facebook
+                  ? `
+                    <a href="${redes.facebook}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Facebook">
+                      <span>f</span>
+                    </a>
+                  `
+                  : ''
+              }
 
-  ${redes.facebook ? `
-    <a href="${redes.facebook}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Facebook">
-      <span>f</span>
-    </a>
-  ` : ''}
+              ${
+                redes.instagram
+                  ? `
+                    <a href="${redes.instagram}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Instagram">
+                      <span>◎</span>
+                    </a>
+                  `
+                  : ''
+              }
 
-  ${redes.instagram ? `
-    <a href="${redes.instagram}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Instagram">
-      <span>◎</span>
-    </a>
-  ` : ''}
+              ${
+                redes.youtube
+                  ? `
+                    <a href="${redes.youtube}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="YouTube">
+                      <span>▶</span>
+                    </a>
+                  `
+                  : ''
+              }
 
-  ${redes.youtube ? `
-    <a href="${redes.youtube}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="YouTube">
-      <span>▶</span>
-    </a>
-  ` : ''}
+              ${
+                redes.whatsapp
+                  ? `
+                    <a href="https://wa.me/${redes.whatsapp.replace(/\D/g, '')}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="WhatsApp">
+                      <span>☎</span>
+                    </a>
+                  `
+                  : ''
+              }
+            </div>
+          </div>
 
-  ${redes.whatsapp ? `
-    <a href="https://wa.me/${redes.whatsapp.replace(/\D/g, '')}" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="WhatsApp">
-      <span>☎</span>
-    </a>
-  ` : ''}
+          <div>
+            <h4>Links rápidos</h4>
+            <a href="./index.html">Início</a>
+            <a href="./historia.html">História</a>
+            <a href="./noticias.html">Notícias</a>
+            <a href="./contato.html">Contato</a>
+          </div>
 
-</div>
-      </div>
+          <div>
+            <h4>Contato</h4>
+            ${payload.telefone ? `<p>📞 ${payload.telefone}</p>` : ''}
+            ${payload.email ? `<p>✉️ ${payload.email}</p>` : ''}
+            ${payload.endereco ? `<p>📍 ${payload.endereco}</p>` : ''}
+            ${redes.whatsapp ? `<p>💬 WhatsApp: ${redes.whatsapp}</p>` : ''}
+          </div>
+        `;
+      }
 
-      <div>
-        <h4>Links rápidos</h4>
-        <a href="./index.html">Início</a>
-        <a href="./historia.html">História</a>
-        <a href="./noticias.html">Notícias</a>
-        <a href="./contato.html">Contato</a>
-      </div>
+      if (copyright) {
+        copyright.textContent =
+          `© ${new Date().getFullYear()} ${payload.nomeSite}. Todos os direitos reservados.`;
+      }
+    }
 
-      <div>
-        <h4>Contato</h4>
-        ${payload.telefone ? `<p>📞 ${payload.telefone}</p>` : ''}
-        ${payload.email ? `<p>✉️ ${payload.email}</p>` : ''}
-        ${payload.endereco ? `<p>📍 ${payload.endereco}</p>` : ''}
-        ${redes.whatsapp ? `<p>💬 WhatsApp: ${redes.whatsapp}</p>` : ''}
-      </div>
-    `;
-  }
-
-  if (copyright) {
-    copyright.textContent =
-      `© ${new Date().getFullYear()} ${payload.nomeSite}. Todos os direitos reservados.`;
-  }
-}
   } catch (err) {
     console.error(err);
     showToast('Falha ao salvar. Verifique se está logado.');
   }
-});
+});;
 
 /* =========================
    MÍDIAS / UPLOAD
@@ -14424,7 +14547,9 @@ async function publicarTudoCms() {
   return [resultado];
 }
 
-document.getElementById('btn-publicar')?.addEventListener('click', async () => {
+document.getElementById('btn-publicar')?.addEventListener('click', async (event) => {
+  event.preventDefault();
+
   try {
     showToast('Publicando páginas e blocos...');
 
@@ -14439,7 +14564,8 @@ document.getElementById('btn-publicar')?.addEventListener('click', async () => {
       `Publicação concluída: ${resultados.length} página(s), ${totalBlocos} bloco(s).`
     );
 
-    carregarConfig();
+    aplicarIdentidadeNaPreview();
+    aplicarLayoutGlobalNaPreview();
 
   } catch (err) {
     console.error(err);
@@ -14479,9 +14605,317 @@ document.getElementById('live-preview')?.addEventListener('load', () => {
   }, 300);
 });
 
+
+
 /* =========================
    IDENTIDADE VISUAL
    ========================= */
+
+function montarItemMenuGlobal(n, item = {}) {
+  return `
+    <div class="global-menu-item" data-menu-index="${n}">
+      <div class="news-editor-top">
+        <strong>Item do menu</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-menu-up">↑</button>
+          <button type="button" class="btn-menu-down">↓</button>
+        </div>
+      </div>
+
+      <label>Texto</label>
+      <input
+        class="global-menu-text"
+        value="${item.texto || ''}"
+      >
+
+      <label>Link</label>
+      <input
+        class="global-menu-link"
+        value="${item.link || '#'}"
+      >
+
+      <div class="cms-field-row">
+        <label>
+          <input
+            type="checkbox"
+            class="global-menu-featured"
+            ${item.destaque ? 'checked' : ''}
+          >
+          Botão destaque
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            class="global-menu-newtab"
+            ${item.novaAba ? 'checked' : ''}
+          >
+          Abrir em nova aba
+        </label>
+      </div>
+
+      <button class="btn ghost btn-remove-menu-item" type="button">
+        Remover item
+      </button>
+    </div>
+  `;
+}
+
+function montarItemFooterGlobal(n, item = {}) {
+  return `
+    <div class="global-footer-link-item" data-footer-link-index="${n}">
+      <div class="news-editor-top">
+        <strong>Link do rodapé</strong>
+
+        <div class="quick-item-controls">
+          <button type="button" class="btn-footer-link-up">↑</button>
+          <button type="button" class="btn-footer-link-down">↓</button>
+        </div>
+      </div>
+
+      <label>Texto</label>
+      <input id="global-footer-link-text-${n}" value="${item.texto || ''}">
+
+      <label>Link</label>
+      <input id="global-footer-link-url-${n}" value="${item.link || '#'}">
+
+      <button class="btn ghost btn-remove-footer-link" type="button">
+        Remover link
+      </button>
+    </div>
+  `;
+}
+
+function renderizarMenuGlobal(menu = []) {
+  const primeiroItemExistente =
+    document.querySelector('.global-menu-item');
+
+  const container =
+    primeiroItemExistente?.parentElement ||
+    document.getElementById('global-menu-items') ||
+    document.getElementById('global-menu-list');
+
+  if (!container) return;
+
+  const itensPadrao = [
+    { texto: 'Início', link: './index.html', destaque: false, novaAba: false },
+    { texto: 'História', link: './historia.html', destaque: false, novaAba: false },
+    { texto: 'Direção', link: './direcao.html', destaque: false, novaAba: false },
+    { texto: 'Professores', link: './professores.html', destaque: false, novaAba: false },
+    { texto: 'Corpo de Alunos', link: './corpo-alunos.html', destaque: false, novaAba: false },
+    { texto: '🏆 Interclasse', link: './interclasse.html', destaque: false, novaAba: false },
+    { texto: 'Processo Seletivo', link: './processo-seletivo.html', destaque: false, novaAba: false },
+    { texto: 'Notícias', link: './noticias.html', destaque: false, novaAba: false },
+    { texto: 'Galeria', link: './galeria.html', destaque: false, novaAba: false },
+    { texto: 'Contato', link: './contato.html', destaque: false, novaAba: false }
+  ];
+
+  const itens = Array.isArray(menu) && menu.length
+    ? menu
+    : itensPadrao;
+
+  container.innerHTML = itens
+    .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+    .map((item, index) =>
+      montarItemMenuGlobal(index + 1, item)
+    )
+    .join('');
+
+  ligarEventosIdentidadeVisual();
+  aplicarIdentidadeNaPreview();
+}
+
+function renderizarFooterLinksGlobal(links = []) {
+  const container =
+    document.getElementById('global-footer-links') ||
+    document.getElementById('global-footer-link-items');
+
+  if (!container) return;
+
+  const itens = Array.isArray(links) && links.length
+    ? links
+    : [
+        { texto: 'Início', link: './index.html' },
+        { texto: 'História', link: './historia.html' },
+        { texto: 'Contato', link: './contato.html' }
+      ];
+
+  container.innerHTML = itens.map((item, index) =>
+    montarItemFooterGlobal(index + 1, item)
+  ).join('');
+
+  ligarEventosIdentidadeVisual();
+}
+
+function hidratarMenuGlobalDireto(menu = []) {
+  const itens = [...document.querySelectorAll('.global-menu-item')];
+
+  menu
+    .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+    .forEach((item, index) => {
+      const box = itens[index];
+      if (!box) return;
+
+      const texto = box.querySelector('.global-menu-text');
+      const link = box.querySelector('.global-menu-link');
+      const destaque = box.querySelector('.global-menu-featured');
+      const novaAba =
+        box.querySelector('.global-menu-newtab') ||
+        box.querySelector('.global-menu-blank');
+
+      if (texto) texto.value = item.texto || '';
+      if (link) link.value = item.link || '#';
+      if (destaque) destaque.checked = !!item.destaque;
+      if (novaAba) novaAba.checked = !!item.novaAba;
+    });
+
+  aplicarIdentidadeNaPreview();
+}
+
+function coletarMenuGlobal() {
+  const itens = [...document.querySelectorAll('.global-menu-item')];
+
+  return itens.map((box, index) => {
+    return {
+      ordem: index,
+
+      texto:
+        box.querySelector('.global-menu-text')?.value ||
+        box.querySelectorAll('input')[0]?.value ||
+        '',
+
+      link:
+        box.querySelector('.global-menu-link')?.value ||
+        box.querySelectorAll('input')[1]?.value ||
+        '#',
+
+      destaque:
+        box.querySelector('.global-menu-featured')?.checked ||
+        false,
+
+      novaAba:
+        box.querySelector('.global-menu-newtab')?.checked ||
+        box.querySelector('.global-menu-blank')?.checked ||
+        false
+    };
+  }).filter(item => item.texto.trim());
+}
+
+function coletarLinksFooterGlobal() {
+  const itens = [...document.querySelectorAll('.global-footer-link-item')];
+
+  return itens.map((box, index) => {
+    const i = box.dataset.footerLinkIndex;
+
+    return {
+      ordem: index,
+      texto: getInput(`global-footer-link-text-${i}`)?.value || '',
+      link: getInput(`global-footer-link-url-${i}`)?.value || '#'
+    };
+  }).filter(item => item.texto.trim());
+}
+
+function moverElementoIdentidade(botao, direcao) {
+  const item =
+    botao.closest('.global-menu-item') ||
+    botao.closest('.global-footer-link-item');
+
+  if (!item) return;
+
+  if (direcao === 'up' && item.previousElementSibling) {
+    item.parentNode.insertBefore(item, item.previousElementSibling);
+  }
+
+  if (direcao === 'down' && item.nextElementSibling) {
+    item.parentNode.insertBefore(item.nextElementSibling, item);
+  }
+
+  aplicarIdentidadeNaPreview();
+}
+
+function ligarEventosIdentidadeVisual() {
+  document.querySelectorAll('.btn-remove-menu-item').forEach(btn => {
+    btn.onclick = () => {
+      btn.closest('.global-menu-item')?.remove();
+      aplicarIdentidadeNaPreview();
+    };
+  });
+
+  document.querySelectorAll('.btn-menu-up').forEach(btn => {
+    btn.onclick = () => moverElementoIdentidade(btn, 'up');
+  });
+
+  document.querySelectorAll('.btn-menu-down').forEach(btn => {
+    btn.onclick = () => moverElementoIdentidade(btn, 'down');
+  });
+
+  document.querySelectorAll('.btn-remove-footer-link').forEach(btn => {
+    btn.onclick = () => {
+      btn.closest('.global-footer-link-item')?.remove();
+      aplicarIdentidadeNaPreview();
+    };
+  });
+
+  document.querySelectorAll('.btn-footer-link-up').forEach(btn => {
+    btn.onclick = () => moverElementoIdentidade(btn, 'up');
+  });
+
+  document.querySelectorAll('.btn-footer-link-down').forEach(btn => {
+    btn.onclick = () => moverElementoIdentidade(btn, 'down');
+  });
+
+  document
+    .querySelectorAll('.global-menu-item input, .global-footer-link-item input')
+    .forEach(input => {
+      input.oninput = aplicarIdentidadeNaPreview;
+      input.onchange = aplicarIdentidadeNaPreview;
+    });
+}
+
+document.getElementById('btn-add-global-menu-item')?.addEventListener('click', () => {
+  const container =
+    document.getElementById('global-menu-items') ||
+    document.getElementById('global-menu-list');
+
+  if (!container) return;
+
+  const novo = Date.now();
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = montarItemMenuGlobal(novo, {
+    texto: 'Novo item',
+    link: '#',
+    destaque: false,
+    novaAba: false
+  });
+
+  container.appendChild(wrap.firstElementChild);
+
+  ligarEventosIdentidadeVisual();
+  aplicarIdentidadeNaPreview();
+});
+
+document.getElementById('btn-add-global-footer-link')?.addEventListener('click', () => {
+  const container =
+    document.getElementById('global-footer-links') ||
+    document.getElementById('global-footer-link-items');
+
+  if (!container) return;
+
+  const novo = Date.now();
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = montarItemFooterGlobal(novo, {
+    texto: 'Novo link',
+    link: '#'
+  });
+
+  container.appendChild(wrap.firstElementChild);
+
+  ligarEventosIdentidadeVisual();
+  aplicarIdentidadeNaPreview();
+});
 
 function aplicarIdentidadeNaPreview() {
   const doc = getPreviewDoc();
@@ -14495,13 +14929,22 @@ function aplicarIdentidadeNaPreview() {
   doc.documentElement.style.setProperty('--vermelho', corSecundaria);
   doc.documentElement.style.setProperty('--dourado', corDestaque);
 
-  const logoHeader = getInput('ident-logo-header')?.value?.trim();
-  const brasao = getInput('ident-brasao')?.value?.trim();
+  const logoHeader =
+    getInput('global-header-logo')?.value?.trim() ||
+    getInput('ident-logo-header')?.value?.trim();
+
+  const brasao =
+    getInput('ident-brasao')?.value?.trim();
 
   const brandSeal = doc.querySelector('.brand-seal');
 
   if (brandSeal && brasao) {
-    brandSeal.innerHTML = `<img src="${brasao}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">`;
+    brandSeal.innerHTML = `
+      <img
+        src="${brasao}"
+        style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
+      >
+    `;
   }
 
   const brand = doc.querySelector('.brand');
@@ -14519,6 +14962,58 @@ function aplicarIdentidadeNaPreview() {
 
     brand.prepend(img);
   }
+
+  const brandTitle = doc.querySelector('.brand strong');
+  const brandSubtitle = doc.querySelector('.brand span');
+  const brandSmall = doc.querySelector('.brand small');
+
+  if (brandTitle) {
+    brandTitle.textContent =
+      getInput('global-header-title')?.value ||
+      'COLÉGIO DOM PEDRO II';
+  }
+
+  if (brandSubtitle) {
+    brandSubtitle.textContent =
+      getInput('global-header-subtitle')?.value ||
+      'CAMPUS CZS SUL';
+  }
+
+  if (brandSmall) {
+    brandSmall.textContent =
+      getInput('global-header-small')?.value ||
+      'Unidade de Ensino';
+  }
+
+  const axoriinBtn = doc.querySelector('.btn-axoriin');
+
+  if (axoriinBtn) {
+    axoriinBtn.textContent =
+      getInput('global-header-button-text')?.value ||
+      'Acesso Axoriin';
+
+    axoriinBtn.href =
+      getInput('global-header-button-link')?.value ||
+      'https://axoriin.com.br';
+  }
+
+  const navDesktop = doc.querySelector('.nav');
+  const menu = coletarMenuGlobal();
+
+  if (navDesktop && menu.length) {
+    navDesktop.innerHTML = menu
+      .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+      .map(item => `
+        <a
+          href="${item.link || '#'}"
+          ${item.novaAba ? 'target="_blank" rel="noopener noreferrer"' : ''}
+          class="${item.destaque ? 'menu-featured' : ''}"
+        >
+          ${item.texto || ''}
+        </a>
+      `)
+      .join('');
+  }
 }
 
 [
@@ -14528,7 +15023,13 @@ function aplicarIdentidadeNaPreview() {
   'ident-favicon',
   'ident-cor-primaria',
   'ident-cor-secundaria',
-  'ident-cor-destaque'
+  'ident-cor-destaque',
+  'global-header-title',
+  'global-header-subtitle',
+  'global-header-small',
+  'global-header-logo',
+  'global-header-button-text',
+  'global-header-button-link'
 ].forEach(id => {
   document.getElementById(id)?.addEventListener('input', aplicarIdentidadeNaPreview);
 });
@@ -14586,105 +15087,115 @@ document.getElementById('upload-identidade-file')?.addEventListener('change', as
   }
 });
 
-document.getElementById('btn-save-identidade')?.addEventListener('click', async () => {
+document.getElementById('btn-save-identidade')?.addEventListener('click', async (event) => {
+  event.preventDefault();
+
+  const menuGlobal = [...document.querySelectorAll('.global-menu-item')]
+    .map((box, index) => ({
+      ordem: index,
+      texto: box.querySelector('.global-menu-text')?.value || '',
+      link: box.querySelector('.global-menu-link')?.value || '#',
+      destaque: box.querySelector('.global-menu-featured')?.checked || false,
+      novaAba:
+        box.querySelector('.global-menu-newtab')?.checked ||
+        box.querySelector('.global-menu-blank')?.checked ||
+        false
+    }))
+    .filter(item => item.texto.trim());
+
+  const footerLinks = [...document.querySelectorAll('.global-footer-link-item')]
+    .map((box, index) => ({
+      ordem: index,
+      texto: box.querySelector('.global-footer-link-text')?.value || '',
+      link: box.querySelector('.global-footer-link-url')?.value || '#'
+    }))
+    .filter(item => item.texto.trim());
+
+  console.log('[IDENTIDADE] Menu enviado:', menuGlobal);
 
   aplicarIdentidadeNaPreview();
 
-
-  const payload = {
-  logoUrl:
-    getInput('ident-logo-header')?.value || '',
-
-  brasaoUrl:
-    getInput('ident-brasao')?.value || '',
-
-  faviconUrl:
-    getInput('ident-favicon')?.value || '',
-
-  corPrimaria:
-    getInput('ident-cor-primaria')?.value || '#061a35',
-
-  corSecundaria:
-    getInput('ident-cor-secundaria')?.value || '#b9151b',
-
-  corDestaque:
-    getInput('ident-cor-destaque')?.value || '#f5b51b',
-
-  layoutGlobal: {
-      header: {
-        titulo:
-          getInput('global-header-title')?.value || '',
-
-        subtitulo:
-          getInput('global-header-subtitle')?.value || '',
-
-        descricaoPequena:
-          getInput('global-header-small')?.value || '',
-
-        logo:
-          getInput('global-header-logo')?.value || '',
-
-        botaoTexto:
-          getInput('global-header-button-text')?.value || '',
-
-        botaoLink:
-          getInput('global-header-button-link')?.value || ''
-      },
-
-      menu: coletarMenuGlobal(),
-
-      footerLinks: coletarLinksFooterGlobal()
-    }
-  };
-
   try {
+    const configAtualRes = await fetch(`${API_ADMIN}/config`, {
+      cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('site_cms_token')}`
+      }
+    });
+
+    const configAtualData = await configAtualRes.json();
+    const configAtual = configAtualData?.config || {};
+
+    const payload = {
+      ...configAtual,
+
+      logoUrl: getInput('ident-logo-header')?.value || '',
+      brasaoUrl: getInput('ident-brasao')?.value || '',
+      logoFooterUrl: getInput('ident-logo-footer')?.value || '',
+      faviconUrl: getInput('ident-favicon')?.value || '',
+
+      corPrimaria: getInput('ident-cor-primaria')?.value || '#061a35',
+      corSecundaria: getInput('ident-cor-secundaria')?.value || '#b9151b',
+      corDestaque: getInput('ident-cor-destaque')?.value || '#f5b51b',
+
+      layoutGlobal: {
+        ...(configAtual.layoutGlobal || {}),
+
+        header: {
+          ...(configAtual.layoutGlobal?.header || {}),
+
+          titulo: getInput('global-header-title')?.value || '',
+          subtitulo: getInput('global-header-subtitle')?.value || '',
+          descricaoPequena: getInput('global-header-small')?.value || '',
+          logo: getInput('global-header-logo')?.value || '',
+          botaoTexto: getInput('global-header-button-text')?.value || '',
+          botaoLink: getInput('global-header-button-link')?.value || ''
+        },
+
+        menu: menuGlobal,
+        footerLinks
+      }
+    };
+
+    console.log('[IDENTIDADE] Payload enviado:', payload);
 
     const res = await fetch(`${API_ADMIN}/config`, {
       method: 'PUT',
-
       headers: {
         'Content-Type': 'application/json',
-
-        Authorization:
-          `Bearer ${localStorage.getItem('site_cms_token')}`
+        Authorization: `Bearer ${localStorage.getItem('site_cms_token')}`
       },
-
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
     if (!data.ok) {
-      throw new Error(
-        data.erro ||
-        'Erro ao salvar identidade visual.'
-      );
+      throw new Error(data.erro || 'Erro ao salvar identidade visual.');
     }
 
-    showToast(
-      'Identidade visual salva com sucesso.'
-    );
+    console.log('[IDENTIDADE] Config salva no Mongo:', data.config);
+
+    showToast('Identidade visual salva com sucesso.');
+
+    // Não recarregar aqui, pois estava trazendo configuração antiga
+// await carregarConfig();
+
+aplicarIdentidadeNaPreview();
+aplicarLayoutGlobalNaPreview();
 
   } catch (err) {
-
     console.error(err);
-
-    showToast(
-      err.message ||
-      'Erro ao salvar identidade visual.'
-    );
+    showToast(err.message || 'Erro ao salvar identidade visual.');
   }
 });
-document.getElementById('btn-logout')?.addEventListener('click', () => {
 
+document.getElementById('btn-logout')?.addEventListener('click', () => {
   localStorage.removeItem('site_cms_token');
   localStorage.removeItem('site_cms_usuario');
 
-  window.location.href =
-    '/admin-site/login.html';
-
+  window.location.href = '/admin-site/login.html';
 });
-
 /* =========================
    ADICIONAR NOVO BLOCO
    ========================= */
