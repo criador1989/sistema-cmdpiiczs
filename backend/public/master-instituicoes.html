@@ -772,9 +772,15 @@
                 <div class="empty-note">Nenhuma turma carregada.</div>
               </div>
 
-              <button class="btn btn-primary" id="btnGerarAcessosLote" style="width:100%;">
-                Gerar acessos automaticamente
-              </button>
+              <div style="display:grid; gap:8px;">
+  <button class="btn btn-primary" id="btnGerarAcessosLote" style="width:100%;">
+    Gerar acessos automaticamente
+  </button>
+
+  <button class="btn" id="btnEnviarAcessosEmail" style="width:100%;">
+    Enviar acessos por e-mail
+  </button>
+</div>
 
               <div class="msg" id="msgAcessoLote"></div>
 
@@ -987,6 +993,7 @@
     const btnDesmarcarTodos = document.getElementById('btnDesmarcarTodos');
     const listaAlunosAcesso = document.getElementById('listaAlunosAcesso');
     const btnGerarAcessosLote = document.getElementById('btnGerarAcessosLote');
+    const btnEnviarAcessosEmail = document.getElementById('btnEnviarAcessosEmail');
     const msgAcessoLote = document.getElementById('msgAcessoLote');
     const resultadoAcessos = document.getElementById('resultadoAcessos');
     const btnBaixarRelatorioAcessos = document.getElementById('btnBaixarRelatorioAcessos');
@@ -1203,7 +1210,7 @@
         return `
           <div class="student-item">
             <div>
-              <input type="checkbox" class="chk-aluno-acesso" data-id="${escapeHtml(alunoId)}" ${temAcesso ? 'disabled' : ''}>
+              <input type="checkbox" class="chk-aluno-acesso" data-id="${escapeHtml(alunoId)}">
             </div>
             <div class="student-main">
               <div class="student-name">${escapeHtml(aluno.nome || 'Aluno')}</div>
@@ -1222,8 +1229,7 @@
                   type="email"
                   placeholder="responsavel@exemplo.com"
                   value="${escapeHtml(emailResponsavel)}"
-                  ${temAcesso ? 'disabled' : ''}
-                />
+                  />
               </div>
 
               <div class="student-actions">
@@ -1732,6 +1738,91 @@ if (atualizados.length) {
         btnGerarAcessosLote.textContent = 'Gerar acessos automaticamente';
       }
     });
+
+    btnEnviarAcessosEmail.addEventListener('click', async () => {
+  showMsg(msgAcessoLote, '', '');
+  renderResultadoAcessos();
+
+  if (!selectedStudentInst?.slug || !selectedStudentInst?.id) {
+    showMsg(msgAcessoLote, 'warn', 'Selecione primeiro a instituição.');
+    return;
+  }
+
+  const selecionados = getSelecionadosParaGerar();
+
+  if (!selecionados.length) {
+    showMsg(msgAcessoLote, 'warn', 'Selecione ao menos um aluno.');
+    return;
+  }
+
+  const comEmailValido = selecionados.filter(item =>
+    item.emailResponsavel && isEmailBasico(item.emailResponsavel)
+  );
+
+  const semEmail = selecionados.filter(item =>
+    !item.emailResponsavel || !isEmailBasico(item.emailResponsavel)
+  );
+
+  if (!comEmailValido.length) {
+    showMsg(msgAcessoLote, 'warn', 'Nenhum dos alunos selecionados possui e-mail válido do responsável.');
+    return;
+  }
+
+  if (semEmail.length) {
+    const confirmar = confirm(
+      `${semEmail.length} aluno(s) selecionado(s) estão sem e-mail válido do responsável.\n\n` +
+      `Deseja enviar apenas para os alunos que possuem e-mail válido?`
+    );
+
+    if (!confirmar) return;
+  }
+
+  const confirmarEnvio = confirm(
+    `Atenção: o sistema irá REDEFINIR a senha do aluno e do responsável antes de enviar o e-mail.\n\n` +
+    `As senhas anteriores deixarão de funcionar.\n\n` +
+    `Deseja continuar?`
+  );
+
+  if (!confirmarEnvio) return;
+
+  btnEnviarAcessosEmail.disabled = true;
+  btnEnviarAcessosEmail.innerHTML = '<span class="spinner"></span>Enviando e-mails...';
+
+  try {
+    const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/enviar-acessos-email`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ alunos: comEmailValido })
+    });
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) {
+      showMsg(msgAcessoLote, 'err', data?.mensagem || 'Erro ao enviar acessos por e-mail.');
+      if (data?.erro) console.error('[enviar-acessos-email]', data.erro);
+      return;
+    }
+
+    showMsg(msgAcessoLote, 'ok', data?.mensagem || 'Envio concluído.');
+
+    renderResultadoAcessos({
+      acessos: data.acessos || [],
+      reutilizados: [],
+      ignorados: data.ignorados || [],
+      acessosResponsaveis: data.acessosResponsaveis || [],
+      responsaveisReutilizados: [],
+      responsaveisIgnorados: data.erros || []
+    });
+
+  } catch (err) {
+    showMsg(msgAcessoLote, 'err', 'Erro de conexão ao enviar acessos por e-mail.');
+  } finally {
+    btnEnviarAcessosEmail.disabled = false;
+    btnEnviarAcessosEmail.textContent = 'Enviar acessos por e-mail';
+  }
+});
+
 
     btnRefresh.addEventListener('click', () => loadList());
     btnBuscar.addEventListener('click', () => renderFiltered());

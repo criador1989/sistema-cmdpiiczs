@@ -11,6 +11,7 @@ const Notificacao = require('../../models/Notificacao');
 const Observacao = require('../../models/Observacao');
 const ConfiguracaoDisciplinar = require('../../models/ConfiguracaoDisciplinar');
 const { getPresetBase } = require('../../utils/configuracaoDisciplinar');
+const { sendMail } = require('../../utils/mailer');
 
 function normSlug(s) {
   return String(s || '')
@@ -971,6 +972,298 @@ totalResponsaveisIgnorados,
 
     return res.status(500).json({
       mensagem: 'Erro ao gerar acessos dos alunos.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+router.post('/instituicoes/:id/enviar-acessos-email', requireSuperAdmin, async (req, res) => {
+  try {
+    const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
+
+    const instituicaoId = String(req.params.id || '').trim();
+    const alunosPayload = Array.isArray(req.body?.alunos) ? req.body.alunos : [];
+
+    if (!mongoose.isValidObjectId(instituicaoId)) {
+      return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    }
+
+    if (!alunosPayload.length) {
+      return res.status(400).json({ mensagem: 'Selecione pelo menos um aluno.' });
+    }
+
+    const instituicao = await Instituicao.findById(instituicaoId)
+      .select('_id nome sigla slug')
+      .lean();
+
+    if (!instituicao) {
+      return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+    }
+
+    const ids = alunosPayload
+      .map(a => String(a?.alunoId || '').trim())
+      .filter(id => mongoose.isValidObjectId(id));
+
+    if (!ids.length) {
+      return res.status(400).json({ mensagem: 'Nenhum aluno válido foi enviado.' });
+    }
+
+    const emailPorAluno = new Map();
+
+    for (const item of alunosPayload) {
+      const alunoId = String(item?.alunoId || '').trim();
+      const emailResponsavel = normalizeEmail(item?.emailResponsavel || '');
+
+      if (alunoId) {
+        emailPorAluno.set(alunoId, emailResponsavel);
+      }
+    }
+
+    const alunos = await Aluno.find({
+      _id: { $in: ids },
+      instituicao: instituicaoId
+    })
+      .select('_id nome turma codigoAcesso usuarioId contatos instituicao')
+      .lean();
+
+    const acessos = [];
+    const acessosResponsaveis = [];
+    const ignorados = [];
+    const erros = [];
+
+    const portal = `/login-aluno.html?t=${encodeURIComponent(instituicao.slug || '')}`;
+
+    for (const aluno of alunos) {
+      const alunoId = String(aluno._id);
+
+      let emailResponsavel = emailPorAluno.get(alunoId) || '';
+
+      if (!emailResponsavel) {
+        emailResponsavel = normalizeEmail(
+          aluno?.contatos?.emailResponsavel ||
+          aluno?.emailResponsavel ||
+          ''
+        );
+      }
+
+      if (!isValidEmail(emailResponsavel)) {
+        ignorados.push({
+          alunoId,
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          motivo: 'E-mail do responsável inválido ou ausente.'
+        });
+        continue;
+      }
+
+      const codigoAcesso = String(aluno.codigoAcesso || '').trim().toUpperCase();
+
+      if (!codigoAcesso) {
+        ignorados.push({
+          alunoId,
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          motivo: 'Aluno ainda não possui código de acesso. Gere o acesso antes de enviar por e-mail.'
+        });
+        continue;
+      }
+
+      const usuarioAluno = await Usuario.findOne({
+        instituicao: instituicaoId,
+        alunoId: aluno._id,
+        tipo: 'aluno'
+      }).select('+senha nome email tipo portal alunoId instituicao ativo');
+
+      if (!usuarioAluno) {
+        ignorados.push({
+          alunoId,
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          motivo: 'Aluno ainda não possui usuário de acesso. Gere o acesso antes de enviar por e-mail.'
+        });
+        continue;
+      }
+
+      const usuarioResponsavel = await Usuario.findOne({
+        instituicao: instituicaoId,
+        alunoId: aluno._id,
+        tipo: 'responsavel',
+        email: emailResponsavel
+      }).select('+senha nome email tipo portal alunoId instituicao ativo');
+
+      if (!usuarioResponsavel) {
+        ignorados.push({
+          alunoId,
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          motivo: 'Responsável ainda não possui usuário de acesso. Gere o acesso antes de enviar por e-mail.'
+        });
+        continue;
+      }
+
+      const novaSenhaAluno = gerarSenhaSimples();
+      const novaSenhaResponsavel = gerarSenhaSimples();
+
+      usuarioAluno.senha = novaSenhaAluno;
+      usuarioAluno.ativo = true;
+      usuarioAluno.emailVerificado = true;
+      usuarioAluno.emailVerificadoEm = usuarioAluno.emailVerificadoEm || new Date();
+      await usuarioAluno.save();
+
+      usuarioResponsavel.senha = novaSenhaResponsavel;
+      usuarioResponsavel.ativo = true;
+      usuarioResponsavel.emailVerificado = true;
+      usuarioResponsavel.emailVerificadoEm = usuarioResponsavel.emailVerificadoEm || new Date();
+      await usuarioResponsavel.save();
+
+      await Aluno.updateOne(
+        { _id: aluno._id, instituicao: instituicaoId },
+        {
+          $set: {
+            codigoAcesso,
+            'contatos.emailResponsavel': emailResponsavel
+          }
+        }
+      );
+
+      const nomeInstituicao = instituicao.nome || instituicao.sigla || 'Instituição';
+      const siglaInstituicao = instituicao.sigla || instituicao.slug || 'Axoriin';
+
+      const subject = `Axoriin • Credenciais de acesso — ${siglaInstituicao}`;
+
+      const text = [
+        `Prezados responsáveis,`,
+        ``,
+        `As credenciais de acesso ao Portal do Aluno e Responsável foram atualizadas.`,
+        ``,
+        `Portal: ${portal}`,
+        ``,
+        `DADOS DO ALUNO`,
+        `Aluno: ${aluno.nome}`,
+        `Turma: ${normalizarTurma(aluno.turma) || '—'}`,
+        `Código de acesso: ${codigoAcesso}`,
+        `Nova senha do aluno: ${novaSenhaAluno}`,
+        ``,
+        `DADOS DO RESPONSÁVEL`,
+        `E-mail do responsável: ${emailResponsavel}`,
+        `Nova senha do responsável: ${novaSenhaResponsavel}`,
+        ``,
+        `Atenção: as senhas anteriores deixam de funcionar a partir deste envio.`,
+        ``,
+        `Atenciosamente,`,
+        `${nomeInstituicao}`,
+        `Sistema Axoriin`
+      ].join('\n');
+
+      const html = `
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#222">
+          <p>Prezados responsáveis,</p>
+
+          <p>
+            As credenciais de acesso ao <strong>Portal do Aluno e Responsável</strong>
+            foram atualizadas.
+          </p>
+
+          <p>
+            <strong>Portal:</strong><br>
+            <a href="${portal}">${portal}</a>
+          </p>
+
+          <h3 style="margin-top:18px;">Dados do aluno</h3>
+          <ul>
+            <li><strong>Aluno:</strong> ${aluno.nome}</li>
+            <li><strong>Turma:</strong> ${normalizarTurma(aluno.turma) || '—'}</li>
+            <li><strong>Código de acesso:</strong> ${codigoAcesso}</li>
+            <li><strong>Nova senha do aluno:</strong> ${novaSenhaAluno}</li>
+          </ul>
+
+          <h3 style="margin-top:18px;">Dados do responsável</h3>
+          <ul>
+            <li><strong>E-mail do responsável:</strong> ${emailResponsavel}</li>
+            <li><strong>Nova senha do responsável:</strong> ${novaSenhaResponsavel}</li>
+          </ul>
+
+          <p>
+            <strong>Atenção:</strong> as senhas anteriores deixam de funcionar a partir deste envio.
+          </p>
+
+          <p>
+            Atenciosamente,<br>
+            ${nomeInstituicao}<br>
+            Sistema Axoriin
+          </p>
+        </div>
+      `;
+
+      try {
+        await sendMail({
+          to: emailResponsavel,
+          subject,
+          text,
+          html
+        });
+
+        acessos.push({
+          alunoId,
+          usuarioId: String(usuarioAluno._id),
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          codigoAcesso,
+          senha: novaSenhaAluno,
+          status: 'senha_redefinida',
+          observacao: 'Senha do aluno redefinida e enviada por e-mail.'
+        });
+
+        acessosResponsaveis.push({
+          alunoId,
+          usuarioId: String(usuarioResponsavel._id),
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          codigoAcesso,
+          senha: novaSenhaResponsavel,
+          status: 'senha_redefinida',
+          observacao: 'Senha do responsável redefinida e enviada por e-mail.'
+        });
+      } catch (e) {
+        erros.push({
+          alunoId,
+          nome: aluno.nome,
+          turma: normalizarTurma(aluno.turma),
+          email: emailResponsavel,
+          codigoAcesso,
+          motivo: `Senhas redefinidas, mas houve falha no envio do e-mail: ${String(e.message || e)}`
+        });
+      }
+    }
+
+    return res.json({
+      ok: true,
+      mensagem:
+        `Envio concluído. ` +
+        `E-mails enviados: ${acessosResponsaveis.length}. ` +
+        `Ignorados: ${ignorados.length}. ` +
+        `Erros: ${erros.length}.`,
+      totalEnviados: acessosResponsaveis.length,
+      totalIgnorados: ignorados.length,
+      totalErros: erros.length,
+      acessos,
+      acessosResponsaveis,
+      ignorados,
+      erros,
+      links: buildInstitutionLinks(instituicao.slug || '')
+    });
+
+  } catch (e) {
+    console.error('[masterInstituicoes][enviar-acessos-email]', e);
+
+    return res.status(500).json({
+      mensagem: 'Erro ao enviar acessos por e-mail.',
       erro: String(e.message || e)
     });
   }
