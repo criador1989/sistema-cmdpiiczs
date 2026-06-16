@@ -669,6 +669,8 @@
     let chartInstance = null;
     let usuarioLogado = null;
     let isProfessorView = false;
+    let isResponsavelView = false;
+    let isReadonlyView = false;
 
     function toast(msg, type='ok', title='') {
       const box = byId('toastBox');
@@ -794,28 +796,59 @@
     }
 
     function aplicarPermissoesUI(){
-      const hideForProfessor = [
-        'btnTrocarFoto',
-        'btnVerDados',
-        'btnEditar',
-        'btnPDFTop',
-        'badgeCodigo',
-        'badgeId',
-        'kvCodigoCard',
-        'qrWrap',
-        'editorAluno',
-        'dadosModal',
-        'attachRow',
-        'aphCard'
-      ];
+  const hideForProfessor = [
+    'btnTrocarFoto',
+    'btnVerDados',
+    'btnEditar',
+    'btnPDFTop',
+    'badgeCodigo',
+    'badgeId',
+    'kvCodigoCard',
+    'qrWrap',
+    'editorAluno',
+    'dadosModal',
+    'attachRow',
+    'aphCard'
+  ];
 
-      hideForProfessor.forEach(id => toggle(byId(id), !isProfessorView));
+  const hideForResponsavel = [
+    'btnTrocarFoto',
+    'btnEditar',
+    'btnPDFTop',
+    'badgeCodigo',
+    'badgeId',
+    'kvCodigoCard',
+    'qrWrap',
+    'editorAluno',
+    'attachRow',
+    'obsEditor',
+    'aphCard'
+  ];
 
-      if (isProfessorView) {
-        byId('btnVoltarPainel')?.classList.remove('hidden');
-        byId('fotoBox').innerHTML = 'Sem foto';
-      }
+  if (isProfessorView) {
+    hideForProfessor.forEach(id => toggle(byId(id), false));
+    byId('btnVoltarPainel')?.classList.remove('hidden');
+    byId('fotoBox').innerHTML = 'Sem foto';
+    return;
+  }
+
+  if (isResponsavelView) {
+    hideForResponsavel.forEach(id => toggle(byId(id), false));
+
+    const btnVoltarLista = byId('btnVoltarLista');
+    if (btnVoltarLista) btnVoltarLista.classList.add('hidden');
+
+    const btnVoltarPainel = byId('btnVoltarPainel');
+    if (btnVoltarPainel) {
+      btnVoltarPainel.classList.remove('hidden');
+      btnVoltarPainel.textContent = 'Sair';
     }
+
+    return;
+  }
+
+  [...hideForProfessor, ...hideForResponsavel].forEach(id => toggle(byId(id), true));
+}
 
     async function api(path, opts = {}){
       const method = (opts.method || 'GET').toUpperCase();
@@ -905,7 +938,7 @@
     }
 
     async function fetchAphCount(){
-      if(!alunoId || isProfessorView) return;
+      if(!alunoId || isReadonlyView) return;
       try{
         const { total = 0 } = await api(`/aph/atendimentos/count/${alunoId}`);
         byId('aphCount').textContent = String(total ?? 0);
@@ -918,11 +951,11 @@
       const ver  = byId('btnVerAtendimentos');
       const novo = byId('btnNovoAtendimento');
       if (ver) ver.addEventListener('click', ()=>{
-        if (!alunoId || isProfessorView) return;
+        if (!alunoId || isReadonlyView) return;
         location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
       });
       if (novo) novo.addEventListener('click', ()=>{
-        if (!alunoId || isProfessorView) return;
+        if (!alunoId || isReadonlyView) return;
         location.href = `/aph-atendimento.html?alunoId=${encodeURIComponent(alunoId)}`;
       });
     }
@@ -1049,7 +1082,12 @@
       const { aluno, notificacoes = [], observacoes = [] } = payload || {};
       alunoAtual = aluno;
 
+      const tipoUsuario = String(usuarioLogado?.tipo || usuarioLogado?.perfil || '').toLowerCase();
+
       isProfessorView = detectProfessorView(usuarioLogado, aluno);
+      isResponsavelView = tipoUsuario === 'responsavel';
+      isReadonlyView = isProfessorView || isResponsavelView;
+
       aplicarPermissoesUI();
 
       byId('alunoNome').textContent = aluno?.nome ?? '—';
@@ -1057,9 +1095,9 @@
       byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
       byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
 
-      if (!isProfessorView) {
-        byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
-      }
+      if (!isReadonlyView) {
+  byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
+}
 
       byId('kvTurma').textContent = aluno?.turma ?? '—';
       byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
@@ -1129,7 +1167,7 @@
             '</div>'
           ) : '';
 
-          const actionsHtml = isProfessorView ? '' : (
+          const actionsHtml = isReadonlyView ? '' : (
             '<div class="actions">' +
               '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
               '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
@@ -1171,7 +1209,7 @@
           const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
           const dataNStr = dataN ? dataN.toLocaleDateString('pt-BR') : '—';
 
-          const notifActions = isProfessorView ? '' : (
+          const notifActions = isReadonlyView ? '' : (
             '<div class="actions" style="margin-top:10px">' +
               '<a class="iconbtn" href="/notificacao.html?id=' + encodeURIComponent(idN) + '" title="Abrir notificação">Abrir</a>' +
               '<a class="iconbtn" href="/api/pdf/' + encodeURIComponent(idN) + '" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>' +
@@ -1200,7 +1238,7 @@
         }).join('');
       }
 
-      if (!isProfessorView) {
+      if (!isReadonlyView) {
         try { await mostrarQRCode(true); } catch {}
         try { await fetchAphCount(); } catch {}
       }
@@ -1222,16 +1260,18 @@
     }
 
     async function salvarObservacao(){
+        if (isResponsavelView) return;
+        
       const texto = byId('textoObservacao').value.trim();
       if(!texto) return toast('Digite algo na observação.', 'err', 'Atenção');
 
-      if (isProfessorView) {
+      if (isReadonlyView) {
         const inputFiles = byId('inputObsFiles');
         if (inputFiles) inputFiles.value = '';
       }
 
       const inputFiles = byId('inputObsFiles');
-      const files = (!isProfessorView && inputFiles?.files) ? Array.from(inputFiles.files) : [];
+      const files = (!isReadonlyView && inputFiles?.files) ? Array.from(inputFiles.files) : [];
 
       if (files.length) {
         try{
@@ -1292,7 +1332,7 @@
     }
 
     async function excluirObs(obsId){
-      if(isProfessorView) return;
+      if(isReadonlyView) return;
       if(!confirm('Deseja excluir esta observação?')) return;
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1302,7 +1342,7 @@
     }
 
     function editarObs(obsId, btn){
-      if (isProfessorView) return;
+      if (isReadonlyView) return;
       const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
       card.innerHTML =
@@ -1329,7 +1369,7 @@
     }
 
     function abrirEditor(){
-      if(!alunoAtual || isProfessorView) return;
+      if(!alunoAtual || isReadonlyView) return;
 
       byId('editorAluno').style.display = 'block';
       byId('edNome').value   = alunoAtual.nome || '';
@@ -1355,7 +1395,7 @@
     function fecharEditor(){ byId('editorAluno').style.display = 'none'; }
 
     async function salvarEdicao(){
-      if(!alunoAtual || isProfessorView) return;
+      if(!alunoAtual || isReadonlyView) return;
 
       const btn = byId('btnSalvarEd');
       const oldText = btn ? btn.textContent : '';
@@ -1430,11 +1470,11 @@
       const btnTrocarFoto = byId('btnTrocarFoto');
       const inputFoto = byId('inputFoto');
       if(btnTrocarFoto) btnTrocarFoto.addEventListener('click', function(){
-        if (isProfessorView) return;
+        if (isReadonlyView) return;
         inputFoto.click();
       });
       if(inputFoto) inputFoto.addEventListener('change', async function(){
-        if (isProfessorView) return;
+        if (isReadonlyView) return;
         const file = inputFoto.files && inputFoto.files[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
@@ -1487,7 +1527,7 @@
     });
 
     async function habilitarLinkPublico(){
-      if (isProfessorView) return;
+      if (isReadonlyView) return;
       try{
         byId('qrStatus').textContent = 'Gerando link...';
         const r = await api('/alunos/' + alunoId + '/public/enable', {
@@ -1503,7 +1543,7 @@
     }
 
     async function mostrarQRCode(silent){
-      if (isProfessorView) return;
+      if (isReadonlyView) return;
       try{
         const r = await api('/alunos/' + alunoId + '/public/qrcode', { method:'GET' });
         preencherQR(r);
@@ -1515,7 +1555,7 @@
     }
 
     async function desabilitarLinkPublico(){
-      if (isProfessorView) return;
+      if (isReadonlyView) return;
       if(!confirm('Deseja desabilitar o link público deste aluno?')) return;
       try{
         await api('/alunos/' + alunoId + '/public/disable', { method:'POST' });
@@ -1559,7 +1599,7 @@
     }
 
     async function gerarLinkTelegram(){
-      if (isProfessorView) return;
+      if (isReadonlyView) return;
       const linkEl = byId('tgLink');
       const copiarBtn = byId('btnCopiarTg');
       linkEl.textContent = 'Gerando...';
@@ -1579,7 +1619,7 @@
     }
 
     function copiarLinkTelegram(){
-      if (isProfessorView) return;
+      if (isReadonlyView) return;
       const url = byId('tgLink').href;
       if(!url || url === '#') return;
       navigator.clipboard?.writeText(url).then(
@@ -1636,7 +1676,7 @@
       const inputFiles = byId('inputObsFiles');
       if (btnAnexar && inputFiles){
         btnAnexar.addEventListener('click', ()=>{
-          if (isProfessorView) return;
+          if (isReadonlyView) return;
           inputFiles.click();
         });
         inputFiles.addEventListener('change', updateAttachHelp);

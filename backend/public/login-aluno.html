@@ -532,9 +532,9 @@
         </div>
 
         <p class="welcome-small">Bem-vindo(a) ao</p>
-        <h1>Portal do Aluno</h1>
+        <h1>Portal do Aluno e Responsável</h1>
         <p class="hero-lead">
-          Acompanhe suas atividades, notas, comportamento e muito mais!
+          Aluno acessa atividades e estudos. Responsável acompanha a ficha disciplinar do estudante.
         </p>
       </div>
 
@@ -542,7 +542,7 @@
         <div class="secure-card">
           <strong>Acesso seguro</strong>
           <p>
-            Entre com suas credenciais individuais para acessar seu ambiente estudantil no Axoriin.
+            Aluno e responsável possuem acessos diferentes. Use a opção correta antes de entrar.
           </p>
         </div>
       </div>
@@ -554,13 +554,13 @@
           <div class="brand-mark">A</div>
           <div class="brand-text">
             <strong>AXORIIN</strong>
-            <span>Portal do Aluno</span>
+            <span>Portal do Aluno e Responsável</span>
           </div>
         </div>
 
-        <h2 class="form-title">Login do Aluno</h2>
+        <h2 class="form-title">Login do Aluno e Responsável</h2>
         <p class="form-subtitle">
-          Informe suas credenciais para acessar o portal.
+          Aluno: use código de acesso e senha. Responsável: use e-mail e senha.
         </p>
 
         <div id="tenantInfo" class="tenant-box"></div>
@@ -568,15 +568,15 @@
         <form id="formLoginAluno" autocomplete="on">
           <div class="tabs" role="tablist" aria-label="Tipo de acesso">
             <button type="button" class="tab-btn active" id="tabCodigo" data-mode="codigo">
-              Código de Acesso
+              Aluno: Código
             </button>
             <button type="button" class="tab-btn" id="tabEmail" data-mode="email">
-              E-mail
+              Responsável: E-mail
             </button>
           </div>
 
           <div class="field">
-            <label for="login" id="loginLabel">Código de acesso</label>
+            <label for="login" id="loginLabel">Código de acesso do aluno</label>
             <div class="input-wrap">
               <input
                 type="text"
@@ -588,12 +588,12 @@
               />
             </div>
             <div class="hint" id="loginHint">
-              Use o código de acesso fornecido pela escola.
+              Uso exclusivo do aluno. Exemplo: AXR-12345 ou código informado pela escola.
             </div>
           </div>
 
           <div class="field">
-            <label for="senha">Senha</label>
+            <label for="senha">Senha de acesso</label>
             <div class="input-wrap">
               <input
                 type="password"
@@ -740,9 +740,17 @@
           const token = localStorage.getItem(STORAGE.token);
           const usuario = JSON.parse(localStorage.getItem(STORAGE.usuario) || 'null');
 
-          if (token && usuario && usuario.tipo === 'aluno') {
-            window.location.href = buildUrl('painel-aluno.html');
-          }
+          if (token && usuario) {
+  const portalSalvo =
+    usuario.portal ||
+    (usuario.tipo === 'responsavel' ? 'responsavel' : 'aluno');
+
+  const destino = portalSalvo === 'responsavel'
+    ? 'ficha-responsavel.html'
+    : 'painel-aluno.html';
+
+  window.location.href = buildUrl(destino);
+}
         } catch (_) {}
       }
 
@@ -818,27 +826,53 @@
             return;
           }
 
-          localStorage.setItem(STORAGE.token, token);
-          localStorage.setItem(STORAGE.authType, 'aluno');
+          const portalFinal =
+  data.portal ||
+  usuario?.portal ||
+  (usuario?.tipo === 'responsavel' ? 'responsavel' : 'aluno');
 
-          if (usuario) {
-            localStorage.setItem(STORAGE.usuario, JSON.stringify(usuario));
-          }
+localStorage.setItem(STORAGE.token, token);
+localStorage.setItem(STORAGE.authType, portalFinal);
 
-          if (aluno) {
-            localStorage.setItem(STORAGE.aluno, JSON.stringify(aluno));
-          }
+if (usuario) {
+  localStorage.setItem(STORAGE.usuario, JSON.stringify({
+    ...usuario,
+    portal: portalFinal
+  }));
+}
 
-          localStorage.setItem(STORAGE.tenant, tenantFinal);
-          localStorage.setItem('smartclass_tenant', tenantFinal);
+if (aluno) {
+  localStorage.setItem(STORAGE.aluno, JSON.stringify(aluno));
+}
 
-          setFeedback('Login realizado com sucesso. Redirecionando...', 'success');
+localStorage.setItem(STORAGE.tenant, tenantFinal);
+localStorage.setItem('smartclass_tenant', tenantFinal);
 
-          const destino = redirect
-            ? redirect
-            : 'painel-aluno.html';
+setFeedback('Login realizado com sucesso. Redirecionando...', 'success');
 
-          window.location.href = destino + '?t=' + encodeURIComponent(tenantFinal);
+let destino = redirect;
+
+if (!destino) {
+  if (portalFinal === 'responsavel') {
+    const alunoId =
+      aluno?._id ||
+      usuario?.alunoId;
+
+    destino =
+      'ficha-aluno.html?id=' +
+      encodeURIComponent(alunoId);
+  } else {
+    destino = 'painel-aluno.html';
+  }
+}
+
+const separador = destino.includes('?') ? '&' : '?';
+
+window.location.href =
+  destino +
+  separador +
+  't=' +
+  encodeURIComponent(tenantFinal);
         } catch (error) {
           console.error('Erro no login do aluno:', error);
           setFeedback('Erro de conexão ao tentar entrar no portal do aluno.', 'error');

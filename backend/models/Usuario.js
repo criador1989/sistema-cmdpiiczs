@@ -67,7 +67,7 @@ const usuarioSchema = new Schema(
 
     tipo: {
       type: String,
-      enum: ['admin', 'monitor', 'professor', 'aluno'],
+      enum: ['admin', 'monitor', 'professor', 'aluno', 'responsavel'],
       default: 'monitor',
       index: true,
     },
@@ -86,7 +86,7 @@ const usuarioSchema = new Schema(
 
     portal: {
       type: String,
-      enum: ['institucional', 'aluno'],
+      enum: ['institucional', 'aluno', 'responsavel'],
       default: 'institucional',
       index: true,
     },

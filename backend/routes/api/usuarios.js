@@ -17,8 +17,8 @@ const {
 /** =========================
  *  CONFIG DE TIPOS
  *  ========================= */
-const ALLOWED_CREATE_TYPES = ['admin', 'monitor', 'professor', 'aluno'];
-const ALLOWED_FILTER_TYPES = ['admin', 'monitor', 'professor', 'aluno'];
+const ALLOWED_CREATE_TYPES = ['admin', 'monitor', 'professor', 'aluno', 'responsavel'];
+const ALLOWED_FILTER_TYPES = ['admin', 'monitor', 'professor', 'aluno', 'responsavel'];
 
 /** Somente ADMIN */
 function verificarAdmin(req, res, next) {
@@ -43,6 +43,7 @@ function normalizeTipo(tipo) {
 function normalizePortal(portal) {
   const p = String(portal || '').trim().toLowerCase();
   if (p === 'aluno') return 'aluno';
+  if (p === 'responsavel') return 'responsavel';
   return 'institucional';
 }
 
@@ -186,7 +187,12 @@ router.post('/', autenticar, requireTenant, verificarAdmin, async (req, res) => 
       email: emailNorm,
       senha: senhaLimpa,
       tipo: tipoNorm,
-      portal: tipoNorm === 'aluno' ? 'aluno' : 'institucional',
+      portal:
+  tipoNorm === 'aluno'
+    ? 'aluno'
+    : tipoNorm === 'responsavel'
+      ? 'responsavel'
+      : 'institucional',
       instituicao: instId,
       alunoId: alunoRef ? alunoRef._id : null
     });

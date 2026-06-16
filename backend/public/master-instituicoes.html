@@ -514,6 +514,59 @@
       width:100%;
       text-align:left;
     }
+    .modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.modal-card{
+  background:linear-gradient(180deg, rgba(21,40,76,.96), rgba(13,28,54,.98));
+  border:1px solid rgba(170,200,240,.28);
+  border-radius:18px;
+  box-shadow:0 24px 70px rgba(0,0,0,.65);
+  padding:18px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.modal-header h3{
+  margin:0;
+  color:#fff;
+}
+
+.modal-close{
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+}
+
+.access-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+@media(max-width:700px){
+  .access-grid{
+    grid-template-columns:1fr;
+  }
+}
   </style>
 </head>
 
@@ -712,6 +765,7 @@
                 <button class="mini" id="btnCarregarAlunosTurma" type="button">Carregar alunos</button>
                 <button class="mini aluno" id="btnMarcarTodos" type="button">Marcar todos</button>
                 <button class="mini remove" id="btnDesmarcarTodos" type="button">Desmarcar todos</button>
+                <button class="mini primary" id="btnBaixarRelatorioAcessos" type="button">Baixar relatório da turma</button>
               </div>
 
               <div class="list-box" id="listaAlunosAcesso">
@@ -768,6 +822,125 @@
     </div>
   </div>
 
+<!-- ========================================================= -->
+<!-- MODAL GERENCIAR ACESSOS                                   -->
+<!-- ========================================================= -->
+
+<div id="modal-gerenciar-acessos" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:900px;width:95%;">
+    
+    <div class="modal-header">
+      <h3>Gerenciar Acessos</h3>
+      <button type="button" class="modal-close" onclick="fecharModalAcessos()">
+        ✕
+      </button>
+    </div>
+
+    <div id="modal-acessos-loading" style="padding:20px;">
+      Carregando informações...
+    </div>
+
+    <div id="modal-acessos-conteudo" style="display:none;">
+
+      <div class="access-section">
+        <h4>👨‍🎓 Acesso do Aluno</h4>
+
+        <div class="access-grid">
+          <div>
+            <label>Nome</label>
+            <input id="ga-nome-aluno" disabled>
+          </div>
+
+          <div>
+            <label>Turma</label>
+            <input id="ga-turma-aluno" disabled>
+          </div>
+
+          <div>
+            <label>Código de acesso</label>
+            <input id="ga-codigo-aluno" disabled>
+          </div>
+
+          <div>
+            <label>Status</label>
+            <input id="ga-status-aluno" disabled>
+          </div>
+        </div>
+
+        <div class="student-actions" style="margin-top:12px;">
+          <button
+            class="mini aluno"
+            type="button"
+            id="btn-redefinir-senha-aluno-modal">
+            Redefinir senha do aluno
+          </button>
+
+          <button
+            class="mini"
+            type="button"
+            id="btn-copiar-acesso-aluno">
+            Copiar acesso do aluno
+          </button>
+        </div>
+      </div>
+
+      <hr style="margin:18px 0;">
+
+      <div class="access-section">
+        <h4>👨‍👩‍👧 Responsável</h4>
+
+        <div class="access-grid">
+          <div>
+            <label>E-mail do responsável</label>
+            <input id="ga-email-responsavel">
+          </div>
+
+          <div>
+            <label>Status</label>
+            <input id="ga-status-responsavel" disabled>
+          </div>
+        </div>
+
+        <div class="student-actions" style="margin-top:12px;">
+          <button
+            class="mini"
+            type="button"
+            id="btn-salvar-email-responsavel">
+            Salvar e-mail
+          </button>
+
+          <button
+            class="mini"
+            type="button"
+            id="btn-gerar-acesso-responsavel">
+            Gerar acesso do responsável
+          </button>
+
+          <button
+            class="mini aluno"
+            type="button"
+            id="btn-redefinir-senha-responsavel">
+            Redefinir senha do responsável
+          </button>
+
+          <button
+            class="mini"
+            type="button"
+            id="btn-copiar-acesso-responsavel">
+            Copiar acesso do responsável
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="ga-feedback"
+        style="margin-top:15px;font-size:.92rem;">
+      </div>
+
+    </div>
+  </div>
+</div>
+
   <script>
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
     const MASTER_BASE = `${API_BASE}/api/master/instituicoes/instituicoes`;
@@ -816,11 +989,13 @@
     const btnGerarAcessosLote = document.getElementById('btnGerarAcessosLote');
     const msgAcessoLote = document.getElementById('msgAcessoLote');
     const resultadoAcessos = document.getElementById('resultadoAcessos');
+    const btnBaixarRelatorioAcessos = document.getElementById('btnBaixarRelatorioAcessos');
 
     let all = [];
     let selectedInst = null;
     let selectedStudentInst = null;
     let alunosTurmaAtual = [];
+    let alunoGerenciadoAtual = null;
     const senhasRedefinidasPorAluno = new Map();
 
     inputPreset.addEventListener('change', () => {
@@ -1052,8 +1227,12 @@
               </div>
 
               <div class="student-actions">
-                ${temAcesso ? `<button class="mini aluno" type="button" onclick="window.__redefinirSenhaAluno('${escapeHtml(alunoId)}', this)">Redefinir senha</button>` : ''}
-              </div>
+  <button class="mini primary" type="button" onclick="window.__gerenciarAcessosAluno('${escapeHtml(alunoId)}')">
+    Gerenciar acessos
+  </button>
+
+  ${temAcesso ? `<button class="mini aluno" type="button" onclick="window.__redefinirSenhaAluno('${escapeHtml(alunoId)}', this)">Redefinir senha do aluno</button>` : ''}
+</div>
             </div>
           </div>
         `;
@@ -1094,66 +1273,177 @@
       return linhas.join('\n');
     }
 
+function montarTextoAcessoResponsavel(item){
+  const portal = selectedStudentInst?.slug
+    ? absUrl(`/login-aluno.html?t=${encodeURIComponent(selectedStudentInst.slug)}`)
+    : absUrl('/login-aluno.html');
+
+  const linhas = [
+    `Portal do Aluno e Responsável: ${portal}`,
+    `Responsável pelo aluno: ${item?.nome || 'Aluno'}`,
+    `E-mail do responsável: ${item?.email || '—'}`,
+    `Senha inicial do responsável: ${item?.senha || 'já existente / não alterada'}`,
+    '',
+    `Observação: este acesso é exclusivo do responsável e abre diretamente a ficha disciplinar do estudante.`
+  ];
+
+  return linhas.join('\n');
+}
+
     function renderResultadoAcessos(dataOuAcessos = null) {
-      let acessos = [];
-      let reutilizados = [];
-      let ignorados = [];
+  let acessos = [];
+  let reutilizados = [];
+  let ignorados = [];
+  let acessosResponsaveis = [];
+  let responsaveisReutilizados = [];
+  let responsaveisIgnorados = [];
 
-      if (Array.isArray(dataOuAcessos)) {
-        acessos = dataOuAcessos;
-      } else if (dataOuAcessos && typeof dataOuAcessos === 'object') {
-        acessos = Array.isArray(dataOuAcessos.acessos) ? dataOuAcessos.acessos : [];
-        reutilizados = Array.isArray(dataOuAcessos.reutilizados) ? dataOuAcessos.reutilizados : [];
-        ignorados = Array.isArray(dataOuAcessos.ignorados) ? dataOuAcessos.ignorados : [];
-      }
+  if (Array.isArray(dataOuAcessos)) {
+    acessos = dataOuAcessos;
+  } else if (dataOuAcessos && typeof dataOuAcessos === 'object') {
+    acessos = Array.isArray(dataOuAcessos.acessos) ? dataOuAcessos.acessos : [];
+    reutilizados = Array.isArray(dataOuAcessos.reutilizados) ? dataOuAcessos.reutilizados : [];
+    ignorados = Array.isArray(dataOuAcessos.ignorados) ? dataOuAcessos.ignorados : [];
 
-      if (!acessos.length && !reutilizados.length && !ignorados.length) {
-        resultadoAcessos.style.display = 'none';
-        resultadoAcessos.innerHTML = '';
-        return;
-      }
+    acessosResponsaveis = Array.isArray(dataOuAcessos.acessosResponsaveis) ? dataOuAcessos.acessosResponsaveis : [];
+    responsaveisReutilizados = Array.isArray(dataOuAcessos.responsaveisReutilizados) ? dataOuAcessos.responsaveisReutilizados : [];
+    responsaveisIgnorados = Array.isArray(dataOuAcessos.responsaveisIgnorados) ? dataOuAcessos.responsaveisIgnorados : [];
+  }
 
-      const resumo = `
-        <div class="result-summary">
-          <div class="result-kpi"><b>${acessos.length}</b><span>Criados agora</span></div>
-          <div class="result-kpi"><b>${reutilizados.length}</b><span>Reutilizados</span></div>
-          <div class="result-kpi"><b>${ignorados.length}</b><span>Ignorados</span></div>
+  if (
+    !acessos.length &&
+    !reutilizados.length &&
+    !ignorados.length &&
+    !acessosResponsaveis.length &&
+    !responsaveisReutilizados.length &&
+    !responsaveisIgnorados.length
+  ) {
+    resultadoAcessos.style.display = 'none';
+    resultadoAcessos.innerHTML = '';
+    return;
+  }
+
+  const resumo = `
+    <div class="result-summary">
+      <div class="result-kpi"><b>${acessos.length}</b><span>Alunos criados</span></div>
+      <div class="result-kpi"><b>${reutilizados.length}</b><span>Alunos reutilizados</span></div>
+      <div class="result-kpi"><b>${ignorados.length}</b><span>Alunos ignorados</span></div>
+      <div class="result-kpi"><b>${acessosResponsaveis.length}</b><span>Responsáveis criados</span></div>
+      <div class="result-kpi"><b>${responsaveisReutilizados.length}</b><span>Responsáveis reutilizados</span></div>
+      <div class="result-kpi"><b>${responsaveisIgnorados.length}</b><span>Responsáveis ignorados</span></div>
+    </div>
+  `;
+
+  const renderItem = (item, status, perfil = 'aluno') => {
+    const statusReal = item?.status === 'senha_redefinida' ? 'senha_redefinida' : status;
+    const cls = statusReal === 'criado' ? '' : (statusReal === 'senha_redefinida' ? 'reutilizado' : statusReal);
+    const statusLabel = statusReal === 'senha_redefinida' ? 'SENHA REDEFINIDA' : statusReal.toUpperCase();
+
+    const tituloPerfil = perfil === 'responsavel'
+      ? 'ACESSO DO RESPONSÁVEL'
+      : 'ACESSO DO ALUNO';
+
+    const uso = perfil === 'responsavel'
+      ? 'Uso: ficha disciplinar do estudante'
+      : 'Uso: portal pedagógico do aluno';
+
+    const senhaLinha = item?.senha
+      ? `Senha inicial: <b>${escapeHtml(item.senha)}</b><br>`
+      : `Senha: <b>já existente / não exibida por segurança</b><br>`;
+
+    const obs = item?.observacao || item?.motivo || '';
+
+    const textoCopiar = perfil === 'responsavel'
+      ? escapeHtml(montarTextoAcessoResponsavel(item))
+      : escapeHtml(montarTextoAcesso(item));
+
+    return `
+      <div class="result-item ${escapeHtml(cls)}">
+        <div class="title">${tituloPerfil} • ${escapeHtml(item.nome || 'Aluno')} • ${escapeHtml(statusLabel)}</div>
+        <div class="meta">
+          Turma: ${escapeHtml(item.turma || '—')}<br>
+          ${perfil === 'responsavel'
+            ? `E-mail do responsável: <b>${escapeHtml(item.email || '—')}</b><br>`
+            : `E-mail cadastrado do responsável: <b>${escapeHtml(item.email || '—')}</b><br>`
+          }
+          Código do aluno: <b>${escapeHtml(item.codigoAcesso || '—')}</b><br>
+          ${status === 'ignorado' ? '' : senhaLinha}
+          ${uso}<br>
+          ${obs ? `Observação: ${escapeHtml(obs)}<br>` : ''}
         </div>
-      `;
+        ${status === 'ignorado' ? '' : `<button class="mini copy-access" onclick="window.__copyText('${textoCopiar.replaceAll('\n', '\\n')}', this)">Copiar dados deste acesso</button>`}
+      </div>
+    `;
+  };
 
-      const renderItem = (item, status) => {
-        const statusReal = item?.status === 'senha_redefinida' ? 'senha_redefinida' : status;
-        const cls = statusReal === 'criado' ? '' : (statusReal === 'senha_redefinida' ? 'reutilizado' : statusReal);
-        const statusLabel = statusReal === 'senha_redefinida' ? 'SENHA REDEFINIDA' : statusReal.toUpperCase();
-        const senhaLinha = item?.senha
-          ? `Senha inicial: <b>${escapeHtml(item.senha)}</b><br>`
-          : `Senha: <b>já existente / não alterada</b><br>`;
+  resultadoAcessos.innerHTML =
+    resumo +
 
-        const obs = item?.observacao || item?.motivo || '';
-        const textoCopiar = escapeHtml(montarTextoAcesso(item));
+    `<div class="result-section-title" style="margin:10px 0 8px;font-weight:900;color:#fff;">Acessos dos alunos</div>` +
+    acessos.map(item => renderItem(item, 'criado', 'aluno')).join('') +
+    reutilizados.map(item => renderItem(item, 'reutilizado', 'aluno')).join('') +
+    ignorados.map(item => renderItem(item, 'ignorado', 'aluno')).join('') +
 
-        return `
-          <div class="result-item ${escapeHtml(cls)}">
-            <div class="title">${escapeHtml(item.nome || 'Aluno')} • ${escapeHtml(statusLabel)}</div>
-            <div class="meta">
-              Turma: ${escapeHtml(item.turma || '—')}<br>
-              E-mail: <b>${escapeHtml(item.email || '—')}</b><br>
-              Código: <b>${escapeHtml(item.codigoAcesso || '—')}</b><br>
-              ${status === 'ignorado' ? '' : senhaLinha}
-              ${obs ? `Observação: ${escapeHtml(obs)}<br>` : ''}
-            </div>
-            ${status === 'ignorado' ? '' : `<button class="mini copy-access" onclick="window.__copyText('${textoCopiar.replaceAll('\n', '\\n')}', this)">Copiar dados deste acesso</button>`}
-          </div>
-        `;
-      };
+    `<div class="result-section-title" style="margin:14px 0 8px;font-weight:900;color:#fff;">Acessos dos responsáveis</div>` +
+    acessosResponsaveis.map(item => renderItem(item, 'criado', 'responsavel')).join('') +
+    responsaveisReutilizados.map(item => renderItem(item, 'reutilizado', 'responsavel')).join('') +
+    responsaveisIgnorados.map(item => renderItem(item, 'ignorado', 'responsavel')).join('');
 
-      resultadoAcessos.innerHTML = resumo +
-        acessos.map(item => renderItem(item, 'criado')).join('') +
-        reutilizados.map(item => renderItem(item, 'reutilizado')).join('') +
-        ignorados.map(item => renderItem(item, 'ignorado')).join('');
+  resultadoAcessos.style.display = 'block';
+}
 
-      resultadoAcessos.style.display = 'block';
-    }
+function baixarRelatorioAcessosTurma() {
+  if (!alunosTurmaAtual.length) {
+    showMsg(msgAcessoLote, 'warn', 'Carregue uma turma primeiro.');
+    return;
+  }
+
+  const linhas = [];
+
+  linhas.push([
+    'Aluno',
+    'Turma',
+    'CodigoAluno',
+    'EmailResponsavel',
+    'AcessoCriado'
+  ].join(';'));
+
+  alunosTurmaAtual.forEach(aluno => {
+    linhas.push([
+      `"${String(aluno.nome || '').replaceAll('"', '""')}"`,
+      `"${String(aluno.turma || '')}"`,
+      `"${String(aluno.codigoAcesso || '')}"`,
+      `"${String(
+        aluno?.contatos?.emailResponsavel ||
+        aluno?.emailResponsavel ||
+        ''
+      )}"`,
+      `"${aluno.usuarioId ? 'SIM' : 'NAO'}"`
+    ].join(';'));
+  });
+
+  const csv = '\uFEFF' + linhas.join('\n');
+
+  const blob = new Blob([csv], {
+    type: 'text/csv;charset=utf-8;'
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+
+  const nomeTurma = String(turmaAcesso?.value || 'turma')
+  .replace(/[^\w\-]/g, '_');
+
+  a.download = `acessos_${nomeTurma}.csv`;
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+}
 
     async function criarInstituicao(){
       showMsg(msgCreate, '', '');
@@ -1290,6 +1580,7 @@
       showMsg(msgAcessoLote, '', '');
       renderResultadoAcessos();
 
+      
       if (!selectedStudentInst?.slug) {
         showMsg(msgAcessoLote, 'warn', 'Selecione primeiro uma instituição para trabalhar os acessos dos alunos.');
         return;
@@ -1330,6 +1621,10 @@
       });
     });
 
+    if (btnBaixarRelatorioAcessos) {
+        btnBaixarRelatorioAcessos.addEventListener('click', baixarRelatorioAcessosTurma);
+      }
+
     btnGerarAcessosLote.addEventListener('click', async () => {
       showMsg(msgAcessoLote, '', '');
       renderResultadoAcessos();
@@ -1338,7 +1633,7 @@
         showMsg(msgAcessoLote, 'warn', 'Selecione primeiro a instituição.');
         return;
       }
-
+      
       const selecionados = getSelecionadosParaGerar();
 
       if (!selecionados.length) {
@@ -1346,11 +1641,31 @@
         return;
       }
 
-      const semEmail = selecionados.filter(item => !item.emailResponsavel || !isEmailBasico(item.emailResponsavel));
-      if (semEmail.length) {
-        showMsg(msgAcessoLote, 'warn', 'Preencha um e-mail válido para todos os alunos selecionados.');
-        return;
-      }
+      const comEmailValido = selecionados.filter(item =>
+  item.emailResponsavel && isEmailBasico(item.emailResponsavel)
+);
+
+const semEmail = selecionados.filter(item =>
+  !item.emailResponsavel || !isEmailBasico(item.emailResponsavel)
+);
+
+if (!comEmailValido.length) {
+  showMsg(
+    msgAcessoLote,
+    'warn',
+    'Nenhum dos alunos selecionados possui e-mail válido do responsável.'
+  );
+  return;
+}
+
+if (semEmail.length) {
+  const confirmar = confirm(
+    `${semEmail.length} aluno(s) selecionado(s) estão sem e-mail válido do responsável.\n\n` +
+    `Deseja gerar acesso apenas para os alunos que possuem e-mail válido?`
+  );
+
+  if (!confirmar) return;
+}
 
       btnGerarAcessosLote.disabled = true;
       btnGerarAcessosLote.innerHTML = '<span class="spinner"></span>Gerando acessos...';
@@ -1360,7 +1675,7 @@
           method: 'POST',
           headers: { 'Content-Type':'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ alunos: selecionados })
+          body: JSON.stringify({ alunos: comEmailValido })
         });
 
         const data = await r.json().catch(() => ({}));
@@ -1531,6 +1846,254 @@ if (atualizados.length) {
         }
       }
     };
+
+window.__gerenciarAcessosAluno = async function(alunoId) {
+  showMsg(msgAcessoLote, '', '');
+
+  if (!selectedStudentInst?.id) {
+    showMsg(msgAcessoLote, 'warn', 'Selecione primeiro a instituição.');
+    return;
+  }
+
+  alunoGerenciadoAtual = String(alunoId || '').trim();
+
+  if (!alunoGerenciadoAtual) {
+    showMsg(msgAcessoLote, 'warn', 'Aluno inválido.');
+    return;
+  }
+
+  abrirModalAcessos();
+
+  document.getElementById('modal-acessos-loading').style.display = 'block';
+  document.getElementById('modal-acessos-conteudo').style.display = 'none';
+  document.getElementById('ga-feedback').textContent = '';
+
+  try {
+    const r = await fetch(
+      `${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/${encodeURIComponent(alunoGerenciadoAtual)}/acessos`,
+      {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store'
+      }
+    );
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) {
+      throw new Error(data?.mensagem || 'Erro ao carregar acessos.');
+    }
+
+    const aluno = data.aluno || {};
+    const acessoAluno = data.acessoAluno || {};
+    const acessoResponsavel = data.acessoResponsavel || {};
+
+    document.getElementById('ga-nome-aluno').value = aluno.nome || '';
+    document.getElementById('ga-turma-aluno').value = aluno.turma || '';
+    document.getElementById('ga-codigo-aluno').value = aluno.codigoAcesso || '';
+    document.getElementById('ga-status-aluno').value = acessoAluno.existe
+      ? 'Acesso criado'
+      : 'Sem acesso criado';
+
+    document.getElementById('ga-email-responsavel').value =
+      aluno.emailResponsavel || acessoResponsavel.email || '';
+
+    document.getElementById('ga-status-responsavel').value = acessoResponsavel.existe
+      ? 'Acesso criado'
+      : 'Sem acesso criado';
+
+    document.getElementById('btn-redefinir-senha-aluno-modal').onclick = () => {
+      window.__redefinirSenhaAluno(alunoGerenciadoAtual, document.getElementById('btn-redefinir-senha-aluno-modal'));
+    };
+
+    document.getElementById('btn-gerar-acesso-responsavel').onclick = () => {
+  showMsg(
+    msgAcessoLote,
+    'warn',
+    'A função de gerar acesso individual do responsável ainda precisa ser criada no backend.'
+  );
+};
+
+    document.getElementById('btn-copiar-acesso-aluno').onclick = () => {
+      const texto = [
+        `Portal do Aluno e Responsável: ${selectedStudentInst?.slug ? absUrl(`/login-aluno.html?t=${encodeURIComponent(selectedStudentInst.slug)}`) : absUrl('/login-aluno.html')}`,
+        `Aluno: ${aluno.nome || 'Aluno'}`,
+        `Código de acesso do aluno: ${aluno.codigoAcesso || '—'}`,
+        `Senha: redefina a senha para gerar uma nova senha inicial.`
+      ].join('\n');
+
+      window.__copyText(texto, document.getElementById('btn-copiar-acesso-aluno'));
+    };
+
+document.getElementById('btn-salvar-email-responsavel').onclick = async () => {
+  const btn = document.getElementById('btn-salvar-email-responsavel');
+  const old = btn.textContent;
+  const emailResponsavel = normalizarEmail(document.getElementById('ga-email-responsavel').value);
+
+  if (!isEmailBasico(emailResponsavel)) {
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#ffecc1;font-weight:800;">Informe um e-mail válido.</span>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+  try {
+    const r = await fetch(
+      `${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/${encodeURIComponent(alunoGerenciadoAtual)}/email-responsavel`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
+        body: JSON.stringify({ emailResponsavel })
+      }
+    );
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) throw new Error(data?.mensagem || 'Erro ao salvar e-mail.');
+
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#d6ffe9;font-weight:800;">${escapeHtml(data?.mensagem || 'E-mail salvo com sucesso.')}</span>`;
+
+    document.getElementById('ga-email-responsavel').value = emailResponsavel;
+
+  } catch (err) {
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#ffb3b8;font-weight:800;">${escapeHtml(err.message || 'Erro ao salvar e-mail.')}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+};
+
+document.getElementById('btn-gerar-acesso-responsavel').onclick = async () => {
+  const btn = document.getElementById('btn-gerar-acesso-responsavel');
+  const old = btn.textContent;
+  const emailResponsavel = normalizarEmail(document.getElementById('ga-email-responsavel').value);
+
+  if (!isEmailBasico(emailResponsavel)) {
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#ffecc1;font-weight:800;">Informe um e-mail válido para gerar o acesso.</span>`;
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Gerando...';
+
+  try {
+    const r = await fetch(
+      `${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/${encodeURIComponent(alunoGerenciadoAtual)}/gerar-acesso-responsavel`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
+        body: JSON.stringify({ emailResponsavel })
+      }
+    );
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) throw new Error(data?.mensagem || 'Erro ao gerar acesso do responsável.');
+
+    document.getElementById('ga-status-responsavel').value = 'Acesso criado';
+
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#d6ffe9;font-weight:800;">${escapeHtml(data?.mensagem || 'Acesso criado com sucesso.')}</span>
+       <div style="margin-top:8px;">
+         Nova senha do responsável: <b style="color:#fff;">${escapeHtml(data?.acesso?.senha || '—')}</b>
+       </div>`;
+
+    renderResultadoAcessos({
+      acessosResponsaveis: data?.acesso ? [data.acesso] : [],
+      responsaveisReutilizados: [],
+      responsaveisIgnorados: []
+    });
+
+  } catch (err) {
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#ffb3b8;font-weight:800;">${escapeHtml(err.message || 'Erro ao gerar acesso.')}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+};
+
+document.getElementById('btn-redefinir-senha-responsavel').onclick = async () => {
+  const confirmar = confirm('Deseja redefinir a senha do responsável? A senha anterior deixará de funcionar.');
+  if (!confirmar) return;
+
+  const btn = document.getElementById('btn-redefinir-senha-responsavel');
+  const old = btn.textContent;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Redefinindo...';
+
+  try {
+    const r = await fetch(
+      `${MASTER_BASE}/${encodeURIComponent(selectedStudentInst.id)}/alunos/${encodeURIComponent(alunoGerenciadoAtual)}/redefinir-senha-responsavel`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store'
+      }
+    );
+
+    const data = await r.json().catch(() => ({}));
+
+    if (!r.ok) throw new Error(data?.mensagem || 'Erro ao redefinir senha do responsável.');
+
+    document.getElementById('ga-status-responsavel').value = 'Acesso criado';
+
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#d6ffe9;font-weight:800;">${escapeHtml(data?.mensagem || 'Senha redefinida com sucesso.')}</span>
+       <div style="margin-top:8px;">
+         Nova senha do responsável: <b style="color:#fff;">${escapeHtml(data?.acesso?.senha || '—')}</b>
+       </div>`;
+
+    renderResultadoAcessos({
+      acessosResponsaveis: data?.acesso ? [data.acesso] : [],
+      responsaveisReutilizados: [],
+      responsaveisIgnorados: []
+    });
+
+  } catch (err) {
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#ffb3b8;font-weight:800;">${escapeHtml(err.message || 'Erro ao redefinir senha.')}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+};
+
+    document.getElementById('btn-copiar-acesso-responsavel').onclick = () => {
+      const emailResp = document.getElementById('ga-email-responsavel').value.trim();
+
+      const texto = [
+        `Portal do Aluno e Responsável: ${selectedStudentInst?.slug ? absUrl(`/login-aluno.html?t=${encodeURIComponent(selectedStudentInst.slug)}`) : absUrl('/login-aluno.html')}`,
+        `Responsável pelo aluno: ${aluno.nome || 'Aluno'}`,
+        `E-mail do responsável: ${emailResp || '—'}`,
+        `Senha: redefina a senha para gerar uma nova senha inicial.`,
+        '',
+        `Observação: este acesso é exclusivo do responsável e abre diretamente a ficha disciplinar do estudante.`
+      ].join('\n');
+
+      window.__copyText(texto, document.getElementById('btn-copiar-acesso-responsavel'));
+    };
+
+    document.getElementById('modal-acessos-loading').style.display = 'none';
+    document.getElementById('modal-acessos-conteudo').style.display = 'block';
+
+  } catch (err) {
+    document.getElementById('modal-acessos-loading').style.display = 'none';
+    document.getElementById('modal-acessos-conteudo').style.display = 'block';
+    document.getElementById('ga-feedback').innerHTML =
+      `<span style="color:#ffb3b8;font-weight:800;">${escapeHtml(err.message || 'Erro ao carregar acessos.')}</span>`;
+  }
+};
 
     window.__redefinirSenhaAluno = async (alunoId, btn) => {
       showMsg(msgAcessoLote, '', '');
@@ -1720,6 +2283,16 @@ if (atualizados.length) {
       renderSelectedStudentInst();
       await loadList();
     })();
+
+
+function abrirModalAcessos() {
+  document.getElementById('modal-gerenciar-acessos').style.display = 'flex';
+}
+
+function fecharModalAcessos() {
+  document.getElementById('modal-gerenciar-acessos').style.display = 'none';
+}
+
   </script>
   <script src="notify.js"></script>
   <script src="/update-client.js"></script>

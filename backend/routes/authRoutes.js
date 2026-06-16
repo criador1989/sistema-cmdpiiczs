@@ -220,6 +220,9 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
   let redirecionar = '/painel.html';
   if (usuario.tipo === 'professor') redirecionar = '/painel-professor.html';
   if (usuario.tipo === 'aluno') redirecionar = '/painel-aluno.html';
+  if (usuario.tipo === 'responsavel' && usuario.alunoId) {
+  redirecionar = `/ficha-aluno.html?id=${String(usuario.alunoId)}`;
+}
 
   return {
     mensagem: 'Login realizado com sucesso.',
@@ -232,7 +235,13 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
       instituicao: String(usuario.instituicao || ''),
       email: String(usuario.email || '').toLowerCase(),
       alunoId: usuario.alunoId ? String(usuario.alunoId) : null,
-      portal: usuario.portal || (usuario.tipo === 'aluno' ? 'aluno' : 'institucional')
+      portal:
+  usuario.portal ||
+  (usuario.tipo === 'aluno'
+    ? 'aluno'
+    : usuario.tipo === 'responsavel'
+      ? 'responsavel'
+      : 'institucional')
     },
     aluno: buildAlunoPublicData(aluno),
     instituicao: inst ? {
@@ -242,7 +251,13 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
       slug: inst.slug
     } : undefined,
     tenant: tenantCookie,
-    portal: usuario.portal || (usuario.tipo === 'aluno' ? 'aluno' : 'institucional')
+    portal:
+  usuario.portal ||
+  (usuario.tipo === 'aluno'
+    ? 'aluno'
+    : usuario.tipo === 'responsavel'
+      ? 'responsavel'
+      : 'institucional')
   };
 }
 
@@ -332,7 +347,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
     usuario = await Usuario.findOne({
       email,
       instituicao: instituicaoId,
-      tipo: 'aluno',
+      tipo: { $in: ['aluno', 'responsavel'] },
       $or: [{ ativo: true }, { ativo: { $exists: false } }]
     }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
   } else {
@@ -380,7 +395,13 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
 
   if (!usuario) {
     return res.status(401).json({
-      mensagem: 'Acesso do aluno não encontrado nesta instituição.'
+      mensagem: 'Acesso não encontrado nesta instituição.'
+    });
+  }
+
+  if (!['aluno', 'responsavel'].includes(String(usuario.tipo || '').toLowerCase())) {
+    return res.status(403).json({
+      mensagem: 'Este usuário não possui acesso ao portal do aluno/responsável.'
     });
   }
 
@@ -403,11 +424,19 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
     }).select('_id nome turma codigoAcesso usuarioId').lean().catch(() => null);
   }
 
+  if (!aluno) {
+    return res.status(404).json({
+      mensagem: 'Aluno vinculado a este acesso não foi encontrado nesta instituição.'
+    });
+  }
+
+  const portalFinal = usuario.tipo === 'responsavel' ? 'responsavel' : 'aluno';
+
   const token = jwt.sign(
     {
       ...buildJwtPayload(usuario),
-      portal: 'aluno',
-      alunoId: usuario.alunoId ? String(usuario.alunoId) : (aluno?._id ? String(aluno._id) : null)
+      portal: portalFinal,
+      alunoId: usuario.alunoId ? String(usuario.alunoId) : String(aluno._id)
     },
     process.env.JWT_SECRET,
     { expiresIn: '2h' }
@@ -421,7 +450,8 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
   return res.json(buildLoginResponse({
     usuario: {
       ...usuario.toObject(),
-      portal: 'aluno'
+      portal: portalFinal,
+      alunoId: usuario.alunoId ? String(usuario.alunoId) : String(aluno._id)
     },
     inst,
     token,

@@ -89,6 +89,40 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
     }
 
     const isProfessor = usuario.tipo === 'professor';
+    
+    const isResponsavel = usuario.tipo === 'responsavel';
+
+if (isResponsavel) {
+  const alunoIdToken = usuario.alunoId ? String(usuario.alunoId) : null;
+
+  if (!alunoIdToken) {
+    return res.status(403).json({
+      erro: 'Responsável sem aluno vinculado.'
+    });
+  }
+
+  if (String(id) !== alunoIdToken) {
+    return res.status(403).json({
+      erro: 'Responsável sem permissão para acessar este aluno.'
+    });
+  }
+}
+
+if (isResponsavel) {
+  const alunoIdToken = usuario.alunoId ? String(usuario.alunoId) : null;
+
+  if (!alunoIdToken) {
+    return res.status(403).json({
+      erro: 'Responsável sem aluno vinculado.'
+    });
+  }
+
+  if (String(id) !== alunoIdToken) {
+    return res.status(403).json({
+      erro: 'Responsável sem permissão para acessar este aluno.'
+    });
+  }
+}
 
     const turmasProfessor = Array.isArray(usuario.turmas) ? usuario.turmas : [];
     if (isProfessor && turmasProfessor.length) {
@@ -210,6 +244,73 @@ router.get('/:id', autenticar, attachActor, async (req, res) => {
         })),
       });
     }
+
+    if (isResponsavel) {
+  return res.json({
+    aluno: {
+      _id: aluno._id,
+      nome: aluno.nome || null,
+      turma: aluno.turma || null,
+      dataEntrada: aluno.dataEntrada || null,
+      comportamento: notaComportamento,
+      notaComportamental: notaComportamento,
+
+      nascimento: null,
+      nomePai: null,
+      nomeMae: null,
+      telefone: null,
+      endereco: null,
+      codigoAcesso: null,
+
+      foto: aluno.foto || null,
+      fotoOriginal: aluno.fotoOriginal || aluno.foto || null,
+      fotoMedium: aluno.fotoMedium || null,
+      fotoThumb: aluno.fotoThumb || null,
+      fotoUrl,
+      fotoThumbUrl,
+      fotoMeta: aluno.fotoMeta || null,
+
+      contatos: {
+        emailResponsavel: null,
+        whatsapp: null,
+        telegramChatId: null,
+      },
+    },
+
+    notificacoes: (notificacoes || []).map((n) => ({
+      _id: n._id,
+      data: n.data || null,
+      createdAt: n.createdAt || null,
+      tipo: n.tipo || null,
+      tipoMedida: n.tipoMedida || null,
+      natureza: n.natureza || null,
+      motivo: n.motivo || null,
+      valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : null,
+      artigo: n.artigo || null,
+      inciso: n.inciso || null,
+      classificacaoRegulamento: n.classificacaoRegulamento || null,
+      quantidadeDias: n.quantidadeDias || null,
+      observacoes: n.observacoes || null,
+      notaAnterior: typeof n.notaAnterior === 'number' ? n.notaAnterior : null,
+      notaAtual: typeof n.notaAtual === 'number' ? n.notaAtual : null,
+      classificacaoAnterior: n.classificacaoAnterior || null,
+      classificacaoAtual: n.classificacaoAtual || null,
+      numeroSequencial: n.numeroSequencial || null,
+      status: n.status || null,
+    })),
+
+    observacoes: (observacoes || []).map((o) => ({
+      _id: o._id,
+      texto: o.texto || '',
+      autor: o.autor || 'Não informado',
+      criadoEm: o.criadoEm || o.createdAt || null,
+      createdAt: o.createdAt || null,
+      anexos: [],
+      attachments: [],
+      files: [],
+    })),
+  });
+}
 
     return res.json({
       aluno: {

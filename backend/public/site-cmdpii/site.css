@@ -8132,3 +8132,16 @@ body:has(.interclasse-public-section) {
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
+.btn-portal-aluno {
+  background: #f5b51b;
+  color: #061a35;
+  padding: 13px 18px;
+  border-radius: 999px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-portal-aluno:hover {
+  filter: brightness(1.05);
+}

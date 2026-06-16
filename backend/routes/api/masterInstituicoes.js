@@ -582,176 +582,176 @@ router.post('/instituicoes/:id/gerar-acessos-alunos', requireSuperAdmin, async (
     const acessos = [];
     const reutilizados = [];
     const ignorados = [];
+    const acessosResponsaveis = [];
+    const responsaveisReutilizados = [];
+    const responsaveisIgnorados = [];
 
     for (const aluno of alunos) {
-      const alunoId = String(aluno._id);
+  const alunoId = String(aluno._id);
 
-      let emailResponsavel = emailPorAluno.get(alunoId) || '';
+  let emailResponsavel = emailPorAluno.get(alunoId) || '';
 
-      if (!emailResponsavel) {
-        emailResponsavel = normalizeEmail(
-          aluno?.contatos?.emailResponsavel ||
-          aluno?.emailResponsavel ||
-          ''
-        );
+  if (!emailResponsavel) {
+    emailResponsavel = normalizeEmail(
+      aluno?.contatos?.emailResponsavel ||
+      aluno?.emailResponsavel ||
+      ''
+    );
+  }
+
+  if (!isValidEmail(emailResponsavel)) {
+    ignorados.push({
+      alunoId,
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      motivo: 'E-mail do responsável inválido ou ausente.'
+    });
+
+    responsaveisIgnorados.push({
+      alunoId,
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      motivo: 'E-mail do responsável inválido ou ausente.'
+    });
+
+    continue;
+  }
+
+  let codigoAcesso = String(aluno.codigoAcesso || '').trim().toUpperCase();
+
+  if (!codigoAcesso) {
+    let tentativas = 0;
+
+    do {
+      codigoAcesso = gerarCodigoAcesso();
+      tentativas++;
+
+      if (tentativas > 30) {
+        codigoAcesso = '';
+        break;
       }
+    } while (await Aluno.findOne({
+      instituicao: instituicaoId,
+      codigoAcesso
+    }).select('_id').lean());
+  }
 
-      if (!isValidEmail(emailResponsavel)) {
-        ignorados.push({
-          alunoId,
-          nome: aluno.nome,
-          turma: normalizarTurma(aluno.turma),
-          motivo: 'E-mail do responsável inválido ou ausente.'
-        });
-        continue;
-      }
+  if (!codigoAcesso) {
+    ignorados.push({
+      alunoId,
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      motivo: 'Não foi possível gerar um código de acesso único.'
+    });
 
-      let codigoAcesso = String(aluno.codigoAcesso || '').trim().toUpperCase();
+    responsaveisIgnorados.push({
+      alunoId,
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      motivo: 'Não foi possível gerar o acesso porque o aluno ficou sem código único.'
+    });
 
-      if (!codigoAcesso) {
-        let tentativas = 0;
+    continue;
+  }
 
-        do {
-          codigoAcesso = gerarCodigoAcesso();
-          tentativas++;
+  let senhaAlunoCriada = null;
 
-          if (tentativas > 30) {
-            codigoAcesso = '';
-            break;
-          }
-        } while (await Aluno.findOne({
-          instituicao: instituicaoId,
-          codigoAcesso
-        }).select('_id').lean());
-      }
+  const usuarioJaVinculadoAoAluno = await Usuario.findOne({
+    instituicao: instituicaoId,
+    alunoId: aluno._id,
+    tipo: 'aluno'
+  })
+    .select('_id nome email tipo portal alunoId')
+    .lean();
 
-      if (!codigoAcesso) {
-        ignorados.push({
-          alunoId,
-          nome: aluno.nome,
-          turma: normalizarTurma(aluno.turma),
-          email: emailResponsavel,
-          motivo: 'Não foi possível gerar um código de acesso único.'
-        });
-        continue;
-      }
-
-      const usuarioJaVinculadoAoAluno = await Usuario.findOne({
-        instituicao: instituicaoId,
-        alunoId: aluno._id
-      })
-        .select('_id nome email tipo portal alunoId')
-        .lean();
-
-      if (usuarioJaVinculadoAoAluno) {
-        await Aluno.updateOne(
-          { _id: aluno._id, instituicao: instituicaoId },
-          {
-            $set: {
-              usuarioId: usuarioJaVinculadoAoAluno._id,
-              codigoAcesso,
-              'contatos.emailResponsavel': normalizeEmail(usuarioJaVinculadoAoAluno.email || emailResponsavel)
-            }
-          }
-        );
-
-        reutilizados.push({
-          alunoId,
-          usuarioId: String(usuarioJaVinculadoAoAluno._id),
-          nome: aluno.nome,
-          turma: normalizarTurma(aluno.turma),
-          email: usuarioJaVinculadoAoAluno.email || emailResponsavel,
+  if (usuarioJaVinculadoAoAluno) {
+    await Aluno.updateOne(
+      { _id: aluno._id, instituicao: instituicaoId },
+      {
+        $set: {
+          usuarioId: usuarioJaVinculadoAoAluno._id,
           codigoAcesso,
-          senha: null,
-          status: 'reutilizado',
-          observacao: 'Este aluno já possuía usuário vinculado. A senha anterior foi mantida.'
-        });
-
-        continue;
-      }
-
-      if (aluno.usuarioId && mongoose.isValidObjectId(aluno.usuarioId)) {
-        const usuarioDoAluno = await Usuario.findOne({
-          _id: aluno.usuarioId,
-          instituicao: instituicaoId
-        })
-          .select('_id nome email tipo portal alunoId')
-          .lean();
-
-        if (usuarioDoAluno) {
-          const precisaCorrigirUsuario = (
-            usuarioDoAluno.tipo !== 'aluno' ||
-            usuarioDoAluno.portal !== 'aluno' ||
-            String(usuarioDoAluno.alunoId || '') !== alunoId
-          );
-
-          if (precisaCorrigirUsuario) {
-            await Usuario.updateOne(
-              { _id: usuarioDoAluno._id, instituicao: instituicaoId },
-              {
-                $set: {
-                  tipo: 'aluno',
-                  portal: 'aluno',
-                  alunoId: aluno._id,
-                  ativo: true,
-                  emailVerificado: true,
-                  emailVerificadoEm: usuarioDoAluno.emailVerificadoEm || new Date()
-                }
-              }
-            );
-          }
-
-          await Aluno.updateOne(
-            { _id: aluno._id, instituicao: instituicaoId },
-            {
-              $set: {
-                usuarioId: usuarioDoAluno._id,
-                codigoAcesso,
-                'contatos.emailResponsavel': normalizeEmail(usuarioDoAluno.email || emailResponsavel)
-              }
-            }
-          );
-
-          reutilizados.push({
-            alunoId,
-            usuarioId: String(usuarioDoAluno._id),
-            nome: aluno.nome,
-            turma: normalizarTurma(aluno.turma),
-            email: usuarioDoAluno.email || emailResponsavel,
-            codigoAcesso,
-            senha: null,
-            status: 'reutilizado',
-            observacao: 'Usuário já vinculado ao cadastro do aluno. A senha anterior foi mantida.'
-          });
-
-          continue;
+          'contatos.emailResponsavel': emailResponsavel
         }
       }
+    );
 
-      const usuarioComMesmoEmail = await Usuario.findOne({
-  email: emailResponsavel,
-  instituicao: instituicaoId
-})
-  .select('_id nome email tipo portal alunoId instituicao')
-  .lean();
+    reutilizados.push({
+      alunoId,
+      usuarioId: String(usuarioJaVinculadoAoAluno._id),
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      codigoAcesso,
+      senha: null,
+      status: 'reutilizado',
+      observacao: 'Este aluno já possuía usuário de aluno vinculado. A senha anterior foi mantida.'
+    });
+  } else if (aluno.usuarioId && mongoose.isValidObjectId(aluno.usuarioId)) {
+    const usuarioDoAluno = await Usuario.findOne({
+      _id: aluno.usuarioId,
+      instituicao: instituicaoId
+    })
+      .select('_id nome email tipo portal alunoId')
+      .lean();
 
-let emailUsuarioAcesso = emailResponsavel;
+    if (usuarioDoAluno) {
+      const precisaCorrigirUsuario = (
+        usuarioDoAluno.tipo !== 'aluno' ||
+        usuarioDoAluno.portal !== 'aluno' ||
+        String(usuarioDoAluno.alunoId || '') !== alunoId
+      );
 
-if (usuarioComMesmoEmail && String(usuarioComMesmoEmail.alunoId || '') !== alunoId) {
-  const baseTecnica = String(codigoAcesso || gerarCodigoAcesso())
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
+      if (precisaCorrigirUsuario) {
+        await Usuario.updateOne(
+          { _id: usuarioDoAluno._id, instituicao: instituicaoId },
+          {
+            $set: {
+              tipo: 'aluno',
+              portal: 'aluno',
+              alunoId: aluno._id,
+              ativo: true,
+              emailVerificado: true,
+              emailVerificadoEm: usuarioDoAluno.emailVerificadoEm || new Date()
+            }
+          }
+        );
+      }
 
-  emailUsuarioAcesso = `${baseTecnica}.${alunoId.slice(-6)}@aluno.axoriin.local`;
-}
+      await Aluno.updateOne(
+        { _id: aluno._id, instituicao: instituicaoId },
+        {
+          $set: {
+            usuarioId: usuarioDoAluno._id,
+            codigoAcesso,
+            'contatos.emailResponsavel': emailResponsavel
+          }
+        }
+      );
 
+      reutilizados.push({
+        alunoId,
+        usuarioId: String(usuarioDoAluno._id),
+        nome: aluno.nome,
+        turma: normalizarTurma(aluno.turma),
+        email: emailResponsavel,
+        codigoAcesso,
+        senha: null,
+        status: 'reutilizado',
+        observacao: 'Usuário já vinculado ao cadastro do aluno. A senha anterior foi mantida.'
+      });
+    } else {
       const senha = gerarSenhaSimples();
+      senhaAlunoCriada = senha;
 
       const emailUnicoUsuario = `${String(codigoAcesso).toLowerCase().replace(/[^a-z0-9]/g, '')}.${alunoId.slice(-6)}@aluno.axoriin.local`;
 
-const novoUsuario = new Usuario({
-  nome: aluno.nome,
-  email: emailUnicoUsuario,
+      const novoUsuario = new Usuario({
+        nome: aluno.nome,
+        email: emailUnicoUsuario,
         senha,
         tipo: 'aluno',
         portal: 'aluno',
@@ -787,28 +787,178 @@ const novoUsuario = new Usuario({
         codigoAcesso,
         senha,
         status: 'criado',
-        observacao: 'Novo acesso criado com sucesso.'
+        observacao: 'Novo acesso do aluno criado com sucesso.'
       });
     }
+  } else {
+    const senha = gerarSenhaSimples();
+    senhaAlunoCriada = senha;
+
+    const emailUnicoUsuario = `${String(codigoAcesso).toLowerCase().replace(/[^a-z0-9]/g, '')}.${alunoId.slice(-6)}@aluno.axoriin.local`;
+
+    const novoUsuario = new Usuario({
+      nome: aluno.nome,
+      email: emailUnicoUsuario,
+      senha,
+      tipo: 'aluno',
+      portal: 'aluno',
+      alunoId: aluno._id,
+      instituicao: instituicaoId,
+      tenantId: instituicaoId,
+      ativo: true,
+      emailVerificado: true,
+      emailVerificadoEm: new Date(),
+      tokenVerificacaoHash: null,
+      tokenVerificacaoExpiraEm: null,
+    });
+
+    await novoUsuario.save();
+
+    await Aluno.updateOne(
+      { _id: aluno._id, instituicao: instituicaoId },
+      {
+        $set: {
+          usuarioId: novoUsuario._id,
+          codigoAcesso,
+          'contatos.emailResponsavel': emailResponsavel
+        }
+      }
+    );
+
+    acessos.push({
+      alunoId,
+      usuarioId: String(novoUsuario._id),
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      codigoAcesso,
+      senha,
+      status: 'criado',
+      observacao: 'Novo acesso do aluno criado com sucesso.'
+    });
+  }
+
+  let usuarioResponsavel = await Usuario.findOne({
+    email: emailResponsavel,
+    instituicao: instituicaoId,
+    tipo: 'responsavel'
+  })
+    .select('_id nome email tipo portal alunoId')
+    .lean();
+
+  if (usuarioResponsavel && String(usuarioResponsavel.alunoId || '') === alunoId) {
+    responsaveisReutilizados.push({
+      alunoId,
+      usuarioId: String(usuarioResponsavel._id),
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      codigoAcesso,
+      senha: null,
+      status: 'responsavel_reutilizado',
+      observacao: 'Responsável já possuía acesso vinculado a este aluno. A senha anterior foi mantida.'
+    });
+
+    continue;
+  }
+
+  if (usuarioResponsavel && String(usuarioResponsavel.alunoId || '') !== alunoId) {
+    responsaveisIgnorados.push({
+      alunoId,
+      nome: aluno.nome,
+      turma: normalizarTurma(aluno.turma),
+      email: emailResponsavel,
+      codigoAcesso,
+      motivo: 'Este e-mail já está vinculado como responsável de outro aluno. Por enquanto, o sistema permite um aluno por acesso de responsável.'
+    });
+
+    continue;
+  }
+
+  const senhaResponsavel = gerarSenhaSimples();
+
+  const novoResponsavel = new Usuario({
+    nome: `Responsável - ${aluno.nome}`,
+    email: emailResponsavel,
+    senha: senhaResponsavel,
+    tipo: 'responsavel',
+    portal: 'responsavel',
+    alunoId: aluno._id,
+    instituicao: instituicaoId,
+    tenantId: instituicaoId,
+    ativo: true,
+    emailVerificado: true,
+    emailVerificadoEm: new Date(),
+    tokenVerificacaoHash: null,
+    tokenVerificacaoExpiraEm: null,
+  });
+
+  await novoResponsavel.save();
+
+  acessosResponsaveis.push({
+    alunoId,
+    usuarioId: String(novoResponsavel._id),
+    nome: aluno.nome,
+    turma: normalizarTurma(aluno.turma),
+    email: emailResponsavel,
+    codigoAcesso,
+    senha: senhaResponsavel,
+    status: 'responsavel_criado',
+    observacao: 'Acesso do responsável criado com sucesso.'
+  });
+}
 
     const totalCriados = acessos.length;
-    const totalReutilizados = reutilizados.length;
-    const totalIgnorados = ignorados.length;
-    const totalProcessados = totalCriados + totalReutilizados + totalIgnorados;
+const totalReutilizados = reutilizados.length;
+const totalIgnorados = ignorados.length;
+
+const totalResponsaveisCriados = acessosResponsaveis.length;
+const totalResponsaveisReutilizados = responsaveisReutilizados.length;
+const totalResponsaveisIgnorados = responsaveisIgnorados.length;
+
+const totalProcessados =
+  totalCriados +
+  totalReutilizados +
+  totalIgnorados +
+  totalResponsaveisCriados +
+  totalResponsaveisReutilizados +
+  totalResponsaveisIgnorados;
 
     return res.json({
-      ok: true,
-      mensagem: `Processamento concluído. Criados: ${totalCriados}. Reutilizados: ${totalReutilizados}. Ignorados: ${totalIgnorados}.`,
-      total: totalCriados,
-      totalCriados,
-      totalReutilizados,
-      totalIgnorados,
-      totalProcessados,
-      acessos,
-      reutilizados,
-      ignorados,
-      links: buildInstitutionLinks(instituicao.slug || '')
-    });
+  ok: true,
+
+  mensagem:
+    `Processamento concluído. ` +
+    `Alunos criados: ${totalCriados}. ` +
+    `Alunos reutilizados: ${totalReutilizados}. ` +
+    `Alunos ignorados: ${totalIgnorados}. ` +
+    `Responsáveis criados: ${acessosResponsaveis.length}. ` +
+    `Responsáveis reutilizados: ${responsaveisReutilizados.length}. ` +
+    `Responsáveis ignorados: ${responsaveisIgnorados.length}.`,
+
+  total: totalCriados,
+
+  totalCriados,
+  totalReutilizados,
+  totalIgnorados,
+
+  totalResponsaveisCriados,
+totalResponsaveisReutilizados,
+totalResponsaveisIgnorados,
+
+  totalProcessados,
+
+  acessos,
+  reutilizados,
+  ignorados,
+
+  acessosResponsaveis,
+  responsaveisReutilizados,
+  responsaveisIgnorados,
+
+  links: buildInstitutionLinks(instituicao.slug || '')
+});
+
   } catch (e) {
     console.error('[masterInstituicoes][gerar-acessos-alunos]', e);
 
@@ -821,6 +971,328 @@ const novoUsuario = new Usuario({
 
     return res.status(500).json({
       mensagem: 'Erro ao gerar acessos dos alunos.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+/* =========================================================================
+ * GESTÃO DE ACESSOS DO ALUNO / RESPONSÁVEL
+ * ========================================================================= */
+
+router.get('/instituicoes/:id/alunos/:alunoId/acessos', requireSuperAdmin, async (req, res) => {
+  try {
+    const instituicaoId = String(req.params.id || '').trim();
+    const alunoId = String(req.params.alunoId || '').trim();
+
+    if (!mongoose.isValidObjectId(instituicaoId) || !mongoose.isValidObjectId(alunoId)) {
+      return res.status(400).json({ mensagem: 'Instituição ou aluno inválido.' });
+    }
+
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      instituicao: instituicaoId
+    })
+      .select('_id nome turma codigoAcesso usuarioId contatos')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
+    }
+
+    const usuarioAluno = await Usuario.findOne({
+      instituicao: instituicaoId,
+      alunoId: aluno._id,
+      tipo: 'aluno'
+    })
+      .select('_id nome email tipo portal alunoId ativo createdAt updatedAt')
+      .lean();
+
+    const emailResponsavel = normalizeEmail(
+      aluno?.contatos?.emailResponsavel ||
+      ''
+    );
+
+    const usuarioResponsavel = emailResponsavel
+      ? await Usuario.findOne({
+          instituicao: instituicaoId,
+          alunoId: aluno._id,
+          tipo: 'responsavel',
+          email: emailResponsavel
+        })
+          .select('_id nome email tipo portal alunoId ativo createdAt updatedAt')
+          .lean()
+      : await Usuario.findOne({
+          instituicao: instituicaoId,
+          alunoId: aluno._id,
+          tipo: 'responsavel'
+        })
+          .select('_id nome email tipo portal alunoId ativo createdAt updatedAt')
+          .lean();
+
+    return res.json({
+      ok: true,
+      aluno: {
+        id: String(aluno._id),
+        nome: aluno.nome || '',
+        turma: aluno.turma || '',
+        codigoAcesso: aluno.codigoAcesso || '',
+        emailResponsavel
+      },
+      acessoAluno: usuarioAluno
+        ? {
+            existe: true,
+            usuarioId: String(usuarioAluno._id),
+            nome: usuarioAluno.nome || '',
+            email: usuarioAluno.email || '',
+            tipo: usuarioAluno.tipo,
+            portal: usuarioAluno.portal || 'aluno',
+            ativo: usuarioAluno.ativo !== false,
+            senhaDisponivel: false
+          }
+        : {
+            existe: false,
+            senhaDisponivel: false
+          },
+      acessoResponsavel: usuarioResponsavel
+        ? {
+            existe: true,
+            usuarioId: String(usuarioResponsavel._id),
+            nome: usuarioResponsavel.nome || '',
+            email: usuarioResponsavel.email || '',
+            tipo: usuarioResponsavel.tipo,
+            portal: usuarioResponsavel.portal || 'responsavel',
+            ativo: usuarioResponsavel.ativo !== false,
+            senhaDisponivel: false
+          }
+        : {
+            existe: false,
+            email: emailResponsavel || '',
+            senhaDisponivel: false
+          }
+    });
+  } catch (e) {
+    console.error('[masterInstituicoes][consultar-acessos]', e);
+    return res.status(500).json({
+      mensagem: 'Erro ao consultar acessos.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+router.patch('/instituicoes/:id/alunos/:alunoId/email-responsavel', requireSuperAdmin, async (req, res) => {
+  try {
+    const instituicaoId = String(req.params.id || '').trim();
+    const alunoId = String(req.params.alunoId || '').trim();
+    const emailResponsavel = normalizeEmail(req.body?.emailResponsavel || '');
+
+    if (!mongoose.isValidObjectId(instituicaoId) || !mongoose.isValidObjectId(alunoId)) {
+      return res.status(400).json({ mensagem: 'Instituição ou aluno inválido.' });
+    }
+
+    if (!isValidEmail(emailResponsavel)) {
+      return res.status(400).json({ mensagem: 'Informe um e-mail válido para o responsável.' });
+    }
+
+    const aluno = await Aluno.findOneAndUpdate(
+      { _id: alunoId, instituicao: instituicaoId },
+      { $set: { 'contatos.emailResponsavel': emailResponsavel } },
+      { new: true }
+    )
+      .select('_id nome turma codigoAcesso contatos instituicao')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
+    }
+
+    return res.json({
+      ok: true,
+      mensagem: 'E-mail do responsável atualizado com sucesso.',
+      aluno: {
+        id: String(aluno._id),
+        nome: aluno.nome,
+        turma: aluno.turma,
+        codigoAcesso: aluno.codigoAcesso || '',
+        emailResponsavel
+      }
+    });
+  } catch (e) {
+    console.error('[masterInstituicoes][email-responsavel]', e);
+    return res.status(500).json({
+      mensagem: 'Erro ao atualizar e-mail do responsável.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+router.post('/instituicoes/:id/alunos/:alunoId/gerar-acesso-responsavel', requireSuperAdmin, async (req, res) => {
+  try {
+    const instituicaoId = String(req.params.id || '').trim();
+    const alunoId = String(req.params.alunoId || '').trim();
+    const emailResponsavel = normalizeEmail(req.body?.emailResponsavel || '');
+
+    if (!mongoose.isValidObjectId(instituicaoId) || !mongoose.isValidObjectId(alunoId)) {
+      return res.status(400).json({ mensagem: 'Instituição ou aluno inválido.' });
+    }
+
+    if (!isValidEmail(emailResponsavel)) {
+      return res.status(400).json({ mensagem: 'Informe um e-mail válido para o responsável.' });
+    }
+
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      instituicao: instituicaoId
+    })
+      .select('_id nome turma codigoAcesso contatos instituicao')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
+    }
+
+    const existenteMesmoAluno = await Usuario.findOne({
+      instituicao: instituicaoId,
+      alunoId: aluno._id,
+      tipo: 'responsavel'
+    }).lean();
+
+    if (existenteMesmoAluno) {
+      return res.status(409).json({
+        mensagem: 'Este aluno já possui acesso de responsável. Use “Redefinir senha do responsável”.'
+      });
+    }
+
+    const existenteOutroAluno = await Usuario.findOne({
+      instituicao: instituicaoId,
+      email: emailResponsavel,
+      tipo: 'responsavel'
+    }).lean();
+
+    if (existenteOutroAluno) {
+      return res.status(409).json({
+        mensagem: 'Este e-mail já está vinculado como responsável de outro aluno nesta instituição.'
+      });
+    }
+
+    const senha = gerarSenhaSimples();
+
+    const novoResponsavel = new Usuario({
+      nome: `Responsável - ${aluno.nome}`,
+      email: emailResponsavel,
+      senha,
+      tipo: 'responsavel',
+      portal: 'responsavel',
+      alunoId: aluno._id,
+      instituicao: instituicaoId,
+      tenantId: instituicaoId,
+      ativo: true,
+      emailVerificado: true,
+      emailVerificadoEm: new Date(),
+      tokenVerificacaoHash: null,
+      tokenVerificacaoExpiraEm: null,
+    });
+
+    await novoResponsavel.save();
+
+    await Aluno.updateOne(
+      { _id: aluno._id, instituicao: instituicaoId },
+      { $set: { 'contatos.emailResponsavel': emailResponsavel } }
+    );
+
+    return res.json({
+      ok: true,
+      mensagem: 'Acesso do responsável criado com sucesso.',
+      acesso: {
+        alunoId,
+        usuarioId: String(novoResponsavel._id),
+        nome: aluno.nome,
+        turma: normalizarTurma(aluno.turma),
+        email: emailResponsavel,
+        codigoAcesso: aluno.codigoAcesso || '',
+        senha,
+        status: 'responsavel_criado',
+        observacao: 'Acesso do responsável criado com sucesso.'
+      }
+    });
+  } catch (e) {
+    console.error('[masterInstituicoes][gerar-acesso-responsavel]', e);
+
+    if (e?.code === 11000) {
+      return res.status(409).json({
+        mensagem: 'Já existe usuário cadastrado com este e-mail.',
+        erro: String(e.message || e)
+      });
+    }
+
+    return res.status(500).json({
+      mensagem: 'Erro ao gerar acesso do responsável.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+router.post('/instituicoes/:id/alunos/:alunoId/redefinir-senha-responsavel', requireSuperAdmin, async (req, res) => {
+  try {
+    const instituicaoId = String(req.params.id || '').trim();
+    const alunoId = String(req.params.alunoId || '').trim();
+
+    if (!mongoose.isValidObjectId(instituicaoId) || !mongoose.isValidObjectId(alunoId)) {
+      return res.status(400).json({ mensagem: 'Instituição ou aluno inválido.' });
+    }
+
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      instituicao: instituicaoId
+    })
+      .select('_id nome turma codigoAcesso contatos instituicao')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
+    }
+
+    const usuarioResponsavel = await Usuario.findOne({
+      instituicao: instituicaoId,
+      alunoId: aluno._id,
+      tipo: 'responsavel'
+    });
+
+    if (!usuarioResponsavel) {
+      return res.status(404).json({
+        mensagem: 'Este aluno ainda não possui acesso de responsável.'
+      });
+    }
+
+    const senha = gerarSenhaSimples();
+    usuarioResponsavel.senha = senha;
+    usuarioResponsavel.ativo = true;
+    usuarioResponsavel.portal = 'responsavel';
+    usuarioResponsavel.tipo = 'responsavel';
+    usuarioResponsavel.emailVerificado = true;
+    usuarioResponsavel.emailVerificadoEm = usuarioResponsavel.emailVerificadoEm || new Date();
+
+    await usuarioResponsavel.save();
+
+    return res.json({
+      ok: true,
+      mensagem: 'Senha do responsável redefinida com sucesso.',
+      acesso: {
+        alunoId,
+        usuarioId: String(usuarioResponsavel._id),
+        nome: aluno.nome,
+        turma: normalizarTurma(aluno.turma),
+        email: usuarioResponsavel.email,
+        codigoAcesso: aluno.codigoAcesso || '',
+        senha,
+        status: 'senha_redefinida',
+        observacao: 'Nova senha do responsável gerada com sucesso.'
+      }
+    });
+  } catch (e) {
+    console.error('[masterInstituicoes][redefinir-senha-responsavel]', e);
+    return res.status(500).json({
+      mensagem: 'Erro ao redefinir senha do responsável.',
       erro: String(e.message || e)
     });
   }

@@ -453,6 +453,8 @@ function buildProfessorGuard(publicRoot) {
     '/login-aluno.html',
     '/painel-aluno.html',
     '/painel-aluno.js',
+    '/ficha-responsavel.html',
+    '/ficha-responsavel.js',
     '/aluno-redacao.html',
     '/aluno-questionarios.html',
     '/superadmin-login.html',
@@ -622,6 +624,7 @@ mountIf('/api/alunos', alunoRoutes);
 mountIf('/api', fichaPdfRoutes);
 mountIf('/notificacoes', notificacoesViewRoutes);
 mountIf('/api/responsavel', responsavelRoutes);
+mountIf('/api/ficha-responsavel', fichaResponsavelRoute);
 mountIf('/api/motivos', motivosRoutes);
 mountIf('/api/cartoes', cartoesRoutes);
 mountIf('/api/cartoes-professores', cartoesProfessoresRoute);

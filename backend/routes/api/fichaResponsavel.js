@@ -1,61 +1,93 @@
+'use strict';
+
 const express = require('express');
 const router = express.Router();
+
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
+const Observacao = require('../../models/Observacao');
+const { autenticar } = require('../../middleware/autenticacao');
 
-// 🔍 ROTA ORIGINAL: /api/ficha/:codigo (continua funcionando)
-router.get('/:codigo', async (req, res) => {
+function toPublicUrl(p) {
+  if (!p) return null;
+  let s = String(p).trim().replace(/\\/g, '/');
+  if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s)) return s;
+  if (!/^\/?uploads\//i.test(s)) s = 'uploads/' + s.replace(/^\/+/, '');
+  return '/' + s.replace(/^\/+/, '');
+}
+
+router.get('/', autenticar, async (req, res) => {
   try {
-    const codigo = req.params.codigo?.trim().toUpperCase();
-    if (!codigo) return res.status(400).json({ erro: 'Código de acesso não informado.' });
+    const usuario = req.usuario || {};
+    const instituicao = usuario.instituicao;
+    const alunoId = usuario.alunoId;
 
-    const aluno = await Aluno.findOne({ codigoAcesso: codigo });
-    if (!aluno) return res.status(404).json({ erro: 'Código inválido ou aluno não encontrado.' });
+    if (usuario.tipo !== 'responsavel') {
+      return res.status(403).json({
+        mensagem: 'Acesso permitido apenas ao responsável.'
+      });
+    }
 
-    const notificacoes = await Notificacao.find({ aluno: aluno._id })
-      .sort({ createdAt: -1 })
-      .select('tipo tipoMedida motivo valorNumerico createdAt');
+    if (!instituicao || !alunoId) {
+      return res.status(401).json({
+        mensagem: 'Sessão inválida para acesso do responsável.'
+      });
+    }
+
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      instituicao
+    })
+      .select('nome turma comportamento dataEntrada nascimento foto fotoOriginal fotoThumb codigoAcesso instituicao')
+      .lean();
+
+    if (!aluno) {
+      return res.status(404).json({
+        mensagem: 'Aluno vinculado não encontrado nesta instituição.'
+      });
+    }
+
+    const notificacoes = await Notificacao.find({
+      aluno: aluno._id,
+      instituicao,
+      ativo: { $ne: false },
+      arquivada: { $ne: true }
+    })
+      .select('data natureza tipo tipoMedida motivo valorNumerico numeroSequencial status createdAt')
+      .sort({ data: -1, createdAt: -1 })
+      .lean();
+
+    const observacoes = await Observacao.find({
+      aluno: aluno._id,
+      instituicao: String(instituicao)
+    })
+      .select('texto autor criadoEm createdAt')
+      .sort({ criadoEm: -1, createdAt: -1 })
+      .lean()
+      .catch(() => []);
+
+    res.set('Cache-Control', 'no-store');
 
     return res.json({
       aluno: {
-        nome: aluno.nome,
-        turma: aluno.turma,
-        codigoAcesso: aluno.codigoAcesso,
-        comportamento: aluno.comportamento || 8.00
+        _id: aluno._id,
+        nome: aluno.nome || null,
+        turma: aluno.turma || null,
+        comportamento: aluno.comportamento ?? 8.0,
+        dataEntrada: aluno.dataEntrada || null,
+        nascimento: aluno.nascimento || null,
+
+        fotoUrl: toPublicUrl(aluno.fotoOriginal || aluno.foto || aluno.fotoThumb || null),
+        fotoThumbUrl: toPublicUrl(aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || null)
       },
-      notificacoes
+      notificacoes,
+      observacoes
     });
-
   } catch (erro) {
-    console.error("❌ ERRO na rota /api/ficha/:codigo:", erro);
-    return res.status(500).json({ erro: 'Erro interno do servidor.' });
-  }
-});
-
-
-// ✅ NOVA ROTA: /api/ficha/id/:id — busca ficha por ID do aluno
-router.get('/id/:id', async (req, res) => {
-  try {
-    const aluno = await Aluno.findById(req.params.id);
-    if (!aluno) return res.status(404).json({ erro: 'Aluno não encontrado.' });
-
-    const notificacoes = await Notificacao.find({ aluno: aluno._id })
-      .sort({ createdAt: -1 })
-      .select('tipo tipoMedida motivo valorNumerico createdAt');
-
-    return res.json({
-      aluno: {
-        nome: aluno.nome,
-        turma: aluno.turma,
-        codigoAcesso: aluno.codigoAcesso,
-        comportamento: aluno.comportamento || 8.00
-      },
-      notificacoes
+    console.error('[fichaResponsavel] erro:', erro);
+    return res.status(500).json({
+      mensagem: 'Erro ao carregar ficha do responsável.'
     });
-
-  } catch (erro) {
-    console.error('❌ ERRO na rota /api/ficha/id/:id:', erro);
-    return res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });
 
