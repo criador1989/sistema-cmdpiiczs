@@ -297,7 +297,7 @@
             placeholder="Deixe em branco para manter"
             autocomplete="new-password"
           />
-          <div class="muted">Senhas simples também são aceitas, com mínimo de 6 caracteres.</div>
+          <div class="muted">A senha deve ter no mínimo 8 caracteres e conter ao menos 1 letra maiúscula, 1 letra minúscula e 1 número.</div>
         </div>
         <div>
           <label for="ativo">Status</label>
@@ -363,6 +363,14 @@
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
     const userId = params.get('id');
+
+    function validatePasswordClient(senha) {
+      if (!senha || String(senha).length < 8) return { ok: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
+      if (!/[A-Z]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos uma letra maiúscula.' };
+      if (!/[a-z]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos uma letra minúscula.' };
+      if (!/[0-9]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos um número.' };
+      return { ok: true };
+    }
 
     function syncAlunoFields() {
       const tipo = $('tipo').value;
@@ -464,9 +472,10 @@
 
       const novaSenha = $('novaSenha').value.trim();
       if (novaSenha) {
-        if (novaSenha.length < 6) {
+        const passCheck = validatePasswordClient(novaSenha);
+        if (!passCheck.ok) {
           msg.classList.add('err');
-          msg.textContent = 'A nova senha deve ter pelo menos 6 caracteres.';
+          msg.textContent = passCheck.message || 'A nova senha não atende à política de segurança.';
           return;
         }
         payload.senha = novaSenha;

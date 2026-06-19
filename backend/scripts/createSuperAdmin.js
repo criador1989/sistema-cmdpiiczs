@@ -5,6 +5,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const SuperAdmin = require('../models/SuperAdmin');
+const { validatePasswordStrength } = require('../utils/passwordPolicy');
 
 async function main() {
   const mongoUri = process.env.MONGO_URI;
@@ -20,6 +21,11 @@ async function main() {
     throw new Error(
       'Uso: node scripts/createSuperAdmin.js "Seu Nome" "email@dominio.com" "senhaforte"'
     );
+  }
+
+  const check = validatePasswordStrength(senha);
+  if (!check.ok) {
+    throw new Error(`Senha inválida: ${check.message || 'não atende à política de segurança'}`);
   }
 
   await mongoose.connect(mongoUri);

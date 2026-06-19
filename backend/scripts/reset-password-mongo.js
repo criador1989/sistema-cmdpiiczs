@@ -5,6 +5,7 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { generateTemporaryPassword } = require('../utils/passwordPolicy');
 
 // ========== CONFIGURE AQUI ==========
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://<usuario>:<senha>@localhost:27017'; // substitua pela sua string
@@ -19,16 +20,9 @@ if (!MONGO_URI || MONGO_URI.includes('<usuario>')) {
   process.exit(1);
 }
 
+// Use gerador centralizado e legível
 async function gerarSenhaTemp() {
-  // Gera senha forte: 12-14 caracteres com letras, números, símbolos
-  const base = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, '');
-  const special = '!@#_$';
-  const senha = (
-    base.slice(0, 8) +
-    special[Math.floor(Math.random() * special.length)] +
-    Date.now().toString().slice(-3)
-  ).slice(0, 14);
-  return senha;
+  return generateTemporaryPassword();
 }
 
 async function run() {
@@ -55,9 +49,9 @@ async function run() {
     const update = {
       $set: {
         senha: hash,                    // campo conforme seu documento (você usou "senha")
-        mustChangePassword: true,       // flag opcional: exija troca no primeiro login
+        // Não forçar troca de senha automaticamente — entrega manual ao usuário
         passwordResetAt: new Date(),
-        passwordResetBy: 'admin-script' // opcional, altere para identificador real se desejar
+        passwordResetBy: 'admin-script'
       }
     };
 

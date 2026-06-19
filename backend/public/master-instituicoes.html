@@ -690,7 +690,7 @@
             <div class="row" style="margin-top:10px;">
               <div>
                 <label for="uSenha">Senha</label>
-                <input id="uSenha" type="password" placeholder="Mínimo 6 caracteres" />
+                <input id="uSenha" type="password" placeholder="Mínimo 8 caracteres; 1 maiúsc., 1 min., 1 número" />
               </div>
               <div>
                 <label for="uTipo">Tipo</label>
@@ -1044,6 +1044,14 @@
 
     function isEmailBasico(email){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    }
+
+    function validatePasswordClient(senha) {
+      if (!senha || String(senha).length < 8) return { ok: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
+      if (!/[A-Z]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos uma letra maiúscula.' };
+      if (!/[a-z]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos uma letra minúscula.' };
+      if (!/[0-9]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos um número.' };
+      return { ok: true };
     }
 
     async function copyFromSelector(sel){
@@ -1534,8 +1542,9 @@ function baixarRelatorioAcessosTurma() {
         return;
       }
 
-      if (!senha || senha.length < 6) {
-        showMsg(msgUser, 'warn', 'A senha deve ter pelo menos 6 caracteres.');
+      const passCheck = validatePasswordClient(senha);
+      if (!passCheck.ok) {
+        showMsg(msgUser, 'warn', passCheck.message || 'A senha não atende à política de segurança.');
         return;
       }
 

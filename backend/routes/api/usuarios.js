@@ -50,6 +50,7 @@ function normalizePortal(portal) {
 function limparSenha(v) {
   return String(v || '').trim();
 }
+const { validatePasswordStrength } = require('../../utils/passwordPolicy');
 
 function usuarioToResponse(usuario) {
   if (!usuario) return null;
@@ -130,10 +131,9 @@ router.post('/', autenticar, requireTenant, verificarAdmin, async (req, res) => 
       });
     }
 
-    if (senhaLimpa.length < 6) {
-      return res.status(400).json({
-        mensagem: 'A senha deve ter pelo menos 6 caracteres.'
-      });
+    const check = validatePasswordStrength(senhaLimpa);
+    if (!check.ok) {
+      return res.status(400).json({ mensagem: check.message || 'A senha não atende à política de segurança.' });
     }
 
     let instId = null;
@@ -429,8 +429,9 @@ router.put('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) =
 
     const senhaLimpa = limparSenha(senha);
     if (senhaLimpa) {
-      if (senhaLimpa.length < 6) {
-        return res.status(400).json({ mensagem: 'A senha deve ter pelo menos 6 caracteres.' });
+      const check = validatePasswordStrength(senhaLimpa);
+      if (!check.ok) {
+        return res.status(400).json({ mensagem: check.message || 'A senha não atende à política de segurança.' });
       }
       usuario.senha = senhaLimpa;
     }

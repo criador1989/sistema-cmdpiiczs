@@ -25,6 +25,8 @@ const TENANT_ALIASES = {
 
 const DEFAULT_TENANT_SLUG = (process.env.DEFAULT_TENANT_SLUG || 'cmdpii').trim().toLowerCase();
 
+const { validatePasswordStrength, generateTemporaryPassword } = require('../utils/passwordPolicy');
+
 function setAuthCookie(res, token) {
   res.cookie('token', token, {
     httpOnly: true,
@@ -673,8 +675,9 @@ router.post('/cadastro', async (req, res) => {
   if (!isValidEmail(email)) {
     return res.status(400).json({ mensagem: 'Informe um e-mail válido.' });
   }
-  if (!senha || senha.length < 6) {
-    return res.status(400).json({ mensagem: 'A senha deve ter pelo menos 6 caracteres.' });
+  const check = validatePasswordStrength(senha);
+  if (!check.ok) {
+    return res.status(400).json({ mensagem: check.message || 'A senha deve atender à política de segurança.' });
   }
   if (!['monitor', 'professor'].includes(tipo)) {
     return res.status(400).json({ mensagem: 'Tipo inválido. Selecione Monitor ou Professor.' });
@@ -926,17 +929,22 @@ router.post('/cadastrar', autenticar, async (req, res) => {
       return res.status(409).json({ mensagem: 'E-mail já está em uso nesta instituição.' });
     }
 
-    const novoUsuario = new Usuario({
-      nome,
-      email: emailNormalizado,
-      senha,
-      tipo,
-      instituicao: instituicaoId,
-      emailVerificado: true,
-      emailVerificadoEm: new Date(),
-      tokenVerificacaoHash: null,
-      tokenVerificacaoExpiraEm: null,
-    });
+      const check = validatePasswordStrength(senha);
+      if (!check.ok) {
+        return res.status(400).json({ mensagem: check.message || 'A senha não atende à política de segurança.' });
+      }
+
+      const novoUsuario = new Usuario({
+        nome,
+        email: emailNormalizado,
+        senha,
+        tipo,
+        instituicao: instituicaoId,
+        emailVerificado: true,
+        emailVerificadoEm: new Date(),
+        tokenVerificacaoHash: null,
+        tokenVerificacaoExpiraEm: null,
+      });
 
     await novoUsuario.save();
 

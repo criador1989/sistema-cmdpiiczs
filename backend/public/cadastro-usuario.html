@@ -243,7 +243,7 @@
     <form id="formCadastro">
       <input type="text" id="nome" placeholder="Nome completo" required />
       <input type="email" id="email" placeholder="E-mail válido" required />
-      <input type="password" id="senha" placeholder="Senha (mín. 6 caracteres)" required />
+      <input type="password" id="senha" placeholder="Senha (mín. 8 caracteres; 1 maiúsc., 1 min., 1 número)" required />
       <input type="password" id="senha2" placeholder="Confirmar senha" required />
 
       <select id="tipo" required>
@@ -337,6 +337,22 @@
 
     function isValidEmail(email){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    }
+
+    function validatePasswordClient(senha) {
+      if (!senha || String(senha).length < 8) {
+        return { ok: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
+      }
+      if (!/[A-Z]/.test(senha)) {
+        return { ok: false, message: 'A senha deve conter ao menos uma letra maiúscula.' };
+      }
+      if (!/[a-z]/.test(senha)) {
+        return { ok: false, message: 'A senha deve conter ao menos uma letra minúscula.' };
+      }
+      if (!/[0-9]/.test(senha)) {
+        return { ok: false, message: 'A senha deve conter ao menos um número.' };
+      }
+      return { ok: true };
     }
 
     async function carregarInstituicao(){
@@ -434,8 +450,9 @@
         return;
       }
 
-      if (!senhaVal || senhaVal.length < 6){
-        showErr('A senha deve ter pelo menos 6 caracteres.');
+      const passCheck = validatePasswordClient(senhaVal);
+      if (!passCheck.ok) {
+        showErr(passCheck.message || 'A senha não atende à política de segurança.');
         return;
       }
 

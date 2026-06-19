@@ -12,6 +12,7 @@ const Observacao = require('../../models/Observacao');
 const ConfiguracaoDisciplinar = require('../../models/ConfiguracaoDisciplinar');
 const { getPresetBase } = require('../../utils/configuracaoDisciplinar');
 const { sendMail } = require('../../utils/mailer');
+const { generateTemporaryPassword, validatePasswordStrength } = require('../../utils/passwordPolicy');
 
 function normSlug(s) {
   return String(s || '')
@@ -55,8 +56,10 @@ function gerarCodigoAcesso() {
   return 'AXR-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
+// Nota: gerador antigo retornava 6 dígitos numéricos.
+// Agora utilizamos gerador legível/temporário centralizado em utils/passwordPolicy.
 function gerarSenhaSimples() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return generateTemporaryPassword();
 }
 
 function normalizarTurma(valor) {
@@ -318,8 +321,9 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
       return res.status(400).json({ mensagem: 'Informe um e-mail válido.' });
     }
 
-    if (!senha || senha.length < 6) {
-      return res.status(400).json({ mensagem: 'A senha deve ter pelo menos 6 caracteres.' });
+    const check = validatePasswordStrength(senha);
+    if (!check.ok) {
+      return res.status(400).json({ mensagem: check.message || 'A senha não atende à política de segurança.' });
     }
 
     if (!['admin', 'monitor', 'professor'].includes(tipo)) {

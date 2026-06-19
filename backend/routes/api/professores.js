@@ -6,6 +6,7 @@ const { autenticar } = require('../../middleware/autenticacao');
 const qrcode = require('qrcode');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { validatePasswordStrength } = require('../../utils/passwordPolicy');
 
 const SECRET = process.env.JWT_SECRET || 'segredo_padrao';
 const BASE_URL = process.env.BASE_URL || 'https://sistema-cmdpiiczs.onrender.com';
@@ -62,6 +63,11 @@ router.post('/', autenticar, async (req, res) => {
     const existe = await Usuario.findOne({ email });
     if (existe) {
       return res.status(400).json({ mensagem: 'Já existe um usuário com este e-mail.' });
+    }
+
+    const check = validatePasswordStrength(senha);
+    if (!check.ok) {
+      return res.status(400).json({ mensagem: check.message || 'Senha inválida.' });
     }
 
     const hashed = await bcrypt.hash(senha, 10);

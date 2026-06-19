@@ -20,6 +20,7 @@ const calcularNotaTSMD = require('../../utils/calculoNota');
 const { getConfigDisciplinar } = require('../../utils/configuracaoDisciplinar');
 const { enviarTelegram } = require('../../services/mensageria');
 const { logAction, attachActor } = require('../../utils/audit');
+const { generateTemporaryPassword, validatePasswordStrength } = require('../../utils/passwordPolicy');
 
 // ======================================================
 // ☁️ AWS S3 / CloudFront
@@ -1321,8 +1322,9 @@ router.post('/:id/vincular-usuario', autenticar, requireTenant, attachActor, ape
       return res.status(400).json({ message: 'Informe um e-mail válido para o acesso do aluno.' });
     }
 
-    if (!senha || senha.length < 6) {
-      return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
+    const check = validatePasswordStrength(senha);
+    if (!check.ok) {
+      return res.status(400).json({ message: check.message || 'Senha inválida.' });
     }
 
     const instituicaoId = aluno.instituicao || aluno.tenantId || getTenantId(req);
@@ -1449,7 +1451,7 @@ router.post(
           aluno.codigoAcesso = codigo;
         }
 
-        const senha = String(Math.floor(100000 + Math.random() * 900000));
+        const senha = generateTemporaryPassword();
 
         const email =
           aluno.contatos?.emailResponsavel ||
