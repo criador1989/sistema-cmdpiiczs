@@ -799,6 +799,9 @@
             <option value="devolvida">Devolvida</option>
           </select>
 
+          <label>Número específico</label>
+          <input id="fNumero" placeholder="Ex: 4217" type="number" min="1" />
+
           <label>Responsável</label>
           <input id="fResponsavel" placeholder="Buscar por nome" />
 
@@ -824,7 +827,10 @@
         <div id="tabela-responsaveis" class="panel active">
           <div class="section-title">
             <h2>Responsáveis com rifas</h2>
-            <button class="btn small" onclick="carregarResponsaveis()">Atualizar</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="fResponsavelAba" placeholder="Filtrar por nome" style="width:200px;" oninput="carregarResponsaveis()" />
+              <button class="btn small" onclick="carregarResponsaveis()">Atualizar</button>
+            </div>
           </div>
 
           <div class="table-wrap">
@@ -833,10 +839,12 @@
                 <tr>
                   <th>Responsável</th>
                   <th>Turma/Setor</th>
-                  <th>Bloco</th>
+                  <th>Blocos reais</th>
                   <th>Entregues</th>
+                  <th>Distrib.</th>
                   <th>Vendidas</th>
                   <th>Pagas</th>
+                  <th>Devolvidas</th>
                   <th>Valor pago</th>
                   <th>Pendente</th>
                   <th>Ações</th>
@@ -844,7 +852,7 @@
               </thead>
               <tbody id="responsaveisBody">
                 <tr>
-                  <td colspan="9">Nenhum dado carregado.</td>
+                  <td colspan="11">Nenhum dado carregado.</td>
                 </tr>
               </tbody>
             </table>
@@ -2339,32 +2347,45 @@
       const body = document.getElementById("responsaveisBody");
 
       if (!campanhaAtual?._id) {
-        body.innerHTML = `<tr><td colspan="9">Selecione uma campanha.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11">Selecione uma campanha.</td></tr>`;
         return;
       }
 
-      body.innerHTML = `<tr><td colspan="9">Carregando...</td></tr>`;
+      body.innerHTML = `<tr><td colspan="11">Carregando...</td></tr>`;
 
-      const data = await api(`/api/rifas/responsaveis/${campanhaAtual._id}`);
+      const filtroNome = (document.getElementById("fResponsavelAba")?.value || "").trim();
+      const qs = filtroNome ? `?responsavelNome=${encodeURIComponent(filtroNome)}` : "";
+
+      const data = await api(`/api/rifas/blocos-reais/${campanhaAtual._id}${qs}`);
       const lista = data.responsaveis || [];
       responsaveisCache = lista;
 
       if (!lista.length) {
-        body.innerHTML = `<tr><td colspan="9">Nenhum responsável com rifas distribuídas.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11">Nenhum responsável com rifas distribuídas.</td></tr>`;
         return;
       }
 
       body.innerHTML = lista.map(r => {
-        const bloco = `${formatNumeroBloco(r.menorNumero)} a ${formatNumeroBloco(r.maiorNumero)}`;
+        const blocosTexto = r.blocos.map(b =>
+          b.inicio === b.fim
+            ? formatNumeroBloco(b.inicio)
+            : `${formatNumeroBloco(b.inicio)}–${formatNumeroBloco(b.fim)}`
+        ).join(", ");
+
+        const blocoLabel = r.totalBlocos > 1
+          ? `<span title="${blocosTexto}">${r.totalBlocos} blocos: ${blocosTexto}</span>`
+          : blocosTexto;
 
         return `
           <tr>
             <td><strong>${escapeHtml(r.responsavelNome || "—")}</strong></td>
             <td>${escapeHtml(r.turmaOuSetor || "—")}</td>
-            <td>${bloco}</td>
+            <td style="font-size:0.85em;white-space:normal;max-width:220px">${blocoLabel}</td>
             <td>${r.entregues || 0}</td>
+            <td>${r.distribuidas || 0}</td>
             <td>${r.vendidas || 0}</td>
             <td>${r.pagas || 0}</td>
+            <td>${r.devolvidas || 0}</td>
             <td>${money.format(r.valorPago || 0)}</td>
             <td>${money.format(r.pendente || 0)}</td>
             <td>
@@ -2392,10 +2413,12 @@
       const status = document.getElementById("fStatus").value;
       const responsavel = document.getElementById("fResponsavel").value.trim();
       const turma = document.getElementById("fTurma").value.trim();
+      const numero = document.getElementById("fNumero")?.value.trim();
 
       if (status) qs.set("status", status);
       if (responsavel) qs.set("responsavel", responsavel);
       if (turma) qs.set("turma", turma);
+      if (numero) qs.set("numero", numero);
       qs.set("limite", "500");
 
       const data = await api(`/api/rifas/numeros/${campanhaAtual._id}?${qs.toString()}`);

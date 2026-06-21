@@ -1398,7 +1398,7 @@ router.get(
       const instituicao = getInstituicaoId(req);
       const { campanhaId } = req.params;
 
-      const { status, responsavel, turma, limite = 300 } = req.query;
+      const { status, responsavel, turma, numero, limite = 300 } = req.query;
 
       const filtro = {
         instituicao,
@@ -1408,6 +1408,14 @@ router.get(
       if (status) filtro.status = status;
       if (responsavel) filtro.responsavelNome = new RegExp(responsavel, "i");
       if (turma) filtro.turmaOuSetor = new RegExp(turma, "i");
+      if (numero) {
+        const n = Number(numero);
+        if (Number.isInteger(n) && n > 0) {
+          filtro.numeroValor = n;
+        } else {
+          filtro.numero = new RegExp(`^${numero.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i");
+        }
+      }
 
       const numeros = await RifaNumero.find(filtro)
         .sort({ numeroValor: 1 })
@@ -1509,6 +1517,127 @@ router.get(
         erro: "Erro ao listar responsáveis.",
         detalhe: err.message,
       });
+    }
+  }
+);
+
+/**
+ * GET /api/rifas/blocos-reais/:campanhaId
+ * Retorna blocos contíguos reais por responsável (não apenas min/max).
+ * Query: ?responsavelNome= (filtro opcional, parcial case-insensitive)
+ */
+router.get(
+  "/blocos-reais/:campanhaId",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+      const { campanhaId } = req.params;
+      const { responsavelNome } = req.query;
+
+      const campanha = await CampanhaRifa.findOne({ _id: campanhaId, instituicao }).lean();
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const matchFiltro = {
+        instituicao: campanha.instituicao,
+        campanha: campanha._id,
+        responsavelNome: { $exists: true, $nin: [null, ""] },
+      };
+      if (responsavelNome) {
+        matchFiltro.responsavelNome = new RegExp(
+          responsavelNome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "i"
+        );
+      }
+
+      // Agrupa por responsável e coleta todos os numeroValor + totais por status
+      const grupos = await RifaNumero.aggregate([
+        { $match: matchFiltro },
+        { $sort: { numeroValor: 1 } },
+        {
+          $group: {
+            _id: {
+              nome: "$responsavelNome",
+              turma: "$turmaOuSetor",
+              tipo: "$responsavelTipo",
+              responsavelId: "$responsavelId",
+            },
+            numerosValor: { $push: "$numeroValor" },
+            entregues: { $sum: 1 },
+            distribuidas: {
+              $sum: { $cond: [{ $eq: ["$status", "distribuida"] }, 1, 0] },
+            },
+            vendidas: {
+              $sum: { $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0] },
+            },
+            pagas: {
+              $sum: { $cond: [{ $eq: ["$status", "paga"] }, 1, 0] },
+            },
+            devolvidas: {
+              $sum: { $cond: [{ $eq: ["$status", "devolvida"] }, 1, 0] },
+            },
+            valorTotal: { $sum: { $ifNull: ["$valor", 0] } },
+            valorPago: { $sum: { $ifNull: ["$valorPago", 0] } },
+          },
+        },
+      ]);
+
+      // Detecta blocos contíguos a partir do array de números já ordenado
+      function detectarBlocos(numerosOrdenados) {
+        const blocos = [];
+        if (!numerosOrdenados.length) return blocos;
+        let inicio = numerosOrdenados[0];
+        let fim = numerosOrdenados[0];
+        for (let i = 1; i < numerosOrdenados.length; i++) {
+          if (numerosOrdenados[i] === fim + 1) {
+            fim = numerosOrdenados[i];
+          } else {
+            blocos.push({ inicio, fim, quantidade: fim - inicio + 1 });
+            inicio = numerosOrdenados[i];
+            fim = numerosOrdenados[i];
+          }
+        }
+        blocos.push({ inicio, fim, quantidade: fim - inicio + 1 });
+        return blocos;
+      }
+
+      const responsaveis = grupos
+        .map((g) => {
+          const blocos = detectarBlocos(g.numerosValor);
+          const pendente = Math.max((g.valorTotal || 0) - (g.valorPago || 0), 0);
+          return {
+            responsavelNome: g._id.nome,
+            turmaOuSetor: g._id.turma,
+            responsavelTipo: g._id.tipo,
+            responsavelId: g._id.responsavelId,
+            blocos,
+            totalBlocos: blocos.length,
+            entregues: g.entregues,
+            distribuidas: g.distribuidas,
+            vendidas: g.vendidas,
+            pagas: g.pagas,
+            devolvidas: g.devolvidas,
+            valorTotal: g.valorTotal,
+            valorPago: g.valorPago,
+            pendente,
+          };
+        })
+        .sort((a, b) => {
+          const ta = indiceTurmaRifaBackend(a.turmaOuSetor);
+          const tb = indiceTurmaRifaBackend(b.turmaOuSetor);
+          if (ta !== tb) return ta - tb;
+          return String(a.responsavelNome).localeCompare(String(b.responsavelNome), "pt-BR", {
+            sensitivity: "base",
+          });
+        });
+
+      return res.json({ ok: true, responsaveis });
+    } catch (err) {
+      console.error("[RIFAS][BLOCOS_REAIS]", err);
+      return res.status(500).json({ erro: "Erro ao calcular blocos reais.", detalhe: err.message });
     }
   }
 );
