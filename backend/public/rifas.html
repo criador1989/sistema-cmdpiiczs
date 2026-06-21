@@ -2429,38 +2429,34 @@
     }
 
     async function salvarEdicaoResponsavel() {
-      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+  if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+  if (!edicaoAtual?._id) return toast("Número da rifa não identificado.", "erro");
 
-      const inicio = Number(document.getElementById("editInicio").value);
-      const fim = Number(document.getElementById("editFim").value);
+  const confirmar = confirm("Confirmar correção do responsável deste número?");
+  if (!confirmar) return;
 
-      if (!inicio || !fim || fim < inicio) return toast("Informe um intervalo válido.", "erro");
+  const categoria = document.getElementById("editCategoria").value;
 
-      const confirmar = confirm("Confirmar correção do responsável/bloco?");
-      if (!confirmar) return;
+  const data = await api("/api/rifas/editar-responsavel", {
+    method: "PATCH",
+    body: JSON.stringify({
+      campanhaId: campanhaAtual._id,
+      numeroId: edicaoAtual._id,
+      novoResponsavelNome: document.getElementById("editResponsavel").value.trim(),
+      novoResponsavelId: null,
+      novoResponsavelTipo: categoria,
+      novaTurmaOuSetor: document.getElementById("editTurma").value.trim(),
+      novaObservacao: document.getElementById("editObs").value.trim()
+    })
+  });
 
-      const categoria = document.getElementById("editCategoria").value;
+  toast(data.mensagem || "Responsável atualizado.");
+  fecharModalEditarBloco();
 
-      const data = await api("/api/rifas/editar-responsavel", {
-        method: "PATCH",
-        body: JSON.stringify({
-          campanhaId: campanhaAtual._id,
-          numeroInicial: inicio,
-          numeroFinal: fim,
-          novoResponsavelNome: document.getElementById("editResponsavel").value.trim(),
-          novoResponsavelId: categoria === "aluno" ? edicaoAtual?.responsavelId || null : null,
-          novaTurmaOuSetor: document.getElementById("editTurma").value.trim(),
-          novaObservacao: document.getElementById("editObs").value.trim()
-        })
-      });
-
-      toast(data.mensagem || "Responsável atualizado.");
-      fecharModalEditarBloco();
-
-      await carregarDashboard();
-      await carregarResponsaveis();
-      await carregarNumeros();
-    }
+  await carregarDashboard();
+  await carregarResponsaveis();
+  await carregarNumeros();
+}
 
     async function salvarEdicaoPagamento() {
       if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");

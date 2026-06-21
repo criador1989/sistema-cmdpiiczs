@@ -837,6 +837,29 @@ router.post(
         set.formaPagamento = "";
         set.valorPago = 0;
         set.comprovanteUrl = "";
+        set.dataDistribuicao = null;
+        set.dataVenda = null;
+        set.dataPagamento = null;
+      }
+
+      // Guard: verificar responsável antes de alterar status financeiro
+      const registrosPrestacao = await RifaNumero.find({
+        instituicao,
+        campanha: campanha._id,
+        numero: { $in: numeros.map(String) },
+      }).select("numero status responsavelNome").lean();
+
+      if (status === "paga" || status === "vendida") {
+        const semResponsavel = registrosPrestacao.filter(
+          r => !r.responsavelNome || r.responsavelNome.trim() === ""
+        );
+        if (semResponsavel.length > 0) {
+          return res.status(400).json({
+            erro: `Não é possível marcar como "${status}": ${semResponsavel.length} número(s) não possuem responsável. Distribua antes de registrar pagamento.`,
+            numerosInvalidos: semResponsavel.map(r => r.numero),
+            bloqueio: "SEM_RESPONSAVEL",
+          });
+        }
       }
 
       const resultado = await RifaNumero.updateMany(
@@ -878,51 +901,63 @@ router.patch(
       const instituicao = getInstituicaoId(req);
 
       const {
-        campanhaId,
-        numeroInicial,
-        numeroFinal,
-        novoResponsavelNome,
-        novoResponsavelId,
-        novaTurmaOuSetor,
-        novaObservacao,
-        novoResponsavelTipo,
-      } = req.body;
+  campanhaId,
+  numeroId,
+  numeroInicial,
+  numeroFinal,
+  novoResponsavelNome,
+  novoResponsavelId,
+  novaTurmaOuSetor,
+  novaObservacao,
+  novoResponsavelTipo,
+} = req.body;
 
-      if (!campanhaId || !numeroInicial || !numeroFinal) {
-        return res.status(400).json({
-          erro: "Informe campanha e intervalo de números.",
-        });
-      }
+      if (!campanhaId) {
+  return res.status(400).json({
+    erro: "Informe a campanha.",
+  });
+}
 
-      const inicial = Number(numeroInicial);
-      const final = Number(numeroFinal);
+const campanha = await CampanhaRifa.findOne({
+  _id: campanhaId,
+  instituicao,
+});
 
-      if (!Number.isInteger(inicial) || !Number.isInteger(final)) {
-        return res.status(400).json({
-          erro: "Número inicial e final precisam ser números inteiros.",
-        });
-      }
+if (!campanha) {
+  return res.status(404).json({ erro: "Campanha não encontrada." });
+}
 
-      if (final < inicial) {
-        return res.status(400).json({
-          erro: "Intervalo inválido.",
-        });
-      }
+let filtro = {
+  instituicao,
+  campanha: campanha._id,
+};
 
-      const campanha = await CampanhaRifa.findOne({
-        _id: campanhaId,
-        instituicao,
-      });
+if (numeroId) {
+  filtro._id = numeroId;
+} else {
+  if (!numeroInicial || !numeroFinal) {
+    return res.status(400).json({
+      erro: "Informe o número da rifa ou intervalo.",
+    });
+  }
 
-      if (!campanha) {
-        return res.status(404).json({ erro: "Campanha não encontrada." });
-      }
+  const inicial = Number(numeroInicial);
+  const final = Number(numeroFinal);
 
-      const filtro = {
-        instituicao,
-        campanha: campanha._id,
-        numeroValor: { $gte: inicial, $lte: final },
-      };
+  if (!Number.isInteger(inicial) || !Number.isInteger(final)) {
+    return res.status(400).json({
+      erro: "Número inicial e final precisam ser números inteiros.",
+    });
+  }
+
+  if (final < inicial) {
+    return res.status(400).json({
+      erro: "Intervalo inválido.",
+    });
+  }
+
+  filtro.numeroValor = { $gte: inicial, $lte: final };
+}
 
       const numeros = await RifaNumero.find(filtro).lean();
 
@@ -930,6 +965,25 @@ router.patch(
         return res.status(404).json({
           erro: "Nenhum número encontrado nesse intervalo.",
         });
+      }
+
+      // Guard: bloquear range com múltiplos responsáveis sem confirmação explícita
+      if (!filtro._id && numeros.length > 1) {
+        const respSet = new Set(
+          numeros.map(n =>
+            n.responsavelId
+              ? n.responsavelId.toString()
+              : (n.responsavelNome && n.responsavelNome.trim() ? n.responsavelNome.trim() : "__sem__")
+          )
+        );
+        if (respSet.size > 1 && !req.body.confirmarMultiplosResponsaveis) {
+          return res.status(400).json({
+            erro: `O intervalo contém ${respSet.size} responsáveis distintos. Envie confirmarMultiplosResponsaveis: true para confirmar a alteração em lote.`,
+            totalAfetados: numeros.length,
+            totalRespDistintos: respSet.size,
+            bloqueio: "MULTIPLOS_RESPONSAVEIS",
+          });
+        }
       }
 
       const tipoSeguro = ["aluno", "professor", "servidor", "externo", "outro", ""].includes(
@@ -1037,6 +1091,66 @@ router.patch(
         filtro.numeroValor = { $gte: inicial, $lte: final };
       }
 
+      // ── GUARD: inspecionar registros antes de qualquer escrita ─────────────
+      const numerosAfetados = await RifaNumero.find(filtro)
+        .select("status responsavelId responsavelNome")
+        .lean();
+
+      const totalAfetados = numerosAfetados.length;
+
+      if (totalAfetados === 0) {
+        return res.status(404).json({ erro: "Nenhum número encontrado com esse filtro." });
+      }
+
+      // Contar responsáveis distintos no intervalo
+      const respDistintosSet = new Set(
+        numerosAfetados.map(n =>
+          n.responsavelId
+            ? n.responsavelId.toString()
+            : (n.responsavelNome && n.responsavelNome.trim() ? n.responsavelNome.trim() : "__sem__")
+        )
+      );
+      const totalRespDistintos = respDistintosSet.size;
+      const temVinculos = numerosAfetados.some(
+        n => n.responsavelNome && n.responsavelNome.trim() !== ""
+      );
+
+      // Operações destrutivas (apagam vínculo) exigem confirmação extra
+      if (status === "disponivel" || status === "devolvida") {
+        if (temVinculos && totalRespDistintos > 1) {
+          return res.status(400).json({
+            erro: `Operação bloqueada: o intervalo contém ${totalRespDistintos} responsáveis distintos. Corrija número por número ou envie confirmarMultiplosResponsaveis: true para forçar.`,
+            totalAfetados,
+            totalRespDistintos,
+            bloqueio: "MULTIPLOS_RESPONSAVEIS",
+          });
+        }
+
+        if (totalAfetados > 20 && req.body.confirmarGrandeLote !== "CONFIRMAR") {
+          return res.status(400).json({
+            erro: `Operação bloqueada: ${totalAfetados} números seriam afetados. Envie confirmarGrandeLote: "CONFIRMAR" no corpo da requisição para prosseguir.`,
+            totalAfetados,
+            totalRespDistintos,
+            bloqueio: "LOTE_GRANDE",
+          });
+        }
+      }
+
+      // Paga/vendida exige responsável vinculado em todos os números
+      if (status === "paga" || status === "vendida") {
+        const semResponsavel = numerosAfetados.filter(
+          n => !n.responsavelNome || n.responsavelNome.trim() === ""
+        );
+        if (semResponsavel.length > 0) {
+          return res.status(400).json({
+            erro: `Não é possível marcar como "${status}": ${semResponsavel.length} número(s) não possuem responsável vinculado. Distribua antes de registrar pagamento.`,
+            totalAfetados,
+            bloqueio: "SEM_RESPONSAVEL",
+          });
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
       const set = {
         status,
         observacao: observacao || "",
@@ -1090,6 +1204,7 @@ router.patch(
         set.formaPagamento = "";
         set.valorPago = 0;
         set.comprovanteUrl = "";
+        set.dataDistribuicao = null;
         set.dataVenda = null;
         set.dataPagamento = null;
       }
@@ -1592,12 +1707,46 @@ if (conflitos.length > 0) {
         });
       }
 
-      const resultado = await RifaNumero.bulkWrite(ops);
+      const resultado = await RifaNumero.bulkWrite(ops, { ordered: false });
+
+      const modificados = resultado.modifiedCount || 0;
+      const esperadoTotal = blocos.reduce((acc, b) => acc + (b.fim - b.inicio + 1), 0);
+
+      if (modificados < esperadoTotal) {
+        // Identificar quais blocos não foram completamente distribuídos
+        const blocosFalhos = [];
+        for (const b of blocos) {
+          const esperadoBloco = b.fim - b.inicio + 1;
+          const distribuido = await RifaNumero.countDocuments({
+            instituicao,
+            campanha: campanha._id,
+            numeroValor: { $gte: b.inicio, $lte: b.fim },
+            status: "distribuida",
+            responsavelNome: b.nome,
+          });
+          if (distribuido < esperadoBloco) {
+            blocosFalhos.push({
+              inicio: b.inicio,
+              fim: b.fim,
+              nome: b.nome,
+              esperado: esperadoBloco,
+              distribuido,
+            });
+          }
+        }
+        return res.status(207).json({
+          ok: false,
+          mensagem: `Distribuição parcial: ${modificados} de ${esperadoTotal} números distribuídos.`,
+          modificados,
+          esperadoTotal,
+          blocosFalhos,
+        });
+      }
 
       return res.json({
         ok: true,
         mensagem: "Distribuição em lote concluída.",
-        modificados: resultado.modifiedCount || 0,
+        modificados,
       });
     } catch (error) {
       console.error("[RIFAS][DISTRIBUICAO_LOTE]", error);
