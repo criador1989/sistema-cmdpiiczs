@@ -925,17 +925,27 @@
         <div id="tabela-ranking" class="panel">
           <div class="section-title">
             <h2>🏆 Ranking de Vendas</h2>
-            <button class="btn small" onclick="carregarRanking()">Atualizar</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="rkTurma" onchange="renderRanking()" style="min-width:120px;">
+                <option value="">Todas as turmas</option>
+              </select>
+              <select id="rkFiltro" onchange="renderRanking()">
+                <option value="todos">Todos</option>
+                <option value="pagos">Somente pagaram</option>
+                <option value="nao_pagaram">Não pagaram nada</option>
+              </select>
+              <button class="btn small" onclick="carregarRanking()">Atualizar</button>
+            </div>
           </div>
 
           <div class="grid cards" style="grid-template-columns: repeat(4, minmax(150px, 1fr)); margin-bottom:16px;">
-            <div class="card metric"><span>Total vendido</span><strong id="rTotalVendido">0</strong></div>
+            <div class="card metric"><span>Total pago ✓</span><strong id="rTotalVendido">0</strong></div>
             <div class="card metric"><span>Total arrecadado</span><strong id="rTotalPago">R$ 0,00</strong></div>
             <div class="card metric"><span>Melhor responsável</span><strong id="rTopAluno">-</strong></div>
             <div class="card metric"><span>Melhor turma</span><strong id="rTopTurma">-</strong></div>
           </div>
 
-          <div class="section-title"><h2>Top Responsáveis</h2></div>
+          <div class="section-title"><h2>Responsáveis</h2></div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -943,20 +953,22 @@
                   <th>#</th>
                   <th>Nome</th>
                   <th>Turma/Setor</th>
-                  <th>Vendidas</th>
-                  <th>Pagas</th>
-                  <th>R$ Vendido</th>
+                  <th title="Total de números distribuídos">Entregues</th>
+                  <th title="Status = paga (confirmado)">Pagas ✓</th>
+                  <th title="Status = vendida (aguardando pagamento)">V. Pend.</th>
+                  <th title="Distribuídas - pagas - vend.pend. - devolvidas">Pend.</th>
+                  <th title="Blocos contíguos com status paga">Blocos Pagos</th>
                   <th>R$ Pago</th>
-                  <th>Pendente</th>
+                  <th>R$ Pendente</th>
                 </tr>
               </thead>
               <tbody id="rankingResponsaveis">
-                <tr><td colspan="8">Nenhum dado carregado.</td></tr>
+                <tr><td colspan="10">Nenhum dado carregado.</td></tr>
               </tbody>
             </table>
           </div>
 
-          <div class="section-title" style="margin-top:20px;"><h2>Top Turmas</h2></div>
+          <div class="section-title" style="margin-top:20px;"><h2>Por Turma</h2></div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -964,15 +976,16 @@
                   <th>#</th>
                   <th>Turma/Setor</th>
                   <th>Responsáveis</th>
-                  <th>Vendidas</th>
-                  <th>Pagas</th>
-                  <th>R$ Vendido</th>
+                  <th>Entregues</th>
+                  <th>Pagas ✓</th>
+                  <th>V. Pend.</th>
+                  <th>Pend.</th>
                   <th>R$ Pago</th>
-                  <th>Pendente</th>
+                  <th>R$ Pendente</th>
                 </tr>
               </thead>
               <tbody id="rankingTurmas">
-                <tr><td colspan="8">Nenhum dado carregado.</td></tr>
+                <tr><td colspan="9">Nenhum dado carregado.</td></tr>
               </tbody>
             </table>
           </div>
@@ -2619,72 +2632,117 @@
       return posicao;
     }
 
-    async function carregarRanking() {
+    function renderRanking() {
       const bodyResp = document.getElementById("rankingResponsaveis");
       const bodyTurmas = document.getElementById("rankingTurmas");
+      if (!rankingCache) return;
 
-      if (!campanhaAtual?._id) {
-        bodyResp.innerHTML = `<tr><td colspan="8">Selecione uma campanha.</td></tr>`;
-        bodyTurmas.innerHTML = `<tr><td colspan="8">Selecione uma campanha.</td></tr>`;
-        return;
-      }
+      const turmaSel = document.getElementById("rkTurma")?.value || "";
+      const filtroSel = document.getElementById("rkFiltro")?.value || "todos";
 
-      bodyResp.innerHTML = `<tr><td colspan="8">Carregando ranking...</td></tr>`;
-      bodyTurmas.innerHTML = `<tr><td colspan="8">Carregando ranking...</td></tr>`;
+      let lista = rankingCache.topResponsaveis || [];
 
-      const data = await api(`/api/rifas/ranking/${campanhaAtual._id}`);
-      rankingCache = data;
+      if (turmaSel) lista = lista.filter(r => r.turmaOuSetor === turmaSel);
+      if (filtroSel === "pagos") lista = lista.filter(r => r.pagas > 0);
+      if (filtroSel === "nao_pagaram") lista = lista.filter(r => r.pagas === 0);
 
-      const topResp = data.topResponsaveis || [];
-      const topTurmas = data.topTurmas || [];
-      const resumo = data.resumo || {};
-
-      document.getElementById("rTotalVendido").textContent = resumo.totalVendido || 0;
-      document.getElementById("rTotalPago").textContent = money.format(resumo.valorPago || 0);
-      document.getElementById("rTopAluno").textContent = resumo.melhorResponsavel?.responsavelNome || "-";
-      document.getElementById("rTopTurma").textContent = resumo.melhorTurma?.turmaOuSetor || "-";
-
-      if (!topResp.length) {
-        bodyResp.innerHTML = `<tr><td colspan="8">Nenhum responsável com venda registrada.</td></tr>`;
+      if (!lista.length) {
+        bodyResp.innerHTML = `<tr><td colspan="10">Nenhum responsável encontrado com esse filtro.</td></tr>`;
       } else {
-        bodyResp.innerHTML = topResp.map((r, i) => {
+        bodyResp.innerHTML = lista.map((r, i) => {
           const pos = i + 1;
           const pendente = Number(r.pendente || 0);
+          const blocosTip = r.blocosPagosDetalhe?.map(b =>
+            b.inicio === b.fim ? b.inicio : `${b.inicio}–${b.fim}`
+          ).join(", ") || "";
           return `
             <tr>
               <td><strong>${medalhaRanking(pos)}</strong></td>
               <td><strong>${escapeHtml(r.responsavelNome || "—")}</strong></td>
               <td>${escapeHtml(r.turmaOuSetor || "—")}</td>
-              <td>${r.vendidas || 0}</td>
-              <td>${r.pagas || 0}</td>
-              <td>${money.format(r.valorVendido || 0)}</td>
+              <td>${r.entregues || 0}</td>
+              <td style="color:#22c55e;font-weight:700;">${r.pagas || 0}</td>
+              <td style="color:#f59e0b;">${r.vendidasPendentes || 0}</td>
+              <td>${r.pendentes || 0}</td>
+              <td title="${escapeHtml(blocosTip)}">${r.blocosPagos || 0}${blocosTip ? " ℹ" : ""}</td>
               <td>${money.format(r.valorPago || 0)}</td>
-              <td style="color:${pendente > 0 ? "#fb7185" : "#22c55e"}; font-weight:900;">${money.format(pendente)}</td>
+              <td style="color:${pendente > 0 ? "#fb7185" : "#22c55e"};font-weight:700;">${money.format(pendente)}</td>
             </tr>
           `;
         }).join("");
       }
 
-      if (!topTurmas.length) {
-        bodyTurmas.innerHTML = `<tr><td colspan="8">Nenhuma turma/setor com venda registrada.</td></tr>`;
+      // Tabela de turmas — recalcula a partir da lista filtrada por filtroSel (sem filtro de turma)
+      let listaParaTurmas = rankingCache.topResponsaveis || [];
+      if (filtroSel === "pagos") listaParaTurmas = listaParaTurmas.filter(r => r.pagas > 0);
+      if (filtroSel === "nao_pagaram") listaParaTurmas = listaParaTurmas.filter(r => r.pagas === 0);
+
+      const turmaAgg = {};
+      for (const r of listaParaTurmas) {
+        const t = r.turmaOuSetor || "—";
+        if (!turmaAgg[t]) turmaAgg[t] = { turmaOuSetor: t, totalResponsaveis:0, entregues:0, pagas:0, vendidasPendentes:0, pendentes:0, valorPago:0, pendente:0 };
+        const ta = turmaAgg[t];
+        ta.totalResponsaveis++; ta.entregues += r.entregues; ta.pagas += r.pagas;
+        ta.vendidasPendentes += r.vendidasPendentes; ta.pendentes += r.pendentes;
+        ta.valorPago += r.valorPago; ta.pendente += r.pendente;
+      }
+      const turmasRender = Object.values(turmaAgg).sort((a,b) => b.pagas - a.pagas || b.valorPago - a.valorPago);
+
+      if (!turmasRender.length) {
+        bodyTurmas.innerHTML = `<tr><td colspan="9">Nenhuma turma encontrada.</td></tr>`;
       } else {
-        bodyTurmas.innerHTML = topTurmas.map((t, i) => {
-          const pos = i + 1;
+        bodyTurmas.innerHTML = turmasRender.map((t, i) => {
           const pendente = Number(t.pendente || 0);
           return `
             <tr>
-              <td><strong>${medalhaRanking(pos)}</strong></td>
+              <td><strong>${medalhaRanking(i+1)}</strong></td>
               <td><strong>${escapeHtml(t.turmaOuSetor || "—")}</strong></td>
-              <td>${t.totalResponsaveis || 0}</td>
-              <td>${t.vendidas || 0}</td>
-              <td>${t.pagas || 0}</td>
-              <td>${money.format(t.valorVendido || 0)}</td>
-              <td>${money.format(t.valorPago || 0)}</td>
-              <td style="color:${pendente > 0 ? "#fb7185" : "#22c55e"}; font-weight:900;">${money.format(pendente)}</td>
+              <td>${t.totalResponsaveis}</td>
+              <td>${t.entregues}</td>
+              <td style="color:#22c55e;font-weight:700;">${t.pagas}</td>
+              <td style="color:#f59e0b;">${t.vendidasPendentes}</td>
+              <td>${t.pendentes}</td>
+              <td>${money.format(t.valorPago)}</td>
+              <td style="color:${pendente > 0 ? "#fb7185" : "#22c55e"};font-weight:700;">${money.format(pendente)}</td>
             </tr>
           `;
         }).join("");
       }
+    }
+
+    async function carregarRanking() {
+      const bodyResp = document.getElementById("rankingResponsaveis");
+      const bodyTurmas = document.getElementById("rankingTurmas");
+
+      if (!campanhaAtual?._id) {
+        bodyResp.innerHTML = `<tr><td colspan="10">Selecione uma campanha.</td></tr>`;
+        bodyTurmas.innerHTML = `<tr><td colspan="9">Selecione uma campanha.</td></tr>`;
+        return;
+      }
+
+      bodyResp.innerHTML = `<tr><td colspan="10">Carregando ranking...</td></tr>`;
+      bodyTurmas.innerHTML = `<tr><td colspan="9">Carregando ranking...</td></tr>`;
+
+      const data = await api(`/api/rifas/ranking/${campanhaAtual._id}`);
+      rankingCache = data;
+
+      const resumo = data.resumo || {};
+      document.getElementById("rTotalVendido").textContent = resumo.totalPago || 0;
+      document.getElementById("rTotalPago").textContent = money.format(resumo.valorPago || 0);
+      document.getElementById("rTopAluno").textContent = resumo.melhorResponsavel?.responsavelNome || "-";
+      document.getElementById("rTopTurma").textContent = resumo.melhorTurma?.turmaOuSetor || "-";
+
+      // Popula dropdown de turmas
+      const sel = document.getElementById("rkTurma");
+      if (sel) {
+        const turmaSalva = sel.value;
+        sel.innerHTML = `<option value="">Todas as turmas</option>`
+          + (data.turmasDisponiveis || []).map(t =>
+              `<option value="${escapeHtml(t)}"${t === turmaSalva ? " selected" : ""}>${escapeHtml(t)}</option>`
+            ).join("");
+      }
+
+      renderRanking();
     }
 
     async function carregarRelatorios() {

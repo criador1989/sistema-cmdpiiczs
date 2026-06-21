@@ -1718,34 +1718,173 @@ router.get(
     try {
       const instituicao = getInstituicaoId(req);
       const { campanhaId } = req.params;
+      const { turma } = req.query; // filtro opcional por turma
 
-      const top = await RifaNumero.aggregate([
-        {
-          $match: {
-            instituicao,
-            campanha: new mongoose.Types.ObjectId(campanhaId),
-            responsavelNome: { $ne: "" },
-          },
-        },
+      const campanha = await CampanhaRifa.findOne({ _id: campanhaId, instituicao }).lean();
+      if (!campanha) return res.status(404).json({ erro: "Campanha não encontrada." });
+
+      const matchFiltro = {
+        instituicao: campanha.instituicao,
+        campanha: campanha._id,
+        responsavelNome: { $exists: true, $nin: [null, ""] },
+      };
+      if (turma) {
+        matchFiltro.turmaOuSetor = new RegExp(
+          turma.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "i"
+        );
+      }
+
+      // Agrega por responsável coletando dados suficientes para blocos pagos
+      const grupos = await RifaNumero.aggregate([
+        { $match: matchFiltro },
+        { $sort: { numeroValor: 1 } },
         {
           $group: {
             _id: {
               nome: "$responsavelNome",
               turma: "$turmaOuSetor",
+              tipo: "$responsavelTipo",
             },
-            vendidas: {
+            entregues: { $sum: 1 },
+            pagas: {
+              $sum: { $cond: [{ $eq: ["$status", "paga"] }, 1, 0] },
+            },
+            vendidasPendentes: {
+              $sum: { $cond: [{ $eq: ["$status", "vendida"] }, 1, 0] },
+            },
+            devolvidas: {
+              $sum: { $cond: [{ $eq: ["$status", "devolvida"] }, 1, 0] },
+            },
+            valorTotal: { $sum: { $ifNull: ["$valor", 0] } },
+            valorPago: { $sum: { $ifNull: ["$valorPago", 0] } },
+            valorVendido: {
               $sum: {
-                $cond: [{ $in: ["$status", ["vendida", "paga"]] }, 1, 0],
+                $cond: [
+                  { $in: ["$status", ["vendida", "paga"]] },
+                  { $ifNull: ["$valorPago", { $ifNull: ["$valor", 0] }] },
+                  0,
+                ],
               },
             },
-            valorPago: { $sum: "$valorPago" },
+            // Coleta apenas os números pagos para detecção de blocos
+            numerosPagos: {
+              $push: {
+                $cond: [{ $eq: ["$status", "paga"] }, "$numeroValor", "$$REMOVE"],
+              },
+            },
           },
         },
-        { $sort: { vendidas: -1, valorPago: -1 } },
-        { $limit: 10 },
       ]);
 
-      res.json({ ok: true, top });
+      // Reutiliza detectarBlocos (mesma lógica do endpoint blocos-reais)
+      function detectarBlocos(nums) {
+        if (!nums.length) return [];
+        const sorted = [...nums].sort((a, b) => a - b);
+        const blocos = [];
+        let ini = sorted[0], fim = sorted[0];
+        for (let i = 1; i < sorted.length; i++) {
+          if (sorted[i] === fim + 1) { fim = sorted[i]; }
+          else { blocos.push({ inicio: ini, fim, quantidade: fim - ini + 1 }); ini = sorted[i]; fim = sorted[i]; }
+        }
+        blocos.push({ inicio: ini, fim, quantidade: fim - ini + 1 });
+        return blocos;
+      }
+
+      // Processa cada grupo
+      const topResponsaveis = grupos
+        .map((g) => {
+          const blocosPagosArr = detectarBlocos(g.numerosPagos);
+          const pendentes = Math.max(g.entregues - g.pagas - g.vendidasPendentes - g.devolvidas, 0);
+          const pendente = Math.max((g.valorTotal || 0) - (g.valorPago || 0), 0);
+          return {
+            responsavelNome: g._id.nome,
+            turmaOuSetor: g._id.turma,
+            responsavelTipo: g._id.tipo,
+            entregues: g.entregues,
+            pagas: g.pagas,
+            vendidasPendentes: g.vendidasPendentes,
+            devolvidas: g.devolvidas,
+            pendentes,
+            blocosPagos: blocosPagosArr.length,
+            blocosPagosDetalhe: blocosPagosArr,
+            valorPago: g.valorPago,
+            valorVendido: g.valorVendido,
+            valorTotal: g.valorTotal,
+            pendente,
+          };
+        })
+        .sort((a, b) => {
+          // Ordena por pagas DESC, depois por blocosPagos DESC, depois valorPago DESC
+          if (b.pagas !== a.pagas) return b.pagas - a.pagas;
+          if (b.blocosPagos !== a.blocosPagos) return b.blocosPagos - a.blocosPagos;
+          return b.valorPago - a.valorPago;
+        });
+
+      // Agrupa por turma
+      const turmaMap = {};
+      for (const r of topResponsaveis) {
+        const t = r.turmaOuSetor || "—";
+        if (!turmaMap[t]) {
+          turmaMap[t] = {
+            turmaOuSetor: t,
+            totalResponsaveis: 0,
+            entregues: 0,
+            pagas: 0,
+            vendidasPendentes: 0,
+            pendentes: 0,
+            valorPago: 0,
+            valorVendido: 0,
+            valorTotal: 0,
+            pendente: 0,
+          };
+        }
+        const t_ = turmaMap[t];
+        t_.totalResponsaveis++;
+        t_.entregues += r.entregues;
+        t_.pagas += r.pagas;
+        t_.vendidasPendentes += r.vendidasPendentes;
+        t_.pendentes += r.pendentes;
+        t_.valorPago += r.valorPago;
+        t_.valorVendido += r.valorVendido;
+        t_.valorTotal += r.valorTotal;
+        t_.pendente += r.pendente;
+      }
+
+      const topTurmas = Object.values(turmaMap).sort((a, b) => {
+        if (b.pagas !== a.pagas) return b.pagas - a.pagas;
+        return b.valorPago - a.valorPago;
+      });
+
+      // Ordena turmas pela ordem pedagógica para o dropdown
+      const turmasOrdenadas = [...new Set(
+        topResponsaveis.map(r => r.turmaOuSetor || "").filter(Boolean)
+      )].sort((a, b) => {
+        const ia = indiceTurmaRifaBackend(a);
+        const ib = indiceTurmaRifaBackend(b);
+        return ia !== ib ? ia - ib : a.localeCompare(b, "pt-BR");
+      });
+
+      // Resumo geral
+      const totalPago = topResponsaveis.reduce((s, r) => s + r.pagas, 0);
+      const totalVendidoPendente = topResponsaveis.reduce((s, r) => s + r.vendidasPendentes, 0);
+      const valorPagoTotal = topResponsaveis.reduce((s, r) => s + r.valorPago, 0);
+      const melhorResponsavel = topResponsaveis[0] || null;
+      const melhorTurma = topTurmas[0] || null;
+
+      return res.json({
+        ok: true,
+        topResponsaveis,
+        topTurmas,
+        turmasDisponiveis: turmasOrdenadas,
+        resumo: {
+          totalPago,
+          totalVendidoPendente,
+          valorPago: valorPagoTotal,
+          melhorResponsavel,
+          melhorTurma,
+        },
+      });
     } catch (err) {
       console.error("[RIFAS][RANKING]", err);
       res.status(500).json({ erro: "Erro no ranking." });
