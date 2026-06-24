@@ -8255,3 +8255,52 @@ body:has(.interclasse-public-section) {
     grid-column: 1;
   }
 }
+/* =========================
+   PAGINAÇÃO DE NOTÍCIAS
+   ========================= */
+
+.news-pagination {
+  grid-column: 1 / 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.news-pagination-btn {
+  min-width: 42px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: white;
+  color: var(--azul);
+  border: 1px solid #dbe2ec;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+  transition: .25s;
+}
+
+.news-pagination-btn:hover {
+  background: var(--vermelho);
+  color: white;
+  border-color: var(--vermelho);
+  transform: translateY(-2px);
+}
+
+.news-pagination-btn.active {
+  background: var(--vermelho);
+  color: white;
+  border-color: var(--vermelho);
+}
+
+@media (max-width: 980px) {
+  .news-pagination {
+    grid-column: 1;
+  }
+}

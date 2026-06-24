@@ -623,8 +623,6 @@ const noticiasPagina = todasNoticiasFiltradas.slice(
           `).join('')}
         </div>
 
-${montarPaginacaoNoticias(paginaAtual, totalPaginas)}
-
 <aside class="news-sidebar">
           <div class="sidebar-box" data-cms-block-id="noticias-categorias">
   <h3>${escaparHtml(categoriasConfig.titulo || 'Categorias')}</h3>
@@ -692,6 +690,7 @@ ${montarPaginacaoNoticias(paginaAtual, totalPaginas)}
             <a href="./contato.html">Entrar em contato</a>
           </div>
         </aside>
+        ${montarPaginacaoNoticias(paginaAtual, totalPaginas)}
       </section>
     `;
 
