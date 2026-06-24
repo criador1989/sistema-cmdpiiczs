@@ -350,6 +350,45 @@ function abrirImagemNoticiaModal(src, caption = '') {
   document.body.classList.add('lightbox-open');
 }
 
+function montarPaginacaoNoticias(paginaAtual, totalPaginas) {
+  if (totalPaginas <= 1) return '';
+
+  let botoes = '';
+
+  if (paginaAtual > 1) {
+    botoes += `
+      <a class="news-pagination-btn" href="./noticias.html?pagina=${paginaAtual - 1}">
+        ← Anterior
+      </a>
+    `;
+  }
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    botoes += `
+      <a
+        class="news-pagination-btn ${i === paginaAtual ? 'active' : ''}"
+        href="./noticias.html?pagina=${i}"
+      >
+        ${i}
+      </a>
+    `;
+  }
+
+  if (paginaAtual < totalPaginas) {
+    botoes += `
+      <a class="news-pagination-btn" href="./noticias.html?pagina=${paginaAtual + 1}">
+        Próxima →
+      </a>
+    `;
+  }
+
+  return `
+    <nav class="news-pagination" aria-label="Paginação de notícias">
+      ${botoes}
+    </nav>
+  `;
+}
+
 async function carregarListaNoticiasPublicas() {
   const root =
     document.getElementById('news-list-root') ||
@@ -508,12 +547,35 @@ if (
       });
     }
 
-    noticias = noticias.slice(0, Number(listaConfig.limite || 6));
+    const todasNoticiasFiltradas = [...noticias];
+
+const itensPorPagina = Math.max(Number(listaConfig.limite || 6), 1);
+
+const params = new URLSearchParams(window.location.search);
+
+const paginaSolicitada = Math.max(
+  Number(params.get('pagina') || 1),
+  1
+);
+
+const totalPaginas = Math.max(
+  Math.ceil(todasNoticiasFiltradas.length / itensPorPagina),
+  1
+);
+
+const paginaAtual = Math.min(paginaSolicitada, totalPaginas);
+
+const inicio = (paginaAtual - 1) * itensPorPagina;
+
+const noticiasPagina = todasNoticiasFiltradas.slice(
+  inicio,
+  inicio + itensPorPagina
+);
 
     const textoBotaoLista =
       listaConfig.textoBotao || 'Leia mais →';
 
-    if (!noticias.length) {
+    if (!todasNoticiasFiltradas.length) {
       root.innerHTML = `
         ${bannerHtml}
 
@@ -529,7 +591,7 @@ if (
 
       <section class="news-page" data-cms-block-id="noticias-lista">
         <div class="news-list">
-          ${noticias.map(noticia => `
+          ${noticiasPagina.map(noticia => `
             <article class="news-page-card ${noticia.destaque ? 'featured' : ''}">
               <div
                 class="news-page-image"
@@ -561,7 +623,9 @@ if (
           `).join('')}
         </div>
 
-        <aside class="news-sidebar">
+${montarPaginacaoNoticias(paginaAtual, totalPaginas)}
+
+<aside class="news-sidebar">
           <div class="sidebar-box" data-cms-block-id="noticias-categorias">
   <h3>${escaparHtml(categoriasConfig.titulo || 'Categorias')}</h3>
 
@@ -572,7 +636,7 @@ if (
             ${escaparHtml(item.texto || '')}
           </a>
         `).join('')
-      : [...new Set(noticias.map(n => n.categoria || 'Comunicado'))]
+      : [...new Set(todasNoticiasFiltradas.map(n => n.categoria || 'Comunicado'))]
           .map(cat => `<a href="#">${escaparHtml(cat)}</a>`)
           .join('')
   }
@@ -601,7 +665,7 @@ if (
             <p>${escaparHtml(item.titulo || '')}</p>
           </a>
         `).join('')
-      : noticias.slice(0, 4).map(noticia => `
+      : todasNoticiasFiltradas.slice(0, 4).map(noticia => `
           <a
             href="./pagina-noticia.html?slug=${escaparHtml(noticia.slug || '')}"
             class="recent-news"
@@ -3283,7 +3347,7 @@ async function renderHomeNoticias(main, bloco) {
 
     noticias = noticias.slice(0, limite);
 
-    if (!noticias.length) {
+    if (!todasNoticiasFiltradas.length) {
       main.insertAdjacentHTML('beforeend', `
         <section class="section" data-cms-block-id="home-noticias">
           <div class="section-head">
