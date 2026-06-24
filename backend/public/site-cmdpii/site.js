@@ -3347,7 +3347,7 @@ async function renderHomeNoticias(main, bloco) {
 
     noticias = noticias.slice(0, limite);
 
-    if (!todasNoticiasFiltradas.length) {
+    if (!noticias.length) {
       main.insertAdjacentHTML('beforeend', `
         <section class="section" data-cms-block-id="home-noticias">
           <div class="section-head">
