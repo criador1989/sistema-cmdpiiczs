@@ -42,6 +42,68 @@ function normalizarPreset(preset) {
   return 'militar';
 }
 
+
+function normalizarUF(estado) {
+  const uf = String(estado || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(uf) ? uf : '';
+}
+
+function normalizarTextoCurto(valor) {
+  return String(valor || '').trim();
+}
+
+function normalizarRedeEnsino(valor) {
+  const v = String(valor || '').trim().toLowerCase();
+  if (['estadual', 'municipal', 'federal', 'privada', 'militar', 'civico_militar', 'outra'].includes(v)) return v;
+  return 'estadual';
+}
+
+function normalizarTipoEscola(valor, redeEnsino = '') {
+  const v = String(valor || '').trim().toLowerCase();
+  if (['militar', 'civico_militar', 'civil', 'privada', 'outra'].includes(v)) return v;
+  if (redeEnsino === 'privada') return 'privada';
+  if (redeEnsino === 'militar') return 'militar';
+  if (redeEnsino === 'civico_militar') return 'civico_militar';
+  return 'civil';
+}
+
+function boolFromBody(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  const v = String(value).trim().toLowerCase();
+  return ['1', 'true', 'sim', 'yes', 'on'].includes(v);
+}
+
+function montarCamposGovernancaInstituicao(body = {}) {
+  const redeEnsino = normalizarRedeEnsino(body.redeEnsino || body.rede || body.tipoRede);
+  const tipoEscola = normalizarTipoEscola(body.tipoEscola, redeEnsino);
+  const ambienteTeste = boolFromBody(body.ambienteTeste, false);
+
+  let observatorioAtivo = boolFromBody(body.observatorioAtivo, false);
+  let visivelParaSecretaria = boolFromBody(body.visivelParaSecretaria, false);
+
+  // Regra de proteção: instituição privada nunca entra no Observatório da Secretaria por padrão.
+  // Caso exista convênio no futuro, criaremos uma permissão específica e auditada.
+  if (redeEnsino === 'privada' || tipoEscola === 'privada') {
+    observatorioAtivo = false;
+    visivelParaSecretaria = false;
+  }
+
+  if (ambienteTeste) {
+    visivelParaSecretaria = false;
+  }
+
+  return {
+    estado: normalizarUF(body.estado),
+    municipio: normalizarTextoCurto(body.municipio),
+    redeEnsino,
+    tipoEscola,
+    observatorioAtivo,
+    visivelParaSecretaria,
+    ambienteTeste,
+  };
+}
+
 function buildInstitutionLinks(slug) {
   const safeSlug = String(slug || '').trim();
 
@@ -128,7 +190,7 @@ router.get('/instituicoes', requireSuperAdmin, async (_req, res) => {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
 
     const list = await Instituicao.find({})
-      .select('_id nome sigla slug ativo ativa')
+      .select('_id nome sigla slug ativo ativa estado municipio redeEnsino tipoEscola observatorioAtivo visivelParaSecretaria ambienteTeste')
       .sort({ nome: 1 })
       .lean();
 
@@ -151,6 +213,7 @@ router.post('/instituicoes', requireSuperAdmin, async (req, res) => {
     const sigla = String(req.body?.sigla || '').trim();
     const slug = normSlug(req.body?.slug || sigla || nome);
     const preset = normalizarPreset(req.body?.preset);
+    const governanca = montarCamposGovernancaInstituicao(req.body || {});
 
     if (!nome || nome.length < 3) {
       return res.status(400).json({ mensagem: 'Informe um nome válido.' });
@@ -181,6 +244,13 @@ router.post('/instituicoes', requireSuperAdmin, async (req, res) => {
         slug,
         ativo: true,
         ativa: true,
+        estado: governanca.estado || undefined,
+        municipio: governanca.municipio || undefined,
+        redeEnsino: governanca.redeEnsino,
+        tipoEscola: governanca.tipoEscola,
+        observatorioAtivo: governanca.observatorioAtivo,
+        visivelParaSecretaria: governanca.visivelParaSecretaria,
+        ambienteTeste: governanca.ambienteTeste,
       }], { session });
 
       inst = created[0];
@@ -196,7 +266,14 @@ router.post('/instituicoes', requireSuperAdmin, async (req, res) => {
         sigla: inst.sigla,
         slug: inst.slug,
         ativo: inst.ativo,
-        ativa: inst.ativa
+        ativa: inst.ativa,
+        estado: inst.estado || null,
+        municipio: inst.municipio || null,
+        redeEnsino: inst.redeEnsino || null,
+        tipoEscola: inst.tipoEscola || null,
+        observatorioAtivo: !!inst.observatorioAtivo,
+        visivelParaSecretaria: !!inst.visivelParaSecretaria,
+        ambienteTeste: !!inst.ambienteTeste
       },
       configuracaoDisciplinar: {
         id: String(config._id),
@@ -219,14 +296,60 @@ router.patch('/instituicoes/:id', requireSuperAdmin, async (req, res) => {
   try {
     const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
     const id = String(req.params.id || '').trim();
-    const ativo = !!req.body?.ativo;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    }
+
+    const $set = {};
+
+    if ('ativo' in (req.body || {})) {
+      const ativo = !!req.body.ativo;
+      $set.ativo = ativo;
+      $set.ativa = ativo;
+    }
+
+    const camposGovernanca = ['estado', 'municipio', 'redeEnsino', 'tipoEscola', 'observatorioAtivo', 'visivelParaSecretaria', 'ambienteTeste'];
+    const recebeuGovernanca = camposGovernanca.some(c => c in (req.body || {}));
+
+    if (recebeuGovernanca) {
+      const atual = await Instituicao.findById(id)
+        .select('_id redeEnsino tipoEscola observatorioAtivo visivelParaSecretaria ambienteTeste')
+        .lean();
+
+      if (!atual) {
+        return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+      }
+
+      const governanca = montarCamposGovernancaInstituicao({
+        ...atual,
+        ...(req.body || {})
+      });
+
+      if ('estado' in req.body) $set.estado = governanca.estado || undefined;
+      if ('municipio' in req.body) $set.municipio = governanca.municipio || undefined;
+      if ('redeEnsino' in req.body || 'rede' in req.body || 'tipoRede' in req.body) $set.redeEnsino = governanca.redeEnsino;
+      if ('tipoEscola' in req.body) $set.tipoEscola = governanca.tipoEscola;
+      if ('observatorioAtivo' in req.body) $set.observatorioAtivo = governanca.observatorioAtivo;
+      if ('visivelParaSecretaria' in req.body) $set.visivelParaSecretaria = governanca.visivelParaSecretaria;
+      if ('ambienteTeste' in req.body) $set.ambienteTeste = governanca.ambienteTeste;
+
+      if (governanca.redeEnsino === 'privada' || governanca.tipoEscola === 'privada') {
+        $set.observatorioAtivo = false;
+        $set.visivelParaSecretaria = false;
+      }
+
+      if (governanca.ambienteTeste === true) {
+        $set.visivelParaSecretaria = false;
+      }
+    }
 
     const up = await Instituicao.findByIdAndUpdate(
       id,
-      { $set: { ativo, ativa: ativo } },
+      { $set },
       { new: true }
     )
-      .select('_id nome sigla slug ativo ativa')
+      .select('_id nome sigla slug ativo ativa estado municipio redeEnsino tipoEscola observatorioAtivo visivelParaSecretaria ambienteTeste')
       .lean();
 
     if (!up) {
@@ -306,7 +429,7 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
     }
 
     const instituicao = await Instituicao.findById(instituicaoId)
-      .select('_id nome sigla slug ativo ativa')
+      .select('_id nome sigla slug ativo ativa estado municipio')
       .lean();
 
     if (!instituicao) {
@@ -326,9 +449,9 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
       return res.status(400).json({ mensagem: check.message || 'A senha não atende à política de segurança.' });
     }
 
-    if (!['admin', 'monitor', 'professor'].includes(tipo)) {
+    if (!['admin', 'monitor', 'professor', 'secretaria'].includes(tipo)) {
       return res.status(400).json({
-        mensagem: 'Tipo inválido. Use admin, monitor ou professor.'
+        mensagem: 'Tipo inválido. Use admin, monitor, professor ou secretaria.'
       });
     }
 
@@ -354,6 +477,20 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
       emailVerificadoEm: new Date(),
       tokenVerificacaoHash: null,
       tokenVerificacaoExpiraEm: null,
+
+      escopoObservatorio: tipo === 'secretaria'
+        ? {
+            nivel: req.body?.escopoObservatorio?.nivel || 'estadual',
+            estado: req.body?.escopoObservatorio?.estado || instituicao.estado || null,
+            municipio: req.body?.escopoObservatorio?.municipio || null,
+            regional: req.body?.escopoObservatorio?.regional || null,
+            rede: req.body?.escopoObservatorio?.rede || null,
+            instituicoesPermitidas: Array.isArray(req.body?.escopoObservatorio?.instituicoesPermitidas)
+              ? req.body.escopoObservatorio.instituicoesPermitidas
+              : [],
+            podeVerDadosIndividuais: false,
+          }
+        : undefined,
     });
 
     await novoUsuario.save();
@@ -365,6 +502,7 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
         nome: novoUsuario.nome,
         email: novoUsuario.email,
         tipo: novoUsuario.tipo,
+        escopoObservatorio: novoUsuario.escopoObservatorio || null,
         instituicao: {
           id: String(instituicao._id),
           nome: instituicao.nome,
@@ -441,7 +579,7 @@ async function listarAlunosTurmaMaster(req, res) {
     }
 
     const instituicao = await Instituicao.findById(instituicaoId)
-      .select('_id nome sigla slug ativo ativa')
+      .select('_id nome sigla slug ativo ativa estado municipio redeEnsino tipoEscola observatorioAtivo visivelParaSecretaria ambienteTeste')
       .lean();
 
     if (!instituicao) {

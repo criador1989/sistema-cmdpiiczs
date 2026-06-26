@@ -198,6 +198,7 @@ const notificacoesMetricsRoutes = require('./routes/api/notificacoes.metrics');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
 const alertasRoutes = require('./routes/api/alunos-alertas');
 const dashboardFastRoutes = require('./routes/api/dashboard-fast');
+const observatorioRoutes = require('./routes/api/observatorio');
 
 const pdfRoutes = require('./routes/api/pdf.js');
 
@@ -609,6 +610,7 @@ mountIf('/api/notificacoes', notificacoesMetricsRoutes);
 mountIf('/api/notificacoes', notificacoesApiRoutes);
 
 mountIf('/api/dashboard-fast', dashboardFastRoutes, autenticar);
+mountIf('/api/observatorio', observatorioRoutes);
 
 mountIf('/api/ficha', fichaApiRoutes, autenticar);
 mountIf('/api/fichaAluno', fichaAlunoRoutes, autenticar);

@@ -1,4 +1,6 @@
 // backend/models/Instituicao.js
+'use strict';
+
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
@@ -34,6 +36,41 @@ function normalizeDomain(v) {
   return s.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
 
+function normalizarRedeEnsino(v) {
+  const s = String(v || '').trim().toLowerCase();
+  if (['estadual', 'municipal', 'federal', 'privada', 'militar', 'civico_militar', 'outra'].includes(s)) return s;
+  return 'estadual';
+}
+
+function normalizarTipoEscola(v, redeEnsino = '') {
+  const s = String(v || '').trim().toLowerCase();
+  if (['militar', 'civico_militar', 'civil', 'privada', 'outra'].includes(s)) return s;
+  if (redeEnsino === 'privada') return 'privada';
+  if (redeEnsino === 'militar') return 'militar';
+  if (redeEnsino === 'civico_militar') return 'civico_militar';
+  return 'civil';
+}
+
+function aplicarProtecaoObservatorio(doc) {
+  if (!doc) return;
+
+  const rede = normalizarRedeEnsino(doc.redeEnsino || doc.rede || 'estadual');
+  const tipo = normalizarTipoEscola(doc.tipoEscola || doc.tipoInstituicao, rede);
+
+  doc.redeEnsino = rede;
+  doc.tipoEscola = tipo;
+
+  // Proteção conservadora: escolas privadas e ambientes de teste não aparecem para Secretaria.
+  if (rede === 'privada' || tipo === 'privada') {
+    doc.observatorioAtivo = false;
+    doc.visivelParaSecretaria = false;
+  }
+
+  if (doc.ambienteTeste === true) {
+    doc.visivelParaSecretaria = false;
+  }
+}
+
 const instituicaoSchema = new Schema(
   {
     nome: {
@@ -62,8 +99,9 @@ const instituicaoSchema = new Schema(
       match: [/^\d{14}$/, 'CNPJ deve conter 14 dígitos numéricos.'],
     },
 
-    municipio: { type: String, trim: true },
-    estado: { type: String, trim: true, uppercase: true, minlength: 2, maxlength: 2 },
+    municipio: { type: String, trim: true, index: true },
+    estado: { type: String, trim: true, uppercase: true, minlength: 2, maxlength: 2, index: true },
+    timezone: { type: String, trim: true, default: 'America/Rio_Branco', index: true, },
     endereco: { type: String, trim: true },
     telefone: { type: String, trim: true },
 
@@ -111,7 +149,6 @@ const instituicaoSchema = new Schema(
       default: undefined,
     },
 
-    // 🔥 NOVO CAMPO DE LOGO
     logoUrl: {
       type: String,
       trim: true,
@@ -125,6 +162,41 @@ const instituicaoSchema = new Schema(
       index: true,
       default: undefined,
     },
+
+    // =========================
+    // GOVERNANÇA DO OBSERVATÓRIO
+    // =========================
+    redeEnsino: {
+      type: String,
+      enum: ['estadual', 'municipal', 'federal', 'privada', 'militar', 'civico_militar', 'outra'],
+      default: 'estadual',
+      index: true,
+    },
+
+    tipoEscola: {
+      type: String,
+      enum: ['militar', 'civico_militar', 'civil', 'privada', 'outra'],
+      default: 'civil',
+      index: true,
+    },
+
+    observatorioAtivo: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    visivelParaSecretaria: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    ambienteTeste: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   { timestamps: true }
 );
@@ -137,6 +209,8 @@ instituicaoSchema.index({ dominioPersonalizado: 1 }, { unique: true, sparse: tru
 instituicaoSchema.index({ codigo: 1 }, { unique: true, sparse: true });
 instituicaoSchema.index({ ativa: 1, slug: 1 });
 instituicaoSchema.index({ ativo: 1, slug: 1 });
+instituicaoSchema.index({ estado: 1, municipio: 1, redeEnsino: 1, observatorioAtivo: 1, visivelParaSecretaria: 1 });
+instituicaoSchema.index({ ambienteTeste: 1, observatorioAtivo: 1 });
 
 /** Normalizações */
 instituicaoSchema.pre('validate', function (next) {
@@ -173,6 +247,8 @@ instituicaoSchema.pre('validate', function (next) {
     } else if (typeof this.ativo === 'boolean' && typeof this.ativa === 'boolean') {
       this.ativa = this.ativo;
     }
+
+    aplicarProtecaoObservatorio(this);
 
     next();
   } catch (e) {
@@ -220,6 +296,18 @@ instituicaoSchema.pre('findOneAndUpdate', function (next) {
       alvo.ativo = alvo.ativa;
     } else if ('ativo' in alvo && 'ativa' in alvo) {
       alvo.ativa = alvo.ativo;
+    }
+
+    if ('redeEnsino' in alvo) alvo.redeEnsino = normalizarRedeEnsino(alvo.redeEnsino);
+    if ('tipoEscola' in alvo) alvo.tipoEscola = normalizarTipoEscola(alvo.tipoEscola, alvo.redeEnsino);
+
+    if (alvo.redeEnsino === 'privada' || alvo.tipoEscola === 'privada') {
+      alvo.observatorioAtivo = false;
+      alvo.visivelParaSecretaria = false;
+    }
+
+    if (alvo.ambienteTeste === true) {
+      alvo.visivelParaSecretaria = false;
     }
 
     this.setUpdate(update);

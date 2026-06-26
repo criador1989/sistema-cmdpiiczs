@@ -48,10 +48,12 @@ async function autenticar(req, res, next) {
 
     let email = payload.email || payload.mail || payload.userEmail || null;
     let turmas = Array.isArray(payload.turmas) ? payload.turmas : [];
+    let tenantId = payload.tenantId || null;
+    let escopoObservatorio = payload.escopoObservatorio || null;
 
     if (Usuario?.findById) {
       const usuarioDb = await Usuario.findById(id)
-        .select('email tipo instituicao nome turmas alunoId portal')
+        .select('email tipo instituicao tenantId nome turmas alunoId portal escopoObservatorio')
         .lean()
         .catch(() => null);
 
@@ -67,6 +69,12 @@ async function autenticar(req, res, next) {
         if (usuarioDb.instituicao) {
           payload.instituicao = usuarioDb.instituicao;
         }
+        if (usuarioDb.tenantId) {
+          tenantId = usuarioDb.tenantId;
+        }
+        if (usuarioDb.escopoObservatorio) {
+          escopoObservatorio = usuarioDb.escopoObservatorio;
+        }
         if (Array.isArray(usuarioDb.turmas)) {
           turmas = usuarioDb.turmas;
         }
@@ -79,10 +87,12 @@ async function autenticar(req, res, next) {
       nome: payload.nome || nome,
       tipo: String(payload.tipo || tipo || '').trim().toLowerCase(),
       instituicao: String(payload.instituicao || instituicao || '').trim(),
+      tenantId: tenantId ? String(tenantId) : String(payload.instituicao || instituicao || '').trim(),
       email: email ? String(email).toLowerCase() : null,
       turmas: Array.isArray(turmas) ? turmas : [],
       alunoId: payload.alunoId ? String(payload.alunoId) : null,
       portal: payload.portal || (String(payload.tipo || tipo || '').toLowerCase() === 'aluno' ? 'aluno' : null),
+      escopoObservatorio: escopoObservatorio || null,
     };
 
     if (!req.usuario.instituicao) {
@@ -109,7 +119,7 @@ function apenasProfessor(req, res, next) {
 
 function apenasLeitura(req, res, next) {
   const tipo = req.usuario?.tipo;
-  if (tipo === 'professor' || tipo === 'monitor' || tipo === 'admin' || tipo === 'master' || tipo === 'superadmin') {
+  if (tipo === 'professor' || tipo === 'monitor' || tipo === 'admin' || tipo === 'master' || tipo === 'superadmin' || tipo === 'secretaria') {
     return next();
   }
   return res.status(403).json({ mensagem: 'Acesso negado.' });

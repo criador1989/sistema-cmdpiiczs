@@ -986,6 +986,67 @@
   </div>
 
   <script>
+    // ===== Datas de calendário sem erro de fuso =====
+    function axIsDateOnly(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+    }
+
+    function axDateOnlyFromAny(value) {
+      if (!value) return '';
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, '0');
+        const d = String(value.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      const s = String(value || '').trim();
+      if (!s) return '';
+      if (axIsDateOnly(s)) return s;
+
+      // Para campos de calendário vindos do Mongo como ISO,
+      // preserva a data gravada no documento, sem converter para fuso local.
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return '';
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yy}-${mm}-${dd}`;
+    }
+
+    function axDateOnlyHoje() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dia}`;
+    }
+
+    function axDateOnlyAddDias(dateOnly, dias) {
+      const iso = axDateOnlyFromAny(dateOnly);
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-').map(Number);
+      const utc = new Date(Date.UTC(y, m - 1, d + Number(dias || 0)));
+      return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, '0')}-${String(utc.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    function axDateOnlyParaBR(value) {
+      const iso = axDateOnlyFromAny(value);
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function axDateTimeBR(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
+    }
+  </script>
+  <script>
         document.addEventListener('DOMContentLoaded', () => {
       const filtroTurma = document.getElementById('filtroTurma');
       const pesquisaNome = document.getElementById('pesquisaNome');
@@ -1184,7 +1245,7 @@
         const turma = n.aluno?.turma || '—';
         const medida = n.tipoMedida || n.tipo || '—';
         const dmod = parseDataRegistro(n);
-        const dataTxt = dmod ? dmod.toLocaleString('pt-BR') : '—';
+        const dataTxt = n.data ? axDateOnlyParaBR(n.data) : (dmod ? axDateTimeBR(dmod) : '—');
 
         const faixa = faixaNotaPrevista(n);
         const classificacaoAtual = n.classificacaoAtual || classificarComportamento(faixa.depois);
@@ -1195,7 +1256,7 @@
           const disabled = n.entregue ? 'disabled' : '';
           const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
           const atrasado = prazo && Date.now() > prazo.getTime() && !n.devolvidoPeloAluno;
-          const prazoTxt = prazo ? prazo.toLocaleString('pt-BR') : '';
+          const prazoTxt = prazo ? axDateTimeBR(prazo) : '';
 
           entregueBox = `
             <label class="entregue-wrap" onclick="event.stopPropagation()">
@@ -1268,12 +1329,12 @@
               const med = String(det.tipoMedida || det.tipo || '').toUpperCase().replace(/\./g, '');
               const deferida = String(det.status || '').toLowerCase() === 'deferido';
               const showCom = deferida && (med === 'AIA' || med === 'AECDE');
-              const prazoTxt = det.prazoDevolucao ? new Date(det.prazoDevolucao).toLocaleString('pt-BR') : '—';
+              const prazoTxt = det.prazoDevolucao ? axDateTimeBR(det.prazoDevolucao) : '—';
 
               const entregueDetalhe = deferida ? `
                 <div class="n-kv">
                   <b>Entrega ao aluno</b>
-                  <div class="hint">${det.entregue ? `✔️ Entregue em ${new Date(det.entregueEm).toLocaleString('pt-BR')}` : 'Ainda não entregue'}</div>
+                  <div class="hint">${det.entregue ? `✔️ Entregue em ${axDateTimeBR(det.entregueEm)}` : 'Ainda não entregue'}</div>
                   ${det.entregue ? `<div class="hint">Prazo para devolução: ${prazoTxt}</div>` : ''}
                 </div>
               ` : '';
@@ -1664,7 +1725,7 @@ body.innerHTML = `
       }
 
       function fmtDate(d) {
-        return d.toISOString().slice(0, 10);
+        return axDateOnlyFromAny(d);
       }
 
       const debounce = (fn, ms = 250) => {
@@ -1715,27 +1776,23 @@ body.innerHTML = `
       btnAtualizar.addEventListener('click', async () => { await carregarModoAtual(); });
 
       chipHoje.addEventListener('click', async () => {
-        const now = new Date();
-        dataDe.value = fmtDate(now);
-        dataAte.value = fmtDate(now);
+        const hoje = axDateOnlyHoje();
+        dataDe.value = hoje;
+        dataAte.value = hoje;
         await carregarModoAtual();
       });
 
       chip7.addEventListener('click', async () => {
-        const now = new Date();
-        const de = new Date();
-        de.setDate(now.getDate() - 6);
-        dataDe.value = fmtDate(de);
-        dataAte.value = fmtDate(now);
+        const hoje = axDateOnlyHoje();
+        dataDe.value = axDateOnlyAddDias(hoje, -6);
+        dataAte.value = hoje;
         await carregarModoAtual();
       });
 
       chip30.addEventListener('click', async () => {
-        const now = new Date();
-        const de = new Date();
-        de.setDate(now.getDate() - 29);
-        dataDe.value = fmtDate(de);
-        dataAte.value = fmtDate(now);
+        const hoje = axDateOnlyHoje();
+        dataDe.value = axDateOnlyAddDias(hoje, -29);
+        dataAte.value = hoje;
         await carregarModoAtual();
       });
 
@@ -1761,7 +1818,7 @@ body.innerHTML = `
           const turma = n.aluno?.turma || '';
           const tipo = n.tipoMedida || n.tipo || '';
           const dmod = parseDataRegistro(n);
-          const dataTxt = dmod ? dmod.toLocaleString('pt-BR') : '';
+          const dataTxt = n.data ? axDateOnlyParaBR(n.data) : (dmod ? axDateTimeBR(dmod) : '');
           const faixa = faixaNotaPrevista(n);
 
           return [
@@ -1776,7 +1833,7 @@ body.innerHTML = `
             n.artigo ?? '',
             n.inciso ?? '',
             n.entregue ? 'Sim' : 'Não',
-            n.prazoDevolucao ? new Date(n.prazoDevolucao).toLocaleString('pt-BR') : '',
+            n.prazoDevolucao ? axDateTimeBR(n.prazoDevolucao) : '',
             n.devolvidoPeloAluno ? 'Sim' : 'Não'
           ];
         });
@@ -1796,7 +1853,7 @@ body.innerHTML = `
         const a = document.createElement('a');
 
         a.href = url;
-        a.download = `notificacoes_${modoAtual}_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `notificacoes_${modoAtual}_${axDateOnlyHoje()}.csv`;
 
         document.body.appendChild(a);
         a.click();
@@ -1843,7 +1900,7 @@ return;
           ? 'grave'
           : 'media',
 
-      dataFato: det.data || new Date(),
+      dataFato: axDateOnlyFromAny(det.data) || axDateOnlyHoje(),
 
       descricaoFato:
         det.motivo ||
@@ -1983,7 +2040,7 @@ async function confirmarAberturaProcedimento() {
       natureza,
       classificacaoOcorrencia,
       gravidade,
-      dataFato: det.data || new Date(),
+      dataFato: axDateOnlyFromAny(det.data) || axDateOnlyHoje(),
       horaFato,
       localFato,
       descricaoFato:

@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
+
 const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
 const Counter = require('../../models/Counter'); // pode ficar aqui, mesmo sem uso direto
@@ -24,6 +25,63 @@ const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
 const { addBusinessDays } = require('../../utils/businessDays');
+
+// Datas de calendário em notificações: preserva YYYY-MM-DD sem deslocamento de fuso.
+// Para compatibilidade com registros antigos salvos como 00:00Z,
+// a exibição usa a parte YYYY-MM-DD do ISO armazenado.
+const DATE_ONLY_SAFE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function dateOnlyFromAny(value) {
+  if (!value) return '';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const s = String(value || '').trim();
+  if (!s) return '';
+  if (DATE_ONLY_SAFE_RE.test(s)) return s;
+
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+}
+
+function parseDateOnlyNoonUTC(value) {
+  const iso = dateOnlyFromAny(value);
+  if (!iso) return new Date();
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, (m || 1) - 1, d || 1, 12, 0, 0, 0));
+}
+
+function dateOnlyStartUTC(value) {
+  const iso = dateOnlyFromAny(value);
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0, 0));
+}
+
+function dateOnlyEndUTC(value) {
+  const iso = dateOnlyFromAny(value);
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, (m || 1) - 1, d || 1, 23, 59, 59, 999));
+}
+
+function formatDateOnlyBR(value) {
+  const iso = dateOnlyFromAny(value);
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function formatDateTimeBR(value) {
+  if (!value) return '';
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('pt-BR');
+}
+
 const { logAction, attachActor } = require('../../utils/audit');
 const {
   getConfigDisciplinar,
@@ -402,20 +460,11 @@ function escapeHtml(s) {
 }
 
 function formatDataBr(dt) {
-  if (!dt) return '';
-  const d = new Date(dt);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+  return formatDateOnlyBR(dt);
 }
 
 function formatDataHoraBr(dt) {
-  if (!dt) return '';
-  const d = new Date(dt);
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${formatDataBr(d)} ${hh}:${mi}`;
+  return formatDateTimeBR(dt);
 }
 
 function montarEmailDeferido({ aluno, notif, contexto }) {
@@ -617,21 +666,17 @@ const NP_AGENDAMENTO_URL = process.env.NP_AGENDAMENTO_URL || '';
 const CONTATO_ESCOLA = process.env.CONTATO_ESCOLA || '';
 
 function parseDateOnlyLocal(yyyy_mm_dd) {
-  if (!yyyy_mm_dd) return new Date();
-  const [y, m, d] = String(yyyy_mm_dd).split('-').map(Number);
-  return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
+  return parseDateOnlyNoonUTC(yyyy_mm_dd);
 }
 
 function toDayStart(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+  const iso = dateOnlyFromAny(d);
+  return dateOnlyStartUTC(iso) || new Date(d);
 }
 
 function toDayEnd(d) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
+  const iso = dateOnlyFromAny(d);
+  return dateOnlyEndUTC(iso) || new Date(d);
 }
 
 function normalizeText(value) {
@@ -1368,7 +1413,7 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
       valor = normalizarValorPorNatureza('indisciplina', valor);
     }
 
-    const dataBase = data ? parseDateOnlyLocal(data) : new Date();
+    const dataBase = data ? parseDateOnlyNoonUTC(data) : parseDateOnlyNoonUTC(dateOnlyFromAny(new Date()));
 
     let prazoDevolucao = null;
     if (!ehElogio) {
@@ -1672,7 +1717,11 @@ router.put('/:id',
 
       campos.forEach(c => {
         if (req.body[c] !== undefined) {
-          notif[c] = req.body[c];
+          if (c === 'data') {
+            notif[c] = parseDateOnlyNoonUTC(req.body[c]);
+          } else {
+            notif[c] = req.body[c];
+          }
         }
       });
 
@@ -1760,4 +1809,5 @@ router.get('/revisoes/pendentes',
     }
   }
 );
+
 module.exports = router;

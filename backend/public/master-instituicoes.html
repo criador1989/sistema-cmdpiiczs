@@ -514,6 +514,73 @@
       width:100%;
       text-align:left;
     }
+
+
+    .check-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+
+    @media(max-width:700px){ .check-grid{ grid-template-columns:1fr; } }
+
+    .check-card{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(170,200,240,.22);
+      background:rgba(10,19,34,.22);
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .check-card input{
+      width:auto;
+      margin-top:2px;
+      box-shadow:none;
+    }
+
+    .check-card b{
+      display:block;
+      color:#fff;
+      font-size:14px;
+      line-height:1.1;
+    }
+
+    .check-card span{
+      display:block;
+      color:rgba(236,242,255,.70);
+      font-size:12px;
+      line-height:1.2;
+      margin-top:3px;
+    }
+
+    .inst-meta{
+      margin-top:6px;
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 7px;
+      border-radius:999px;
+      border:1px solid rgba(170,200,240,.18);
+      background:rgba(10,19,34,.22);
+      color:rgba(236,242,255,.78);
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .tag.ok{ border-color:rgba(0,255,140,.25); color:#d6ffe9; background:rgba(0,255,140,.08); }
+    .tag.warn{ border-color:rgba(255,226,154,.25); color:#ffecc1; background:rgba(255,226,154,.08); }
+    .tag.err{ border-color:rgba(255,70,90,.25); color:#ffccd2; background:rgba(255,70,90,.08); }
     .modal-overlay{
   position:fixed;
   inset:0;
@@ -633,6 +700,62 @@
               </div>
             </div>
 
+
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label for="estadoInst">Estado/UF</label>
+                <input id="estadoInst" maxlength="2" placeholder="AC" autocomplete="off" value="AC" />
+              </div>
+              <div>
+                <label for="municipioInst">Município</label>
+                <input id="municipioInst" placeholder="Cruzeiro do Sul" autocomplete="off" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label for="redeEnsinoInst">Rede de ensino</label>
+                <select id="redeEnsinoInst">
+                  <option value="estadual">Estadual</option>
+                  <option value="municipal">Municipal</option>
+                  <option value="federal">Federal</option>
+                  <option value="privada">Privada</option>
+                  <option value="militar">Militar</option>
+                  <option value="civico_militar">Cívico-militar</option>
+                  <option value="outra">Outra</option>
+                </select>
+              </div>
+              <div>
+                <label for="tipoEscolaInst">Tipo de escola</label>
+                <select id="tipoEscolaInst">
+                  <option value="militar">Militar</option>
+                  <option value="civico_militar">Cívico-militar</option>
+                  <option value="civil">Civil</option>
+                  <option value="privada">Privada</option>
+                  <option value="outra">Outra</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="check-grid">
+              <label class="check-card" for="observatorioAtivoInst">
+                <input id="observatorioAtivoInst" type="checkbox" checked>
+                <span><b>Participa do Observatório</b><span>Permite consolidar indicadores agregados.</span></span>
+              </label>
+              <label class="check-card" for="visivelSecretariaInst">
+                <input id="visivelSecretariaInst" type="checkbox" checked>
+                <span><b>Visível para Secretaria</b><span>Somente redes públicas/autorizadas.</span></span>
+              </label>
+              <label class="check-card" for="ambienteTesteInst">
+                <input id="ambienteTesteInst" type="checkbox">
+                <span><b>Ambiente de teste</b><span>Nunca aparece para Secretaria.</span></span>
+              </label>
+            </div>
+
+            <div class="hint" id="obsHint">
+              Escolas públicas autorizadas podem aparecer para seus secretários. Escolas privadas e ambientes de teste ficam protegidos por padrão.
+            </div>
+
             <button class="btn btn-primary" id="btnCriar" style="margin-top:12px; width:100%;">Criar instituição</button>
 
             <div class="msg" id="msgCreate"></div>
@@ -699,6 +822,7 @@
                   <option value="admin">Admin</option>
                   <option value="monitor">Monitor</option>
                   <option value="professor">Professor</option>
+                  <option value="secretaria">Secretaria / Observatório</option>
                 </select>
               </div>
             </div>
@@ -965,6 +1089,15 @@
     const inputPreset = document.getElementById('preset');
     const presetHint = document.getElementById('presetHint');
 
+    const estadoInst = document.getElementById('estadoInst');
+    const municipioInst = document.getElementById('municipioInst');
+    const redeEnsinoInst = document.getElementById('redeEnsinoInst');
+    const tipoEscolaInst = document.getElementById('tipoEscolaInst');
+    const observatorioAtivoInst = document.getElementById('observatorioAtivoInst');
+    const visivelSecretariaInst = document.getElementById('visivelSecretariaInst');
+    const ambienteTesteInst = document.getElementById('ambienteTesteInst');
+    const obsHint = document.getElementById('obsHint');
+
     const createdLinks = document.getElementById('createdLinks');
     const linkLogin = document.getElementById('linkLogin');
     const linkCadastro = document.getElementById('linkCadastro');
@@ -1005,17 +1138,68 @@
     let alunoGerenciadoAtual = null;
     const senhasRedefinidasPorAluno = new Map();
 
-    inputPreset.addEventListener('change', () => {
+    function aplicarPadraoGovernancaPorPreset() {
       const p = inputPreset.value;
 
       if (p === 'militar') {
         presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
+        redeEnsinoInst.value = 'estadual';
+        tipoEscolaInst.value = 'militar';
+        observatorioAtivoInst.checked = true;
+        visivelSecretariaInst.checked = !ambienteTesteInst.checked;
       } else if (p === 'particular') {
         presetHint.textContent = 'Modelo pedagógico com foco em acompanhamento escolar.';
+        redeEnsinoInst.value = 'privada';
+        tipoEscolaInst.value = 'privada';
+        observatorioAtivoInst.checked = false;
+        visivelSecretariaInst.checked = false;
       } else {
         presetHint.textContent = 'Modelo flexível totalmente personalizável pela instituição.';
       }
+
+      aplicarProtecaoVisualObservatorio();
+    }
+
+    function aplicarProtecaoVisualObservatorio() {
+      const rede = String(redeEnsinoInst.value || '').toLowerCase();
+      const tipo = String(tipoEscolaInst.value || '').toLowerCase();
+      const teste = !!ambienteTesteInst.checked;
+
+      if (rede === 'privada' || tipo === 'privada') {
+        observatorioAtivoInst.checked = false;
+        visivelSecretariaInst.checked = false;
+        observatorioAtivoInst.disabled = true;
+        visivelSecretariaInst.disabled = true;
+        obsHint.textContent = 'Proteção ativa: escolas privadas não aparecem no Observatório da Secretaria.';
+        return;
+      }
+
+      observatorioAtivoInst.disabled = false;
+      visivelSecretariaInst.disabled = false;
+
+      if (teste) {
+        visivelSecretariaInst.checked = false;
+        visivelSecretariaInst.disabled = true;
+        obsHint.textContent = 'Proteção ativa: ambientes de teste não aparecem para a Secretaria.';
+        return;
+      }
+
+      obsHint.textContent = 'Escolas públicas autorizadas podem aparecer para seus secretários. Escolas privadas e ambientes de teste ficam protegidos por padrão.';
+    }
+
+    inputPreset.addEventListener('change', aplicarPadraoGovernancaPorPreset);
+    redeEnsinoInst.addEventListener('change', () => {
+      if (redeEnsinoInst.value === 'privada') tipoEscolaInst.value = 'privada';
+      if (redeEnsinoInst.value === 'estadual' && tipoEscolaInst.value === 'privada') tipoEscolaInst.value = 'civil';
+      aplicarProtecaoVisualObservatorio();
     });
+    tipoEscolaInst.addEventListener('change', aplicarProtecaoVisualObservatorio);
+    ambienteTesteInst.addEventListener('change', aplicarProtecaoVisualObservatorio);
+    observatorioAtivoInst.addEventListener('change', () => {
+      if (!observatorioAtivoInst.checked) visivelSecretariaInst.checked = false;
+    });
+
+    aplicarPadraoGovernancaPorPreset();
 
     function showMsg(el, type, text){
       if (!el) return;
@@ -1467,9 +1651,21 @@ function baixarRelatorioAcessosTurma() {
       const sigla = String(inputSigla.value || '').trim();
       const slug = String(inputSlug.value || '').trim();
       const preset = String(inputPreset.value || 'militar').trim();
+      const estado = String(estadoInst.value || '').trim().toUpperCase();
+      const municipio = String(municipioInst.value || '').trim();
+      const redeEnsino = String(redeEnsinoInst.value || 'estadual').trim();
+      const tipoEscola = String(tipoEscolaInst.value || 'civil').trim();
+      const ambienteTeste = !!ambienteTesteInst.checked;
+      const observatorioAtivo = !!observatorioAtivoInst.checked;
+      const visivelParaSecretaria = !!visivelSecretariaInst.checked;
 
       if (!nome || nome.length < 3) {
         showMsg(msgCreate, 'warn', 'Informe o nome da instituição.');
+        return;
+      }
+
+      if (estado && !/^[A-Z]{2}$/.test(estado)) {
+        showMsg(msgCreate, 'warn', 'Informe a UF com 2 letras, por exemplo AC.');
         return;
       }
 
@@ -1481,7 +1677,19 @@ function baixarRelatorioAcessosTurma() {
           method:'POST',
           headers:{ 'Content-Type':'application/json' },
           credentials:'include',
-          body: JSON.stringify({ nome, sigla, slug, preset })
+          body: JSON.stringify({
+            nome,
+            sigla,
+            slug,
+            preset,
+            estado,
+            municipio,
+            redeEnsino,
+            tipoEscola,
+            observatorioAtivo,
+            visivelParaSecretaria,
+            ambienteTeste
+          })
         });
 
         const data = await r.json().catch(()=> ({}));
@@ -1504,8 +1712,9 @@ function baixarRelatorioAcessosTurma() {
         inputNome.value = '';
         inputSigla.value = '';
         inputSlug.value = '';
+        municipioInst.value = '';
         inputPreset.value = 'militar';
-        presetHint.textContent = 'Modelo rígido com regulamento disciplinar militar.';
+        aplicarPadraoGovernancaPorPreset();
 
         await loadList();
       }catch(err){
@@ -1548,7 +1757,7 @@ function baixarRelatorioAcessosTurma() {
         return;
       }
 
-      if (!['admin','monitor','professor'].includes(tipo)) {
+      if (!['admin','monitor','professor','secretaria'].includes(tipo)) {
         showMsg(msgUser, 'warn', 'Selecione o tipo de usuário.');
         return;
       }
@@ -1847,7 +2056,7 @@ if (atualizados.length) {
       const term = (q.value || '').trim().toLowerCase();
 
       const list = !term ? all : all.filter(i => {
-        const hay = [i?.nome, i?.sigla, i?.slug, i?._id].filter(Boolean).join(' ').toLowerCase();
+        const hay = [i?.nome, i?.sigla, i?.slug, i?.municipio, i?.estado, i?.redeEnsino, i?.tipoEscola, i?._id].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(term);
       });
 
@@ -1864,6 +2073,13 @@ if (atualizados.length) {
         const sigla = inst?.sigla || '—';
         const slug = inst?.slug || '—';
         const ativo = (inst?.ativo !== false && inst?.ativa !== false);
+        const estado = inst?.estado || '';
+        const municipio = inst?.municipio || '';
+        const redeEnsino = inst?.redeEnsino || '—';
+        const tipoEscola = inst?.tipoEscola || '—';
+        const observatorioAtivo = inst?.observatorioAtivo === true;
+        const visivelParaSecretaria = inst?.visivelParaSecretaria === true;
+        const ambienteTeste = inst?.ambienteTeste === true;
 
         const loginUrl = `/login.html?t=${encodeURIComponent(slug)}`;
         const cadUrl = `/cadastro-usuario.html?t=${encodeURIComponent(slug)}`;
@@ -1871,7 +2087,15 @@ if (atualizados.length) {
 
         return `
           <tr>
-            <td>${escapeHtml(nome)}</td>
+            <td>
+              <b>${escapeHtml(nome)}</b>
+              <div class="inst-meta">
+                ${estado ? `<span class="tag">${escapeHtml(estado)}</span>` : ''}
+                ${municipio ? `<span class="tag">${escapeHtml(municipio)}</span>` : ''}
+                <span class="tag">Rede: ${escapeHtml(redeEnsino)}</span>
+                <span class="tag">Tipo: ${escapeHtml(tipoEscola)}</span>
+              </div>
+            </td>
             <td>${escapeHtml(sigla)}</td>
             <td class="mono">${escapeHtml(slug)}</td>
             <td>
@@ -1879,6 +2103,11 @@ if (atualizados.length) {
                 <span class="b"></span>
                 ${ativo ? 'Ativo' : 'Inativo'}
               </span>
+              <div class="inst-meta">
+                ${observatorioAtivo ? '<span class="tag ok">Obs. ativo</span>' : '<span class="tag err">Obs. inativo</span>'}
+                ${visivelParaSecretaria ? '<span class="tag ok">Secretaria</span>' : '<span class="tag warn">Não visível</span>'}
+                ${ambienteTeste ? '<span class="tag warn">Teste</span>' : ''}
+              </div>
             </td>
             <td>
               <div class="actions">

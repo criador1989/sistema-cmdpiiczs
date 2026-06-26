@@ -1,4 +1,6 @@
 // backend/routes/api/pdf.js
+'use strict';
+
 const express = require('express');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -9,7 +11,7 @@ const QRCode = require('qrcode');
 const Notificacao = require('../../models/Notificacao');
 const Instituicao = require('../../models/Instituicao');
 const { autenticar } = require('../../middleware/autenticacao');
-const { obterIdentidadeInstitucional} = require('../../utils/documentos/identidadeInstitucional');
+const { obterIdentidadeInstitucional } = require('../../utils/documentos/identidadeInstitucional');
 
 const {
   getConfigDisciplinar,
@@ -84,10 +86,78 @@ function toFixed2(x) {
   return Number.isFinite(n) ? n.toFixed(2) : '';
 }
 
+/**
+ * Data de calendário segura.
+ *
+ * NÃO usar new Date('YYYY-MM-DD').toLocaleDateString() para data de ocorrência,
+ * porque em fusos como America/Rio_Branco/America/Manaus o dia pode voltar.
+ */
+function dateOnlyFromAny(value) {
+  if (!value) return '';
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const s = String(value || '').trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
+function formatarDataCalendarioBR(value) {
+  const iso = dateOnlyFromAny(value);
+  if (!iso) return '—';
+
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+function formatarDataCalendarioExtenso(value) {
+  const iso = dateOnlyFromAny(value);
+  if (!iso) return '—';
+
+  const [ano, mes, dia] = iso.split('-');
+  const meses = [
+    '',
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro'
+  ];
+
+  const mesNome = meses[Number(mes)] || mes;
+  return `${dia} de ${mesNome} de ${ano}`;
+}
+
+function formatarDataHoraRealBR(value = new Date(), timeZone = 'America/Rio_Branco') {
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+
+  return d.toLocaleString('pt-BR', {
+    timeZone,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 /* ============ Rota: gerar DOCX da notificação ============ */
 async function gerarDocxNotificacao(req, res) {
-  
-    try {
+  try {
     const notificacao = await Notificacao.findOne({
       _id: req.params.id,
       instituicao: req.usuario.instituicao
@@ -101,6 +171,7 @@ async function gerarDocxNotificacao(req, res) {
 
     const instituicao = await Instituicao.findById(req.usuario.instituicao).lean();
     const identidadeInstitucional = await obterIdentidadeInstitucional(req);
+    const timezoneInstituicao = instituicao?.timezone || 'America/Rio_Branco';
 
     const config = await getConfigDisciplinar(req.usuario.instituicao);
     const regulamento = getTextoRegulamento(config);
@@ -119,7 +190,6 @@ async function gerarDocxNotificacao(req, res) {
 
     const classificacao = getClassificacaoComportamento(notaFinalNum, config);
 
-    // 🔥 AQUI ESTÁ A CORREÇÃO PRINCIPAL
     const descricaoInfracao = montarDescricaoInfracao({
       artigo: notificacao.artigo || '',
       paragrafo: notificacao.paragrafo || '',
@@ -128,44 +198,47 @@ async function gerarDocxNotificacao(req, res) {
       classificacao: notificacao.classificacaoRegulamento || ''
     });
 
-    
     const textoCabecalho = regulamento?.textos?.cabecalho || '';
     const textoNotificacao = regulamento?.textos?.notificacao || '';
     const nomeRegulamento = regulamento?.nome || 'Regulamento Disciplinar';
+
     const hashDocumento = crypto
-  .createHash('sha256')
-  .update(JSON.stringify({
-    notificacao: notificacao._id,
-    numero: notificacao.numeroSequencial,
-    aluno: aluno?.nome,
-    data: Date.now()
-  }))
-  .digest('hex');
+      .createHash('sha256')
+      .update(JSON.stringify({
+        notificacao: notificacao._id,
+        numero: notificacao.numeroSequencial,
+        aluno: aluno?.nome,
+        data: Date.now()
+      }))
+      .digest('hex');
 
-const hashAssinatura = crypto
-  .createHash('sha256')
-  .update(`${hashDocumento}-${Date.now()}`)
-  .digest('hex');
+    const hashAssinatura = crypto
+      .createHash('sha256')
+      .update(`${hashDocumento}-${Date.now()}`)
+      .digest('hex');
 
-const pastaQr = path.join(
-  __dirname,
-  '../../public/uploads/qrcodes'
-);
+    const pastaQr = path.join(
+      __dirname,
+      '../../public/uploads/qrcodes'
+    );
 
-fs.mkdirSync(pastaQr, { recursive: true });
+    fs.mkdirSync(pastaQr, { recursive: true });
 
-const qrCodePath = path.join(
-  pastaQr,
-  `notif_${notificacao._id}.png`
-);
+    const qrCodePath = path.join(
+      pastaQr,
+      `notif_${notificacao._id}.png`
+    );
 
-const urlValidacao =
-  `${req.protocol}://${req.get('host')}/verificar-documento.html?hash=${hashDocumento}`;
+    const urlValidacao =
+      `${req.protocol}://${req.get('host')}/verificar-documento.html?hash=${hashDocumento}`;
 
-await QRCode.toFile(qrCodePath, urlValidacao, {
-  width: 300,
-  margin: 2
-});
+    await QRCode.toFile(qrCodePath, urlValidacao, {
+      width: 300,
+      margin: 2
+    });
+
+    const dataOcorrenciaExtenso = formatarDataCalendarioExtenso(notificacao.data);
+    const dataOcorrenciaBR = formatarDataCalendarioBR(notificacao.data);
 
     const dados = {
       numero: (notificacao._id || '').toString().slice(-6).toUpperCase(),
@@ -188,15 +261,15 @@ await QRCode.toFile(qrCodePath, urlValidacao, {
 
       comportamento: classificacao,
 
-      dataPorExtenso: new Date(notificacao.data).toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      }),
-      dataHora: new Date(notificacao.data).toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      }),
+      // Data da ocorrência: calendário puro, sem conversão por fuso.
+      dataPorExtenso: dataOcorrenciaExtenso,
+      dataHora: dataOcorrenciaExtenso,
+      data: dataOcorrenciaBR,
+      dataOcorrencia: dataOcorrenciaBR,
 
       logoUrl: instituicao?.logoUrl || '',
-            orgaoSuperior:
+
+      orgaoSuperior:
         identidadeInstitucional.orgaoSuperior || '',
 
       nomeInstituicao:
@@ -212,39 +285,40 @@ await QRCode.toFile(qrCodePath, urlValidacao, {
         identidadeInstitucional.mostrarRodape !== false,
 
       mostrarBrasaoEsquerdo:
-  identidadeInstitucional.mostrarBrasaoEsquerdo !== false,
+        identidadeInstitucional.mostrarBrasaoEsquerdo !== false,
 
-mostrarBrasaoDireito:
-  identidadeInstitucional.mostrarBrasaoDireito !== false,
+      mostrarBrasaoDireito:
+        identidadeInstitucional.mostrarBrasaoDireito !== false,
 
-brasaoEsquerdoUrl:
-  identidadeInstitucional.brasaoEsquerdoUrl || '',
+      brasaoEsquerdoUrl:
+        identidadeInstitucional.brasaoEsquerdoUrl || '',
 
-brasaoDireitoUrl:
-  identidadeInstitucional.brasaoDireitoUrl || '',
+      brasaoDireitoUrl:
+        identidadeInstitucional.brasaoDireitoUrl || '',
 
       cidade: instituicao?.municipio || '—',
-estado: instituicao?.estado || '—',
+      estado: instituicao?.estado || '—',
 
-assinaturaDigital: {
-  assinadoPorNome:
-    req.actor?.nome ||
-    req.usuario?.nome ||
-    req.user?.nome ||
-    'Usuário institucional',
+      assinaturaDigital: {
+        assinadoPorNome:
+          req.actor?.nome ||
+          req.usuario?.nome ||
+          req.user?.nome ||
+          'Usuário institucional',
 
-  cargo:
-    req.usuario?.cargo ||
-    req.usuario?.funcao ||
-    req.usuario?.tipo ||
-    'Usuário institucional',
+        cargo:
+          req.usuario?.cargo ||
+          req.usuario?.funcao ||
+          req.usuario?.tipo ||
+          'Usuário institucional',
 
-  assinadoEm: new Date().toLocaleString('pt-BR'),
+        // Assinatura é data/hora real, então aqui o uso de Date continua correto.
+        assinadoEm: formatarDataHoraRealBR(new Date(), timezoneInstituicao),
 
-  hashDocumento,
-  hashAssinatura,
-  qrCodePath
-}
+        hashDocumento,
+        hashAssinatura,
+        qrCodePath
+      }
     };
 
     const scriptPath = path.join(__dirname, '../../pdf/generate_notification_docx.py');
@@ -275,12 +349,12 @@ assinaturaDigital: {
         if (err) console.error('❌ Erro ao enviar o arquivo gerado:', err);
       });
     });
-
   } catch (err) {
     console.error('❌ Erro ao gerar notificação:', err);
     res.status(500).json({ error: 'Erro ao gerar notificação' });
   }
 }
+
 router.get('/pdf/:id', autenticar, gerarDocxNotificacao);
 router.post('/pdf/:id', autenticar, gerarDocxNotificacao);
 

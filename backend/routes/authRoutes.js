@@ -24,6 +24,7 @@ const TENANT_ALIASES = {
 };
 
 const DEFAULT_TENANT_SLUG = (process.env.DEFAULT_TENANT_SLUG || 'cmdpii').trim().toLowerCase();
+const TIPOS_LOGIN_INSTITUCIONAL = ['admin', 'monitor', 'professor', 'secretaria'];
 
 const { validatePasswordStrength, generateTemporaryPassword } = require('../utils/passwordPolicy');
 
@@ -195,6 +196,10 @@ function buildJwtPayload(usuario) {
     payload.alunoId = String(usuario.alunoId);
   }
 
+  if (usuario.escopoObservatorio) {
+    payload.escopoObservatorio = usuario.escopoObservatorio;
+  }
+
   if (usuario.portal) {
     payload.portal = String(usuario.portal);
   } else if (usuario.tipo === 'aluno') {
@@ -220,11 +225,22 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
   const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
 
   let redirecionar = '/painel.html';
-  if (usuario.tipo === 'professor') redirecionar = '/painel-professor.html';
-  if (usuario.tipo === 'aluno') redirecionar = '/painel-aluno.html';
+
+  if (usuario.tipo === 'professor') {
+    redirecionar = '/painel-professor.html';
+  }
+
+  if (usuario.tipo === 'secretaria') {
+    redirecionar = '/observatorio.html';
+  }
+
+  if (usuario.tipo === 'aluno') {
+    redirecionar = '/painel-aluno.html';
+  }
+
   if (usuario.tipo === 'responsavel' && usuario.alunoId) {
-  redirecionar = `/ficha-aluno.html?id=${String(usuario.alunoId)}`;
-}
+    redirecionar = `/ficha-aluno.html?id=${String(usuario.alunoId)}`;
+  }
 
   return {
     mensagem: 'Login realizado com sucesso.',
@@ -243,7 +259,8 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
     ? 'aluno'
     : usuario.tipo === 'responsavel'
       ? 'responsavel'
-      : 'institucional')
+      : 'institucional'),
+      escopoObservatorio: usuario.escopoObservatorio || null
     },
     aluno: buildAlunoPublicData(aluno),
     instituicao: inst ? {
@@ -275,11 +292,11 @@ async function doLoginForInstituicao(req, res, { email, senha, inst, portal = 'i
   if (portal === 'aluno') {
     filtrosBase.tipo = 'aluno';
   } else {
-    filtrosBase.tipo = { $in: ['admin', 'monitor', 'professor'] };
+    filtrosBase.tipo = { $in: TIPOS_LOGIN_INSTITUCIONAL };
   }
 
   const usuario = await Usuario.findOne(filtrosBase)
-    .select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+    .select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
 
   if (!usuario) {
     if (portal === 'aluno') {
@@ -351,7 +368,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
       instituicao: instituicaoId,
       tipo: { $in: ['aluno', 'responsavel'] },
       $or: [{ ativo: true }, { ativo: { $exists: false } }]
-    }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+    }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
   } else {
     if (!Aluno || typeof Aluno.findOne !== 'function') {
       return res.status(500).json({
@@ -376,7 +393,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
         instituicao: instituicaoId,
         tipo: 'aluno',
         $or: [{ ativo: true }, { ativo: { $exists: false } }]
-      }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+      }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
     }
 
     if (!usuario) {
@@ -385,7 +402,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
         instituicao: instituicaoId,
         tipo: 'aluno',
         $or: [{ ativo: true }, { ativo: { $exists: false } }]
-      }).select('+senha nome email tipo instituicao emailVerificado alunoId portal ativo');
+      }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
     }
 
     if (!usuario) {
@@ -521,7 +538,7 @@ router.post('/login', async (req, res) => {
         const usuarioDefault = await Usuario.findOne({
           email,
           instituicao: String(defaultInst._id),
-          tipo: { $in: ['admin', 'monitor', 'professor'] },
+          tipo: { $in: TIPOS_LOGIN_INSTITUCIONAL },
           $or: [{ ativo: true }, { ativo: { $exists: false } }],
         }).select('_id');
 
@@ -537,7 +554,7 @@ router.post('/login', async (req, res) => {
 
       const encontrados = await Usuario.find({
         email,
-        tipo: { $in: ['admin', 'monitor', 'professor'] },
+        tipo: { $in: TIPOS_LOGIN_INSTITUCIONAL },
         $or: [{ ativo: true }, { ativo: { $exists: false } }],
       }).select('_id instituicao emailVerificado tipo nome').lean();
 

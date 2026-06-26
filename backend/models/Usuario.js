@@ -67,7 +67,7 @@ const usuarioSchema = new Schema(
 
     tipo: {
       type: String,
-      enum: ['admin', 'monitor', 'professor', 'aluno', 'responsavel'],
+      enum: ['admin', 'monitor', 'professor', 'aluno', 'responsavel', 'secretaria'],
       default: 'monitor',
       index: true,
     },
@@ -89,6 +89,61 @@ const usuarioSchema = new Schema(
       enum: ['institucional', 'aluno', 'responsavel'],
       default: 'institucional',
       index: true,
+    },
+
+    /**
+     * ESCOPO DO OBSERVATÓRIO
+     * Usado por usuários do tipo "secretaria" para definir quais dados
+     * agregados poderão visualizar no painel executivo.
+     */
+    escopoObservatorio: {
+      nivel: {
+        type: String,
+        enum: ['nacional', 'estadual', 'municipal', 'regional', 'rede', 'instituicoes', null],
+        default: null,
+        index: true,
+      },
+
+      estado: {
+        type: String,
+        trim: true,
+        uppercase: true,
+        minlength: 2,
+        maxlength: 2,
+        default: null,
+        index: true,
+      },
+
+      municipio: {
+        type: String,
+        trim: true,
+        default: null,
+        index: true,
+      },
+
+      regional: {
+        type: String,
+        trim: true,
+        default: null,
+        index: true,
+      },
+
+      rede: {
+        type: String,
+        trim: true,
+        default: null,
+        index: true,
+      },
+
+      instituicoesPermitidas: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Instituicao',
+      }],
+
+      podeVerDadosIndividuais: {
+        type: Boolean,
+        default: false,
+      },
     },
 
     /**
@@ -177,6 +232,12 @@ usuarioSchema.index({ instituicao: 1, portal: 1, tipo: 1 });
 usuarioSchema.index({ tenantId: 1, portal: 1, tipo: 1 });
 usuarioSchema.index({ instituicao: 1, alunoId: 1 }, { sparse: true });
 usuarioSchema.index({ tenantId: 1, alunoId: 1 }, { sparse: true });
+usuarioSchema.index({
+  tipo: 1,
+  'escopoObservatorio.nivel': 1,
+  'escopoObservatorio.estado': 1,
+  'escopoObservatorio.municipio': 1,
+});
 
 /* =========================
    SINCRONIZAÇÃO tenantId <-> instituicao

@@ -464,18 +464,72 @@
   </div>
 
   <script>
+    // ===== Datas de calendário sem erro de fuso =====
+    function axIsDateOnly(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+    }
+
+    function axDateOnlyFromAny(value) {
+      if (!value) return '';
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, '0');
+        const d = String(value.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      const s = String(value || '').trim();
+      if (!s) return '';
+      if (axIsDateOnly(s)) return s;
+
+      // Para campos de calendário vindos do Mongo como ISO,
+      // preserva a data gravada no documento, sem converter para fuso local.
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return '';
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yy}-${mm}-${dd}`;
+    }
+
+    function axDateOnlyHoje() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dia}`;
+    }
+
+    function axDateOnlyAddDias(dateOnly, dias) {
+      const iso = axDateOnlyFromAny(dateOnly);
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-').map(Number);
+      const utc = new Date(Date.UTC(y, m - 1, d + Number(dias || 0)));
+      return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, '0')}-${String(utc.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    function axDateOnlyParaBR(value) {
+      const iso = axDateOnlyFromAny(value);
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function axDateTimeBR(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
+    }
+  </script>
+  <script>
     // ===== Helpers =====
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
-    const fmtISO = (d)=> {
-      if(!d) return '';
-      const x=new Date(d);
-      const y=x.getFullYear();
-      const m=String(x.getMonth()+1).padStart(2,'0');
-      const dd=String(x.getDate()).padStart(2,'0');
-      return `${y}-${m}-${dd}`;
-    };
+    const fmtISO = (d)=> axDateOnlyFromAny(d);
 
     function showMsg(text, ok=true){
       const el = document.getElementById('mensagem');
@@ -487,7 +541,7 @@
       document.getElementById('chipStatus').textContent = 'Status: ' + (n.status || '—');
       document.getElementById('chipNumero').textContent = 'Nº: ' + (n.numeroSequencial || '—');
       document.getElementById('chipData').textContent = 'Data: ' +
-        (n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '—');
+        (n.data ? axDateOnlyParaBR(n.data) : '—');
     }
 
     function toggleCamposPorNatureza(){
