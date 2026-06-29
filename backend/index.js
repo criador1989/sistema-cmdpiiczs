@@ -127,7 +127,9 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'BaileMovimentoFinanceiro',
   'ProcessoDisciplinar',
   'LivroOcorrencia',
-  'LivroOcorrenciaExportacao'
+  'LivroOcorrenciaExportacao',
+  'SiteAnalyticsSession',
+  'SiteAnalyticsEvent'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -249,6 +251,7 @@ const processosDisciplinaresRoutes = require('./routes/api/processosDisciplinare
 const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
 const siteAdminRoutes = require('./routes/api/siteAdmin');
 const sitePublicoRoutes = require('./routes/api/sitePublico');
+const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -705,6 +708,10 @@ mountIf('/api/site-admin', siteAdminRoutes, autenticar);
 // API PÚBLICA DO SITE
 mountIf('/api/site-publico', sitePublicoRoutes);
 
+// ANALYTICS INTERNO DO SITE
+// Não colocar "autenticar" aqui, pois a landing page precisa registrar visitas públicas.
+mountIf('/api/site-analytics', siteAnalyticsRoutes);
+
 /* =========================
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
    ========================= */
@@ -774,6 +781,10 @@ app.get('/superadmin-login.html', (_req, res) => {
 
 app.get('/master-instituicoes.html', requireSuperAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'master-instituicoes.html'));
+});
+
+app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'admin-site', 'site-analytics.html'));
 });
 
 app.get('/', (req, res) => {
