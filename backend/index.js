@@ -459,6 +459,7 @@ function buildProfessorGuard(publicRoot) {
     '/painel-aluno.js',
     '/ficha-responsavel.html',
     '/ficha-responsavel.js',
+    '/procedimento-responsavel.html',
     '/aluno-redacao.html',
     '/aluno-questionarios.html',
     '/superadmin-login.html',
@@ -691,6 +692,7 @@ mountIf('/api/baile-controle', baileControleRoutes);
    🚀 PROCESSOS DISCIPLINARES (NOVO MÓDULO)
    ========================= */
 
+mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes.publicRouter);
 mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes, autenticar);
 
 /* =========================

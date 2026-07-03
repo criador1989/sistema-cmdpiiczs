@@ -603,8 +603,9 @@
           </div>
 
           <div class="actions">
-            <button class="btn" id="btn-ver-ficha">Ver ficha</button>
+            <button class="btn" id="btn-ver-ficha">Ver ficha completa</button>
             <button class="btn" id="btn-notificar">Notificar aluno</button>
+            <button class="btn" id="btn-procedimento">Abrir procedimento disciplinar</button>
           </div>
         </div>
       </div>
@@ -1186,93 +1187,171 @@
   });
 
   function fmtData(dStr){
-    if (!dStr) return '—';
-    const d = new Date(dStr);
-    return Number.isNaN(+d) ? '—' : d.toLocaleDateString('pt-BR');
-  }  async function abrirFicha(aCard) {
-    const id = aCard._id;
+  if (!dStr) return '—';
 
-    try {
-      const img = qs('#modal-foto');
-      img.removeAttribute('src');
+  const d = new Date(dStr);
 
-      const fotoLocal = fotoSeguraDoAluno(aCard);
-      if (fotoLocal) {
-        img.src = fotoLocal;
-        img.onerror = () => { img.removeAttribute('src'); };
-      }
+  return Number.isNaN(+d)
+    ? '—'
+    : d.toLocaleDateString('pt-BR');
+}
 
-      let a = {};
-      if (!MODE_TOKEN) {
-        const url = `/api/fichaAluno/${id}`;
-        const res = await fetch(url, { credentials: 'include', cache:'no-store' });
-        if (!res.ok) throw new Error('Falha ao buscar detalhes');
+async function abrirFicha(aCard) {
+  const id = aCard._id;
 
-        const data = await res.json();
-        a = data.aluno || {};
-      } else {
-        a = aCard || {};
-      }
+  try {
+    const img = qs('#modal-foto');
 
-      const fotoFicha = fotoSeguraDoAluno(a);
-      if (fotoFicha) {
-        img.src = fotoFicha;
-        img.onerror = () => { img.removeAttribute('src'); };
-      } else {
+    img.removeAttribute('src');
+
+    const fotoLocal = fotoSeguraDoAluno(aCard);
+
+    if (fotoLocal) {
+      img.src = fotoLocal;
+      img.onerror = () => {
         img.removeAttribute('src');
-      }
-
-      qs('#badge-turma').textContent = a.turma || '—';
-      qs('#modal-nome').textContent = a.nome || 'Aluno';
-      qs('#kv-nome').textContent = a.nome || '—';
-      qs('#kv-turma').textContent = a.turma || '—';
-      qs('#kv-entrada').textContent = fmtData(a.dataEntrada);
-      qs('#kv-resp').textContent = [a.nomePai, a.nomeMae].filter(Boolean).join(' / ') || '—';
-      qs('#kv-telefone').textContent = a.telefone || '—';
-      qs('#kv-endereco').textContent = a.endereco || '—';
-
-      const notaEl = qs('#modal-nota');
-      if (typeof a.comportamento === 'number') {
-        notaEl.textContent = a.comportamento.toFixed(2).replace('.', ',');
-        notaEl.classList.toggle('ok', a.comportamento >= 8.5);
-      } else {
-        notaEl.textContent = '—';
-        notaEl.classList.remove('ok');
-      }
-
-      const btnFicha = qs('#btn-ver-ficha');
-      const btnNotif = qs('#btn-notificar');
-
-      if (MODE_TOKEN) {
-        btnFicha.textContent = 'Ver ficha (professor)';
-        btnFicha.onclick = () => {
-          const u = new URL('/ficha-aluno-professor.html', location.origin);
-          u.searchParams.set('id', a._id);
-          u.searchParams.set('token', token);
-          location.href = u.toString();
-        };
-        btnNotif.style.display = 'none';
-      } else {
-        btnFicha.textContent = 'Ver ficha completa';
-        btnFicha.onclick = () => {
-          const u = new URL('/ficha-aluno.html', location.origin);
-          u.searchParams.set('id', a._id);
-          location.href = u.toString();
-        };
-        btnNotif.style.display = '';
-        btnNotif.onclick = () => {
-          const u = new URL('/cadastrar-notificacao.html', location.origin);
-          u.searchParams.set('aluno', a._id);
-          location.href = u.toString();
-        };
-      }
-
-      abrirModal();
-    } catch (e) {
-      console.error(e);
-      alert('Erro ao abrir a ficha do aluno.');
+      };
     }
+
+    let a = {};
+
+    if (!MODE_TOKEN) {
+      const url = `/api/fichaAluno/${id}`;
+
+      const res = await fetch(url, {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao buscar detalhes');
+      }
+
+      const data = await res.json();
+
+      a = data.aluno || {};
+    } else {
+      a = aCard || {};
+    }
+
+    const fotoFicha = fotoSeguraDoAluno(a);
+
+    if (fotoFicha) {
+      img.src = fotoFicha;
+
+      img.onerror = () => {
+        img.removeAttribute('src');
+      };
+    } else {
+      img.removeAttribute('src');
+    }
+
+    qs('#badge-turma').textContent = a.turma || '—';
+    qs('#modal-nome').textContent = a.nome || 'Aluno';
+
+    qs('#kv-nome').textContent = a.nome || '—';
+    qs('#kv-turma').textContent = a.turma || '—';
+
+    qs('#kv-entrada').textContent = fmtData(a.dataEntrada);
+
+    qs('#kv-resp').textContent =
+      [a.nomePai, a.nomeMae]
+        .filter(Boolean)
+        .join(' / ') || '—';
+
+    qs('#kv-telefone').textContent = a.telefone || '—';
+    qs('#kv-endereco').textContent = a.endereco || '—';
+
+    const notaEl = qs('#modal-nota');
+
+    if (typeof a.comportamento === 'number') {
+      notaEl.textContent =
+        a.comportamento
+          .toFixed(2)
+          .replace('.', ',');
+
+      notaEl.classList.toggle(
+        'ok',
+        a.comportamento >= 8.5
+      );
+    } else {
+      notaEl.textContent = '—';
+      notaEl.classList.remove('ok');
+    }
+
+    const btnFicha = qs('#btn-ver-ficha');
+    const btnNotif = qs('#btn-notificar');
+    const btnProcedimento = qs('#btn-procedimento');
+
+    if (MODE_TOKEN) {
+      btnFicha.textContent = 'Ver ficha (professor)';
+
+      btnFicha.onclick = () => {
+        const u = new URL(
+          '/ficha-aluno-professor.html',
+          location.origin
+        );
+
+        u.searchParams.set('id', a._id);
+        u.searchParams.set('token', token);
+
+        location.href = u.toString();
+      };
+
+      btnNotif.style.display = 'none';
+      btnProcedimento.style.display = 'none';
+
+    } else {
+
+      btnFicha.textContent = 'Ver ficha completa';
+
+      btnFicha.onclick = () => {
+        const u = new URL(
+          '/ficha-aluno.html',
+          location.origin
+        );
+
+        u.searchParams.set('id', a._id);
+
+        location.href = u.toString();
+      };
+
+      btnNotif.style.display = '';
+      btnProcedimento.style.display = '';
+
+      btnNotif.onclick = () => {
+        const u = new URL(
+          '/cadastrar-notificacao.html',
+          location.origin
+        );
+
+        u.searchParams.set('aluno', a._id);
+
+        location.href = u.toString();
+      };
+
+      btnProcedimento.onclick = () => {
+        if (!a?._id) {
+          alert('Aluno não identificado.');
+          return;
+        }
+        window.abrirModalProcedimentoDisciplinar({
+          origem: 'ficha_aluno',
+          alunoId: a._id,
+          nomeAluno: a.nome || 'Aluno',
+          turma: a.turma || 'Turma não informada'
+        });
+      };
+    }
+
+    abrirModal();
+
+  } catch (e) {
+    console.error(e);
+
+    alert('Erro ao abrir a ficha do aluno.');
   }
+}
 
   carregarTurmas()
     .then(() => {
@@ -1297,6 +1376,7 @@
     });
 })();
 </script>
+<script src="/assets/js/procedimento-modal.js"></script>
 <script src="notify.js"></script>
 <script src="/update-client.js"></script>
 </body>

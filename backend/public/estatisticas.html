@@ -1148,13 +1148,13 @@ async function carregarIdentidadeDocumentos(){
   aplicarIdentidadeNoRelatorio({});
 }
 
-    function isoToBR(iso){
+function isoToBR(iso){
       if(!iso) return '';
       const [y,m,d] = iso.split('-');
       return `${d}/${m}/${y}`;
     }
 
-    function showError(msg){
+function showError(msg){
       let el = document.getElementById('errBanner');
       if(!el){
         el = document.createElement('div');
@@ -1176,7 +1176,7 @@ async function carregarIdentidadeDocumentos(){
       }
     }
 
-    async function fetchJsonSeguro(url, timeoutMs = 15000){
+async function fetchJsonSeguro(url, timeoutMs = 15000){
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort('timeout'), timeoutMs);
       try{
@@ -1204,7 +1204,7 @@ async function carregarIdentidadeDocumentos(){
       }
     }
 
-    async function carregarTurmas(){
+async function carregarTurmas(){
       try{
         const lista = await fetchJsonSeguro('/api/estatisticas/turmas');
         const sel = document.getElementById('filtroTurma');
@@ -1228,7 +1228,7 @@ async function carregarIdentidadeDocumentos(){
       }
     }
 
-    function getCanvasCtx(canvasId){
+function getCanvasCtx(canvasId){
       const canvas = document.getElementById(canvasId);
       if(!canvas) return null;
 
@@ -1249,7 +1249,7 @@ async function carregarIdentidadeDocumentos(){
       return { canvas, ctx, W: cssW, H: cssH };
     }
 
-    function roundRectPath(ctx, x, y, w, h, r){
+function roundRectPath(ctx, x, y, w, h, r){
       const rr = Math.min(r, w / 2, h / 2);
       ctx.beginPath();
       ctx.moveTo(x + rr, y);

@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const router = express.Router();
+const publicRouter = express.Router();
 
 const ProcessoDisciplinar = require('../../models/ProcessoDisciplinar');
 const Notificacao = require('../../models/Notificacao');
@@ -1656,7 +1657,7 @@ router.post('/:id/confirmar-ciencia',
    CONSULTA PÚBLICA DO RESPONSÁVEL
 ========================================================= */
 
-router.get('/publico/:token',
+publicRouter.get('/publico/:token',
   async (req, res) => {
     try {
       const { token } = req.params;
@@ -1740,7 +1741,7 @@ router.get('/publico/:token',
    CONFIRMAR CIÊNCIA PÚBLICA
 ========================================================= */
 
-router.post('/publico/:token/confirmar-ciencia',
+publicRouter.post('/publico/:token/confirmar-ciencia',
   async (req, res) => {
     try {
       const { token } = req.params;
@@ -4613,3 +4614,4 @@ let pdfBasePath = caminhoOriginal;
 );
 
 module.exports = router;
+module.exports.publicRouter = publicRouter;

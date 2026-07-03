@@ -498,6 +498,7 @@
             <button class="btn primary" id="btnTrocarFoto">Trocar foto</button>
             <button class="btn ghost" id="btnVerDados">Visualizar dados pessoais</button>
             <button class="btn ghost" id="btnEditar">Editar</button>
+            <button class="btn ghost" id="btnAbrirProcedimento">⚖️ Abrir procedimento</button>
           </div>
           <small class="muted" style="margin-top:8px">Última atualização: <span id="ultimaAtualizacao">—</span></small>
         </div>
@@ -800,6 +801,7 @@
     'btnTrocarFoto',
     'btnVerDados',
     'btnEditar',
+    'btnAbrirProcedimento',
     'btnPDFTop',
     'badgeCodigo',
     'badgeId',
@@ -814,6 +816,7 @@
   const hideForResponsavel = [
     'btnTrocarFoto',
     'btnEditar',
+    'btnAbrirProcedimento',
     'btnPDFTop',
     'badgeCodigo',
     'badgeId',
@@ -1637,6 +1640,15 @@
       byId('btnSalvar').addEventListener('click', salvarObservacao);
       byId('btnImprimirTop').addEventListener('click', ()=> window.print());
       byId('btnEditar').addEventListener('click', abrirEditor);
+      byId('btnAbrirProcedimento')?.addEventListener('click', () => {
+        if (!alunoAtual || isReadonlyView) return;
+        window.abrirModalProcedimentoDisciplinar({
+          origem: 'ficha_aluno',
+          alunoId: alunoAtual._id,
+          nomeAluno: alunoAtual.nome || 'Aluno',
+          turma: alunoAtual.turma || 'Turma não informada'
+        });
+      });
       byId('btnVerDados').addEventListener('click', abrirVisualizacaoDados);
       byId('btnFecharDados').addEventListener('click', fecharVisualizacaoDados);
       byId('btnCancelarEd').addEventListener('click', fecharEditor);
@@ -1693,6 +1705,7 @@
     })();
   </script>
 
+  <script src="/assets/js/procedimento-modal.js"></script>
   <script src="notify.js"></script>
   <script src="/update-client.js"></script>
 </body>
