@@ -2171,20 +2171,30 @@ function roundRectPath(ctx, x, y, w, h, r){
   const qs = p.toString() ? `?${p.toString()}` : '';
   const join = qs ? '&' : '?';
 
+  // Bloco 1: evolução geral (isolado — falha aqui não afeta os rankings)
   try{
-    const [evolucao, melhores, quedas] = await Promise.all([
-      fetchJsonSeguro('/api/estatisticas-comportamento/evolucao-geral' + qs),
-      fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=melhores&limite=10'),
-      fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=piores&limite=10')
-    ]);
-
+    const evolucao = await fetchJsonSeguro('/api/estatisticas-comportamento/evolucao-geral' + qs);
     ultimoSnapshot.comportamentoHistorico.evolucaoGeral = Array.isArray(evolucao?.dados)
       ? evolucao.dados.map(item => ({
           periodo: item.periodo || '—',
           mediaNota: Number(item.mediaNota || 0)
         }))
       : [];
+    drawLine(
+      'chartEvolucaoComportamental',
+      ultimoSnapshot.comportamentoHistorico.evolucaoGeral,
+      'periodo',
+      'mediaNota'
+    );
+  }catch(errEvolucao){
+    console.error('[estatisticas-comportamento] Falha na evolução geral:', errEvolucao);
+    ultimoSnapshot.comportamentoHistorico.evolucaoGeral = [];
+    drawLine('chartEvolucaoComportamental', [], 'periodo', 'mediaNota');
+  }
 
+  // Bloco 2: maiores avanços (isolado)
+  try{
+    const melhores = await fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=melhores&limite=10');
     ultimoSnapshot.comportamentoHistorico.rankingMelhores = Array.isArray(melhores?.dados)
       ? melhores.dados
           .map(item => ({
@@ -2193,7 +2203,22 @@ function roundRectPath(ctx, x, y, w, h, r){
           }))
           .filter(item => item.variacao > 0)
       : [];
+    drawBars(
+      'chartRankingMelhores',
+      ultimoSnapshot.comportamentoHistorico.rankingMelhores,
+      'alunoNome',
+      'variacao',
+      10
+    );
+  }catch(errMelhores){
+    console.error('[estatisticas-comportamento] Falha no ranking de avanços:', errMelhores);
+    ultimoSnapshot.comportamentoHistorico.rankingMelhores = [];
+    drawBars('chartRankingMelhores', [], 'alunoNome', 'variacao', 10);
+  }
 
+  // Bloco 3: maiores quedas (isolado)
+  try{
+    const quedas = await fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=piores&limite=10');
     ultimoSnapshot.comportamentoHistorico.rankingQuedas = Array.isArray(quedas?.dados)
       ? quedas.dados
           .map(item => ({
@@ -2202,22 +2227,6 @@ function roundRectPath(ctx, x, y, w, h, r){
           }))
           .filter(item => item.variacao > 0)
       : [];
-
-    drawLine(
-      'chartEvolucaoComportamental',
-      ultimoSnapshot.comportamentoHistorico.evolucaoGeral,
-      'periodo',
-      'mediaNota'
-    );
-
-    drawBars(
-      'chartRankingMelhores',
-      ultimoSnapshot.comportamentoHistorico.rankingMelhores,
-      'alunoNome',
-      'variacao',
-      10
-    );
-
     drawBars(
       'chartRankingQuedas',
       ultimoSnapshot.comportamentoHistorico.rankingQuedas,
@@ -2225,9 +2234,10 @@ function roundRectPath(ctx, x, y, w, h, r){
       'variacao',
       10
     );
-
-  }catch(errGraficos){
-    console.error('[estatisticas-comportamento] Falha nos gráficos de evolução:', errGraficos);
+  }catch(errQuedas){
+    console.error('[estatisticas-comportamento] Falha no ranking de quedas:', errQuedas);
+    ultimoSnapshot.comportamentoHistorico.rankingQuedas = [];
+    drawBars('chartRankingQuedas', [], 'alunoNome', 'variacao', 10);
   }
 
   // Análise inteligente isolada: falha aqui não derruba os gráficos

@@ -286,57 +286,56 @@ router.get('/aluno/:id', async (req, res) => {
  * GET /api/estatisticas-comportamento/ranking-evolucao
  */
 router.get('/ranking-evolucao', async (req, res) => {
+  const _t0 = Date.now();
   try {
     const { filtro, inicio, fim } = montarFiltroBase(req);
 
     const limite = Math.min(Number(req.query.limite || 20), 100);
     const tipo = String(req.query.tipo || 'melhores').toLowerCase();
 
-    const snapshots = await ComportamentoSnapshot.find(filtro)
-      .sort({ aluno: 1, dataReferencia: 1 })
-      .select('aluno alunoNome turma turmaNome dataReferencia notaComportamento faixaComportamento')
-      .lean();
+    console.log('[ranking-evolucao] tipo:', tipo, '| limite:', limite);
 
-    const mapa = new Map();
+    // Agrega primeiro/último snapshot por aluno no servidor (sem find sem limit)
+    const ordemSort = (tipo === 'piores' || tipo === 'queda') ? 1 : -1;
 
-    for (const s of snapshots) {
-      const key = String(s.aluno);
-      if (!mapa.has(key)) {
-        mapa.set(key, {
-          aluno: s.aluno,
-          alunoNome: s.alunoNome,
-          turma: s.turma,
-          turmaNome: s.turmaNome,
-          primeiraData: s.dataReferencia,
-          ultimaData: s.dataReferencia,
-          primeiraNota: Number(s.notaComportamento || 0),
-          ultimaNota: Number(s.notaComportamento || 0),
-          faixaAtual: s.faixaComportamento || '',
-          pontos: 1,
-        });
-      } else {
-        const item = mapa.get(key);
-        item.ultimaData = s.dataReferencia;
-        item.ultimaNota = Number(s.notaComportamento || 0);
-        item.faixaAtual = s.faixaComportamento || item.faixaAtual;
-        item.pontos += 1;
-      }
-    }
+    const rankingAgg = await ComportamentoSnapshot.aggregate([
+      { $match: filtro },
+      { $sort: { dataReferencia: 1 } },
+      {
+        $group: {
+          _id: '$aluno',
+          alunoNome: { $first: '$alunoNome' },
+          turma: { $first: '$turma' },
+          turmaNome: { $first: '$turmaNome' },
+          primeiraNota: { $first: '$notaComportamento' },
+          ultimaNota: { $last: '$notaComportamento' },
+          faixaAtual: { $last: '$faixaComportamento' },
+          pontos: { $sum: 1 },
+        },
+      },
+      { $match: { pontos: { $gte: 2 } } },
+      {
+        $addFields: {
+          variacao: { $subtract: ['$ultimaNota', '$primeiraNota'] },
+        },
+      },
+      { $sort: { variacao: ordemSort } },
+      { $limit: limite },
+    ]);
 
-    let ranking = Array.from(mapa.values())
-      .map((item) => ({
-        ...item,
-        variacao: arredondar(item.ultimaNota - item.primeiraNota),
-      }))
-      .filter((item) => item.pontos >= 2);
+    console.log('[ranking-evolucao] alunos retornados:', rankingAgg.length, '| ms:', Date.now() - _t0);
 
-    if (tipo === 'piores' || tipo === 'queda') {
-      ranking.sort((a, b) => a.variacao - b.variacao);
-    } else {
-      ranking.sort((a, b) => b.variacao - a.variacao);
-    }
-
-    ranking = ranking.slice(0, limite);
+    const dados = rankingAgg.map(item => ({
+      aluno: item._id,
+      alunoNome: item.alunoNome || 'Aluno',
+      turma: item.turma || null,
+      turmaNome: item.turmaNome || '',
+      primeiraNota: arredondar(item.primeiraNota),
+      ultimaNota: arredondar(item.ultimaNota),
+      faixaAtual: item.faixaAtual || '',
+      pontos: item.pontos,
+      variacao: arredondar(item.variacao),
+    }));
 
     return res.json({
       ok: true,
@@ -344,9 +343,10 @@ router.get('/ranking-evolucao', async (req, res) => {
       fim,
       tipo,
       limite,
-      dados: ranking,
+      dados,
     });
   } catch (err) {
+    console.error('[ranking-evolucao] erro — ms:', Date.now() - _t0, '| msg:', err.message);
     return res.status(err.status || 500).json({
       ok: false,
       erro: err.message || 'Erro ao buscar ranking de evolução.',
