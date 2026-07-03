@@ -422,8 +422,17 @@ router.get('/distribuicao-faixas', async (req, res) => {
  * GET /api/estatisticas-comportamento/parecer
  */
 router.get('/parecer', async (req, res) => {
+  const _t0 = Date.now();
+  console.log('[parecer] início — id:', req.usuario?.id, '| tipo:', req.usuario?.tipo);
   try {
+    const rawInstituicao = req.usuario?.instituicao || req.user?.instituicao || req.query.instituicao || null;
+    if (!rawInstituicao) {
+      console.error('[parecer] instituição ausente — id:', req.usuario?.id, '| raw:', rawInstituicao);
+      return res.status(400).json({ ok: false, erro: 'Instituição não identificada para geração do parecer comportamental.' });
+    }
+
     const { filtro, inicio, fim } = montarFiltroBase(req);
+    console.log('[parecer] filtro — inicio:', inicio.toISOString(), '| fim:', fim.toISOString(), '| turma:', req.query.turma || 'todas');
 
     const dados = await ComportamentoSnapshot.aggregate([
       { $match: filtro },
@@ -457,6 +466,8 @@ router.get('/parecer', async (req, res) => {
       },
       { $sort: { periodo: 1 } },
     ]);
+
+    console.log('[parecer] mensal:', dados.length, 'meses | ms:', Date.now() - _t0);
 
     if (!dados.length) {
       return res.json({
@@ -551,37 +562,40 @@ router.get('/parecer', async (req, res) => {
       );
     }
 
-    const snapshotsAlunos = await ComportamentoSnapshot.find(filtro)
-      .sort({ aluno: 1, dataReferencia: 1 })
-      .select('aluno alunoNome turma turmaNome notaComportamento dataReferencia')
-      .lean();
+    // Agrega primeiro/último snapshot por aluno no servidor (sem limit, sem viés)
+    console.log('[parecer] agregando resumo por aluno...');
+    const resumoAlunos = await ComportamentoSnapshot.aggregate([
+      { $match: filtro },
+      { $sort: { dataReferencia: 1 } },
+      {
+        $group: {
+          _id: '$aluno',
+          alunoNome: { $first: '$alunoNome' },
+          turma: { $last: '$turma' },
+          turmaNome: { $last: '$turmaNome' },
+          primeiraNota: { $first: '$notaComportamento' },
+          ultimaNota: { $last: '$notaComportamento' },
+          pontos: { $sum: 1 },
+        },
+      },
+    ]);
 
-    const mapaAlunos = new Map();
+    console.log('[parecer] alunos agregados:', resumoAlunos.length, '| ms:', Date.now() - _t0);
 
-    for (const s of snapshotsAlunos) {
-      const key = String(s.aluno);
-
-      if (!mapaAlunos.has(key)) {
-        mapaAlunos.set(key, {
-          aluno: s.aluno,
-          alunoNome: s.alunoNome || 'Aluno',
-          turma: s.turma || null,
-          turmaNome: s.turmaNome || '',
-          primeiraData: s.dataReferencia,
-          ultimaData: s.dataReferencia,
-          primeiraNota: Number(s.notaComportamento || 0),
-          ultimaNota: Number(s.notaComportamento || 0),
-          pontos: 1,
-        });
-      } else {
-        const item = mapaAlunos.get(key);
-        item.ultimaData = s.dataReferencia;
-        item.ultimaNota = Number(s.notaComportamento || 0);
-        item.turma = s.turma || item.turma;
-        item.turmaNome = s.turmaNome || item.turmaNome;
-        item.pontos += 1;
-      }
-    }
+    const mapaAlunos = new Map(
+      resumoAlunos.map(a => [
+        String(a._id),
+        {
+          aluno: a._id,
+          alunoNome: a.alunoNome || 'Aluno',
+          turma: a.turma || null,
+          turmaNome: a.turmaNome || '',
+          primeiraNota: Number(a.primeiraNota || 0),
+          ultimaNota: Number(a.ultimaNota || 0),
+          pontos: a.pontos,
+        },
+      ])
+    );
 
     const idsAlunos = Array.from(mapaAlunos.keys());
 
@@ -676,6 +690,7 @@ Observa-se uma tendência de ${tendencia} ao longo do período analisado.
 Recomenda-se manter ações pedagógicas e disciplinares alinhadas ao perfil identificado.
 `.trim();
 
+    console.log('[parecer] concluído — ms:', Date.now() - _t0);
     return res.json({
       ok: true,
       inicio,
@@ -693,7 +708,7 @@ Recomenda-se manter ações pedagógicas e disciplinares alinhadas ao perfil ide
       parecer,
     });
   } catch (err) {
-    console.error('[estatisticas-comportamento][parecer]', err);
+    console.error('[estatisticas-comportamento/parecer] erro — ms:', Date.now() - _t0, '| msg:', err.message, '| status:', err.status || 500);
     return res.status(err.status || 500).json({
       ok: false,
       erro: err.message || 'Erro ao gerar parecer.',

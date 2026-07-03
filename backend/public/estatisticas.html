@@ -1199,6 +1199,11 @@ async function fetchJsonSeguro(url, timeoutMs = 15000){
         }
 
         return r.json();
+      } catch(fetchErr){
+        if(fetchErr.name === 'AbortError'){
+          throw new Error(`Timeout (${timeoutMs}ms) ao carregar ${url}`);
+        }
+        throw fetchErr;
       } finally {
         clearTimeout(to);
       }
@@ -2221,6 +2226,12 @@ function roundRectPath(ctx, x, y, w, h, r){
       10
     );
 
+  }catch(errGraficos){
+    console.error('[estatisticas-comportamento] Falha nos gráficos de evolução:', errGraficos);
+  }
+
+  // Análise inteligente isolada: falha aqui não derruba os gráficos
+  try{
     const parecer = await fetchJsonSeguro('/api/estatisticas-comportamento/parecer' + qs);
     const el = document.getElementById('parecerIA');
     if(!el) return;
@@ -2446,7 +2457,7 @@ function roundRectPath(ctx, x, y, w, h, r){
     `;
 
   }catch(err){
-    console.error(err);
+    console.error('[estatisticas-comportamento] Falha ao carregar análise:', err);
     const el = document.getElementById('parecerIA');
     if(el){
       el.innerHTML = `
