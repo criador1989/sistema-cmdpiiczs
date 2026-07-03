@@ -381,6 +381,117 @@ function send403(res, publicRoot) {
   return res.status(403).send('403 - Acesso negado');
 }
 
+/* ==========================================================
+   🚧 BLOQUEIO TEMPORÁRIO DO SITE INSTITUCIONAL
+   Mantém o sistema Axoriin funcionando normalmente.
+   Ative no Render com:
+   SITE_INSTITUCIONAL_BLOQUEADO=true
+   ========================================================== */
+
+const SITE_INSTITUCIONAL_BLOQUEADO =
+  process.env.SITE_INSTITUCIONAL_BLOQUEADO === 'true';
+
+function enviarPaginaSiteBloqueado(res) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+
+  return res.status(503).send(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="robots" content="noindex, nofollow" />
+      <title>Site temporariamente indisponível</title>
+      <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          min-height: 100vh;
+          font-family: Arial, Helvetica, sans-serif;
+          background: linear-gradient(135deg, #07111f, #10233f);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          text-align: center;
+        }
+
+        .container {
+          width: 100%;
+          max-width: 760px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 18px;
+          padding: 44px 34px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+        }
+
+        h1 {
+          margin: 0 0 18px;
+          font-size: 31px;
+          line-height: 1.25;
+          font-weight: 700;
+        }
+
+        p {
+          margin: 10px 0;
+          font-size: 18px;
+          line-height: 1.5;
+          color: #e5e7eb;
+        }
+
+        .aviso {
+          margin-top: 26px;
+          font-size: 15px;
+          color: #cbd5e1;
+        }
+      </style>
+    </head>
+    <body>
+      <main class="container">
+        <h1>Site temporariamente indisponível</h1>
+        <p>O site institucional encontra-se temporariamente indisponível.</p>
+        <p>Os acessos aos sistemas internos permanecem funcionando normalmente.</p>
+        <div class="aviso">
+          Colégio Militar Dom Pedro II — Unidade Cruzeiro do Sul
+        </div>
+      </main>
+    </body>
+    </html>
+  `);
+}
+
+app.use((req, res, next) => {
+  if (!SITE_INSTITUCIONAL_BLOQUEADO) {
+    return next();
+  }
+
+  const p = req.path;
+
+  const rotaDoSiteInstitucional =
+    p === '/' ||
+    p === '/index.html' ||
+    p === '/site-cmdpii' ||
+    p.startsWith('/site-cmdpii/') ||
+    p === '/api/site-publico' ||
+    p.startsWith('/api/site-publico/') ||
+    p === '/api/site-analytics' ||
+    p.startsWith('/api/site-analytics/');
+
+  if (rotaDoSiteInstitucional) {
+    return enviarPaginaSiteBloqueado(res);
+  }
+
+  return next();
+});
+
 app.use((req, res, next) => {
   const host = (req.hostname || '').toLowerCase();
 
