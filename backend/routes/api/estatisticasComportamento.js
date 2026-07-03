@@ -300,7 +300,7 @@ router.get('/ranking-evolucao', async (req, res) => {
 
     const rankingAgg = await ComportamentoSnapshot.aggregate([
       { $match: filtro },
-      { $sort: { dataReferencia: 1 } },
+      { $sort: { aluno: 1, dataReferencia: 1 } },
       {
         $group: {
           _id: '$aluno',
@@ -321,7 +321,7 @@ router.get('/ranking-evolucao', async (req, res) => {
       },
       { $sort: { variacao: ordemSort } },
       { $limit: limite },
-    ]);
+    ], { allowDiskUse: true });
 
     console.log('[ranking-evolucao] alunos retornados:', rankingAgg.length, '| ms:', Date.now() - _t0);
 
@@ -350,6 +350,83 @@ router.get('/ranking-evolucao', async (req, res) => {
     return res.status(err.status || 500).json({
       ok: false,
       erro: err.message || 'Erro ao buscar ranking de evolução.',
+    });
+  }
+});
+
+/**
+ * GET /api/estatisticas-comportamento/ranking-evolucao-resumo
+ * Rota combinada: uma única aggregation retorna melhores e piores.
+ */
+router.get('/ranking-evolucao-resumo', async (req, res) => {
+  const _t0 = Date.now();
+  console.log('[ranking-evolucao-resumo] início');
+  try {
+    const { filtro, inicio, fim } = montarFiltroBase(req);
+    const limite = Math.min(Number(req.query.limite || 10), 50);
+
+    // Uma única aggregation: sort por aluno+data usa o índice composto
+    const todos = await ComportamentoSnapshot.aggregate([
+      { $match: filtro },
+      { $sort: { aluno: 1, dataReferencia: 1 } },
+      {
+        $group: {
+          _id: '$aluno',
+          alunoNome: { $first: '$alunoNome' },
+          turma: { $first: '$turma' },
+          turmaNome: { $first: '$turmaNome' },
+          primeiraNota: { $first: '$notaComportamento' },
+          ultimaNota: { $last: '$notaComportamento' },
+          faixaAtual: { $last: '$faixaComportamento' },
+          pontos: { $sum: 1 },
+        },
+      },
+      { $match: { pontos: { $gte: 2 } } },
+      {
+        $addFields: {
+          variacao: { $subtract: ['$ultimaNota', '$primeiraNota'] },
+        },
+      },
+    ], { allowDiskUse: true });
+
+    console.log('[ranking-evolucao-resumo] alunos:', todos.length, '| ms:', Date.now() - _t0);
+
+    const mapear = item => ({
+      aluno: item._id,
+      alunoNome: item.alunoNome || 'Aluno',
+      turma: item.turma || null,
+      turmaNome: item.turmaNome || '',
+      primeiraNota: arredondar(item.primeiraNota),
+      ultimaNota: arredondar(item.ultimaNota),
+      faixaAtual: item.faixaAtual || '',
+      pontos: item.pontos,
+      variacao: arredondar(item.variacao),
+    });
+
+    const melhores = [...todos]
+      .sort((a, b) => b.variacao - a.variacao)
+      .slice(0, limite)
+      .map(mapear);
+
+    const piores = [...todos]
+      .sort((a, b) => a.variacao - b.variacao)
+      .slice(0, limite)
+      .map(mapear);
+
+    console.log('[ranking-evolucao-resumo] melhores:', melhores.length, '| piores:', piores.length, '| ms:', Date.now() - _t0);
+
+    return res.json({
+      ok: true,
+      inicio,
+      fim,
+      melhores,
+      piores,
+    });
+  } catch (err) {
+    console.error('[ranking-evolucao-resumo] erro — ms:', Date.now() - _t0, '| msg:', err.message);
+    return res.status(err.status || 500).json({
+      ok: false,
+      erro: err.message || 'Erro ao buscar ranking resumido.',
     });
   }
 });

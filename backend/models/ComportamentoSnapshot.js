@@ -148,4 +148,11 @@ ComportamentoSnapshotSchema.index({
   turma: 1,
 });
 
+// Índice para ranking rápido por aluno dentro de uma instituição
+ComportamentoSnapshotSchema.index({
+  instituicao: 1,
+  aluno: 1,
+  dataReferencia: 1,
+});
+
 module.exports = mongoose.model('ComportamentoSnapshot', ComportamentoSnapshotSchema);

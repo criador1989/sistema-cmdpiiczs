@@ -2192,11 +2192,12 @@ function roundRectPath(ctx, x, y, w, h, r){
     drawLine('chartEvolucaoComportamental', [], 'periodo', 'mediaNota');
   }
 
-  // Bloco 2: maiores avanços (isolado)
+  // Blocos 2+3: maiores avanços e quedas em uma única chamada
   try{
-    const melhores = await fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=melhores&limite=10');
-    ultimoSnapshot.comportamentoHistorico.rankingMelhores = Array.isArray(melhores?.dados)
-      ? melhores.dados
+    const ranking = await fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao-resumo' + qs + join + 'limite=10');
+
+    ultimoSnapshot.comportamentoHistorico.rankingMelhores = Array.isArray(ranking?.melhores)
+      ? ranking.melhores
           .map(item => ({
             alunoNome: item.alunoNome || 'Aluno',
             variacao: Number(item.variacao || 0)
@@ -2210,17 +2211,9 @@ function roundRectPath(ctx, x, y, w, h, r){
       'variacao',
       10
     );
-  }catch(errMelhores){
-    console.error('[estatisticas-comportamento] Falha no ranking de avanços:', errMelhores);
-    ultimoSnapshot.comportamentoHistorico.rankingMelhores = [];
-    drawBars('chartRankingMelhores', [], 'alunoNome', 'variacao', 10);
-  }
 
-  // Bloco 3: maiores quedas (isolado)
-  try{
-    const quedas = await fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao' + qs + join + 'tipo=piores&limite=10');
-    ultimoSnapshot.comportamentoHistorico.rankingQuedas = Array.isArray(quedas?.dados)
-      ? quedas.dados
+    ultimoSnapshot.comportamentoHistorico.rankingQuedas = Array.isArray(ranking?.piores)
+      ? ranking.piores
           .map(item => ({
             alunoNome: item.alunoNome || 'Aluno',
             variacao: Math.abs(Number(item.variacao || 0))
@@ -2234,9 +2227,11 @@ function roundRectPath(ctx, x, y, w, h, r){
       'variacao',
       10
     );
-  }catch(errQuedas){
-    console.error('[estatisticas-comportamento] Falha no ranking de quedas:', errQuedas);
+  }catch(errRanking){
+    console.error('[estatisticas-comportamento] Falha no ranking de evolução:', errRanking);
+    ultimoSnapshot.comportamentoHistorico.rankingMelhores = [];
     ultimoSnapshot.comportamentoHistorico.rankingQuedas = [];
+    drawBars('chartRankingMelhores', [], 'alunoNome', 'variacao', 10);
     drawBars('chartRankingQuedas', [], 'alunoNome', 'variacao', 10);
   }
 
