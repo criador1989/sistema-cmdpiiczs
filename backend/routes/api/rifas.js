@@ -842,12 +842,30 @@ router.post(
         set.dataPagamento = null;
       }
 
+      // Converte os números informados para inteiros (numeroValor)
+      const numerosValor = numeros
+        .map(n => Number(n))
+        .filter(n => Number.isInteger(n) && n > 0);
+
+      if (numerosValor.length === 0) {
+        return res.status(400).json({
+          erro: "Nenhum número válido informado. Informe apenas valores inteiros positivos.",
+        });
+      }
+
       // Guard: verificar responsável antes de alterar status financeiro
       const registrosPrestacao = await RifaNumero.find({
         instituicao,
         campanha: campanha._id,
-        numero: { $in: numeros.map(String) },
-      }).select("numero status responsavelNome").lean();
+        numeroValor: { $in: numerosValor },
+      }).select("numero numeroValor status responsavelNome").lean();
+
+      if (registrosPrestacao.length === 0) {
+        return res.status(404).json({
+          erro: "Nenhum número encontrado nessa campanha com os valores informados.",
+          numerosInformados: numerosValor,
+        });
+      }
 
       if (status === "paga" || status === "vendida") {
         const semResponsavel = registrosPrestacao.filter(
@@ -856,7 +874,7 @@ router.post(
         if (semResponsavel.length > 0) {
           return res.status(400).json({
             erro: `Não é possível marcar como "${status}": ${semResponsavel.length} número(s) não possuem responsável. Distribua antes de registrar pagamento.`,
-            numerosInvalidos: semResponsavel.map(r => r.numero),
+            numerosInvalidos: semResponsavel.map(r => r.numeroValor),
             bloqueio: "SEM_RESPONSAVEL",
           });
         }
@@ -866,17 +884,28 @@ router.post(
         {
           instituicao,
           campanha: campanha._id,
-          numero: { $in: numeros.map(String) },
+          numeroValor: { $in: numerosValor },
         },
         {
           $set: set,
         }
       );
 
+      const modifiedCount = resultado.modifiedCount || resultado.nModified || 0;
+
+      if (modifiedCount === 0) {
+        return res.status(400).json({
+          erro: "Nenhum registro foi atualizado. Verifique os números informados.",
+          matchedCount: registrosPrestacao.length,
+          modifiedCount: 0,
+        });
+      }
+
       return res.json({
         ok: true,
         mensagem: "Prestação registrada com sucesso.",
-        modificados: resultado.modifiedCount || resultado.nModified || 0,
+        matchedCount: registrosPrestacao.length,
+        modifiedCount,
       });
     } catch (error) {
       console.error("[RIFAS][PRESTACAO]", error);

@@ -772,8 +772,9 @@
               </select>
             </div>
             <div>
-              <label>Valor pago</label>
-              <input id="prestValor" type="number" min="0" step="0.01" placeholder="0,00" />
+              <label>Valor pago por número</label>
+              <input id="prestValor" type="number" min="0" step="0.01" placeholder="Ex.: 7,00" />
+              <small style="color:#94a3b8;font-size:0.75em;">Valor unitário. O sistema soma pelo total de números.</small>
             </div>
           </div>
 
@@ -935,6 +936,7 @@
                 <option value="nao_pagaram">Não pagaram nada</option>
               </select>
               <button class="btn small" onclick="carregarRanking()">Atualizar</button>
+              <button class="btn small" id="btnBaixarCsvRanking" onclick="baixarCsvRankingRifas()">&#11015; Baixar CSV</button>
             </div>
           </div>
 
@@ -2313,7 +2315,11 @@
         .split(/[,\n;\s]+/)
         .map(x => x.trim())
         .filter(Boolean)
-        .map(x => /^\d+$/.test(x) ? String(x).padStart(4, "0") : x);
+        .map(x => {
+          const n = Number(x);
+          return Number.isInteger(n) && n > 0 ? n : null;
+        })
+        .filter(n => n !== null);
     }
 
     async function registrarPrestacao() {
@@ -2708,6 +2714,72 @@
           `;
         }).join("");
       }
+    }
+
+    function escapeCsv(value) {
+      const s = String(value ?? '');
+      if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function downloadCsv(filename, csvContent) {
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function baixarCsvRankingRifas() {
+      if (!rankingCache) {
+        toast('Carregue o ranking antes de exportar.', 'erro');
+        return;
+      }
+
+      const turmaSel = document.getElementById('rkTurma')?.value || '';
+      const filtroSel = document.getElementById('rkFiltro')?.value || 'todos';
+
+      let lista = rankingCache.topResponsaveis || [];
+      if (turmaSel) lista = lista.filter(r => r.turmaOuSetor === turmaSel);
+      if (filtroSel === 'pagos') lista = lista.filter(r => r.pagas > 0);
+      if (filtroSel === 'nao_pagaram') lista = lista.filter(r => r.pagas === 0);
+
+      if (!lista.length) {
+        toast('Nenhum registro para exportar com os filtros atuais.', 'erro');
+        return;
+      }
+
+      const cabecalho = ['Posição','Nome','Turma/Setor','Entregues','Pagas','V. Pend.','Pend.','Blocos Pagos','R$ Pago','R$ Pendente'];
+      const linhas = lista.map((r, i) => [
+        i + 1,
+        r.responsavelNome || '',
+        r.turmaOuSetor || '',
+        r.entregues || 0,
+        r.pagas || 0,
+        r.vendidasPendentes || 0,
+        r.pendentes || 0,
+        r.blocosPagos || 0,
+        (r.valorPago || 0).toFixed(2).replace('.', ','),
+        (r.pendente || 0).toFixed(2).replace('.', ','),
+      ].map(escapeCsv).join(';'));
+
+      const csv = [cabecalho.map(escapeCsv).join(';'), ...linhas].join('\r\n');
+
+      const slugTurma = turmaSel ? turmaSel.replace(/[^a-zA-Z0-9]/g, '') : 'todas';
+      const slugFiltro = filtroSel === 'pagos' ? 'somente-pagaram'
+        : filtroSel === 'nao_pagaram' ? 'nao-pagaram'
+        : 'todos';
+      const hoje = new Date().toISOString().slice(0, 10);
+      const filename = `ranking-rifas-${slugTurma}-${slugFiltro}-${hoje}.csv`;
+
+      downloadCsv(filename, csv);
+      toast('CSV exportado com sucesso!');
     }
 
     async function carregarRanking() {
