@@ -104,6 +104,51 @@ function montarCamposGovernancaInstituicao(body = {}) {
   };
 }
 
+const NIVEIS_ESCOPO_VALIDOS = ['nacional', 'estadual', 'municipal', 'regional', 'rede', 'instituicoes'];
+const REDES_ESCOPO_VALIDAS = ['estadual', 'municipal', 'federal', 'militar', 'civico_militar', 'outra'];
+
+function normalizarEscopoSecretaria(body, instituicao) {
+  const raw = body?.escopoObservatorio || {};
+  const limitarInstituicao = raw.limitarInstituicao === true || String(raw.limitarInstituicao).toLowerCase() === 'true';
+  const nivelRaw = String(raw.nivel || 'estadual').trim().toLowerCase();
+  const nivelBase = NIVEIS_ESCOPO_VALIDOS.includes(nivelRaw) ? nivelRaw : 'estadual';
+  const nivel = limitarInstituicao ? 'instituicoes' : nivelBase;
+
+  const estado = normalizarUF(raw.estado || instituicao?.estado || '');
+  const municipio = normalizarTextoCurto(raw.municipio || '');
+
+  if ((nivel === 'estadual' || nivel === 'municipal') && !estado) {
+    return { ok: false, mensagem: 'Estado/UF é obrigatório para escopo estadual ou municipal.' };
+  }
+
+  if (nivel === 'municipal' && !municipio) {
+    return { ok: false, mensagem: 'Município é obrigatório para escopo municipal.' };
+  }
+
+  const redeRaw = String(raw.rede || '').trim().toLowerCase();
+  if (redeRaw === 'privada') {
+    return { ok: false, mensagem: 'Rede "privada" não pode ser adicionada ao escopo da Secretaria.' };
+  }
+  const rede = REDES_ESCOPO_VALIDAS.includes(redeRaw) ? redeRaw : null;
+
+  const instituicoesPermitidas = limitarInstituicao && instituicao?._id
+    ? [instituicao._id]
+    : (Array.isArray(raw.instituicoesPermitidas) ? raw.instituicoesPermitidas : []);
+
+  return {
+    ok: true,
+    escopo: {
+      nivel,
+      estado: estado || null,
+      municipio: municipio || null,
+      regional: normalizarTextoCurto(raw.regional || '') || null,
+      rede: rede || null,
+      instituicoesPermitidas,
+      podeVerDadosIndividuais: false,
+    }
+  };
+}
+
 function buildInstitutionLinks(slug) {
   const safeSlug = String(slug || '').trim();
 
@@ -466,6 +511,15 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
       });
     }
 
+    let escopoObservatorio = undefined;
+    if (tipo === 'secretaria') {
+      const escopoResult = normalizarEscopoSecretaria(req.body, instituicao);
+      if (!escopoResult.ok) {
+        return res.status(400).json({ mensagem: escopoResult.mensagem });
+      }
+      escopoObservatorio = escopoResult.escopo;
+    }
+
     const novoUsuario = new Usuario({
       nome,
       email,
@@ -477,20 +531,7 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
       emailVerificadoEm: new Date(),
       tokenVerificacaoHash: null,
       tokenVerificacaoExpiraEm: null,
-
-      escopoObservatorio: tipo === 'secretaria'
-        ? {
-            nivel: req.body?.escopoObservatorio?.nivel || 'estadual',
-            estado: req.body?.escopoObservatorio?.estado || instituicao.estado || null,
-            municipio: req.body?.escopoObservatorio?.municipio || null,
-            regional: req.body?.escopoObservatorio?.regional || null,
-            rede: req.body?.escopoObservatorio?.rede || null,
-            instituicoesPermitidas: Array.isArray(req.body?.escopoObservatorio?.instituicoesPermitidas)
-              ? req.body.escopoObservatorio.instituicoesPermitidas
-              : [],
-            podeVerDadosIndividuais: false,
-          }
-        : undefined,
+      escopoObservatorio,
     });
 
     await novoUsuario.save();

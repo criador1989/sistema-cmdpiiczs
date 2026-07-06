@@ -827,6 +827,54 @@
               </div>
             </div>
 
+            <!-- ESCOPO DO OBSERVATÓRIO (apenas para tipo secretaria) -->
+            <div id="escopoObsBox" style="display:none; margin-top:10px; padding:12px; border-radius:14px; border:1px solid rgba(0,209,255,.25); background:rgba(0,209,255,.06);">
+              <div style="font-size:12px; font-weight:900; color:rgba(0,209,255,.9); text-transform:uppercase; letter-spacing:.3px; margin-bottom:10px;">Escopo do Observatório</div>
+
+              <div class="row">
+                <div>
+                  <label for="uEscopoNivel">Nível</label>
+                  <select id="uEscopoNivel">
+                    <option value="estadual">Estadual</option>
+                    <option value="municipal">Municipal</option>
+                    <option value="nacional">Nacional</option>
+                    <option value="rede">Por rede</option>
+                    <option value="instituicoes">Instituição específica</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="uEscopoRede">Rede observada</label>
+                  <select id="uEscopoRede">
+                    <option value="">Todas as redes</option>
+                    <option value="estadual">Estadual</option>
+                    <option value="municipal">Municipal</option>
+                    <option value="federal">Federal</option>
+                    <option value="militar">Militar</option>
+                    <option value="civico_militar">Cívico-militar</option>
+                    <option value="outra">Outra</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <div>
+                  <label for="uEscopoEstado">Estado/UF <span id="uEscopoEstadoReq" style="color:rgba(255,110,110,.9);">*</span></label>
+                  <input id="uEscopoEstado" maxlength="2" placeholder="Ex.: AC" autocomplete="off" />
+                </div>
+                <div id="uMunicipioBox">
+                  <label for="uEscopoMunicipio">Município</label>
+                  <input id="uEscopoMunicipio" placeholder="Apenas se nível municipal" autocomplete="off" />
+                </div>
+              </div>
+
+              <label class="check-card" for="uEscopoLimitarInst" style="margin-top:10px;">
+                <input id="uEscopoLimitarInst" type="checkbox">
+                <span><b>Limitar à instituição selecionada</b><span>A secretaria vê apenas os dados desta escola.</span></span>
+              </label>
+
+              <div class="hint" style="margin-top:8px;">Rede "privada" não pode ser adicionada ao escopo da Secretaria.</div>
+            </div>
+
             <div class="hint">
               Este cadastro já cria o usuário diretamente na instituição escolhida, sem precisar passar pelo painel principal.
             </div>
@@ -1199,7 +1247,23 @@
       if (!observatorioAtivoInst.checked) visivelSecretariaInst.checked = false;
     });
 
+    uTipo.addEventListener('change', () => {
+      document.getElementById('escopoObsBox').style.display = uTipo.value === 'secretaria' ? 'block' : 'none';
+      atualizarCamposEscopoObs();
+    });
+
+    document.getElementById('uEscopoNivel')?.addEventListener('change', atualizarCamposEscopoObs);
+
+    function atualizarCamposEscopoObs() {
+      const nivel = String(document.getElementById('uEscopoNivel')?.value || '').trim();
+      const estadoReq = document.getElementById('uEscopoEstadoReq');
+      const municipioBox = document.getElementById('uMunicipioBox');
+      if (estadoReq) estadoReq.style.display = (nivel === 'estadual' || nivel === 'municipal') ? '' : 'none';
+      if (municipioBox) municipioBox.style.display = nivel === 'municipal' ? '' : 'none';
+    }
+
     aplicarPadraoGovernancaPorPreset();
+    atualizarCamposEscopoObs();
 
     function showMsg(el, type, text){
       if (!el) return;
@@ -1319,6 +1383,12 @@
       uEmail.value = '';
       uSenha.value = '';
       uTipo.value = '';
+      document.getElementById('escopoObsBox').style.display = 'none';
+      const _n = document.getElementById('uEscopoNivel'); if (_n) _n.value = 'estadual';
+      const _e = document.getElementById('uEscopoEstado'); if (_e) _e.value = '';
+      const _m = document.getElementById('uEscopoMunicipio'); if (_m) _m.value = '';
+      const _r = document.getElementById('uEscopoRede'); if (_r) _r.value = '';
+      const _l = document.getElementById('uEscopoLimitarInst'); if (_l) _l.checked = false;
       if (!keepInst) {
         selectedInst = null;
         renderSelectedInst();
@@ -1762,15 +1832,39 @@ function baixarRelatorioAcessosTurma() {
         return;
       }
 
+      if (tipo === 'secretaria') {
+        const nivelEsc = String(document.getElementById('uEscopoNivel')?.value || '').trim();
+        const estadoEsc = String(document.getElementById('uEscopoEstado')?.value || '').trim().toUpperCase();
+        const municipioEsc = String(document.getElementById('uEscopoMunicipio')?.value || '').trim();
+        if ((nivelEsc === 'estadual' || nivelEsc === 'municipal') && !/^[A-Z]{2}$/.test(estadoEsc)) {
+          showMsg(msgUser, 'warn', 'Informe o Estado/UF (2 letras) para o escopo da Secretaria.');
+          return;
+        }
+        if (nivelEsc === 'municipal' && !municipioEsc) {
+          showMsg(msgUser, 'warn', 'Informe o município para o escopo municipal.');
+          return;
+        }
+      }
+
       btnCriarUsuario.disabled = true;
       btnCriarUsuario.innerHTML = '<span class="spinner"></span>Criando usuário...';
 
       try{
+        const bodyPayload = { nome, email, senha, tipo };
+        if (tipo === 'secretaria') {
+          bodyPayload.escopoObservatorio = {
+            nivel: String(document.getElementById('uEscopoNivel')?.value || 'estadual').trim(),
+            estado: String(document.getElementById('uEscopoEstado')?.value || '').trim().toUpperCase() || null,
+            municipio: String(document.getElementById('uEscopoMunicipio')?.value || '').trim() || null,
+            rede: String(document.getElementById('uEscopoRede')?.value || '').trim() || null,
+            limitarInstituicao: !!document.getElementById('uEscopoLimitarInst')?.checked,
+          };
+        }
         const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(selectedInst.id)}/usuarios`, {
           method:'POST',
           headers:{ 'Content-Type':'application/json' },
           credentials:'include',
-          body: JSON.stringify({ nome, email, senha, tipo })
+          body: JSON.stringify(bodyPayload)
         });
 
         const data = await r.json().catch(()=> ({}));

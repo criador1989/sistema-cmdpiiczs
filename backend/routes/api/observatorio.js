@@ -369,15 +369,21 @@ function montarFiltroInstituicoesPorEscopo(usuario) {
 
   if (nivel === 'nacional') return {};
 
-  if (nivel === 'estadual' && escopo?.estado) {
+  if (nivel === 'estadual') {
+    if (!escopo?.estado) return { _id: null }; // estado obrigatório; escopo inválido não expõe dados
     return { estado: String(escopo.estado).trim().toUpperCase() };
   }
 
-  if (nivel === 'municipal' && escopo?.estado && escopo?.municipio) {
+  if (nivel === 'municipal') {
+    if (!escopo?.estado || !escopo?.municipio) return { _id: null };
     return {
       estado: String(escopo.estado).trim().toUpperCase(),
       municipio: new RegExp(`^${escapeRegex(String(escopo.municipio).trim())}$`, 'i')
     };
+  }
+
+  if (nivel === 'rede' && escopo?.rede) {
+    return { redeEnsino: normalizeText(String(escopo.rede)) };
   }
 
   if (nivel === 'instituicoes' && instituicoesPermitidas.length) {
@@ -405,18 +411,19 @@ function montarFiltroProtecaoObservatorio(usuario) {
   };
 
   if (escopo?.podeVerPrivadas !== true) {
-    filtro.redeEnsino = { $ne: 'privada' };
     filtro.tipoEscola = { $ne: 'privada' };
   }
 
   const redesPermitidas = Array.isArray(escopo?.redesPermitidas)
-    ? escopo.redesPermitidas.map(r => normalizeText(r)).filter(Boolean)
+    ? escopo.redesPermitidas.map(r => normalizeText(r)).filter(r => r !== 'privada' && Boolean(r))
     : [];
 
   if (redesPermitidas.length) {
     filtro.redeEnsino = { $in: redesPermitidas };
-  } else if (escopo?.rede) {
+  } else if (escopo?.rede && normalizeText(escopo.rede) !== 'privada') {
     filtro.redeEnsino = normalizeText(escopo.rede);
+  } else if (escopo?.podeVerPrivadas !== true) {
+    filtro.redeEnsino = { $ne: 'privada' };
   }
 
   return filtro;
