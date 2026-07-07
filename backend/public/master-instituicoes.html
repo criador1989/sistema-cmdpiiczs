@@ -1119,6 +1119,45 @@
   </div>
 </div>
 
+<!-- ========================================================= -->
+<!-- MODAL USUÁRIOS DA INSTITUIÇÃO                             -->
+<!-- ========================================================= -->
+<div id="modal-usuarios-inst" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:860px;width:95%;">
+
+    <div class="modal-header">
+      <h3 id="modal-usuarios-titulo">Usuários da Instituição</h3>
+      <button type="button" class="modal-close" onclick="fecharModalUsuarios()">✕</button>
+    </div>
+
+    <div id="modal-usuarios-loading" style="padding:18px; color:rgba(236,242,255,.72);">
+      Carregando usuários...
+    </div>
+
+    <div id="modal-usuarios-feedback" class="msg" style="display:none; margin:0 0 10px;"></div>
+
+    <div id="modal-usuarios-conteudo" style="display:none; overflow:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:14px;">
+        <thead>
+          <tr>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Nome / E-mail</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Tipo</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Status</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Escopo (Secretaria)</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="modal-usuarios-tbody"></tbody>
+      </table>
+    </div>
+
+    <div id="modal-usuarios-empty" style="display:none; padding:18px; color:rgba(236,242,255,.72);">
+      Nenhum usuário institucional cadastrado nesta instituição.
+    </div>
+
+  </div>
+</div>
+
   <script>
     const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
     const MASTER_BASE = `${API_BASE}/api/master/instituicoes/instituicoes`;
@@ -2207,6 +2246,7 @@ if (atualizados.length) {
               <div class="actions">
                 <button class="mini primary" onclick="window.__selectInst('${escapeHtml(id)}')">Novo usuário</button>
                 <button class="mini aluno" onclick="window.__selectStudentInst('${escapeHtml(id)}')">Acessos dos alunos</button>
+                <button class="mini" onclick="window.__gerenciarUsuarios('${escapeHtml(id)}')">Usuários</button>
                 <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(loginUrl))}', this)">Copiar login</button>
                 <button class="mini" onclick="window.__copyText('${escapeHtml(absUrl(cadUrl))}', this)">Copiar cadastro</button>
                 <button class="mini aluno" onclick="window.__copyText('${escapeHtml(absUrl(alunoUrl))}', this)">Portal do aluno</button>
@@ -2701,6 +2741,124 @@ document.getElementById('btn-redefinir-senha-responsavel').onclick = async () =>
       }
     };
 
+    window.__gerenciarUsuarios = async function(id) {
+      const inst = all.find(x => String(x?._id || x?.id) === String(id));
+      if (!inst) return;
+
+      const modal = document.getElementById('modal-usuarios-inst');
+      const titulo = document.getElementById('modal-usuarios-titulo');
+      const loading = document.getElementById('modal-usuarios-loading');
+      const conteudo = document.getElementById('modal-usuarios-conteudo');
+      const empty = document.getElementById('modal-usuarios-empty');
+      const feedback = document.getElementById('modal-usuarios-feedback');
+      const tbl = document.getElementById('modal-usuarios-tbody');
+
+      titulo.textContent = `Usuários — ${inst.nome || id}`;
+      loading.style.display = 'block';
+      conteudo.style.display = 'none';
+      empty.style.display = 'none';
+      feedback.style.display = 'none';
+      if (tbl) tbl.innerHTML = '';
+      modal.style.display = 'flex';
+
+      try {
+        const r = await fetch(`${MASTER_BASE}/${encodeURIComponent(id)}/usuarios`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+        const data = await r.json().catch(() => ({}));
+        loading.style.display = 'none';
+
+        if (!r.ok) {
+          feedback.className = 'msg err';
+          feedback.textContent = data?.mensagem || 'Erro ao carregar usuários.';
+          feedback.style.display = 'block';
+          return;
+        }
+
+        const usuarios = Array.isArray(data?.usuarios) ? data.usuarios : [];
+
+        if (!usuarios.length) {
+          empty.style.display = 'block';
+          return;
+        }
+
+        tbl.innerHTML = usuarios.map(u => {
+          const ativo = u.ativo !== false;
+          const escopo = u.tipo === 'secretaria' && u.escopoObservatorio
+            ? [
+                u.escopoObservatorio.estado ? `UF: ${escapeHtml(u.escopoObservatorio.estado)}` : '',
+                u.escopoObservatorio.nivel  ? `Nível: ${escapeHtml(u.escopoObservatorio.nivel)}` : '',
+                u.escopoObservatorio.rede   ? `Rede: ${escapeHtml(u.escopoObservatorio.rede)}` : '',
+              ].filter(Boolean).join(' | ')
+            : '';
+
+          return `<tr style="border-bottom:1px solid rgba(170,200,240,.12);">
+            <td style="padding:10px 12px;">
+              <b style="color:#fff;">${escapeHtml(u.nome || '—')}</b>
+              <div style="font-size:12px; color:rgba(236,242,255,.62); margin-top:2px;">${escapeHtml(u.email || '')}</div>
+            </td>
+            <td style="padding:10px 12px;"><span class="tag">${escapeHtml(u.tipo || '—')}</span></td>
+            <td style="padding:10px 12px;">
+              <span class="badge-active ${ativo ? '' : 'badge-inactive'}"><span class="b"></span>${ativo ? 'Ativo' : 'Inativo'}</span>
+            </td>
+            <td style="padding:10px 12px; font-size:12px; color:rgba(236,242,255,.70);">
+              ${escopo ? escapeHtml(escopo) : '<span style="opacity:.45;">—</span>'}
+            </td>
+            <td style="padding:10px 12px;">
+              <button class="mini ${ativo ? 'danger' : 'ok'}"
+                onclick="window.__toggleUsuarioStatus('${escapeHtml(id)}','${escapeHtml(u.id)}',${!ativo},this)">
+                ${ativo ? 'Desativar' : 'Reativar'}
+              </button>
+            </td>
+          </tr>`;
+        }).join('');
+
+        conteudo.style.display = 'block';
+      } catch (err) {
+        loading.style.display = 'none';
+        feedback.className = 'msg err';
+        feedback.textContent = 'Erro de conexão ao carregar usuários.';
+        feedback.style.display = 'block';
+      }
+    };
+
+    window.__toggleUsuarioStatus = async function(instId, usuarioId, novoAtivo, btn) {
+      const msg = novoAtivo
+        ? 'Deseja reativar este usuário? Ele voltará a ter acesso ao sistema.'
+        : 'Deseja desativar este usuário? Ele perderá o acesso, mas o histórico será preservado.';
+      if (!confirm(msg)) return;
+
+      const old = btn?.textContent || '';
+      if (btn) { btn.disabled = true; btn.textContent = novoAtivo ? 'Reativando...' : 'Desativando...'; }
+
+      try {
+        const r = await fetch(
+          `${MASTER_BASE}/${encodeURIComponent(instId)}/usuarios/${encodeURIComponent(usuarioId)}/status`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ ativo: novoAtivo }),
+          }
+        );
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+          const fb = document.getElementById('modal-usuarios-feedback');
+          if (fb) { fb.className = 'msg err'; fb.textContent = data?.mensagem || 'Erro ao atualizar status.'; fb.style.display = 'block'; }
+          return;
+        }
+
+        await window.__gerenciarUsuarios(instId);
+      } catch (err) {
+        const fb = document.getElementById('modal-usuarios-feedback');
+        if (fb) { fb.className = 'msg err'; fb.textContent = 'Erro de conexão.'; fb.style.display = 'block'; }
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = old; }
+      }
+    };
+
     (async function init(){
       renderSelectedInst();
       renderSelectedStudentInst();
@@ -2714,6 +2872,10 @@ function abrirModalAcessos() {
 
 function fecharModalAcessos() {
   document.getElementById('modal-gerenciar-acessos').style.display = 'none';
+}
+
+function fecharModalUsuarios() {
+  document.getElementById('modal-usuarios-inst').style.display = 'none';
 }
 
   </script>

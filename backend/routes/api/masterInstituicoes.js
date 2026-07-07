@@ -568,6 +568,142 @@ router.post('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) =>
 });
 
 /* =========================================================================
+ * USUÁRIOS DA INSTITUIÇÃO — LISTAGEM E STATUS
+ * ========================================================================= */
+
+const TIPOS_INSTITUCIONAIS = ['admin', 'monitor', 'professor', 'secretaria'];
+
+router.get('/instituicoes/:id/usuarios', requireSuperAdmin, async (req, res) => {
+  try {
+    const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
+    const instituicaoId = String(req.params.id || '').trim();
+
+    if (!mongoose.isValidObjectId(instituicaoId)) {
+      return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    }
+
+    const instituicao = await Instituicao.findById(instituicaoId)
+      .select('_id nome sigla slug')
+      .lean();
+
+    if (!instituicao) {
+      return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+    }
+
+    const usuarios = await Usuario.find({
+      instituicao: instituicaoId,
+      tipo: { $in: TIPOS_INSTITUCIONAIS },
+    })
+      .select('_id nome email tipo ativo portal escopoObservatorio createdAt updatedAt')
+      .sort({ tipo: 1, nome: 1 })
+      .lean();
+
+    return res.json({
+      instituicao: {
+        id: String(instituicao._id),
+        nome: instituicao.nome,
+        sigla: instituicao.sigla || null,
+        slug: instituicao.slug || null,
+      },
+      usuarios: (usuarios || []).map(u => ({
+        id: String(u._id),
+        nome: u.nome || '',
+        email: u.email || '',
+        tipo: u.tipo || '',
+        ativo: u.ativo !== false,
+        portal: u.portal || null,
+        escopoObservatorio: u.escopoObservatorio || null,
+        createdAt: u.createdAt || null,
+        updatedAt: u.updatedAt || null,
+      })),
+    });
+  } catch (e) {
+    console.error('[masterInstituicoes][GET usuarios]', e);
+    return res.status(500).json({
+      mensagem: 'Erro ao listar usuários.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+router.patch('/instituicoes/:id/usuarios/:usuarioId/status', requireSuperAdmin, async (req, res) => {
+  try {
+    const Instituicao = mongoose.models.Instituicao || mongoose.model('Instituicao');
+    const instituicaoId = String(req.params.id || '').trim();
+    const usuarioId = String(req.params.usuarioId || '').trim();
+
+    if (!mongoose.isValidObjectId(instituicaoId)) {
+      return res.status(400).json({ mensagem: 'Instituição inválida.' });
+    }
+
+    if (!mongoose.isValidObjectId(usuarioId)) {
+      return res.status(400).json({ mensagem: 'Usuário inválido.' });
+    }
+
+    const novoAtivo = req.body?.ativo;
+    if (novoAtivo === undefined || novoAtivo === null || novoAtivo === '') {
+      return res.status(400).json({ mensagem: 'Campo "ativo" é obrigatório.' });
+    }
+    const ativoFinal = novoAtivo === true || String(novoAtivo).toLowerCase() === 'true';
+
+    const instituicao = await Instituicao.findById(instituicaoId)
+      .select('_id')
+      .lean();
+
+    if (!instituicao) {
+      return res.status(404).json({ mensagem: 'Instituição não encontrada.' });
+    }
+
+    const usuario = await Usuario.findOne({
+      _id: usuarioId,
+      instituicao: instituicaoId,
+      tipo: { $in: TIPOS_INSTITUCIONAIS },
+    })
+      .select('_id nome email tipo ativo')
+      .lean();
+
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado nesta instituição ou tipo não permitido.' });
+    }
+
+    // Impede o próprio superadmin logado de se desativar acidentalmente.
+    const reqUserId = String(req.usuario?.id || req.usuario?._id || '').trim();
+    if (!ativoFinal && reqUserId && reqUserId === String(usuario._id)) {
+      return res.status(400).json({ mensagem: 'Você não pode desativar o próprio usuário.' });
+    }
+
+    const atualizado = await Usuario.findByIdAndUpdate(
+      usuarioId,
+      { $set: { ativo: ativoFinal } },
+      { new: true }
+    )
+      .select('_id nome email tipo ativo portal escopoObservatorio createdAt updatedAt')
+      .lean();
+
+    return res.json({
+      mensagem: ativoFinal ? 'Usuário reativado com sucesso.' : 'Usuário desativado com sucesso.',
+      usuario: {
+        id: String(atualizado._id),
+        nome: atualizado.nome || '',
+        email: atualizado.email || '',
+        tipo: atualizado.tipo || '',
+        ativo: atualizado.ativo !== false,
+        portal: atualizado.portal || null,
+        escopoObservatorio: atualizado.escopoObservatorio || null,
+        createdAt: atualizado.createdAt || null,
+        updatedAt: atualizado.updatedAt || null,
+      },
+    });
+  } catch (e) {
+    console.error('[masterInstituicoes][PATCH usuarios status]', e);
+    return res.status(500).json({
+      mensagem: 'Erro ao atualizar status do usuário.',
+      erro: String(e.message || e)
+    });
+  }
+});
+
+/* =========================================================================
  * ALUNOS DA INSTITUIÇÃO PARA O MASTER
  * ========================================================================= */
 
