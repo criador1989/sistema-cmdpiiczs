@@ -918,6 +918,257 @@ router.post(
 );
 
 /**
+ * PATCH /api/rifas/baixa-bloco
+ * Baixa rápida de um bloco real de rifas para o responsável selecionado.
+ *
+ * Segurança:
+ * - valida campanha e instituição;
+ * - valida se o intervalo pertence integralmente ao mesmo responsável;
+ * - atualiza pelos _ids encontrados, não por intervalo aberto;
+ * - impede baixa financeira de números sem responsável.
+ */
+router.patch(
+  "/baixa-bloco",
+  requireTenant,
+  requireAdminRifas,
+  async (req, res) => {
+    try {
+      const instituicao = getInstituicaoId(req);
+
+      const {
+        campanhaId,
+        numeroInicial,
+        numeroFinal,
+        responsavelId,
+        responsavelNome,
+        turmaOuSetor,
+        status = "paga",
+        formaPagamento,
+        valorTotalPago,
+        comprovanteUrl,
+        observacao,
+      } = req.body;
+
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
+
+      if (!campanhaId || !numeroInicial || !numeroFinal) {
+        return res.status(400).json({
+          erro: "Informe campanha, número inicial e número final do bloco.",
+        });
+      }
+
+      if (!["vendida", "paga", "devolvida"].includes(status)) {
+        return res.status(400).json({
+          erro: "Status inválido para baixa de bloco.",
+        });
+      }
+
+      const inicial = Number(numeroInicial);
+      const final = Number(numeroFinal);
+
+      if (!Number.isInteger(inicial) || !Number.isInteger(final) || inicial <= 0 || final <= 0) {
+        return res.status(400).json({
+          erro: "Número inicial e final precisam ser inteiros positivos.",
+        });
+      }
+
+      if (final < inicial) {
+        return res.status(400).json({
+          erro: "O número final do bloco não pode ser menor que o inicial.",
+        });
+      }
+
+      const quantidadeEsperada = final - inicial + 1;
+
+      // Guard simples contra clique ou payload errado em intervalo grande.
+      // O fluxo normal é bloco de 10, mas permite blocos maiores quando realmente distribuídos.
+      if (quantidadeEsperada > 100) {
+        return res.status(400).json({
+          erro: "Por segurança, a baixa rápida aceita no máximo 100 números por bloco.",
+          quantidadeEsperada,
+        });
+      }
+
+      const campanha = await CampanhaRifa.findOne({
+        _id: campanhaId,
+        instituicao,
+      });
+
+      if (!campanha) {
+        return res.status(404).json({ erro: "Campanha não encontrada." });
+      }
+
+      const filtroBase = {
+        instituicao,
+        campanha: campanha._id,
+        numeroValor: { $gte: inicial, $lte: final },
+      };
+
+      const numerosDoIntervalo = await RifaNumero.find(filtroBase)
+        .select("_id numero numeroValor status valor valorPago responsavelTipo responsavelId responsavelNome turmaOuSetor")
+        .sort({ numeroValor: 1 });
+
+      if (numerosDoIntervalo.length !== quantidadeEsperada) {
+        return res.status(400).json({
+          erro: "Nem todos os números do bloco existem na campanha.",
+          quantidadeEsperada,
+          quantidadeEncontrada: numerosDoIntervalo.length,
+        });
+      }
+
+      const nomeInformado = String(responsavelNome || "").trim();
+      const turmaInformada = String(turmaOuSetor || "").trim();
+      const responsavelIdValido =
+        responsavelId && mongoose.Types.ObjectId.isValid(responsavelId)
+          ? String(responsavelId)
+          : "";
+
+      if (!responsavelIdValido && !nomeInformado) {
+        return res.status(400).json({
+          erro: "Informe o responsável do bloco.",
+        });
+      }
+
+      const numerosForaDoResponsavel = numerosDoIntervalo.filter((n) => {
+        const idRegistro = n.responsavelId ? String(n.responsavelId) : "";
+        const nomeRegistro = String(n.responsavelNome || "").trim();
+        const turmaRegistro = String(n.turmaOuSetor || "").trim();
+
+        if (responsavelIdValido) {
+          return idRegistro !== responsavelIdValido;
+        }
+
+        if (turmaInformada) {
+          return nomeRegistro !== nomeInformado || turmaRegistro !== turmaInformada;
+        }
+
+        return nomeRegistro !== nomeInformado;
+      });
+
+      if (numerosForaDoResponsavel.length > 0) {
+        return res.status(400).json({
+          erro:
+            "O bloco informado não pertence integralmente ao responsável selecionado. A baixa foi bloqueada para evitar alterar rifas de outro aluno.",
+          numerosInvalidos: numerosForaDoResponsavel.map((n) => n.numero),
+          bloqueio: "BLOCO_FORA_DO_RESPONSAVEL",
+        });
+      }
+
+      if (status === "paga" || status === "vendida") {
+        const semResponsavel = numerosDoIntervalo.filter(
+          (n) => !n.responsavelNome || String(n.responsavelNome).trim() === ""
+        );
+
+        if (semResponsavel.length > 0) {
+          return res.status(400).json({
+            erro: `Não é possível marcar como "${status}": existem números sem responsável. Distribua antes de registrar pagamento.`,
+            numerosInvalidos: semResponsavel.map((n) => n.numero),
+            bloqueio: "SEM_RESPONSAVEL",
+          });
+        }
+      }
+
+      const agora = new Date();
+      const ids = numerosDoIntervalo.map((n) => n._id);
+      const valorUnitarioCampanha = Number(campanha.valorUnitario || 0);
+      const valorTotalEsperado = numerosDoIntervalo.reduce(
+        (total, n) => total + Number(n.valor || valorUnitarioCampanha || 0),
+        0
+      );
+
+      const totalPago =
+        status === "paga"
+          ? Number(valorTotalPago || valorTotalEsperado || 0)
+          : 0;
+
+      if (status === "paga" && (!Number.isFinite(totalPago) || totalPago <= 0)) {
+        return res.status(400).json({
+          erro: "Informe um valor total válido para baixa do bloco.",
+        });
+      }
+
+      const valorPagoPorNumero =
+        status === "paga" ? Number((totalPago / quantidadeEsperada).toFixed(2)) : 0;
+
+      const set = {
+        status,
+        observacao: observacao || "",
+        atualizadoPor: getUserId(req),
+      };
+
+      if (status === "vendida") {
+        set.dataVenda = agora;
+        set.dataPagamento = null;
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+      }
+
+      if (status === "paga") {
+        set.dataVenda = agora;
+        set.dataPagamento = agora;
+        set.formaPagamento = formaPagamento || "";
+        set.valorPago = valorPagoPorNumero;
+        set.comprovanteUrl = comprovanteUrl || "";
+      }
+
+      if (status === "devolvida") {
+        set.responsavelTipo = "";
+        set.responsavelId = null;
+        set.responsavelNome = "";
+        set.turmaOuSetor = "";
+        set.formaPagamento = "";
+        set.valorPago = 0;
+        set.comprovanteUrl = "";
+        set.dataDistribuicao = null;
+        set.dataVenda = null;
+        set.dataPagamento = null;
+      }
+
+      const resultado = await RifaNumero.updateMany(
+        {
+          instituicao,
+          campanha: campanha._id,
+          _id: { $in: ids },
+        },
+        { $set: set }
+      );
+
+      const modifiedCount = resultado.modifiedCount || resultado.nModified || 0;
+
+      return res.json({
+        ok: true,
+        mensagem: "Baixa do bloco registrada com sucesso.",
+        bloco: {
+          inicio: inicial,
+          fim: final,
+          quantidade: quantidadeEsperada,
+        },
+        responsavel: {
+          responsavelId: responsavelIdValido || null,
+          responsavelNome: numerosDoIntervalo[0]?.responsavelNome || nomeInformado,
+          turmaOuSetor: numerosDoIntervalo[0]?.turmaOuSetor || turmaInformada,
+        },
+        status,
+        valorTotalEsperado,
+        valorTotalPago: totalPago,
+        valorPagoPorNumero,
+        matchedCount: numerosDoIntervalo.length,
+        modifiedCount,
+      });
+    } catch (error) {
+      console.error("[RIFAS][BAIXA_BLOCO]", error);
+      return res.status(500).json({
+        erro: "Erro ao registrar baixa do bloco.",
+        detalhe: error.message,
+      });
+    }
+  }
+);
+
+/**
  * PATCH /api/rifas/editar-responsavel
  * Corrige responsável, aluno vinculado, turma/setor ou observação de um intervalo
  */

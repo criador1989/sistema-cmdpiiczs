@@ -2362,6 +2362,49 @@
       await carregarNumeros();
     }
 
+async function baixarBlocoRapido(dados) {
+  if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+  const valorUnitario = Number(campanhaAtual.valorUnitario || 0);
+  const quantidade = Number(dados.quantidade || 0);
+  const valorTotal = quantidade * valorUnitario;
+
+  const confirmar = confirm(
+    `Confirmar baixa do bloco ${formatNumeroBloco(dados.inicio)} a ${formatNumeroBloco(dados.fim)}?\n\n` +
+    `Responsável: ${dados.responsavelNome}\n` +
+    `Quantidade: ${quantidade} rifa(s)\n` +
+    `Valor total: ${money.format(valorTotal)}`
+  );
+
+  if (!confirmar) return;
+
+  const formaPagamento =
+    document.getElementById("formaBaixaRapida")?.value || "";
+
+  const data = await api("/api/rifas/baixa-bloco", {
+    method: "PATCH",
+    body: JSON.stringify({
+      campanhaId: campanhaAtual._id,
+      numeroInicial: dados.inicio,
+      numeroFinal: dados.fim,
+      responsavelId: dados.responsavelId || null,
+      responsavelNome: dados.responsavelNome || "",
+      turmaOuSetor: dados.turmaOuSetor || "",
+      status: "paga",
+      formaPagamento,
+      valorTotalPago: valorTotal,
+      observacao: "Baixa rápida por bloco"
+    })
+  });
+
+  toast(data.mensagem || "Bloco baixado com sucesso.");
+
+  await carregarDashboard();
+  await carregarResponsaveis();
+  await carregarNumeros();
+  await carregarRanking();
+}
+
     async function carregarResponsaveis() {
       const body = document.getElementById("responsaveisBody");
 
@@ -2385,15 +2428,43 @@
       }
 
       body.innerHTML = lista.map(r => {
-        const blocosTexto = r.blocos.map(b =>
+                const blocosTexto = r.blocos.map(b =>
           b.inicio === b.fim
             ? formatNumeroBloco(b.inicio)
             : `${formatNumeroBloco(b.inicio)}–${formatNumeroBloco(b.fim)}`
         ).join(", ");
 
+        const blocosBotoes = r.blocos.map(b => {
+          const quantidade = Number(b.quantidade || (Number(b.fim) - Number(b.inicio) + 1));
+          const valorUnitario = Number(campanhaAtual?.valorUnitario || 7);
+          const valorTotal = quantidade * valorUnitario;
+
+          const dadosBloco = {
+            inicio: b.inicio,
+            fim: b.fim,
+            quantidade,
+            responsavelId: r.responsavelId || null,
+            responsavelNome: r.responsavelNome || "",
+            turmaOuSetor: r.turmaOuSetor || ""
+          };
+
+          return `
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+              <span>${formatNumeroBloco(b.inicio)}–${formatNumeroBloco(b.fim)}</span>
+              <button
+                class="btn small good"
+                title="Baixar este bloco como pago"
+                onclick="baixarBlocoRapido(JSON.parse(this.dataset.dados))"
+                data-dados='${jsArg(dadosBloco)}'>
+                Baixar ${money.format(valorTotal)}
+              </button>
+            </div>
+          `;
+        }).join("");
+
         const blocoLabel = r.totalBlocos > 1
-          ? `<span title="${blocosTexto}">${r.totalBlocos} blocos: ${blocosTexto}</span>`
-          : blocosTexto;
+          ? `<div title="${escapeHtml(blocosTexto)}">${blocosBotoes}</div>`
+          : blocosBotoes;
 
         return `
           <tr>
