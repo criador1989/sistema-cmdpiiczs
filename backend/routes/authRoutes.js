@@ -481,6 +481,9 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
 /**
  * GET /auth/me
  */
+/**
+ * GET /auth/me
+ */
 router.get('/me', autenticar, (req, res) => {
   return res.json({
     id: req.usuario.id,
@@ -489,7 +492,8 @@ router.get('/me', autenticar, (req, res) => {
     instituicao: req.usuario.instituicao,
     email: req.usuario.email || null,
     alunoId: req.usuario.alunoId || null,
-    portal: req.usuario.portal || null
+    portal: req.usuario.portal || null,
+    escopoObservatorio: req.usuario.escopoObservatorio || null
   });
 });
 
