@@ -113,6 +113,81 @@ function formatarDataHoraBR(date) {
   }
 }
 
+
+/**
+ * Gera ou repara os números de uma campanha de forma idempotente.
+ *
+ * Importante:
+ * - não altera números já distribuídos/vendidos/pagos;
+ * - cria somente os números que ainda não existem;
+ * - evita erro de duplicidade usando upsert + $setOnInsert;
+ * - corrige campanhas novas que foram criadas, mas ficaram sem registros em RifaNumero.
+ */
+async function garantirNumerosCampanha({ instituicao, campanha, usuarioId }) {
+  if (!instituicao || !campanha?._id) {
+    return { totalEsperado: 0, existentesAntes: 0, criados: 0 };
+  }
+
+  const inicial = Number(campanha.numeroInicial);
+  const final = Number(campanha.numeroFinal);
+
+  if (!Number.isInteger(inicial) || !Number.isInteger(final) || final < inicial) {
+    throw new Error("Intervalo da campanha inválido para geração de números.");
+  }
+
+  const totalEsperado = final - inicial + 1;
+
+  const existentesAntes = await RifaNumero.countDocuments({
+    instituicao,
+    campanha: campanha._id,
+  });
+
+  if (existentesAntes >= totalEsperado) {
+    return { totalEsperado, existentesAntes, criados: 0 };
+  }
+
+  const largura = String(final).length;
+  const valorUnitario = Number(campanha.valorUnitario || 0);
+  const batchSize = 1000;
+  let criados = 0;
+
+  for (let start = inicial; start <= final; start += batchSize) {
+    const end = Math.min(start + batchSize - 1, final);
+    const ops = [];
+
+    for (let n = start; n <= end; n++) {
+      ops.push({
+        updateOne: {
+          filter: {
+            instituicao,
+            campanha: campanha._id,
+            numero: formatNumero(n, largura),
+          },
+          update: {
+            $setOnInsert: {
+              instituicao,
+              campanha: campanha._id,
+              numero: formatNumero(n, largura),
+              numeroValor: n,
+              status: "disponivel",
+              valor: valorUnitario,
+              criadoPor: usuarioId || null,
+            },
+          },
+          upsert: true,
+        },
+      });
+    }
+
+    if (ops.length) {
+      const result = await RifaNumero.bulkWrite(ops, { ordered: false });
+      criados += result.upsertedCount || 0;
+    }
+  }
+
+  return { totalEsperado, existentesAntes, criados };
+}
+
 /**
  * GET /api/rifas/turmas-alunos
  * Lista turmas disponíveis para seleção no módulo de rifas
@@ -257,9 +332,17 @@ router.post(
         criadoPor: getUserId(req),
       });
 
+      const geracao = await garantirNumerosCampanha({
+        instituicao,
+        campanha,
+        usuarioId: getUserId(req),
+      });
+
       return res.status(201).json({
         ok: true,
         campanha,
+        numerosGerados: geracao.criados,
+        totalEsperadoNumeros: geracao.totalEsperado,
       });
     } catch (error) {
       console.error("[RIFAS][CRIAR_CAMPANHA]", error);
@@ -499,7 +582,11 @@ router.delete(
   }
 );/**
  * POST /api/rifas/gerar-numeros
- * Gera os números da campanha
+ * Gera/repara os números da campanha.
+ *
+ * Antes a rota bloqueava quando existia qualquer registro.
+ * Agora ela é idempotente: se a campanha estiver vazia ou incompleta,
+ * cria apenas os números ausentes.
  */
 router.post(
   "/gerar-numeros",
@@ -509,6 +596,10 @@ router.post(
     try {
       const instituicao = getInstituicaoId(req);
       const { campanhaId } = req.body;
+
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
 
       if (!campanhaId) {
         return res.status(400).json({ erro: "Informe a campanha." });
@@ -523,38 +614,21 @@ router.post(
         return res.status(404).json({ erro: "Campanha não encontrada." });
       }
 
-      const existentes = await RifaNumero.countDocuments({
+      const geracao = await garantirNumerosCampanha({
         instituicao,
-        campanha: campanha._id,
+        campanha,
+        usuarioId: getUserId(req),
       });
-
-      if (existentes > 0) {
-        return res.status(400).json({
-          erro: "Os números dessa campanha já foram gerados.",
-        });
-      }
-
-      const largura = String(campanha.numeroFinal).length;
-      const lote = [];
-
-      for (let n = campanha.numeroInicial; n <= campanha.numeroFinal; n++) {
-        lote.push({
-          instituicao,
-          campanha: campanha._id,
-          numero: formatNumero(n, largura),
-          numeroValor: n,
-          status: "disponivel",
-          valor: campanha.valorUnitario || 0,
-          criadoPor: getUserId(req),
-        });
-      }
-
-      await RifaNumero.insertMany(lote, { ordered: false });
 
       return res.status(201).json({
         ok: true,
-        mensagem: "Números gerados com sucesso.",
-        totalGerado: lote.length,
+        mensagem:
+          geracao.criados > 0
+            ? `Números gerados/reparados com sucesso. Criados: ${geracao.criados}.`
+            : "Os números dessa campanha já estavam gerados.",
+        totalEsperado: geracao.totalEsperado,
+        existentesAntes: geracao.existentesAntes,
+        totalGerado: geracao.criados,
       });
     } catch (error) {
       console.error("[RIFAS][GERAR_NUMEROS]", error);
@@ -606,6 +680,9 @@ router.get(
 
       const totais = {
         total: campanha.quantidadeTotal || 0,
+        totalRegistros: 0,
+        numerosGerados: 0,
+        precisaGerarNumeros: false,
         disponivel: 0,
         distribuida: 0,
         vendida: 0,
@@ -617,8 +694,12 @@ router.get(
 
       resumoStatus.forEach((item) => {
         totais[item._id] = item.total;
+        totais.totalRegistros += item.total || 0;
         totais.arrecadado += item.valorPago || 0;
       });
+
+      totais.numerosGerados = totais.totalRegistros;
+      totais.precisaGerarNumeros = totais.totalRegistros < (campanha.quantidadeTotal || 0);
 
       const valorEsperadoVendido = await RifaNumero.aggregate([
         {
@@ -678,6 +759,10 @@ router.post(
         observacao,
       } = req.body;
 
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
+
       if (!campanhaId || !numeroInicial || !numeroFinal || !responsavelNome) {
         return res.status(400).json({
           erro: "Informe campanha, bloco inicial/final e responsável.",
@@ -708,6 +793,19 @@ router.post(
         return res.status(404).json({ erro: "Campanha não encontrada." });
       }
 
+      if (inicial < campanha.numeroInicial || final > campanha.numeroFinal) {
+        return res.status(400).json({
+          erro: `O bloco ${inicial} a ${final} está fora do intervalo da campanha (${campanha.numeroInicial} a ${campanha.numeroFinal}).`,
+        });
+      }
+
+      // Corrige automaticamente campanha nova/vazia/incompleta antes da distribuição.
+      await garantirNumerosCampanha({
+        instituicao,
+        campanha,
+        usuarioId: getUserId(req),
+      });
+
       const numeros = await RifaNumero.find({
         instituicao,
         campanha: campanha._id,
@@ -718,7 +816,9 @@ router.post(
 
       if (numeros.length !== esperado) {
         return res.status(400).json({
-          erro: "Nem todos os números do bloco existem na campanha.",
+          erro: "Nem todos os números do bloco existem na campanha, mesmo após tentativa de reparo automático.",
+          quantidadeEsperada: esperado,
+          quantidadeEncontrada: numeros.length,
         });
       }
 
@@ -731,7 +831,7 @@ router.post(
         });
       }
 
-      await RifaNumero.updateMany(
+      const resultado = await RifaNumero.updateMany(
         {
           instituicao,
           campanha: campanha._id,
@@ -752,10 +852,20 @@ router.post(
         }
       );
 
+      const totalDistribuido = resultado.modifiedCount || resultado.nModified || 0;
+
+      if (totalDistribuido !== esperado) {
+        return res.status(400).json({
+          erro: "A distribuição não atualizou todos os números esperados. Atualize a página e confira o bloco.",
+          totalEsperado: esperado,
+          totalDistribuido,
+        });
+      }
+
       return res.json({
         ok: true,
         mensagem: "Bloco distribuído com sucesso.",
-        totalDistribuido: esperado,
+        totalDistribuido,
       });
     } catch (error) {
       console.error("[RIFAS][DISTRIBUIR_BLOCO]", error);
@@ -2188,6 +2298,10 @@ router.post(
         blocos // [{inicio, fim, alunoId, nome, turma}]
       } = req.body;
 
+      if (!instituicao) {
+        return res.status(400).json({ erro: "Instituição não identificada." });
+      }
+
       if (!campanhaId || !Array.isArray(blocos) || !blocos.length) {
         return res.status(400).json({
           erro: "Informe campanha e blocos para distribuição.",
@@ -2203,34 +2317,87 @@ router.post(
         return res.status(404).json({ erro: "Campanha não encontrada." });
       }
 
-      // 🔥 verifica conflitos antes de tudo
-      // 🔥 cria lista de todos intervalos
-const filtros = blocos.map(b => ({
-  numeroValor: { $gte: b.inicio, $lte: b.fim }
-}));
+      const blocosNormalizados = blocos.map((b) => ({
+        inicio: Number(b.inicio),
+        fim: Number(b.fim),
+        alunoId: b.alunoId || null,
+        nome: String(b.nome || "").trim(),
+        turma: String(b.turma || "").trim(),
+      }));
 
-// 🔥 busca conflitos em UMA consulta
-const conflitos = await RifaNumero.find({
-  instituicao,
-  campanha: campanha._id,
-  status: { $ne: "disponivel" },
-  $or: filtros
-})
-  .select("numero numeroValor")
-  .limit(1)
-  .lean();
+      const blocoInvalido = blocosNormalizados.find((b) => {
+        return (
+          !Number.isInteger(b.inicio) ||
+          !Number.isInteger(b.fim) ||
+          b.inicio <= 0 ||
+          b.fim < b.inicio ||
+          !b.nome ||
+          b.inicio < campanha.numeroInicial ||
+          b.fim > campanha.numeroFinal
+        );
+      });
 
-if (conflitos.length > 0) {
-  return res.status(400).json({
-    erro: "Existem números já utilizados dentro dos blocos.",
-    numero: conflitos[0].numero,
-  });
-}
+      if (blocoInvalido) {
+        return res.status(400).json({
+          erro: "Há bloco inválido, sem responsável ou fora do intervalo da campanha.",
+          bloco: blocoInvalido,
+          intervaloCampanha: {
+            inicial: campanha.numeroInicial,
+            final: campanha.numeroFinal,
+          },
+        });
+      }
 
-      // 🚀 montagem em lote
+      // Corrige automaticamente campanha nova/vazia/incompleta antes da distribuição em lote.
+      await garantirNumerosCampanha({
+        instituicao,
+        campanha,
+        usuarioId: getUserId(req),
+      });
+
+      const filtros = blocosNormalizados.map(b => ({
+        numeroValor: { $gte: b.inicio, $lte: b.fim }
+      }));
+
+      // Verifica se todos os números existem após o reparo.
+      const totalEsperado = blocosNormalizados.reduce((acc, b) => acc + (b.fim - b.inicio + 1), 0);
+      const totalEncontrado = await RifaNumero.countDocuments({
+        instituicao,
+        campanha: campanha._id,
+        $or: filtros,
+      });
+
+      if (totalEncontrado < totalEsperado) {
+        return res.status(400).json({
+          erro: "Nem todos os números dos blocos existem na campanha, mesmo após tentativa de reparo automático.",
+          totalEsperado,
+          totalEncontrado,
+        });
+      }
+
+      // Busca conflitos em uma consulta.
+      const conflitos = await RifaNumero.find({
+        instituicao,
+        campanha: campanha._id,
+        status: { $ne: "disponivel" },
+        $or: filtros,
+      })
+        .select("numero numeroValor status responsavelNome")
+        .limit(1)
+        .lean();
+
+      if (conflitos.length > 0) {
+        return res.status(400).json({
+          erro: "Existem números já utilizados dentro dos blocos.",
+          numero: conflitos[0].numero,
+          status: conflitos[0].status,
+          responsavelNome: conflitos[0].responsavelNome || "",
+        });
+      }
+
       const ops = [];
 
-      for (const b of blocos) {
+      for (const b of blocosNormalizados) {
         ops.push({
           updateMany: {
             filter: {
@@ -2258,36 +2425,13 @@ if (conflitos.length > 0) {
       const resultado = await RifaNumero.bulkWrite(ops, { ordered: false });
 
       const modificados = resultado.modifiedCount || 0;
-      const esperadoTotal = blocos.reduce((acc, b) => acc + (b.fim - b.inicio + 1), 0);
 
-      if (modificados < esperadoTotal) {
-        // Identificar quais blocos não foram completamente distribuídos
-        const blocosFalhos = [];
-        for (const b of blocos) {
-          const esperadoBloco = b.fim - b.inicio + 1;
-          const distribuido = await RifaNumero.countDocuments({
-            instituicao,
-            campanha: campanha._id,
-            numeroValor: { $gte: b.inicio, $lte: b.fim },
-            status: "distribuida",
-            responsavelNome: b.nome,
-          });
-          if (distribuido < esperadoBloco) {
-            blocosFalhos.push({
-              inicio: b.inicio,
-              fim: b.fim,
-              nome: b.nome,
-              esperado: esperadoBloco,
-              distribuido,
-            });
-          }
-        }
-        return res.status(207).json({
+      if (modificados !== totalEsperado) {
+        return res.status(400).json({
           ok: false,
-          mensagem: `Distribuição parcial: ${modificados} de ${esperadoTotal} números distribuídos.`,
+          erro: `Distribuição incompleta: ${modificados} de ${totalEsperado} números distribuídos.`,
           modificados,
-          esperadoTotal,
-          blocosFalhos,
+          totalEsperado,
         });
       }
 
@@ -2305,4 +2449,5 @@ if (conflitos.length > 0) {
     }
   }
 );
+
 module.exports = router;
