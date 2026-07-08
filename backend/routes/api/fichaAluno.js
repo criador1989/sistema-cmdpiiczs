@@ -146,28 +146,18 @@ if (isResponsavel) {
       .select(PROJ_OBS)
       .lean();
 
-    let notaComportamento =
-      typeof aluno.comportamento === 'number' ? aluno.comportamento : 8.0;
+    const ultimaNotifComNota = [...(notificacoes || [])]
+  .reverse()
+  .find((n) => typeof n.notaAtual === 'number');
 
-    if (calcularNotaTSMD) {
-      const eventos = (notificacoes || []).map((n) => ({
-        data: n.data || null,
-        createdAt: n.createdAt || null,
-        valorNumerico: typeof n.valorNumerico === 'number' ? n.valorNumerico : 0,
-        quantidadeDias: n.quantidadeDias ?? 1,
-        tipoMedida: n.tipoMedida || n.tipo || '',
-        natureza: n.natureza || ''
-      }));
+let notaComportamento =
+  typeof aluno.comportamento === 'number'
+    ? aluno.comportamento
+    : typeof ultimaNotifComNota?.notaAtual === 'number'
+      ? ultimaNotifComNota.notaAtual
+      : 8.0;
 
-      try {
-        const dataEntrada = aluno.dataEntrada ? new Date(aluno.dataEntrada) : null;
-        notaComportamento = calcularNotaTSMD(dataEntrada, new Date(), eventos);
-      } catch (e) {
-        console.warn('Erro ao recalcular nota de comportamento:', e?.message || e);
-      }
-    }
-
-    notaComportamento = Number((+notaComportamento || 0).toFixed(2));
+notaComportamento = Number((+notaComportamento || 0).toFixed(2));
 
     const fotoUrl = toPublicUrl(aluno.fotoOriginal || aluno.foto || aluno.fotoThumb || null);
     const fotoThumbUrl = toPublicUrl(aluno.fotoThumb || aluno.fotoOriginal || aluno.foto || null);

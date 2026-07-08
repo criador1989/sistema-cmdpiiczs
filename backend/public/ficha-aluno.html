@@ -724,6 +724,99 @@
     }
 
     const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
+    function round2(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Number(n.toFixed(2)) : null;
+}
+
+function notaNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function getNotifDateKey(n) {
+  const d = parseDateLike(n?.data || n?.createdAt);
+  if (!d) return 'sem-data';
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function enriquecerNotasPorLancamento(notificacoes = []) {
+  const ordenadas = notificacoes.slice().sort((a, b) => {
+    const da = parseDateLike(a?.data || a?.createdAt);
+    const db = parseDateLike(b?.data || b?.createdAt);
+
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+
+    if (ta !== tb) return ta - tb;
+
+    const ca = parseDateLike(a?.createdAt);
+    const cb = parseDateLike(b?.createdAt);
+
+    const tca = ca ? ca.getTime() : 0;
+    const tcb = cb ? cb.getTime() : 0;
+
+    if (tca !== tcb) return tca - tcb;
+
+    return String(a?._id || '').localeCompare(String(b?._id || ''));
+  });
+
+  const grupos = new Map();
+
+  for (const n of ordenadas) {
+    const key = getNotifDateKey(n);
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(n);
+  }
+
+  const extrasPorId = new Map();
+  let ultimaNota = null;
+
+  for (const [, grupo] of grupos) {
+    let corrente = notaNumber(grupo[0]?.notaAnterior);
+
+    if (corrente === null && ultimaNota !== null) {
+      corrente = ultimaNota;
+    }
+
+    for (const n of grupo) {
+      const valor = Number(calcValorExibicao(n) || 0);
+
+      const anterior =
+        corrente !== null
+          ? corrente
+          : notaNumber(n?.notaAnterior);
+
+      const atual =
+        anterior !== null
+          ? round2(anterior + valor)
+          : notaNumber(n?.notaAtual);
+
+      const classAnteriorObj = classificarNota(anterior ?? NaN);
+      const classAtualObj = classificarNota(atual ?? NaN);
+
+      extrasPorId.set(String(n._id || ''), {
+        notaAnteriorExibicao: anterior,
+        notaAtualExibicao: atual,
+        classificacaoAnteriorExibicao: classAnteriorObj.texto,
+        classificacaoAtualExibicao: classAtualObj.texto,
+      });
+
+      corrente = atual;
+      ultimaNota = atual;
+    }
+  }
+
+  return notificacoes.map((n) => ({
+    ...n,
+    ...(extrasPorId.get(String(n._id || '')) || {}),
+  }));
+}
 
     function calcValorExibicao(n) {
       if (typeof n.valorNumerico === 'number') return Number(n.valorNumerico);
@@ -1195,7 +1288,9 @@
       if(!notificacoes.length){
         notiEl.innerHTML = '<div class="empty">Nenhuma notificação encontrada.</div>';
       }else{
-        notiEl.innerHTML = notificacoes.map(n=>{
+        const notificacoesParaExibir = enriquecerNotasPorLancamento(notificacoes);
+
+notiEl.innerHTML = notificacoesParaExibir.map(n=>{
           const tipo = n.tipo || n.tipoMedida || 'Medida';
           const motivo = n.motivo || '—';
           const artigo = n.artigo || '—';
@@ -1203,10 +1298,16 @@
           const classificacao = n.classificacaoRegulamento || '—';
           const valorCorrigido = calcValorExibicao(n);
           const valor = fmtValor(valorCorrigido);
-          const notaAnterior = typeof n.notaAnterior === 'number' ? n.notaAnterior.toFixed(2) : '—';
-          const notaAtual = typeof n.notaAtual === 'number' ? n.notaAtual.toFixed(2) : '—';
-          const classAnterior = n.classificacaoAnterior || '—';
-          const classAtual = n.classificacaoAtual || '—';
+          const notaAnterior = typeof n.notaAnteriorExibicao === 'number'
+  ? n.notaAnteriorExibicao.toFixed(2)
+  : (typeof n.notaAnterior === 'number' ? n.notaAnterior.toFixed(2) : '—');
+
+const notaAtual = typeof n.notaAtualExibicao === 'number'
+  ? n.notaAtualExibicao.toFixed(2)
+  : (typeof n.notaAtual === 'number' ? n.notaAtual.toFixed(2) : '—');
+
+const classAnterior = n.classificacaoAnteriorExibicao || n.classificacaoAnterior || '—';
+const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—';
           const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + escapeHtml(n.observacoes) + '</div>' : '';
           const idN = n._id || '';
           const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
