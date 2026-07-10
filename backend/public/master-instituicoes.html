@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Master • Instituições - SmartClass</title>
+  <title>Master Instituições • Axoriin Admin</title>
   <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
@@ -15,630 +15,213 @@
 
   <style>
     :root{
-      --bg-0:#0b1220;
-      --bg-1:#071018;
-      --card: rgba(255,255,255,.08);
-      --card2: rgba(255,255,255,.06);
-      --border: rgba(170,200,240,.24);
-      --text: #ecf2ff;
-      --muted: rgba(236,242,255,.72);
-      --shadow: 0 22px 60px rgba(0,0,0,.60);
-
-      --sc-primary:#00D1FF;
-      --sc-secondary:#7A5CFF;
-      --sc-accent:#FFE29A;
-
-      --ok-bg: rgba(0,255,140,.12);
-      --ok-bd: rgba(0,255,140,.25);
-      --ok-tx: #d6ffe9;
-
-      --err-bg: rgba(255,70,90,.10);
-      --err-bd: rgba(255,70,90,.22);
-      --err-tx: #ffb3b8;
-
-      --warn-bg: rgba(255,226,154,.10);
-      --warn-bd: rgba(255,226,154,.22);
-      --warn-tx: #ffecc1;
+      --page:#f3f6fb; --surface:#ffffff; --surface-soft:#f8fafc; --ink:#162033; --muted:#64748b; --line:#dbe4ef;
+      --primary:#165dff; --primary-2:#0ea5e9; --nav:#0b1b33; --nav-2:#071426; --success:#0f9f6e; --warning:#d97706; --danger:#dc2626;
+      --shadow:0 18px 50px rgba(15,23,42,.10); --radius:18px;
     }
+    *{box-sizing:border-box} html,body{min-height:100%;margin:0;padding:0}
+    body{font-family:"Rajdhani",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(900px 460px at 12% -10%,rgba(22,93,255,.14),transparent 62%),radial-gradient(900px 440px at 105% 0%,rgba(14,165,233,.12),transparent 60%),linear-gradient(180deg,#f7faff 0%,var(--page) 100%);-webkit-font-smoothing:antialiased}
+    a{text-decoration:none;color:inherit}.app-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+    .sidebar{position:sticky;top:0;height:100vh;padding:22px 18px;background:linear-gradient(180deg,var(--nav),var(--nav-2));color:#eaf1ff;box-shadow:16px 0 42px rgba(15,23,42,.14);display:flex;flex-direction:column;gap:20px;z-index:10}
+    .side-brand{display:flex;align-items:center;gap:12px;padding:8px 6px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+    .logo{width:48px;height:48px;border-radius:16px;object-fit:contain;padding:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);box-shadow:0 12px 28px rgba(0,0,0,.24)}
+    .side-brand b{display:block;font-family:"Orbitron",system-ui,sans-serif;font-size:.9rem;letter-spacing:.6px}.side-brand span{display:block;color:rgba(234,241,255,.68);font-size:.86rem;margin-top:2px}
+    .nav-list{display:grid;gap:7px}.nav-link{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;color:rgba(234,241,255,.78);font-weight:800;border:1px solid transparent}.nav-link.active,.nav-link:hover{color:#fff;background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.12)}.nav-link.active{background:linear-gradient(135deg,rgba(22,93,255,.92),rgba(14,165,233,.78));box-shadow:0 14px 32px rgba(22,93,255,.24)}.nav-ico{width:28px;height:28px;display:grid;place-items:center;border-radius:10px;background:rgba(255,255,255,.10);font-size:15px}
+    .side-user{margin-top:auto;padding:13px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}.side-user b{display:block}.side-user span{display:flex;align-items:center;gap:7px;color:rgba(234,241,255,.68);font-size:.82rem;margin-top:3px;word-break:break-word}.status-dot{width:8px;height:8px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.15)}
+    .main{min-width:0;padding:22px}.wrap{max-width:1580px;margin:0 auto}
+    header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.brand h1{margin:0;font-family:"Orbitron",system-ui,sans-serif;font-size:1.18rem;letter-spacing:.5px;color:#0f172a}.sub{margin:5px 0 0;color:var(--muted);font-size:1rem}.top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:800;box-shadow:0 8px 24px rgba(15,23,42,.06);white-space:nowrap}.dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 4px rgba(15,159,110,.13)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:#22304a;border-radius:13px;padding:10px 13px;min-height:42px;font-weight:900;cursor:pointer;transition:.15s transform,.15s box-shadow,.15s border-color;box-shadow:0 8px 22px rgba(15,23,42,.05);font-family:inherit;font-size:.96rem}.btn:hover{transform:translateY(-1px);border-color:#b9c7da;box-shadow:0 14px 28px rgba(15,23,42,.08)}.btn:disabled{opacity:.7;cursor:not-allowed;transform:none}.btn-primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary-2));box-shadow:0 14px 34px rgba(22,93,255,.20)}.btn-ghost{background:#eef4ff;border-color:#d8e5ff;color:#1645b4}
+    .action-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:rgba(255,255,255,.78);border:1px solid rgba(219,228,239,.92);border-radius:20px;padding:12px;box-shadow:var(--shadow);backdrop-filter:blur(14px);margin-bottom:16px}.action-group{display:flex;gap:10px;flex-wrap:wrap}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px}.kpi{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:0 14px 36px rgba(15,23,42,.07);display:flex;gap:12px;align-items:flex-start}.kpi-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:#eff6ff;color:var(--primary);font-size:19px;flex:none}.kpi span{display:block;color:var(--muted);font-size:.9rem;font-weight:800}.kpi b{display:block;color:#0f172a;font-size:1.55rem;line-height:1.05;margin-top:3px}.kpi small{display:block;color:#7c8da5;margin-top:4px;font-size:.82rem}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:16px;align-items:start}.left-col{grid-column:2;display:grid;gap:16px;position:sticky;top:20px}.table-wrap{grid-column:1;grid-row:1;min-width:0}.card{background:rgba(255,255,255,.92);border:1px solid rgba(219,228,239,.95);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;position:relative}.card-head{padding:15px 16px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}.card-title{margin:0;color:#0f172a;font-size:1.03rem;font-weight:900}.card-body{padding:16px}
+    label{display:block;margin:0 0 6px;color:#334155;font-size:.88rem;font-weight:900}input,select{width:100%;min-height:42px;border-radius:13px;border:1px solid #cfd9e7;background:#fff;color:#172033;outline:none;padding:10px 12px;font-family:inherit;font-size:1rem;font-weight:700}select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,#64748b 50%),linear-gradient(135deg,#64748b 50%,transparent 50%);background-position:calc(100% - 18px) 18px,calc(100% - 12px) 18px;background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:32px}input::placeholder{color:#9aa8bc;font-weight:700}input:focus,select:focus{border-color:#7da5ff;box-shadow:0 0 0 4px rgba(22,93,255,.12)}input[disabled]{background:#eef2f7;color:#64748b;cursor:not-allowed}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hint{margin-top:8px;color:#64748b;font-size:.86rem;line-height:1.35;font-weight:700}.hint code{background:#eef4ff;border:1px solid #d8e5ff;color:#1645b4;padding:2px 7px;border-radius:8px}
+    .table-toolbar{padding:15px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#f9fbff)}.search{display:flex;gap:9px;align-items:center;width:min(100%,520px)}.search input{flex:1}.table-wrap{padding:0}table{width:100%;border-collapse:collapse;font-size:.96rem;min-width:920px}th,td{padding:14px 16px;border-bottom:1px solid #edf2f7;vertical-align:top}th{text-align:left;color:#64748b;background:#f8fafc;font-size:.8rem;letter-spacing:.45px;text-transform:uppercase;font-weight:900}tbody tr:hover td{background:#fbfdff}td b{color:#0f172a}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:.86rem;color:#334155}
+    .badge-active{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #bbf7d0;font-weight:900;white-space:nowrap;font-size:.84rem}.badge-active .b{width:8px;height:8px;border-radius:99px;background:#10b981}.badge-inactive{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.badge-inactive .b{background:#ef4444}.actions{display:flex;gap:7px;flex-wrap:wrap}.mini{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 10px;border-radius:10px;border:1px solid #d8e2ef;background:#fff;color:#22304a;font-family:inherit;font-weight:900;cursor:pointer;box-shadow:0 5px 14px rgba(15,23,42,.05)}.mini.primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--primary),var(--primary-2))}.mini.aluno{color:#075985;border-color:#bae6fd;background:#eff6ff}.mini.ok{color:#047857;border-color:#bbf7d0;background:#ecfdf5}.mini.danger,.mini.remove{color:#b91c1c;border-color:#fecaca;background:#fff1f2}
+    .links{display:flex;flex-direction:column;gap:9px}.linkrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.linkrow input{flex:1 1 220px;background:#f8fafc}.small{color:#64748b;font-size:.82rem;font-weight:800}.selected-inst{padding:12px;border-radius:16px;border:1px solid #dbeafe;background:#f8fbff;color:#334155;font-weight:800;line-height:1.35;margin-bottom:12px}.selected-inst .name{color:#0f172a;font-size:1.02rem;font-weight:900}.selected-inst .slug{color:#475569;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:.78rem;margin-top:2px}.empty-note{color:#64748b;font-size:.9rem;line-height:1.35;font-weight:700}.check-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.check-card{display:flex;gap:9px;align-items:flex-start;padding:11px;border-radius:15px;border:1px solid #d8e5f3;background:#f8fafc;cursor:pointer;user-select:none}.check-card input{width:auto;min-height:auto;margin:3px 0 0;box-shadow:none}.check-card b{display:block;color:#0f172a;font-size:.9rem;line-height:1.1}.check-card span span{display:block;color:#64748b;font-size:.78rem;line-height:1.2;margin-top:4px;font-weight:700}
+    .msg{display:none;margin-top:12px;padding:11px 12px;border-radius:14px;font-weight:900;white-space:pre-line;line-height:1.35}.msg.ok{display:block;color:#065f46;background:#ecfdf5;border:1px solid #bbf7d0}.msg.err{display:block;color:#991b1b;background:#fef2f2;border:1px solid #fecaca}.msg.warn{display:block;color:#92400e;background:#fffbeb;border:1px solid #fde68a}.divider{height:1px;background:var(--line);margin:16px 0}.student-note{padding:12px;border-radius:15px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;line-height:1.35;font-size:.88rem;font-weight:800}.select-card{display:grid;gap:12px}.student-actions{display:flex;gap:8px;flex-wrap:wrap}.list-box,.result-box{max-height:390px;overflow:auto;border-radius:16px;border:1px solid #dbe4ef;background:#f8fafc;padding:9px}.student-item{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:11px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;margin-bottom:9px}.student-item:last-child{margin-bottom:0}.student-main{display:grid;gap:5px}.student-name{color:#0f172a;font-weight:900}.student-meta{color:#64748b;font-size:.86rem;line-height:1.3;font-weight:700}.student-email{margin-top:6px}.result-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}.result-kpi{border-radius:14px;border:1px solid #dbe4ef;background:#fff;padding:10px}.result-kpi b{display:block;color:#0f172a;font-size:1.1rem}.result-kpi span{color:#64748b;font-size:.78rem;font-weight:800}.result-item{padding:11px;border-radius:14px;border:1px solid #bbf7d0;background:#f0fdf4;margin-bottom:8px}.result-item.reutilizado{border-color:#fde68a;background:#fffbeb}.result-item.ignorado{border-color:#fecaca;background:#fef2f2}.result-item .title{color:#0f172a;font-weight:900}.result-item .meta{color:#334155;font-size:.87rem;margin-top:4px;line-height:1.35;font-weight:700}.copy-access{margin-top:8px;width:100%;text-align:left}.senha-gerada-box{margin-top:6px;display:inline-flex;align-items:center;gap:8px;padding:6px 9px;border-radius:10px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;font-weight:900}.senha-gerada-box code{color:#064e3b;background:#fff;border:1px solid #d1fae5;padding:2px 6px;border-radius:8px}.inst-meta{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}.tag{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid #dbe4ef;background:#f8fafc;color:#64748b;font-size:.76rem;font-weight:900;white-space:nowrap}.tag.ok{border-color:#bbf7d0;color:#047857;background:#ecfdf5}.tag.warn{border-color:#fde68a;color:#92400e;background:#fffbeb}.tag.err{border-color:#fecaca;color:#b91c1c;background:#fef2f2}
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.70);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(5px)}.modal-card{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:20px;box-shadow:0 28px 90px rgba(15,23,42,.32);padding:18px;max-height:90vh;overflow:auto}.modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.modal-header h3{margin:0;color:#0f172a}.modal-close{border:1px solid #dbe4ef;background:#f8fafc;color:#334155;border-radius:12px;padding:8px 10px;cursor:pointer;font-weight:900}.access-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.access-section h4{color:#0f172a;margin:10px 0 12px}
+    @media(max-width:1320px){.app-shell{grid-template-columns:250px minmax(0,1fr)}.layout{grid-template-columns:1fr}.left-col{grid-column:auto;grid-row:auto;position:static}.table-wrap{grid-column:auto;grid-row:auto;order:-1}}
+    @media(max-width:980px){.app-shell{display:block}.sidebar{position:relative;height:auto;border-radius:0 0 24px 24px}.nav-list{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.main{padding:16px}}
+    @media(max-width:640px){.row,.check-grid,.result-summary,.access-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr}.search{width:100%}.action-group{width:100%}.action-group .btn{flex:1 1 100%}table{min-width:760px}}
+  
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; padding:0; }
-
-    body{
-      font-family: "Rajdhani", system-ui, -apple-system, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.22), transparent 60%),
-        radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.14), transparent 60%),
-        radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.16), transparent 60%),
-        linear-gradient(180deg, var(--bg-0), var(--bg-1));
-      background-blend-mode: screen, screen, screen, normal;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      padding: 18px;
-    }
-
-    .wrap{ max-width: 1440px; margin: 0 auto; }
-
-    header{
-      display:flex;
-      gap:14px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-
-    .brand{ display:flex; align-items:center; gap:12px; }
-
-    .logo{
-      width:46px;
-      height:46px;
-      border-radius: 14px;
-      object-fit: contain;
-      padding: 8px;
-      background: rgba(10,19,34,.38);
-      border: 1px solid var(--border);
-      box-shadow: 0 10px 26px rgba(0,0,0,.55);
-    }
-
-    h1{
-      margin:0;
-      font-family:"Orbitron", system-ui, sans-serif;
-      font-size: 1.05rem;
-      letter-spacing: .6px;
-    }
-    .sub{ margin:2px 0 0; color: var(--muted); font-size: .95rem; }
-
-    .top-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap: wrap;
-      justify-content:flex-end;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(10,19,34,.36);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 13px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-      user-select:none;
-    }
-
-    .dot{
-      width:8px; height:8px; border-radius:999px;
-      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
-      box-shadow: 0 0 12px rgba(0,209,255,.6);
-    }
-
-    .btn{
-      border: 1px solid rgba(170,200,240,.28);
-      background: rgba(10,19,34,.32);
-      color: rgba(236,242,255,.92);
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-weight: 900;
-      cursor:pointer;
-      transition: .15s transform, .15s filter, .15s background;
-    }
-    .btn:hover{ filter:brightness(1.06); transform: translateY(-1px); background: rgba(10,19,34,.42); }
-    .btn:disabled{ opacity:.7; cursor:not-allowed; transform:none; filter:none; }
-
-    .btn-primary{
-      border: none;
-      color:#071018;
-      background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary));
-      box-shadow:
-        0 14px 30px rgba(0, 209, 255, .18),
-        0 16px 34px rgba(122, 92, 255, .14),
-        inset 0 1px 0 rgba(255,255,255,.16);
-    }
-
+    /* =========================================================
+       V2 — layout balanceado em módulos + mini dicas
+       Objetivo: evitar área central vazia e destacar cada categoria.
+       ========================================================= */
+    .wrap{max-width:1680px;width:100%;}
+    header{padding-bottom:8px;border-bottom:1px solid rgba(203,213,225,.65)}
+    .brand h1{font-size:1.32rem}.sub{font-size:.96rem}
+    .action-bar{box-shadow:0 12px 34px rgba(15,23,42,.07);}
+    .kpi-grid{grid-template-columns:repeat(4,minmax(210px,1fr));}
     .layout{
       display:grid;
-      grid-template-columns: 430px 1fr;
-      gap: 14px;
-      align-items:start;
+      grid-template-columns:minmax(680px,1.32fr) minmax(430px,.92fr);
+      grid-template-areas:
+        "table inst"
+        "access user"
+        "quick activity";
+      gap:16px;
+      align-items:stretch;
     }
+    .left-col{display:contents;position:static;}
+    #tabela-instituicoes{grid-area:table;min-width:0;}
+    #card-instituicao{grid-area:inst;}
+    #card-usuario{grid-area:user;}
+    #card-acessos-alunos{grid-area:access;}
+    #card-acoes-rapidas{grid-area:quick;}
+    #card-atividades-recentes{grid-area:activity;}
+    .layout > .card, .left-col > .card{height:100%;}
 
-    @media (max-width: 1180px){ .layout{ grid-template-columns: 1fr; } }
+    .card{border-radius:18px;box-shadow:0 14px 38px rgba(15,23,42,.075);}
+    .card-head,.table-toolbar{min-height:58px;}
+    .card-section .card-head{color:#fff;border-bottom:0;align-items:center;}
+    .card-section .card-head .card-title,.card-section .card-head .small{color:#fff;}
+    .card-blue .card-head,.table-wrap .table-toolbar{background:linear-gradient(135deg,#145dff,#0ea5e9);color:#fff;border-bottom:0;}
+    .table-wrap .table-toolbar .card-title,.table-wrap .table-toolbar .small{color:#fff;}
+    .table-wrap .table-toolbar .search input{background:#fff;color:#172033;border-color:rgba(255,255,255,.65)}
+    .table-wrap .table-toolbar .btn{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.35);box-shadow:none}
+    .card-green .card-head{background:linear-gradient(135deg,#0f9f6e,#16a34a)}
+    .card-purple .card-head{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+    .card-orange .card-head{background:linear-gradient(135deg,#f59e0b,#f97316)}
 
-    .left-col{ display:grid; gap:14px; }
-
-    .card{
-      background: linear-gradient(180deg, rgba(21,40,76,.62), rgba(13,28,54,.74));
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
-    }
-
-    .card::before{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      background:
-        radial-gradient(800px 260px at 40% -20%, rgba(0,209,255,.20), transparent 65%),
-        radial-gradient(700px 240px at 110% 10%, rgba(122,92,255,.14), transparent 60%);
-      pointer-events:none;
-    }
-
-    .card > *{ position:relative; z-index:1; }
-
-    .card-head{
-      padding: 14px 14px 10px;
-      border-bottom: 1px solid rgba(170,200,240,.18);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .card-title{
-      margin:0;
-      font-size: 1.05rem;
-      font-weight: 900;
-      letter-spacing: .2px;
-    }
-
-    .card-body{ padding: 14px; }
-
-    label{
-      display:block;
-      margin: 0 0 6px;
-      font-size: 13px;
-      color: rgba(210,225,250,.86);
-      letter-spacing: .2px;
-      font-weight: 800;
-    }
-
-    input, select{
-      width:100%;
-      padding: 11px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(170,200,240,.45);
-      background: linear-gradient(180deg, rgba(19,38,72,.92), rgba(11,26,50,.96));
-      color: var(--text);
-      outline: none;
-      font-size: 15px;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.10),
-        0 8px 18px rgba(0,0,0,.45);
-    }
-
-    select{ appearance:none; -webkit-appearance:none; -moz-appearance:none; }
-    select option, select optgroup{ color: #ecf2ff; background: #0f1b33; }
-    input::placeholder{ color: rgba(236,242,255,.55); }
-
-    input:focus, select:focus{
-      border-color: rgba(190,220,255,.9);
-      box-shadow: 0 0 0 2px rgba(0,209,255,.35), 0 10px 28px rgba(0,0,0,.65);
-    }
-
-    .row{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 560px){ .row{ grid-template-columns: 1fr; } }
-
-    .hint{
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.25;
-    }
-
-    .hint code{
-      background: rgba(10,19,34,.35);
-      border: 1px solid rgba(170,200,240,.22);
-      padding: 2px 6px;
-      border-radius: 8px;
-      color: rgba(236,242,255,.92);
-    }
-
-    .msg{
-      display:none;
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      font-weight: 800;
-      white-space: pre-line;
-      line-height: 1.3;
-    }
-    .msg.ok{ display:block; background: var(--ok-bg); border:1px solid var(--ok-bd); color: var(--ok-tx); }
-    .msg.err{ display:block; background: var(--err-bg); border:1px solid var(--err-bd); color: var(--err-tx); }
-    .msg.warn{ display:block; background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); }
-
-    .table-wrap{ padding: 0; }
-
-    .table-toolbar{
-      padding: 12px 14px;
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      justify-content:space-between;
-      border-bottom: 1px solid rgba(170,200,240,.18);
-      flex-wrap: wrap;
-    }
-
-    .search{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      width: min(520px, 100%);
-    }
-
-    .search input{
-      box-shadow: none;
-      background: rgba(10,19,34,.28);
-      border: 1px solid rgba(170,200,240,.28);
-    }
-
-    table{ width:100%; border-collapse: collapse; font-size: 15px; }
-
-    th, td{
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(170,200,240,.14);
-      vertical-align: top;
-    }
-
-    th{
-      text-align:left;
-      font-size: 13px;
-      color: rgba(210,225,250,.82);
-      letter-spacing: .25px;
-      text-transform: uppercase;
-    }
-
-    tr:hover td{ background: rgba(255,255,255,.03); }
-
-    .mono{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 13px;
-    }
-
-    .badge-active{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(170,200,240,.22);
-      background: rgba(10,19,34,.26);
-      font-weight: 900;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .badge-active .b{
-      width:8px;height:8px;border-radius:999px;
-      background: rgba(0,255,140,.9);
-      box-shadow: 0 0 12px rgba(0,255,140,.45);
-    }
-
-    .badge-inactive .b{
-      background: rgba(255,70,90,.92);
-      box-shadow: 0 0 12px rgba(255,70,90,.35);
-    }
-
-    .actions{ display:flex; gap:8px; flex-wrap: wrap; }
-
-    .mini{
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 900;
-      background: rgba(10,19,34,.28);
-      border: 1px solid rgba(170,200,240,.22);
-      color: rgba(236,242,255,.92);
-      cursor:pointer;
-    }
-
-    .mini:hover{ filter:brightness(1.06); background: rgba(10,19,34,.36); }
-    .mini.danger{ border-color: rgba(255,70,90,.35); }
-    .mini.ok{ border-color: rgba(0,255,140,.35); }
-    .mini.primary{ color:#071018; border:none; background: linear-gradient(135deg, var(--sc-primary), var(--sc-secondary)); }
-    .mini.aluno{ border-color: rgba(255,226,154,.35); background: rgba(255,226,154,.08); color: #fff0c7; }
-    .mini.remove{ border-color: rgba(255,70,90,.35); background: rgba(255,70,90,.08); color: #ffd1d7; }
-
-    .links{ display:flex; flex-direction:column; gap: 8px; }
-
-    .linkrow{ display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
-
-    .linkrow input{
-      flex: 1 1 260px;
-      box-shadow:none;
-      background: rgba(10,19,34,.28);
-      border: 1px solid rgba(170,200,240,.28);
-    }
-
-    .small{ font-size: 12px; color: rgba(236,242,255,.70); }
-
-    .spinner{
-      display:inline-block;
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      border: 2px solid rgba(255,255,255,.35);
-      border-top-color: rgba(255,255,255,.95);
-      margin-right: 8px;
-      vertical-align: -3px;
-      animation: spin .7s linear infinite;
-    }
-
-    @keyframes spin{ to{ transform: rotate(360deg); } }
-
-    .selected-inst{
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(170,200,240,.22);
-      background: rgba(10,19,34,.22);
-      color: rgba(236,242,255,.92);
-      font-weight: 700;
-      line-height: 1.35;
-      margin-bottom: 10px;
-    }
-
-    .selected-inst .name{ font-size: 1rem; font-weight: 900; color: #fff; }
-    .selected-inst .slug{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; opacity: .9; }
-
-    .empty-note{ color: var(--muted); font-size: 13px; line-height: 1.3; }
-
-    .divider{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(170,200,240,.28), transparent);
-      margin: 14px 0;
-    }
-
-    .student-note{
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,226,154,.22);
-      background: rgba(255,226,154,.08);
-      color: #fff0c7;
-      line-height: 1.35;
-      font-size: 13px;
-    }
-
-    .student-note b{ color:#fff7db; }
-    .select-card{ display:grid; gap:10px; }
-
-    .list-box{
-      max-height: 340px;
-      overflow:auto;
-      border-radius: 14px;
-      border:1px solid rgba(170,200,240,.18);
-      background: rgba(8,18,36,.45);
-      padding: 8px;
-    }
-
-    .student-item{
-      display:grid;
-      grid-template-columns: auto 1fr;
-      gap:10px;
-      align-items:start;
-      padding:10px;
-      border-radius:12px;
-      border:1px solid rgba(170,200,240,.12);
-      background: rgba(10,19,34,.18);
-      margin-bottom:8px;
-    }
-
-    .student-item:last-child{ margin-bottom:0; }
-    .student-main{ display:grid; gap:4px; }
-    .student-name{ font-weight:900; color:#fff; }
-    .student-meta{ color: rgba(236,242,255,.76); font-size:13px; line-height:1.25; }
-    .student-email{ margin-top:8px; }
-    .student-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-
-    .senha-gerada-box{
-      margin-top: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 9px;
-      border-radius: 10px;
-      border: 1px solid rgba(0,255,140,.28);
-      background: rgba(0,255,140,.10);
-      color: #d6ffe9;
-      font-weight: 900;
-    }
-
-    .senha-gerada-box code{
-      color: #ffffff;
-      background: rgba(10,19,34,.38);
-      border: 1px solid rgba(170,200,240,.18);
-      padding: 2px 6px;
-      border-radius: 8px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    .result-box{
-      max-height: 320px;
-      overflow:auto;
-      border-radius: 14px;
-      border:1px solid rgba(170,200,240,.18);
-      background: rgba(8,18,36,.45);
-      padding: 8px;
-    }
-
-    .result-summary{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:8px;
-      margin-bottom:8px;
-    }
-
-    @media (max-width:560px){ .result-summary{ grid-template-columns:1fr; } }
-
-    .result-kpi{
-      border-radius: 12px;
-      border:1px solid rgba(170,200,240,.16);
-      background: rgba(10,19,34,.24);
-      padding:9px 10px;
-    }
-
-    .result-kpi b{ display:block; color:#fff; font-size:18px; }
-    .result-kpi span{ color:rgba(236,242,255,.72); font-size:12px; }
-
-    .result-item{
-      padding:10px;
-      border-radius:12px;
-      border:1px solid rgba(0,255,140,.16);
-      background: rgba(0,255,140,.06);
-      margin-bottom:8px;
-    }
-
-    .result-item.reutilizado{
-      border-color: rgba(255,226,154,.22);
-      background: rgba(255,226,154,.07);
-    }
-
-    .result-item.ignorado{
-      border-color: rgba(255,70,90,.22);
-      background: rgba(255,70,90,.07);
-    }
-
-    .result-item:last-child{ margin-bottom:0; }
-    .result-item .title{ font-weight:900; color:#fff; }
-    .result-item .meta{ font-size:13px; color: rgba(236,242,255,.8); margin-top:4px; line-height:1.35; }
-
-    .copy-access{
-      margin-top:8px;
-      width:100%;
-      text-align:left;
-    }
-
-
-    .check-grid{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:10px;
-      margin-top:10px;
-    }
-
-    @media(max-width:700px){ .check-grid{ grid-template-columns:1fr; } }
-
-    .check-card{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      padding:10px;
+    .section-tip{
+      margin:0 0 14px;
+      padding:10px 12px;
       border-radius:14px;
-      border:1px solid rgba(170,200,240,.22);
-      background:rgba(10,19,34,.22);
-      cursor:pointer;
-      user-select:none;
-    }
-
-    .check-card input{
-      width:auto;
-      margin-top:2px;
-      box-shadow:none;
-    }
-
-    .check-card b{
-      display:block;
-      color:#fff;
-      font-size:14px;
-      line-height:1.1;
-    }
-
-    .check-card span{
-      display:block;
-      color:rgba(236,242,255,.70);
-      font-size:12px;
-      line-height:1.2;
-      margin-top:3px;
-    }
-
-    .inst-meta{
-      margin-top:6px;
-      display:flex;
-      gap:6px;
-      flex-wrap:wrap;
-    }
-
-    .tag{
-      display:inline-flex;
-      align-items:center;
-      padding:4px 7px;
-      border-radius:999px;
-      border:1px solid rgba(170,200,240,.18);
-      background:rgba(10,19,34,.22);
-      color:rgba(236,242,255,.78);
-      font-size:12px;
+      font-size:.88rem;
+      line-height:1.32;
       font-weight:800;
-      white-space:nowrap;
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+      border:1px solid transparent;
+    }
+    .section-tip b{color:inherit}.tip-blue{background:#eff6ff;color:#1645b4;border-color:#bfdbfe}.tip-green{background:#ecfdf5;color:#047857;border-color:#bbf7d0}.tip-orange{background:#fff7ed;color:#9a3412;border-color:#fed7aa}.tip-purple{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe}.tip-gray{background:#f8fafc;color:#475569;border-color:#e2e8f0}
+
+    .table-filters-lite{padding:14px 16px 0;background:#fff;}
+    #tabela-instituicoes .section-tip{margin:0;}
+    #tabela-instituicoes .msg{margin:12px 16px;}
+    #card-instituicao .card-body,#card-usuario .card-body,#card-acessos-alunos .card-body{padding:16px;}
+    #card-acoes-rapidas .quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+    .quick-tile{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 6px 16px rgba(15,23,42,.04);}
+    .quick-tile i{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:#eff6ff;color:#165dff;font-style:normal;font-size:16px;flex:none}.quick-tile b{display:block;color:#0f172a}.quick-tile span{display:block;color:#64748b;font-size:.82rem;font-weight:800;margin-top:2px;line-height:1.25}
+    .activity-list{display:grid;gap:10px;}.activity-item{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding-bottom:9px;border-bottom:1px solid #edf2f7}.activity-item:last-child{border-bottom:0;padding-bottom:0}.activity-dot{width:9px;height:9px;border-radius:99px;margin-top:6px;background:#165dff}.activity-item b{display:block;color:#0f172a}.activity-item span{display:block;color:#64748b;font-size:.82rem;font-weight:800;margin-top:2px}.activity-item time{color:#64748b;font-weight:900;font-size:.82rem;white-space:nowrap}
+    .section-footer-link{display:flex;justify-content:flex-end;margin-top:12px;color:#165dff;font-weight:900}
+
+    #card-acessos-alunos .select-card{grid-template-columns:1fr 1fr;align-items:end;}
+    #card-acessos-alunos .student-note,#card-acessos-alunos .list-box,#card-acessos-alunos .msg,#card-acessos-alunos .result-box,#card-acessos-alunos div[style*="display:grid"]{grid-column:1/-1;}
+    #card-acessos-alunos .student-actions{grid-column:1/-1;}
+
+    @media(max-width:1450px){
+      .layout{grid-template-columns:1fr;grid-template-areas:"table" "inst" "access" "user" "quick" "activity";}
+      .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media(max-width:900px){#card-acessos-alunos .select-card,.quick-grid{grid-template-columns:1fr!important}.layout{gap:14px}.main{padding:14px}}
+
+  
+
+    /* =========================================================
+       Correção V2.1 — modais claros
+       Evita textos quase brancos herdados do tema anterior dentro dos modais.
+       ========================================================= */
+    .modal-card{
+      background:#ffffff !important;
+      color:#162033 !important;
+    }
+    .modal-card h3,
+    .modal-card h4,
+    .modal-card .card-title,
+    .modal-card b{
+      color:#0f172a !important;
+    }
+    .modal-card table{
+      background:#ffffff !important;
+      color:#162033 !important;
+    }
+    .modal-card thead th,
+    .modal-card table th{
+      background:#f8fafc !important;
+      color:#475569 !important;
+      border-bottom:1px solid #e2e8f0 !important;
+    }
+    .modal-card tbody td,
+    .modal-card table td{
+      color:#334155 !important;
+      border-bottom:1px solid #e2e8f0 !important;
+    }
+    .modal-card tbody tr:hover td{
+      background:#f8fbff !important;
+    }
+    .modal-card td div,
+    .modal-card .small,
+    .modal-card .empty-note,
+    #modal-usuarios-loading,
+    #modal-usuarios-empty{
+      color:#64748b !important;
+    }
+    .modal-card .tag{
+      background:#f8fafc !important;
+      border-color:#cbd5e1 !important;
+      color:#475569 !important;
+    }
+    .modal-card .badge-active{
+      background:#ecfdf5 !important;
+      border-color:#bbf7d0 !important;
+      color:#047857 !important;
+    }
+    .modal-card .badge-inactive{
+      background:#fef2f2 !important;
+      border-color:#fecaca !important;
+      color:#b91c1c !important;
+    }
+    .modal-card .mini{
+      background:#ffffff !important;
+      color:#22304a !important;
+      border-color:#d8e2ef !important;
+    }
+    .modal-card .mini.danger,
+    .modal-card .mini.remove{
+      background:#fff1f2 !important;
+      color:#b91c1c !important;
+      border-color:#fecaca !important;
+    }
+    .modal-card .mini.ok{
+      background:#ecfdf5 !important;
+      color:#047857 !important;
+      border-color:#bbf7d0 !important;
+    }
+    .modal-card .mini.primary,
+    .modal-card .btn-primary{
+      color:#ffffff !important;
+      border-color:transparent !important;
+      background:linear-gradient(135deg,var(--primary),var(--primary-2)) !important;
     }
 
-    .tag.ok{ border-color:rgba(0,255,140,.25); color:#d6ffe9; background:rgba(0,255,140,.08); }
-    .tag.warn{ border-color:rgba(255,226,154,.25); color:#ffecc1; background:rgba(255,226,154,.08); }
-    .tag.err{ border-color:rgba(255,70,90,.25); color:#ffccd2; background:rgba(255,70,90,.08); }
-    .modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.65);
-  z-index:9999;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-}
-
-.modal-card{
-  background:linear-gradient(180deg, rgba(21,40,76,.96), rgba(13,28,54,.98));
-  border:1px solid rgba(170,200,240,.28);
-  border-radius:18px;
-  box-shadow:0 24px 70px rgba(0,0,0,.65);
-  padding:18px;
-  max-height:90vh;
-  overflow:auto;
-}
-
-.modal-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:14px;
-}
-
-.modal-header h3{
-  margin:0;
-  color:#fff;
-}
-
-.modal-close{
-  border:1px solid rgba(255,255,255,.2);
-  background:rgba(255,255,255,.08);
-  color:#fff;
-  border-radius:10px;
-  padding:8px 10px;
-  cursor:pointer;
-}
-
-.access-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:10px;
-}
-
-@media(max-width:700px){
-  .access-grid{
-    grid-template-columns:1fr;
-  }
-}
   </style>
 </head>
 
 <body>
-  <div class="wrap">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Menu principal">
+      <div class="side-brand">
+        <img class="logo" src="/assets/smartclass-coruja.png" alt="SmartClass" onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
+        <div><b>AXORIIN Admin</b><span>Master Instituições</span></div>
+      </div>
+      <nav class="nav-list">
+        <a class="nav-link" href="#"><span class="nav-ico">⌂</span> Dashboard</a>
+        <a class="nav-link active" href="#tabela-instituicoes"><span class="nav-ico">▦</span> Master Instituições</a>
+        <a class="nav-link" href="#card-usuario"><span class="nav-ico">👤</span> Usuários</a>
+        <a class="nav-link" href="#card-usuario"><span class="nav-ico">◇</span> Perfis</a>
+        <a class="nav-link" href="#card-acessos-alunos"><span class="nav-ico">🔐</span> Acessos</a>
+        <a class="nav-link" href="#resultadoAcessos"><span class="nav-ico">▤</span> Relatórios</a>
+        <a class="nav-link" href="#card-instituicao"><span class="nav-ico">⚙</span> Configurações</a>
+      </nav>
+      <div class="side-user"><b>Super Admin</b><span><i class="status-dot"></i> superadmin@sistema.com</span></div>
+    </aside>
+    <main class="main">
+      <div class="wrap">
     <header>
       <div class="brand">
         <img class="logo" src="/assets/smartclass-coruja.png" alt="SmartClass" onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
@@ -655,16 +238,34 @@
       </div>
     </header>
 
+      <section class="action-bar">
+        <div class="action-group">
+          <a class="btn btn-primary" href="#card-instituicao">+ Nova Instituição</a>
+          <a class="btn btn-ghost" href="#card-usuario">+ Novo Usuário</a>
+          <a class="btn btn-ghost" href="#card-acessos-alunos">Gerar Senha/Acesso</a>
+          <a class="btn" href="#card-acessos-alunos">Importar em lote</a>
+        </div>
+        <div class="small">As senhas continuam aparecendo somente no retorno imediato da geração/redefinição.</div>
+      </section>
+
+      <section class="kpi-grid" aria-label="Resumo administrativo">
+        <div class="kpi"><div class="kpi-icon">🏫</div><div><span>Instituições cadastradas</span><b id="kpiTotalInst">—</b><small>Total no ambiente master</small></div></div>
+        <div class="kpi"><div class="kpi-icon">✓</div><div><span>Instituições ativas</span><b id="kpiAtivas">—</b><small>Disponíveis para uso</small></div></div>
+        <div class="kpi"><div class="kpi-icon">🛡</div><div><span>Visíveis para Secretaria</span><b id="kpiSecretaria">—</b><small>Governança habilitada</small></div></div>
+        <div class="kpi"><div class="kpi-icon">⚙</div><div><span>Ambientes de teste</span><b id="kpiTeste">—</b><small>Protegidos da Secretaria</small></div></div>
+      </section>
+
     <div class="layout">
       <div class="left-col">
         <!-- Criar instituição -->
-        <section class="card">
+        <section class="card card-section card-blue" id="card-instituicao">
           <div class="card-head">
-            <div class="card-title">Criar nova instituição</div>
+            <div class="card-title">🏫 Instituição</div>
             <div class="small" id="apiInfo"></div>
           </div>
 
           <div class="card-body">
+            <div class="section-tip tip-blue">💡 <span><b>Dica:</b> preencha os dados básicos da instituição e confira o slug antes de salvar. Esse slug define o link de login do colégio.</span></div>
             <div class="row">
               <div>
                 <label for="nome">Nome (ex.: Colégio XABC)</label>
@@ -786,13 +387,14 @@
         </section>
 
         <!-- Criar usuário na instituição -->
-        <section class="card">
+        <section class="card card-section card-purple" id="card-usuario">
           <div class="card-head">
-            <div class="card-title">Criar usuário na instituição</div>
-            <div class="small">Admin / Monitor / Professor</div>
+            <div class="card-title">👤 Usuário institucional</div>
+            <div class="small">Admin / Monitor / Professor / Secretaria</div>
           </div>
 
           <div class="card-body">
+            <div class="section-tip tip-purple">💡 <span><b>Dica:</b> primeiro selecione a instituição na tabela. Depois crie usuários administrativos, professores, monitores ou acesso de Secretaria.</span></div>
             <div class="selected-inst" id="selectedInstBox">
               <div class="empty-note">
                 Selecione uma instituição na tabela ao lado clicando em <b>“Novo usuário”</b>.
@@ -908,13 +510,14 @@
         </section>
 
         <!-- Geração de acessos dos alunos -->
-        <section class="card">
+        <section class="card card-section card-green" id="card-acessos-alunos">
           <div class="card-head">
-            <div class="card-title">Gerar acessos dos alunos</div>
+            <div class="card-title">🔑 Gerar acessos dos alunos</div>
             <div class="small">Fundamental e médio</div>
           </div>
 
           <div class="card-body">
+            <div class="section-tip tip-green">💡 <span><b>Dica:</b> selecione a instituição e a turma para gerar, revisar ou enviar acessos. As senhas aparecem somente no resultado imediato da operação.</span></div>
             <div class="selected-inst" id="selectedInstStudentBox">
               <div class="empty-note">
                 Selecione uma instituição na tabela ao lado clicando em <b>“Acessos dos alunos”</b>.
@@ -962,13 +565,49 @@
         </section>
 
 
+        <!-- Ações rápidas -->
+        <section class="card card-section card-orange" id="card-acoes-rapidas">
+          <div class="card-head">
+            <div class="card-title">⚡ Ações rápidas</div>
+            <div class="small">Atalhos frequentes</div>
+          </div>
+          <div class="card-body">
+            <div class="section-tip tip-orange">💡 <span><b>Dica:</b> use estes atalhos para ir direto às tarefas mais comuns do painel, sem precisar procurar os módulos manualmente.</span></div>
+            <div class="quick-grid">
+              <a class="quick-tile" href="#card-usuario"><i>👤</i><div><b>Criar usuário em lote</b><span>Use a área de usuários para preparar novos perfis por instituição.</span></div></a>
+              <a class="quick-tile" href="#tabela-instituicoes"><i>⬇</i><div><b>Exportar CSV</b><span>Localize a instituição e use as ações disponíveis na tabela.</span></div></a>
+              <a class="quick-tile" href="#card-acessos-alunos"><i>🔑</i><div><b>Redefinir senha</b><span>Selecione aluno ou responsável e gere nova senha temporária.</span></div></a>
+              <a class="quick-tile" href="#card-acessos-alunos"><i>⚙</i><div><b>Gerar acessos automaticamente</b><span>Crie acessos por turma selecionada, mantendo o fluxo seguro.</span></div></a>
+            </div>
+            <div class="section-footer-link"><a href="#card-acessos-alunos">Ver opções de acesso ›</a></div>
+          </div>
+        </section>
+
+        <!-- Atividades recentes -->
+        <section class="card card-section card-purple" id="card-atividades-recentes">
+          <div class="card-head">
+            <div class="card-title">🕘 Atividades recentes</div>
+            <div class="small">Resumo visual</div>
+          </div>
+          <div class="card-body">
+            <div class="section-tip tip-purple">💡 <span><b>Dica:</b> este bloco é apenas um resumo visual do painel. As operações críticas continuam sendo confirmadas pelas mensagens de retorno de cada ação.</span></div>
+            <div class="activity-list">
+              <div class="activity-item"><span class="activity-dot"></span><div><b>Lista de instituições atualizada</b><span>Use “Atualizar lista” para buscar os dados mais recentes.</span></div><time>Agora</time></div>
+              <div class="activity-item"><span class="activity-dot" style="background:#16a34a"></span><div><b>Acessos de alunos</b><span>Senhas temporárias aparecem somente após gerar/redefinir.</span></div><time>Seguro</time></div>
+              <div class="activity-item"><span class="activity-dot" style="background:#f59e0b"></span><div><b>Governança da Secretaria</b><span>Privadas e ambientes de teste ficam protegidos por padrão.</span></div><time>Regra</time></div>
+              <div class="activity-item"><span class="activity-dot" style="background:#7c3aed"></span><div><b>Perfis institucionais</b><span>Admin, monitor, professor e secretaria são criados por instituição.</span></div><time>Perfis</time></div>
+            </div>
+          </div>
+        </section>
+
+
       </div>
 
       <!-- Lista -->
-      <section class="card table-wrap">
+      <section class="card table-wrap" id="tabela-instituicoes">
         <div class="table-toolbar">
           <div>
-            <div class="card-title">Instituições cadastradas</div>
+            <div class="card-title">🏫 Instituições cadastradas</div>
             <div class="small" id="countInfo">—</div>
           </div>
 
@@ -977,6 +616,8 @@
             <button class="btn" id="btnBuscar">Buscar</button>
           </div>
         </div>
+
+        <div class="table-filters-lite"><div class="section-tip tip-blue">💡 <span><b>Dica:</b> use a busca para localizar rapidamente a instituição desejada. As ações de usuários, acessos, ativar/desativar e exclusão ficam na última coluna.</span></div></div>
 
         <div style="overflow:auto;">
           <table>
@@ -990,7 +631,7 @@
               </tr>
             </thead>
             <tbody id="tbody">
-              <tr><td colspan="5" style="color:rgba(236,242,255,.72);">Carregando…</td></tr>
+              <tr><td colspan="5" style="color:#64748b;">Carregando…</td></tr>
             </tbody>
           </table>
         </div>
@@ -998,6 +639,8 @@
         <div class="msg" id="msgList" style="margin: 12px 14px;"></div>
       </section>
     </div>
+      </div>
+    </main>
   </div>
 
 <!-- ========================================================= -->
@@ -1130,7 +773,7 @@
       <button type="button" class="modal-close" onclick="fecharModalUsuarios()">✕</button>
     </div>
 
-    <div id="modal-usuarios-loading" style="padding:18px; color:rgba(236,242,255,.72);">
+    <div id="modal-usuarios-loading" style="padding:18px; color:#64748b;">
       Carregando usuários...
     </div>
 
@@ -1140,18 +783,18 @@
       <table style="width:100%; border-collapse:collapse; font-size:14px;">
         <thead>
           <tr>
-            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Nome / E-mail</th>
-            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Tipo</th>
-            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Status</th>
-            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Escopo (Secretaria)</th>
-            <th style="padding:10px 12px; text-align:left; font-size:12px; color:rgba(210,225,250,.82); text-transform:uppercase; border-bottom:1px solid rgba(170,200,240,.18);">Ação</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:#475569; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Nome / E-mail</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:#475569; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Tipo</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:#475569; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Status</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:#475569; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Escopo (Secretaria)</th>
+            <th style="padding:10px 12px; text-align:left; font-size:12px; color:#475569; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Ação</th>
           </tr>
         </thead>
         <tbody id="modal-usuarios-tbody"></tbody>
       </table>
     </div>
 
-    <div id="modal-usuarios-empty" style="display:none; padding:18px; color:rgba(236,242,255,.72);">
+    <div id="modal-usuarios-empty" style="display:none; padding:18px; color:#64748b;">
       Nenhum usuário institucional cadastrado nesta instituição.
     </div>
 
@@ -2196,7 +1839,7 @@ if (atualizados.length) {
       countInfo.textContent = `${list.length} / ${all.length} exibidas`;
 
       if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Nenhuma instituição encontrada.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color:#64748b;">Nenhuma instituição encontrada.</td></tr>`;
         return;
       }
 
@@ -2261,7 +1904,7 @@ if (atualizados.length) {
 
     async function loadList(){
       showMsg(msgList, '', '');
-      tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Carregando…</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="color:#64748b;">Carregando…</td></tr>`;
       countInfo.textContent = '—';
       apiInfo.textContent = API_BASE ? 'DEV (API local)' : 'PROD';
 
@@ -2272,16 +1915,23 @@ if (atualizados.length) {
         if (!r.ok) {
           const msg = data?.mensagem || 'Falha ao listar.';
           showMsg(msgList, 'err', msg + '\n(Se apareceu 403, é porque você não está logado como Master/SuperAdmin.)');
-          tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" style="color:#64748b;">Sem dados.</td></tr>`;
           return;
         }
 
         all = Array.isArray(data?.instituicoes) ? data.instituicoes : [];
+        const totalAtivas = all.filter(i => i?.ativo !== false && i?.ativa !== false).length;
+        const totalSecretaria = all.filter(i => i?.visivelParaSecretaria === true).length;
+        const totalTeste = all.filter(i => i?.ambienteTeste === true).length;
+        document.getElementById('kpiTotalInst') && (document.getElementById('kpiTotalInst').textContent = String(all.length));
+        document.getElementById('kpiAtivas') && (document.getElementById('kpiAtivas').textContent = String(totalAtivas));
+        document.getElementById('kpiSecretaria') && (document.getElementById('kpiSecretaria').textContent = String(totalSecretaria));
+        document.getElementById('kpiTeste') && (document.getElementById('kpiTeste').textContent = String(totalTeste));
         countInfo.textContent = `${all.length} instituição(ões)`;
         renderFiltered();
       }catch(err){
         showMsg(msgList, 'err', 'Erro de conexão com o servidor.');
-        tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(236,242,255,.72);">Sem dados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color:#64748b;">Sem dados.</td></tr>`;
       }
     }
 
@@ -2467,7 +2117,7 @@ document.getElementById('btn-gerar-acesso-responsavel').onclick = async () => {
     document.getElementById('ga-feedback').innerHTML =
       `<span style="color:#d6ffe9;font-weight:800;">${escapeHtml(data?.mensagem || 'Acesso criado com sucesso.')}</span>
        <div style="margin-top:8px;">
-         Nova senha do responsável: <b style="color:#fff;">${escapeHtml(data?.acesso?.senha || '—')}</b>
+         Nova senha do responsável: <b style="color:#0f172a;">${escapeHtml(data?.acesso?.senha || '—')}</b>
        </div>`;
 
     renderResultadoAcessos({
@@ -2514,7 +2164,7 @@ document.getElementById('btn-redefinir-senha-responsavel').onclick = async () =>
     document.getElementById('ga-feedback').innerHTML =
       `<span style="color:#d6ffe9;font-weight:800;">${escapeHtml(data?.mensagem || 'Senha redefinida com sucesso.')}</span>
        <div style="margin-top:8px;">
-         Nova senha do responsável: <b style="color:#fff;">${escapeHtml(data?.acesso?.senha || '—')}</b>
+         Nova senha do responsável: <b style="color:#0f172a;">${escapeHtml(data?.acesso?.senha || '—')}</b>
        </div>`;
 
     renderResultadoAcessos({
@@ -2793,16 +2443,16 @@ document.getElementById('btn-redefinir-senha-responsavel').onclick = async () =>
               ].filter(Boolean).join(' | ')
             : '';
 
-          return `<tr style="border-bottom:1px solid rgba(170,200,240,.12);">
+          return `<tr style="border-bottom:1px solid #e2e8f0;">
             <td style="padding:10px 12px;">
-              <b style="color:#fff;">${escapeHtml(u.nome || '—')}</b>
-              <div style="font-size:12px; color:rgba(236,242,255,.62); margin-top:2px;">${escapeHtml(u.email || '')}</div>
+              <b style="color:#0f172a;">${escapeHtml(u.nome || '—')}</b>
+              <div style="font-size:12px; color:#64748b; margin-top:2px;">${escapeHtml(u.email || '')}</div>
             </td>
             <td style="padding:10px 12px;"><span class="tag">${escapeHtml(u.tipo || '—')}</span></td>
             <td style="padding:10px 12px;">
               <span class="badge-active ${ativo ? '' : 'badge-inactive'}"><span class="b"></span>${ativo ? 'Ativo' : 'Inativo'}</span>
             </td>
-            <td style="padding:10px 12px; font-size:12px; color:rgba(236,242,255,.70);">
+            <td style="padding:10px 12px; font-size:12px; color:#64748b;">
               ${escopo ? escapeHtml(escopo) : '<span style="opacity:.45;">—</span>'}
             </td>
             <td style="padding:10px 12px;">
