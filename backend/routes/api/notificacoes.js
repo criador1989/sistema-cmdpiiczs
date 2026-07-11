@@ -1251,8 +1251,8 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
         aluno tipo tipoMedida data status valorNumerico quantidadeDias
         notaAnterior notaAtual classificacaoAnterior classificacaoAtual
         comentarioMonitor numeroSequencial entregue prazoDevolucao
-        devolvidoPeloAluno devolvidaEm entregueEm natureza mensagemEnviada
-        deferidoEm arquivada ativo artigo paragrafo inciso classificacaoRegulamento motivo
+        devolvidoPeloAluno devolvidaEm entregueEm natureza mensagemEnviada mensagemEnviadaEm
+        responsavelCiencia deferidoEm arquivada ativo artigo paragrafo inciso classificacaoRegulamento motivo
       `)
       .populate({
         path: 'aluno',

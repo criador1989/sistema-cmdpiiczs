@@ -1267,6 +1267,12 @@
         }
 
         const devolvida = n.devolvidoPeloAluno ? `<span class="badge">📥 Devolvida</span>` : '';
+        const rc = n.responsavelCiencia || {};
+        const cienciaBadges = String(n.status || '').toLowerCase() === 'deferido' ? `
+          <span class="badge">${n.mensagemEnviada || rc.notificado ? '📧 E-mail enviado' : '📭 E-mail pendente'}</span>
+          <span class="badge">${rc.visualizou ? '👁️ Responsável visualizou' : '👁️ Não visualizado'}</span>
+          <span class="badge">${rc.confirmouCiencia ? '✅ Ciência confirmada' : '⚠️ Ciência pendente'}</span>
+        ` : '';
 
         return `
           <div>
@@ -1278,6 +1284,7 @@
             <span class="badge">Nota: ${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</span>
             <span class="badge">Faixa: ${classificacaoAtual}</span>
             ${devolvida}
+            ${cienciaBadges}
             ${entregueBox}
           </div>
         `;
@@ -1338,6 +1345,18 @@
                 </div>
               ` : '';
 
+              const rc = det.responsavelCiencia || {};
+              const cienciaDetalhe = deferida ? `
+                <div class="n-kv">
+                  <b>Ciência digital do responsável</b>
+                  <div class="hint">E-mail: ${rc.email || '—'}</div>
+                  <div class="hint">${rc.notificado || det.mensagemEnviada ? `📧 Enviado em ${axDateTimeBR(rc.notificadoEm || det.mensagemEnviadaEm)}` : '📭 E-mail ainda não enviado/registrado'}</div>
+                  <div class="hint">${rc.visualizou ? `👁️ Visualizado em ${axDateTimeBR(rc.visualizouEm)}` : '👁️ Ainda não visualizado'}</div>
+                  <div class="hint">${rc.confirmouCiencia ? `✅ Ciência confirmada em ${axDateTimeBR(rc.confirmouCienciaEm)}` : '⚠️ Ciência ainda pendente'}</div>
+                  ${rc.resposta ? `<div class="hint">Resposta/observação: ${rc.resposta}</div>` : ''}
+                </div>
+              ` : '';
+
               const devolucaoActions = deferida && modoAtual !== 'antigas' ? `
                 <div class="actions">
                   ${!det.entregue ? `<button class="comunicacao-btn" onclick="marcarEntregue('${det._id}', this)">Marcar ENTREGUE</button>` : ''}
@@ -1382,6 +1401,7 @@ body.innerHTML = `
     <div class="n-kv"><b>Nota</b>${fmtValor(faixa.antes)} → ${fmtValor(faixa.depois)}</div>
     <div class="n-kv"><b>Classificação</b>${classificacaoAnterior} → ${classificacaoAtual}</div>
     ${entregueDetalhe}
+    ${cienciaDetalhe}
   </div>
 
   ${reviewBanner}

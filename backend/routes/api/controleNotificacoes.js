@@ -1,6 +1,7 @@
 // backend/routes/api/controleNotificacoes.js
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 
 const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
@@ -151,7 +152,7 @@ function assuntoDeferido(aluno, _notif, contexto = {}) {
   return `Notificação deferida | ${nome} | ${prefixo}`;
 }
 
-function htmlDeferido(aluno, notif, contexto = {}) {
+function htmlDeferido(aluno, notif, contexto = {}, linkCiencia = '') {
   const nome = aluno?.nome || '';
   const turma = aluno?.turma || '';
   const tipo = notif?.tipo || notif?.tipoMedida || '—';
@@ -205,6 +206,23 @@ function htmlDeferido(aluno, notif, contexto = {}) {
                 </tr>
               </table>
 
+              ${linkCiencia ? `
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:18px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${escapeHtml(linkCiencia)}"
+                       style="display:inline-block;background:#8B0000;color:#ffffff;text-decoration:none;padding:13px 22px;border-radius:9px;font-weight:700;">
+                      Visualizar e confirmar ciência
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 14px 0;font-size:13px;line-height:1.5;color:#6b6f76;">
+                Este link é individual e possui validade temporária. Ao acessar, o sistema registrará a visualização e permitirá a confirmação de ciência pelo responsável.
+              </p>
+              ` : ''}
+
               <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;">
                 Estamos à disposição para quaisquer esclarecimentos.
               </p>
@@ -241,6 +259,163 @@ function textoCurtoDeferido(aluno, notif, contexto = {}) {
     `Estamos à disposição. — ${assinatura}`
   ].join('\n');
 }
+
+function getBaseUrl(req) {
+  const envUrl =
+    process.env.PUBLIC_BASE_URL ||
+    process.env.APP_URL ||
+    process.env.BASE_URL ||
+    '';
+
+  if (envUrl) return String(envUrl).replace(/\/+$/, '');
+
+  return `${req.protocol}://${req.get('host')}`;
+}
+
+function gerarTokenResponsavel() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function gerarExpiracaoToken(dias = 15) {
+  const expira = new Date();
+  expira.setDate(expira.getDate() + Number(dias || 15));
+  expira.setHours(23, 59, 59, 999);
+  return expira;
+}
+
+function montarLinkCienciaNotificacao(req, token) {
+  return `${getBaseUrl(req)}/notificacao-responsavel.html?token=${encodeURIComponent(token)}`;
+}
+
+function getClientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || req.ip || req.connection?.remoteAddress || '';
+}
+
+/* ============================================================
+   🔹 ROTAS PÚBLICAS — Ciência digital da notificação
+   ============================================================ */
+router.get('/publico/:token', async (req, res) => {
+  try {
+    const token = String(req.params.token || '').trim();
+
+    if (!token) {
+      return res.status(400).json({ message: 'Token ausente.' });
+    }
+
+    const notificacao = await Notificacao.findOne({
+      tokenResponsavel: token,
+      ativo: { $ne: false }
+    })
+      .populate('aluno', 'nome turma')
+      .lean();
+
+    if (!notificacao) {
+      return res.status(404).json({ message: 'Link inválido ou não encontrado.' });
+    }
+
+    if (
+      notificacao.tokenResponsavelExpiraEm &&
+      new Date(notificacao.tokenResponsavelExpiraEm) < new Date()
+    ) {
+      return res.status(410).json({ message: 'Este link expirou.' });
+    }
+
+    let responsavelCiencia = notificacao.responsavelCiencia || {};
+
+    if (!responsavelCiencia.visualizou) {
+      responsavelCiencia = {
+        ...responsavelCiencia,
+        visualizou: true,
+        visualizouEm: new Date()
+      };
+
+      await Notificacao.updateOne(
+        { _id: notificacao._id },
+        {
+          $set: {
+            'responsavelCiencia.visualizou': true,
+            'responsavelCiencia.visualizouEm': responsavelCiencia.visualizouEm
+          }
+        }
+      );
+    }
+
+    return res.json({
+      ok: true,
+      notificacao: {
+        _id: notificacao._id,
+        numeroSequencial: notificacao.numeroSequencial,
+        natureza: notificacao.natureza,
+        status: notificacao.status,
+        data: notificacao.data,
+        tipo: notificacao.tipo,
+        tipoMedida: notificacao.tipoMedida,
+        motivo: notificacao.motivo,
+        observacao: notificacao.observacao,
+        artigo: notificacao.artigo,
+        paragrafo: notificacao.paragrafo,
+        inciso: notificacao.inciso,
+        aluno: notificacao.aluno,
+        responsavelCiencia
+      }
+    });
+  } catch (err) {
+    console.error('[CTRL-NOTIF][PUBLICO][GET]', err);
+    return res.status(500).json({ message: 'Erro ao consultar notificação.' });
+  }
+});
+
+router.post('/publico/:token/confirmar-ciencia', async (req, res) => {
+  try {
+    const token = String(req.params.token || '').trim();
+    const resposta = String(req.body?.resposta || '').trim();
+
+    if (!token) {
+      return res.status(400).json({ message: 'Token ausente.' });
+    }
+
+    const notificacao = await Notificacao.findOne({
+      tokenResponsavel: token,
+      ativo: { $ne: false }
+    });
+
+    if (!notificacao) {
+      return res.status(404).json({ message: 'Link inválido.' });
+    }
+
+    if (
+      notificacao.tokenResponsavelExpiraEm &&
+      new Date(notificacao.tokenResponsavelExpiraEm) < new Date()
+    ) {
+      return res.status(410).json({ message: 'Este link expirou.' });
+    }
+
+    const visualizouEmAtual =
+      notificacao.responsavelCiencia?.visualizouEm ||
+      new Date();
+
+    notificacao.responsavelCiencia = {
+      ...(notificacao.responsavelCiencia || {}),
+      visualizou: true,
+      visualizouEm: visualizouEmAtual,
+      confirmouCiencia: true,
+      confirmouCienciaEm: new Date(),
+      resposta: resposta || notificacao.responsavelCiencia?.resposta || '',
+      ipCiencia: getClientIp(req),
+      userAgentCiencia: req.headers['user-agent'] || ''
+    };
+
+    notificacao.tokenResponsavelUsadoEm = new Date();
+
+    await notificacao.save();
+
+    return res.json({ ok: true, message: 'Ciência confirmada com sucesso.' });
+  } catch (err) {
+    console.error('[CTRL-NOTIF][PUBLICO][CIENCIA]', err);
+    return res.status(500).json({ message: 'Erro ao confirmar ciência.' });
+  }
+});
 
 /* ============================================================
    🔹 LISTAR notificações para controle
@@ -353,21 +528,66 @@ router.put('/:id/deferir', autenticar, async (req, res) => {
     const instituicaoEfetiva = aluno?.instituicao || req.usuario?.instituicao || null;
     const contexto = await carregarContextoInstitucional(instituicaoEfetiva);
 
+    const emailResponsavel = String(aluno?.contatos?.emailResponsavel || '').trim();
+    const telefoneResponsavel = firstNonEmpty(
+      aluno?.contatos?.telefoneResponsavel,
+      aluno?.contatos?.whatsapp,
+      aluno?.telefone
+    );
+
+    const tokenResponsavel = gerarTokenResponsavel();
+    const tokenResponsavelExpiraEm = gerarExpiracaoToken(15);
+    const linkCiencia = montarLinkCienciaNotificacao(req, tokenResponsavel);
+
+    notificacao.tokenResponsavel = tokenResponsavel;
+    notificacao.tokenResponsavelExpiraEm = tokenResponsavelExpiraEm;
+    notificacao.tokenResponsavelUsadoEm = null;
+    notificacao.deferidoEm = notificacao.deferidoEm || new Date();
+
+    notificacao.responsavelCiencia = {
+      ...(notificacao.responsavelCiencia || {}),
+      telefone: notificacao.responsavelCiencia?.telefone || telefoneResponsavel || '',
+      email: emailResponsavel || notificacao.responsavelCiencia?.email || '',
+      notificado: Boolean(emailResponsavel),
+      notificadoEm: emailResponsavel
+        ? new Date()
+        : notificacao.responsavelCiencia?.notificadoEm || null,
+      visualizou: false,
+      visualizouEm: null,
+      confirmouCiencia: false,
+      confirmouCienciaEm: null,
+      resposta: '',
+      ipCiencia: '',
+      userAgentCiencia: ''
+    };
+
+    notificacao.mensagemEnviada = Boolean(emailResponsavel);
+    notificacao.mensagemEnviadaEm = emailResponsavel
+      ? new Date()
+      : notificacao.mensagemEnviadaEm || null;
+
+    await notificacao.save();
+
     try {
       if (mensageria && aluno) {
         comunicacao.tentou = true;
 
         const assunto = assuntoDeferido(aluno, notificacao, contexto);
-        const html = htmlDeferido(aluno, notificacao, contexto);
-        const texto = textoCurtoDeferido(aluno, notificacao, contexto);
+        const html = htmlDeferido(aluno, notificacao, contexto, linkCiencia);
+        const texto = [
+          textoCurtoDeferido(aluno, notificacao, contexto),
+          '',
+          'Para visualizar e confirmar ciência, acesse:',
+          linkCiencia
+        ].join('\n');
 
-        if (aluno?.contatos?.emailResponsavel) {
+        if (emailResponsavel) {
           try {
             comunicacao.resultados.email = await mensageria.enviarEmail(
               { ...aluno, instituicao: instituicaoEfetiva },
               'Deferido',
               html,
-              aluno.contatos.emailResponsavel,
+              emailResponsavel,
               assunto
             );
           } catch (e) {

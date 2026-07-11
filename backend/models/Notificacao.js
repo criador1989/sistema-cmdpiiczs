@@ -227,6 +227,93 @@ const notificacaoSchema = new mongoose.Schema({
     default: null
   },
 
+  /* =========================
+     CIÊNCIA DIGITAL DO RESPONSÁVEL
+     - Usado para controle de e-mail, visualização e confirmação de ciência.
+  ========================= */
+  responsavelCiencia: {
+    nome: {
+      type: String,
+      trim: true
+    },
+    parentesco: {
+      type: String,
+      trim: true
+    },
+    telefone: {
+      type: String,
+      trim: true
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+
+    notificado: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    notificadoEm: {
+      type: Date,
+      default: null
+    },
+
+    visualizou: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    visualizouEm: {
+      type: Date,
+      default: null
+    },
+
+    confirmouCiencia: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    confirmouCienciaEm: {
+      type: Date,
+      default: null
+    },
+
+    ipCiencia: {
+      type: String,
+      trim: true
+    },
+
+    userAgentCiencia: {
+      type: String,
+      trim: true
+    },
+
+    resposta: {
+      type: String,
+      trim: true
+    }
+  },
+
+  tokenResponsavel: {
+    type: String,
+    trim: true,
+    default: null,
+    index: true
+  },
+
+  tokenResponsavelExpiraEm: {
+    type: Date,
+    default: null,
+    index: true
+  },
+
+  tokenResponsavelUsadoEm: {
+    type: Date,
+    default: null
+  },
+
   entregue: {
     type: Boolean,
     default: false,
@@ -358,12 +445,12 @@ const notificacaoSchema = new mongoose.Schema({
   },
 
   documentoDigital: {
-  tipo: String,
-  hash: String,
-  hashAssinatura: String,
-  assinadoPorNome: String,
-  assinadoEm: Date
-}
+    tipo: String,
+    hash: String,
+    hashAssinatura: String,
+    assinadoPorNome: String,
+    assinadoEm: Date
+  }
 
 }, {
   timestamps: true
@@ -428,6 +515,11 @@ notificacaoSchema.index(
 notificacaoSchema.index(
   { tenantId: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 },
   { name: 'idx_notificacao_tenant_status_devolucao_arquivada_createdAt' }
+);
+
+notificacaoSchema.index(
+  { tokenResponsavel: 1, tokenResponsavelExpiraEm: 1 },
+  { name: 'idx_notificacao_token_responsavel' }
 );
 
 /* =========================
