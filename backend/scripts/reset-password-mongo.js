@@ -2,21 +2,23 @@
 // Uso: ajustar MONGO_URI e opcionalmente DB_NAME, depois: node reset-password-mongo.js
 // Requer: npm install mongodb bcryptjs
 
+require('dotenv').config();
+
 const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { generateTemporaryPassword } = require('../utils/passwordPolicy');
 
 // ========== CONFIGURE AQUI ==========
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://<usuario>:<senha>@localhost:27017'; // substitua pela sua string
-const DB_NAME = process.env.DB_NAME || 'nomeDoSeuDB'; // ex: 'sistema_escolar'
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGO_URL;
+const DB_NAME = process.env.DB_NAME || 'colegiomilitar';
 const USERS_COLLECTION = process.env.USERS_COLLECTION || 'usuarios';
 // Identificador do usuário que você enviou
 const USER_ID = '685059970ca9cf93c0730239'; // já preenchido com o _id que você forneceu
 // =====================================
 
-if (!MONGO_URI || MONGO_URI.includes('<usuario>')) {
-  console.error('⚠️  ATENÇÃO: configure a variável MONGO_URI no arquivo ou exporte-a no ambiente.');
+if (!MONGO_URI) {
+  console.error('⚠️  ATENÇÃO: defina MONGODB_URI, MONGO_URI ou MONGO_URL no ambiente.');
   process.exit(1);
 }
 

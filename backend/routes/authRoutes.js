@@ -8,6 +8,11 @@ const crypto = require('crypto');
 const router = express.Router();
 
 const Usuario = require('../models/Usuario');
+const {
+  resolverUsuarioNoTenant,
+  listarAmbientesDoUsuario,
+  listarAmbientesPorEmail,
+} = require('../services/usuarioVinculos');
 let Instituicao = null;
 let Aluno = null;
 
@@ -120,22 +125,22 @@ async function findInstituicaoByTenant(t) {
 
   if (isObjectIdLike(tenantRaw)) {
     const byId =
-      (await Instituicao.findOne({ _id: tenantRaw, ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
-      (await Instituicao.findOne({ _id: tenantRaw }).select('_id nome sigla slug ativo').lean().catch(() => null));
+      (await Instituicao.findOne({ _id: tenantRaw, ativo: true }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null)) ||
+      (await Instituicao.findOne({ _id: tenantRaw }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null));
     if (byId) return byId;
   }
 
   for (const candidate of candidates) {
     const bySlug =
-      (await Instituicao.findOne({ slug: String(candidate).toLowerCase(), ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
-      (await Instituicao.findOne({ slug: String(candidate).toLowerCase() }).select('_id nome sigla slug ativo').lean().catch(() => null));
+      (await Instituicao.findOne({ slug: String(candidate).toLowerCase(), ativo: true }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null)) ||
+      (await Instituicao.findOne({ slug: String(candidate).toLowerCase() }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null));
     if (bySlug) return bySlug;
   }
 
   for (const candidate of candidates) {
     const bySigla =
-      (await Instituicao.findOne({ sigla: String(candidate).toUpperCase(), ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null)) ||
-      (await Instituicao.findOne({ sigla: String(candidate).toUpperCase() }).select('_id nome sigla slug ativo').lean().catch(() => null));
+      (await Instituicao.findOne({ sigla: String(candidate).toUpperCase(), ativo: true }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null)) ||
+      (await Instituicao.findOne({ sigla: String(candidate).toUpperCase() }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null));
     if (bySigla) return bySigla;
   }
 
@@ -148,10 +153,10 @@ async function getDefaultInstituicao() {
   const byDefaultSlug = await findInstituicaoByTenant(DEFAULT_TENANT_SLUG);
   if (byDefaultSlug) return byDefaultSlug;
 
-  const ativa = await Instituicao.findOne({ ativo: true }).select('_id nome sigla slug ativo').lean().catch(() => null);
+  const ativa = await Instituicao.findOne({ ativo: true }).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null);
   if (ativa) return ativa;
 
-  const qualquer = await Instituicao.findOne({}).select('_id nome sigla slug ativo').lean().catch(() => null);
+  const qualquer = await Instituicao.findOne({}).select('_id nome sigla slug ativo categoriaInstituicao modulosAtivos associacaoConfig logoUrl').lean().catch(() => null);
   if (qualquer) return qualquer;
 
   return null;
@@ -185,20 +190,18 @@ async function resolveInstituicaoOnlyIfTenantProvided(req) {
 
 function buildJwtPayload(usuario) {
   const payload = {
-    id: String(usuario._id),
+    id: String(usuario._id || usuario.id),
     tipo: usuario.tipo,
     nome: usuario.nome,
-    instituicao: String(usuario.instituicao || ''),
+    instituicao: String(usuario.instituicao || usuario.tenantId || ''),
+    tenantId: String(usuario.tenantId || usuario.instituicao || ''),
     email: String(usuario.email || '').toLowerCase(),
   };
 
-  if (usuario.alunoId) {
-    payload.alunoId = String(usuario.alunoId);
-  }
-
-  if (usuario.escopoObservatorio) {
-    payload.escopoObservatorio = usuario.escopoObservatorio;
-  }
+  if (usuario.vinculoId) payload.vinculoId = String(usuario.vinculoId);
+  if (usuario.alunoId) payload.alunoId = String(usuario.alunoId);
+  if (usuario.escopoObservatorio) payload.escopoObservatorio = usuario.escopoObservatorio;
+  if (usuario.acessosModulos) payload.acessosModulos = usuario.acessosModulos;
 
   if (usuario.portal) {
     payload.portal = String(usuario.portal);
@@ -242,6 +245,15 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
     redirecionar = `/ficha-aluno.html?id=${String(usuario.alunoId)}`;
   }
 
+  const associacaoAtiva =
+    inst?.categoriaInstituicao === 'associacao' ||
+    inst?.associacaoConfig?.ativo === true ||
+    (Array.isArray(inst?.modulosAtivos) && inst.modulosAtivos.includes('associacao'));
+  const acessoAssociacao = usuario?.acessosModulos?.associacao;
+  if (associacaoAtiva && (acessoAssociacao?.ativo === true || usuario.tipo === 'admin')) {
+    redirecionar = '/associacao.html';
+  }
+
   return {
     mensagem: 'Login realizado com sucesso.',
     redirecionar,
@@ -260,14 +272,18 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
     : usuario.tipo === 'responsavel'
       ? 'responsavel'
       : 'institucional'),
-      escopoObservatorio: usuario.escopoObservatorio || null
+      escopoObservatorio: usuario.escopoObservatorio || null,
+      associacaoAcesso: usuario.acessosModulos?.associacao || null
     },
     aluno: buildAlunoPublicData(aluno),
     instituicao: inst ? {
       id: String(inst._id),
       nome: inst.nome,
       sigla: inst.sigla,
-      slug: inst.slug
+      slug: inst.slug,
+      logoUrl: inst.logoUrl || null,
+      categoriaInstituicao: inst.categoriaInstituicao || 'escola',
+      associacaoAtiva
     } : undefined,
     tenant: tenantCookie,
     portal:
@@ -282,46 +298,41 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
 
 async function doLoginForInstituicao(req, res, { email, senha, inst, portal = 'institucional' }) {
   const instituicaoId = inst?._id ? String(inst._id) : null;
+  if (!instituicaoId) {
+    return res.status(400).json({ mensagem: 'Instituição não encontrada para o login.' });
+  }
 
-  const filtrosBase = {
+  const tiposPermitidos = portal === 'aluno'
+    ? ['aluno']
+    : TIPOS_LOGIN_INSTITUCIONAL;
+
+  const resolvido = await resolverUsuarioNoTenant({
     email,
-    ...(instituicaoId ? { instituicao: instituicaoId } : {}),
-    $or: [{ ativo: true }, { ativo: { $exists: false } }],
-  };
+    instituicaoId,
+    comSenha: true,
+    tiposPermitidos,
+  });
 
-  if (portal === 'aluno') {
-    filtrosBase.tipo = 'aluno';
-  } else {
-    filtrosBase.tipo = { $in: TIPOS_LOGIN_INSTITUCIONAL };
-  }
-
-  const usuario = await Usuario.findOne(filtrosBase)
-    .select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
-
-  if (!usuario) {
+  if (!resolvido?.usuario || !resolvido?.efetivo) {
     if (portal === 'aluno') {
-      return res.status(401).json({
-        mensagem: 'Acesso do aluno não encontrado nesta instituição.',
-      });
+      return res.status(401).json({ mensagem: 'Acesso do aluno não encontrado nesta instituição.' });
     }
-
-    if (instituicaoId) {
-      return res.status(401).json({
-        mensagem: 'Usuário não encontrado nesta instituição. Verifique se você está no link correto (instituição).',
-      });
-    }
-
-    return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
+    return res.status(401).json({
+      mensagem: 'Usuário não encontrado nesta instituição ou sem vínculo ativo. Verifique se você está no link correto.',
+    });
   }
 
-  if (usuario.emailVerificado === false) {
+  const identidade = resolvido.usuario;
+  const usuario = resolvido.efetivo;
+
+  if (identidade.emailVerificado === false) {
     return res.status(403).json({
       code: 'EMAIL_NOT_VERIFIED',
       mensagem: 'Conta não confirmada. Verifique seu e-mail para liberar o acesso.',
     });
   }
 
-  const senhaValida = await bcrypt.compare(String(senha || ''), usuario.senha);
+  const senhaValida = await bcrypt.compare(String(senha || ''), identidade.senha);
   if (!senhaValida) {
     return res.status(401).json({ mensagem: 'Senha incorreta.' });
   }
@@ -368,7 +379,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
       instituicao: instituicaoId,
       tipo: { $in: ['aluno', 'responsavel'] },
       $or: [{ ativo: true }, { ativo: { $exists: false } }]
-    }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
+    }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio acessosModulos');
   } else {
     if (!Aluno || typeof Aluno.findOne !== 'function') {
       return res.status(500).json({
@@ -393,7 +404,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
         instituicao: instituicaoId,
         tipo: 'aluno',
         $or: [{ ativo: true }, { ativo: { $exists: false } }]
-      }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
+      }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio acessosModulos');
     }
 
     if (!usuario) {
@@ -402,7 +413,7 @@ async function doLoginAluno(req, res, { login, senha, inst }) {
         instituicao: instituicaoId,
         tipo: 'aluno',
         $or: [{ ativo: true }, { ativo: { $exists: false } }]
-      }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio');
+      }).select('+senha nome email tipo instituicao tenantId emailVerificado alunoId portal ativo escopoObservatorio acessosModulos');
     }
 
     if (!usuario) {
@@ -493,7 +504,9 @@ router.get('/me', autenticar, (req, res) => {
     email: req.usuario.email || null,
     alunoId: req.usuario.alunoId || null,
     portal: req.usuario.portal || null,
-    escopoObservatorio: req.usuario.escopoObservatorio || null
+    escopoObservatorio: req.usuario.escopoObservatorio || null,
+    associacao: req.usuario.associacaoAcesso || null,
+    vinculoId: req.usuario.vinculoId || null
   });
 });
 
@@ -537,16 +550,14 @@ router.post('/login', async (req, res) => {
 
     if (!instFromTenant?._id) {
       const defaultInst = await findInstituicaoByTenant(DEFAULT_TENANT_SLUG);
-
       if (defaultInst?._id) {
-        const usuarioDefault = await Usuario.findOne({
+        const acessoDefault = await resolverUsuarioNoTenant({
           email,
-          instituicao: String(defaultInst._id),
-          tipo: { $in: TIPOS_LOGIN_INSTITUCIONAL },
-          $or: [{ ativo: true }, { ativo: { $exists: false } }],
-        }).select('_id');
-
-        if (usuarioDefault) {
+          instituicaoId: String(defaultInst._id),
+          comSenha: false,
+          tiposPermitidos: TIPOS_LOGIN_INSTITUCIONAL,
+        });
+        if (acessoDefault) {
           return await doLoginForInstituicao(req, res, {
             email,
             senha,
@@ -556,51 +567,34 @@ router.post('/login', async (req, res) => {
         }
       }
 
-      const encontrados = await Usuario.find({
-        email,
-        tipo: { $in: TIPOS_LOGIN_INSTITUCIONAL },
-        $or: [{ ativo: true }, { ativo: { $exists: false } }],
-      }).select('_id instituicao emailVerificado tipo nome').lean();
+      const ambientes = await listarAmbientesPorEmail(email);
+      const institucionais = ambientes.filter(item => TIPOS_LOGIN_INSTITUCIONAL.includes(item.tipo));
 
-      if (!encontrados?.length) {
+      if (!institucionais.length) {
         return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
       }
 
-      const instIds = [...new Set(encontrados.map(u => String(u.instituicao || '')).filter(Boolean))];
-
-      if (instIds.length > 1 && Instituicao) {
-        const insts = await Instituicao.find({ _id: { $in: instIds } })
-          .select('_id nome sigla slug')
-          .lean()
-          .catch(() => []);
-
+      if (institucionais.length > 1) {
         return res.status(409).json({
           code: 'AMBIGUOUS_TENANT',
-          mensagem: 'Seu e-mail existe em mais de uma instituição. Selecione a instituição para entrar.',
-          instituicoes: (insts || []).map(i => ({
-            id: String(i._id),
-            nome: i.nome,
-            sigla: i.sigla || null,
-            slug: i.slug || null,
-            tenant: i.slug || String(i._id),
+          mensagem: 'Seu e-mail possui acesso a mais de um ambiente. Selecione a instituição para entrar.',
+          instituicoes: institucionais.map(item => ({
+            id: item.instituicaoId,
+            nome: item.nome,
+            sigla: item.sigla || null,
+            slug: item.tenant || null,
+            tenant: item.tenant,
+            categoria: item.categoria,
           })),
         });
       }
 
-      const onlyId = instIds[0];
-      if (!onlyId) {
-        return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
-      }
-
-      let instLoaded = null;
-      if (Instituicao) {
-        instLoaded = await Instituicao.findOne({ _id: onlyId }).select('_id nome sigla slug').lean().catch(() => null);
-      }
-
+      const unico = institucionais[0];
+      const instLoaded = await findInstituicaoByTenant(unico.tenant || unico.instituicaoId);
       return await doLoginForInstituicao(req, res, {
         email,
         senha,
-        inst: instLoaded || { _id: onlyId },
+        inst: instLoaded || { _id: unico.instituicaoId, slug: unico.tenant },
         portal: 'institucional'
       });
     }
@@ -662,22 +656,82 @@ router.post('/login-aluno', async (req, res) => {
 });
 
 /**
+ * GET /auth/ambientes
+ * Lista os ambientes aos quais a identidade autenticada possui acesso.
+ */
+router.get('/ambientes', autenticar, async (req, res) => {
+  try {
+    const ambientes = await listarAmbientesDoUsuario(req.usuario.id);
+    return res.json({
+      ambienteAtual: String(req.usuario.instituicao || ''),
+      vinculoAtual: req.usuario.vinculoId || null,
+      ambientes,
+    });
+  } catch (error) {
+    console.error('Erro /auth/ambientes:', error);
+    return res.status(500).json({ mensagem: 'Não foi possível listar seus ambientes.' });
+  }
+});
+
+/**
+ * POST /auth/trocar-ambiente
+ * Emite uma nova sessão para outro vínculo ativo da mesma identidade.
+ */
+router.post('/trocar-ambiente', autenticar, async (req, res) => {
+  try {
+    const tenant = String(req.body?.tenant || req.body?.t || req.body?.instituicaoId || '').trim();
+    if (!tenant) return res.status(400).json({ mensagem: 'Informe o ambiente de destino.' });
+
+    const inst = await findInstituicaoByTenant(tenant);
+    if (!inst?._id) return res.status(404).json({ mensagem: 'Ambiente não encontrado.' });
+
+    const identidade = await Usuario.findById(req.usuario.id).select('email ativo').lean();
+    if (!identidade || identidade.ativo === false) {
+      return res.status(403).json({ mensagem: 'Usuário não encontrado ou inativo.' });
+    }
+
+    const resolvido = await resolverUsuarioNoTenant({
+      email: identidade.email,
+      instituicaoId: String(inst._id),
+      comSenha: false,
+      tiposPermitidos: null,
+    });
+    if (!resolvido?.efetivo) {
+      return res.status(403).json({ mensagem: 'Você não possui vínculo ativo com este ambiente.' });
+    }
+
+    const usuario = resolvido.efetivo;
+    const tokenNovo = jwt.sign(buildJwtPayload(usuario), process.env.JWT_SECRET, { expiresIn: '2h' });
+    setAuthCookie(res, tokenNovo);
+    setTenantCookie(res, inst.slug || String(inst._id));
+
+    const resposta = buildLoginResponse({ usuario, inst, token: tokenNovo });
+    return res.json({
+      mensagem: 'Ambiente alterado com sucesso.',
+      redirecionar: resposta.redirecionar,
+      tenant: resposta.tenant,
+      instituicao: resposta.instituicao,
+      usuario: resposta.usuario,
+    });
+  } catch (error) {
+    console.error('Erro /auth/trocar-ambiente:', error);
+    return res.status(500).json({ mensagem: 'Não foi possível trocar de ambiente.' });
+  }
+});
+
+/**
  * GET /auth/usuario-logado
  */
 router.get('/usuario-logado', autenticar, async (req, res) => {
   try {
-    const usuario = await Usuario.findById(req.usuario.id)
-      .select('-senha -__v')
-      .populate('instituicao', 'nome sigla slug');
-
-    if (!usuario) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
-
-    res.json(usuario);
+    const ambientes = await listarAmbientesDoUsuario(req.usuario.id);
+    return res.json({
+      ...req.usuario,
+      ambientes,
+    });
   } catch (error) {
     console.error('Erro /auth/usuario-logado:', error);
-    res.status(500).json({ mensagem: 'Erro ao buscar usuário logado.' });
+    return res.status(500).json({ mensagem: 'Erro ao buscar usuário logado.' });
   }
 });
 

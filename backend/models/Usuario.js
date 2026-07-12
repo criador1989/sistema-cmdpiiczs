@@ -168,6 +168,20 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
+    // Acessos modulares preservam o tipo institucional legado e permitem
+    // perfis específicos no Axoriin Associações sem quebrar o login atual.
+    acessosModulos: {
+      associacao: {
+        ativo: { type: Boolean, default: false, index: true },
+        perfil: {
+          type: String,
+          enum: ['presidente', 'vice_presidente', 'tesoureiro', 'secretario', 'conselho_fiscal', 'operador', 'consulta', null],
+          default: null,
+          index: true,
+        },
+      },
+    },
+
     // turmas vinculadas ao professor
     turmas: {
       type: [String],
@@ -232,6 +246,7 @@ usuarioSchema.index({ instituicao: 1, portal: 1, tipo: 1 });
 usuarioSchema.index({ tenantId: 1, portal: 1, tipo: 1 });
 usuarioSchema.index({ instituicao: 1, alunoId: 1 }, { sparse: true });
 usuarioSchema.index({ tenantId: 1, alunoId: 1 }, { sparse: true });
+usuarioSchema.index({ tenantId: 1, 'acessosModulos.associacao.ativo': 1, 'acessosModulos.associacao.perfil': 1 });
 usuarioSchema.index({
   tipo: 1,
   'escopoObservatorio.nivel': 1,

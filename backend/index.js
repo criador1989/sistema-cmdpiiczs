@@ -17,6 +17,7 @@ const { recalcularTodosAlunos } = require('./utils/recalculoComportamento');
 
 // 🚀 NOVO: SNAPSHOTS DE COMPORTAMENTO
 const { iniciarAgendadorSnapshotsComportamento } = require('./jobs/agendadorSnapshotsComportamento');
+const { iniciarAgendadorLembretesAssociacao } = require('./jobs/agendadorLembretesAssociacao');
 
 // ✅ NOVOS MIDDLEWARES / AUTH SUPERADMIN
 const resolveTenant = require('./middleware/resolveTenant');
@@ -129,7 +130,23 @@ console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
   'LivroOcorrencia',
   'LivroOcorrenciaExportacao',
   'SiteAnalyticsSession',
-  'SiteAnalyticsEvent'
+  'SiteAnalyticsEvent',
+  'AssociacaoPessoa',
+  'AssociacaoConta',
+  'AssociacaoCategoria',
+  'AssociacaoProjeto',
+  'AssociacaoMovimentacao',
+  'AssociacaoContribuicao',
+  'AssociacaoPagamento',
+  'AssociacaoRecibo',
+  'AssociacaoPatrimonio',
+  'AssociacaoDocumento',
+  'AssociacaoAnexo',
+  'AssociacaoMensagemModelo',
+  'AssociacaoCampanha',
+  'AssociacaoMensagemFila',
+  'AssociacaoLembreteConfig',
+  'AssociacaoLembreteEnvio'
 ].forEach(m => { try { require(`./models/${m}`); } catch {} });
 
 /* =========================
@@ -252,6 +269,11 @@ const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
 const siteAdminRoutes = require('./routes/api/siteAdmin');
 const sitePublicoRoutes = require('./routes/api/sitePublico');
 const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
+
+// Axoriin Associações — módulo multi-tenant
+const associacaoRoutes = require('./routes/api/associacao');
+const masterAssociacoesRoutes = require('./routes/api/masterAssociacoes');
+const { carregarContextoAssociacao } = require('./middleware/associacaoAuth');
 
 let masterInstituicoesRoutes = null;
 try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
@@ -527,6 +549,7 @@ function buildProfessorGuard(publicRoot) {
     '/monitor-ficha.html',
     '/ranking-alunos.html',
     '/master-instituicoes.html',
+    '/master-associacoes.html',
     '/rifas.html',
     '/livro-ocorrencias.html',
     '/configuracao-documentos.html'
@@ -617,7 +640,7 @@ function buildProfessorGuard(publicRoot) {
     if (!shouldCheck) return next();
 
     // ✅ Tratamento especial do painel master: não depende do login comum
-    if (p === '/master-instituicoes.html' || p === '/api/master' || p.startsWith('/api/master/')) {
+    if (p === '/master-instituicoes.html' || p === '/master-associacoes.html' || p === '/api/master' || p.startsWith('/api/master/')) {
       return next();
     }
 
@@ -649,6 +672,8 @@ app.get('/api/usuario', autenticar, (req, res) => {
     tipo: u.tipo || u.perfil || 'usuario',
     perfil: u.perfil || u.tipo || 'usuario',
     instituicao: u.instituicao || null,
+    tenantId: u.tenantId || u.instituicao || null,
+    associacao: u.associacaoAcesso || u.acessosModulos?.associacao || null,
   });
 });
 
@@ -658,6 +683,9 @@ app.get('/api/usuario-logado', autenticar, (req, res) => {
     id: u._id || u.id || null,
     nome: u.nome || u.login || 'Usuário',
     tipo: u.tipo || u.perfil || 'usuario',
+    instituicao: u.instituicao || null,
+    tenantId: u.tenantId || u.instituicao || null,
+    associacao: u.associacaoAcesso || u.acessosModulos?.associacao || null,
   });
 });
 
@@ -812,6 +840,11 @@ mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes, autenticar
 mountIf('/api/livro-ocorrencias', livroOcorrenciasRoutes, autenticar);
 
 /* =========================
+   🤝 AXORIIN ASSOCIAÇÕES
+   ========================= */
+mountIf('/api/associacao', associacaoRoutes, autenticar, carregarContextoAssociacao);
+
+/* =========================
    🌐 CMS SITE INSTITUCIONAL
    ========================= */
 
@@ -829,6 +862,7 @@ mountIf('/api/site-analytics', siteAnalyticsRoutes);
    ✅ MASTER INSTITUIÇÕES (SuperAdmin)
    ========================= */
 mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
+mountIf('/api/master/associacoes', masterAssociacoesRoutes, requireSuperAdmin);
 
 /* =========================
    ✅ FIX TEMPORÁRIO DE INSTITUIÇÃO LEGADA (SuperAdmin)
@@ -894,6 +928,10 @@ app.get('/superadmin-login.html', (_req, res) => {
 
 app.get('/master-instituicoes.html', requireSuperAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'master-instituicoes.html'));
+});
+
+app.get('/master-associacoes.html', requireSuperAdmin, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'master-associacoes.html'));
 });
 
 app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
@@ -1007,12 +1045,13 @@ app.get('/monitores.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(
 app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
 app.get('/livro-ocorrencias.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'livro-ocorrencias.html')));
 app.get('/configuracao-documentos.html', autenticar, exigirAdmin, (_req, res) => { return res.sendFile(path.join(publicRoot, 'configuracao-documentos.html'));});
+app.get('/associacao.html', autenticar, carregarContextoAssociacao, (_req, res) => res.sendFile(path.join(publicRoot, 'associacao.html')));
 
 /* =========================
    DIAGNÓSTICOS / ERRORS
    ========================= */
 app.get('/__version', (_req, res) =>
-  res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', builtAt: new Date().toISOString() })
+  res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', associacoes: '3.2.0', builtAt: new Date().toISOString() })
 );
 
 app.get('/healthz', (_req, res) => res.json({
@@ -1077,6 +1116,12 @@ async function connectMongo() {
 
       iniciarAgendadorSnapshotsComportamento();
       console.log('📊 Agendador de snapshots de comportamento iniciado');
+
+      iniciarAgendadorLembretesAssociacao({
+        mensageria: app.locals.mensageria || null,
+        intervalMs: Number(process.env.ASSOCIACAO_LEMBRETES_INTERVAL_MS || 15 * 60 * 1000),
+      });
+      console.log('✉️  Agendador de lembretes das associações iniciado');
 
       agendadorRecalculoIniciado = true;
     } catch (err) {

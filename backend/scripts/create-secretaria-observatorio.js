@@ -20,9 +20,13 @@ async function main() {
   await mongoose.connect(MONGO_URI);
   console.log('✅ Conectado ao MongoDB');
 
-  const email = 'secretaria@axoriin.com.br';
-  const senha = 'Axoriin2026';
-  const nome = 'Secretaria de Educação';
+  const email = String(process.env.SECRETARIA_EMAIL || '').trim().toLowerCase();
+  const senha = String(process.env.SECRETARIA_SENHA || '');
+  const nome = String(process.env.SECRETARIA_NOME || 'Secretaria de Educação').trim();
+
+  if (!email || !senha) {
+    throw new Error('Defina SECRETARIA_EMAIL e SECRETARIA_SENHA no ambiente antes de executar este script.');
+  }
 
   const instituicao =
     await Instituicao.findOne({ slug: 'cmdpii' }) ||
@@ -62,7 +66,7 @@ async function main() {
 
     console.log('✅ Usuário secretaria atualizado com sucesso.');
     console.log('E-mail:', email);
-    console.log('Senha:', senha);
+    console.log('Senha atualizada a partir da variável SECRETARIA_SENHA.');
     console.log('Instituição vinculada:', instituicao.nome);
     console.log('Tipo:', existente.tipo);
     return;

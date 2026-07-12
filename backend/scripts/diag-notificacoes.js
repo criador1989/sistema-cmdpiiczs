@@ -1,10 +1,18 @@
+'use strict';
+
+require('dotenv').config();
+
 // scripts/diag-notificacoes.js
 const mongoose = require('mongoose');
 
 // 🔧 ajuste o caminho se seu model exporta o mongoose.model('Notificacao', ...)
 const Notificacao = require('../models/Notificacao');
 
-const MONGO_URI = 'mongodb+srv://admin:admin123@cluster0.yyf7zhy.mongodb.net/colegiomilitar?retryWrites=true&w=majority';
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGO_URL;
+
+if (!MONGO_URI) {
+  throw new Error('Variável MONGODB_URI, MONGO_URI ou MONGO_URL não encontrada no ambiente.');
+}
 
 (async () => {
   try {

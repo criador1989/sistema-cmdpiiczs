@@ -164,6 +164,46 @@ const instituicaoSchema = new Schema(
     },
 
     // =========================
+    // ECOSSISTEMA / MÓDULOS AXORIIN
+    // =========================
+    categoriaInstituicao: {
+      type: String,
+      enum: ['escola', 'associacao', 'secretaria', 'empresa', 'outra'],
+      default: 'escola',
+      index: true,
+    },
+
+    instituicaoMatriz: {
+      type: Schema.Types.ObjectId,
+      ref: 'Instituicao',
+      default: null,
+      index: true,
+    },
+
+    modulosAtivos: {
+      type: [String],
+      default: [],
+      set: (arr) => Array.isArray(arr)
+        ? [...new Set(arr.map(v => String(v || '').trim().toLowerCase()).filter(Boolean))]
+        : [],
+    },
+
+    associacaoConfig: {
+      ativo: { type: Boolean, default: false, index: true },
+      plano: {
+        type: String,
+        enum: ['piloto', 'essencial', 'profissional', 'rede', 'personalizado'],
+        default: 'piloto',
+      },
+      limiteUsuarios: { type: Number, default: 10, min: 1 },
+      limiteArmazenamentoMb: { type: Number, default: 1024, min: 50 },
+      nomePresidente: { type: String, trim: true, default: null },
+      periodoMandato: { type: String, trim: true, default: null },
+      emailResposta: { type: String, trim: true, lowercase: true, default: null },
+      identidadeHerdadaDaMatriz: { type: Boolean, default: false },
+    },
+
+    // =========================
     // GOVERNANÇA DO OBSERVATÓRIO
     // =========================
     redeEnsino: {
@@ -211,6 +251,9 @@ instituicaoSchema.index({ ativa: 1, slug: 1 });
 instituicaoSchema.index({ ativo: 1, slug: 1 });
 instituicaoSchema.index({ estado: 1, municipio: 1, redeEnsino: 1, observatorioAtivo: 1, visivelParaSecretaria: 1 });
 instituicaoSchema.index({ ambienteTeste: 1, observatorioAtivo: 1 });
+instituicaoSchema.index({ categoriaInstituicao: 1, ativo: 1, slug: 1 });
+instituicaoSchema.index({ instituicaoMatriz: 1, categoriaInstituicao: 1, ativo: 1 });
+instituicaoSchema.index({ 'associacaoConfig.ativo': 1, ativo: 1 });
 
 /** Normalizações */
 instituicaoSchema.pre('validate', function (next) {
@@ -249,6 +292,15 @@ instituicaoSchema.pre('validate', function (next) {
     }
 
     aplicarProtecaoObservatorio(this);
+
+    if (this.categoriaInstituicao === 'associacao') {
+      this.observatorioAtivo = false;
+      this.visivelParaSecretaria = false;
+      if (!Array.isArray(this.modulosAtivos)) this.modulosAtivos = [];
+      if (!this.modulosAtivos.includes('associacao')) this.modulosAtivos.push('associacao');
+      if (!this.associacaoConfig) this.associacaoConfig = {};
+      this.associacaoConfig.ativo = true;
+    }
 
     next();
   } catch (e) {
@@ -308,6 +360,14 @@ instituicaoSchema.pre('findOneAndUpdate', function (next) {
 
     if (alvo.ambienteTeste === true) {
       alvo.visivelParaSecretaria = false;
+    }
+
+    if (alvo.categoriaInstituicao === 'associacao') {
+      alvo.observatorioAtivo = false;
+      alvo.visivelParaSecretaria = false;
+      const atuais = Array.isArray(alvo.modulosAtivos) ? alvo.modulosAtivos : [];
+      alvo.modulosAtivos = [...new Set([...atuais, 'associacao'])];
+      alvo['associacaoConfig.ativo'] = true;
     }
 
     this.setUpdate(update);
