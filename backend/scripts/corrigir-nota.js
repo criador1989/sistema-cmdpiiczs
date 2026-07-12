@@ -12,7 +12,7 @@
  *  node scripts/corrigir-nota.js --id 652fb8... --field "notas.matematica.b4" --value 9 --apply
  *
  * Informar conexão (se não houver .env):
- *  node scripts/corrigir-nota.js --nome "Wilckson..." --field "..." --value 8.7 --apply --uri "mongodb+srv://usuario:senha@host/db?..."
+ *  node scripts/corrigir-nota.js --nome "Wilckson..." --field "..." --value 8.7 --apply --uri "<MONGODB_URI>"
  */
 
 const path = require('path');

@@ -3,10 +3,17 @@
 const jwt = require('jsonwebtoken');
 
 let Usuario = null;
+let UsuarioVinculoInstituicao = null;
+let montarUsuarioEfetivo = null;
+
 try {
   Usuario = require('../models/Usuario');
+  UsuarioVinculoInstituicao = require('../models/UsuarioVinculoInstituicao');
+  ({ montarUsuarioEfetivo } = require('../services/usuarioVinculos'));
 } catch {
   Usuario = null;
+  UsuarioVinculoInstituicao = null;
+  montarUsuarioEfetivo = null;
 }
 
 function extrairToken(req) {
@@ -21,6 +28,10 @@ function extrairToken(req) {
   const headerToken = req.headers?.['x-access-token'];
 
   return cookieToken || bearerToken || headerToken || queryToken || null;
+}
+
+function sameId(a, b) {
+  return Boolean(a && b && String(a) === String(b));
 }
 
 async function autenticar(req, res, next) {
@@ -38,61 +49,81 @@ async function autenticar(req, res, next) {
       return res.status(401).json({ mensagem: 'Sessão inválida: id ausente no token.' });
     }
 
-    const tipo = String(payload.tipo || '').trim().toLowerCase();
-    const instituicao = String(payload.instituicao || '').trim();
-    const nome = payload.nome || null;
-
-    if (!instituicao) {
+    const instituicaoToken = String(payload.instituicao || payload.tenantId || '').trim();
+    if (!instituicaoToken) {
       return res.status(401).json({ mensagem: 'Sessão inválida: instituição ausente no token.' });
     }
 
-    let email = payload.email || payload.mail || payload.userEmail || null;
-    let turmas = Array.isArray(payload.turmas) ? payload.turmas : [];
-    let tenantId = payload.tenantId || null;
-    let escopoObservatorio = payload.escopoObservatorio || null;
+    let efetivo = {
+      _id: id,
+      id,
+      nome: payload.nome || null,
+      email: payload.email || payload.mail || payload.userEmail || null,
+      tipo: String(payload.tipo || '').trim().toLowerCase(),
+      instituicao: instituicaoToken,
+      tenantId: instituicaoToken,
+      turmas: Array.isArray(payload.turmas) ? payload.turmas : [],
+      alunoId: payload.alunoId || null,
+      portal: payload.portal || null,
+      escopoObservatorio: payload.escopoObservatorio || null,
+      acessosModulos: payload.acessosModulos || null,
+      vinculoId: payload.vinculoId || null,
+    };
 
     if (Usuario?.findById) {
       const usuarioDb = await Usuario.findById(id)
-        .select('email tipo instituicao tenantId nome turmas alunoId portal escopoObservatorio')
+        .select('email tipo instituicao tenantId nome turmas alunoId portal escopoObservatorio acessosModulos ativo')
         .lean()
         .catch(() => null);
 
-      if (usuarioDb) {
-        if (usuarioDb.email) email = usuarioDb.email;
-        if (usuarioDb.tipo) {
-          // banco prevalece se existir
-          payload.tipo = usuarioDb.tipo;
+      if (!usuarioDb || usuarioDb.ativo === false) {
+        return res.status(401).json({ mensagem: 'Usuário não encontrado ou inativo.' });
+      }
+
+      const instituicaoPrimaria = usuarioDb.instituicao || usuarioDb.tenantId;
+      const precisaVinculo = Boolean(payload.vinculoId) || !sameId(instituicaoPrimaria, instituicaoToken);
+
+      if (precisaVinculo) {
+        if (!UsuarioVinculoInstituicao || !montarUsuarioEfetivo) {
+          return res.status(401).json({ mensagem: 'Sessão multi-institucional indisponível.' });
         }
-        if (usuarioDb.nome) {
-          payload.nome = usuarioDb.nome;
+
+        const filtro = {
+          usuario: id,
+          instituicao: instituicaoToken,
+          ativo: true,
+        };
+        if (payload.vinculoId) filtro._id = payload.vinculoId;
+
+        const vinculo = await UsuarioVinculoInstituicao.findOne(filtro).lean().catch(() => null);
+        if (!vinculo) {
+          return res.status(401).json({ mensagem: 'Seu vínculo com este ambiente foi removido ou está inativo.' });
         }
-        if (usuarioDb.instituicao) {
-          payload.instituicao = usuarioDb.instituicao;
-        }
-        if (usuarioDb.tenantId) {
-          tenantId = usuarioDb.tenantId;
-        }
-        if (usuarioDb.escopoObservatorio) {
-          escopoObservatorio = usuarioDb.escopoObservatorio;
-        }
-        if (Array.isArray(usuarioDb.turmas)) {
-          turmas = usuarioDb.turmas;
-        }
+
+        efetivo = montarUsuarioEfetivo(usuarioDb, vinculo, instituicaoToken);
+      } else if (montarUsuarioEfetivo) {
+        efetivo = montarUsuarioEfetivo(usuarioDb, null, instituicaoToken);
+      } else {
+        efetivo = { ...usuarioDb, instituicao: instituicaoToken, tenantId: instituicaoToken };
       }
     }
 
     req.usuario = {
-      id,
-      _id: id,
-      nome: payload.nome || nome,
-      tipo: String(payload.tipo || tipo || '').trim().toLowerCase(),
-      instituicao: String(payload.instituicao || instituicao || '').trim(),
-      tenantId: tenantId ? String(tenantId) : String(payload.instituicao || instituicao || '').trim(),
-      email: email ? String(email).toLowerCase() : null,
-      turmas: Array.isArray(turmas) ? turmas : [],
-      alunoId: payload.alunoId ? String(payload.alunoId) : null,
-      portal: payload.portal || (String(payload.tipo || tipo || '').toLowerCase() === 'aluno' ? 'aluno' : null),
-      escopoObservatorio: escopoObservatorio || null,
+      id: String(efetivo._id || efetivo.id || id),
+      _id: String(efetivo._id || efetivo.id || id),
+      nome: efetivo.nome || payload.nome || null,
+      tipo: String(efetivo.tipo || payload.tipo || '').trim().toLowerCase(),
+      instituicao: String(efetivo.instituicao || instituicaoToken),
+      tenantId: String(efetivo.tenantId || efetivo.instituicao || instituicaoToken),
+      email: efetivo.email ? String(efetivo.email).toLowerCase() : null,
+      turmas: Array.isArray(efetivo.turmas) ? efetivo.turmas : [],
+      alunoId: efetivo.alunoId ? String(efetivo.alunoId) : null,
+      portal: efetivo.portal || (String(efetivo.tipo || '').toLowerCase() === 'aluno' ? 'aluno' : null),
+      escopoObservatorio: efetivo.escopoObservatorio || null,
+      acessosModulos: efetivo.acessosModulos || null,
+      associacaoAcesso: efetivo.acessosModulos?.associacao || null,
+      vinculoId: efetivo.vinculoId || payload.vinculoId || null,
+      identidadePrimariaInstituicao: efetivo.identidadePrimariaInstituicao || null,
     };
 
     if (!req.usuario.instituicao) {
@@ -108,6 +139,7 @@ async function autenticar(req, res, next) {
     if (err?.name === 'JsonWebTokenError') {
       return res.status(401).json({ mensagem: 'Token inválido.' });
     }
+    console.error('[autenticacao] falha:', err?.message || err);
     return res.status(401).json({ mensagem: 'Falha na autenticação.' });
   }
 }

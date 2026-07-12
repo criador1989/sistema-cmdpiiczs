@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "postinstall": "pip install -r ./pdf/requirements.txt"
+    "postinstall": "pip install -r ./pdf/requirements.txt",
+    "migrar:associacao": "node scripts/migrar-associacao-sqlite-para-mongo.js",
+    "check:associacao": "node --check routes/api/associacao.js && node --check routes/api/masterAssociacoes.js && node --check middleware/autenticacao.js && node --check middleware/associacaoAuth.js && node --check services/usuarioVinculos.js && node --check models/UsuarioVinculoInstituicao.js && node --check routes/authRoutes.js && node --check public/associacao/associacao.js && node --check public/js/axoriin-ambientes.js && node --check scripts/migrar-vinculos-institucionais.js && node --check scripts/migrar-associacao-sqlite-para-mongo.js && node --check models/AssociacaoLembreteConfig.js && node --check models/AssociacaoLembreteEnvio.js && node --check services/associacaoLembretes.js && node --check jobs/agendadorLembretesAssociacao.js && node --check scripts/testar-regras-lembretes.js && node --check utils/associacaoReminderRules.js && node --check services/associacaoIndicadores.js && node --check utils/associacaoFinancialInsights.js && node --check scripts/testar-indicadores-financeiros.js",
+    "migrar:vinculos": "node scripts/migrar-vinculos-institucionais.js",
+    "test:lembretes": "node scripts/testar-regras-lembretes.js",
+    "test:indicadores": "node scripts/testar-indicadores-financeiros.js"
   },
   "keywords": [
     "CMDPII",
@@ -47,6 +52,7 @@
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "sharp": "^0.34.5",
-    "twilio": "^5.7.0"
+    "twilio": "^5.7.0",
+    "sql.js": "^1.14.1"
   }
 }
