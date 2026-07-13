@@ -258,6 +258,7 @@ const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
 const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
 const chamadasRoutes = require('./routes/api/chamadas');
 const redacaoRoutes = require('./routes/api/redacao');
+const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
 const rifasRoutes = require('./routes/api/rifas');
@@ -808,6 +809,7 @@ mountIf('/api/aph', aphPdfRoutes);
 /* =========================
    âœ… NOVA ROTA: REDAÃ‡ÃƒO ENEM
    ========================= */
+mountIf('/api/redacao/gestao', redacaoGestaoRoutes);
 mountIf('/api/redacao', redacaoRoutes);
 
 /* =========================
@@ -939,6 +941,34 @@ app.get('/master-instituicoes.html', requireSuperAdmin, (_req, res) => {
 app.get('/master-associacoes.html', requireSuperAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'master-associacoes.html'));
 });
+
+function exigirProfessorOuAdminRedacao(req, res, next) {
+  const role = getRole(req);
+  const permitido =
+    role.includes('admin') ||
+    role.includes('master') ||
+    role.includes('superadmin') ||
+    role.includes('coorden') ||
+    role.includes('dire') ||
+    role.includes('professor');
+
+  if (!permitido) {
+    return send403(res, publicRoot);
+  }
+
+  return next();
+}
+
+app.get(
+  '/admin-redacao.html',
+  autenticar,
+  exigirProfessorOuAdminRedacao,
+  (_req, res) => {
+    return res.sendFile(
+      path.join(publicRoot, 'admin-redacao.html')
+    );
+  }
+);
 
 app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'admin-site', 'site-analytics.html'));

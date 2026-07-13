@@ -44,11 +44,15 @@
 
     resumoAvaliacao: $('resumoAvaliacao'),
     focoPrincipal: $('focoPrincipal'),
+    focoPrincipalTitulo: $('focoPrincipalTitulo'),
     planoEstudoSugerido: $('planoEstudoSugerido'),
     pontosFortes: $('pontosFortes'),
     pontosMelhorar: $('pontosMelhorar'),
+    pontosMelhorarTitulo: $('pontosMelhorarTitulo'),
     recomendacoes: $('recomendacoes'),
     propostaIntervencao: $('propostaIntervencao'),
+    sugestaoAprimoramentoIntervencao: $('sugestaoAprimoramentoIntervencao'),
+    sugestaoIntervencaoBlock: $('sugestaoIntervencaoBlock'),
     observacoesTecnicas: $('observacoesTecnicas'),
 
     apoioBox: $('apoioBox'),
@@ -57,6 +61,8 @@
     apoioStatusMensagem: $('apoioStatusMensagem'),
     respostaProfessorBlock: $('respostaProfessorBlock'),
     respostaProfessorTexto: $('respostaProfessorTexto'),
+    respostaProfessorMeta: $('respostaProfessorMeta'),
+    respostaProfessorBadge: $('respostaProfessorBadge'),
 
     apoioEscritaContent: $('apoioEscritaContent'),
     apoioTabs: document.querySelectorAll('[data-apoio-tab]'),
@@ -64,11 +70,23 @@
     estruturaSteps: document.querySelectorAll('[data-estrutura-step]'),
     estruturaDica: $('estruturaDica'),
     competenciasLive: document.querySelectorAll('.competencia-live'),
-    alertasRedacao: $('alertasRedacao')
+    alertasRedacao: $('alertasRedacao'),
+    modalidadeResumo: $('modalidadeResumo'),
+    temasLivresBox: $('temasLivresBox'),
+    temasLivresLista: $('temasLivresLista'),
+    modalidadeTabs: document.querySelectorAll('[data-modalidade]'),
+    apoioEscritaCard: $('apoioEscritaCard'),
+    evolucaoBox: $('evolucaoBox'),
+    evolucaoResumo: $('evolucaoResumo'),
+    evolucaoGrid: $('evolucaoGrid')
   };
 
   const state = {
     tema: null,
+    contexto: null,
+    modalidade: null,
+    ciclo: null,
+    etapaCiclo: null,
     redacaoAtualId: null,
     timerAtivo: false,
     segundos: 0,
@@ -78,7 +96,14 @@
     fotoSelecionada: null,
     apoioRedacao: null,
     apoioTabAtual: 'estrutura',
-    motivadoresAutomaticos: []
+    motivadoresAutomaticos: [],
+    caracteresColados: 0,
+    maiorColagem: 0,
+    eventosDigitacao: 0,
+    revisoesEstimadas: 0,
+    ultimoTamanhoTexto: 0,
+    inicioEdicaoEm: Date.now(),
+    ultimaAnalise: null
   };
 
   function getTenant() {
@@ -99,7 +124,9 @@
   }
 
   function getDraftKey() {
-    return `axoriin_redacao_rascunho_${getTenant()}`;
+    const tema = state.tema?._id || 'sem-tema';
+    const modalidade = state.modalidade || 'legado';
+    return `axoriin_redacao_rascunho_${getTenant()}_${modalidade}_${tema}`;
   }
 
   function escapeHtml(text) {
@@ -109,6 +136,13 @@
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;');
+  }
+
+  function safeUrl(url) {
+    try {
+      const u = new URL(String(url || ''), window.location.origin);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
+    } catch { return ''; }
   }
 
   function formatarTempo(segundos) {
@@ -188,6 +222,11 @@
       els.textoAutoriaStatus.textContent = 'Aguardando escrita do aluno';
       els.textoAutoriaStatus.style.color = '';
       return;
+    }
+
+    if (state.ciclo?.cronometroObrigatorio && state.segundos <= 0) {
+      setStatus('Esta avaliação exige que o cronômetro seja iniciado.', 'erro');
+      return false;
     }
 
     if (state.colagemGrande) {
@@ -401,7 +440,9 @@ function renderMotivadoresAutomaticos(motivadores = []) {
 
           ${
             item.fonte
-              ? `<span class="tag">Fonte: ${escapeHtml(item.fonte)}</span>`
+              ? (safeUrl(item.fonteUrl)
+                  ? `<a class="tag" href="${escapeHtml(safeUrl(item.fonteUrl))}" target="_blank" rel="noopener noreferrer">Fonte: ${escapeHtml(item.fonte)}</a>`
+                  : `<span class="tag">Fonte: ${escapeHtml(item.fonte)}</span>`)
               : ''
           }
         </div>
@@ -433,7 +474,14 @@ function renderTema(tema) {
     return;
   }
 
-  els.temaStatus.textContent = 'Tema ativo';
+  const nomesModalidade = {
+    trilha_orientada: 'Trilha orientada da escola',
+    pratica_livre: 'Prática livre',
+    avaliacao_institucional: 'Avaliação institucional'
+  };
+
+  els.temaStatus.textContent =
+    nomesModalidade[state.modalidade] || 'Tema ativo';
   els.temaTitulo.textContent = tema.titulo || 'Tema sem título';
   els.temaProposta.textContent = tema.proposta || '';
   els.tempoSugerido.textContent = `${tema.tempoSugeridoMinutos || 60} min`;
@@ -452,22 +500,251 @@ function renderTema(tema) {
   }
 }
 
-  async function carregarTema() {
+  function formatarEtapa(etapa) {
+    const mapa = {
+      producao_inicial: 'Produção inicial',
+      reescrita: 'Reescrita orientada',
+      pratica: 'Treino livre',
+      avaliacao: 'Avaliação'
+    };
+
+    return mapa[etapa] || '';
+  }
+
+  function resumoModalidade(bloco, titulo, descricao) {
+    if (!els.modalidadeResumo) return;
+
+    if (!bloco) {
+      els.modalidadeResumo.innerHTML =
+        `<strong>${escapeHtml(titulo)}</strong>` +
+        `<p>${escapeHtml(descricao)}</p>`;
+      return;
+    }
+
+    const uso = bloco.uso || {};
+    const ciclo = bloco.ciclo || {};
+
+    els.modalidadeResumo.innerHTML =
+      `<strong>${escapeHtml(ciclo.nome || titulo)}</strong>` +
+      `<p>${escapeHtml(descricao)}</p>` +
+      `<div class="modalidade-progresso">` +
+      `<span>${Number(uso.usadas || 0)}/${Number(uso.limite || 0)} entrega(s)</span>` +
+      `${uso.etapaSeguinte ? `<span>${escapeHtml(formatarEtapa(uso.etapaSeguinte))}</span>` : '<span>Concluído</span>'}` +
+      `</div>`;
+  }
+
+  function atualizarLimiteVisual(uso = {}) {
+    const usadas = Number(uso.usadas || 0);
+    const limite = Number(uso.limite || 0);
+    const restantes = Math.max(0, Number(uso.restantes ?? limite - usadas));
+
+    if (els.badgeLimiteMensal) {
+      els.badgeLimiteMensal.textContent =
+        limite > 0
+          ? `Entregas: ${usadas}/${limite}`
+          : 'Entregas indisponíveis';
+    }
+
+    if (els.restantesMes) {
+      els.restantesMes.textContent = restantes;
+    }
+
+    if (els.btnEnviar) {
+      els.btnEnviar.disabled = Boolean(uso.atingiuLimite) || !state.tema?._id;
+    }
+  }
+
+  function aplicarModoInterface() {
+    const avaliacao =
+      state.modalidade === 'avaliacao_institucional' &&
+      state.ciclo?.assistenteDuranteEscrita === false;
+
+    document.body.classList.toggle('redacao-avaliacao', avaliacao);
+
+    if (state.ciclo?.cronometroObrigatorio && !state.timerAtivo) {
+      setStatus(
+        'Esta avaliação exige o uso do cronômetro antes do envio.',
+        'alerta'
+      );
+    }
+  }
+
+  function selecionarTemaLivre(temaId) {
+    const temas = state.contexto?.praticaLivre?.temas || [];
+    const tema = temas.find((item) => String(item._id) === String(temaId));
+
+    if (!tema) return;
+
+    state.modalidade = 'pratica_livre';
+    state.ciclo = null;
+    state.etapaCiclo = 'pratica';
+
+    renderTema(tema);
+    atualizarLimiteVisual(state.contexto.praticaLivre.uso || {});
+    resumoModalidade(
+      {
+        ciclo: { nome: 'Prática livre' },
+        uso: state.contexto.praticaLivre.uso || {}
+      },
+      'Prática livre',
+      'Escolha um tema do banco e treine no seu ritmo.'
+    );
+
+    document.querySelectorAll('.tema-livre-card').forEach((card) => {
+      card.classList.toggle(
+        'active',
+        String(card.dataset.temaId) === String(temaId)
+      );
+    });
+
+    aplicarModoInterface();
+    analisarEstruturaTexto();
+  }
+
+  function renderTemasLivres() {
+    if (!els.temasLivresLista || !els.temasLivresBox) return;
+
+    const temas = state.contexto?.praticaLivre?.temas || [];
+
+    els.temasLivresBox.style.display =
+      state.modalidade === 'pratica_livre' ? 'block' : 'none';
+
+    if (!temas.length) {
+      els.temasLivresLista.innerHTML =
+        '<div class="temas-livres-vazio">Nenhum tema foi liberado para prática livre.</div>';
+      return;
+    }
+
+    els.temasLivresLista.innerHTML = temas
+      .map(
+        (tema) =>
+          `<button class="tema-livre-card" type="button" data-tema-id="${escapeHtml(tema._id)}">` +
+          `<strong>${escapeHtml(tema.titulo)}</strong>` +
+          `<span>${escapeHtml(tema.eixoTematico || 'Redação ENEM')}</span>` +
+          `</button>`
+      )
+      .join('');
+
+    els.temasLivresLista
+      .querySelectorAll('[data-tema-id]')
+      .forEach((card) => {
+        card.addEventListener('click', () => {
+          selecionarTemaLivre(card.dataset.temaId);
+        });
+      });
+  }
+
+  function selecionarModalidade(modalidade) {
+    const contexto = state.contexto || {};
+
+    if (modalidade === 'trilha_orientada') {
+      const bloco = contexto.trilhaOrientada;
+
+      if (!bloco) return;
+
+      state.modalidade = modalidade;
+      state.ciclo = bloco.ciclo;
+      state.etapaCiclo = bloco.uso?.etapaSeguinte;
+      renderTema(bloco.tema);
+      atualizarLimiteVisual(bloco.uso || {});
+      resumoModalidade(
+        bloco,
+        'Trilha da escola',
+        bloco.uso?.etapaSeguinte === 'reescrita'
+          ? 'Use a devolutiva da primeira versão para produzir sua reescrita.'
+          : 'Tema comum definido pela escola para produção inicial e reescrita.'
+      );
+    }
+
+    if (modalidade === 'avaliacao_institucional') {
+      const bloco = contexto.avaliacaoInstitucional;
+
+      if (!bloco) return;
+
+      state.modalidade = modalidade;
+      state.ciclo = bloco.ciclo;
+      state.etapaCiclo = 'avaliacao';
+      renderTema(bloco.tema);
+      atualizarLimiteVisual(bloco.uso || {});
+      resumoModalidade(
+        bloco,
+        'Avaliação institucional',
+        'Produção avaliativa com regras definidas pela escola.'
+      );
+    }
+
+    if (modalidade === 'pratica_livre') {
+      const bloco = contexto.praticaLivre || {};
+
+      state.modalidade = modalidade;
+      state.ciclo = null;
+      state.etapaCiclo = 'pratica';
+
+      const primeiroTema =
+        bloco.temas?.find(
+          (item) => String(item._id) === String(state.tema?._id)
+        ) || bloco.temas?.[0];
+
+      if (primeiroTema) {
+        renderTema(primeiroTema);
+      } else {
+        renderTema(null);
+      }
+
+      atualizarLimiteVisual(bloco.uso || {});
+      resumoModalidade(
+        {
+          ciclo: { nome: 'Prática livre' },
+          uso: bloco.uso || {}
+        },
+        'Prática livre',
+        'Escolha um tema do banco e treine no seu ritmo.'
+      );
+    }
+
+    els.modalidadeTabs?.forEach((btn) => {
+      btn.classList.toggle(
+        'active',
+        btn.dataset.modalidade === state.modalidade
+      );
+    });
+
+    renderTemasLivres();
+    aplicarModoInterface();
+    analisarEstruturaTexto();
+  }
+
+  function renderModalidades() {
+    const contexto = state.contexto || {};
+
+    els.modalidadeTabs?.forEach((btn) => {
+      const modalidade = btn.dataset.modalidade;
+
+      const disponivel =
+        modalidade === 'trilha_orientada'
+          ? Boolean(contexto.trilhaOrientada)
+          : modalidade === 'avaliacao_institucional'
+            ? Boolean(contexto.avaliacaoInstitucional)
+            : Boolean(contexto.praticaLivre?.temas?.length);
+
+      btn.disabled = !disponivel;
+      btn.addEventListener('click', () => selecionarModalidade(modalidade));
+    });
+
+    selecionarModalidade(contexto.modalidadePadrao);
+  }
+
+  async function carregarContexto() {
     try {
-      const { tema, limiteMensal } = await api('/api/redacao/tema/ativo');
+      state.contexto = await api('/api/redacao/contexto');
+      renderModalidades();
 
-      renderTema(tema);
-
-      if (limiteMensal) {
-        const usadas = Number(limiteMensal.usadas || 0);
-        const limite = Number(limiteMensal.limite || 2);
-        const restantes = Math.max(limite - usadas, 0);
-
-        if (els.badgeLimiteMensal) els.badgeLimiteMensal.textContent = `Redações no mês: ${usadas}/${limite}`;
-        if (els.restantesMes) els.restantesMes.textContent = restantes;
+      if (!state.contexto.modalidadePadrao) {
+        renderTema(null);
       }
     } catch (error) {
       setStatus(error.message, 'erro');
+      renderTema(null);
     }
   }
 
@@ -478,6 +755,235 @@ function renderTema(tema) {
     } catch (error) {
       els.historicoLista.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
     }
+  }
+
+  function preencherLista(el, itens = []) {
+    if (!el) return;
+    const lista = Array.isArray(itens) ? itens.filter(Boolean) : [];
+    el.innerHTML = lista.length ? lista.map(item => `<li>${escapeHtml(item)}</li>`).join('') : '<li>Sem observações adicionais.</li>';
+  }
+
+  function renderFeedbackCompetencias(correcao = {}) {
+    let box = document.getElementById('feedbackCompetenciasDetalhado');
+    if (!box && els.resultadoBox) {
+      box = document.createElement('div');
+      box.id = 'feedbackCompetenciasDetalhado';
+      box.className = 'block feedback-competencias';
+      const obs = document.getElementById('observacoesTecnicas')?.closest('.block');
+      (obs || els.resultadoBox).insertAdjacentElement('afterend', box);
+    }
+    if (!box) return;
+    const fb = correcao.feedbackCompetencias || {};
+    const notas = correcao.competencias || {};
+    box.innerHTML = `<h4>Análise por competência</h4>${['c1','c2','c3','c4','c5'].map(k => {
+      const f = fb[k] || {};
+      return `<details><summary><b>${k.toUpperCase()} — ${Number(notas[k]||0)} pontos</b> <span>${escapeHtml(f.nivel||'')}</span></summary><p>${escapeHtml(f.diagnostico||'Análise não disponível.')}</p><strong>Evidências</strong><ul>${(f.evidencias||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul><strong>Como melhorar</strong><ul>${(f.comoMelhorar||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></details>`;
+    }).join('')}`;
+  }
+
+  function formatarDataProfessor(valor) {
+    if (!valor) return '';
+
+    const data = new Date(valor);
+
+    if (Number.isNaN(data.getTime())) return '';
+
+    return data.toLocaleString('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+  }
+
+  function chaveLeituraProfessor(redacao, apoio) {
+    const identificador =
+      apoio?.respondidoEm ||
+      apoio?.observacaoProfessor ||
+      'sem-data';
+
+    return (
+      `axoriin_redacao_orientacao_lida_` +
+      `${redacao?._id || 'sem-redacao'}_` +
+      `${encodeURIComponent(String(identificador))}`
+    );
+  }
+
+  function renderOrientacaoProfessor(redacao) {
+    if (!els.respostaProfessorBlock) return;
+
+    const apoio = redacao?.apoioProfessor || {};
+    const resposta = String(
+      apoio.observacaoProfessor || ''
+    ).trim();
+
+    if (!resposta) {
+      els.respostaProfessorBlock.style.display = 'none';
+      els.respostaProfessorBlock.open = false;
+      return;
+    }
+
+    const professor =
+      String(apoio.professorNome || '').trim() ||
+      'Professor';
+
+    const data = formatarDataProfessor(
+      apoio.respondidoEm
+    );
+
+    const chave = chaveLeituraProfessor(
+      redacao,
+      apoio
+    );
+
+    const jaLida =
+      localStorage.getItem(chave) === '1';
+
+    els.respostaProfessorBlock.style.display = 'block';
+    els.respostaProfessorTexto.textContent = resposta;
+
+    if (els.respostaProfessorMeta) {
+      els.respostaProfessorMeta.textContent =
+        data
+          ? `${professor} • ${data}`
+          : professor;
+    }
+
+    if (els.respostaProfessorBadge) {
+      els.respostaProfessorBadge.textContent =
+        jaLida ? 'Orientação recebida' : 'Nova orientação';
+
+      els.respostaProfessorBadge.classList.toggle(
+        'lida',
+        jaLida
+      );
+    }
+
+    // A orientação nova abre uma única vez.
+    els.respostaProfessorBlock.open = !jaLida;
+
+    els.respostaProfessorBlock.ontoggle = () => {
+      if (!els.respostaProfessorBlock.open) return;
+
+      localStorage.setItem(chave, '1');
+
+      if (els.respostaProfessorBadge) {
+        els.respostaProfessorBadge.textContent =
+          'Orientação recebida';
+
+        els.respostaProfessorBadge.classList.add(
+          'lida'
+        );
+      }
+    };
+  }
+
+  function renderResultado(redacao) {
+    if (!redacao || !els.resultadoBox) return;
+    state.redacaoAtualId = redacao._id || null;
+    const c = redacao.correcaoIA || {};
+    const comps = c.competencias || {};
+    els.resultadoBox.classList.add('visible');
+
+    if (els.evolucaoBox && redacao.evolucao) {
+      const ev = redacao.evolucao;
+      const dif = Number(ev.diferencaTotal || 0);
+      els.evolucaoBox.classList.add('visible');
+
+      if (els.evolucaoResumo) {
+        els.evolucaoResumo.innerHTML =
+          `Nota anterior: <strong>${Number(ev.notaAnterior || 0)}</strong> • ` +
+          `Nota atual: <strong>${Number(ev.notaAtual || 0)}</strong> • ` +
+          `<strong class="${dif >= 0 ? 'evolucao-positivo' : 'evolucao-negativo'}">` +
+          `${dif >= 0 ? '+' : ''}${dif} pontos</strong>`;
+      }
+
+      if (els.evolucaoGrid) {
+        els.evolucaoGrid.innerHTML = ['c1','c2','c3','c4','c5']
+          .map((k) => {
+            const valor = Number(ev.competencias?.[k] || 0);
+            return `<div class="evolucao-item"><strong>${k.toUpperCase()}</strong>` +
+              `<span class="${valor >= 0 ? 'evolucao-positivo' : 'evolucao-negativo'}">` +
+              `${valor >= 0 ? '+' : ''}${valor}</span></div>`;
+          })
+          .join('');
+      }
+    } else if (els.evolucaoBox) {
+      els.evolucaoBox.classList.remove('visible');
+    }
+    els.notaTotal.textContent = redacao.status === 'erro_correcao' ? 'Correção pendente' : `Nota estimada: ${Number(c.notaTotal || 0)}`;
+    ['c1','c2','c3','c4','c5'].forEach(k => { if (els[k]) els[k].textContent = Number(comps[k] || 0); });
+    els.resumoAvaliacao.textContent = c.resumoAvaliacao || redacao.erroCorrecao || 'A correção ainda não foi concluída.';
+    const notaTotal = Number(c.notaTotal || 0);
+    const desempenhoExcelente = notaTotal >= 920;
+
+    if (els.focoPrincipalTitulo) {
+      els.focoPrincipalTitulo.textContent = desempenhoExcelente
+        ? 'Próximo desafio de aprimoramento'
+        : 'Foco principal de melhoria';
+    }
+
+    if (els.pontosMelhorarTitulo) {
+      els.pontosMelhorarTitulo.textContent = desempenhoExcelente
+        ? 'Próximos desafios de excelência'
+        : 'Pontos a melhorar';
+    }
+
+    els.focoPrincipal.textContent = c.focoPrincipal || redacao.focoPrincipal || '-';
+    preencherLista(els.planoEstudoSugerido, c.planoEstudoSugerido || redacao.planoEstudoSugerido);
+    preencherLista(els.pontosFortes, c.pontosFortes);
+    preencherLista(els.pontosMelhorar, c.pontosMelhorar);
+    preencherLista(els.recomendacoes, c.recomendacoes);
+
+    const intervencaoIdentificada =
+      c.propostaIntervencaoIdentificada ||
+      c.propostaIntervencao ||
+      '-';
+
+    const sugestaoIntervencao =
+      c.sugestaoAprimoramentoIntervencao ||
+      '';
+
+    els.propostaIntervencao.textContent = intervencaoIdentificada;
+
+    if (els.sugestaoAprimoramentoIntervencao) {
+      els.sugestaoAprimoramentoIntervencao.textContent =
+        sugestaoIntervencao || '-';
+    }
+
+    if (els.sugestaoIntervencaoBlock) {
+      els.sugestaoIntervencaoBlock.style.display =
+        sugestaoIntervencao ? 'block' : 'none';
+    }
+    els.observacoesTecnicas.textContent = `${c.observacoesTecnicas || '-'}${c.disclaimer ? ` ${c.disclaimer}` : ''}`;
+    renderFeedbackCompetencias(c);
+    if (els.apoioBox) els.apoioBox.classList.toggle('visible', redacao.status !== 'erro_correcao');
+    renderOrientacaoProfessor(redacao);
+    els.resultadoBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderHistorico(historico = []) {
+    if (!els.historicoLista) return;
+    if (!Array.isArray(historico) || !historico.length) {
+      els.historicoLista.innerHTML = '<div class="empty">Nenhuma redação enviada ainda.</div>';
+      return;
+    }
+    els.historicoLista.innerHTML = historico.map(item => {
+      const nota = item.correcaoIA?.notaTotal;
+      const data = item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : '';
+      const modalidade = {
+        trilha_orientada: 'Trilha',
+        pratica_livre: 'Prática livre',
+        avaliacao_institucional: 'Avaliação'
+      }[item.modalidade] || 'Redação';
+
+      const temOrientacao = Boolean(
+        item.apoioProfessor?.observacaoProfessor
+      );
+
+      return `<article class="hist-item ${temOrientacao ? 'tem-orientacao' : ''}" data-redacao-id="${escapeHtml(item._id)}"><div class="hist-top"><strong>${escapeHtml(item.temaTituloSnapshot || 'Redação ENEM')}</strong><span>${nota != null ? `${nota} pts` : escapeHtml(item.status || '')}</span></div><div class="hist-tags"><span>${data}</span><span>${escapeHtml(modalidade)}</span><span>${Number(item.quantidadePalavras||0)} palavras</span><span>${escapeHtml(formatarEtapa(item.etapaCiclo) || `Tentativa ${Number(item.tentativa||1)}`)}</span>${temOrientacao ? '<span class="hist-feedback-tag">Professor respondeu</span>' : ''}</div></article>`;
+    }).join('');
+    els.historicoLista.querySelectorAll('[data-redacao-id]').forEach(card => card.addEventListener('click', async () => {
+      try { const { redacao } = await api(`/api/redacao/${card.dataset.redacaoId}`); renderResultado(redacao); } catch (e) { setStatus(e.message, 'erro'); }
+    }));
   }
 
   function validarEnvio(texto) {
@@ -532,29 +1038,43 @@ function renderTema(tema) {
       const formData = new FormData();
 
 formData.append('temaId', state.tema._id);
+formData.append('modalidade', state.modalidade || 'legado');
+if (state.ciclo?._id) formData.append('cicloId', state.ciclo._id);
+if (state.etapaCiclo) formData.append('etapaCiclo', state.etapaCiclo);
 formData.append('texto', texto);
 formData.append('tempoGastoSegundos', String(state.segundos));
 formData.append('cronometroUtilizado', String(state.segundos > 0));
 formData.append('colagensDetectadas', String(state.colagens));
 formData.append('colagemGrandeDetectada', String(state.colagemGrande));
+formData.append('caracteresColados', String(state.caracteresColados));
+formData.append('maiorColagem', String(state.maiorColagem));
+formData.append('eventosDigitacao', String(state.eventosDigitacao));
+formData.append('revisoesEstimadas', String(state.revisoesEstimadas));
+formData.append('tempoEdicaoSegundos', String(Math.max(state.segundos, Math.floor((Date.now() - state.inicioEdicaoEm) / 1000))));
 
 if (state.fotoSelecionada) {
   formData.append('fotoManuscrita', state.fotoSelecionada);
 }
 
-const { redacao } = await api('/api/redacao/enviar', {
+const { redacao, resumoUso } = await api('/api/redacao/enviar', {
   method: 'POST',
   body: formData
 });
 
       renderResultado(redacao);
       await carregarHistorico();
+      await carregarContexto();
+
+      if (resumoUso) {
+        atualizarLimiteVisual(resumoUso);
+      }
 
       limparRascunhoLocal();
       els.redacaoTexto.value = '';
       state.segundos = 0;
       state.colagens = 0;
       state.colagemGrande = false;
+      state.caracteresColados = 0; state.maiorColagem = 0; state.eventosDigitacao = 0; state.revisoesEstimadas = 0; state.ultimoTamanhoTexto = 0; state.inicioEdicaoEm = Date.now();
 
       atualizarContadores();
       atualizarAutoriaStatus('');
@@ -635,7 +1155,7 @@ const { redacao } = await api('/api/redacao/enviar', {
 
       await api(`/api/redacao/${state.redacaoAtualId}/solicitar-apoio`, {
         method: 'POST',
-        body: JSON.stringify({ foco })
+        body: JSON.stringify({ focoTema: foco })
       });
 
       setApoioStatus('Solicitação enviada ao professor.', 'sucesso');
@@ -796,193 +1316,19 @@ function toggleModoFoco() {
 }
 
 function analisarEstruturaTexto() {
-  if (!els.redacaoTexto || !els.estruturaSteps?.length) return;
-
-  const texto = els.redacaoTexto.value.trim();
-
-  const paragrafos = texto
-    .split(/\n+/)
-    .map(p => p.trim())
-    .filter(p => p.length > 20);
-
-  const total = paragrafos.length;
-
-  const intro = paragrafos[0] || '';
-  const d1 = paragrafos[1] || '';
-  const d2 = paragrafos[2] || '';
-  const conc = paragrafos[3] || '';
-
-  const status = {
-    intro: total >= 1,
-    d1: total >= 2,
-    d2: total >= 3,
-    conc: total >= 4
-  };
-
-  els.estruturaSteps.forEach((step) => {
-    const key = step.dataset.estruturaStep;
-    const small = step.querySelector('small');
-
-    step.classList.remove('done', 'warn', 'bad');
-
-    if (!status[key]) {
-      if (total > 0) {
-        step.classList.add('warn');
-
-        if (small) {
-          small.textContent = 'Faltando';
-        }
-      } else {
-        if (small) {
-          small.textContent = 'Aguardando';
-        }
-      }
-
-      return;
-    }
-
-    const textoParte =
-      key === 'intro' ? intro :
-      key === 'd1' ? d1 :
-      key === 'd2' ? d2 :
-      conc;
-
-    if (textoParte.length < 80) {
-      step.classList.add('warn');
-
-      if (small) {
-        small.textContent = 'Muito curto';
-      }
-
-      return;
-    }
-
-    if (textoParte.length < 40) {
-      step.classList.add('bad');
-
-      if (small) {
-        small.textContent = 'Insuficiente';
-      }
-
-      return;
-    }
-
-    step.classList.add('done');
-
-    if (small) {
-      small.textContent = 'Adequado';
-    }
-  });
-
-  analisarCompetencias(texto, paragrafos);
-  gerarAlertas(texto, paragrafos);
-}
-function analisarCompetencias(texto, paragrafos) {
-  if (!els.competenciasLive?.length) return;
-
-  const textoLower = texto.toLowerCase();
-
-  const conectivos = [
-    'portanto',
-    'além disso',
-    'todavia',
-    'contudo',
-    'entretanto',
-    'desse modo',
-    'assim',
-    'logo'
-  ];
-
-  const repertorios = [
-    'constituição',
-    'sociedade',
-    'filósofo',
-    'história',
-    'dados',
-    'pesquisa',
-    'ibge',
-    'onu'
-  ];
-
-  const intervencao = [
-    'governo',
-    'estado',
-    'ministério',
-    'campanhas',
-    'escolas'
-  ];
-
-  const temConectivo = conectivos.some(c => textoLower.includes(c));
-  const temRepertorio = repertorios.some(c => textoLower.includes(c));
-  const temIntervencao = intervencao.some(c => textoLower.includes(c));
-
-  els.competenciasLive.forEach((card) => {
-    card.classList.remove('active', 'warn');
-
-    const comp = card.dataset.comp;
-
-    if (comp === 'c2') {
-      card.classList.add(temRepertorio ? 'active' : 'warn');
-    }
-
-    if (comp === 'c3') {
-      card.classList.add(paragrafos.length >= 3 ? 'active' : 'warn');
-    }
-
-    if (comp === 'c4') {
-      card.classList.add(temConectivo ? 'active' : 'warn');
-    }
-
-    if (comp === 'c5') {
-      card.classList.add(temIntervencao ? 'active' : 'warn');
-    }
-  });
-}
-function gerarAlertas(texto, paragrafos) {
-  if (!els.alertasRedacao) return;
-
-  const alertas = [];
-
-  if (paragrafos.length < 4) {
-    alertas.push({
-      tipo: 'warn',
-      texto: 'Sua redação ainda parece incompleta.'
-    });
+  if (!els.redacaoTexto) return;
+  const texto = els.redacaoTexto.value || '';
+  if (
+    window.AxoriinRedacaoAssistente &&
+    !(
+      state.modalidade === 'avaliacao_institucional' &&
+      state.ciclo?.assistenteDuranteEscrita === false
+    )
+  ) {
+    const proporcaoColada = texto.length ? Math.min(1, state.caracteresColados / texto.length) : 0;
+    state.ultimaAnalise = window.AxoriinRedacaoAssistente.analisar(texto, state.tema, { proporcaoColada });
+    window.AxoriinRedacaoAssistente.aplicar(state.ultimaAnalise);
   }
-
-  if (texto.length < 900) {
-    alertas.push({
-      tipo: 'warn',
-      texto: 'Seu texto ainda parece curto para o padrão ENEM.'
-    });
-  }
-
-  if (!texto.includes('.')) {
-    alertas.push({
-      tipo: 'bad',
-      texto: 'Pouca pontuação detectada no texto.'
-    });
-  }
-
-  if (!/portanto|assim|logo|desse modo/i.test(texto)) {
-    alertas.push({
-      tipo: 'warn',
-      texto: 'Poucos conectivos argumentativos detectados.'
-    });
-  }
-
-  if (!/governo|estado|ministério|sociedade/i.test(texto)) {
-    alertas.push({
-      tipo: 'warn',
-      texto: 'Sua proposta de intervenção parece incompleta.'
-    });
-  }
-
-  els.alertasRedacao.innerHTML = alertas.map(alerta => `
-    <div class="alerta-redacao ${alerta.tipo === 'bad' ? 'bad' : ''}">
-      ${alerta.texto}
-    </div>
-  `).join('');
 }
 function configurarMapaEstrutural() {
   if (!els.estruturaSteps?.length || !els.estruturaDica) return;
@@ -1027,6 +1373,8 @@ function configurarMapaEstrutural() {
 
       if (pasted) {
         state.colagens += 1;
+        state.caracteresColados += pasted.length;
+        state.maiorColagem = Math.max(state.maiorColagem, pasted.length);
       }
 
       if (pasted.length > 600) {
@@ -1040,6 +1388,10 @@ function configurarMapaEstrutural() {
     });
 
     els.redacaoTexto.addEventListener('input', () => {
+      const tamanhoAtual = els.redacaoTexto.value.length;
+      state.eventosDigitacao += 1;
+      if (tamanhoAtual < state.ultimoTamanhoTexto) state.revisoesEstimadas += 1;
+      state.ultimoTamanhoTexto = tamanhoAtual;
       atualizarContadores();
       atualizarAutoriaStatus(els.redacaoTexto.value);
       analisarEstruturaTexto();
@@ -1090,7 +1442,8 @@ function configurarMapaEstrutural() {
     analisarEstruturaTexto();
     carregarRascunhoLocal();
     await carregarApoioRedacao();
-    await carregarTema();
+    await carregarContexto();
+    analisarEstruturaTexto();
     await carregarHistorico();
   }
 

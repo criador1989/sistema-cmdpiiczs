@@ -1681,7 +1681,14 @@ body.modo-foco-ativo .modo-foco-alerta {
     font-size: 38px;
   }
 }
+  
+    .assistente-progresso{margin:14px 0;padding:14px;border-radius:16px;background:rgba(232,241,255,.72);border:1px solid rgba(37,99,235,.15)}
+    .assistente-top,.assistente-metricas{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.assistente-top strong{color:var(--ink)}.assistente-top span,.assistente-progresso small{color:var(--ink-soft);font-size:12px}.assistente-bar{height:8px;background:rgba(37,99,235,.12);border-radius:99px;overflow:hidden;margin:10px 0}.assistente-bar i{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#16a34a);border-radius:99px;transition:width .25s}.assistente-metricas span{font-size:11px;font-weight:800;padding:5px 8px;border-radius:99px;background:rgba(255,255,255,.7);color:var(--ink-soft)}
+    .feedback-competencias details{padding:10px 0;border-bottom:1px solid rgba(52,65,94,.1)}.feedback-competencias details:last-child{border-bottom:0}.feedback-competencias summary{cursor:pointer;color:var(--ink);display:flex;justify-content:space-between;gap:10px}.feedback-competencias details p{margin:10px 0}.feedback-competencias details strong{font-size:12px;color:var(--ink)}
+
   </style>
+  <link rel="stylesheet" href="/css/redacao-modalidades.css">
+  <link rel="stylesheet" href="/css/redacao-devolutiva-professor.css">
 </head>
 
 <body>
@@ -1971,13 +1978,53 @@ body.modo-foco-ativo .modo-foco-alerta {
                 </div>
               </div>
 
+
+              <div class="evolucao-box" id="evolucaoBox">
+                <h4>Evolução entre a primeira versão e a reescrita</h4>
+                <p id="evolucaoResumo">-</p>
+                <div class="evolucao-grid" id="evolucaoGrid"></div>
+              </div>
+
+              <details
+                class="devolutiva-professor-card"
+                id="respostaProfessorBlock"
+                style="display:none;"
+              >
+                <summary>
+                  <span class="devolutiva-professor-icon" aria-hidden="true">P</span>
+
+                  <span class="devolutiva-professor-cabecalho">
+                    <strong>Orientação do professor</strong>
+                    <small id="respostaProfessorMeta">
+                      Uma orientação pedagógica foi registrada para esta redação.
+                    </small>
+                  </span>
+
+                  <span
+                    class="devolutiva-professor-badge"
+                    id="respostaProfessorBadge"
+                  >
+                    Nova
+                  </span>
+                </summary>
+
+                <div class="devolutiva-professor-conteudo">
+                  <p id="respostaProfessorTexto">-</p>
+
+                  <small>
+                    Considere esta orientação junto com a análise da IA ao realizar
+                    sua próxima produção ou reescrita.
+                  </small>
+                </div>
+              </details>
+
               <div class="block">
                 <h4>Resumo da avaliação</h4>
                 <p id="resumoAvaliacao">-</p>
               </div>
 
               <div class="block">
-                <h4>Foco principal de melhoria</h4>
+                <h4 id="focoPrincipalTitulo">Foco principal de melhoria</h4>
                 <p id="focoPrincipal">-</p>
               </div>
 
@@ -1992,7 +2039,7 @@ body.modo-foco-ativo .modo-foco-alerta {
               </div>
 
               <div class="block">
-                <h4>Pontos a melhorar</h4>
+                <h4 id="pontosMelhorarTitulo">Pontos a melhorar</h4>
                 <ul id="pontosMelhorar"></ul>
               </div>
 
@@ -2002,8 +2049,13 @@ body.modo-foco-ativo .modo-foco-alerta {
               </div>
 
               <div class="block">
-                <h4>Proposta de intervenção</h4>
+                <h4>Intervenção identificada no texto</h4>
                 <p id="propostaIntervencao">-</p>
+              </div>
+
+              <div class="block" id="sugestaoIntervencaoBlock" style="display:none">
+                <h4>Sugestão de aprimoramento da intervenção</h4>
+                <p id="sugestaoAprimoramentoIntervencao">-</p>
               </div>
 
               <div class="block">
@@ -2033,17 +2085,51 @@ body.modo-foco-ativo .modo-foco-alerta {
                 <div class="status" id="apoioStatusMensagem"></div>
               </div>
 
-              <div class="block" id="respostaProfessorBlock" style="display:none;">
-                <h4>Orientação do professor</h4>
-                <p id="respostaProfessorTexto">-</p>
-              </div>
+
             </div>
           </div>
         </section>
       </section>
 
       <aside class="sidebar">
-        <section class="card">
+
+        <section class="card" id="modalidadesCard">
+          <div class="card-header">
+            <div>
+              <h2 class="section-title">Modalidades e temas</h2>
+              <p class="section-sub">Escolha como deseja produzir sua redação.</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="modalidades-redacao">
+              <div class="modalidades-tabs">
+                <button class="modalidade-tab" type="button" data-modalidade="trilha_orientada">
+                  Trilha da escola
+                </button>
+
+                <button class="modalidade-tab" type="button" data-modalidade="pratica_livre">
+                  Prática livre
+                </button>
+
+                <button class="modalidade-tab" type="button" data-modalidade="avaliacao_institucional">
+                  Avaliação
+                </button>
+              </div>
+
+              <div class="modalidade-resumo" id="modalidadeResumo">
+                <strong>Carregando modalidades...</strong>
+                <p>Aguarde enquanto o sistema consulta os ciclos disponíveis.</p>
+              </div>
+
+              <div id="temasLivresBox" style="display:none">
+                <div class="temas-livres-lista" id="temasLivresLista"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" id="apoioEscritaCard">
   <div class="card-header">
     <div>
       <h2 class="section-title">Apoio à escrita</h2>
@@ -2218,6 +2304,7 @@ body.modo-foco-ativo .modo-foco-alerta {
     })();
   </script>
 
+  <script src="/js/redacao-assistente.js"></script>
   <script src="/aluno-redacao.js"></script>
 </body>
 </html>
