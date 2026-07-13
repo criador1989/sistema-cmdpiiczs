@@ -1,0 +1,633 @@
+[
+  {
+    "escopo": "global",
+    "area": "Linguagens",
+    "disciplina": "Língua Portuguesa",
+    "competencia": "Leitura e interpretação de textos",
+    "habilidade": "Identificar a finalidade comunicativa de um texto de circulação social",
+    "tema": "Gêneros textuais",
+    "subtema": "Campanha de conscientização",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-LING-001",
+    "enunciado": "A finalidade principal da mensagem é",
+    "apoioTexto": "ANTES DE COMPARTILHAR, CONFIRA. Uma informação falsa também causa danos reais.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "orientar o público a verificar informações antes de divulgá-las"
+      },
+      {
+        "letra": "B",
+        "texto": "defender que toda informação publicada na internet é confiável"
+      },
+      {
+        "letra": "C",
+        "texto": "ensinar técnicas de produção de notícias para jornalistas"
+      },
+      {
+        "letra": "D",
+        "texto": "proibir o uso de redes sociais por adolescentes"
+      },
+      {
+        "letra": "E",
+        "texto": "divulgar uma plataforma específica de comunicação"
+      }
+    ],
+    "gabarito": "A",
+    "explicacao": "O uso do imperativo “confira” e a relação entre compartilhamento e dano orientam uma conduta responsável diante das informações.",
+    "comentarioPedagogico": "Avalia a identificação da finalidade de uma campanha de conscientização.",
+    "tags": [
+      "linguagens",
+      "língua portuguesa",
+      "gênero textual",
+      "campanha",
+      "leitura",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Linguagens",
+    "disciplina": "Língua Portuguesa",
+    "competencia": "Variação linguística",
+    "habilidade": "Reconhecer a variação linguística como manifestação cultural e identitária",
+    "tema": "Diversidade da língua portuguesa",
+    "subtema": "Variação regional",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-LING-002",
+    "enunciado": "A expressão destacada exemplifica",
+    "apoioTexto": "Ao reencontrar o amigo depois de muitos anos, o personagem diz: “Oxente, rapaz, pensei que você não vinha mais!”",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "um erro que impede a compreensão da fala"
+      },
+      {
+        "letra": "B",
+        "texto": "uma marca de variação regional da língua"
+      },
+      {
+        "letra": "C",
+        "texto": "um termo técnico usado apenas em textos científicos"
+      },
+      {
+        "letra": "D",
+        "texto": "uma construção exclusiva da linguagem escrita formal"
+      },
+      {
+        "letra": "E",
+        "texto": "uma tentativa de eliminar diferenças culturais"
+      }
+    ],
+    "gabarito": "B",
+    "explicacao": "“Oxente” é uma marca regional associada a variedades do português brasileiro e funciona como elemento de identidade cultural.",
+    "comentarioPedagogico": "Trabalha o reconhecimento da variação regional sem associá-la a erro linguístico.",
+    "tags": [
+      "linguagens",
+      "variação linguística",
+      "regionalismo",
+      "identidade",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Linguagens",
+    "disciplina": "Literatura",
+    "competencia": "Análise de recursos expressivos",
+    "habilidade": "Reconhecer efeitos de sentido produzidos por repetição",
+    "tema": "Linguagem poética",
+    "subtema": "Repetição e ritmo",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-LING-003",
+    "enunciado": "No trecho, a repetição da palavra “ainda” contribui principalmente para",
+    "apoioTexto": "Ainda espero a chuva,\nainda escuto o rio,\nainda guardo na varanda\no silêncio do estio.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "eliminar a musicalidade dos versos"
+      },
+      {
+        "letra": "B",
+        "texto": "indicar mudança brusca de assunto"
+      },
+      {
+        "letra": "C",
+        "texto": "reforçar a permanência de uma expectativa"
+      },
+      {
+        "letra": "D",
+        "texto": "apresentar uma explicação científica"
+      },
+      {
+        "letra": "E",
+        "texto": "transformar o poema em texto instrucional"
+      }
+    ],
+    "gabarito": "C",
+    "explicacao": "A repetição intensifica a ideia de continuidade, permanência e espera ao longo dos versos.",
+    "comentarioPedagogico": "Avalia a percepção do efeito expressivo da repetição em texto poético.",
+    "tags": [
+      "linguagens",
+      "literatura",
+      "poesia",
+      "repetição",
+      "efeito de sentido",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Linguagens",
+    "disciplina": "Língua Portuguesa",
+    "competencia": "Leitura de textos multimodais",
+    "habilidade": "Relacionar linguagem verbal e não verbal na construção de sentidos",
+    "tema": "Multimodalidade",
+    "subtema": "Infográfico",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-LING-004",
+    "enunciado": "Nesse infográfico, a combinação entre ícones e frases curtas tem a função de",
+    "apoioTexto": "Um infográfico sobre economia de água apresenta o desenho de uma torneira fechada ao lado da frase “Feche enquanto ensaboa as mãos” e o desenho de um balde ao lado da frase “Reutilize a água sempre que possível”.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "dificultar a leitura por meio de informações desconectadas"
+      },
+      {
+        "letra": "B",
+        "texto": "substituir totalmente as orientações escritas"
+      },
+      {
+        "letra": "C",
+        "texto": "apresentar apenas dados estatísticos detalhados"
+      },
+      {
+        "letra": "D",
+        "texto": "facilitar a compreensão de ações práticas de economia"
+      },
+      {
+        "letra": "E",
+        "texto": "produzir ambiguidade sobre o uso da água"
+      }
+    ],
+    "gabarito": "D",
+    "explicacao": "Os ícones ilustram as ações descritas e tornam as orientações mais rápidas e acessíveis ao leitor.",
+    "comentarioPedagogico": "Explora a complementaridade entre recursos visuais e verbais.",
+    "tags": [
+      "linguagens",
+      "multimodalidade",
+      "infográfico",
+      "leitura",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Matemática",
+    "disciplina": "Matemática",
+    "competencia": "Raciocínio proporcional",
+    "habilidade": "Resolver situação-problema envolvendo proporcionalidade direta",
+    "tema": "Grandezas proporcionais",
+    "subtema": "Taxa de produção",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-MAT-001",
+    "enunciado": "Mantendo-se a mesma taxa de funcionamento, quantas garrafas serão enchidas por 10 bebedouros no mesmo intervalo de tempo?",
+    "apoioTexto": "Durante uma ação escolar, 6 bebedouros idênticos enchem, juntos, 180 garrafas em 15 minutos.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "240"
+      },
+      {
+        "letra": "B",
+        "texto": "270"
+      },
+      {
+        "letra": "C",
+        "texto": "300"
+      },
+      {
+        "letra": "D",
+        "texto": "360"
+      },
+      {
+        "letra": "E",
+        "texto": "450"
+      }
+    ],
+    "gabarito": "C",
+    "explicacao": "Cada bebedouro enche 30 garrafas no intervalo. Assim, 10 bebedouros enchem 10 × 30 = 300 garrafas.",
+    "comentarioPedagogico": "Questão de proporcionalidade direta em contexto cotidiano.",
+    "tags": [
+      "matemática",
+      "proporcionalidade",
+      "regra de três",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Matemática",
+    "disciplina": "Matemática",
+    "competencia": "Geometria plana",
+    "habilidade": "Calcular área útil após retirada de uma faixa de largura constante",
+    "tema": "Áreas de figuras planas",
+    "subtema": "Retângulo",
+    "dificuldade": "medio",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-MAT-002",
+    "enunciado": "A área que permanecerá disponível para as atividades esportivas será, em metro quadrado, igual a",
+    "apoioTexto": "Uma quadra retangular mede 30 m de comprimento por 18 m de largura. Para instalar uma faixa de segurança interna de 1 m de largura em todos os lados, a área central será reduzida.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "416"
+      },
+      {
+        "letra": "B",
+        "texto": "448"
+      },
+      {
+        "letra": "C",
+        "texto": "476"
+      },
+      {
+        "letra": "D",
+        "texto": "504"
+      },
+      {
+        "letra": "E",
+        "texto": "540"
+      }
+    ],
+    "gabarito": "B",
+    "explicacao": "A faixa de 1 m em cada lado reduz as dimensões internas para 28 m por 16 m. Logo, a área útil é 28 × 16 = 448 m².",
+    "comentarioPedagogico": "Exige interpretação geométrica da redução em ambos os lados de cada dimensão.",
+    "tags": [
+      "matemática",
+      "geometria",
+      "área",
+      "retângulo",
+      "medio"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Matemática",
+    "disciplina": "Matemática",
+    "competencia": "Porcentagem e educação financeira",
+    "habilidade": "Resolver problema com descontos sucessivos",
+    "tema": "Porcentagem",
+    "subtema": "Descontos sucessivos",
+    "dificuldade": "medio",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-MAT-003",
+    "enunciado": "O valor final pago pelo estudante será",
+    "apoioTexto": "Um curso preparatório custa R$ 500,00. Em uma campanha, a escola concede 20% de desconto e, sobre o valor já descontado, aplica mais 10% para pagamento à vista.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "R$ 350,00"
+      },
+      {
+        "letra": "B",
+        "texto": "R$ 360,00"
+      },
+      {
+        "letra": "C",
+        "texto": "R$ 370,00"
+      },
+      {
+        "letra": "D",
+        "texto": "R$ 400,00"
+      },
+      {
+        "letra": "E",
+        "texto": "R$ 450,00"
+      }
+    ],
+    "gabarito": "B",
+    "explicacao": "Após 20% de desconto, o valor passa a R$ 400,00. Aplicando 10% sobre R$ 400,00, o valor final é R$ 360,00.",
+    "comentarioPedagogico": "Avalia a compreensão de que descontos sucessivos não se somam diretamente.",
+    "tags": [
+      "matemática",
+      "porcentagem",
+      "desconto",
+      "educação financeira",
+      "medio"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Humanas",
+    "disciplina": "Geografia",
+    "competencia": "Espaço urbano e cidadania",
+    "habilidade": "Relacionar mobilidade urbana ao acesso desigual à cidade",
+    "tema": "Urbanização",
+    "subtema": "Direito à cidade",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-HUM-001",
+    "enunciado": "A situação descrita evidencia principalmente",
+    "apoioTexto": "Em uma cidade, bairros periféricos possuem poucas linhas de ônibus e longos tempos de deslocamento, enquanto regiões centrais concentram empregos, serviços públicos e equipamentos culturais.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "a distribuição equilibrada dos serviços urbanos"
+      },
+      {
+        "letra": "B",
+        "texto": "a eliminação das diferenças socioespaciais"
+      },
+      {
+        "letra": "C",
+        "texto": "a autonomia completa dos bairros periféricos"
+      },
+      {
+        "letra": "D",
+        "texto": "a redução da dependência do transporte coletivo"
+      },
+      {
+        "letra": "E",
+        "texto": "a desigualdade no acesso às oportunidades da cidade"
+      }
+    ],
+    "gabarito": "E",
+    "explicacao": "A concentração de serviços no centro e a mobilidade precária na periferia limitam o acesso de parte da população às oportunidades urbanas.",
+    "comentarioPedagogico": "Relaciona segregação socioespacial, mobilidade e direito à cidade.",
+    "tags": [
+      "humanas",
+      "geografia",
+      "urbanização",
+      "mobilidade",
+      "direito à cidade",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Humanas",
+    "disciplina": "História",
+    "competencia": "Transformações econômicas e territoriais",
+    "habilidade": "Interpretar a relação entre infraestrutura e expansão de atividades econômicas",
+    "tema": "Brasil no século XIX",
+    "subtema": "Ferrovias e economia cafeeira",
+    "dificuldade": "medio",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-HUM-002",
+    "enunciado": "A expansão dessa infraestrutura contribuiu para",
+    "apoioTexto": "Na segunda metade do século XIX, diversas ferrovias foram construídas ligando áreas produtoras de café do interior aos portos. A redução do tempo de transporte alterou o ritmo de circulação de mercadorias e capitais.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "integrar regiões produtoras aos circuitos de exportação"
+      },
+      {
+        "letra": "B",
+        "texto": "substituir imediatamente todo o trabalho agrícola por máquinas"
+      },
+      {
+        "letra": "C",
+        "texto": "encerrar a participação brasileira no comércio internacional"
+      },
+      {
+        "letra": "D",
+        "texto": "impedir o crescimento de cidades próximas às linhas férreas"
+      },
+      {
+        "letra": "E",
+        "texto": "eliminar as desigualdades econômicas entre as províncias"
+      }
+    ],
+    "gabarito": "A",
+    "explicacao": "As ferrovias facilitaram o escoamento do café e conectaram áreas produtoras aos portos e ao mercado externo.",
+    "comentarioPedagogico": "Exige relacionar infraestrutura de transporte e integração econômica.",
+    "tags": [
+      "humanas",
+      "história",
+      "ferrovias",
+      "café",
+      "século XIX",
+      "medio"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Natureza",
+    "disciplina": "Biologia",
+    "competencia": "Saúde coletiva",
+    "habilidade": "Compreender o papel da vacinação na redução da circulação de agentes infecciosos",
+    "tema": "Imunização",
+    "subtema": "Vacinação coletiva",
+    "dificuldade": "facil",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-NAT-001",
+    "enunciado": "A elevada cobertura vacinal contribui para a proteção coletiva porque",
+    "apoioTexto": "Em uma comunidade, a maioria das pessoas recebeu uma vacina capaz de reduzir a infecção e a transmissão de determinado vírus.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "faz o vírus desaparecer imediatamente do ambiente"
+      },
+      {
+        "letra": "B",
+        "texto": "impede qualquer mutação em todos os microrganismos"
+      },
+      {
+        "letra": "C",
+        "texto": "reduz as cadeias de transmissão entre as pessoas"
+      },
+      {
+        "letra": "D",
+        "texto": "substitui todas as demais medidas de prevenção"
+      },
+      {
+        "letra": "E",
+        "texto": "elimina a necessidade de acompanhamento epidemiológico"
+      }
+    ],
+    "gabarito": "C",
+    "explicacao": "Com mais pessoas protegidas, diminui a probabilidade de transmissão e são interrompidas mais cadeias de contágio.",
+    "comentarioPedagogico": "Avalia o entendimento básico de proteção coletiva por vacinação.",
+    "tags": [
+      "natureza",
+      "biologia",
+      "vacinação",
+      "saúde coletiva",
+      "facil"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  },
+  {
+    "escopo": "global",
+    "area": "Natureza",
+    "disciplina": "Física",
+    "competencia": "Energia e consumo",
+    "habilidade": "Calcular economia de energia elétrica em situação cotidiana",
+    "tema": "Potência e energia elétrica",
+    "subtema": "Eficiência energética",
+    "dificuldade": "medio",
+    "estilo": "enem_adaptado",
+    "origem": "autor",
+    "anoReferencia": 2026,
+    "codigoOrigem": "AXQ-ENEM-V1.1-NAT-002",
+    "enunciado": "A economia mensal de energia obtida com a substituição será de",
+    "apoioTexto": "Uma residência substituiu uma lâmpada incandescente de 60 W por uma lâmpada LED de 9 W. A lâmpada permanece ligada 5 horas por dia, durante 30 dias.",
+    "imagemUrl": "",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "5,10 kWh"
+      },
+      {
+        "letra": "B",
+        "texto": "6,00 kWh"
+      },
+      {
+        "letra": "C",
+        "texto": "6,75 kWh"
+      },
+      {
+        "letra": "D",
+        "texto": "7,65 kWh"
+      },
+      {
+        "letra": "E",
+        "texto": "9,00 kWh"
+      }
+    ],
+    "gabarito": "D",
+    "explicacao": "A diferença de potência é 51 W = 0,051 kW. Em 150 horas mensais, a economia é 0,051 × 150 = 7,65 kWh.",
+    "comentarioPedagogico": "Integra potência, tempo de uso e conversão para quilowatt-hora.",
+    "tags": [
+      "natureza",
+      "física",
+      "energia elétrica",
+      "potência",
+      "eficiência",
+      "medio"
+    ],
+    "ativa": true,
+    "publicada": true,
+    "metadadosIA": {
+      "modelo": "GPT-5.6 Thinking",
+      "promptVersao": "axoriin-enem-v1.1-ajuste-2026-07",
+      "revisadaHumano": false,
+      "observacoes": "Questão autoral em estilo ENEM. Recomenda-se revisão pedagógica antes da publicação em larga escala."
+    }
+  }
+]

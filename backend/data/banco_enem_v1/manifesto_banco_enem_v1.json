@@ -1,0 +1,88 @@
+{
+  "versao": "1.0.0",
+  "geradoEm": "2026-07-13",
+  "totalNovas": 711,
+  "areas": {
+    "Linguagens": {
+      "novas": 145,
+      "dificuldades": {
+        "medio": 52,
+        "facil": 54,
+        "dificil": 39
+      },
+      "disciplinas": {
+        "Língua Portuguesa": 95,
+        "Literatura/Artes": 20,
+        "Inglês": 15,
+        "Espanhol": 15
+      },
+      "gabaritos": {
+        "A": 29,
+        "B": 29,
+        "C": 29,
+        "D": 29,
+        "E": 29
+      }
+    },
+    "Matemática": {
+      "novas": 174,
+      "dificuldades": {
+        "facil": 61,
+        "medio": 65,
+        "dificil": 48
+      },
+      "disciplinas": {
+        "Matemática": 174
+      },
+      "gabaritos": {
+        "A": 35,
+        "B": 35,
+        "C": 35,
+        "D": 35,
+        "E": 34
+      }
+    },
+    "Humanas": {
+      "novas": 196,
+      "dificuldades": {
+        "medio": 78,
+        "facil": 68,
+        "dificil": 50
+      },
+      "disciplinas": {
+        "História": 49,
+        "Geografia": 49,
+        "Sociologia": 49,
+        "Filosofia": 49
+      },
+      "gabaritos": {
+        "A": 40,
+        "B": 39,
+        "C": 39,
+        "D": 39,
+        "E": 39
+      }
+    },
+    "Natureza": {
+      "novas": 196,
+      "dificuldades": {
+        "facil": 69,
+        "medio": 78,
+        "dificil": 49
+      },
+      "disciplinas": {
+        "Biologia": 66,
+        "Física": 65,
+        "Química": 65
+      },
+      "gabaritos": {
+        "A": 40,
+        "B": 39,
+        "C": 39,
+        "D": 39,
+        "E": 39
+      }
+    }
+  },
+  "observacao": "Questões autorais estilo ENEM; não são questões oficiais do Inep."
+}
