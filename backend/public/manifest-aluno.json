@@ -1,0 +1,37 @@
+{
+  "id": "/portal-aluno",
+  "name": "Axoriin — Portal do Aluno",
+  "short_name": "Axoriin Aluno",
+  "description": "Portal de aprendizagem do Axoriin para Ensino Médio e Ensino Fundamental II.",
+  "start_url": "/login-aluno.html?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#06101f",
+  "theme_color": "#06101f",
+  "orientation": "any",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icons/axoriin-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/axoriin-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Painel do aluno",
+      "short_name": "Painel",
+      "url": "/painel-aluno.html",
+      "icons": [{ "src": "/icons/axoriin-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Questionários",
+      "short_name": "Questionários",
+      "url": "/aluno-questionarios.html",
+      "icons": [{ "src": "/icons/axoriin-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Redação ENEM",
+      "short_name": "Redação",
+      "url": "/aluno-redacao.html",
+      "icons": [{ "src": "/icons/axoriin-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

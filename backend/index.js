@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 require('dotenv').config({ path: __dirname + '/.env' });
 
@@ -11,23 +11,23 @@ const compression = require('compression');
 const cors = require('cors');
 const os = require('os');
 
-// ✅ NOVOS HELPERS DE RECÁLCULO AUTOMÁTICO
+// âœ… NOVOS HELPERS DE RECÃLCULO AUTOMÃTICO
 const { iniciarAgendadorRecalculo } = require('./services/agendadorRecalculoComportamento');
 const { recalcularTodosAlunos } = require('./utils/recalculoComportamento');
 
-// 🚀 NOVO: SNAPSHOTS DE COMPORTAMENTO
+// ðŸš€ NOVO: SNAPSHOTS DE COMPORTAMENTO
 const { iniciarAgendadorSnapshotsComportamento } = require('./jobs/agendadorSnapshotsComportamento');
 const { iniciarAgendadorLembretesAssociacao } = require('./jobs/agendadorLembretesAssociacao');
 
-// ✅ NOVOS MIDDLEWARES / AUTH SUPERADMIN
+// âœ… NOVOS MIDDLEWARES / AUTH SUPERADMIN
 const resolveTenant = require('./middleware/resolveTenant');
 const requireSuperAdmin = require('./middleware/requireSuperAdmin');
 const superadminAuthRoutes = require('./routes/api/superadminAuth');
 
 const app = express();/* =========================
-   DIAGNÓSTICO / SEGURANÇA
+   DIAGNÃ“STICO / SEGURANÃ‡A
    ========================= */
-console.log('NODE_ENV =', process.env.NODE_ENV || '(não definido)');
+console.log('NODE_ENV =', process.env.NODE_ENV || '(nÃ£o definido)');
 app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
@@ -94,10 +94,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 /* =========================
-   ✅ TENANT RESOLVER (ANTES DE TUDO)
+   âœ… TENANT RESOLVER (ANTES DE TUDO)
    ========================= */
 app.use(resolveTenant);
-console.log('🏷️  ResolveTenant ligado (subdomínio/query/cookie).');
+console.log('ðŸ·ï¸  ResolveTenant ligado (subdomÃ­nio/query/cookie).');
 
 /* =========================
    MODELS
@@ -156,13 +156,13 @@ try {
   const { initMensageria, getStatus } = require('./services/mensageria');
   initMensageria(app);
   global.mensageria = app.locals.mensageria;
-  console.log('✉️  Mensageria injetada (email/telegram/whatsapp).');
+  console.log('âœ‰ï¸  Mensageria injetada (email/telegram/whatsapp).');
   app.get('/debug/mensageria/status', (_req, res) => {
     try { res.json({ ...(getStatus?.() || {}), ativo: !!app.locals.mensageria }); }
     catch (e) { res.status(500).json({ erro: String(e.message || e) }); }
   });
 } catch (e) {
-  console.warn('⚠️  Mensageria não carregada:', e?.message || e);
+  console.warn('âš ï¸  Mensageria nÃ£o carregada:', e?.message || e);
 }
 
 /* =========================
@@ -204,9 +204,9 @@ app.get('/debug/mail/status', (_req, res) => {
 
 try {
   app.use('/api', require('./routes/api/mail-health'));
-  console.log('🩺  Mail health ligado em /api/_mail/health');
+  console.log('ðŸ©º  Mail health ligado em /api/_mail/health');
 } catch {
-  console.warn('ℹ️  /api/_mail/health indisponível.');
+  console.warn('â„¹ï¸  /api/_mail/health indisponÃ­vel.');
 }
 
 /* =========================
@@ -259,6 +259,7 @@ const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportament
 const chamadasRoutes = require('./routes/api/chamadas');
 const redacaoRoutes = require('./routes/api/redacao');
 const questionariosRoutes = require('./routes/api/questionarios');
+const portalAlunoRoutes = require('./routes/api/portalAluno');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
@@ -270,7 +271,7 @@ const siteAdminRoutes = require('./routes/api/siteAdmin');
 const sitePublicoRoutes = require('./routes/api/sitePublico');
 const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
 
-// Axoriin Associações — módulo multi-tenant
+// Axoriin AssociaÃ§Ãµes â€” mÃ³dulo multi-tenant
 const associacaoRoutes = require('./routes/api/associacao');
 const masterAssociacoesRoutes = require('./routes/api/masterAssociacoes');
 const { carregarContextoAssociacao } = require('./middleware/associacaoAuth');
@@ -286,9 +287,9 @@ app.use('/auth', authRoutes);
 
 app.use('/api', pdfRoutes);
 
-// ✅ AUTH SEPARADA DO SUPERADMIN
+// âœ… AUTH SEPARADA DO SUPERADMIN
 app.use('/api/superadmin', superadminAuthRoutes);/* ==========================================================
-   ✅ FALLBACK: /auth/confirmar-email (se authRoutes não tiver)
+   âœ… FALLBACK: /auth/confirmar-email (se authRoutes nÃ£o tiver)
    ========================================================== */
 app.get('/auth/confirmar-email', async (req, res, next) => {
   try {
@@ -323,7 +324,7 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
     }
 
     if (!usuario) {
-      return res.status(400).send('Token inválido ou usuário não encontrado.');
+      return res.status(400).send('Token invÃ¡lido ou usuÃ¡rio nÃ£o encontrado.');
     }
 
     const now = new Date();
@@ -340,7 +341,7 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
     if (expCandidates.length) {
       const exp = expCandidates.find(d => d instanceof Date) || null;
       if (exp && exp <= now) {
-        return res.status(400).send('Token expirado. Solicite um novo cadastro/confirmação.');
+        return res.status(400).send('Token expirado. Solicite um novo cadastro/confirmacÌ§aÌƒo.');
       }
     }
 
@@ -404,8 +405,8 @@ function send403(res, publicRoot) {
 }
 
 /* ==========================================================
-   🚧 BLOQUEIO TEMPORÁRIO DO SITE INSTITUCIONAL
-   Mantém o sistema Axoriin funcionando normalmente.
+   ðŸš§ BLOQUEIO TEMPORÃRIO DO SITE INSTITUCIONAL
+   MantÃ©m o sistema Axoriin funcionando normalmente.
    Ative no Render com:
    SITE_INSTITUCIONAL_BLOQUEADO=true
    ========================================================== */
@@ -426,7 +427,7 @@ function enviarPaginaSiteBloqueado(res) {
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta name="robots" content="noindex, nofollow" />
-      <title>Site temporariamente indisponível</title>
+      <title>Site temporariamente indisponÃ­vel</title>
       <style>
         * {
           box-sizing: border-box;
@@ -478,11 +479,11 @@ function enviarPaginaSiteBloqueado(res) {
     </head>
     <body>
       <main class="container">
-        <h1>Site temporariamente indisponível</h1>
-        <p>O site institucional encontra-se temporariamente indisponível.</p>
+        <h1>Site temporariamente indisponÃ­vel</h1>
+        <p>O site institucional encontra-se temporariamente indisponÃ­vel.</p>
         <p>Os acessos aos sistemas internos permanecem funcionando normalmente.</p>
         <div class="aviso">
-          Colégio Militar Dom Pedro II — Unidade Cruzeiro do Sul
+          ColÃ©gio Militar Dom Pedro II â€” Unidade Cruzeiro do Sul
         </div>
       </main>
     </body>
@@ -533,7 +534,7 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   ✅ BLOQUEIO REAL POR URL (ANTES DO express.static)
+   âœ… BLOQUEIO REAL POR URL (ANTES DO express.static)
    ========================= */
 function buildProfessorGuard(publicRoot) {
   const blockedExact = new Set([
@@ -591,6 +592,8 @@ function buildProfessorGuard(publicRoot) {
     '/login-aluno.html',
     '/painel-aluno.html',
     '/painel-aluno.js',
+    '/aluno-jogos.html',
+    '/aluno-simulados.html',
     '/ficha-responsavel.html',
     '/ficha-responsavel.js',
     '/procedimento-responsavel.html',
@@ -639,7 +642,7 @@ function buildProfessorGuard(publicRoot) {
     const shouldCheck = looksLikeHtml || prefixHit;
     if (!shouldCheck) return next();
 
-    // ✅ Tratamento especial do painel master: não depende do login comum
+    // âœ… Tratamento especial do painel master: nÃ£o depende do login comum
     if (p === '/master-instituicoes.html' || p === '/master-associacoes.html' || p === '/api/master' || p.startsWith('/api/master/')) {
       return next();
     }
@@ -667,7 +670,7 @@ app.get('/api/usuario', autenticar, (req, res) => {
   const u = req.usuario || {};
   res.json({
     id: u._id || u.id || null,
-    nome: u.nome || u.login || 'Usuário',
+    nome: u.nome || u.login || 'UsuÃ¡rio',
     email: u.email || null,
     tipo: u.tipo || u.perfil || 'usuario',
     perfil: u.perfil || u.tipo || 'usuario',
@@ -681,7 +684,7 @@ app.get('/api/usuario-logado', autenticar, (req, res) => {
   const u = req.usuario || {};
   res.json({
     id: u._id || u.id || null,
-    nome: u.nome || u.login || 'Usuário',
+    nome: u.nome || u.login || 'UsuÃ¡rio',
     tipo: u.tipo || u.perfil || 'usuario',
     instituicao: u.instituicao || null,
     tenantId: u.tenantId || u.instituicao || null,
@@ -721,9 +724,9 @@ app.get('/api/dashboard/graficos', async (_req, res) => {
     const Aluno = mongoose.model('Aluno');
     const alunos = await Aluno.find({ ativo: true }).select('turma comportamento notaComportamento').lean();
     const comp = a => Number(a.comportamento ?? a.notaComportamento ?? 0);
-    const turmas = [...new Set(alunos.map(a => (a.turma || '—').trim()))];
+    const turmas = [...new Set(alunos.map(a => (a.turma || 'â€”').trim()))];
     const medias = turmas.map(t => {
-      const g = alunos.filter(a => (a.turma || '—').trim() === t).map(comp).filter(n => Number.isFinite(n) && n > 0);
+      const g = alunos.filter(a => (a.turma || 'â€”').trim() === t).map(comp).filter(n => Number.isFinite(n) && n > 0);
       const m = g.length ? g.reduce((s, n) => s + n, 0) / g.length : 0;
       return Number(m.toFixed(2));
     });
@@ -760,8 +763,8 @@ mountIf('/api/fichaAluno', fichaAlunoRoutes, autenticar);
 mountIf('/ficha', fichaViewRoutes, autenticar);
 mountIf('/api', fichaTesteRoute);
 
-// 🔥 IMPORTANTE: rotas públicas do aluno precisam vir ANTES de /api/alunos
-// para /api/alunos/:id/public/qrcode, /enable e /disable não caírem no CRUD normal.
+// ðŸ”¥ IMPORTANTE: rotas pÃºblicas do aluno precisam vir ANTES de /api/alunos
+// para /api/alunos/:id/public/qrcode, /enable e /disable nÃ£o caÃ­rem no CRUD normal.
 mountIf('/api', publicAlunoRoutes);
 mountIf('/api/alunos', alunoRoutes);
 
@@ -803,22 +806,25 @@ mountIf('/api/aph', aphEstatisticasRoutes);
 mountIf('/api/aph', aphPdfRoutes);
 
 /* =========================
-   ✅ NOVA ROTA: REDAÇÃO ENEM
+   âœ… NOVA ROTA: REDAÃ‡ÃƒO ENEM
    ========================= */
 mountIf('/api/redacao', redacaoRoutes);
 
 /* =========================
-   ✅ NOVA ROTA: QUESTIONÁRIOS
+   âœ… NOVA ROTA: QUESTIONÃRIOS
    ========================= */
 mountIf('/api/questionarios', questionariosRoutes);
 
+/* Portal do Aluno segmentado */
+mountIf('/api/portal-aluno', portalAlunoRoutes);
+
 /* =========================
-   🚀 RIFAS (NOVO MÓDULO)
+   ðŸš€ RIFAS (NOVO MÃ“DULO)
    ========================= */
 mountIf('/api/rifas', rifasRoutes, autenticar);
 
 /* =========================
-   🚀 BAILE FORMATURA (NOVO MÓDULO)
+   ðŸš€ BAILE FORMATURA (NOVO MÃ“DULO)
    ========================= */
 mountIf('/api/baile-contratos', baileContratosRoutes, autenticar);
 
@@ -828,49 +834,49 @@ mountIf('/api/baile-financeiro', baileFinanceiroRoutes, autenticar);
 
 mountIf('/api/baile-controle', baileControleRoutes);
 /* =========================
-   🚀 PROCESSOS DISCIPLINARES (NOVO MÓDULO)
+   ðŸš€ PROCESSOS DISCIPLINARES (NOVO MÃ“DULO)
    ========================= */
 
 mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes.publicRouter);
 mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes, autenticar);
 
 /* =========================
-   🚀 LIVRO DE OCORRENCIAS (NOVO MÓDULO)
+   ðŸš€ LIVRO DE OCORRENCIAS (NOVO MÃ“DULO)
    ========================= */
 mountIf('/api/livro-ocorrencias', livroOcorrenciasRoutes, autenticar);
 
 /* =========================
-   🤝 AXORIIN ASSOCIAÇÕES
+   ðŸ¤ AXORIIN ASSOCIAÃ‡Ã•ES
    ========================= */
 mountIf('/api/associacao', associacaoRoutes, autenticar, carregarContextoAssociacao);
 
 /* =========================
-   🌐 CMS SITE INSTITUCIONAL
+   ðŸŒ CMS SITE INSTITUCIONAL
    ========================= */
 
 // ADMIN DO SITE
 mountIf('/api/site-admin', siteAdminRoutes, autenticar);
 
-// API PÚBLICA DO SITE
+// API PÃšBLICA DO SITE
 mountIf('/api/site-publico', sitePublicoRoutes);
 
 // ANALYTICS INTERNO DO SITE
-// Não colocar "autenticar" aqui, pois a landing page precisa registrar visitas públicas.
+// NÃ£o colocar "autenticar" aqui, pois a landing page precisa registrar visitas pÃºblicas.
 mountIf('/api/site-analytics', siteAnalyticsRoutes);
 
 /* =========================
-   ✅ MASTER INSTITUIÇÕES (SuperAdmin)
+   âœ… MASTER INSTITUIÃ‡Ã•ES (SuperAdmin)
    ========================= */
 mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
 mountIf('/api/master/associacoes', masterAssociacoesRoutes, requireSuperAdmin);
 
 /* =========================
-   ✅ FIX TEMPORÁRIO DE INSTITUIÇÃO LEGADA (SuperAdmin)
+   âœ… FIX TEMPORÃRIO DE INSTITUIÃ‡ÃƒO LEGADA (SuperAdmin)
    ========================= */
 mountIf('/api/fix-instituicao', fixInstituicaoLegacy, requireSuperAdmin);
 
 /* =========================
-   ESTÁTICOS / HTML
+   ESTÃTICOS / HTML
    ========================= */
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
@@ -915,12 +921,12 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   ✅ GUARD ANTES DO STATIC
+   âœ… GUARD ANTES DO STATIC
    ========================= */
 app.use(buildProfessorGuard(publicRoot));
 
 /* =========================
-   ✅ ROTAS HTML ESPECIAIS ANTES DO STATIC
+   âœ… ROTAS HTML ESPECIAIS ANTES DO STATIC
    ========================= */
 app.get('/superadmin-login.html', (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'superadmin-login.html'));
@@ -966,7 +972,7 @@ app.get('/service-worker.js', (_req, res) => {
 });
 
 /* =========================
-   ✅ PUBLIC TENANT
+   âœ… PUBLIC TENANT
    ========================= */
 function normalizeSlug(s) {
   return String(s || '').trim().toLowerCase();
@@ -1048,7 +1054,7 @@ app.get('/configuracao-documentos.html', autenticar, exigirAdmin, (_req, res) =>
 app.get('/associacao.html', autenticar, carregarContextoAssociacao, (_req, res) => res.sendFile(path.join(publicRoot, 'associacao.html')));
 
 /* =========================
-   DIAGNÓSTICOS / ERRORS
+   DIAGNÃ“STICOS / ERRORS
    ========================= */
 app.get('/__version', (_req, res) =>
   res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', associacoes: '3.2.0', builtAt: new Date().toISOString() })
@@ -1065,11 +1071,11 @@ app.use((req, res) => {
     const nf = path.join(publicRoot, '404.html');
     if (fs.existsSync(nf)) return res.status(404).sendFile(nf);
   }
-  res.status(404).json({ error: 'Rota não encontrada' });
+  res.status(404).json({ error: 'Rota nÃ£o encontrada' });
 });
 
 app.use((err, _req, res, _next) => {
-  console.error('❌ Erro não tratado:', err);
+  console.error('âŒ Erro nÃ£o tratado:', err);
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
@@ -1082,11 +1088,11 @@ let agendadorRecalculoIniciado = false;
 
 async function connectMongo() {
   if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
-    throw new Error('URI do Mongo inválida ou ausente no .env.');
+    throw new Error('URI do Mongo invÃ¡lida ou ausente no .env.');
   }
 
   const masked = URI.replace(/\/\/.*?@/, '//***@');
-  console.log('🔐 Conectando no Mongo:', masked);
+  console.log('ðŸ” Conectando no Mongo:', masked);
 
   await mongoose.connect(URI, {
     serverSelectionTimeoutMS: Number(process.env.DB_SERVER_SEL_MS || 60000),
@@ -1098,34 +1104,34 @@ async function connectMongo() {
     family: 4,
   });
 
-  console.log('🟢 Conectado ao MongoDB');
+  console.log('ðŸŸ¢ Conectado ao MongoDB');
 
   setTimeout(async () => {
     try {
       const resultado = await recalcularTodosAlunos();
-      console.log(`[startup] recálculo inicial concluído. Alunos recalculados: ${resultado.total}`);
+      console.log(`[startup] recÃ¡lculo inicial concluÃ­do. Alunos recalculados: ${resultado.total}`);
     } catch (err) {
-      console.error('[startup] erro no recálculo inicial:', err);
+      console.error('[startup] erro no recÃ¡lculo inicial:', err);
     }
   }, 5000);
 
   if (!agendadorRecalculoIniciado) {
     try {
       iniciarAgendadorRecalculo();
-      console.log('✅ Agendador de recálculo diário iniciado');
+      console.log('âœ… Agendador de recÃ¡lculo diÃ¡rio iniciado');
 
       iniciarAgendadorSnapshotsComportamento();
-      console.log('📊 Agendador de snapshots de comportamento iniciado');
+      console.log('ðŸ“Š Agendador de snapshots de comportamento iniciado');
 
       iniciarAgendadorLembretesAssociacao({
         mensageria: app.locals.mensageria || null,
         intervalMs: Number(process.env.ASSOCIACAO_LEMBRETES_INTERVAL_MS || 15 * 60 * 1000),
       });
-      console.log('✉️  Agendador de lembretes das associações iniciado');
+      console.log('âœ‰ï¸  Agendador de lembretes das associaÃ§Ãµes iniciado');
 
       agendadorRecalculoIniciado = true;
     } catch (err) {
-      console.error('❌ Falha ao iniciar agendadores:', err);
+      console.error('âŒ Falha ao iniciar agendadores:', err);
     }
   }
 }
@@ -1135,9 +1141,9 @@ async function startServer() {
     await connectMongo();
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Servidor ligado em: http://localhost:${PORT}`);
-      console.log('🧪 Health pronto: /__version e /healthz');
-      console.log('🌍 CORS: Render + localhost + *.onrender.com');
+      console.log(`ðŸš€ Servidor ligado em: http://localhost:${PORT}`);
+      console.log('ðŸ§ª Health pronto: /__version e /healthz');
+      console.log('ðŸŒ CORS: Render + localhost + *.onrender.com');
 
       (async () => {
         try {
@@ -1146,7 +1152,7 @@ async function startServer() {
       })();
     });
   } catch (err) {
-    console.error('❌ Falha crítica ao iniciar servidor:', err?.message || err);
+    console.error('âŒ Falha crÃ­tica ao iniciar servidor:', err?.message || err);
     process.exit(1);
   }
 }
@@ -1155,6 +1161,6 @@ startServer();
 
 process.on('SIGINT', async () => {
   try { await mongoose.disconnect(); } catch {}
-  console.log('\n👋 Encerrado com sucesso');
+  console.log('\nðŸ‘‹ Encerrado com sucesso');
   process.exit(0);
 });

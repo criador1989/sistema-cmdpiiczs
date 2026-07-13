@@ -1,0 +1,22 @@
+@import url('/portal-aluno/portal-aluno.css?v=1.0.0');
+
+.placeholder-shell { min-height: 100vh; padding: 28px clamp(14px, 4vw, 52px) 60px; }
+.placeholder-top { max-width: 1240px; margin: 0 auto 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.placeholder-brand { font-weight: 950; letter-spacing: .05em; }
+.placeholder-hero { max-width: 1240px; margin: 0 auto; padding: clamp(26px, 5vw, 58px); border: 1px solid var(--line-strong); border-radius: 34px; background: linear-gradient(140deg, rgba(32,72,126,.94), rgba(8,27,51,.96)); box-shadow: var(--shadow); }
+.placeholder-hero.game { background: radial-gradient(circle at 85% 10%, rgba(255,199,93,.23), transparent 30%), linear-gradient(140deg, rgba(50,58,112,.95), rgba(10,38,66,.96)); }
+.placeholder-hero h1 { margin: 14px 0 10px; max-width: 850px; font-size: clamp(35px, 6vw, 68px); line-height: 1; letter-spacing: -.05em; }
+.placeholder-hero p { max-width: 790px; color: #c3d5e9; font-size: 17px; line-height: 1.65; }
+.placeholder-grid { max-width: 1240px; margin: 22px auto 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.placeholder-card { padding: 22px; border: 1px solid var(--line); border-radius: 24px; background: var(--panel); }
+.placeholder-card .big { font-size: 34px; }
+.placeholder-card h2 { margin: 15px 0 8px; }
+.placeholder-card p { color: var(--muted); line-height: 1.55; }
+.locked { display: inline-flex; padding: 6px 9px; border-radius: 999px; background: rgba(255,199,93,.13); color: var(--amber); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; }
+.world-map { max-width: 1240px; margin: 18px auto 0; display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.world-node { position: relative; min-height: 150px; padding: 18px; border: 1px dashed var(--line-strong); border-radius: 22px; background: rgba(255,255,255,.035); }
+.world-node b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: rgba(155,120,255,.14); color: #c9bbff; }
+.world-node strong { display:block; margin: 17px 0 6px; }
+.world-node span { color: var(--muted); font-size: 13px; line-height: 1.45; }
+@media (max-width: 850px) { .placeholder-grid { grid-template-columns: 1fr; } .world-map { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 520px) { .placeholder-shell { padding: 16px 12px 40px; } .placeholder-top { align-items: stretch; flex-direction: column; } .placeholder-top .btn { width: 100%; } .world-map { grid-template-columns: 1fr; } }
