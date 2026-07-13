@@ -6,6 +6,9 @@ const mongoose = require('mongoose');
 const Questao = require('../../models/Questao');
 const QuestionarioTentativa = require('../../models/QuestionarioTentativa');
 const { autenticar } = require('../../middleware/autenticacao');
+const {
+  selecionarQuestoesAdaptativas
+} = require('../../services/questionarioAdaptativoService');
 
 const router = express.Router();
 
@@ -536,12 +539,10 @@ router.get('/gerar', async (req, res) => {
       .lean()
       .catch(() => []);
 
-    const perfil = calcularPerfilAdaptativo(tentativasRecentes);
-
     const habilidadeFocoAutomatica =
-    habilidade ||
-    perfil.habilidadeMaisFraca ||
-    extrairHabilidadeMaisFraca(tentativasRecentes);
+      habilidade ||
+      extrairHabilidadeMaisFraca(tentativasRecentes);
+
     const questoesErradasParaReforco = extrairQuestoesErradasParaReforco(tentativasRecentes);
 
     const filtroBase = {
@@ -553,133 +554,43 @@ router.get('/gerar', async (req, res) => {
     if (area) filtroBase.area = area;
     if (disciplina) filtroBase.disciplina = disciplina;
     if (tema) filtroBase.tema = tema;
-    const dificuldadeFinal =
-  ['facil', 'medio', 'dificil'].includes(dificuldade)
-    ? dificuldade
-    : perfil.dificuldadeAlvo;
+    if (habilidade) filtroBase.habilidade = habilidade;
 
-    const questoesRecentesIds = new Set();
+    const candidatas = await Questao.find(filtroBase)
+      .limit(2500)
+      .lean();
 
+    if (!candidatas.length) {
+      return respostaErro(res, 404, 'Nenhuma questão disponível para esse filtro.');
+    }
+
+    const idsRecentes = [];
     for (const tentativa of tentativasRecentes.slice(0, 3)) {
       for (const q of tentativa.questoes || []) {
-        if (q.questaoId) questoesRecentesIds.add(String(q.questaoId));
+        if (q.questaoId) idsRecentes.push(String(q.questaoId));
       }
     }
 
     const idsReforco = questoesErradasParaReforco
-      .map(item => item.questaoId)
-      .filter(Boolean)
-      .slice(0, Math.ceil(quantidade * 0.4));
+      .map((item) => item.questaoId)
+      .filter(Boolean);
 
-    let questoesReforco = [];
-
-    if (idsReforco.length) {
-      questoesReforco = await Questao.find({
-        ...filtroBase,
-        _id: { $in: idsReforco }
-      })
-        .limit(Math.ceil(quantidade * 0.4))
-        .lean();
-
-      questoesReforco = questoesReforco.map(q => ({
-        ...q,
-        __reforcoAplicado: true
-      }));
-    }
-
-    let questoesFoco = [];
-
-    if (habilidadeFocoAutomatica) {
-      questoesFoco = await Questao.find({
-        ...filtroBase,
-        habilidade: habilidadeFocoAutomatica,
-        _id: { $nin: questoesReforco.map(q => q._id) }
-      })
-        .limit(200)
-        .lean();
-
-      questoesFoco = questoesFoco
-        .filter(q => !questoesRecentesIds.has(String(q._id)))
-        .map(q => ({
-          ...q,
-          __reforcoAplicado: tipo === 'revisao'
-        }));
-    }
-
-    let questoesGerais = await Questao.find({
-      ...filtroBase,
-      ...(habilidade ? { habilidade } : {}),
-      _id: {
-        $nin: [
-          ...questoesReforco.map(q => q._id),
-          ...questoesFoco.map(q => q._id)
-        ]
-      }
-    })
-      .limit(300)
-      .lean();
-
-    questoesGerais = questoesGerais.filter(q => !questoesRecentesIds.has(String(q._id)));
-
-    let selecionadas = [];
-
-    if (tipo === 'diagnostico') {
-      selecionadas = embaralhar([...questoesFoco, ...questoesGerais, ...questoesReforco]).slice(0, quantidade);
-    } else if (tipo === 'revisao') {
-      selecionadas = [
-        ...embaralhar(questoesReforco).slice(0, Math.ceil(quantidade * 0.4)),
-        ...embaralhar(questoesFoco).slice(0, Math.ceil(quantidade * 0.4))
-      ];
-
-      const faltam = quantidade - selecionadas.length;
-      if (faltam > 0) {
-        selecionadas = [
-          ...selecionadas,
-          ...embaralhar(questoesGerais).slice(0, faltam)
-        ];
-      }
-    } else {
-      selecionadas = [
-        ...embaralhar(questoesReforco).slice(0, Math.ceil(quantidade * 0.25)),
-        ...embaralhar(questoesFoco).slice(0, Math.ceil(quantidade * 0.35))
-      ];
-
-      const faltam = quantidade - selecionadas.length;
-      if (faltam > 0) {
-        selecionadas = [
-          ...selecionadas,
-          ...embaralhar(questoesGerais).slice(0, faltam)
-        ];
-      }
-    }
-
-    const idsUnicos = new Set();
-    selecionadas = selecionadas.filter(q => {
-      const id = String(q._id);
-      if (idsUnicos.has(id)) return false;
-      idsUnicos.add(id);
-      return true;
+    const montagem = selecionarQuestoesAdaptativas({
+      questoes: candidatas,
+      tentativasRecentes,
+      quantidade,
+      tipo,
+      dificuldadeSolicitada: dificuldade,
+      habilidadeFoco: habilidadeFocoAutomatica,
+      idsReforco,
+      idsRecentes
     });
 
-    if (selecionadas.length < quantidade) {
-      const adicionais = await Questao.find({
-        ...filtroBase,
-        _id: { $nin: selecionadas.map(q => q._id) }
-      })
-        .limit(300)
-        .lean();
-
-      selecionadas = [
-        ...selecionadas,
-        ...embaralhar(adicionais).slice(0, quantidade - selecionadas.length)
-      ];
-    }
+    const selecionadas = montagem.selecionadas;
 
     if (!selecionadas.length) {
-      return respostaErro(res, 404, 'Nenhuma questão disponível para esse filtro.');
+      return respostaErro(res, 404, 'Não foi possível montar o questionário com os filtros informados.');
     }
-
-    selecionadas = selecionadas.slice(0, quantidade);
 
     const snapshots = selecionadas.map((q, index) => snapshotQuestao(q, index + 1));
 
@@ -698,15 +609,17 @@ router.get('/gerar', async (req, res) => {
       tipo: ['diagnostico', 'treino', 'revisao', 'pre_simulado', 'personalizado'].includes(tipo) ? tipo : 'treino',
       titulo,
       descricao: habilidadeFocoAutomatica
-        ? `Questionário montado com reforço na habilidade: ${habilidadeFocoAutomatica}.`
-        : 'Questionário montado automaticamente pelo Axoriin.',
+        ? `Questionário adaptativo com reforço na habilidade: ${habilidadeFocoAutomatica}.`
+        : `Questionário adaptativo em nível ${montagem.dificuldadeAlvo}.`,
       area,
       disciplina,
-      dificuldadePredominante: dificuldadeFinal || 'misto',
-      origemMontagem: habilidadeFocoAutomatica || questoesReforco.length ? 'reforco_adaptativo' : 'banco',
+      dificuldadePredominante: montagem.dificuldadeAlvo || 'misto',
+      origemMontagem: habilidadeFocoAutomatica || idsReforco.length
+        ? 'reforco_adaptativo'
+        : 'banco',
       focoMontagem: habilidadeFocoAutomatica
         ? `Reforço adaptativo em ${habilidadeFocoAutomatica}`
-        : '',
+        : `Progressão adaptativa: ${montagem.dificuldadeAlvo}`,
       habilidadeFoco: habilidadeFocoAutomatica || '',
       questoes: snapshots,
       totalQuestoes: snapshots.length,
@@ -727,9 +640,11 @@ router.get('/gerar', async (req, res) => {
         origemMontagem: tentativa.origemMontagem,
         focoMontagem: tentativa.focoMontagem,
         habilidadeFoco: tentativa.habilidadeFoco,
+        dificuldadePredominante: tentativa.dificuldadePredominante,
+        distribuicaoPlanejada: montagem.distribuicaoPlanejada,
         createdAt: tentativa.createdAt,
         questoes: selecionadas.map(limparQuestaoParaAluno),
-        perfilAdaptativo: perfil
+        perfilAdaptativo: montagem.perfil
       }
     });
   } catch (error) {
