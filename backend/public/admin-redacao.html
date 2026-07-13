@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel ENEM — Redação | Axoriin</title>
+  <link rel="stylesheet" href="/css/admin-redacao.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <strong>Axoriin — Painel ENEM / Redação</strong>
+      <span id="perfilPainel">Professores e administradores</span>
+    </div>
+
+    <button class="btn btn-secondary" type="button" onclick="history.back()">
+      Voltar
+    </button>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Gerencie a Redação ENEM e acompanhe a evolução dos alunos</h1>
+      <p>
+        Selecione temas, organize ciclos, filtre por turma e aluno e consulte a redação completa com a devolutiva da inteligência artificial.
+      </p>
+    </section>
+
+
+    <section class="card acompanhamento-card">
+      <div class="card-head">
+        <h2>Acompanhamento das redações</h2>
+        <p>Selecione a turma e o aluno para consultar o texto, a nota C1–C5 e a devolutiva pedagógica.</p>
+      </div>
+
+      <div class="card-body">
+        <div class="filtros-acompanhamento">
+          <div class="field">
+            <label for="filtroTurma">Turma</label>
+            <select id="filtroTurma">
+              <option value="">Todas as turmas</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="filtroAluno">Aluno</label>
+            <select id="filtroAluno">
+              <option value="">Todos os alunos</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="filtroCiclo">Ciclo</label>
+            <select id="filtroCiclo">
+              <option value="">Todos os ciclos</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="filtroModalidade">Modalidade</label>
+            <select id="filtroModalidade">
+              <option value="">Todas</option>
+              <option value="trilha_orientada">Trilha orientada</option>
+              <option value="pratica_livre">Prática livre</option>
+              <option value="avaliacao_institucional">Avaliação institucional</option>
+              <option value="legado">Legado</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="filtroStatus">Situação</label>
+            <select id="filtroStatus">
+              <option value="">Todas</option>
+              <option value="corrigida">Corrigida</option>
+              <option value="apoio_professor_solicitado">Apoio solicitado</option>
+              <option value="apoio_professor_respondido">Apoio respondido</option>
+              <option value="erro_correcao">Erro de correção</option>
+            </select>
+          </div>
+
+          <div class="field filtro-acao">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" id="btnBuscarRedacoes" type="button">
+              Buscar redações
+            </button>
+          </div>
+        </div>
+
+        <div class="metricas-redacao">
+          <article>
+            <span>Total localizado</span>
+            <strong id="metricaTotal">0</strong>
+          </article>
+
+          <article>
+            <span>Corrigidas</span>
+            <strong id="metricaCorrigidas">0</strong>
+          </article>
+
+          <article>
+            <span>Média das notas</span>
+            <strong id="metricaMedia">0</strong>
+          </article>
+
+          <article>
+            <span>Apoios pendentes</span>
+            <strong id="metricaApoios">0</strong>
+          </article>
+        </div>
+
+        <div class="acompanhamento-grid">
+          <div>
+            <div class="subtitulo-linha">
+              <h3>Redações encontradas</h3>
+              <span id="quantidadeLista">0 registro(s)</span>
+            </div>
+
+            <div class="lista-redacoes-professor" id="listaRedacoesProfessor">
+              <div class="item">Use os filtros para carregar as redações.</div>
+            </div>
+          </div>
+
+          <div class="detalhe-redacao-professor" id="detalheRedacaoProfessor">
+            <div class="detalhe-vazio">
+              Selecione uma redação para consultar o texto e a devolutiva.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="grid">
+      <section class="card">
+        <div class="card-head">
+          <h2>Criar ciclo coletivo</h2>
+          <p>Use para a trilha orientada ou para uma avaliação institucional.</p>
+        </div>
+
+        <div class="card-body">
+          <form id="formCiclo">
+            <div class="form-grid">
+              <div class="field">
+                <label for="cicloNome">Nome do ciclo</label>
+                <input id="cicloNome" required placeholder="Ex.: Ciclo de agosto — evasão escolar">
+              </div>
+
+              <div class="field">
+                <label for="cicloModalidade">Modalidade</label>
+                <select id="cicloModalidade">
+                  <option value="trilha_orientada">Trilha orientada</option>
+                  <option value="avaliacao_institucional">Avaliação institucional</option>
+                </select>
+              </div>
+
+              <div class="field full">
+                <label for="cicloTema">Tema</label>
+                <select id="cicloTema" required>
+                  <option value="">Carregando temas...</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="cicloInicio">Início</label>
+                <input id="cicloInicio" type="datetime-local">
+              </div>
+
+              <div class="field">
+                <label for="cicloFim">Encerramento</label>
+                <input id="cicloFim" type="datetime-local">
+              </div>
+
+              <div class="field">
+                <label for="cicloMaxEnvios">Entregas por aluno</label>
+                <input id="cicloMaxEnvios" type="number" min="1" max="10" value="2">
+              </div>
+
+              <div class="field">
+                <label for="cicloTempo">Tempo limite/sugerido</label>
+                <input id="cicloTempo" type="number" min="10" max="240" value="60">
+              </div>
+
+              <div class="field full">
+                <label for="cicloInstrucoes">Orientação exibida ao aluno</label>
+                <textarea id="cicloInstrucoes" placeholder="Ex.: faça a primeira versão, analise a devolutiva e reescreva o texto."></textarea>
+              </div>
+            </div>
+
+            <div class="checks">
+              <label class="check">
+                <input id="cicloReescrita" type="checkbox" checked>
+                <span>Permitir reescrita no mesmo ciclo</span>
+              </label>
+
+              <label class="check">
+                <input id="cicloAssistente" type="checkbox" checked>
+                <span>Exibir assistente em tempo real</span>
+              </label>
+
+              <label class="check">
+                <input id="cicloCronometro" type="checkbox">
+                <span>Exigir cronômetro</span>
+              </label>
+
+              <label class="check">
+                <input id="cicloMotivadores" type="checkbox" checked>
+                <span>Exibir textos motivadores</span>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">Criar ciclo</button>
+            </div>
+          </form>
+
+          <div class="status" id="statusCiclo"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Novo tema</h2>
+          <p>Cadastre um tema autoral para usar em ciclos ou na prática livre.</p>
+        </div>
+
+        <div class="card-body">
+          <form id="formTema">
+            <div class="form-grid">
+              <div class="field full">
+                <label for="temaTitulo">Título</label>
+                <input id="temaTitulo" required placeholder="Desafios para...">
+              </div>
+
+              <div class="field full">
+                <label for="temaProposta">Proposta</label>
+                <textarea id="temaProposta" required placeholder="A partir da leitura dos textos motivadores..."></textarea>
+              </div>
+
+              <div class="field">
+                <label for="temaEixo">Eixo temático</label>
+                <input id="temaEixo" placeholder="Educação e cidadania">
+              </div>
+
+              <div class="field">
+                <label for="temaModalidade">Destino inicial</label>
+                <select id="temaModalidade">
+                  <option value="trilha_orientada">Banco institucional</option>
+                  <option value="pratica_livre">Prática livre</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">Cadastrar tema</button>
+            </div>
+          </form>
+
+          <div class="status" id="statusTema"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div class="card-head">
+          <h2>Ciclos cadastrados</h2>
+          <p>Ative somente o ciclo que deve aparecer aos alunos.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="list" id="listaCiclos">
+            <div class="item">Carregando...</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Biblioteca de prática livre</h2>
+          <p>Escolha quais temas ficarão disponíveis na lista lateral do aluno.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="toolbar">
+            <input id="buscaTema" placeholder="Buscar tema">
+            <button class="btn btn-secondary" type="button" id="btnAtualizar">Atualizar</button>
+          </div>
+
+          <div class="list" id="listaTemas">
+            <div class="item">Carregando...</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/admin-redacao.js"></script>
+</body>
+</html>

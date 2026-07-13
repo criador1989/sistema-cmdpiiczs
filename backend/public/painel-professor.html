@@ -135,11 +135,12 @@
     <!-- ✅ Agora este painel "permanece" e só segue se clicar -->
     <div class="actions" id="actions" style="display:none;">
       <button class="btn primary" id="btnProsseguir" style="display:none;">Prosseguir</button>
+      <button class="btn" id="btnRedacaoEnem" style="display:none;">Painel ENEM — Redação</button>
       <button class="btn" id="btnIrLogin" style="display:none;">Ir para o login</button>
     </div>
 
     <div class="hint">
-      <b>Dica:</b> Professor acessa a <b>ficha do aluno</b> e a <b>chamada</b> pelo painel principal.
+      <b>Dica:</b> Use o <b>Painel ENEM — Redação</b> para selecionar temas, acompanhar turmas e consultar as devolutivas dos alunos.
       Tudo fica registrado nos <b>logs</b>.
     </div>
   </div>
@@ -150,6 +151,7 @@
     const actions    = document.getElementById('actions');
     const btnProsseguir = document.getElementById('btnProsseguir');
     const btnIrLogin    = document.getElementById('btnIrLogin');
+    const btnRedacaoEnem = document.getElementById('btnRedacaoEnem');
 
     function setStatus(pill, text){
       statusPill.textContent = pill;
@@ -201,6 +203,10 @@
         showProsseguir();
         btnProsseguir.textContent = 'Prosseguir';
         btnProsseguir.onclick = () => window.location.href = '/painel.html';
+        if (btnRedacaoEnem) {
+          btnRedacaoEnem.style.display = 'inline-flex';
+          btnRedacaoEnem.onclick = () => window.location.href = '/admin-redacao.html';
+        }
         return;
       }
 

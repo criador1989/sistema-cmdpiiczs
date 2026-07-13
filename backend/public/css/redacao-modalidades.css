@@ -1,0 +1,190 @@
+
+.modalidades-redacao {
+  display: grid;
+  gap: 12px;
+}
+
+.modalidades-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.modalidade-tab {
+  border: 1px solid rgba(44, 86, 139, .18);
+  border-radius: 14px;
+  padding: 11px 8px;
+  background: rgba(255,255,255,.8);
+  color: #24364f;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.modalidade-tab:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, .4);
+}
+
+.modalidade-tab.active {
+  background: linear-gradient(135deg, #164b9b, #2570dc);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .22);
+}
+
+.modalidade-tab[disabled] {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.modalidade-resumo {
+  border: 1px solid rgba(37, 99, 235, .16);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(239,246,255,.95), rgba(255,255,255,.95));
+  padding: 13px;
+}
+
+.modalidade-resumo strong {
+  display: block;
+  color: #15345d;
+  margin-bottom: 4px;
+}
+
+.modalidade-resumo p {
+  margin: 0;
+  font-size: .83rem;
+  line-height: 1.45;
+  color: #52657c;
+}
+
+.modalidade-progresso {
+  margin-top: 10px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.modalidade-progresso span,
+.tema-livre-card span {
+  display: inline-flex;
+  border-radius: 999px;
+  background: rgba(37,99,235,.09);
+  color: #1f5fae;
+  padding: 5px 8px;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.temas-livres-lista {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.tema-livre-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(44, 86, 139, .14);
+  border-radius: 14px;
+  background: rgba(255,255,255,.82);
+  padding: 11px;
+  cursor: pointer;
+  color: #263b59;
+  transition: .2s ease;
+}
+
+.tema-livre-card:hover,
+.tema-livre-card.active {
+  border-color: #2a6bd4;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.tema-livre-card strong {
+  display: block;
+  font-size: .84rem;
+  line-height: 1.35;
+  margin-bottom: 7px;
+}
+
+.temas-livres-vazio {
+  font-size: .8rem;
+  color: #6b7d93;
+  padding: 8px 0;
+}
+
+.modalidade-aviso {
+  border-radius: 12px;
+  padding: 10px;
+  font-size: .78rem;
+  line-height: 1.45;
+  background: #fff8df;
+  color: #765300;
+  border: 1px solid #f4d886;
+}
+
+body.redacao-avaliacao .estrutura-map,
+body.redacao-avaliacao .estrutura-dica,
+body.redacao-avaliacao .competencias-live,
+body.redacao-avaliacao .alertas-redacao,
+body.redacao-avaliacao #assistenteProgresso,
+body.redacao-avaliacao #apoioEscritaCard {
+  display: none !important;
+}
+
+body.redacao-avaliacao .text-card > p::after {
+  content: " Nesta modalidade, o apoio em tempo real foi desativado pela escola.";
+  font-weight: 800;
+  color: #8a5b00;
+}
+
+.evolucao-box {
+  display: none;
+  margin-top: 16px;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, #edfdf5, #f7fffb);
+  border: 1px solid rgba(16,185,129,.24);
+}
+
+.evolucao-box.visible {
+  display: block;
+}
+
+.evolucao-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.evolucao-item {
+  border-radius: 12px;
+  background: rgba(255,255,255,.85);
+  padding: 9px;
+  text-align: center;
+}
+
+.evolucao-item strong {
+  display: block;
+  color: #155e4b;
+}
+
+.evolucao-positivo { color: #0f8c67; }
+.evolucao-negativo { color: #c24142; }
+
+@media (max-width: 900px) {
+  .modalidades-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .evolucao-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}

@@ -1,0 +1,157 @@
+
+.devolutiva-professor-card {
+  margin: 16px 0;
+  border: 1px solid rgba(18, 127, 96, .22);
+  border-radius: 17px;
+  background:
+    linear-gradient(145deg, rgba(239, 252, 247, .96), rgba(255, 255, 255, .98));
+  box-shadow:
+    0 10px 24px rgba(18, 127, 96, .08),
+    inset 0 1px 0 rgba(255,255,255,.8);
+  overflow: hidden;
+}
+
+.devolutiva-professor-card summary {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 13px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.devolutiva-professor-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.devolutiva-professor-card summary::after {
+  content: "⌄";
+  color: #397562;
+  font-size: 18px;
+  font-weight: 900;
+  margin-left: 2px;
+  transition: transform .18s ease;
+}
+
+.devolutiva-professor-card[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.devolutiva-professor-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #167a5d, #27a47e);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 950;
+  box-shadow: 0 8px 16px rgba(22, 122, 93, .18);
+}
+
+.devolutiva-professor-cabecalho {
+  min-width: 0;
+}
+
+.devolutiva-professor-cabecalho strong {
+  display: block;
+  color: #164f40;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.3;
+}
+
+.devolutiva-professor-cabecalho small {
+  display: block;
+  margin-top: 3px;
+  color: #60776f;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.devolutiva-professor-badge {
+  grid-column: 3;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #dff8ed;
+  color: #0d7657;
+  font-size: 10px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.devolutiva-professor-badge.lida {
+  background: #eef4f1;
+  color: #5f726b;
+}
+
+.devolutiva-professor-conteudo {
+  border-top: 1px solid rgba(18, 127, 96, .14);
+  padding: 14px 16px 15px 65px;
+}
+
+.devolutiva-professor-conteudo p {
+  margin: 0;
+  color: #273e37;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.devolutiva-professor-conteudo > small {
+  display: block;
+  margin-top: 11px;
+  color: #71847e;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.hist-feedback-tag {
+  background: #e5f8f0 !important;
+  color: #146d53 !important;
+}
+
+.hist-item.tem-orientacao {
+  border-color: rgba(22, 122, 93, .24);
+}
+
+@media (max-width: 620px) {
+  .devolutiva-professor-card summary {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .devolutiva-professor-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .devolutiva-professor-badge {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    margin-top: 5px;
+  }
+
+  .devolutiva-professor-card summary::after {
+    position: absolute;
+    right: 16px;
+  }
+
+  .devolutiva-professor-conteudo {
+    padding: 13px 14px;
+  }
+
+  .devolutiva-professor-cabecalho small {
+    white-space: normal;
+  }
+}
