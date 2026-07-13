@@ -1,0 +1,3090 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin | Controle de Rifas</title>
+
+  <style>
+    :root {
+      --bg: #050816;
+      --card: rgba(15, 23, 42, 0.82);
+      --card2: rgba(15, 23, 42, 0.62);
+      --line: rgba(148, 163, 184, 0.22);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --blue: #38bdf8;
+      --green: #22c55e;
+      --yellow: #facc15;
+      --red: #fb7185;
+      --purple: #a78bfa;
+      --radius: 20px;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.18), transparent 34%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.18), transparent 30%),
+        linear-gradient(135deg, #020617, #0f172a 48%, #020617);
+      color: var(--text);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      width: min(1480px, 96%);
+      margin: 0 auto;
+      padding: 22px 0 44px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(15, 23, 42, 0.72);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.28), rgba(167, 139, 250, 0.2));
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      box-shadow: 0 0 28px rgba(34, 211, 238, 0.18);
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2.2vw, 2rem);
+      letter-spacing: -0.04em;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 0.9rem;
+      transition: 0.18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(34, 211, 238, 0.42);
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.12);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.9));
+      color: #02111f;
+      border-color: rgba(34, 211, 238, 0.75);
+    }
+
+    .btn.good {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(20, 184, 166, 0.85));
+      color: #02130b;
+      border-color: rgba(34, 197, 94, 0.7);
+    }
+
+    .btn.warning {
+      background: rgba(250, 204, 21, 0.14);
+      color: #fef08a;
+      border-color: rgba(250, 204, 21, 0.38);
+    }
+
+    .btn.danger {
+      background: rgba(251, 113, 133, 0.15);
+      color: #fecdd3;
+      border-color: rgba(251, 113, 133, 0.4);
+    }
+
+    .btn.small {
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      border-radius: 12px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.cards {
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      margin-bottom: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      padding: 18px;
+    }
+
+    .metric {
+      position: relative;
+      overflow: hidden;
+      min-height: 118px;
+    }
+
+    .metric::after {
+      content: "";
+      position: absolute;
+      inset: auto -30px -40px auto;
+      width: 110px;
+      height: 110px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.08);
+      filter: blur(4px);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 12px;
+      font-size: clamp(1.35rem, 2vw, 2.1rem);
+      letter-spacing: -0.04em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(2, 6, 23, 0.66);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 13px;
+      outline: none;
+      font-size: 0.92rem;
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(34, 211, 238, 0.65);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.62);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 0.82rem;
+    }
+
+    .tab.active {
+      color: #04111f;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      border-color: rgba(34, 211, 238, 0.8);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+      background: rgba(2, 6, 23, 0.22);
+    }
+
+    th,
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      text-align: left;
+      font-size: 0.88rem;
+      vertical-align: middle;
+    }
+
+    th {
+      color: #bae6fd;
+      background: rgba(15, 23, 42, 0.78);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td { color: #e2e8f0; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 0.74rem;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      white-space: nowrap;
+      text-transform: capitalize;
+    }
+
+    .badge.disponivel { color: #bae6fd; background: rgba(34, 211, 238, 0.10); }
+    .badge.distribuida { color: #ddd6fe; background: rgba(167, 139, 250, 0.12); }
+    .badge.vendida { color: #fef08a; background: rgba(250, 204, 21, 0.12); }
+    .badge.paga { color: #bbf7d0; background: rgba(34, 197, 94, 0.12); }
+    .badge.devolvida { color: #fecdd3; background: rgba(251, 113, 133, 0.12); }
+
+    .notice {
+      border: 1px solid rgba(34, 211, 238, 0.24);
+      background: rgba(34, 211, 238, 0.08);
+      color: #cffafe;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+
+    .danger-notice {
+      border-color: rgba(251, 113, 133, 0.35);
+      background: rgba(251, 113, 133, 0.10);
+      color: #fecdd3;
+    }
+
+    .muted { color: var(--muted); }
+    .hidden { display: none !important; }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .report-box {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(2, 6, 23, 0.28);
+    }
+
+    .report-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .report-box strong {
+      font-size: 1.28rem;
+      letter-spacing: -0.03em;
+    }    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-card {
+      width: min(820px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.96);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+      padding: 22px;
+    }
+
+
+
+    .modal-card.large {
+      width: min(1100px, 100%);
+    }
+
+    .auto-tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+      align-items: center;
+    }
+
+    .auto-lista {
+      max-height: 280px;
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(2, 6, 23, 0.24);
+    }
+
+    .auto-aluno-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 7px 0;
+      color: var(--text);
+      font-weight: 750;
+    }
+
+    .auto-aluno-item input {
+      width: auto;
+    }
+
+    .auto-preview-table {
+      width: 100%;
+      min-width: 760px;
+      margin-top: 10px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .close {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(2, 6, 23, 0.55);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 80;
+      width: min(420px, calc(100% - 36px));
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(34, 211, 238, 0.28);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      display: none;
+    }
+
+    .toast.show { display: block; }
+
+    .print-area {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+
+      body * {
+        visibility: hidden !important;
+      }
+
+      .print-area,
+      .print-area * {
+        visibility: visible !important;
+      }
+
+      .print-area {
+        display: block !important;
+        position: absolute;
+        inset: 0;
+        padding: 18px;
+        color: #000000 !important;
+        background: #ffffff !important;
+      }
+
+      .print-area table {
+        width: 100%;
+        min-width: 0;
+        border-collapse: collapse;
+        background: #ffffff !important;
+      }
+
+      .print-area th,
+      .print-area td {
+        border: 1px solid #222;
+        padding: 8px;
+        color: #000000 !important;
+        font-size: 12px;
+      }
+
+      .print-area th {
+        background: #f1f5f9 !important;
+        color: #000000 !important;
+      }
+
+      .print-title {
+        text-align: center;
+        margin-bottom: 14px;
+      }
+
+      .print-title h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .print-title p {
+        margin: 4px 0;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .grid.cards { grid-template-columns: repeat(3, 1fr); }
+      .layout { grid-template-columns: 1fr; }
+      .action-grid { grid-template-columns: repeat(3, 1fr); }
+      .report-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .grid.cards { grid-template-columns: repeat(2, 1fr); }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .action-grid,
+      .report-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .grid.cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">AX</div>
+        <div>
+          <h1>Controle de Rifas</h1>
+          <p>Campanhas, blocos, prestação de contas e relatórios administrativos.</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a class="btn" href="/painel.html">← Painel</a>
+        <button class="btn primary" onclick="abrirModalCampanha()">Nova campanha</button>
+      </div>
+    </header>
+
+    <div id="bloqueio" class="notice danger-notice hidden">
+      Acesso restrito. Este módulo é permitido apenas para administradores, master ou financeiro.
+    </div>
+
+    <section class="card" style="margin-bottom:16px;">
+      <div class="section-title">
+        <h2>Campanha ativa</h2>
+        <button class="btn small" onclick="carregarTudo()">Atualizar</button>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Selecionar campanha</label>
+          <select id="campanhaSelect" onchange="selecionarCampanha(this.value)">
+            <option value="">Carregando campanhas...</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Ação rápida</label>
+          <button class="btn good" style="width:100%;" onclick="gerarNumerosCampanha()">
+            Gerar números da campanha
+          </button>
+        </div>
+      </div>
+
+      <p class="muted" id="campanhaInfo" style="margin-bottom:0;">
+        Selecione ou crie uma campanha para iniciar o controle.
+      </p>
+    </section>
+
+    <section class="card" style="margin-bottom:16px;">
+      <div class="section-title">
+        <h2>Ações da campanha</h2>
+        <span class="muted">Ferramentas administrativas</span>
+      </div>
+
+      <div class="action-grid">
+        <button class="btn warning" onclick="abrirModalEditarCampanha()">Editar campanha</button>
+        <button class="btn danger" onclick="excluirCampanha()">Excluir campanha</button>
+        <button class="btn" onclick="trocarTabelaPorNome('relatorios')">Relatórios</button>
+        <button class="btn" onclick="trocarTabelaPorNome('assinaturas')">Lista assinatura</button>
+        <button class="btn" onclick="imprimirListaAssinatura()">Imprimir lista</button>
+        <button class="btn good" onclick="exportarCSVBasico()">Exportar CSV</button>
+        <button class="btn primary" onclick="abrirModalDistribuicaoAuto()">Distribuição automática</button>
+      </div>
+
+      <div class="notice" style="margin-bottom:0;">
+        As ações de edição e exclusão dependem das rotas correspondentes no backend.
+        A lista de assinatura, impressão e CSV usam os dados já carregados da campanha.
+        A distribuição automática permite selecionar alunos por turma, desmarcar participantes e gerar blocos em sequência.
+      </div>
+    </section>
+
+    <section class="grid cards">
+      <div class="card metric"><span>Total</span><strong id="mTotal">0</strong></div>
+      <div class="card metric"><span>Disponíveis</span><strong id="mDisponivel">0</strong></div>
+      <div class="card metric"><span>Distribuídas</span><strong id="mDistribuida">0</strong></div>
+      <div class="card metric"><span>Vendidas</span><strong id="mVendida">0</strong></div>
+      <div class="card metric"><span>Pagas</span><strong id="mPaga">0</strong></div>
+      <div class="card metric"><span>Arrecadado</span><strong id="mArrecadado">R$ 0,00</strong></div>
+    </section>
+
+    <section class="layout">
+      <aside class="card">
+        <div class="section-title">
+          <h2>Operações</h2>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="trocarAba('distribuir', this)">Distribuir</button>
+          <button class="tab" onclick="trocarAba('prestacao', this)">Prestação</button>
+          <button class="tab" onclick="trocarAba('filtros', this)">Filtros</button>
+        </div>
+
+        <div id="aba-distribuir" class="panel active">
+          <div class="notice">
+            Distribuição inteligente: escolha a categoria, selecione o aluno quando for o caso, ou informe manualmente professor/servidor/outro responsável.
+          </div>
+
+          <label>Categoria do responsável</label>
+          <select id="distCategoria" onchange="alterarCategoriaDistribuicao()">
+            <option value="aluno">Aluno</option>
+            <option value="professor">Professor</option>
+            <option value="servidor">Servidor</option>
+            <option value="externo">Externo</option>
+            <option value="outro">Outro</option>
+          </select>
+
+          <div id="boxAlunoDistribuicao">
+            <label>Turma</label>
+            <select id="distTurmaSelect" onchange="carregarAlunosTurma()">
+              <option value="">Selecione a turma</option>
+            </select>
+
+            <label>Aluno</label>
+            <select id="distAlunoSelect" onchange="selecionarAluno()">
+              <option value="">Selecione o aluno</option>
+            </select>
+          </div>          <div id="boxManualDistribuicao" class="hidden">
+            <label>Nome do responsável</label>
+            <input id="distResponsavelManual" placeholder="Ex: Sgt. Fulano, Prof. Maria, Associação" />
+
+            <label>Setor / função / referência</label>
+            <input id="distSetorManual" placeholder="Ex: Coordenação, Secretaria, Professor, Externo" />
+          </div>
+
+          <label>Responsável selecionado</label>
+          <input id="distResponsavel" disabled />
+
+          <label>Turma/Setor</label>
+          <input id="distTurma" disabled />
+
+          <div class="form-row">
+            <div>
+              <label>Nº inicial</label>
+              <input id="distInicio" type="number" min="1" />
+            </div>
+            <div>
+              <label>Nº final</label>
+              <input id="distFim" type="number" min="1" />
+            </div>
+          </div>
+
+          <label>Observação</label>
+          <textarea id="distObs" placeholder="Opcional"></textarea>
+
+          <div id="previewBloco" class="notice hidden"></div>
+
+          <button class="btn primary" style="width:100%; margin-top:12px;" onclick="distribuirBlocoSeguro()">
+            Distribuir bloco
+          </button>
+        </div>
+
+        <div id="aba-prestacao" class="panel">
+          <div class="notice">
+            Informe os números separados por vírgula. O valor só será registrado quando o status for <strong>paga</strong>.
+          </div>
+
+          <label>Números</label>
+          <textarea id="prestNumeros" placeholder="0101,0102,0103"></textarea>
+
+          <label>Status</label>
+          <select id="prestStatus">
+            <option value="vendida">Marcar como vendida</option>
+            <option value="paga">Confirmar pagamento</option>
+            <option value="devolvida">Registrar devolução</option>
+          </select>
+
+          <div class="form-row">
+            <div>
+              <label>Forma de pagamento</label>
+              <select id="prestForma">
+                <option value="">Não informado</option>
+                <option value="pix">Pix</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="misto">Misto</option>
+              </select>
+            </div>
+            <div>
+              <label>Valor pago por número</label>
+              <input id="prestValor" type="number" min="0" step="0.01" placeholder="Ex.: 7,00" />
+              <small style="color:#94a3b8;font-size:0.75em;">Valor unitário. O sistema soma pelo total de números.</small>
+            </div>
+          </div>
+
+          <label>Comprovante URL</label>
+          <input id="prestComprovante" placeholder="Opcional" />
+
+          <label>Observação</label>
+          <textarea id="prestObs" placeholder="Opcional"></textarea>
+
+          <button class="btn good" style="width:100%; margin-top:12px;" onclick="registrarPrestacao()">
+            Registrar prestação
+          </button>
+        </div>
+
+        <div id="aba-filtros" class="panel">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="">Todos</option>
+            <option value="disponivel">Disponível</option>
+            <option value="distribuida">Distribuída</option>
+            <option value="vendida">Vendida</option>
+            <option value="paga">Paga</option>
+            <option value="devolvida">Devolvida</option>
+          </select>
+
+          <label>Número específico</label>
+          <input id="fNumero" placeholder="Ex: 4217" type="number" min="1" />
+
+          <label>Responsável</label>
+          <input id="fResponsavel" placeholder="Buscar por nome" />
+
+          <label>Turma ou setor</label>
+          <input id="fTurma" placeholder="Buscar por turma/setor" />
+
+          <button class="btn primary" style="width:100%; margin-top:12px;" onclick="carregarNumeros()">
+            Aplicar filtros
+          </button>
+        </div>
+      </aside>
+
+      <section class="card">
+        <div class="tabs">
+          <button class="tab active" onclick="trocarTabela('responsaveis', this)">Responsáveis</button>
+          <button class="tab" onclick="trocarTabela('numeros', this)">Números</button>
+          <button class="tab" onclick="trocarTabela('inadimplencia', this)">Inadimplência</button>
+          <button class="tab" onclick="trocarTabela('ranking', this)">Ranking</button>
+          <button class="tab" onclick="trocarTabela('relatorios', this)">Relatórios</button>
+          <button class="tab" onclick="trocarTabela('assinaturas', this)">Assinaturas</button>
+        </div>
+
+        <div id="tabela-responsaveis" class="panel active">
+          <div class="section-title">
+            <h2>Responsáveis com rifas</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="fResponsavelAba" placeholder="Filtrar por nome" style="width:200px;" oninput="carregarResponsaveis()" />
+              <button class="btn small" onclick="carregarResponsaveis()">Atualizar</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Responsável</th>
+                  <th>Turma/Setor</th>
+                  <th>Blocos reais</th>
+                  <th>Entregues</th>
+                  <th>Distrib.</th>
+                  <th>Vendidas</th>
+                  <th>Pagas</th>
+                  <th>Devolvidas</th>
+                  <th>Valor pago</th>
+                  <th>Pendente</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="responsaveisBody">
+                <tr>
+                  <td colspan="11">Nenhum dado carregado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>        <div id="tabela-numeros" class="panel">
+          <div class="section-title">
+            <h2>Números da campanha</h2>
+            <button class="btn small" onclick="carregarNumeros()">Atualizar</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Status</th>
+                  <th>Responsável</th>
+                  <th>Turma/Setor</th>
+                  <th>Valor</th>
+                  <th>Pago</th>
+                  <th>Pagamento</th>
+                  <th>Atualizado</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="numerosBody">
+                <tr>
+                  <td colspan="9">Nenhum dado carregado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabela-inadimplencia" class="panel">
+          <div class="section-title">
+            <h2>Controle de inadimplência</h2>
+            <button class="btn small" onclick="carregarInadimplencia()">Atualizar</button>
+          </div>
+
+          <div class="grid cards" style="grid-template-columns: repeat(4, minmax(150px, 1fr)); margin-bottom:16px;">
+            <div class="card metric"><span>Total pendente</span><strong id="iTotalPendente">R$ 0,00</strong></div>
+            <div class="card metric"><span>Inadimplentes</span><strong id="iInadimplentes">0</strong></div>
+            <div class="card metric"><span>Casos críticos</span><strong id="iCriticos">0</strong></div>
+            <div class="card metric"><span>Arrecadação</span><strong id="iPercentual">0%</strong></div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Responsável</th>
+                  <th>Turma/Setor</th>
+                  <th>Vendidas</th>
+                  <th>Valor esperado</th>
+                  <th>Valor pago</th>
+                  <th>Pendente</th>
+                  <th>Dias sem movimento</th>
+                  <th>Nível</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="inadimplenciaBody">
+                <tr><td colspan="9">Nenhum dado carregado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabela-ranking" class="panel">
+          <div class="section-title">
+            <h2>🏆 Ranking de Vendas</h2>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="rkTurma" onchange="renderRanking()" style="min-width:120px;">
+                <option value="">Todas as turmas</option>
+              </select>
+              <select id="rkFiltro" onchange="renderRanking()">
+                <option value="todos">Todos</option>
+                <option value="pagos">Somente pagaram</option>
+                <option value="nao_pagaram">Não pagaram nada</option>
+              </select>
+              <button class="btn small" onclick="carregarRanking()">Atualizar</button>
+              <button class="btn small" id="btnBaixarCsvRanking" onclick="baixarCsvRankingRifas()">&#11015; Baixar CSV</button>
+            </div>
+          </div>
+
+          <div class="grid cards" style="grid-template-columns: repeat(4, minmax(150px, 1fr)); margin-bottom:16px;">
+            <div class="card metric"><span>Total pago ✓</span><strong id="rTotalVendido">0</strong></div>
+            <div class="card metric"><span>Total arrecadado</span><strong id="rTotalPago">R$ 0,00</strong></div>
+            <div class="card metric"><span>Melhor responsável</span><strong id="rTopAluno">-</strong></div>
+            <div class="card metric"><span>Melhor turma</span><strong id="rTopTurma">-</strong></div>
+          </div>
+
+          <div class="section-title"><h2>Responsáveis</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nome</th>
+                  <th>Turma/Setor</th>
+                  <th title="Total de números distribuídos">Entregues</th>
+                  <th title="Status = paga (confirmado)">Pagas ✓</th>
+                  <th title="Status = vendida (aguardando pagamento)">V. Pend.</th>
+                  <th title="Distribuídas - pagas - vend.pend. - devolvidas">Pend.</th>
+                  <th title="Blocos contíguos com status paga">Blocos Pagos</th>
+                  <th>R$ Pago</th>
+                  <th>R$ Pendente</th>
+                </tr>
+              </thead>
+              <tbody id="rankingResponsaveis">
+                <tr><td colspan="10">Nenhum dado carregado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section-title" style="margin-top:20px;"><h2>Por Turma</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Turma/Setor</th>
+                  <th>Responsáveis</th>
+                  <th>Entregues</th>
+                  <th>Pagas ✓</th>
+                  <th>V. Pend.</th>
+                  <th>Pend.</th>
+                  <th>R$ Pago</th>
+                  <th>R$ Pendente</th>
+                </tr>
+              </thead>
+              <tbody id="rankingTurmas">
+                <tr><td colspan="9">Nenhum dado carregado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabela-relatorios" class="panel">
+          <div class="section-title">
+            <h2>Relatórios da campanha</h2>
+            <div>
+              <button class="btn small" onclick="carregarRelatorios()">Atualizar</button>
+              <button class="btn small good" onclick="exportarCSVBasico()">Exportar CSV</button>
+            </div>
+          </div>
+
+          <div class="notice">
+            Relatório consolidado da campanha ativa, com resumo financeiro, situação dos números e desempenho geral.
+          </div>
+
+          <div class="report-grid">
+            <div class="report-box">
+              <span>Total de números</span>
+              <strong id="relTotalNumeros">0</strong>
+            </div>
+            <div class="report-box">
+              <span>Valor potencial</span>
+              <strong id="relValorPotencial">R$ 0,00</strong>
+            </div>
+            <div class="report-box">
+              <span>Valor arrecadado</span>
+              <strong id="relValorArrecadado">R$ 0,00</strong>
+            </div>
+            <div class="report-box">
+              <span>Valor pendente</span>
+              <strong id="relValorPendente">R$ 0,00</strong>
+            </div>
+            <div class="report-box">
+              <span>Disponíveis</span>
+              <strong id="relDisponiveis">0</strong>
+            </div>
+            <div class="report-box">
+              <span>Distribuídas</span>
+              <strong id="relDistribuidas">0</strong>
+            </div>
+            <div class="report-box">
+              <span>Vendidas</span>
+              <strong id="relVendidas">0</strong>
+            </div>
+            <div class="report-box">
+              <span>Pagas</span>
+              <strong id="relPagas">0</strong>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Resultado</th>
+                  <th>Observação</th>
+                </tr>
+              </thead>
+              <tbody id="relatoriosBody">
+                <tr><td colspan="3">Nenhum relatório carregado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabela-assinaturas" class="panel">
+          <div class="section-title">
+            <h2>Lista de assinatura / recebimento</h2>
+            <div>
+              <button class="btn small" onclick="carregarAssinaturas()">Atualizar</button>
+              <button class="btn small warning" onclick="imprimirListaAssinatura()">Imprimir</button>
+            </div>
+          </div>
+
+          <div class="notice">
+            Esta lista pode ser usada para controle físico de entrega/recebimento dos blocos de rifas.
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Responsável</th>
+                  <th>Turma/Setor</th>
+                  <th>Bloco</th>
+                  <th>Qtd.</th>
+                  <th>Data recebimento</th>
+                  <th>Assinatura</th>
+                </tr>
+              </thead>
+              <tbody id="assinaturasBody">
+                <tr><td colspan="6">Nenhuma lista carregada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <section id="printArea" class="print-area">
+    <div class="print-title">
+      <h1>Lista de assinatura / recebimento de rifas</h1>
+      <p id="printCampanhaNome">Campanha: —</p>
+      <p id="printCampanhaInfo">Controle administrativo de entrega de blocos</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Responsável</th>
+          <th>Turma/Setor</th>
+          <th>Bloco</th>
+          <th>Qtd.</th>
+          <th>Data recebimento</th>
+          <th>Assinatura</th>
+        </tr>
+      </thead>
+      <tbody id="printAssinaturasBody">
+        <tr>
+          <td colspan="6">Nenhum dado disponível.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>  <div id="modalCampanha" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Nova campanha de rifa</h3>
+          <p class="muted" style="margin:4px 0 0;">Crie a campanha antes de gerar os números.</p>
+        </div>
+        <button class="close" onclick="fecharModalCampanha()">×</button>
+      </div>
+
+      <label>Nome da campanha</label>
+      <input id="cNome" placeholder="Ex: Rifa Associação 2026" />
+
+      <label>Descrição</label>
+      <textarea id="cDescricao" placeholder="Opcional"></textarea>
+
+      <div class="form-row">
+        <div>
+          <label>Número inicial</label>
+          <input id="cInicial" type="number" min="1" value="1" />
+        </div>
+        <div>
+          <label>Número final</label>
+          <input id="cFinal" type="number" min="1" value="9000" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Valor unitário</label>
+          <input id="cValor" type="number" min="0" step="0.01" value="10" />
+        </div>
+        <div>
+          <label>Responsável financeiro</label>
+          <input id="cFinanceiro" placeholder="Nome do responsável" />
+        </div>
+      </div>
+
+      <label>Chave Pix</label>
+      <input id="cPix" placeholder="Opcional" />
+
+      <div class="form-row">
+        <div>
+          <label>Data inicial</label>
+          <input id="cDataInicio" type="date" />
+        </div>
+        <div>
+          <label>Data final</label>
+          <input id="cDataFim" type="date" />
+        </div>
+      </div>
+
+      <button class="btn primary" style="width:100%; margin-top:16px;" onclick="criarCampanha()">
+        Criar campanha
+      </button>
+    </div>
+  </div>
+
+  <div id="modalEditarCampanha" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Editar campanha</h3>
+          <p class="muted" style="margin:4px 0 0;">Atualize os dados gerais da campanha selecionada.</p>
+        </div>
+        <button class="close" onclick="fecharModalEditarCampanha()">×</button>
+      </div>
+
+      <label>Nome da campanha</label>
+      <input id="ecNome" placeholder="Nome da campanha" />
+
+      <label>Descrição</label>
+      <textarea id="ecDescricao" placeholder="Opcional"></textarea>
+
+      <div class="form-row">
+        <div>
+          <label>Número inicial</label>
+          <input id="ecInicial" type="number" min="1" />
+        </div>
+        <div>
+          <label>Número final</label>
+          <input id="ecFinal" type="number" min="1" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Valor unitário</label>
+          <input id="ecValor" type="number" min="0" step="0.01" />
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="ecStatus">
+            <option value="ativa">Ativa</option>
+            <option value="encerrada">Encerrada</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="rascunho">Rascunho</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Responsável financeiro</label>
+      <input id="ecFinanceiro" placeholder="Nome do responsável financeiro" />
+
+      <label>Chave Pix</label>
+      <input id="ecPix" placeholder="Opcional" />
+
+      <div class="form-row">
+        <div>
+          <label>Data inicial</label>
+          <input id="ecDataInicio" type="date" />
+        </div>
+        <div>
+          <label>Data final</label>
+          <input id="ecDataFim" type="date" />
+        </div>
+      </div>
+
+      <button class="btn warning" style="width:100%; margin-top:16px;" onclick="salvarEdicaoCampanha()">
+        Salvar alterações da campanha
+      </button>
+    </div>
+  </div>
+
+  <div id="modalEditarBloco" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Editar bloco/responsável</h3>
+          <p class="muted" style="margin:4px 0 0;">
+            Corrija responsável, categoria, turma/setor ou status dos números.
+          </p>
+        </div>
+        <button class="close" onclick="fecharModalEditarBloco()">×</button>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Nº inicial</label>
+          <input id="editInicio" type="number" min="1" />
+        </div>
+        <div>
+          <label>Nº final</label>
+          <input id="editFim" type="number" min="1" />
+        </div>
+      </div>
+
+      <label>Categoria</label>
+      <select id="editCategoria">
+        <option value="aluno">Aluno</option>
+        <option value="professor">Professor</option>
+        <option value="servidor">Servidor</option>
+        <option value="externo">Externo</option>
+        <option value="outro">Outro</option>
+      </select>
+
+      <label>Responsável</label>
+      <input id="editResponsavel" placeholder="Nome do responsável" />
+
+      <label>Turma/Setor</label>
+      <input id="editTurma" placeholder="Turma, setor ou referência" />
+
+      <label>Observação/motivo da correção</label>
+      <textarea id="editObs" placeholder="Ex: correção de digitação, troca de responsável, ajuste de teste"></textarea>
+
+      <button class="btn primary" style="width:100%; margin-top:16px;" onclick="salvarEdicaoResponsavel()">
+        Salvar correção do responsável/bloco
+      </button>
+
+      <hr style="border:0; border-top:1px solid rgba(148,163,184,.18); margin:18px 0;">
+
+      <label>Status dos números</label>
+      <select id="editStatus">
+        <option value="">Não alterar status</option>
+        <option value="disponivel">Disponível / limpar tudo</option>
+        <option value="distribuida">Distribuída</option>
+        <option value="vendida">Vendida</option>
+        <option value="paga">Paga</option>
+        <option value="devolvida">Devolvida</option>
+      </select>
+
+      <div class="form-row">
+        <div>
+          <label>Forma de pagamento</label>
+          <select id="editForma">
+            <option value="">Não informado</option>
+            <option value="pix">Pix</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="misto">Misto</option>
+          </select>
+        </div>
+        <div>
+          <label>Valor pago</label>
+          <input id="editValorPago" type="number" min="0" step="0.01" placeholder="0,00" />
+        </div>
+      </div>
+
+      <label>Comprovante URL</label>
+      <input id="editComprovante" placeholder="Opcional" />
+
+      <button class="btn good" style="width:100%; margin-top:16px;" onclick="salvarEdicaoPagamento()">
+        Salvar correção de status/pagamento
+      </button>
+    </div>
+  </div>
+
+
+  <div id="modalDistribuicaoAuto" class="modal">
+    <div class="modal-card large">
+      <div class="modal-head">
+        <div>
+          <h3>Distribuição automática de blocos</h3>
+          <p class="muted" style="margin:4px 0 0;">
+            Selecione os alunos, defina o tamanho do bloco e gere a distribuição em sequência.
+          </p>
+        </div>
+        <button class="close" onclick="fecharModalDistribuicaoAuto()">×</button>
+      </div>
+
+      <div class="notice">
+        Para campanhas grandes, como 9000 rifas, use a prévia antes de confirmar. Alunos com “teste” no nome são ignorados automaticamente.
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Categoria do responsável</label>
+          <select id="autoCategoria">
+            <option value="aluno">Aluno</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Turma</label>
+          <select id="autoTurma">
+            <option value="todas">Todas as turmas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Tamanho do bloco</label>
+          <input id="autoTamanho" type="number" value="10" min="1" />
+        </div>
+
+        <div>
+          <label>Buscar aluno</label>
+          <input id="autoBuscaAluno" placeholder="Digite parte do nome ou turma" oninput="renderizarListaAlunosAuto()" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Número inicial</label>
+          <input id="autoInicio" type="number" min="1" />
+        </div>
+        <div>
+          <label>Número final</label>
+          <input id="autoFim" type="number" min="1" />
+        </div>
+      </div>
+
+      <label style="display:flex; align-items:center; gap:8px; color:var(--text); font-weight:800;">
+        <input type="checkbox" id="autoIgnorarJaDistribuidos" checked style="width:auto;" />
+        Ignorar alunos que já possuem bloco
+      </label>
+
+      <div class="auto-tools">
+        <button type="button" class="btn small" onclick="marcarTodosAuto(true)">Marcar todos</button>
+        <button type="button" class="btn small" onclick="marcarTodosAuto(false)">Desmarcar todos</button>
+        <button type="button" class="btn small" onclick="carregarAlunosAuto()">Recarregar alunos</button>
+        <span class="muted" id="autoResumoSelecao">Nenhum aluno carregado.</span>
+      </div>
+
+      <label>Alunos participantes</label>
+      <div id="autoListaAlunos" class="auto-lista">
+        Carregando alunos...
+      </div>
+
+      <div id="autoPreview" class="notice hidden" style="margin-top:14px;"></div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
+        <button class="btn" onclick="gerarPreviewAuto()">
+          Gerar prévia
+        </button>
+
+        <button class="btn primary" onclick="executarDistribuicaoAuto()">
+          Confirmar distribuição automática
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API_BASE = "";
+    let campanhas = [];
+    let campanhaAtual = null;
+    let usuarioAtual = null;
+    let alunosTurma = [];
+    let edicaoAtual = null;
+    let responsaveisCache = [];
+    let numerosCache = [];
+    let inadimplenciaCache = [];
+    let rankingCache = null;
+    let autoAlunos = [];
+    let autoPreviewGerado = [];
+
+    const money = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
+    function getToken() {
+      return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("axoriin_token") ||
+        localStorage.getItem("smartclass_token") ||
+        localStorage.getItem("axoriin_admin_token") ||
+        localStorage.getItem("axoriin_usuario_token") ||
+        localStorage.getItem("usuarioToken") ||
+        localStorage.getItem("jwt") ||
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("token") ||
+        sessionStorage.getItem("authToken") ||
+        sessionStorage.getItem("axoriin_token") ||
+        sessionStorage.getItem("smartclass_token") ||
+        ""
+      );
+    }
+
+    function getTenant() {
+      const params = new URLSearchParams(location.search);
+      return (
+        params.get("t") ||
+        localStorage.getItem("axoriin_tenant") ||
+        localStorage.getItem("smartclass_tenant") ||
+        localStorage.getItem("tenant") ||
+        ""
+      );
+    }
+
+    function headers(json = true) {
+      const h = {};
+      const token = getToken();
+      const tenant = getTenant();
+
+      if (json) h["Content-Type"] = "application/json";
+      if (token) h["Authorization"] = `Bearer ${token}`;
+      if (token) h["x-access-token"] = token;
+      if (tenant) h["x-tenant"] = tenant;
+      if (tenant) h["x-tenant-slug"] = tenant;
+
+      return h;
+    }
+
+    async function api(path, options = {}) {
+      const resp = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        credentials: "include",
+        headers: {
+          ...headers(options.body !== undefined),
+          ...(options.headers || {})
+        }
+      });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        throw new Error(data.erro || data.error || data.message || "Erro na requisição.");
+      }
+
+      return data;
+    }
+
+    function toast(msg, tipo = "ok") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.borderColor = tipo === "erro"
+        ? "rgba(251, 113, 133, 0.45)"
+        : "rgba(34, 211, 238, 0.35)";
+      el.classList.add("show");
+
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.remove("show"), 4200);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function jsArg(obj) {
+      return escapeHtml(JSON.stringify(obj || {}));
+    }
+
+    function formatNumeroBloco(n) {
+      if (!n && n !== 0) return "";
+      return String(n).padStart(4, "0");
+    }
+
+    function formatDateInput(value) {
+      if (!value) return "";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "";
+      return d.toISOString().slice(0, 10);
+    }
+
+    function badge(status) {
+      const s = status || "disponivel";
+      return `<span class="badge ${s}">${escapeHtml(s)}</span>`;
+    }
+
+    function abrirModalCampanha() {
+      document.getElementById("modalCampanha").classList.add("active");
+    }
+
+    function fecharModalCampanha() {
+      document.getElementById("modalCampanha").classList.remove("active");
+    }
+
+    function abrirModalEditarCampanha() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha para editar.", "erro");
+
+      document.getElementById("ecNome").value = campanhaAtual.nome || "";
+      document.getElementById("ecDescricao").value = campanhaAtual.descricao || "";
+      document.getElementById("ecInicial").value = campanhaAtual.numeroInicial || "";
+      document.getElementById("ecFinal").value = campanhaAtual.numeroFinal || "";
+      document.getElementById("ecValor").value = campanhaAtual.valorUnitario || 0;
+      document.getElementById("ecStatus").value = campanhaAtual.status || "ativa";
+      document.getElementById("ecFinanceiro").value = campanhaAtual.responsavelFinanceiro || "";
+      document.getElementById("ecPix").value = campanhaAtual.chavePix || "";
+      document.getElementById("ecDataInicio").value = formatDateInput(campanhaAtual.dataInicio);
+      document.getElementById("ecDataFim").value = formatDateInput(campanhaAtual.dataFim);
+
+      document.getElementById("modalEditarCampanha").classList.add("active");
+    }
+
+    function fecharModalEditarCampanha() {
+      document.getElementById("modalEditarCampanha").classList.remove("active");
+    }
+
+    function abrirModalEditarBloco(dados) {
+      edicaoAtual = dados || {};
+
+      document.getElementById("editInicio").value = edicaoAtual.menorNumero || edicaoAtual.numeroValor || "";
+      document.getElementById("editFim").value = edicaoAtual.maiorNumero || edicaoAtual.numeroValor || "";
+      document.getElementById("editCategoria").value = edicaoAtual.responsavelTipo || "outro";
+      document.getElementById("editResponsavel").value = edicaoAtual.responsavelNome || "";
+      document.getElementById("editTurma").value = edicaoAtual.turmaOuSetor || "";
+      document.getElementById("editObs").value = "";
+
+      document.getElementById("editStatus").value = "";
+      document.getElementById("editForma").value = edicaoAtual.formaPagamento || "";
+      document.getElementById("editValorPago").value = edicaoAtual.valorPago || "";
+      document.getElementById("editComprovante").value = edicaoAtual.comprovanteUrl || "";
+
+      document.getElementById("modalEditarBloco").classList.add("active");
+    }
+
+    function fecharModalEditarBloco() {
+      document.getElementById("modalEditarBloco").classList.remove("active");
+      edicaoAtual = null;
+    }
+
+    function trocarAba(nome, btn) {
+      document.querySelectorAll("aside .tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      ["distribuir", "prestacao", "filtros"].forEach(id => {
+        document.getElementById(`aba-${id}`).classList.toggle("active", id === nome);
+      });
+    }
+
+    function trocarTabela(nome, btn) {
+      btn.parentElement.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      ativarTabela(nome);
+    }
+
+    function trocarTabelaPorNome(nome) {
+      const tabs = Array.from(document.querySelectorAll("section.card > .tabs .tab"));
+      const btn = tabs.find(b => (b.textContent || "").toLowerCase().includes(nome === "assinaturas" ? "assinaturas" : nome));
+      if (btn) {
+        tabs.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      }
+      ativarTabela(nome);
+    }
+
+    function ativarTabela(nome) {
+      ["responsaveis", "numeros", "inadimplencia", "ranking", "relatorios", "assinaturas"].forEach(id => {
+        document.getElementById(`tabela-${id}`).classList.toggle("active", id === nome);
+      });
+
+      if (nome === "responsaveis") carregarResponsaveis();
+      if (nome === "numeros") carregarNumeros();
+      if (nome === "inadimplencia") carregarInadimplencia();
+      if (nome === "ranking") carregarRanking();
+      if (nome === "relatorios") carregarRelatorios();
+      if (nome === "assinaturas") carregarAssinaturas();
+    }
+
+    async function carregarUsuario() {
+      try {
+        const data = await api("/api/usuario");
+        usuarioAtual = data;
+
+        const perfil = String(data.perfil || data.tipo || "").toLowerCase();
+        const permitido =
+          perfil.includes("admin") ||
+          perfil.includes("master") ||
+          perfil.includes("financeiro");
+
+        if (!permitido) {
+          document.getElementById("bloqueio").classList.remove("hidden");
+          document.querySelectorAll("button, input, select, textarea").forEach(el => {
+            if (!el.closest(".topbar")) el.disabled = true;
+          });
+          return false;
+        }
+
+        return true;
+      } catch (e) {
+        console.error(e);
+        toast("Não foi possível validar o usuário. Faça login novamente.", "erro");
+        return false;
+      }
+    }
+
+    async function carregarCampanhas() {
+      const select = document.getElementById("campanhaSelect");
+      select.innerHTML = `<option value="">Carregando...</option>`;
+
+      const data = await api("/api/rifas/campanhas");
+      campanhas = data.campanhas || [];
+
+      if (!campanhas.length) {
+        select.innerHTML = `<option value="">Nenhuma campanha criada</option>`;
+        campanhaAtual = null;
+        limparDashboard();
+        return;
+      }
+
+      select.innerHTML = campanhas.map(c => {
+        return `<option value="${c._id}">${escapeHtml(c.nome)} — ${escapeHtml(c.status)}</option>`;
+      }).join("");
+
+      const atualAindaExiste = campanhaAtual?._id
+        ? campanhas.find(c => c._id === campanhaAtual._id)
+        : null;
+
+      const ativa = atualAindaExiste || campanhas.find(c => c.status === "ativa") || campanhas[0];
+      select.value = ativa._id;
+      campanhaAtual = ativa;
+      atualizarInfoCampanha();
+    }
+
+    function selecionarCampanha(id) {
+      campanhaAtual = campanhas.find(c => c._id === id) || null;
+      atualizarInfoCampanha();
+
+      responsaveisCache = [];
+      numerosCache = [];
+      inadimplenciaCache = [];
+      rankingCache = null;
+
+      if (campanhaAtual) {
+        carregarDashboard();
+        carregarResponsaveis();
+      }
+    }
+
+    function atualizarInfoCampanha() {
+      const el = document.getElementById("campanhaInfo");
+
+      if (!campanhaAtual) {
+        el.textContent = "Selecione ou crie uma campanha para iniciar o controle.";
+        return;
+      }
+
+      el.textContent =
+        `${campanhaAtual.nome} | Números ${formatNumeroBloco(campanhaAtual.numeroInicial)} a ${formatNumeroBloco(campanhaAtual.numeroFinal)} | Valor: ${money.format(campanhaAtual.valorUnitario || 0)} | Status: ${campanhaAtual.status}`;
+    }
+
+    function limparDashboard() {
+      ["mTotal", "mDisponivel", "mDistribuida", "mVendida", "mPaga"].forEach(id => {
+        document.getElementById(id).textContent = "0";
+      });
+      document.getElementById("mArrecadado").textContent = money.format(0);
+    }
+
+    async function carregarDashboard() {
+      if (!campanhaAtual?._id) {
+        limparDashboard();
+        return;
+      }
+
+      const data = await api(`/api/rifas/dashboard/${campanhaAtual._id}`);
+      const t = data.totais || {};
+
+      document.getElementById("mTotal").textContent = t.total || 0;
+      document.getElementById("mDisponivel").textContent = t.disponivel || 0;
+      document.getElementById("mDistribuida").textContent = t.distribuida || 0;
+      document.getElementById("mVendida").textContent = t.vendida || 0;
+      document.getElementById("mPaga").textContent = t.paga || 0;
+      document.getElementById("mArrecadado").textContent = money.format(t.arrecadado || 0);
+    }
+
+    async function criarCampanha() {
+      const body = {
+        nome: document.getElementById("cNome").value.trim(),
+        descricao: document.getElementById("cDescricao").value.trim(),
+        numeroInicial: Number(document.getElementById("cInicial").value),
+        numeroFinal: Number(document.getElementById("cFinal").value),
+        valorUnitario: Number(document.getElementById("cValor").value || 0),
+        chavePix: document.getElementById("cPix").value.trim(),
+        responsavelFinanceiro: document.getElementById("cFinanceiro").value.trim(),
+        dataInicio: document.getElementById("cDataInicio").value || null,
+        dataFim: document.getElementById("cDataFim").value || null
+      };
+
+      if (!body.nome) return toast("Informe o nome da campanha.", "erro");
+      if (!body.numeroInicial || !body.numeroFinal) return toast("Informe os números inicial e final.", "erro");
+      if (body.numeroFinal < body.numeroInicial) return toast("Número final não pode ser menor que o inicial.", "erro");
+
+      await api("/api/rifas/campanhas", {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+
+      fecharModalCampanha();
+      toast("Campanha criada com sucesso.");
+      await carregarTudo();
+    }
+
+    async function salvarEdicaoCampanha() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const body = {
+        nome: document.getElementById("ecNome").value.trim(),
+        descricao: document.getElementById("ecDescricao").value.trim(),
+        numeroInicial: Number(document.getElementById("ecInicial").value),
+        numeroFinal: Number(document.getElementById("ecFinal").value),
+        valorUnitario: Number(document.getElementById("ecValor").value || 0),
+        status: document.getElementById("ecStatus").value,
+        responsavelFinanceiro: document.getElementById("ecFinanceiro").value.trim(),
+        chavePix: document.getElementById("ecPix").value.trim(),
+        dataInicio: document.getElementById("ecDataInicio").value || null,
+        dataFim: document.getElementById("ecDataFim").value || null
+      };
+
+      if (!body.nome) return toast("Informe o nome da campanha.", "erro");
+      if (!body.numeroInicial || !body.numeroFinal) return toast("Informe os números inicial e final.", "erro");
+      if (body.numeroFinal < body.numeroInicial) return toast("Número final não pode ser menor que o inicial.", "erro");
+
+      const ok = confirm("Confirmar alteração dos dados da campanha?");
+      if (!ok) return;
+
+      await api(`/api/rifas/campanhas/${campanhaAtual._id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body)
+      });
+
+      fecharModalEditarCampanha();
+      toast("Campanha atualizada com sucesso.");
+      await carregarTudo();
+    }
+
+    async function excluirCampanha() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha para excluir.", "erro");
+
+      const aviso =
+        `Atenção!\n\n` +
+        `Você está prestes a excluir a campanha:\n"${campanhaAtual.nome}"\n\n` +
+        `Essa ação pode remover ou inutilizar os dados vinculados a ela, dependendo da regra do backend.\n\n` +
+        `Deseja continuar?`;
+
+      if (!confirm(aviso)) return;
+
+      const confirmacao = prompt(`Digite EXCLUIR para confirmar a exclusão da campanha "${campanhaAtual.nome}".`);
+      if (confirmacao !== "EXCLUIR") {
+        return toast("Exclusão cancelada.", "erro");
+      }
+
+      await api(`/api/rifas/campanhas/${campanhaAtual._id}`, {
+        method: "DELETE"
+      });
+
+      campanhaAtual = null;
+      toast("Campanha excluída com sucesso.");
+      await carregarTudo();
+    }
+
+    async function gerarNumerosCampanha() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const ok = confirm("Gerar todos os números dessa campanha? Essa ação só deve ser feita uma vez.");
+      if (!ok) return;
+
+      const data = await api("/api/rifas/gerar-numeros", {
+        method: "POST",
+        body: JSON.stringify({ campanhaId: campanhaAtual._id })
+      });
+
+      toast(data.mensagem || "Números gerados com sucesso.");
+      await carregarDashboard();
+      await carregarNumeros();
+    }
+
+    async function carregarTurmas() {
+      const data = await api("/api/rifas/turmas-alunos");
+      const select = document.getElementById("distTurmaSelect");
+
+      select.innerHTML = `<option value="">Selecione a turma</option>`;
+
+      (data.turmas || []).forEach(t => {
+        select.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`;
+      });
+    }
+
+    async function carregarAlunosTurma() {
+      const turma = document.getElementById("distTurmaSelect").value;
+      const select = document.getElementById("distAlunoSelect");
+
+      select.innerHTML = `<option value="">Carregando...</option>`;
+      alunosTurma = [];
+      window.__alunoSelecionado = null;
+
+      if (!turma) {
+        select.innerHTML = `<option value="">Selecione o aluno</option>`;
+        return;
+      }
+
+      const data = await api(`/api/rifas/alunos-por-turma?turma=${encodeURIComponent(turma)}`);
+      alunosTurma = data.alunos || [];
+
+      select.innerHTML = `<option value="">Selecione o aluno</option>`;
+      alunosTurma.forEach(a => {
+        select.innerHTML += `<option value="${a._id}">${escapeHtml(a.nome)}</option>`;
+      });
+    }
+
+    function alterarCategoriaDistribuicao() {
+      const categoria = document.getElementById("distCategoria").value;
+      const isAluno = categoria === "aluno";
+
+      document.getElementById("boxAlunoDistribuicao").classList.toggle("hidden", !isAluno);
+      document.getElementById("boxManualDistribuicao").classList.toggle("hidden", isAluno);
+
+      document.getElementById("distResponsavel").value = "";
+      document.getElementById("distTurma").value = "";
+      document.getElementById("distResponsavelManual").value = "";
+      document.getElementById("distSetorManual").value = "";
+      window.__alunoSelecionado = null;
+    }
+
+    function selecionarAluno() {
+      const id = document.getElementById("distAlunoSelect").value;
+      const aluno = alunosTurma.find(a => a._id === id);
+
+      if (!aluno) return;
+
+      document.getElementById("distResponsavel").value = aluno.nome;
+      document.getElementById("distTurma").value = aluno.turma;
+      window.__alunoSelecionado = aluno;
+    }
+
+    function atualizarManualSelecionado() {
+      document.getElementById("distResponsavel").value =
+        document.getElementById("distResponsavelManual").value.trim();
+
+      document.getElementById("distTurma").value =
+        document.getElementById("distSetorManual").value.trim();
+    }
+
+    function previewBloco() {
+      const i = Number(document.getElementById("distInicio").value);
+      const f = Number(document.getElementById("distFim").value);
+      const el = document.getElementById("previewBloco");
+
+      if (!i || !f || f < i) {
+        el.classList.add("hidden");
+        return;
+      }
+
+      const total = f - i + 1;
+      const valor = campanhaAtual?.valorUnitario || 0;
+
+      el.classList.remove("hidden");
+      el.innerHTML = `
+        <strong>Bloco:</strong> ${formatNumeroBloco(i)} a ${formatNumeroBloco(f)}<br>
+        <strong>Total:</strong> ${total} rifas<br>
+        <strong>Valor esperado:</strong> ${money.format(total * valor)}
+      `;
+    }
+
+
+    const ordemTurmasRifa = [
+  "6ºA", "6ºB", "6ºC", "6ºD",
+  "7ºA", "7ºB", "7ºC", "7ºD",
+  "8ºA", "8ºB", "8ºC", "8ºD",
+  "9ºA", "9ºB", "9ºC", "9ºD",
+
+  "1ºA", "1ºB", "1ºC", "1ºD",
+  "2ºA", "2ºB", "2ºC", "2ºD",
+  "3ºA", "3ºB", "3ºC", "3ºD",
+];
+
+    function normalizarTurmaRifa(turma) {
+      return String(turma || "")
+        .toUpperCase()
+        .replace(/\\s+/g, "")
+        .replace("ANO", "")
+        .replace("SÉRIE", "")
+        .replace("SERIE", "");
+    }
+
+    function indiceTurmaRifa(turma) {
+      const t = normalizarTurmaRifa(turma);
+      const i = ordemTurmasRifa.findIndex(x => normalizarTurmaRifa(x) === t);
+      return i >= 0 ? i : 999;
+    }
+
+    function alunoDeTesteRifa(aluno) {
+      const nome = String(aluno?.nome || "").toLowerCase();
+      return nome.includes("teste") || nome.includes("aluno teste");
+    }
+
+    function atualizarResumoSelecaoAuto() {
+      const resumo = document.getElementById("autoResumoSelecao");
+      if (!resumo) return;
+
+      const total = autoAlunos.length;
+      const selecionados = document.querySelectorAll(".autoAlunoCheck:checked").length;
+      resumo.textContent = `${selecionados} selecionado(s) de ${total} aluno(s) carregado(s).`;
+    }
+
+    function abrirModalDistribuicaoAuto() {
+      if (!campanhaAtual?._id) {
+        return toast("Selecione uma campanha antes de distribuir automaticamente.", "erro");
+      }
+
+      document.getElementById("autoInicio").value = campanhaAtual.numeroInicial || 1;
+      document.getElementById("autoFim").value = campanhaAtual.numeroFinal || 9000;
+      document.getElementById("autoTamanho").value = 10;
+      document.getElementById("autoBuscaAluno").value = "";
+      document.getElementById("autoPreview").classList.add("hidden");
+      document.getElementById("modalDistribuicaoAuto").classList.add("active");
+
+      carregarTurmasAuto();
+      carregarAlunosAuto();
+    }
+
+    function fecharModalDistribuicaoAuto() {
+      document.getElementById("modalDistribuicaoAuto").classList.remove("active");
+      autoAlunos = [];
+      autoPreviewGerado = [];
+    }
+
+    async function carregarTurmasAuto() {
+      const select = document.getElementById("autoTurma");
+      if (!select) return;
+
+      select.innerHTML = `<option value="todas">Todas as turmas</option>`;
+
+      try {
+        const data = await api("/api/rifas/turmas-alunos");
+        const turmas = data.turmas || [];
+
+        turmas
+          .sort((a, b) => indiceTurmaRifa(a) - indiceTurmaRifa(b) || String(a).localeCompare(String(b), "pt-BR"))
+          .forEach(t => {
+            select.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`;
+          });
+      } catch (e) {
+        console.error(e);
+        toast("Não foi possível carregar as turmas.", "erro");
+      }
+    }
+
+    async function carregarAlunosAuto() {
+      const box = document.getElementById("autoListaAlunos");
+      const turmaSelecionada = document.getElementById("autoTurma")?.value || "todas";
+
+      box.innerHTML = "Carregando alunos...";
+      autoAlunos = [];
+      autoPreviewGerado = [];
+      document.getElementById("autoPreview")?.classList.add("hidden");
+
+      try {
+        let alunos = [];
+
+        if (turmaSelecionada === "todas") {
+          const dataTurmas = await api("/api/rifas/turmas-alunos");
+          const turmas = (dataTurmas.turmas || [])
+            .sort((a, b) => indiceTurmaRifa(a) - indiceTurmaRifa(b) || String(a).localeCompare(String(b), "pt-BR"));
+
+          for (const turma of turmas) {
+            const data = await api(`/api/rifas/alunos-por-turma?turma=${encodeURIComponent(turma)}`);
+            alunos.push(...(data.alunos || []));
+          }
+        } else {
+          const data = await api(`/api/rifas/alunos-por-turma?turma=${encodeURIComponent(turmaSelecionada)}`);
+          alunos = data.alunos || [];
+        }
+
+        autoAlunos = alunos
+  .filter(a => a && a._id && a.nome)
+  .filter(a => !alunoDeTesteRifa(a))
+  .sort((a, b) => {
+    const turmaA = indiceTurmaRifa(a.turma);
+    const turmaB = indiceTurmaRifa(b.turma);
+
+    if (turmaA !== turmaB) return turmaA - turmaB;
+
+    return String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR", {
+      sensitivity: "base",
+    });
+  });
+
+        renderizarListaAlunosAuto();
+      } catch (e) {
+        console.error(e);
+        box.innerHTML = `<div class="danger-notice notice">Erro ao carregar alunos.</div>`;
+        toast("Erro ao carregar alunos para distribuição automática.", "erro");
+      }
+    }
+
+    function renderizarListaAlunosAuto() {
+      const box = document.getElementById("autoListaAlunos");
+      if (!box) return;
+
+      const busca = String(document.getElementById("autoBuscaAluno")?.value || "").trim().toLowerCase();
+
+      const filtrados = autoAlunos.filter(a => {
+        if (!busca) return true;
+        const base = `${a.nome || ""} ${a.turma || ""}`.toLowerCase();
+        return base.includes(busca);
+      });
+
+      if (!filtrados.length) {
+        box.innerHTML = "Nenhum aluno encontrado.";
+        atualizarResumoSelecaoAuto();
+        return;
+      }
+
+      box.innerHTML = filtrados.map(a => `
+        <label class="auto-aluno-item">
+          <input
+            type="checkbox"
+            class="autoAlunoCheck"
+            value="${escapeHtml(a._id)}"
+            checked
+            onchange="atualizarResumoSelecaoAuto()"
+          />
+          <span>${escapeHtml(a.nome)} — <span class="muted">${escapeHtml(a.turma || "Sem turma")}</span></span>
+        </label>
+      `).join("");
+
+      atualizarResumoSelecaoAuto();
+    }
+
+    function marcarTodosAuto(valor) {
+      document.querySelectorAll(".autoAlunoCheck").forEach(chk => {
+        chk.checked = valor;
+      });
+      atualizarResumoSelecaoAuto();
+    }
+
+    function obterAlunosSelecionadosAuto() {
+      const ids = Array.from(document.querySelectorAll(".autoAlunoCheck:checked")).map(chk => chk.value);
+      return autoAlunos.filter(a => ids.includes(String(a._id)));
+    }
+
+    function responsavelJaTemBlocoAuto(aluno) {
+      const id = String(aluno?._id || "");
+      const nome = String(aluno?.nome || "").trim().toLowerCase();
+
+      return responsaveisCache.some(r => {
+        const rid = String(r.responsavelId || r._id || "");
+        const rnome = String(r.responsavelNome || "").trim().toLowerCase();
+        return (id && rid && id === rid) || (nome && rnome && nome === rnome);
+      });
+    }
+
+    function gerarPreviewAuto() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const inicio = Number(document.getElementById("autoInicio").value);
+      const fim = Number(document.getElementById("autoFim").value);
+      const tamanho = Number(document.getElementById("autoTamanho").value);
+      const ignorar = document.getElementById("autoIgnorarJaDistribuidos")?.checked;
+
+      let alunos = obterAlunosSelecionadosAuto();
+
+      if (ignorar && responsaveisCache.length) {
+        alunos = alunos.filter(a => !responsavelJaTemBlocoAuto(a));
+      }
+
+      if (!inicio || !fim || fim < inicio) return toast("Informe um intervalo válido.", "erro");
+      if (!tamanho || tamanho <= 0) return toast("Informe o tamanho do bloco.", "erro");
+      if (!alunos.length) return toast("Selecione pelo menos um aluno disponível.", "erro");
+
+      autoPreviewGerado = [];
+      let numeroAtual = inicio;
+
+      for (const aluno of alunos) {
+        const blocoInicio = numeroAtual;
+        const blocoFim = Math.min(numeroAtual + tamanho - 1, fim);
+        if (blocoInicio > fim) break;
+
+        autoPreviewGerado.push({
+          alunoId: aluno._id,
+          nome: aluno.nome,
+          turma: aluno.turma,
+          inicio: blocoInicio,
+          fim: blocoFim,
+          qtd: blocoFim - blocoInicio + 1
+        });
+
+        numeroAtual = blocoFim + 1;
+      }
+
+      const totalDisponivel = fim - inicio + 1;
+      const totalNecessario = alunos.length * tamanho;
+      const totalDistribuido = autoPreviewGerado.reduce((s, x) => s + x.qtd, 0);
+      const sobrando = Math.max(0, totalDisponivel - totalDistribuido);
+      const semBloco = Math.max(0, alunos.length - autoPreviewGerado.length);
+
+      let alerta = "";
+      if (sobrando > 0) alerta += `<br><span style="color:#facc15;">⚠️ Sobrarão ${sobrando} rifas.</span>`;
+      if (semBloco > 0) alerta += `<br><span style="color:#fb7185;">❌ ${semBloco} aluno(s) ficarão sem bloco por falta de número.</span>`;
+
+      const el = document.getElementById("autoPreview");
+      el.classList.remove("hidden");
+
+      el.innerHTML = `
+        <strong>Prévia da distribuição</strong><br>
+        Alunos selecionados/disponíveis: <strong>${alunos.length}</strong><br>
+        Tamanho do bloco: <strong>${tamanho}</strong><br>
+        Intervalo disponível: <strong>${formatNumeroBloco(inicio)} a ${formatNumeroBloco(fim)}</strong><br>
+        Total disponível: <strong>${totalDisponivel}</strong> rifas<br>
+        Total necessário: <strong>${totalNecessario}</strong> rifas<br>
+        Total que será distribuído: <strong>${totalDistribuido}</strong> rifas<br>
+        Sobra: <strong>${sobrando}</strong> rifas<br>
+        Alunos sem bloco: <strong>${semBloco}</strong>
+        ${alerta}
+        <br><br>
+        <strong>Primeiros blocos:</strong><br>
+        ${autoPreviewGerado.slice(0, 12).map(p => `
+          ${escapeHtml(p.nome)} — ${escapeHtml(p.turma || "Sem turma")}:
+          ${formatNumeroBloco(p.inicio)} a ${formatNumeroBloco(p.fim)}
+        `).join("<br>")}
+        ${autoPreviewGerado.length > 12 ? `<br>... e mais ${autoPreviewGerado.length - 12} bloco(s).` : ""}
+      `;
+    }
+
+    function blocoTemConflitoAuto(item) {
+      return numerosCache.some(n => {
+        const numeroValor = Number(n.numeroValor || n.numero || 0);
+        return numeroValor >= item.inicio && numeroValor <= item.fim && String(n.status || "disponivel") !== "disponivel";
+      });
+    }
+
+    async function executarDistribuicaoAuto() {
+  if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+  if (!autoPreviewGerado.length) {
+    gerarPreviewAuto();
+  }
+
+  if (!autoPreviewGerado.length) {
+    return toast("Gere a prévia antes de confirmar.", "erro");
+  }
+
+  const confirmar = confirm(
+    `Confirmar distribuição automática?\n\n` +
+    `Blocos: ${autoPreviewGerado.length}\n` +
+    `Total de rifas: ${autoPreviewGerado.reduce((s, x) => s + x.qtd, 0)}\n\n` +
+    `Essa ação será feita em lote, de forma mais rápida.`
+  );
+
+  if (!confirmar) return;
+
+  try {
+    const data = await api("/api/rifas/distribuir-blocos-lote", {
+      method: "POST",
+      body: JSON.stringify({
+        campanhaId: campanhaAtual._id,
+        blocos: autoPreviewGerado.map(item => ({
+          inicio: item.inicio,
+          fim: item.fim,
+          alunoId: item.alunoId,
+          nome: item.nome,
+          turma: item.turma
+        }))
+      })
+    });
+
+    toast(data.mensagem || "Distribuição automática concluída.");
+
+    fecharModalDistribuicaoAuto();
+
+    await carregarDashboard();
+    await carregarResponsaveis();
+    await carregarNumeros();
+    await carregarAssinaturas();
+  } catch (e) {
+    console.error(e);
+    toast(e.message || "Erro ao executar distribuição automática.", "erro");
+  }
+}
+
+    async function distribuirBlocoSeguro() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const categoria = document.getElementById("distCategoria").value;
+      const inicio = Number(document.getElementById("distInicio").value);
+      const fim = Number(document.getElementById("distFim").value);
+      const observacao = document.getElementById("distObs").value.trim();
+
+      let responsavelId = null;
+      let responsavelNome = "";
+      let turmaOuSetor = "";
+
+      if (categoria === "aluno") {
+        const aluno = window.__alunoSelecionado;
+        if (!aluno) return toast("Selecione o aluno.", "erro");
+
+        responsavelId = aluno._id;
+        responsavelNome = aluno.nome;
+        turmaOuSetor = aluno.turma;
+      } else {
+        responsavelNome = document.getElementById("distResponsavelManual").value.trim();
+        turmaOuSetor = document.getElementById("distSetorManual").value.trim();
+
+        if (!responsavelNome) return toast("Informe o nome do responsável.", "erro");
+        if (!turmaOuSetor) return toast("Informe o setor ou referência.", "erro");
+      }
+
+      if (!inicio || !fim) return toast("Informe início e fim do bloco.", "erro");
+      if (fim < inicio) return toast("Bloco inválido.", "erro");
+
+      const total = fim - inicio + 1;
+
+      if (total > 50) {
+        const okGrande = confirm(`Atenção: esse bloco possui ${total} rifas. Deseja continuar?`);
+        if (!okGrande) return;
+      }
+
+      const confirmar = confirm(
+        `Confirmar distribuição?\n\n` +
+        `Categoria: ${categoria}\n` +
+        `Responsável: ${responsavelNome}\n` +
+        `Turma/Setor: ${turmaOuSetor}\n` +
+        `Bloco: ${formatNumeroBloco(inicio)} a ${formatNumeroBloco(fim)}\n` +
+        `Total: ${total} rifas`
+      );
+
+      if (!confirmar) return;
+
+      const data = await api("/api/rifas/distribuir-bloco", {
+        method: "POST",
+        body: JSON.stringify({
+          campanhaId: campanhaAtual._id,
+          numeroInicial: inicio,
+          numeroFinal: fim,
+          responsavelTipo: categoria,
+          responsavelId,
+          responsavelNome,
+          turmaOuSetor,
+          observacao
+        })
+      });
+
+      toast(data.mensagem || "Bloco distribuído.");
+
+      document.getElementById("distInicio").value = "";
+      document.getElementById("distFim").value = "";
+      document.getElementById("distObs").value = "";
+      document.getElementById("previewBloco").classList.add("hidden");
+
+      await carregarDashboard();
+      await carregarResponsaveis();
+      await carregarNumeros();
+    }
+
+    function parseNumeros(raw) {
+      return String(raw || "")
+        .split(/[,\n;\s]+/)
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(x => {
+          const n = Number(x);
+          return Number.isInteger(n) && n > 0 ? n : null;
+        })
+        .filter(n => n !== null);
+    }
+
+    async function registrarPrestacao() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const numeros = parseNumeros(document.getElementById("prestNumeros").value);
+      if (!numeros.length) return toast("Informe pelo menos um número.", "erro");
+
+      const status = document.getElementById("prestStatus").value;
+      const valorPago = Number(document.getElementById("prestValor").value || 0);
+
+      if (status === "paga" && valorPago <= 0) {
+        return toast("Para confirmar pagamento, informe o valor pago.", "erro");
+      }
+
+      const body = {
+        campanhaId: campanhaAtual._id,
+        numeros,
+        status,
+        formaPagamento: document.getElementById("prestForma").value,
+        valorPago,
+        comprovanteUrl: document.getElementById("prestComprovante").value.trim(),
+        observacao: document.getElementById("prestObs").value.trim()
+      };
+
+      const data = await api("/api/rifas/prestacao", {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+
+      toast(data.mensagem || "Prestação registrada.");
+
+      document.getElementById("prestNumeros").value = "";
+      document.getElementById("prestValor").value = "";
+      document.getElementById("prestComprovante").value = "";
+      document.getElementById("prestObs").value = "";
+
+      await carregarDashboard();
+      await carregarResponsaveis();
+      await carregarNumeros();
+    }
+
+async function baixarBlocoRapido(dados) {
+  if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+  const valorUnitario = Number(campanhaAtual.valorUnitario || 0);
+  const quantidade = Number(dados.quantidade || 0);
+  const valorTotal = quantidade * valorUnitario;
+
+  const confirmar = confirm(
+    `Confirmar baixa do bloco ${formatNumeroBloco(dados.inicio)} a ${formatNumeroBloco(dados.fim)}?\n\n` +
+    `Responsável: ${dados.responsavelNome}\n` +
+    `Quantidade: ${quantidade} rifa(s)\n` +
+    `Valor total: ${money.format(valorTotal)}`
+  );
+
+  if (!confirmar) return;
+
+  const formaPagamento =
+    document.getElementById("formaBaixaRapida")?.value || "";
+
+  const data = await api("/api/rifas/baixa-bloco", {
+    method: "PATCH",
+    body: JSON.stringify({
+      campanhaId: campanhaAtual._id,
+      numeroInicial: dados.inicio,
+      numeroFinal: dados.fim,
+      responsavelId: dados.responsavelId || null,
+      responsavelNome: dados.responsavelNome || "",
+      turmaOuSetor: dados.turmaOuSetor || "",
+      status: "paga",
+      formaPagamento,
+      valorTotalPago: valorTotal,
+      observacao: "Baixa rápida por bloco"
+    })
+  });
+
+  toast(data.mensagem || "Bloco baixado com sucesso.");
+
+  await carregarDashboard();
+  await carregarResponsaveis();
+  await carregarNumeros();
+  await carregarRanking();
+}
+
+    async function carregarResponsaveis() {
+      const body = document.getElementById("responsaveisBody");
+
+      if (!campanhaAtual?._id) {
+        body.innerHTML = `<tr><td colspan="11">Selecione uma campanha.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = `<tr><td colspan="11">Carregando...</td></tr>`;
+
+      const filtroNome = (document.getElementById("fResponsavelAba")?.value || "").trim();
+      const qs = filtroNome ? `?responsavelNome=${encodeURIComponent(filtroNome)}` : "";
+
+      const data = await api(`/api/rifas/blocos-reais/${campanhaAtual._id}${qs}`);
+      const lista = data.responsaveis || [];
+      responsaveisCache = lista;
+
+      if (!lista.length) {
+        body.innerHTML = `<tr><td colspan="11">Nenhum responsável com rifas distribuídas.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = lista.map(r => {
+                const blocosTexto = r.blocos.map(b =>
+          b.inicio === b.fim
+            ? formatNumeroBloco(b.inicio)
+            : `${formatNumeroBloco(b.inicio)}–${formatNumeroBloco(b.fim)}`
+        ).join(", ");
+
+        const blocosBotoes = r.blocos.map(b => {
+          const quantidade = Number(b.quantidade || (Number(b.fim) - Number(b.inicio) + 1));
+          const valorUnitario = Number(campanhaAtual?.valorUnitario || 7);
+          const valorTotal = quantidade * valorUnitario;
+
+          const dadosBloco = {
+            inicio: b.inicio,
+            fim: b.fim,
+            quantidade,
+            responsavelId: r.responsavelId || null,
+            responsavelNome: r.responsavelNome || "",
+            turmaOuSetor: r.turmaOuSetor || ""
+          };
+
+          return `
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+              <span>${formatNumeroBloco(b.inicio)}–${formatNumeroBloco(b.fim)}</span>
+              <button
+                class="btn small good"
+                title="Baixar este bloco como pago"
+                onclick="baixarBlocoRapido(JSON.parse(this.dataset.dados))"
+                data-dados='${jsArg(dadosBloco)}'>
+                Baixar ${money.format(valorTotal)}
+              </button>
+            </div>
+          `;
+        }).join("");
+
+        const blocoLabel = r.totalBlocos > 1
+          ? `<div title="${escapeHtml(blocosTexto)}">${blocosBotoes}</div>`
+          : blocosBotoes;
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(r.responsavelNome || "—")}</strong></td>
+            <td>${escapeHtml(r.turmaOuSetor || "—")}</td>
+            <td style="font-size:0.85em;white-space:normal;max-width:220px">${blocoLabel}</td>
+            <td>${r.entregues || 0}</td>
+            <td>${r.distribuidas || 0}</td>
+            <td>${r.vendidas || 0}</td>
+            <td>${r.pagas || 0}</td>
+            <td>${r.devolvidas || 0}</td>
+            <td>${money.format(r.valorPago || 0)}</td>
+            <td>${money.format(r.pendente || 0)}</td>
+            <td>
+              <button class="btn small" onclick="abrirModalEditarBloco(JSON.parse(this.dataset.dados))" data-dados='${jsArg(r)}'>
+                Editar
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function carregarNumeros() {
+      const body = document.getElementById("numerosBody");
+
+      if (!campanhaAtual?._id) {
+        body.innerHTML = `<tr><td colspan="9">Selecione uma campanha.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = `<tr><td colspan="9">Carregando...</td></tr>`;
+
+      const qs = new URLSearchParams();
+
+      const status = document.getElementById("fStatus").value;
+      const responsavel = document.getElementById("fResponsavel").value.trim();
+      const turma = document.getElementById("fTurma").value.trim();
+      const numero = document.getElementById("fNumero")?.value.trim();
+
+      if (status) qs.set("status", status);
+      if (responsavel) qs.set("responsavel", responsavel);
+      if (turma) qs.set("turma", turma);
+      if (numero) qs.set("numero", numero);
+      qs.set("limite", "500");
+
+      const data = await api(`/api/rifas/numeros/${campanhaAtual._id}?${qs.toString()}`);
+      const lista = data.numeros || [];
+      numerosCache = lista;
+
+      if (!lista.length) {
+        body.innerHTML = `<tr><td colspan="9">Nenhum número encontrado.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = lista.map(n => {
+        return `
+          <tr>
+            <td><strong>${escapeHtml(n.numero || "—")}</strong></td>
+            <td>${badge(n.status)}</td>
+            <td>${escapeHtml(n.responsavelNome || "—")}</td>
+            <td>${escapeHtml(n.turmaOuSetor || "—")}</td>
+            <td>${money.format(n.valor || 0)}</td>
+            <td>${money.format(n.valorPago || 0)}</td>
+            <td>${escapeHtml(n.formaPagamento || "—")}</td>
+            <td>${n.updatedAt ? new Date(n.updatedAt).toLocaleString("pt-BR") : "—"}</td>
+            <td>
+              <button class="btn small" onclick="abrirModalEditarBloco(JSON.parse(this.dataset.dados))" data-dados='${jsArg(n)}'>
+                Editar
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function salvarEdicaoResponsavel() {
+  if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+  if (!edicaoAtual?._id) return toast("Número da rifa não identificado.", "erro");
+
+  const confirmar = confirm("Confirmar correção do responsável deste número?");
+  if (!confirmar) return;
+
+  const categoria = document.getElementById("editCategoria").value;
+
+  const data = await api("/api/rifas/editar-responsavel", {
+    method: "PATCH",
+    body: JSON.stringify({
+      campanhaId: campanhaAtual._id,
+      numeroId: edicaoAtual._id,
+      novoResponsavelNome: document.getElementById("editResponsavel").value.trim(),
+      novoResponsavelId: null,
+      novoResponsavelTipo: categoria,
+      novaTurmaOuSetor: document.getElementById("editTurma").value.trim(),
+      novaObservacao: document.getElementById("editObs").value.trim()
+    })
+  });
+
+  toast(data.mensagem || "Responsável atualizado.");
+  fecharModalEditarBloco();
+
+  await carregarDashboard();
+  await carregarResponsaveis();
+  await carregarNumeros();
+}
+
+    async function salvarEdicaoPagamento() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      const status = document.getElementById("editStatus").value;
+      if (!status) return toast("Selecione um status para alterar.", "erro");
+
+      const inicio = Number(document.getElementById("editInicio").value);
+      const fim = Number(document.getElementById("editFim").value);
+
+      if (!inicio || !fim || fim < inicio) return toast("Informe um intervalo válido.", "erro");
+
+      if (status === "paga") {
+        const valor = Number(document.getElementById("editValorPago").value || 0);
+        if (!valor || valor <= 0) {
+          return toast("Para marcar como paga, informe o valor pago.", "erro");
+        }
+      }
+
+      const confirmar = confirm("Confirmar correção de status/pagamento?");
+      if (!confirmar) return;
+
+      const data = await api("/api/rifas/editar-pagamento", {
+        method: "PATCH",
+        body: JSON.stringify({
+          campanhaId: campanhaAtual._id,
+          numeroInicial: inicio,
+          numeroFinal: fim,
+          status,
+          formaPagamento: document.getElementById("editForma").value,
+          valorPago: Number(document.getElementById("editValorPago").value || 0),
+          comprovanteUrl: document.getElementById("editComprovante").value.trim(),
+          observacao: document.getElementById("editObs").value.trim()
+        })
+      });
+
+      toast(data.mensagem || "Status/pagamento atualizado.");
+      fecharModalEditarBloco();
+
+      await carregarDashboard();
+      await carregarResponsaveis();
+      await carregarNumeros();
+    }
+
+    function labelNivelAlerta(nivel) {
+      if (nivel === "critico") return `<span class="badge devolvida">Crítico</span>`;
+      if (nivel === "atrasado") return `<span class="badge vendida">Atrasado</span>`;
+      if (nivel === "atencao") return `<span class="badge distribuida">Atenção</span>`;
+      return `<span class="badge paga">Em dia</span>`;
+    }
+
+    async function copiarCobranca(texto) {
+      try {
+        await navigator.clipboard.writeText(texto || "");
+        toast("Mensagem de cobrança copiada.");
+      } catch {
+        const area = document.createElement("textarea");
+        area.value = texto || "";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+        toast("Mensagem de cobrança copiada.");
+      }
+    }
+
+    function abrirWhatsAppCobranca(texto) {
+      const url = `https://wa.me/?text=${encodeURIComponent(texto || "")}`;
+      window.open(url, "_blank");
+    }
+
+    async function carregarInadimplencia() {
+      const body = document.getElementById("inadimplenciaBody");
+
+      if (!campanhaAtual?._id) {
+        body.innerHTML = `<tr><td colspan="9">Selecione uma campanha.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = `<tr><td colspan="9">Carregando inadimplência...</td></tr>`;
+
+      const data = await api(`/api/rifas/inadimplencia/${campanhaAtual._id}`);
+      const lista = data.dados || [];
+      inadimplenciaCache = lista;
+
+      const totalEsperado = lista.reduce((s, r) => s + Number(r.valorEsperado || 0), 0);
+      const totalPago = lista.reduce((s, r) => s + Number(r.valorPago || 0), 0);
+      const totalPendente = lista.reduce((s, r) => s + Number(r.pendente || 0), 0);
+      const inadimplentes = lista.filter(r => Number(r.pendente || 0) > 0).length;
+      const criticos = lista.filter(r => r.nivelAlerta === "critico").length;
+      const percentual = totalEsperado > 0 ? Math.round((totalPago / totalEsperado) * 100) : 0;
+
+      document.getElementById("iTotalPendente").textContent = money.format(totalPendente);
+      document.getElementById("iInadimplentes").textContent = inadimplentes;
+      document.getElementById("iCriticos").textContent = criticos;
+      document.getElementById("iPercentual").textContent = `${percentual}%`;
+
+      if (!lista.length) {
+        body.innerHTML = `<tr><td colspan="9">Nenhum responsável encontrado.</td></tr>`;
+        return;
+      }
+
+      const ordenada = [...lista].sort((a, b) => {
+        const peso = { critico: 4, atrasado: 3, atencao: 2, em_dia: 1 };
+        return (peso[b.nivelAlerta] || 0) - (peso[a.nivelAlerta] || 0)
+          || Number(b.pendente || 0) - Number(a.pendente || 0);
+      });
+
+      body.innerHTML = ordenada.map(r => {
+        const pendente = Number(r.pendente || 0);
+        const corPendente = pendente > 0 ? "#fb7185" : "#22c55e";
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(r.responsavelNome || "—")}</strong></td>
+            <td>${escapeHtml(r.turmaOuSetor || "—")}</td>
+            <td>${r.vendidas || 0}</td>
+            <td>${money.format(r.valorEsperado || 0)}</td>
+            <td>${money.format(r.valorPago || 0)}</td>
+            <td style="color:${corPendente}; font-weight:900;">${money.format(pendente)}</td>
+            <td>${r.diasSemMovimento >= 999 ? "Sem registro" : `${r.diasSemMovimento} dia(s)`}</td>
+            <td>${labelNivelAlerta(r.nivelAlerta)}</td>
+            <td>
+              <button class="btn small" onclick="copiarCobranca(this.dataset.msg)" data-msg="${escapeHtml(r.mensagemCobranca || "")}">Copiar</button>
+              <button class="btn small" onclick="abrirWhatsAppCobranca(this.dataset.msg)" data-msg="${escapeHtml(r.mensagemCobranca || "")}">WhatsApp</button>
+              <button class="btn small" onclick="abrirModalEditarBloco(JSON.parse(this.dataset.dados))" data-dados='${jsArg(r)}'>Editar</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function medalhaRanking(posicao) {
+      if (posicao === 1) return "🥇";
+      if (posicao === 2) return "🥈";
+      if (posicao === 3) return "🥉";
+      return posicao;
+    }
+
+    function renderRanking() {
+      const bodyResp = document.getElementById("rankingResponsaveis");
+      const bodyTurmas = document.getElementById("rankingTurmas");
+      if (!rankingCache) return;
+
+      const turmaSel = document.getElementById("rkTurma")?.value || "";
+      const filtroSel = document.getElementById("rkFiltro")?.value || "todos";
+
+      let lista = rankingCache.topResponsaveis || [];
+
+      if (turmaSel) lista = lista.filter(r => r.turmaOuSetor === turmaSel);
+      if (filtroSel === "pagos") lista = lista.filter(r => r.pagas > 0);
+      if (filtroSel === "nao_pagaram") lista = lista.filter(r => r.pagas === 0);
+
+      if (!lista.length) {
+        bodyResp.innerHTML = `<tr><td colspan="10">Nenhum responsável encontrado com esse filtro.</td></tr>`;
+      } else {
+        bodyResp.innerHTML = lista.map((r, i) => {
+          const pos = i + 1;
+          const pendente = Number(r.pendente || 0);
+          const blocosTip = r.blocosPagosDetalhe?.map(b =>
+            b.inicio === b.fim ? b.inicio : `${b.inicio}–${b.fim}`
+          ).join(", ") || "";
+          return `
+            <tr>
+              <td><strong>${medalhaRanking(pos)}</strong></td>
+              <td><strong>${escapeHtml(r.responsavelNome || "—")}</strong></td>
+              <td>${escapeHtml(r.turmaOuSetor || "—")}</td>
+              <td>${r.entregues || 0}</td>
+              <td style="color:#22c55e;font-weight:700;">${r.pagas || 0}</td>
+              <td style="color:#f59e0b;">${r.vendidasPendentes || 0}</td>
+              <td>${r.pendentes || 0}</td>
+              <td title="${escapeHtml(blocosTip)}">${r.blocosPagos || 0}${blocosTip ? " ℹ" : ""}</td>
+              <td>${money.format(r.valorPago || 0)}</td>
+              <td style="color:${pendente > 0 ? "#fb7185" : "#22c55e"};font-weight:700;">${money.format(pendente)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      // Tabela de turmas — recalcula a partir da lista filtrada por filtroSel (sem filtro de turma)
+      let listaParaTurmas = rankingCache.topResponsaveis || [];
+      if (filtroSel === "pagos") listaParaTurmas = listaParaTurmas.filter(r => r.pagas > 0);
+      if (filtroSel === "nao_pagaram") listaParaTurmas = listaParaTurmas.filter(r => r.pagas === 0);
+
+      const turmaAgg = {};
+      for (const r of listaParaTurmas) {
+        const t = r.turmaOuSetor || "—";
+        if (!turmaAgg[t]) turmaAgg[t] = { turmaOuSetor: t, totalResponsaveis:0, entregues:0, pagas:0, vendidasPendentes:0, pendentes:0, valorPago:0, pendente:0 };
+        const ta = turmaAgg[t];
+        ta.totalResponsaveis++; ta.entregues += r.entregues; ta.pagas += r.pagas;
+        ta.vendidasPendentes += r.vendidasPendentes; ta.pendentes += r.pendentes;
+        ta.valorPago += r.valorPago; ta.pendente += r.pendente;
+      }
+      const turmasRender = Object.values(turmaAgg).sort((a,b) => b.pagas - a.pagas || b.valorPago - a.valorPago);
+
+      if (!turmasRender.length) {
+        bodyTurmas.innerHTML = `<tr><td colspan="9">Nenhuma turma encontrada.</td></tr>`;
+      } else {
+        bodyTurmas.innerHTML = turmasRender.map((t, i) => {
+          const pendente = Number(t.pendente || 0);
+          return `
+            <tr>
+              <td><strong>${medalhaRanking(i+1)}</strong></td>
+              <td><strong>${escapeHtml(t.turmaOuSetor || "—")}</strong></td>
+              <td>${t.totalResponsaveis}</td>
+              <td>${t.entregues}</td>
+              <td style="color:#22c55e;font-weight:700;">${t.pagas}</td>
+              <td style="color:#f59e0b;">${t.vendidasPendentes}</td>
+              <td>${t.pendentes}</td>
+              <td>${money.format(t.valorPago)}</td>
+              <td style="color:${pendente > 0 ? "#fb7185" : "#22c55e"};font-weight:700;">${money.format(pendente)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    function escapeCsv(value) {
+      const s = String(value ?? '');
+      if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function downloadCsv(filename, csvContent) {
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function baixarCsvRankingRifas() {
+      if (!rankingCache) {
+        toast('Carregue o ranking antes de exportar.', 'erro');
+        return;
+      }
+
+      const turmaSel = document.getElementById('rkTurma')?.value || '';
+      const filtroSel = document.getElementById('rkFiltro')?.value || 'todos';
+
+      let lista = rankingCache.topResponsaveis || [];
+      if (turmaSel) lista = lista.filter(r => r.turmaOuSetor === turmaSel);
+      if (filtroSel === 'pagos') lista = lista.filter(r => r.pagas > 0);
+      if (filtroSel === 'nao_pagaram') lista = lista.filter(r => r.pagas === 0);
+
+      if (!lista.length) {
+        toast('Nenhum registro para exportar com os filtros atuais.', 'erro');
+        return;
+      }
+
+      const cabecalho = ['Posição','Nome','Turma/Setor','Entregues','Pagas','V. Pend.','Pend.','Blocos Pagos','R$ Pago','R$ Pendente'];
+      const linhas = lista.map((r, i) => [
+        i + 1,
+        r.responsavelNome || '',
+        r.turmaOuSetor || '',
+        r.entregues || 0,
+        r.pagas || 0,
+        r.vendidasPendentes || 0,
+        r.pendentes || 0,
+        r.blocosPagos || 0,
+        (r.valorPago || 0).toFixed(2).replace('.', ','),
+        (r.pendente || 0).toFixed(2).replace('.', ','),
+      ].map(escapeCsv).join(';'));
+
+      const csv = [cabecalho.map(escapeCsv).join(';'), ...linhas].join('\r\n');
+
+      const slugTurma = turmaSel ? turmaSel.replace(/[^a-zA-Z0-9]/g, '') : 'todas';
+      const slugFiltro = filtroSel === 'pagos' ? 'somente-pagaram'
+        : filtroSel === 'nao_pagaram' ? 'nao-pagaram'
+        : 'todos';
+      const hoje = new Date().toISOString().slice(0, 10);
+      const filename = `ranking-rifas-${slugTurma}-${slugFiltro}-${hoje}.csv`;
+
+      downloadCsv(filename, csv);
+      toast('CSV exportado com sucesso!');
+    }
+
+    async function carregarRanking() {
+      const bodyResp = document.getElementById("rankingResponsaveis");
+      const bodyTurmas = document.getElementById("rankingTurmas");
+
+      if (!campanhaAtual?._id) {
+        bodyResp.innerHTML = `<tr><td colspan="10">Selecione uma campanha.</td></tr>`;
+        bodyTurmas.innerHTML = `<tr><td colspan="9">Selecione uma campanha.</td></tr>`;
+        return;
+      }
+
+      bodyResp.innerHTML = `<tr><td colspan="10">Carregando ranking...</td></tr>`;
+      bodyTurmas.innerHTML = `<tr><td colspan="9">Carregando ranking...</td></tr>`;
+
+      const data = await api(`/api/rifas/ranking/${campanhaAtual._id}`);
+      rankingCache = data;
+
+      const resumo = data.resumo || {};
+      document.getElementById("rTotalVendido").textContent = resumo.totalPago || 0;
+      document.getElementById("rTotalPago").textContent = money.format(resumo.valorPago || 0);
+      document.getElementById("rTopAluno").textContent = resumo.melhorResponsavel?.responsavelNome || "-";
+      document.getElementById("rTopTurma").textContent = resumo.melhorTurma?.turmaOuSetor || "-";
+
+      // Popula dropdown de turmas
+      const sel = document.getElementById("rkTurma");
+      if (sel) {
+        const turmaSalva = sel.value;
+        sel.innerHTML = `<option value="">Todas as turmas</option>`
+          + (data.turmasDisponiveis || []).map(t =>
+              `<option value="${escapeHtml(t)}"${t === turmaSalva ? " selected" : ""}>${escapeHtml(t)}</option>`
+            ).join("");
+      }
+
+      renderRanking();
+    }
+
+    async function carregarRelatorios() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      if (!responsaveisCache.length) {
+        await carregarResponsaveis();
+      }
+
+      const totalNumeros =
+        Number(document.getElementById("mTotal").textContent || 0) ||
+        ((campanhaAtual.numeroFinal || 0) - (campanhaAtual.numeroInicial || 0) + 1);
+
+      const disponiveis = Number(document.getElementById("mDisponivel").textContent || 0);
+      const distribuidas = Number(document.getElementById("mDistribuida").textContent || 0);
+      const vendidas = Number(document.getElementById("mVendida").textContent || 0);
+      const pagas = Number(document.getElementById("mPaga").textContent || 0);
+      const valorUnitario = Number(campanhaAtual.valorUnitario || 0);
+
+      const valorPotencial = totalNumeros * valorUnitario;
+      const valorArrecadado = responsaveisCache.reduce((s, r) => s + Number(r.valorPago || 0), 0);
+      const valorPendente = responsaveisCache.reduce((s, r) => s + Number(r.pendente || 0), 0);
+      const percentualArrecadado = valorPotencial > 0 ? Math.round((valorArrecadado / valorPotencial) * 100) : 0;
+      const percentualVenda = totalNumeros > 0 ? Math.round((vendidas / totalNumeros) * 100) : 0;
+
+      document.getElementById("relTotalNumeros").textContent = totalNumeros || 0;
+      document.getElementById("relValorPotencial").textContent = money.format(valorPotencial);
+      document.getElementById("relValorArrecadado").textContent = money.format(valorArrecadado);
+      document.getElementById("relValorPendente").textContent = money.format(valorPendente);
+      document.getElementById("relDisponiveis").textContent = disponiveis || 0;
+      document.getElementById("relDistribuidas").textContent = distribuidas || 0;
+      document.getElementById("relVendidas").textContent = vendidas || 0;
+      document.getElementById("relPagas").textContent = pagas || 0;
+
+      document.getElementById("relatoriosBody").innerHTML = `
+        <tr>
+          <td><strong>Campanha</strong></td>
+          <td>${escapeHtml(campanhaAtual.nome || "—")}</td>
+          <td>Status atual: ${escapeHtml(campanhaAtual.status || "—")}</td>
+        </tr>
+        <tr>
+          <td><strong>Faixa de números</strong></td>
+          <td>${formatNumeroBloco(campanhaAtual.numeroInicial)} a ${formatNumeroBloco(campanhaAtual.numeroFinal)}</td>
+          <td>Total previsto: ${totalNumeros} número(s)</td>
+        </tr>
+        <tr>
+          <td><strong>Valor unitário</strong></td>
+          <td>${money.format(valorUnitario)}</td>
+          <td>Base usada para estimativa financeira</td>
+        </tr>
+        <tr>
+          <td><strong>Percentual de venda</strong></td>
+          <td>${percentualVenda}%</td>
+          <td>Rifas vendidas em relação ao total da campanha</td>
+        </tr>
+        <tr>
+          <td><strong>Percentual arrecadado</strong></td>
+          <td>${percentualArrecadado}%</td>
+          <td>Valor pago em relação ao potencial total</td>
+        </tr>
+      `;
+    }
+
+    async function carregarAssinaturas() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      if (!responsaveisCache.length) {
+        await carregarResponsaveis();
+      }
+
+      const body = document.getElementById("assinaturasBody");
+      const printBody = document.getElementById("printAssinaturasBody");
+
+      if (!responsaveisCache.length) {
+        body.innerHTML = `<tr><td colspan="6">Nenhum responsável com bloco distribuído.</td></tr>`;
+        printBody.innerHTML = `<tr><td colspan="6">Nenhum dado disponível.</td></tr>`;
+        return;
+      }
+
+      const linhas = responsaveisCache.map(r => {
+        const bloco = `${formatNumeroBloco(r.menorNumero)} a ${formatNumeroBloco(r.maiorNumero)}`;
+        const qtd = Number(r.entregues || 0);
+
+        return `
+          <tr>
+            <td>${escapeHtml(r.responsavelNome || "—")}</td>
+            <td>${escapeHtml(r.turmaOuSetor || "—")}</td>
+            <td>${bloco}</td>
+            <td>${qtd}</td>
+            <td>____ / ____ / ______</td>
+            <td style="min-width:180px;">________________________________</td>
+          </tr>
+        `;
+      }).join("");
+
+      body.innerHTML = linhas;
+      printBody.innerHTML = linhas;
+
+      document.getElementById("printCampanhaNome").textContent = `Campanha: ${campanhaAtual.nome || "—"}`;
+      document.getElementById("printCampanhaInfo").textContent =
+        `Números ${formatNumeroBloco(campanhaAtual.numeroInicial)} a ${formatNumeroBloco(campanhaAtual.numeroFinal)} | Valor unitário: ${money.format(campanhaAtual.valorUnitario || 0)}`;
+    }
+
+    async function imprimirListaAssinatura() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+      await carregarAssinaturas();
+      window.print();
+    }
+
+    async function exportarCSVBasico() {
+      if (!campanhaAtual?._id) return toast("Selecione uma campanha.", "erro");
+
+      if (!numerosCache.length) {
+        await carregarNumeros();
+      }
+
+      const rows = [
+        [
+          "Campanha",
+          "Numero",
+          "Status",
+          "Responsavel",
+          "Turma_Setor",
+          "Valor",
+          "Valor_Pago",
+          "Forma_Pagamento",
+          "Atualizado_Em"
+        ]
+      ];
+
+      numerosCache.forEach(n => {
+        rows.push([
+          campanhaAtual.nome || "",
+          n.numero || "",
+          n.status || "",
+          n.responsavelNome || "",
+          n.turmaOuSetor || "",
+          Number(n.valor || 0).toFixed(2),
+          Number(n.valorPago || 0).toFixed(2),
+          n.formaPagamento || "",
+          n.updatedAt ? new Date(n.updatedAt).toLocaleString("pt-BR") : ""
+        ]);
+      });
+
+      const csv = rows.map(row => {
+        return row.map(value => {
+          const v = String(value ?? "").replaceAll('"', '""');
+          return `"${v}"`;
+        }).join(";");
+      }).join("\n");
+
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      const nomeSeguro = String(campanhaAtual.nome || "rifas")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .toLowerCase();
+
+      a.href = url;
+      a.download = `${nomeSeguro || "rifas"}_exportacao.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast("CSV exportado com sucesso.");
+    }
+
+    async function carregarTudo() {
+      try {
+        await carregarCampanhas();
+
+        if (campanhaAtual?._id) {
+          await carregarDashboard();
+          await carregarResponsaveis();
+        }
+
+        await carregarTurmas();
+      } catch (e) {
+        console.error(e);
+        toast(e.message || "Erro ao carregar dados.", "erro");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      document.getElementById("distInicio")?.addEventListener("input", previewBloco);
+      document.getElementById("distFim")?.addEventListener("input", previewBloco);
+      document.getElementById("distResponsavelManual")?.addEventListener("input", atualizarManualSelecionado);
+      document.getElementById("distSetorManual")?.addEventListener("input", atualizarManualSelecionado);
+
+      const ok = await carregarUsuario();
+      if (!ok) return;
+
+      await carregarTudo();
+    });
+  </script>
+</body>
+</html>

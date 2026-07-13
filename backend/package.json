@@ -1,32 +1,58 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "Backend do Sistema Escolar CMDPII/CZS — Node.js + Express + MongoDB",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "postinstall": "pip install -r ./pdf/requirements.txt"
+    "postinstall": "pip install -r ./pdf/requirements.txt",
+    "migrar:associacao": "node scripts/migrar-associacao-sqlite-para-mongo.js",
+    "check:associacao": "node --check routes/api/associacao.js && node --check routes/api/masterAssociacoes.js && node --check middleware/autenticacao.js && node --check middleware/associacaoAuth.js && node --check services/usuarioVinculos.js && node --check models/UsuarioVinculoInstituicao.js && node --check routes/authRoutes.js && node --check public/associacao/associacao.js && node --check public/js/axoriin-ambientes.js && node --check scripts/migrar-vinculos-institucionais.js && node --check scripts/migrar-associacao-sqlite-para-mongo.js && node --check models/AssociacaoLembreteConfig.js && node --check models/AssociacaoLembreteEnvio.js && node --check services/associacaoLembretes.js && node --check jobs/agendadorLembretesAssociacao.js && node --check scripts/testar-regras-lembretes.js && node --check utils/associacaoReminderRules.js && node --check services/associacaoIndicadores.js && node --check utils/associacaoFinancialInsights.js && node --check scripts/testar-indicadores-financeiros.js",
+    "migrar:vinculos": "node scripts/migrar-vinculos-institucionais.js",
+    "test:lembretes": "node scripts/testar-regras-lembretes.js",
+    "test:indicadores": "node scripts/testar-indicadores-financeiros.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "CMDPII",
+    "sistema-escolar",
+    "express",
+    "mongodb",
+    "mongoose",
+    "render"
+  ],
+  "author": "Colégio Militar Dom Pedro II - Cruzeiro do Sul",
   "license": "ISC",
-  "description": "",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1038.0",
+    "@aws-sdk/cloudfront-signer": "^3.1005.0",
+    "@aws-sdk/lib-storage": "^3.1004.0",
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
     "canvas": "^3.1.2",
+    "cloudinary": "^2.7.0",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "docx": "^9.5.0",
     "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.7.2",
+    "mongodb": "^6.20.0",
     "mongoose": "^8.18.0",
-    "multer": "^2.0.0",
-    "nodemailer": "^7.0.3",
+    "multer": "^2.1.1",
+    "node-telegram-bot-api": "^0.66.0",
+    "nodemailer": "^7.0.10",
     "pdf-lib": "^1.17.1",
-    "pdfkit": "^0.17.1",
+    "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
-    "twilio": "^5.7.0"
+    "sharp": "^0.34.5",
+    "twilio": "^5.7.0",
+    "sql.js": "^1.14.1"
   }
 }

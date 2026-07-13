@@ -3,101 +3,1583 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Logs do Sistema</title>
-  <meta name="theme-color" content="#8B0000" />
+  <title>🧾 Logs do Sistema - CMDPII</title>
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #8B0000;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    th, td {
-      padding: 12px 15px;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
-    th {
-      background-color: #8B0000;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    .voltar {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 15px;
-      background-color: #B22222;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      text-decoration: none;
-    }
-    .voltar:hover {
-      background-color: #8B0000;
-    }
-  </style>
-</head>
-<body>
-  <h1>📜 Logs de Auditoria</h1>
-  <table id="tabelaLogs">
-    <thead>
-      <tr>
-        <th>Usuário</th>
-        <th>Ação</th>
-        <th>Entidade</th>
-        <th>ID da Entidade</th>
-        <th>Data/Hora</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    :root{
+      --text:#e5f0ff;
+      --text-soft:#9ca9c7;
+      --accent:#38bdf8;
+      --accent-soft:rgba(56,189,248,0.25);
 
-  <a href="painel.html" class="voltar">⬅️ Voltar ao Painel</a>
+      --card-bg:rgba(15,23,42,0.92);
+      --card-border:rgba(148,163,184,0.5);
 
-  <script>
-    async function carregarLogs() {
-      try {
-        const resposta = await fetch('/api/logs', { credentials: 'include' });
-        if (!resposta.ok) throw new Error('Erro ao buscar logs');
+      --radius:20px;
 
-        const logs = await resposta.json();
-        const tbody = document.querySelector('#tabelaLogs tbody');
-        tbody.innerHTML = '';
+      --ok-bg:rgba(34,197,94,0.18);
+      --ok-bd:rgba(74,222,128,0.75);
 
-        logs.forEach(log => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${log.usuario?.nome || 'Desconhecido'}</td>
-            <td>${log.acao}</td>
-            <td>${log.entidade}</td>
-            <td>${log.entidadeId}</td>
-            <td>${new Date(log.data).toLocaleString('pt-BR')}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (erro) {
-        alert('Erro ao carregar logs.');
-        console.error(erro);
+      --warn-bg:rgba(245,158,11,0.18);
+      --warn-bd:rgba(251,191,36,0.8);
+
+      --err-bg:rgba(239,68,68,0.18);
+      --err-bd:rgba(252,165,165,0.8);
+
+      --chip-bg:rgba(56,189,248,0.18);
+      --chip-bd:rgba(148,216,255,0.8);
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+
+    body{
+      font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:28px 14px 60px;
+
+      background:
+        url("/bg-painel-smart.png") center/cover no-repeat fixed,
+        linear-gradient(145deg, #020617cc, #0b1120cc);
+      background-blend-mode:overlay;
+      color-scheme:dark;
+    }
+
+    h1{
+      color:#f9fafb;
+      font-size:clamp(24px,3vw,34px);
+      font-weight:800;
+      margin-bottom:18px;
+      text-shadow:0 4px 16px rgba(0,0,0,.7);
+      letter-spacing:.06em;
+      position:relative;
+      z-index:3;
+      text-align:center;
+    }
+
+    .wrap{
+      position:relative;
+      z-index:3;
+      width:min(1320px,95%);
+      background:var(--card-bg);
+      border:1px solid var(--card-border);
+      border-radius:var(--radius);
+      backdrop-filter:blur(20px) saturate(160%);
+      -webkit-backdrop-filter:blur(20px) saturate(160%);
+      box-shadow:
+        0 18px 45px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(15,23,42,0.9);
+      padding:22px 22px 22px;
+      overflow:hidden;
+    }
+
+    .wrap::before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:
+        radial-gradient(circle at 0 0, var(--accent-soft), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(59,130,246,0.18), transparent 55%);
+      opacity:0.9;
+      pointer-events:none;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      position:relative;
+      z-index:5;
+    }
+
+    .topbar .right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      border:0;
+      border-radius:999px;
+      background:linear-gradient(135deg,#1d4ed8,#38bdf8);
+      color:#fff;
+      padding:10px 18px;
+      font-size:.92rem;
+      cursor:pointer;
+      box-shadow:
+        0 10px 24px rgba(15,23,42,0.9),
+        0 0 0 1px rgba(15,23,42,0.8);
+      transition:.18s;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+
+    .btn:hover{
+      filter:brightness(1.05);
+      transform:translateY(-1px);
+      box-shadow:
+        0 16px 34px rgba(15,23,42,1),
+        0 0 0 1px rgba(56,189,248,0.7);
+    }
+
+    .btn-secondary{
+      background:rgba(15,23,42,0.92);
+      border:1px solid rgba(148,163,184,0.6);
+      box-shadow:0 10px 24px rgba(15,23,42,0.9);
+    }
+
+    .btn-secondary:hover{
+      border-color:rgba(56,189,248,0.75);
+    }
+
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+      filter:none;
+    }
+
+    input[type="search"], select{
+      padding:10px 13px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.6);
+      background:linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.98));
+      color:#e5f0ff;
+      min-width:220px;
+      font-size:.9rem;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 8px 18px rgba(15,23,42,0.9);
+    }
+
+    input[type="search"]:focus,
+    select:focus{
+      outline:none;
+      border-color:#38bdf8;
+      box-shadow:
+        0 0 0 2px rgba(56,189,248,0.6),
+        0 10px 24px rgba(15,23,42,1);
+    }
+
+    .filters{
+      position:relative;
+      z-index:5;
+      display:grid;
+      grid-template-columns:repeat(6, minmax(0, 1fr));
+      gap:10px;
+      margin:12px 0 12px;
+    }
+
+    .filters .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+
+    .filters label{
+      font-size:.78rem;
+      color:var(--text-soft);
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+
+    .meta{
+      position:relative;
+      z-index:5;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:8px 0 10px;
+      color:var(--text-soft);
+      font-size:.85rem;
+    }
+
+    .table-wrap{
+      position:relative;
+      z-index:4;
+      overflow:auto;
+      border-radius:16px;
+      border:1px solid rgba(148,163,184,0.18);
+      background:rgba(2,6,23,0.18);
+    }
+
+    table{
+      width:100%;
+      min-width:1240px;
+      border-collapse:collapse;
+      font-size:.9rem;
+      position:relative;
+      z-index:4;
+    }
+
+    th,td{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(148,163,184,0.20);
+      vertical-align:top;
+    }
+
+    th{
+      background:rgba(15,23,42,0.92);
+      color:#e5edff;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      font-size:.8rem;
+      position:sticky;
+      top:0;
+      z-index:6;
+      border-bottom:1px solid rgba(56,189,248,0.6);
+    }
+
+    tbody tr:nth-child(even){ background:rgba(15,23,42,0.78); }
+    tbody tr:nth-child(odd){  background:rgba(15,23,42,0.72); }
+    tbody tr:hover{ background:rgba(30,64,175,0.32); }
+
+    .pill{
+      background:var(--chip-bg);
+      border:1px solid var(--chip-bd);
+      border-radius:999px;
+      padding:3px 10px;
+      font-size:.78rem;
+      display:inline-block;
+      letter-spacing:.05em;
+      margin-right:6px;
+      margin-bottom:6px;
+      white-space:nowrap;
+    }
+
+    .pill-status{
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+
+    .pill-status.sucesso{
+      background:var(--ok-bg);
+      border:1px solid var(--ok-bd);
+      color:#dcfce7;
+    }
+
+    .pill-status.erro{
+      background:var(--err-bg);
+      border:1px solid var(--err-bd);
+      color:#fee2e2;
+    }
+
+    .pill-status.negado{
+      background:var(--warn-bg);
+      border:1px solid var(--warn-bd);
+      color:#fef3c7;
+    }
+
+    .pill-status.aviso{
+      background:var(--warn-bg);
+      border:1px solid var(--warn-bd);
+      color:#fef3c7;
+    }
+
+    .muted{
+      color:var(--text-soft);
+      font-size:.78rem;
+      margin-top:2px;
+      word-break:break-word;
+    }
+
+    .stack{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .empty{
+      padding:16px;
+      text-align:center;
+      color:var(--text-soft);
+    }
+
+    #erro{
+      color:#fecaca;
+      font-size:.9rem;
+      min-height:18px;
+      margin-bottom:8px;
+      text-align:center;
+      position:relative;
+      z-index:6;
+    }
+
+    .paginacao{
+      margin-top:18px;
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      align-items:center;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:4;
+    }
+
+    .paginacao button{
+      background:rgba(15,23,42,0.92);
+      color:#e5f0ff;
+      border:1px solid rgba(148,163,184,0.6);
+      border-radius:999px;
+      padding:6px 10px;
+      cursor:pointer;
+      font-size:.85rem;
+      box-shadow:0 6px 16px rgba(15,23,42,0.9);
+      min-width:40px;
+    }
+
+    .paginacao button.ativo{
+      background:linear-gradient(135deg,#1d4ed8,#38bdf8);
+      border-color:#bcdfff;
+      color:#fff;
+    }
+
+    .paginacao .dots{
+      color:rgba(229,240,255,0.8);
+      padding:0 6px;
+      user-select:none;
+    }
+
+    .idbox{ display:flex; flex-direction:column; gap:4px; }
+    .idrow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+    .copy-btn{
+      border:1px solid rgba(148,163,184,0.6);
+      background:rgba(15,23,42,0.85);
+      color:#e5f0ff;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:.78rem;
+      cursor:pointer;
+    }
+
+    .copy-btn:hover{
+      border-color:rgba(56,189,248,0.75);
+    }
+
+    .mini-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+    }
+
+    .kv{
+      font-size:.78rem;
+      color:#dbeafe;
+      line-height:1.35;
+    }
+
+    .kv b{
+      color:#ffffff;
+      font-weight:700;
+    }
+
+    .diffbox{
+      margin-top:8px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+
+    .diffcard{
+      border:1px solid rgba(148,163,184,0.20);
+      background:rgba(15,23,42,0.45);
+      border-radius:12px;
+      padding:8px 10px;
+    }
+
+    .diffcard h4{
+      font-size:.72rem;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      color:#bfdbfe;
+      margin-bottom:6px;
+    }
+
+    .json-mini{
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-size:.74rem;
+      color:#e2e8f0;
+      line-height:1.35;
+      max-height:130px;
+      overflow:auto;
+    }
+
+    .act{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .icon-btn{
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,.55);
+      background:rgba(15,23,42,.85);
+      color:#e5f0ff;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 8px 18px rgba(15,23,42,.9);
+      transition:.16s;
+      user-select:none;
+    }
+
+    .icon-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(56,189,248,.85);
+      box-shadow:0 14px 26px rgba(15,23,42,1);
+    }
+
+    .icon-btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background:rgba(2,6,23,.75);
+      z-index:9999;
+      padding:14px;
+    }
+
+    .modal.open{ display:grid; }
+
+    .modal-box{
+      width:min(1100px, 100%);
+      max-height:88vh;
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.45);
+      background:
+        radial-gradient(circle at 0 0, rgba(56,189,248,.10), transparent 55%),
+        rgba(15,23,42,.96);
+      box-shadow:0 24px 60px rgba(0,0,0,.75);
+      backdrop-filter: blur(14px) saturate(140%);
+    }
+
+    .modal-head{
+      position:sticky;
+      top:0;
+      z-index:2;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:14px 14px;
+      border-bottom:1px solid rgba(148,163,184,.25);
+      background:rgba(2,6,23,.55);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:800;
+      letter-spacing:.02em;
+    }
+
+    .modal-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.45);
+      background:rgba(15,23,42,.55);
+      color:#e5f0ff;
+      font-size:.85rem;
+      box-shadow:0 10px 24px rgba(15,23,42,.8);
+    }
+
+    .sub{
+      display:block;
+      margin-top:6px;
+      color:rgba(229,240,255,.7);
+      font-size:.85rem;
+    }
+
+    .modal-body{
+      padding:14px 14px 18px;
+    }
+
+    .preview-card{
+      margin-top:12px;
+      border-radius:16px;
+      border:1px solid rgba(148,163,184,0.35);
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,.12), transparent 55%),
+                  rgba(2,6,23,0.55);
+      padding:14px;
+    }
+
+    .preview-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .pkv{
+      border:1px solid rgba(148,163,184,0.20);
+      background: rgba(15,23,42,0.45);
+      border-radius:12px;
+      padding:10px;
+    }
+
+    .pkv b{
+      display:block;
+      color: rgba(229,240,255,0.8);
+      font-size: .78rem;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      margin-bottom:4px;
+    }
+
+    .pbig{
+      font-size:1.05rem;
+      font-weight:900;
+    }
+
+    .pmuted{
+      color: rgba(229,240,255,0.72);
+    }
+
+    @media (max-width: 1200px){
+      .filters{
+        grid-template-columns:repeat(3, minmax(0, 1fr));
       }
     }
 
-    carregarLogs();
+    @media (max-width: 760px){
+      .preview-grid,
+      .diffbox{
+        grid-template-columns:1fr;
+      }
+
+      .filters{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width:600px){
+      input[type="search"], select{
+        width:100%;
+        min-width:0;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .topbar .right{
+        width:100%;
+      }
+
+      .btn{
+        width:100%;
+        justify-content:center;
+      }
+
+      .filters{
+        grid-template-columns:1fr;
+      }
+    }
+    select {
+  background: rgba(15,23,42,0.98) !important;
+  color: #e5f0ff !important;
+}
+
+select option {
+  background: #0f172a;
+  color: #e5f0ff;
+}
+  </style>
+</head>
+
+<body>
+  <h1>🧾 Logs de Auditoria do Sistema</h1>
+
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn" onclick="window.location.href='painel.html'">⬅ Voltar ao Painel</button>
+
+      <div class="right">
+        <input id="busca" type="search" placeholder="Filtrar por usuário, ação, aluno, entidade…" />
+        <button id="btnAtualizar" class="btn">🔄 Atualizar</button>
+        <button id="btnMaisAntigos" class="btn btn-secondary" type="button" title="Tenta puxar registros mais antigos, se a API suportar cursor">
+          ⏳ Carregar mais antigos
+        </button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="field">
+        <label for="fStatus">Status</label>
+        <select id="fStatus">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fModulo">Módulo</label>
+        <select id="fModulo">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fAcao">Ação</label>
+        <select id="fAcao">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fEntidade">Entidade</label>
+        <select id="fEntidade">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fUsuarioTipo">Perfil</label>
+        <select id="fUsuarioTipo">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fSeveridade">Severidade</label>
+        <select id="fSeveridade">
+          <option value="">Todas</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="erro"></div>
+
+    <div class="meta">
+      <div>
+        <span id="metaTotal">—</span>
+        <span class="muted" id="metaModo" style="margin:0"></span>
+      </div>
+      <div class="muted" id="metaPagina" style="margin:0">—</div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:15%">Usuário</th>
+            <th style="width:13%">Ação</th>
+            <th style="width:17%">Aluno / Entidade</th>
+            <th style="width:13%">Referência</th>
+            <th style="width:18%">Auditoria</th>
+            <th style="width:14%">Data e Hora</th>
+            <th style="width:10%">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody id="tbody">
+          <tr><td class="empty" colspan="7">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="paginacao" id="paginacao"></div>
+  </div>
+
+  <div class="modal" id="modalPreview" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">👁 Pré-visualização (notificação/log)</div>
+          <div class="sub" id="modalSub">—</div>
+        </div>
+        <div class="modal-actions">
+          <button class="chip" id="btnModalAbrir" type="button" title="Abrir registro relacionado">↗ Abrir</button>
+          <button class="chip" id="btnModalFechar" type="button">✖ Fechar</button>
+        </div>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <div class="empty">Carregando…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+        const getTenant = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('t') || localStorage.getItem('axoriin_tenant') || '';
+};
+
+const API = (p) => {
+  const base = p.startsWith('http')
+    ? p
+    : (p.startsWith('/api') ? p : `/api${p.startsWith('/') ? p : '/' + p}`);
+
+  const tenant = getTenant();
+  if (!tenant) return base;
+
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}t=${encodeURIComponent(tenant)}`;
+};
+
+    const PAGE_SIZE = 15;
+
+    let paginaAtual = 1;
+    let totalPaginas = 1;
+    let totalItens = 0;
+    let modo = 'server';
+
+    let ALL = [];
+    let FILTERED = [];
+    let lastBefore = null;
+
+    const tbody = document.getElementById('tbody');
+    const erro = document.getElementById('erro');
+    const busca = document.getElementById('busca');
+    const paginacao = document.getElementById('paginacao');
+    const metaTotal = document.getElementById('metaTotal');
+    const metaModo = document.getElementById('metaModo');
+    const metaPagina = document.getElementById('metaPagina');
+    const btnMaisAntigos = document.getElementById('btnMaisAntigos');
+    const btnAtualizar = document.getElementById('btnAtualizar');
+
+    const fStatus = document.getElementById('fStatus');
+    const fModulo = document.getElementById('fModulo');
+    const fAcao = document.getElementById('fAcao');
+    const fEntidade = document.getElementById('fEntidade');
+    const fUsuarioTipo = document.getElementById('fUsuarioTipo');
+    const fSeveridade = document.getElementById('fSeveridade');
+
+    const modal = document.getElementById('modalPreview');
+    const modalBody = document.getElementById('modalBody');
+    const modalSub = document.getElementById('modalSub');
+    const btnModalFechar = document.getElementById('btnModalFechar');
+    const btnModalAbrir = document.getElementById('btnModalAbrir');
+
+    let _modalOpenUrl = null;
+
+    function openModal(){
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal(){
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      modalBody.innerHTML = '<div class="empty">—</div>';
+      modalSub.textContent = '—';
+      _modalOpenUrl = null;
+    }
+
+    btnModalFechar.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{
+      if(e.target === modal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+    });
+
+    btnModalAbrir.addEventListener('click', ()=>{
+      if(_modalOpenUrl) window.open(_modalOpenUrl, '_blank', 'noopener');
+    });
+
+    function fmtDt(v){
+      try{
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
+      }catch{
+        return '—';
+      }
+    }
+
+    function s(v){
+      return (v ?? '').toString().replace(/[<>&]/g, c => ({
+        '<':'&lt;',
+        '>':'&gt;',
+        '&':'&amp;'
+      }[c]));
+    }
+
+    function prettyJson(value){
+      try{
+        if(value === null || value === undefined) return '—';
+        if(typeof value === 'string') return value;
+        return JSON.stringify(value, null, 2);
+      }catch{
+        return String(value ?? '—');
+      }
+    }
+
+    function truncateText(value, max = 180){
+      const txt = String(value ?? '');
+      if(txt.length <= max) return txt;
+      return txt.slice(0, max) + '…';
+    }
+
+    function getDateValue(l){
+      return l?.data || l?.createdAt || l?.updatedAt || null;
+    }
+
+    function getEntityLabel(l){
+  const tipoRaw =
+    l?.entidade ||
+    l?.entityType ||
+    l?.tipoEntidade ||
+    l?.targetType ||
+    (l?.alunoId ? 'Aluno' : '') ||
+    'Entidade';
+
+  const tipo = String(tipoRaw || 'Entidade');
+
+  const id =
+    l?.entidadeId ||
+    l?.entityId ||
+    l?.idEntidade ||
+    l?.alunoId ||
+    l?.targetId ||
+    l?.notificacaoId ||
+    l?.notificacao?._id ||
+    '';
+
+  const seq =
+    l?.numeroSequencial ||
+    l?.numeroSequencia ||
+    l?.numeroNotificacao ||
+    l?.notificacaoNumero ||
+    l?.numero ||
+    l?.dados?.numeroSequencial ||
+    l?.dados?.numero ||
+    l?.payload?.numeroSequencial ||
+    l?.payload?.numero ||
+    l?.notificacao?.numeroSequencial ||
+    l?.notificacao?.numero ||
+    l?.notificacao?.numeroNotificacao ||
+    l?.entidadeNumero ||
+    l?.entidadeCodigo ||
+    l?.detalhes?.numeroSequencial ||
+    l?.detalhes?.numero ||
+    '';
+
+  const tipoLower = tipo.toLowerCase();
+  const pareceNotificacao =
+    tipoLower.includes('notifica') ||
+    tipoLower.includes('advert') ||
+    tipoLower.includes('ocorr') ||
+    tipoLower.includes('registro');
+
+  if (pareceNotificacao) {
+    return {
+      tipo: 'Notificação',
+      id: String(id || ''),
+      display: seq ? `Nº ${String(seq)}` : ''
+    };
+  }
+
+  return {
+    tipo,
+    id: String(id || ''),
+    display: ''
+  };
+}
+
+         function buildSearchText(l){
+      const pieces = [
+        l?.usuarioNome,
+        l?.usuarioTipo,
+        l?.usuarioEmail,
+        l?.acao,
+        l?.alunoNome,
+        l?.entidade,
+        l?.entidadeNome,
+        l?.entidadeId,
+        l?.status,
+        l?.modulo,
+        l?.categoria,
+        l?.severidade,
+        l?.motivo,
+        l?.ip,
+        l?.navegador,
+        l?.sistema,
+        l?.dispositivo,
+        l?.sessionId,
+        l?.correlationId,
+        l?.requestId
+      ];
+
+      return pieces
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    }
+
+    function copyText(txt){
+      const t = String(txt || '').trim();
+      if(!t) return;
+
+      navigator.clipboard?.writeText(t).catch(()=>{
+        try{
+          const ta = document.createElement('textarea');
+          ta.value = t;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }catch{}
+      });
+    }
+
+    function statusClass(status){
+      const v = String(status || '').toLowerCase();
+      if(v === 'erro') return 'erro';
+      if(v === 'negado') return 'negado';
+      if(v === 'aviso') return 'aviso';
+      return 'sucesso';
+    }
+
+    function formatTempo(ms){
+      if(!Number.isFinite(ms) || ms < 0) return '—';
+      return `${ms} ms`;
+    }
+
+    function fillSelect(selectEl, values, placeholder){
+      const current = selectEl.value;
+      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+
+      (values || []).forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        selectEl.appendChild(opt);
+      });
+
+      if(current && [...selectEl.options].some(o => o.value === current)){
+        selectEl.value = current;
+      }
+    }
+
+    async function carregarMetadadosFiltros(){
+      try{
+        const res = await fetch(API('/logs/meta/filtros/lista'), {
+          credentials:'include',
+          cache:'no-store'
+        });
+
+        if(!res.ok) return;
+
+        const data = await res.json();
+
+        fillSelect(fStatus, data?.status || [], 'Todos');
+        fillSelect(fModulo, data?.modulos || [], 'Todos');
+        fillSelect(fAcao, data?.acoes || [], 'Todas');
+        fillSelect(fEntidade, data?.entidades || [], 'Todas');
+        fillSelect(fUsuarioTipo, data?.usuariosTipos || [], 'Todos');
+        fillSelect(fSeveridade, data?.severidades || [], 'Todas');
+      }catch{}
+    }
+
+    function getFiltrosQuery(){
+      const params = new URLSearchParams();
+
+      params.set('limit', String(PAGE_SIZE));
+      params.set('page', String(paginaAtual));
+      params.set('skip', String((paginaAtual - 1) * PAGE_SIZE));
+      params.set('sort', 'createdAt');
+      params.set('order', 'desc');
+
+      const q = (busca.value || '').trim();
+      if(q) params.set('search', q);
+
+      if(fStatus.value) params.set('status', fStatus.value);
+      if(fModulo.value) params.set('modulo', fModulo.value);
+      if(fAcao.value) params.set('acao', fAcao.value);
+      if(fEntidade.value) params.set('entidade', fEntidade.value);
+      if(fUsuarioTipo.value) params.set('usuarioTipo', fUsuarioTipo.value);
+      if(fSeveridade.value) params.set('severidade', fSeveridade.value);
+
+      return params.toString();
+    }
+
+    function renderMeta(){
+      const shown = Array.isArray(ALL) ? ALL.length : 0;
+      metaTotal.textContent = `Total: ${Number(totalItens || 0).toLocaleString('pt-BR')} • exibindo ${shown} nesta página`;
+      metaModo.textContent = '• modo: servidor (auditoria filtrada)';
+      metaPagina.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
+    }
+
+    function renderPagination(){
+      paginacao.innerHTML = '';
+      if(totalPaginas <= 1) return;
+
+      const mkBtn = (label, page, { active=false, disabled=false } = {}) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        if(active) b.classList.add('ativo');
+        if(disabled) b.disabled = true;
+
+        b.addEventListener('click', async ()=>{
+          if(b.disabled) return;
+          paginaAtual = page;
+          await carregar();
+        });
+
+        return b;
+      };
+
+      const windowSize = 2;
+      const start = Math.max(1, paginaAtual - windowSize);
+      const end = Math.min(totalPaginas, paginaAtual + windowSize);
+
+      const addDots = () => {
+        const d = document.createElement('span');
+        d.className = 'dots';
+        d.textContent = '…';
+        paginacao.appendChild(d);
+      };
+
+      paginacao.appendChild(mkBtn('◀', Math.max(1, paginaAtual - 1), { disabled: paginaAtual <= 1 }));
+      paginacao.appendChild(mkBtn('1', 1, { active: paginaAtual === 1 }));
+
+      if(start > 2) addDots();
+
+      for(let p = start; p <= end; p++){
+        if(p === 1 || p === totalPaginas) continue;
+        paginacao.appendChild(mkBtn(String(p), p, { active: paginaAtual === p }));
+      }
+
+      if(end < totalPaginas - 1) addDots();
+
+      if(totalPaginas > 1){
+        paginacao.appendChild(mkBtn(String(totalPaginas), totalPaginas, { active: paginaAtual === totalPaginas }));
+      }
+
+      paginacao.appendChild(mkBtn('▶', Math.min(totalPaginas, paginaAtual + 1), { disabled: paginaAtual >= totalPaginas }));
+    }
+
+    function extractIdsFromLog(l){
+      const label = getEntityLabel(l);
+      const entidadeId = label?.id || l?.entidadeId || l?.entityId || l?.notificacaoId || l?.notificacao?._id || '';
+      const conversationId = l?.conversationId || l?.chatId || l?.conversaId || '';
+      const logId = l?._id || l?.id || '';
+      return { entidadeId, conversationId, logId, tipo: label?.tipo || '' };
+    }
+
+    function buildOpenUrl({conversationId, entidadeId, logId, tipo}){
+      const tipoLower = String(tipo || '').toLowerCase();
+
+      if(entidadeId && (tipoLower.includes('notifica') || tipoLower.includes('registro'))){
+        return `editar-notificacao.html?id=${encodeURIComponent(entidadeId)}`;
+      }
+
+      if(entidadeId && tipoLower.includes('aluno')){
+        return `ficha-aluno.html?id=${encodeURIComponent(entidadeId)}`;
+      }
+
+      if(conversationId){
+        return `conversa.html?id=${encodeURIComponent(conversationId)}`;
+      }
+
+      if(logId){
+        return null;
+      }
+
+      return null;
+    }
+
+    function renderAuditCell(l){
+      const status = l?.status || 'sucesso';
+      const statusCls = statusClass(status);
+
+      const topChips = [
+        `<span class="pill pill-status ${s(statusCls)}">${s(status)}</span>`,
+        l?.modulo ? `<span class="pill">${s(l.modulo)}</span>` : '',
+        l?.severidade ? `<span class="pill">${s(l.severidade)}</span>` : ''
+      ].filter(Boolean).join('');
+
+      const lines = [];
+
+      if(l?.motivo) lines.push(`<div class="kv"><b>Motivo:</b> ${s(l.motivo)}</div>`);
+      if(l?.ip) lines.push(`<div class="kv"><b>IP:</b> ${s(l.ip)}</div>`);
+      if(l?.navegador || l?.sistema || l?.dispositivo){
+        lines.push(
+          `<div class="kv"><b>Ambiente:</b> ${s([l?.navegador, l?.sistema, l?.dispositivo].filter(Boolean).join(' • ') || '—')}</div>`
+        );
+      }
+      if(Number.isFinite(l?.tempoExecucaoMs)){
+        lines.push(`<div class="kv"><b>Tempo:</b> ${s(formatTempo(l.tempoExecucaoMs))}</div>`);
+      }
+      if(l?.sessionId){
+        lines.push(`<div class="kv"><b>Sessão:</b> ${s(truncateText(l.sessionId, 40))}</div>`);
+      }
+      if(l?.correlationId){
+        lines.push(`<div class="kv"><b>Correlação:</b> ${s(truncateText(l.correlationId, 40))}</div>`);
+      }
+
+      const temDiff = l?.antes !== null || l?.depois !== null;
+      const diffHtml = temDiff ? `
+        <div class="diffbox">
+          <div class="diffcard">
+            <h4>Antes</h4>
+            <div class="json-mini">${s(truncateText(prettyJson(l?.antes), 280))}</div>
+          </div>
+          <div class="diffcard">
+            <h4>Depois</h4>
+            <div class="json-mini">${s(truncateText(prettyJson(l?.depois), 280))}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="stack">
+          <div>${topChips}</div>
+          <div class="mini-grid">
+            ${lines.join('') || '<div class="muted">Sem dados adicionais de auditoria.</div>'}
+          </div>
+          ${diffHtml}
+        </div>
+      `;
+    }
+
+    function renderRows(logs){
+      if(!Array.isArray(logs) || !logs.length){
+        tbody.innerHTML = '<tr><td class="empty" colspan="7">Nenhum log encontrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l=>{
+        const lLabel = getEntityLabel(l);
+        const tipo = lLabel.tipo;
+        const id = lLabel.id;
+        const disp = lLabel.display || '';
+
+        const usuarioNome = l?.usuarioNome || l?.ator?.nome || '—';
+        const usuarioTipo = l?.usuarioTipo || l?.ator?.tipo || '';
+        const usuarioEmail = l?.usuarioEmail || l?.ator?.email || '';
+
+        const acao = l?.acao || '—';
+
+        const nomeEnt = (l?.alunoNome || l?.entidadeNome || '—');
+        const tipoEnt = (l?.entidade || l?.entityType || '');
+        const dt = fmtDt(getDateValue(l));
+
+        const idDisplay = id ? s(id) : '—';
+        const tipoDisplay = tipo ? s(tipo) : 'Entidade';
+        const dispHtml = disp ? `<span class="pill" title="Número sequencial">${s(disp)}</span>` : '';
+
+        const detalhesPreview = l?.detalhesPreview
+          ? `<div class="muted">${s(truncateText(prettyJson(l.detalhesPreview), 140))}</div>`
+          : '';
+
+        const { entidadeId, conversationId, logId, tipo: tipoExtraido } = extractIdsFromLog(l);
+        const openUrl = buildOpenUrl({ conversationId, entidadeId, logId, tipo: tipoExtraido });
+
+        return `
+          <tr data-logid="${s(logId || '')}" data-entidadeid="${s(entidadeId || '')}" data-convid="${s(conversationId || '')}">
+            <td>
+              ${s(usuarioNome)}
+              <div class="muted">${s(usuarioTipo || '')}</div>
+              ${usuarioEmail ? `<div class="muted">${s(usuarioEmail)}</div>` : ''}
+            </td>
+
+            <td>
+              <span class="pill">${s(acao)}</span>
+              ${l?.categoria ? `<div class="muted">${s(l.categoria)}</div>` : ''}
+            </td>
+
+            <td>
+              ${s(nomeEnt)}
+              <div class="muted">${s(tipoEnt)}</div>
+              ${detalhesPreview}
+            </td>
+
+            <td>
+              <div class="idbox">
+                <div class="idrow">
+                  <span class="pill">${tipoDisplay}</span>
+                  ${dispHtml}
+                </div>
+                <div class="idrow">
+                  <span class="muted" style="margin:0">${idDisplay}</span>
+                  ${id ? `<button class="copy-btn" data-copy="${s(id)}" type="button" title="Copiar ID">📋 Copiar</button>` : ''}
+                </div>
+              </div>
+            </td>
+
+            <td>${renderAuditCell(l)}</td>
+
+            <td>
+              ${dt}
+              ${l?.requestContext?.method ? `<div class="muted">${s(l.requestContext.method)} ${s(l.requestContext.path || '')}</div>` : ''}
+            </td>
+
+            <td>
+              <div class="act">
+                <button class="icon-btn" type="button" title="Pré-visualizar" data-preview="1">👁</button>
+                <button class="icon-btn" type="button" title="Abrir" data-open="${openUrl ? s(openUrl) : ''}" ${openUrl ? '' : 'disabled'}>↗</button>
+                <button class="icon-btn" type="button" title="Detalhes do log" data-logdetail="1">🧾</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function getJSON(url){
+      const r = await fetch(API(url), {
+        credentials:'include',
+        cache:'no-store'
+      });
+      if(!r.ok) throw new Error(String(r.status));
+      return r.json();
+    }
+
+    async function carregar(){
+      erro.textContent = '';
+      tbody.innerHTML = '<tr><td class="empty" colspan="7">Carregando…</td></tr>';
+
+      try{
+        const qs = getFiltrosQuery();
+        const res = await getJSON(`/logs?${qs}`);
+
+        ALL = Array.isArray(res?.data) ? res.data : [];
+        FILTERED = ALL.slice();
+
+        totalItens = Number(res?.total ?? ALL.length ?? 0);
+        totalPaginas = Math.max(1, Number(res?.totalPages ?? Math.ceil(totalItens / PAGE_SIZE) ?? 1));
+
+        renderRows(ALL);
+        renderPagination();
+        renderMeta();
+      }catch(e){
+        console.error(e);
+        erro.textContent = 'Não foi possível carregar os logs.';
+        tbody.innerHTML = '<tr><td class="empty" colspan="7">Erro ao carregar logs.</td></tr>';
+      }
+    }
+        function renderPreviewNotificacao(n){
+      const aluno = n?.aluno || {};
+      const dataTxt = n?.data ? new Date(n.data).toLocaleString('pt-BR') : '—';
+
+      const valorTxt = (n?.valorNumerico ?? n?.valorTotal ?? '—');
+      const diasTxt = (n?.quantidadeDias ?? '—');
+
+      return `
+        <div class="preview-card">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+              <div class="pbig">${s(aluno.nome || '—')}</div>
+              <div class="pmuted">Turma: ${s(aluno.turma || '—')} • Nº: ${s(n?.numeroSequencial || '—')}</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+              <span class="chip">Status: ${s(n?.status || '—')}</span>
+              <span class="chip">${s(n?.natureza || '—')}</span>
+              <span class="chip">${s(n?.tipoMedida || n?.tipo || '—')}</span>
+            </div>
+          </div>
+
+          <div class="preview-grid">
+            <div class="pkv"><b>Motivo</b>${s(n?.motivo || '—')}</div>
+            <div class="pkv"><b>Data</b>${s(dataTxt)}</div>
+
+            <div class="pkv"><b>Valor</b>${s(valorTxt)}</div>
+            <div class="pkv"><b>Dias</b>${s(diasTxt)}</div>
+
+            <div class="pkv"><b>Artigo</b>${s(n?.artigo || '—')}</div>
+            <div class="pkv"><b>Inciso</b>${s(n?.inciso || '—')}</div>
+
+            <div class="pkv"><b>Classificação</b>${s(n?.classificacaoRegulamento || '—')}</div>
+            <div class="pkv"><b>Entregue</b>${n?.entregue ? 'Sim ✅' : 'Não ❌'}</div>
+
+            <div class="pkv" style="grid-column:1/-1">
+              <b>Observação</b>
+              <div class="pmuted">${s(n?.observacao || '—')}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPreviewLog(l){
+      const status = l?.status || 'sucesso';
+      const statusCls = statusClass(status);
+
+      const chips = [
+        `<span class="chip">Ação: ${s(l?.acao || '—')}</span>`,
+        `<span class="chip">Entidade: ${s(l?.entidade || '—')}</span>`,
+        `<span class="chip">Status: ${s(status)}</span>`,
+        l?.modulo ? `<span class="chip">Módulo: ${s(l.modulo)}</span>` : '',
+        l?.severidade ? `<span class="chip">Severidade: ${s(l.severidade)}</span>` : ''
+      ].filter(Boolean).join('');
+
+      const usuario = l?.usuarioNome || l?.ator?.nome || '—';
+      const perfil = l?.usuarioTipo || l?.ator?.tipo || '—';
+      const email = l?.usuarioEmail || l?.ator?.email || '—';
+
+      const entidadeNome = l?.alunoNome || l?.entidadeNome || '—';
+      const entidadeId = l?.entidadeId || '—';
+
+      const method = l?.requestContext?.method || '—';
+      const path = l?.requestContext?.path || l?.requestContext?.originalUrl || '—';
+
+      const diffHtml = (l?.antes !== null || l?.depois !== null) ? `
+        <div class="preview-grid" style="margin-top:12px;">
+          <div class="pkv">
+            <b>Antes</b>
+            <div class="json-mini">${s(prettyJson(l?.antes))}</div>
+          </div>
+          <div class="pkv">
+            <b>Depois</b>
+            <div class="json-mini">${s(prettyJson(l?.depois))}</div>
+          </div>
+        </div>
+      ` : '';
+
+      const erroHtml = l?.erro ? `
+        <div class="pkv" style="margin-top:10px;">
+          <b>Erro</b>
+          <div class="json-mini">${s(prettyJson(l.erro))}</div>
+        </div>
+      ` : '';
+
+      const detalhesHtml = l?.detalhes ? `
+        <div class="pkv" style="margin-top:10px;">
+          <b>Detalhes</b>
+          <div class="json-mini">${s(prettyJson(l.detalhes))}</div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="preview-card">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+              <div class="pbig">${s(usuario)}</div>
+              <div class="pmuted">${s(perfil)} • ${s(email)}</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+              <span class="pill pill-status ${s(statusCls)}">${s(status)}</span>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${chips}
+          </div>
+
+          <div class="preview-grid">
+            <div class="pkv"><b>Entidade</b>${s(entidadeNome)}</div>
+            <div class="pkv"><b>ID da Entidade</b>${s(entidadeId)}</div>
+
+            <div class="pkv"><b>Data</b>${s(fmtDt(getDateValue(l)))}</div>
+            <div class="pkv"><b>Tempo</b>${s(formatTempo(l?.tempoExecucaoMs))}</div>
+
+            <div class="pkv"><b>IP</b>${s(l?.ip || l?.requestContext?.ip || '—')}</div>
+            <div class="pkv"><b>Origem</b>${s(l?.origem || l?.requestContext?.origin || '—')}</div>
+
+            <div class="pkv"><b>Ambiente</b>${s([l?.navegador, l?.sistema, l?.dispositivo].filter(Boolean).join(' • ') || '—')}</div>
+            <div class="pkv"><b>Rota</b>${s(method)} ${s(path)}</div>
+
+            <div class="pkv"><b>Sessão</b>${s(l?.sessionId || '—')}</div>
+            <div class="pkv"><b>Correlação</b>${s(l?.correlationId || '—')}</div>
+
+            <div class="pkv" style="grid-column:1/-1">
+              <b>Motivo</b>
+              <div class="pmuted">${s(l?.motivo || '—')}</div>
+            </div>
+          </div>
+
+          ${diffHtml}
+          ${erroHtml}
+          ${detalhesHtml}
+        </div>
+      `;
+    }
+
+    async function tryFetchPreview(l){
+      const { entidadeId, logId, tipo } = extractIdsFromLog(l);
+      const tipoLower = String(tipo || '').toLowerCase();
+
+      if(entidadeId && (tipoLower.includes('notifica') || tipoLower.includes('registro'))){
+        const url = `/notificacoes/${encodeURIComponent(entidadeId)}`;
+        const data = await getJSON(url);
+        return { url, data, kind: 'notificacao', entidadeId };
+      }
+
+      if(logId){
+        const url = `/logs/${encodeURIComponent(logId)}`;
+        const data = await getJSON(url);
+        return { url, data, kind: 'log', entidadeId };
+      }
+
+      throw new Error('Sem referência para pré-visualizar.');
+    }
+
+    async function openPreviewForLog(l){
+      erro.textContent = '';
+      modalBody.innerHTML = '<div class="empty">Carregando…</div>';
+      modalSub.textContent = '—';
+      btnModalAbrir.disabled = true;
+      _modalOpenUrl = null;
+
+      openModal();
+
+      try{
+        const r = await tryFetchPreview(l);
+        modalSub.textContent = `Fonte: ${r.url}`;
+
+        const { entidadeId, conversationId, logId, tipo } = extractIdsFromLog(l);
+        const openUrl = buildOpenUrl({ entidadeId, conversationId, logId, tipo });
+        _modalOpenUrl = openUrl;
+        btnModalAbrir.disabled = !openUrl;
+
+        if(r.kind === 'notificacao'){
+          modalBody.innerHTML = `
+            <div>
+              <span class="chip">Fonte: ${s(r.url)}</span>
+              <span class="sub">Pré-visualização do registro relacionado.</span>
+            </div>
+            ${renderPreviewNotificacao(r.data)}
+          `;
+          return;
+        }
+
+        modalBody.innerHTML = `
+          <div>
+            <span class="chip">Fonte: ${s(r.url)}</span>
+            <span class="sub">Pré-visualização detalhada do log.</span>
+          </div>
+          ${renderPreviewLog(r.data)}
+        `;
+      }catch(e){
+        modalBody.innerHTML = `
+          <div class="preview-card">
+            <div class="pbig">⚠️ Não foi possível pré-visualizar automaticamente.</div>
+            <div class="sub">Mostrando resumo local do item selecionado.</div>
+            ${renderPreviewLog(l)}
+          </div>
+        `;
+      }
+    }
+
+    tbody.addEventListener('click', async (e)=>{
+      const copyBtn = e.target.closest('[data-copy]');
+      if(copyBtn){
+        copyText(copyBtn.getAttribute('data-copy'));
+        return;
+      }
+
+      const tr = e.target.closest('tr');
+      if(!tr) return;
+
+      const logId = tr.dataset.logid || '';
+      const entidadeId = tr.dataset.entidadeid || '';
+      const conversationId = tr.dataset.convid || '';
+
+      const item = ALL.find(x => String(x?._id || x?.id || '') === String(logId))
+        || ALL.find(x => String(x?.entidadeId || '') === String(entidadeId))
+        || null;
+
+      if(!item) return;
+
+      const previewBtn = e.target.closest('[data-preview]');
+      if(previewBtn){
+        await openPreviewForLog(item);
+        return;
+      }
+
+      const openBtn = e.target.closest('[data-open]');
+      if(openBtn){
+        const url = openBtn.getAttribute('data-open');
+        if(url) window.open(url, '_blank', 'noopener');
+        return;
+      }
+
+      const logDetailBtn = e.target.closest('[data-logdetail]');
+      if(logDetailBtn){
+        await openPreviewForLog(item);
+        return;
+      }
+    });
+
+    let timerBusca = null;
+
+    busca.addEventListener('input', ()=>{
+      clearTimeout(timerBusca);
+      timerBusca = setTimeout(async ()=>{
+        paginaAtual = 1;
+        await carregar();
+      }, 300);
+    });
+
+    [fStatus, fModulo, fAcao, fEntidade, fUsuarioTipo, fSeveridade].forEach(el=>{
+      el.addEventListener('change', async ()=>{
+        paginaAtual = 1;
+        await carregar();
+      });
+    });
+
+    btnAtualizar.addEventListener('click', async ()=>{
+      await carregarMetadadosFiltros();
+      await carregar();
+    });
+
+    btnMaisAntigos.addEventListener('click', async ()=>{
+      if(paginaAtual < totalPaginas){
+        paginaAtual += 1;
+        await carregar();
+        return;
+      }
+
+      erro.textContent = 'Você já está na última página disponível.';
+      setTimeout(()=>{
+        if(erro.textContent === 'Você já está na última página disponível.'){
+          erro.textContent = '';
+        }
+      }, 2500);
+    });
+
+    (async function init(){
+      await carregarMetadadosFiltros();
+      await carregar();
+    })();
   </script>
 </body>
 </html>

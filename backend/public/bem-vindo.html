@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Bem-vindo(a) - Axoriin</title>
+
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0A1322" />
+  <link rel="icon" href="/icons/icon-512x512.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-512x512.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root{
+      --bg-1:#020617;
+      --bg-2:#0b1120;
+      --ax-primary:#00C2FF;
+      --ax-secondary:#7A5CFF;
+      --card-bg: rgba(15,23,42,0.92);
+      --card-border: rgba(148,163,184,0.55);
+      --txt:#f9fafb;
+      --txt-muted: rgba(148,163,184,0.92);
+      --shadow:
+        0 18px 45px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(15,23,42,0.9);
+      --mark-size: 250px;
+      --core-x: 50%;
+      --core-y: 56%;
+      --core-size: 150px;
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; }
+
+    body{
+      font-family: "Rajdhani", system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--txt);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      padding: 16px;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(0,194,255,0.16), transparent 55%),
+        radial-gradient(circle at 90% 100%, rgba(122,92,255,0.14), transparent 55%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2));
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color-scheme: dark;
+      overflow:hidden;
+    }
+
+    .container{
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      padding: 26px 26px 28px;
+      border-radius: 22px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      overflow: hidden;
+      transform: translateZ(0);
+    }
+
+    .container::before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:
+        radial-gradient(circle at 0 0, rgba(0,194,255,0.22), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(122,92,255,0.18), transparent 55%);
+      opacity:0.9;
+      pointer-events:none;
+    }
+
+    .content{ position: relative; z-index: 1; }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(170,200,240,.28);
+      background: rgba(10,19,34,.35);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      font-size: 13px;
+      color: var(--txt-muted);
+      margin: 0 auto 14px;
+    }
+
+    .dot{
+      width:8px; height:8px;
+      border-radius:999px;
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
+      box-shadow: 0 0 12px rgba(0,194,255,.55);
+      flex: 0 0 auto;
+    }
+
+    .mascote-stage{
+      width: 260px;
+      height: 260px;
+      margin: 0 auto 8px;
+      position: relative;
+      display:grid;
+      place-items:center;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.55);
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.10), transparent 60%),
+        radial-gradient(circle at 70% 80%, rgba(0,194,255,0.10), transparent 55%),
+        linear-gradient(180deg, rgba(21,40,76,.55), rgba(13,28,54,.65));
+      box-shadow:
+        0 14px 34px rgba(0,0,0,.75),
+        0 0 26px rgba(0,194,255,.10);
+      overflow:hidden;
+      transform: translateZ(0);
+      will-change: transform, opacity, filter;
+    }
+
+    .mascote-stage::after{
+      content:"";
+      position:absolute;
+      inset:-30%;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(0,194,255,0.22), transparent 55%),
+        radial-gradient(circle at 80% 90%, rgba(122,92,255,0.16), transparent 55%);
+      opacity: .7;
+      animation: glowPulse 2.6s ease-in-out infinite;
+      pointer-events:none;
+    }
+
+    .mark{
+      width: var(--mark-size);
+      height: var(--mark-size);
+      object-fit: contain;
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-drag:none;
+      transform-origin: 50% 56%;
+      will-change: transform, filter, opacity;
+      filter: drop-shadow(0 12px 26px rgba(0,0,0,.55));
+      animation: axOrbit 9s ease-in-out infinite alternate,
+                 axFloat 5.6s ease-in-out infinite;
+    }
+
+    .core-glow{
+      position:absolute;
+      width: var(--core-size);
+      height: var(--core-size);
+      border-radius: 999px;
+      left: var(--core-x);
+      top: var(--core-y);
+      transform: translate(-50%, -50%);
+      pointer-events:none;
+      mix-blend-mode: screen;
+      background: radial-gradient(circle,
+        rgba(255,255,255,.95) 0%,
+        rgba(0,194,255,.80) 20%,
+        rgba(0,194,255,.42) 42%,
+        rgba(0,194,255,.18) 58%,
+        transparent 76%);
+      filter: blur(10px);
+      opacity: .72;
+      will-change: transform, opacity, filter;
+      animation: corePulse 3.1s ease-in-out infinite;
+    }
+
+    @keyframes axOrbit{
+      0%   { transform: rotate(-1.6deg) scale(1); }
+      100% { transform: rotate( 1.6deg) scale(1.02); }
+    }
+    @keyframes axFloat{
+      0%   { transform: translateY(0px); }
+      50%  { transform: translateY(-6px); }
+      100% { transform: translateY(0px); }
+    }
+    @keyframes corePulse{
+      0%{ opacity:.62; transform: translate(-50%,-50%) scale(.92); filter: blur(11px); }
+      50%{ opacity:1;  transform: translate(-50%,-50%) scale(1.10); filter: blur(9px); }
+      100%{ opacity:.62; transform: translate(-50%,-50%) scale(.92); filter: blur(11px); }
+    }
+
+    .brand{
+      font-family: "Orbitron", system-ui, sans-serif;
+      font-size: 1.55rem;
+      letter-spacing: .08em;
+      margin-top: 10px;
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 14px rgba(0,0,0,.45);
+    }
+
+    .title{
+      margin-top: 8px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      color: rgba(236,242,255,.96);
+    }
+
+    .tagline{
+      margin-top: 8px;
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+      color: rgba(236,242,255,.88);
+      opacity: 0;
+      transform: translateY(6px);
+      animation: taglineIn 700ms ease-out 450ms forwards;
+    }
+    .tagline em{
+      font-style: normal;
+      background: linear-gradient(135deg, rgba(0,194,255,.95), rgba(122,92,255,.92));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 800;
+    }
+    @keyframes taglineIn{ to{ opacity: 1; transform: translateY(0); } }
+
+    .sub{
+      margin-top: 8px;
+      font-size: 1.02rem;
+      color: var(--txt-muted);
+      line-height: 1.35;
+    }
+    .sub strong{ color: rgba(236,242,255,.96); font-weight: 800; }
+
+    .spinner{
+      margin: 18px auto 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 3px solid rgba(148,163,184,0.35);
+      border-top-color: var(--ax-primary);
+      animation: spin 0.9s linear infinite;
+      box-shadow:
+        0 0 0 1px rgba(15,23,42,0.9),
+        0 0 18px rgba(0,194,255,0.35);
+    }
+
+    .dots{
+      margin-top: 10px;
+      font-size: 0.95rem;
+      letter-spacing: 0.35em;
+      color: var(--txt-muted);
+    }
+
+    .hint{
+      margin-top: 6px;
+      font-size: 0.92rem;
+      color: var(--txt-muted);
+    }
+
+    .cinematic-out{
+      animation: cinematicOut 1200ms ease-in-out forwards;
+      transform-origin: 50% 55%;
+    }
+
+    @keyframes cinematicOut{
+      0%{ opacity: 1; transform: scale(1) translateY(0); filter: brightness(1) saturate(1) blur(0); }
+      55%{ opacity: 1; transform: scale(1.18) translateY(-2px); filter: brightness(1.65) saturate(1.28) blur(0.4px); }
+      100%{ opacity: 0; transform: scale(1.34) translateY(-6px); filter: brightness(2.1) saturate(1.35) blur(7px); }
+    }
+
+    .fade-out{ animation: fadeOut .70s ease forwards; }
+    @keyframes fadeOut{ to{ opacity: 0; transform: scale(0.985); filter: blur(7px); } }
+
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    @keyframes glowPulse{
+      0%,100% { opacity: .45; transform: scale(1); }
+      50%     { opacity: .85; transform: scale(1.04); }
+    }
+
+    @media (max-width:480px){
+      .container{ padding: 22px 18px 24px; border-radius: 18px; }
+      .mascote-stage{ width: 215px; height: 215px; }
+      .brand{ font-size: 1.35rem; }
+      .title{ font-size: 1.05rem; }
+      .tagline{ font-size: .98rem; }
+      .sub{ font-size: 0.98rem; }
+      :root{
+        --mark-size: 210px;
+        --core-size: 130px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .tagline{ animation: none !important; opacity: 1 !important; transform:none !important; }
+      .mark,.core-glow,.mascote-stage::after{ animation: none !important; }
+      .cinematic-out,.fade-out{ animation: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" id="card">
+    <div class="content">
+
+      <div class="badge"><span class="dot"></span> Ambiente seguro • Preparando acesso</div>
+
+      <div class="mascote-stage" id="axoriin-mark" aria-hidden="true">
+        <img src="/assets/axoriin/axoriin-logo-8k.png" class="mark" alt="Axoriin">
+        <div class="core-glow" aria-hidden="true"></div>
+      </div>
+
+      <div class="brand">Axoriin</div>
+      <div class="title">Bem-vindo(a) ao sistema</div>
+
+      <div class="tagline"><em>O eixo que organiza e ilumina a gestão educacional.</em></div>
+
+      <div class="sub">
+        Preparando o painel principal de
+        <strong id="nome-colegio">Colégio Militar Dom Pedro II</strong>…
+      </div>
+
+      <div class="spinner" aria-label="Carregando"></div>
+      <div class="dots" aria-hidden="true">● ● ●</div>
+      <div class="hint">Você será redirecionado automaticamente em instantes.</div>
+
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
+    const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
+
+    const params = new URLSearchParams(location.search);
+    const card = document.getElementById('card');
+    const mark = document.getElementById('axoriin-mark');
+
+    function getTenantFromUrl() {
+      return (params.get('t') || params.get('tenant') || '').trim();
+    }
+
+    function getTenantFromStorage() {
+      const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+      if (current) return current;
+
+      const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+      if (legacy) {
+        localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+        return legacy;
+      }
+
+      return '';
+    }
+
+    function setTenantStorage(t) {
+      const value = String(t || '').trim();
+      if (!value) return;
+      localStorage.setItem(TENANT_STORAGE_KEY, value);
+      localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+    }
+
+    function getResolvedTenant() {
+      const finalTenant = getTenantFromUrl() || getTenantFromStorage() || DEFAULT_TENANT;
+      setTenantStorage(finalTenant);
+      return finalTenant;
+    }
+
+    function appendTenantToPath(path, tenant) {
+      try {
+        const isAbsolute = /^https?:\/\//i.test(path);
+        const url = isAbsolute ? new URL(path) : new URL(path, location.origin);
+        url.searchParams.set('t', tenant);
+        return isAbsolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        const sep = path.includes('?') ? '&' : '?';
+        return `${path}${sep}t=${encodeURIComponent(tenant)}`;
+      }
+    }
+
+    const TENANT = getResolvedTenant();
+
+    let destino = params.get('next') || '/painel.html';
+    destino = appendTenantToPath(destino, TENANT);
+
+    (async () => {
+      const el = document.getElementById('nome-colegio');
+      if (!el) return;
+
+      const key = `axoriin_nome_colegio__${TENANT}`;
+      const cached = localStorage.getItem(key);
+      if (cached && cached.trim().length > 2) {
+        el.textContent = cached.trim();
+      }
+
+      try {
+        const r = await fetch(`/public/tenant?t=${encodeURIComponent(TENANT)}`, {
+          cache: 'no-store',
+          credentials: 'include'
+        });
+
+        if (!r.ok) return;
+
+        const data = await r.json().catch(() => ({}));
+        const nome =
+          data?.nomeColegio ||
+          data?.nome_escola ||
+          data?.nome ||
+          data?.instituicao?.nome;
+
+        if (nome && String(nome).trim().length > 2) {
+          const nomeFinal = String(nome).trim();
+          el.textContent = nomeFinal;
+          localStorage.setItem(key, nomeFinal);
+        }
+      } catch {}
+    })();
+
+    const TEMPO_TELA_MS = 5200;
+    const TEMPO_FADE_MS = 750;
+    const CINEMATIC_MS = 1200;
+
+    setTimeout(() => {
+      if (mark) mark.classList.add('cinematic-out');
+    }, Math.max(0, TEMPO_TELA_MS - CINEMATIC_MS - 140));
+
+    setTimeout(() => {
+      if (card) card.classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = destino;
+      }, TEMPO_FADE_MS);
+    }, TEMPO_TELA_MS);
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+    }
+  </script>
+  <script src="/update-client.js"></script>
+</body>
+</html>

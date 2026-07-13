@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Axoriin | Plataforma Inteligente de Gestão Educacional</title>
+  <meta
+    name="description"
+    content="Axoriin é uma plataforma inteligente de gestão educacional para gestão acadêmica, disciplina, comunicação com responsáveis, APH escolar, relatórios, observatório educacional e decisões baseadas em dados."
+  />
+  <meta name="theme-color" content="#061326" />
+  <meta property="og:title" content="Axoriin | Plataforma Inteligente de Gestão Educacional" />
+  <meta property="og:description" content="Tecnologia para conectar escola, família e gestão pública, com segurança, relatórios e acompanhamento estratégico." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg: #030815;
+      --bg-2: #061326;
+      --bg-3: #081a34;
+      --panel: rgba(8, 23, 44, 0.72);
+      --panel-strong: rgba(8, 23, 44, 0.93);
+      --panel-soft: rgba(10, 29, 55, 0.58);
+      --line: rgba(117, 179, 255, 0.16);
+      --line-strong: rgba(65, 200, 255, 0.38);
+      --text: #f3f8ff;
+      --muted: #a9bbd1;
+      --muted-2: #8195ae;
+      --cyan: #31d7ff;
+      --cyan-2: #16f2ff;
+      --blue: #4da3ff;
+      --blue-2: #176dff;
+      --violet: #986dff;
+      --green: #54ef9e;
+      --gold: #f7c873;
+      --orange: #ff9c3a;
+      --red: #ff5a6e;
+      --radius-xl: 30px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --shadow: 0 0 0 1px rgba(123, 173, 255, 0.10), 0 22px 70px rgba(0, 0, 0, 0.38);
+      --shadow-soft: 0 16px 38px rgba(0, 0, 0, 0.26);
+      --maxw: 1240px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 6%, rgba(25, 123, 255, 0.25), transparent 31%),
+        radial-gradient(circle at 90% 8%, rgba(115, 69, 255, 0.18), transparent 29%),
+        radial-gradient(circle at 50% 102%, rgba(0, 221, 255, 0.14), transparent 34%),
+        linear-gradient(180deg, #020611 0%, #061326 38%, #030815 100%);
+      font-family: "Rajdhani", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    body::before {
+      background-image:
+        linear-gradient(rgba(82, 151, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(82, 151, 255, 0.055) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: radial-gradient(circle at center, black 36%, transparent 88%);
+      opacity: 0.55;
+    }
+
+    body::after {
+      background:
+        linear-gradient(110deg, transparent 0 44%, rgba(49, 215, 255, 0.07) 48%, transparent 54% 100%);
+      transform: translateX(-60%);
+      animation: pageSweep 13s ease-in-out infinite;
+      opacity: 0.9;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      z-index: 2000;
+      background: linear-gradient(90deg, var(--cyan), var(--blue), var(--violet));
+      box-shadow: 0 0 18px rgba(49, 215, 255, 0.75);
+    }
+
+    .container {
+      width: min(var(--maxw), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .section {
+      position: relative;
+      padding: 92px 0;
+      isolation: isolate;
+    }
+
+    .section.compact {
+      padding: 64px 0;
+    }
+
+    .section-head {
+      max-width: 860px;
+    }
+
+    .section-head.center {
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(99, 168, 255, 0.25);
+      background: rgba(8, 25, 50, 0.72);
+      color: #cbe5ff;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      box-shadow: inset 0 0 20px rgba(49, 215, 255, 0.05);
+      backdrop-filter: blur(12px);
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      flex: none;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      box-shadow: 0 0 18px var(--cyan);
+    }
+
+    .section-title {
+      margin: 20px 0 14px;
+      font-family: "Orbitron", sans-serif;
+      font-weight: 900;
+      line-height: 1.03;
+      letter-spacing: -0.04em;
+      font-size: clamp(2.15rem, 4.6vw, 4.65rem);
+    }
+
+    .section-title .grad,
+    .grad-text {
+      background: linear-gradient(90deg, #ffffff 0%, #6fe8ff 30%, #4f9bff 63%, #a77dff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .section-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1.08rem, 1.6vw, 1.3rem);
+      line-height: 1.62;
+    }
+
+    .mini-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.5;
+    }
+
+    .glass-card {
+      background:
+        linear-gradient(180deg, rgba(10, 29, 55, 0.84), rgba(6, 17, 34, 0.94)),
+        radial-gradient(circle at 20% 0%, rgba(49, 215, 255, 0.09), transparent 38%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .glass-card:hover {
+      border-color: rgba(71, 203, 255, 0.28);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 14px 22px;
+      border-radius: 15px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform 0.26s ease, box-shadow 0.26s ease, border-color 0.26s ease, background 0.26s ease;
+    }
+
+    .btn-primary {
+      color: #f6fbff;
+      background: linear-gradient(135deg, rgba(29, 195, 255, 0.28), rgba(84, 82, 255, 0.28));
+      border-color: rgba(88, 181, 255, 0.38);
+      box-shadow:
+        0 0 0 1px rgba(115, 184, 255, 0.07),
+        0 16px 30px rgba(0, 0, 0, 0.28),
+        inset 0 0 18px rgba(49, 215, 255, 0.08);
+    }
+
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .btn-whatsapp:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:hover {
+      box-shadow:
+        0 0 0 1px rgba(115, 184, 255, 0.10),
+        0 20px 44px rgba(0, 0, 0, 0.34),
+        0 0 34px rgba(63, 187, 255, 0.2);
+    }
+
+    .btn-secondary {
+      color: #e5f2ff;
+      background: rgba(7, 22, 44, 0.62);
+      border-color: rgba(108, 160, 255, 0.2);
+      box-shadow: inset 0 0 18px rgba(49, 215, 255, 0.04);
+    }
+
+    .btn-secondary:hover {
+      color: #ffffff;
+      border-color: rgba(111, 199, 255, 0.35);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+    }
+
+    .btn-whatsapp {
+      color: #062315;
+      background: linear-gradient(135deg, #64ffac, #28d681);
+      border-color: rgba(84, 239, 158, 0.55);
+      box-shadow: 0 16px 34px rgba(20, 190, 104, 0.14);
+    }
+
+    /* HEADER */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 1500;
+      border-bottom: 1px solid rgba(116, 162, 255, 0.12);
+      background: linear-gradient(180deg, rgba(3, 8, 21, 0.95), rgba(3, 8, 21, 0.76));
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      flex: none;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.35), transparent 13%),
+        conic-gradient(from 140deg, #1ee5ff, #236cff, #8a6dff, #1ee5ff);
+      box-shadow: 0 0 28px rgba(49, 215, 255, 0.24);
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      inset: 13px 5px;
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      transform: rotate(-18deg);
+    }
+
+    .brand-mark::after {
+      inset: 5px 13px;
+      transform: rotate(18deg);
+      opacity: 0.7;
+    }
+
+    .brand-letter {
+      position: relative;
+      z-index: 1;
+      font-family: "Orbitron", sans-serif;
+      font-size: 1.75rem;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 16px rgba(255, 255, 255, 0.55);
+    }
+
+    .brand-name {
+      font-family: "Orbitron", sans-serif;
+      font-size: 1.74rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      color: #f4f9ff;
+      white-space: nowrap;
+    }
+
+    .brand-name span {
+      color: #72dfff;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #d9e7ff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      opacity: 0.9;
+      transition: 0.24s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--cyan);
+      text-shadow: 0 0 18px rgba(49, 215, 255, 0.36);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: none;
+    }
+
+    .mobile-toggle {
+      display: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      border: 1px solid rgba(108, 160, 255, 0.22);
+      background: rgba(7, 22, 44, 0.68);
+      color: #dff2ff;
+      cursor: pointer;
+    }
+
+    .mobile-toggle span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      margin: 5px auto;
+      border-radius: 2px;
+      background: currentColor;
+      transition: 0.25s ease;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: calc(100vh - 80px);
+      display: flex;
+      align-items: center;
+      padding: 76px 0 66px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -10% -10% auto auto;
+      width: min(780px, 78vw);
+      height: min(780px, 78vw);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(45, 183, 255, 0.18), transparent 68%);
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    .hero-wrap {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 44px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-copy .section-text {
+      max-width: 730px;
+    }
+
+    .hero-actions {
+      margin-top: 28px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero-points {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .point {
+      min-height: 118px;
+      padding: 16px 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(12, 32, 60, 0.76), rgba(8, 20, 39, 0.9));
+      border: 1px solid rgba(94, 143, 255, 0.13);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .point strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1.06rem;
+      color: #f3f8ff;
+    }
+
+    .point span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.35;
+    }
+
+    .hero-panel-wrap {
+      position: relative;
+      min-height: 610px;
+      display: grid;
+      place-items: center;
+      perspective: 1200px;
+    }
+
+    .orbital {
+      position: absolute;
+      width: 82%;
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      border: 1px solid rgba(107, 189, 255, 0.18);
+      box-shadow: inset 0 0 70px rgba(49, 215, 255, 0.08), 0 0 60px rgba(47, 146, 255, 0.12);
+      animation: pulseGlow 5.2s ease-in-out infinite;
+    }
+
+    .orbital::before,
+    .orbital::after {
+      content: "";
+      position: absolute;
+      inset: 16%;
+      border-radius: 50%;
+      border: 1px solid rgba(49, 215, 255, 0.30);
+      transform: rotate(18deg) scaleX(1.45);
+      box-shadow: 0 0 28px rgba(49, 215, 255, 0.18);
+    }
+
+    .orbital::after {
+      transform: rotate(-22deg) scaleX(1.42);
+      opacity: 0.65;
+    }
+
+    .dashboard-mock {
+      position: relative;
+      width: min(100%, 560px);
+      padding: 20px;
+      border-radius: 32px;
+      background:
+        linear-gradient(180deg, rgba(9, 25, 47, 0.92), rgba(7, 14, 31, 0.96)),
+        radial-gradient(circle at 20% 0%, rgba(49, 215, 255, 0.14), transparent 42%);
+      border: 1px solid rgba(116, 184, 255, 0.22);
+      box-shadow: 0 26px 88px rgba(0, 0, 0, 0.48), inset 0 0 40px rgba(49, 215, 255, 0.04);
+      transform: rotateY(-10deg) rotateX(4deg);
+      animation: floatPanel 6.4s ease-in-out infinite;
+    }
+
+    .mock-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 2px 16px;
+      gap: 14px;
+    }
+
+    .mock-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: "Orbitron", sans-serif;
+      font-weight: 800;
+      color: #eef8ff;
+    }
+
+    .mock-dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 18px var(--cyan);
+    }
+
+    .mock-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(116, 184, 255, 0.18);
+      color: #b9cde5;
+      background: rgba(5, 15, 30, 0.65);
+      font-size: 0.9rem;
+    }
+
+    .mock-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mock-card {
+      min-height: 98px;
+      border-radius: 18px;
+      padding: 15px 13px;
+      background: rgba(9, 29, 55, 0.78);
+      border: 1px solid rgba(116, 184, 255, 0.13);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mock-card::after {
+      content: "";
+      position: absolute;
+      inset: auto 12px 12px 12px;
+      height: 28px;
+      border-radius: 10px;
+      background:
+        linear-gradient(90deg, rgba(49, 215, 255, 0.16), rgba(49, 215, 255, 0.02)),
+        linear-gradient(135deg, transparent 0 34%, rgba(49, 215, 255, 0.9) 35% 38%, transparent 39% 100%);
+      background-size: 100% 100%, 46px 28px;
+    }
+
+    .mock-card em {
+      display: block;
+      color: var(--muted-2);
+      font-style: normal;
+      font-size: 0.88rem;
+    }
+
+    .mock-card strong {
+      display: block;
+      margin-top: 6px;
+      font-family: "Orbitron", sans-serif;
+      font-size: 1.35rem;
+      color: #f5fbff;
+    }
+
+    .mock-wide {
+      grid-column: span 2;
+      min-height: 172px;
+    }
+
+    .mock-ranking {
+      min-height: 172px;
+    }
+
+    .mock-lines {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .mock-line {
+      display: grid;
+      grid-template-columns: 1fr 46px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(95, 153, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      box-shadow: 0 0 16px rgba(49, 215, 255, 0.36);
+    }
+
+    .floating-note {
+      position: absolute;
+      z-index: 2;
+      left: -22px;
+      bottom: 34px;
+      max-width: 218px;
+      padding: 15px 16px;
+      border-radius: 20px;
+      background: rgba(5, 15, 29, 0.78);
+      border: 1px solid rgba(116, 184, 255, 0.24);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(14px);
+    }
+
+    .floating-note strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #ffffff;
+    }
+
+    .floating-note span {
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.35;
+    }
+
+    /* TRUST STRIP */
+    .trust-strip {
+      position: relative;
+      z-index: 3;
+      margin-top: -18px;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .trust-item {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(8, 23, 44, 0.78);
+      border: 1px solid rgba(116, 184, 255, 0.12);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .trust-item strong {
+      display: block;
+      font-size: 1.08rem;
+      margin-bottom: 4px;
+    }
+
+    .trust-item span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* SOLUTION */
+    .feature-grid {
+      margin-top: 38px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .feature-card {
+      min-height: 252px;
+      padding: 24px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -18% -28% auto;
+      width: 136px;
+      height: 136px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(49, 215, 255, 0.15), transparent 70%);
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      color: #ffffff;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, rgba(26, 174, 255, 0.2), rgba(116, 79, 255, 0.2));
+      border: 1px solid rgba(111, 166, 255, 0.18);
+      box-shadow: inset 0 0 18px rgba(49, 215, 255, 0.07);
+    }
+
+    .feature-card h3 {
+      margin: 0 0 10px;
+      color: #f3f8ff;
+      font-size: 1.35rem;
+    }
+
+    .feature-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.04rem;
+      line-height: 1.52;
+    }
+
+    /* OBSERVATORY */
+    .observatory {
+      overflow: hidden;
+    }
+
+    .observatory::before {
+      content: "";
+      position: absolute;
+      inset: 7% auto auto -12%;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(49, 215, 255, 0.14), transparent 70%);
+      filter: blur(25px);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .observatory-wrap {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .observatory-copy {
+      padding: 30px;
+    }
+
+    .observatory-list {
+      margin: 28px 0 0;
+      display: grid;
+      gap: 14px;
+    }
+
+    .observatory-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(8, 24, 47, 0.58);
+      border: 1px solid rgba(116, 184, 255, 0.12);
+    }
+
+    .observatory-item .icon {
+      width: 36px;
+      height: 36px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(49, 215, 255, 0.13);
+      border: 1px solid rgba(49, 215, 255, 0.20);
+      color: #9eefff;
+    }
+
+    .observatory-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1.06rem;
+    }
+
+    .observatory-item span {
+      color: var(--muted);
+      line-height: 1.42;
+    }
+
+    .observatory-visual {
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .observatory-visual::before {
+      content: "";
+      position: absolute;
+      inset: -20% -20% auto auto;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(49, 215, 255, 0.16), transparent 70%);
+      filter: blur(16px);
+      pointer-events: none;
+    }
+
+    .observatory-visual img {
+      width: 100%;
+      border-radius: 22px;
+      border: 1px solid rgba(116, 184, 255, 0.12);
+      box-shadow: 0 0 34px rgba(49, 215, 255, 0.14);
+      position: relative;
+      z-index: 1;
+    }
+
+    .image-caption {
+      margin-top: 12px;
+      color: #9fb2ca;
+      font-size: 0.96rem;
+      text-align: center;
+    }
+
+    /* PLANS */
+    .plans-grid {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .price-card {
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .price-card.featured {
+      border-color: rgba(247, 200, 115, 0.52);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(247, 200, 115, 0.16), transparent 34%),
+        linear-gradient(180deg, rgba(25, 31, 38, 0.94), rgba(9, 20, 37, 0.96));
+    }
+
+    .price-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -28% -34% auto;
+      width: 230px;
+      height: 230px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(49, 215, 255, 0.11), transparent 70%);
+      filter: blur(12px);
+      pointer-events: none;
+    }
+
+    .plan-badge {
+      display: inline-flex;
+      width: max-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(116, 184, 255, 0.18);
+      color: #cfe5ff;
+      background: rgba(6, 18, 36, 0.72);
+      font-weight: 800;
+    }
+
+    .price-card.featured .plan-badge {
+      color: #241600;
+      background: linear-gradient(135deg, #ffdc8b, #d59b33);
+      border-color: rgba(255, 219, 139, 0.55);
+    }
+
+    .price-card h3 {
+      margin: 18px 0 8px;
+      font-family: "Orbitron", sans-serif;
+      font-size: 1.42rem;
+      letter-spacing: -0.01em;
+    }
+
+    .price-subtitle {
+      min-height: 46px;
+      color: var(--muted);
+      line-height: 1.42;
+      margin: 0 0 18px;
+    }
+
+    .price {
+      margin: 4px 0 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      color: #fff;
+    }
+
+    .price .currency {
+      font-size: 1.15rem;
+      font-weight: 800;
+      padding-bottom: 7px;
+      color: #d8eaff;
+    }
+
+    .price .amount {
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(2.4rem, 4.2vw, 3.35rem);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .price .period {
+      padding-bottom: 7px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .price-note {
+      margin: 10px 0 22px;
+      color: #b5c9df;
+      font-size: 0.98rem;
+      line-height: 1.35;
+    }
+
+    .plan-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 24px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .plan-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: #dcecff;
+      line-height: 1.35;
+    }
+
+    .plan-list li::before {
+      content: "✓";
+      width: 22px;
+      height: 22px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      color: #021421;
+      font-weight: 900;
+      font-size: 0.88rem;
+      margin-top: 1px;
+    }
+
+    .price-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .plans-note {
+      margin: 20px auto 0;
+      max-width: 900px;
+      padding: 14px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(116, 184, 255, 0.12);
+      background: rgba(8, 23, 44, 0.54);
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    /* PRINTS */
+    .prints-wrapper {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .shot-card {
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+      min-height: 260px;
+    }
+
+    .shot-card img {
+      width: 100%;
+      height: 100%;
+      min-height: 246px;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid rgba(120, 172, 255, 0.08);
+      box-shadow: 0 0 22px rgba(63, 152, 255, 0.12);
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+      background: rgba(7, 18, 35, 0.88);
+    }
+
+    .shot-card:hover img {
+      transform: scale(1.025);
+      box-shadow: 0 0 30px rgba(63, 152, 255, 0.22);
+    }
+
+    .shot-label {
+      position: absolute;
+      left: 24px;
+      top: 24px;
+      z-index: 2;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(4, 12, 24, 0.74);
+      border: 1px solid rgba(94, 153, 255, 0.22);
+      color: #dff1ff;
+      font-size: 0.96rem;
+      font-weight: 800;
+      box-shadow: 0 0 18px rgba(49, 215, 255, 0.10);
+      backdrop-filter: blur(10px);
+    }
+
+    /* IMPACT */
+    .impact-grid {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 22px;
+    }
+
+    .impact-left,
+    .impact-right {
+      padding: 28px;
+    }
+
+    .impact-left h3,
+    .impact-right h3 {
+      margin: 0 0 6px;
+      font-size: 1.62rem;
+    }
+
+    .impact-cards {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .impact-card {
+      min-height: 168px;
+      padding: 20px 17px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(9, 24, 46, 0.68), rgba(6, 17, 33, 0.88));
+      border: 1px solid rgba(106, 152, 255, 0.1);
+    }
+
+    .impact-card .num {
+      display: block;
+      margin-bottom: 10px;
+      font-family: "Orbitron", sans-serif;
+      font-size: 1.45rem;
+      color: #bce9ff;
+    }
+
+    .impact-card h4 {
+      margin: 0 0 9px;
+      font-size: 1.12rem;
+    }
+
+    .impact-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .ods-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .ods {
+      min-height: 145px;
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: white;
+      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.26);
+    }
+
+    .ods strong {
+      font-size: 1.8rem;
+      font-family: "Orbitron", sans-serif;
+      line-height: 1;
+    }
+
+    .ods span {
+      font-size: 0.98rem;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .ods-4 { background: linear-gradient(135deg, #cc2936, #b7192f); }
+    .ods-9 { background: linear-gradient(135deg, #fd6c11, #dd5300); }
+    .ods-16 { background: linear-gradient(135deg, #0f5a94, #0a4c7e); }
+
+    .diff-list {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .diff-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 20px 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(9, 24, 46, 0.72), rgba(8, 18, 37, 0.9));
+      border: 1px solid rgba(106, 152, 255, 0.10);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .diff-check {
+      width: 28px;
+      height: 28px;
+      flex: none;
+      display: grid;
+      place-items: center;
+      margin-top: 2px;
+      border-radius: 50%;
+      color: #021421;
+      background: linear-gradient(135deg, var(--green), #25d5ff);
+      font-weight: 900;
+      box-shadow: 0 0 20px rgba(78, 240, 168, 0.20);
+    }
+
+    .diff-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1.08rem;
+    }
+
+    .diff-item p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.48;
+    }
+
+    /* CTA */
+    .cta-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-box::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: 50%;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(49, 215, 255, 0.18), transparent 68%);
+      filter: blur(20px);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .cta-text h3 {
+      margin: 0 0 10px;
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(1.6rem, 3vw, 2.35rem);
+      letter-spacing: -0.02em;
+    }
+
+    .cta-text p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 1.12rem;
+      line-height: 1.55;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* CONTACT / FOOTER */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 36px;
+    }
+
+    .contact-card {
+      padding: 28px;
+    }
+
+    .contact-card h3 {
+      margin: 0 0 12px;
+      font-size: 1.55rem;
+    }
+
+    .contact-list {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .contact-list li,
+    .contact-list a {
+      color: #dcecff;
+      font-size: 1.08rem;
+      line-height: 1.4;
+    }
+
+    .contact-list small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.94rem;
+      margin-top: 3px;
+    }
+
+    .site-footer {
+      padding: 36px 0 28px;
+      border-top: 1px solid rgba(116, 162, 255, 0.12);
+      background: linear-gradient(180deg, rgba(5, 10, 20, 0), rgba(5, 10, 20, 0.78));
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.18fr 0.82fr 0.82fr;
+      gap: 18px;
+    }
+
+    .footer-card {
+      padding: 24px;
+      border-radius: 24px;
+    }
+
+    .footer-card h4 {
+      margin: 0 0 12px;
+      font-size: 1.18rem;
+    }
+
+    .footer-card p,
+    .footer-card li,
+    .footer-card a {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .footer-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .copy {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(116, 162, 255, 0.10);
+      color: #8fa5c2;
+      font-size: 0.96rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .whatsapp-float {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1400;
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #64ffac, #28d681);
+      color: #042113;
+      font-size: 1.55rem;
+      font-weight: 900;
+      box-shadow: 0 18px 46px rgba(20, 190, 104, 0.32);
+      border: 1px solid rgba(132, 255, 189, 0.55);
+    }
+
+    /* ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.75s ease, transform 0.75s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal[data-delay="1"] { transition-delay: 0.08s; }
+    .reveal[data-delay="2"] { transition-delay: 0.16s; }
+    .reveal[data-delay="3"] { transition-delay: 0.24s; }
+    .reveal[data-delay="4"] { transition-delay: 0.32s; }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.78; }
+      50% { transform: scale(1.035); opacity: 1; }
+    }
+
+    @keyframes floatPanel {
+      0%, 100% { transform: rotateY(-10deg) rotateX(4deg) translateY(0); }
+      50% { transform: rotateY(-7deg) rotateX(3deg) translateY(-10px); }
+    }
+
+    @keyframes pageSweep {
+      0%, 100% { transform: translateX(-62%); opacity: 0; }
+      45%, 55% { opacity: 0.65; }
+      100% { transform: translateX(62%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 1180px) {
+      .hero-wrap,
+      .observatory-wrap,
+      .impact-grid,
+      .contact-grid,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel-wrap {
+        min-height: auto;
+      }
+
+      .hero-points,
+      .feature-grid,
+      .trust-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .plans-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .prints-wrapper {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .cta-box {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 940px) {
+      .mobile-toggle {
+        display: inline-block;
+      }
+
+      .nav {
+        min-height: 74px;
+        position: relative;
+      }
+
+      .nav-links {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 1px);
+        display: none;
+        padding: 16px;
+        border-bottom: 1px solid rgba(116, 162, 255, 0.14);
+        background: rgba(3, 8, 21, 0.96);
+        backdrop-filter: blur(18px);
+        justify-content: flex-start;
+      }
+
+      .site-header.menu-open .nav-links {
+        display: flex;
+      }
+
+      .site-header.menu-open .mobile-toggle span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+      }
+
+      .site-header.menu-open .mobile-toggle span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .site-header.menu-open .mobile-toggle span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+      }
+
+      .header-actions .btn-secondary {
+        display: none;
+      }
+
+      .section {
+        padding: 72px 0;
+      }
+
+      .hero {
+        padding-top: 54px;
+      }
+
+      .dashboard-mock {
+        transform: none;
+        animation: none;
+      }
+
+      .floating-note {
+        position: static;
+        margin-top: 14px;
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .container {
+        width: min(100% - 22px, var(--maxw));
+      }
+
+      .brand-name {
+        font-size: 1.38rem;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+      }
+
+      .header-actions .btn-primary {
+        display: none;
+      }
+
+      .hero-actions,
+      .cta-actions,
+      .price-actions {
+        width: 100%;
+      }
+
+      .hero-actions .btn,
+      .cta-actions .btn,
+      .price-actions .btn {
+        width: 100%;
+      }
+
+      .hero-points,
+      .feature-grid,
+      .trust-grid,
+      .prints-wrapper,
+      .impact-cards,
+      .ods-grid,
+      .diff-list {
+        grid-template-columns: 1fr;
+      }
+
+      .mock-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mock-wide {
+        grid-column: span 1;
+      }
+
+      .section-title {
+        font-size: 2.25rem;
+      }
+
+      .observatory-copy,
+      .contact-card,
+      .cta-box,
+      .impact-left,
+      .impact-right,
+      .price-card {
+        padding: 24px 18px;
+      }
+
+      .whatsapp-float {
+        right: 14px;
+        bottom: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" aria-hidden="true"></div>
+
+  <header class="site-header" id="topo">
+    <div class="container nav">
+      <a href="#inicio" class="brand" aria-label="Axoriin">
+        <span class="brand-mark" aria-hidden="true"><span class="brand-letter">A</span></span>
+        <span class="brand-name">Axor<span>iin</span></span>
+      </a>
+
+      <nav class="nav-links" aria-label="Navegação principal">
+        <a href="#inicio">Início</a>
+        <a href="#solucao">Solução</a>
+        <a href="#observatorio">Observatório</a>
+        <a href="#planos">Planos</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#impacto">Impacto</a>
+        <a href="#contato">Contato</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn btn-primary" href="/login.html">Acessar Axoriin</a>
+        <a class="btn btn-secondary" href="/login-aluno.html">Portal do Aluno</a>
+        <button class="mobile-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="container hero-wrap">
+        <div class="hero-copy reveal">
+          <span class="eyebrow">Plataforma em nuvem • Escola, família e gestão pública</span>
+
+          <h1 class="section-title">
+            Gestão educacional inteligente para <span class="grad">proteger, acompanhar e decidir melhor</span>
+          </h1>
+
+          <p class="section-text">
+            O Axoriin centraliza rotinas acadêmicas, disciplinares, comunicação com responsáveis,
+            registros de APH escolar, relatórios e indicadores em um ambiente seguro, moderno e
+            preparado para a realidade de escolas e redes de ensino.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="/login.html">Acessar sistema</a>
+            <a class="btn btn-whatsapp" href="https://wa.me/5568999683070?text=Ol%C3%A1%2C%20quero%20conhecer%20o%20Axoriin." target="_blank" rel="noopener">Falar no WhatsApp</a>
+            <a class="btn btn-secondary" href="#planos">Ver planos</a>
+          </div>
+
+          <div class="hero-points">
+            <article class="point reveal" data-delay="1">
+              <strong>Família conectada</strong>
+              <span>Comunicação mais ágil com responsáveis e acompanhamento institucional.</span>
+            </article>
+
+            <article class="point reveal" data-delay="2">
+              <strong>Escola fortalecida</strong>
+              <span>Registros organizados, menos retrabalho e rotinas mais seguras.</span>
+            </article>
+
+            <article class="point reveal" data-delay="3">
+              <strong>Dados estratégicos</strong>
+              <span>Relatórios, indicadores e visão gerencial para apoiar decisões.</span>
+            </article>
+
+            <article class="point reveal" data-delay="4">
+              <strong>Ambiente protegido</strong>
+              <span>Controle de acesso, rastreabilidade e documentos protegidos.</span>
+            </article>
+          </div>
+        </div>
+
+        <div class="hero-panel-wrap reveal">
+          <div class="orbital" aria-hidden="true"></div>
+
+          <div class="dashboard-mock" aria-label="Representação visual do painel Axoriin">
+            <div class="mock-top">
+              <div class="mock-title"><span class="mock-dot"></span> Axoriin Dashboard</div>
+              <span class="mock-pill">tempo real</span>
+            </div>
+
+            <div class="mock-grid">
+              <div class="mock-card">
+                <em>Notificações</em>
+                <strong>7.864</strong>
+              </div>
+              <div class="mock-card">
+                <em>Elogios</em>
+                <strong>2.915</strong>
+              </div>
+              <div class="mock-card">
+                <em>APH</em>
+                <strong>128</strong>
+              </div>
+
+              <div class="mock-card mock-wide">
+                <em>Evolução comportamental</em>
+                <strong>Índice geral</strong>
+                <div class="mock-lines">
+                  <div class="mock-line"><div class="bar"><span style="width: 62%"></span></div><span>62%</span></div>
+                  <div class="mock-line"><div class="bar"><span style="width: 78%"></span></div><span>78%</span></div>
+                  <div class="mock-line"><div class="bar"><span style="width: 86%"></span></div><span>86%</span></div>
+                </div>
+              </div>
+
+              <div class="mock-card mock-ranking">
+                <em>Alertas</em>
+                <strong>12</strong>
+                <div class="mock-lines">
+                  <div class="mock-line"><div class="bar"><span style="width: 84%"></span></div><span>alto</span></div>
+                  <div class="mock-line"><div class="bar"><span style="width: 45%"></span></div><span>médio</span></div>
+                  <div class="mock-line"><div class="bar"><span style="width: 24%"></span></div><span>baixo</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="floating-note">
+            <strong>Operação institucional</strong>
+            <span>Validado em ambiente real de colégio militar, com uso contínuo na rotina escolar.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-strip" aria-label="Diferenciais resumidos">
+      <div class="container trust-grid">
+        <div class="trust-item reveal">
+          <strong>Multi-institucional</strong>
+          <span>Estrutura para diferentes unidades e redes.</span>
+        </div>
+        <div class="trust-item reveal" data-delay="1">
+          <strong>Mobile e responsivo</strong>
+          <span>Acesso adaptado para computador e celular.</span>
+        </div>
+        <div class="trust-item reveal" data-delay="2">
+          <strong>Notificações automáticas</strong>
+          <span>Comunicação institucional mais rápida.</span>
+        </div>
+        <div class="trust-item reveal" data-delay="3">
+          <strong>Assinatura digital</strong>
+          <span>Documentos e ciência de responsáveis com registro.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="solucao">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Uma plataforma completa</span>
+          <h2 class="section-title">Solução pensada para a <span class="grad">rotina real da escola</span></h2>
+          <p class="section-text">
+            O Axoriin foi desenvolvido para organizar processos, reduzir retrabalho, aproximar família e escola
+            e transformar registros escolares em inteligência operacional.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon">🎓</div>
+            <h3>Gestão acadêmica e de alunos</h3>
+            <p>
+              Cadastro, ficha individual, responsáveis, acesso institucional e acompanhamento da trajetória escolar
+              com informações padronizadas.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal" data-delay="1">
+            <div class="feature-icon">🛡️</div>
+            <h3>Gestão disciplinar</h3>
+            <p>
+              Registro de ocorrências, elogios, notificações, histórico comportamental e relatórios para atuação
+              preventiva da gestão.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal" data-delay="2">
+            <div class="feature-icon">💬</div>
+            <h3>Comunicação em tempo real</h3>
+            <p>
+              Responsáveis mais próximos da vida escolar, com avisos, registros de ciência e acompanhamento
+              documentado pela instituição.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal" data-delay="3">
+            <div class="feature-icon">🩺</div>
+            <h3>APH escolar</h3>
+            <p>
+              Registro de atendimentos pré-hospitalares e ocorrências de saúde escolar, fortalecendo cuidado,
+              rastreabilidade e resposta institucional.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon">📊</div>
+            <h3>Relatórios inteligentes</h3>
+            <p>
+              Indicadores, consultas e painéis para apoiar coordenação, direção e equipes responsáveis pelo
+              acompanhamento dos estudantes.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal" data-delay="1">
+            <div class="feature-icon">🔐</div>
+            <h3>Segurança avançada</h3>
+            <p>
+              Controle de acesso, registros auditáveis, ambiente multi-institucional e proteção das informações
+              sensíveis da rotina escolar.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal" data-delay="2">
+            <div class="feature-icon">👨‍👩‍👧</div>
+            <h3>Portal do responsável</h3>
+            <p>
+              Acesso do responsável às informações permitidas pela escola, fortalecendo transparência,
+              acompanhamento e corresponsabilidade.
+            </p>
+          </article>
+
+          <article class="feature-card glass-card reveal" data-delay="3">
+            <div class="feature-icon">🏆</div>
+            <h3>Ranking e engajamento</h3>
+            <p>
+              Recursos de ranking, gamificação e acompanhamento comportamental, liberados conforme o escopo
+              e a etapa de implantação.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section observatory" id="observatorio">
+      <div class="container observatory-wrap">
+        <div class="observatory-copy glass-card reveal">
+          <span class="eyebrow">Novo módulo para redes de ensino</span>
+          <h2 class="section-title">Observatório <span class="grad">Educacional</span></h2>
+          <p class="section-text">
+            Uma visão estratégica para secretarias de educação, redes municipais, estaduais e mantenedoras:
+            o responsável pela rede acompanha, em uma única tela, o status das escolas sob sua jurisdição,
+            com indicadores agregados, alertas, relatórios e comparativos por período.
+          </p>
+
+          <div class="observatory-list">
+            <div class="observatory-item">
+              <span class="icon">🏫</span>
+              <div>
+                <strong>Acompanhamento por escola</strong>
+                <span>Visão consolidada da rede, com panorama por unidade e dados organizados para gestão.</span>
+              </div>
+            </div>
+
+            <div class="observatory-item">
+              <span class="icon">📈</span>
+              <div>
+                <strong>Indicadores e relatórios</strong>
+                <span>Leitura de ocorrências, notificações, engajamento familiar e evolução dos índices da rede.</span>
+              </div>
+            </div>
+
+            <div class="observatory-item">
+              <span class="icon">⚠️</span>
+              <div>
+                <strong>Alertas estratégicos</strong>
+                <span>Sinalização de situações que exigem acompanhamento, prevenção e atuação coordenada.</span>
+              </div>
+            </div>
+
+            <div class="observatory-item">
+              <span class="icon">🔎</span>
+              <div>
+                <strong>Dados agregados e seguros</strong>
+                <span>Foco em governança e tomada de decisão, sem exposição pública de histórico individual de estudantes.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="observatory-visual glass-card reveal" data-delay="1">
+          <img
+            src="assets/img/observatorio-educacional.png"
+            alt="Imagem demonstrativa do módulo Observatório Educacional Axoriin para redes de ensino"
+            loading="lazy"
+          />
+          <p class="image-caption">Imagem demonstrativa do painel estratégico para redes de ensino.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="planos">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Planos e investimento</span>
+          <h2 class="section-title">Modelos para escola, implantação e <span class="grad">piloto governamental</span></h2>
+          <p class="section-text">
+            Valores referenciais para contratação do Axoriin, considerando os pacotes indicados e a possibilidade
+            de adequação conforme quantidade de escolas, escopo, implantação e necessidades da rede.
+          </p>
+        </div>
+
+        <div class="plans-grid">
+          <article class="price-card glass-card reveal">
+            <span class="plan-badge">Axoriin Escola</span>
+            <h3>Para escolas particulares, militares e cívico-militares</h3>
+            <p class="price-subtitle">Plano mensal para operação escolar com módulos centrais de gestão, comunicação e relatórios.</p>
+
+            <div class="price" aria-label="A partir de R$ 1.490,90 por mês">
+              <span class="currency">R$</span>
+              <span class="amount">1.490,90</span>
+              <span class="period">/mês</span>
+            </div>
+            <p class="price-note">A partir de, conforme porte da escola e escopo contratado.</p>
+
+            <ul class="plan-list">
+              <li>Gestão acadêmica e de alunos</li>
+              <li>Gestão disciplinar e ocorrências</li>
+              <li>Comunicação em tempo real</li>
+              <li>Portal do responsável</li>
+              <li>APH escolar</li>
+              <li>Relatórios inteligentes</li>
+              <li>Segurança avançada</li>
+              <li>Portal do aluno quando liberado</li>
+              <li>Gamificação, ranking e documentos protegidos</li>
+            </ul>
+
+            <div class="price-actions">
+              <a class="btn btn-primary" href="https://wa.me/5568999683070?text=Ol%C3%A1%2C%20quero%20conhecer%20o%20plano%20Axoriin%20Escola." target="_blank" rel="noopener">Solicitar demonstração</a>
+            </div>
+          </article>
+
+          <article class="price-card glass-card featured reveal" data-delay="1">
+            <span class="plan-badge">Implantação Assistida</span>
+            <h3>Configuração, migração e treinamento</h3>
+            <p class="price-subtitle">Acompanhamento inicial para colocar a instituição em operação com mais segurança e organização.</p>
+
+            <div class="price" aria-label="A partir de R$ 3.990 pagamento único">
+              <span class="currency">R$</span>
+              <span class="amount">3.990</span>
+              <span class="period">único</span>
+            </div>
+            <p class="price-note">Pagamento único para implantação inicial.</p>
+
+            <ul class="plan-list">
+              <li>Configuração inicial da instituição</li>
+              <li>Migração ou organização de dados</li>
+              <li>Treinamento de equipe</li>
+              <li>Acompanhamento de implantação</li>
+              <li>Orientação de fluxos internos</li>
+              <li>Preparação para uso institucional</li>
+            </ul>
+
+            <div class="price-actions">
+              <a class="btn btn-whatsapp" href="https://wa.me/5568999333960?text=Ol%C3%A1%2C%20quero%20informa%C3%A7%C3%B5es%20sobre%20a%20Implanta%C3%A7%C3%A3o%20Assistida%20do%20Axoriin." target="_blank" rel="noopener">Falar sobre implantação</a>
+            </div>
+          </article>
+
+          <article class="price-card glass-card reveal" data-delay="2">
+            <span class="plan-badge">Axoriin Governo</span>
+            <h3>Para secretarias e redes municipais ou estaduais</h3>
+            <p class="price-subtitle">Condição especial para piloto estadual ou rede de 8 a 10 escolas, por período de 6 a 12 meses, com visão estratégica por instituição.</p>
+
+            <div class="price" aria-label="Mensalidade de R$ 850 por escola no piloto">
+              <span class="currency">R$</span>
+              <span class="amount">850</span>
+              <span class="period">/escola/mês</span>
+            </div>
+            <p class="price-note">Valor mensal referencial para piloto de <strong style="color:#fff;">6 a 12 meses</strong>, com 8 a 10 escolas. Setup: <strong style="color:#fff;">R$ 1.500 por escola</strong>.</p>
+
+            <ul class="plan-list">
+              <li>Gestão por rede e por instituição</li>
+              <li>Observatório Educacional</li>
+              <li>Indicadores agregados da rede</li>
+              <li>Relatórios e alertas estratégicos</li>
+              <li>Comparativo entre escolas e períodos</li>
+              <li>Dados seguros e estrutura multi-institucional</li>
+            </ul>
+
+            <div class="price-actions">
+              <a class="btn btn-primary" href="https://wa.me/5568999683070?text=Ol%C3%A1%2C%20quero%20conhecer%20a%20proposta%20Axoriin%20Governo." target="_blank" rel="noopener">Conversar sobre piloto</a>
+            </div>
+          </article>
+        </div>
+
+        <p class="plans-note reveal">
+          Os valores acima são referenciais e podem variar conforme número de alunos, quantidade de escolas,
+          escopo dos módulos, nível de suporte, migração de dados e necessidades específicas de implantação.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="recursos">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Conheça o sistema</span>
+          <h2 class="section-title">Recursos com visual moderno e <span class="grad">foco em resultado</span></h2>
+          <p class="section-text">
+            Alguns módulos e telas do Axoriin em operação ou em demonstração institucional. Ao publicar prints reais,
+            preserve a privacidade de alunos, responsáveis e dados sensíveis.
+          </p>
+        </div>
+
+        <div class="prints-wrapper">
+          <article class="shot-card glass-card reveal">
+            <span class="shot-label">Painel principal</span>
+            <img src="assets/img/painel.png" alt="Painel principal do Axoriin" loading="lazy" />
+          </article>
+
+          <article class="shot-card glass-card reveal" data-delay="1">
+            <span class="shot-label">Ranking comportamental</span>
+            <img src="assets/img/ranking-blur.png" alt="Tela de ranking com dados sensíveis ocultados" loading="lazy" />
+          </article>
+
+          <article class="shot-card glass-card reveal" data-delay="2">
+            <span class="shot-label">Ficha do aluno</span>
+            <img src="assets/img/ficha-blur.png" alt="Ficha individual com dados ocultados" loading="lazy" />
+          </article>
+
+          <article class="shot-card glass-card reveal">
+            <span class="shot-label">Relatórios e estatísticas</span>
+            <img src="assets/img/relatorios.png" alt="Tela de relatórios e estatísticas do sistema" loading="lazy" />
+          </article>
+
+          <article class="shot-card glass-card reveal" data-delay="1">
+            <span class="shot-label">APH e atendimentos</span>
+            <img src="assets/img/aph.png" alt="Módulo de atendimentos pré-hospitalares" loading="lazy" />
+          </article>
+
+          <article class="shot-card glass-card reveal" data-delay="2">
+            <span class="shot-label">Acesso institucional</span>
+            <img src="assets/img/hero-login.png" alt="Tela institucional de acesso ao sistema" loading="lazy" />
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="impacto">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Impacto que geramos</span>
+          <h2 class="section-title">Tecnologia para uma escola mais <span class="grad">eficiente, segura e inteligente</span></h2>
+          <p class="section-text">
+            O Axoriin apoia a tomada de decisão, melhora a organização institucional, fortalece a rastreabilidade
+            das ações e contribui para uma gestão educacional moderna.
+          </p>
+        </div>
+
+        <div class="impact-grid">
+          <div class="impact-left glass-card reveal">
+            <h3>Resultados institucionais</h3>
+            <p class="mini-text">
+              Plataforma orientada para eficiência administrativa, organização de dados e suporte às rotinas escolares.
+            </p>
+
+            <div class="impact-cards">
+              <article class="impact-card">
+                <span class="num">+ Eficiência</span>
+                <h4>Menos retrabalho</h4>
+                <p>Processos centralizados reduzem dispersão de informações e melhoram o fluxo da gestão.</p>
+              </article>
+
+              <article class="impact-card">
+                <span class="num">+ Segurança</span>
+                <h4>Controle institucional</h4>
+                <p>Ambiente com acesso controlado, rastreabilidade de ações e visão consolidada das operações.</p>
+              </article>
+
+              <article class="impact-card">
+                <span class="num">+ Estratégia</span>
+                <h4>Decisões baseadas em dados</h4>
+                <p>Gráficos, indicadores e relatórios ajudam a coordenação a agir com mais precisão.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="impact-right glass-card reveal" data-delay="1">
+            <h3>Alinhado aos ODS</h3>
+            <p class="mini-text">
+              O Axoriin contribui para objetivos ligados à educação, inovação e fortalecimento institucional.
+            </p>
+
+            <div class="ods-grid">
+              <article class="ods ods-4">
+                <strong>4</strong>
+                <span>Educação de qualidade</span>
+              </article>
+
+              <article class="ods ods-9">
+                <strong>9</strong>
+                <span>Indústria, inovação e infraestrutura</span>
+              </article>
+
+              <article class="ods ods-16">
+                <strong>16</strong>
+                <span>Paz, justiça e instituições eficazes</span>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="diff-list">
+          <article class="diff-item reveal">
+            <div class="diff-check">✓</div>
+            <div>
+              <strong>Arquitetura multi-institucional</strong>
+              <p>Estrutura preparada para atender diferentes instituições com separação de dados e gestão por unidade.</p>
+            </div>
+          </article>
+
+          <article class="diff-item reveal" data-delay="1">
+            <div class="diff-check">✓</div>
+            <div>
+              <strong>Rastreabilidade e auditoria</strong>
+              <p>Registro estruturado de ações, fortalecendo governança, acompanhamento e segurança operacional.</p>
+            </div>
+          </article>
+
+          <article class="diff-item reveal" data-delay="2">
+            <div class="diff-check">✓</div>
+            <div>
+              <strong>Aplicação real em ambiente escolar</strong>
+              <p>Solução construída com base em vivência prática, necessidades reais e operação institucional concreta.</p>
+            </div>
+          </article>
+
+          <article class="diff-item reveal" data-delay="3">
+            <div class="diff-check">✓</div>
+            <div>
+              <strong>Potencial de escala</strong>
+              <p>Modelo compatível com expansão para escolas públicas, privadas, militares e redes de ensino.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section compact">
+      <div class="container">
+        <div class="cta-box glass-card reveal">
+          <div class="cta-text">
+            <h3>Pronto para conhecer o Axoriin?</h3>
+            <p>
+              Solicite uma apresentação da plataforma, tire dúvidas sobre implantação e conheça os modelos para escola
+              individual, rede de ensino ou piloto governamental.
+            </p>
+          </div>
+
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="/login.html">Acessar sistema</a>
+            <a class="btn btn-whatsapp" href="https://wa.me/5568999683070?text=Ol%C3%A1%2C%20quero%20agendar%20uma%20apresenta%C3%A7%C3%A3o%20do%20Axoriin." target="_blank" rel="noopener">Agendar apresentação</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contato">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Contato</span>
+          <h2 class="section-title">Fale com a equipe <span class="grad">Axoriin</span></h2>
+          <p class="section-text">
+            Entre em contato para demonstração, implantação assistida, proposta para escolas ou apresentação para secretarias e redes de ensino.
+          </p>
+        </div>
+
+        <div class="contact-grid">
+          <article class="contact-card glass-card reveal">
+            <h3>WhatsApp comercial</h3>
+            <p class="mini-text">Canal para apresentação, planos, valores, demonstração e implantação.</p>
+            <ul class="contact-list">
+              <li>
+                <a href="https://wa.me/5568999683070?text=Ol%C3%A1%2C%20quero%20conhecer%20o%20Axoriin." target="_blank" rel="noopener">+55 68 99968-3070</a>
+                <small>Atendimento comercial e apresentações.</small>
+              </li>
+              <li>
+                <a href="https://wa.me/5568999333960?text=Ol%C3%A1%2C%20quero%20falar%20sobre%20o%20Axoriin." target="_blank" rel="noopener">+55 68 99933-3960</a>
+                <small>Contato institucional e suporte de negociação.</small>
+              </li>
+            </ul>
+          </article>
+
+          <article class="contact-card glass-card reveal" data-delay="1">
+            <h3>Canais oficiais</h3>
+            <p class="mini-text">Use os canais abaixo para contato formal ou navegação institucional.</p>
+            <ul class="contact-list">
+              <li>
+                <a href="mailto:axoriin.sistema@gmail.com">axoriin.sistema@gmail.com</a>
+                <small>E-mail institucional.</small>
+              </li>
+              <li>
+                <a href="https://www.axoriin.com.br/" target="_blank" rel="noopener">www.axoriin.com.br</a>
+                <small>Site oficial da plataforma.</small>
+              </li>
+              <li>
+                Cruzeiro do Sul - AC, Brasil
+                <small>Atendimento a escolas, instituições e redes de ensino.</small>
+              </li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-card glass-card">
+          <div class="brand" style="margin-bottom:12px;">
+            <span class="brand-mark" aria-hidden="true"><span class="brand-letter">A</span></span>
+            <span class="brand-name">Axor<span>iin</span></span>
+          </div>
+          <p>
+            Plataforma inteligente de gestão educacional desenvolvida para organizar, acompanhar e fortalecer
+            a rotina institucional com tecnologia, segurança e dados.
+          </p>
+        </div>
+
+        <div class="footer-card glass-card">
+          <h4>Contato</h4>
+          <ul>
+            <li><a href="mailto:axoriin.sistema@gmail.com">axoriin.sistema@gmail.com</a></li>
+            <li><a href="https://wa.me/5568999683070" target="_blank" rel="noopener">+55 68 99968-3070</a></li>
+            <li><a href="https://wa.me/5568999333960" target="_blank" rel="noopener">+55 68 99933-3960</a></li>
+            <li>Cruzeiro do Sul - AC, Brasil</li>
+          </ul>
+        </div>
+
+        <div class="footer-card glass-card">
+          <h4>Navegação</h4>
+          <ul>
+            <li><a href="#inicio">Início</a></li>
+            <li><a href="#solucao">Solução</a></li>
+            <li><a href="#observatorio">Observatório Educacional</a></li>
+            <li><a href="#planos">Planos e valores</a></li>
+            <li><a href="#recursos">Recursos</a></li>
+            <li><a href="/login.html">Acessar sistema</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="copy">
+        <span>© 2026 Axoriin. Todos os direitos reservados.</span>
+        <span>Gestão, acompanhamento e proteção estudantil.</span>
+      </div>
+    </div>
+  </footer>
+
+  <a class="whatsapp-float" href="https://wa.me/5568999683070?text=Ol%C3%A1%2C%20quero%20conhecer%20o%20Axoriin." target="_blank" rel="noopener" aria-label="Falar com o Axoriin pelo WhatsApp">💬</a>
+
+  <script>
+    const header = document.querySelector('.site-header');
+    const toggle = document.querySelector('.mobile-toggle');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    const progressBar = document.querySelector('.progress-bar');
+
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const isOpen = header.classList.toggle('menu-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+
+    navLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        header.classList.remove('menu-open');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    const revealElements = document.querySelectorAll('.reveal');
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.14 });
+
+    revealElements.forEach((el) => revealObserver.observe(el));
+
+    const updateProgress = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max > 0 ? (window.scrollY / max) * 100 : 0;
+      progressBar.style.width = `${progress}%`;
+    };
+
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+  </script>
+  <script src="assets/js/site-analytics-client.js" defer></script>
+</body>
+</html>

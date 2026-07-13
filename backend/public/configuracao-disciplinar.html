@@ -1,0 +1,2832 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Configuração Disciplinar • Axoriin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    .command-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .command-panel {
+      grid-column: span 12;
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(0,255,255,0.14);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
+        rgba(5, 12, 28, 0.78);
+      min-height: 160px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 0 24px rgba(0,255,255,0.08);
+    }
+
+    .command-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(0,245,255,0.11), transparent 18%),
+        radial-gradient(circle at 85% 80%, rgba(155,123,255,0.10), transparent 20%);
+    }
+
+    .command-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+    }
+
+    .command-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    .command-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(0,245,255,0.16);
+      background: rgba(0,245,255,0.08);
+      color: var(--neon-2);
+    }
+
+    .radar-wrap {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      padding: 20px 16px 22px;
+    }
+
+    .radar {
+      width: 240px;
+      height: 240px;
+      border-radius: 999px;
+      position: relative;
+      background:
+        radial-gradient(circle, rgba(0,245,255,0.08) 0 18%, transparent 18% 100%),
+        repeating-radial-gradient(circle, rgba(0,245,255,0.10) 0 1px, transparent 1px 36px),
+        linear-gradient(transparent 49.5%, rgba(0,245,255,0.10) 50%, transparent 50.5%),
+        linear-gradient(90deg, transparent 49.5%, rgba(0,245,255,0.10) 50%, transparent 50.5%);
+      border: 1px solid rgba(0,245,255,0.18);
+      box-shadow: inset 0 0 40px rgba(0,245,255,0.05), 0 0 26px rgba(0,245,255,0.08);
+      overflow: hidden;
+    }
+
+    .radar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: conic-gradient(from 0deg, rgba(0,245,255,0.00), rgba(0,245,255,0.24), rgba(0,245,255,0.00) 28%);
+      animation: radarSpin 5s linear infinite;
+      transform-origin: 50% 50%;
+    }
+
+    .radar::after {
+      content: "";
+      position: absolute;
+      inset: 10%;
+      border-radius: 999px;
+      border: 1px solid rgba(0,245,255,0.08);
+    }
+
+    @keyframes radarSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .radar-dot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #7efeff;
+      box-shadow: 0 0 12px rgba(0,245,255,0.8);
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+
+    .radar-center-label {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      text-align: center;
+      padding: 40px;
+      pointer-events: none;
+      text-shadow: 0 0 16px rgba(0,245,255,0.18);
+    }
+
+    .bar-hud-list {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 12px;
+      padding: 16px 18px 18px;
+    }
+
+    .bar-hud-item {
+      display: grid;
+      grid-template-columns: 120px 1fr 64px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bar-hud-label {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .bar-hud-track {
+      height: 14px;
+      border-radius: 999px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .bar-hud-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0,245,255,0.85), rgba(92,251,255,0.62));
+      box-shadow: 0 0 16px rgba(0,245,255,0.20);
+      transition: width 260ms ease;
+    }
+
+    .bar-hud-value {
+      text-align: right;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .command-mini-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 0 18px 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .command-mini {
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      min-height: 86px;
+    }
+
+    .command-mini .k {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .command-mini .v {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .timeline-hud {
+      position: relative;
+      z-index: 1;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .timeline-line {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+
+    .timeline-seg {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      box-shadow: 0 0 14px rgba(0,245,255,0.18);
+      opacity: 0.95;
+    }
+
+    .timeline-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      .command-mini-row {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-hud-item {
+        grid-template-columns: 1fr;
+      }
+
+      .radar {
+        width: 210px;
+        height: 210px;
+      }
+    }
+
+    :root {
+      --bg-0: #040816;
+      --bg-1: #071022;
+      --bg-2: #0b1730;
+      --panel: rgba(11, 23, 48, 0.68);
+      --panel-2: rgba(8, 18, 38, 0.86);
+      --glass: rgba(255, 255, 255, 0.045);
+      --border: rgba(0, 255, 255, 0.13);
+      --border-strong: rgba(0, 255, 255, 0.28);
+      --shadow: 0 0 24px rgba(0, 255, 255, 0.08);
+      --shadow-strong: 0 0 40px rgba(0, 255, 255, 0.14);
+      --text: #eaf6ff;
+      --muted: #9db6cb;
+      --neon: #00f5ff;
+      --neon-2: #5cfbff;
+      --cyan-soft: rgba(0, 245, 255, 0.12);
+      --success: #00e7a8;
+      --warning: #ffd166;
+      --danger: #ff5c7a;
+      --purple: #9b7bff;
+      --chip: rgba(255,255,255,0.06);
+      --input-bg: rgba(2, 8, 23, 0.82);
+      --grid-line: rgba(0, 255, 255, 0.05);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --transition: 180ms ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(0, 245, 255, 0.10), transparent 24%),
+        radial-gradient(circle at 85% 14%, rgba(92, 251, 255, 0.08), transparent 22%),
+        radial-gradient(circle at 82% 82%, rgba(155, 123, 255, 0.10), transparent 26%),
+        linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0)),
+        linear-gradient(135deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
+      background-attachment: fixed;
+      overflow-x: hidden;
+      padding: 26px;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      opacity: 0.55;
+      mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+      -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 18%),
+        radial-gradient(circle at 50% -10%, rgba(0,255,255,0.14), transparent 35%);
+      opacity: 0.8;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(0,255,255,0.08), rgba(155,123,255,0.05)),
+        rgba(5, 12, 28, 0.70);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow-strong);
+      padding: 28px 28px 22px;
+      margin-bottom: 22px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(0,255,255,0.12), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(92,251,255,0.09), transparent 24%),
+        radial-gradient(circle at 100% 100%, rgba(155,123,255,0.10), transparent 28%);
+      pointer-events: none;
+    }
+
+    .hero-top {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .title-block {
+      min-width: 320px;
+      flex: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(0,245,255,0.08);
+      border: 1px solid rgba(0,245,255,0.16);
+      color: var(--neon-2);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.08;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      text-shadow: 0 0 20px rgba(0,245,255,0.12);
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 880px;
+      line-height: 1.35;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      min-height: 44px;
+      padding: 0 16px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition), opacity var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      color: #04111a;
+      background: linear-gradient(135deg, var(--neon), #8afcff);
+      box-shadow: 0 0 24px rgba(0,245,255,0.20);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 30px rgba(0,245,255,0.28);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-strong);
+      box-shadow: 0 0 18px rgba(0,245,255,0.08);
+    }
+
+    .btn-success {
+      color: #021910;
+      background: linear-gradient(135deg, var(--success), #6effcf);
+      box-shadow: 0 0 24px rgba(0,231,168,0.18);
+    }
+
+    .btn-danger {
+      color: white;
+      background: linear-gradient(135deg, #ff5c7a, #ff7f96);
+      box-shadow: 0 0 24px rgba(255,92,122,0.18);
+    }
+
+    .btn-ghost {
+      color: var(--muted);
+      background: transparent;
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status-card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      padding: 14px 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      min-height: 96px;
+    }
+
+    .status-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 21px;
+      color: var(--text);
+      line-height: 1.1;
+      text-shadow: 0 0 18px rgba(0,245,255,0.08);
+    }
+
+    .status-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 1.1fr) minmax(320px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+        var(--panel);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(0,245,255,0.08), transparent 20%),
+        radial-gradient(circle at 0% 100%, rgba(155,123,255,0.05), transparent 24%);
+      opacity: 0.95;
+    }
+
+    .card-header {
+      position: relative;
+      z-index: 1;
+      padding: 18px 20px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .card-title-wrap h2,
+    .card-title-wrap h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--text);
+      font-size: 20px;
+      letter-spacing: 0.03em;
+      margin-bottom: 5px;
+    }
+
+    .card-title-wrap p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.3;
+      max-width: 760px;
+    }
+
+    .card-body {
+      position: relative;
+      z-index: 1;
+      padding: 18px 20px 20px;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .col-12 { grid-column: span 12; }
+    .col-9 { grid-column: span 9; }
+    .col-8 { grid-column: span 8; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+    .col-2 { grid-column: span 2; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .input, .textarea, .select {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 11px 14px;
+      font-size: 17px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    .textarea {
+      min-height: 130px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
+    .input:focus, .textarea:focus, .select:focus {
+      border-color: var(--border-strong);
+      box-shadow: 0 0 0 4px rgba(0,245,255,0.08);
+      background: rgba(2, 8, 23, 0.92);
+    }
+
+    .field-help {
+      font-size: 13px;
+      color: var(--muted);
+      opacity: 0.9;
+      line-height: 1.3;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: var(--chip);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .chip.neon {
+      color: var(--neon-2);
+      border-color: rgba(0,245,255,0.16);
+      background: rgba(0,245,255,0.08);
+    }
+
+    .chip.success {
+      color: #7ef7cf;
+      border-color: rgba(0,231,168,0.16);
+      background: rgba(0,231,168,0.08);
+    }
+
+    .chip.warning {
+      color: #ffe08a;
+      border-color: rgba(255,209,102,0.18);
+      background: rgba(255,209,102,0.08);
+    }
+
+    .chip.danger {
+      color: #ff9fb0;
+      border-color: rgba(255,92,122,0.18);
+      background: rgba(255,92,122,0.08);
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      margin: 16px 0;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini-stat {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 88px;
+    }
+
+    .mini-stat .label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .mini-stat .value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .faixas-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .faixa-item {
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.035);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .faixa-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .faixa-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .faixa-index {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      background: rgba(0,245,255,0.10);
+      color: var(--neon-2);
+      border: 1px solid rgba(0,245,255,0.18);
+      flex-shrink: 0;
+    }
+
+    .faixa-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-mini {
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }    .faixa-range {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .range-bar-wrap {
+      margin-top: 12px;
+    }
+
+    .range-bar {
+      position: relative;
+      height: 13px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .range-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(90deg, rgba(0,245,255,0.85), rgba(92,251,255,0.70));
+      box-shadow: 0 0 18px rgba(0,245,255,0.22);
+    }
+
+    .range-meta {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .simulator {
+      display: grid;
+      gap: 16px;
+    }
+
+    .preview-box {
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      background:
+        linear-gradient(135deg, rgba(0,245,255,0.08), rgba(155,123,255,0.06)),
+        rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      padding: 18px;
+      min-height: 180px;
+    }
+
+    .preview-box::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(0,245,255,0.12), transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(155,123,255,0.10), transparent 20%);
+    }
+
+    .preview-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .preview-score {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      color: var(--text);
+      text-shadow: 0 0 24px rgba(0,245,255,0.18);
+      margin-bottom: 12px;
+    }
+
+    .preview-band {
+      display: inline-flex;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      min-height: 44px;
+      align-items: center;
+    }
+
+    .preview-desc {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .occ-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: end;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .occ-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .occ-item {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.035);
+      border-radius: 18px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1.3fr 180px auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .occ-main {
+      display: grid;
+      gap: 6px;
+    }
+
+    .occ-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.15;
+    }
+
+    .occ-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .occ-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .occ-score {
+      justify-self: stretch;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .occ-score.negative {
+      color: #ff9fb0;
+      border-color: rgba(255,92,122,0.16);
+      background: rgba(255,92,122,0.06);
+    }
+
+    .occ-score.positive {
+      color: #88ffd7;
+      border-color: rgba(0,231,168,0.16);
+      background: rgba(0,231,168,0.06);
+    }
+
+    .incisos-grid-pro {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .gravidade-card {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.035);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+      min-height: 220px;
+    }
+
+    .gravidade-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .gravidade-head h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .gravidade-head span {
+      min-width: 30px;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+
+    .gravidade-head.leve {
+      background: linear-gradient(135deg, rgba(0,231,168,0.08), rgba(0,245,255,0.04));
+    }
+
+    .gravidade-head.medio {
+      background: linear-gradient(135deg, rgba(255,209,102,0.10), rgba(255,180,0,0.04));
+    }
+
+    .gravidade-head.grave {
+      background: linear-gradient(135deg, rgba(255,120,87,0.12), rgba(255,92,122,0.04));
+    }
+
+    .gravidade-head.gravissimo {
+      background: linear-gradient(135deg, rgba(255,92,122,0.14), rgba(155,123,255,0.06));
+    }
+
+    .gravidade-head.elogio {
+      background: linear-gradient(135deg, rgba(0,245,255,0.10), rgba(0,231,168,0.08));
+    }
+
+    .gravidade-lista {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      max-height: 560px;
+      overflow-y: auto;
+    }
+
+    .gravidade-item {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .gravidade-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .gravidade-item-codigo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--neon-2);
+      margin-bottom: 2px;
+    }
+
+    .gravidade-item-artigo {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .gravidade-item-texto {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    .gravidade-item-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .badge-mini {
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .gravidade-item-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-inciso-edit {
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,245,255,0.18);
+      background: rgba(0,245,255,0.08);
+      color: var(--neon-2);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-inciso-edit:hover {
+      box-shadow: 0 0 18px rgba(0,245,255,0.14);
+      transform: translateY(-1px);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(2,8,23,0.70);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(760px, 100%);
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+        rgba(5,12,26,0.94);
+      box-shadow: var(--shadow-strong);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 18px 20px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .modal-header h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 19px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .modal-header p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .modal-body {
+      padding: 18px 20px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .modal-actions {
+      padding: 14px 20px 18px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .footer-actions {
+      position: sticky;
+      bottom: 12px;
+      z-index: 3;
+      margin-top: 18px;
+      border: 1px solid rgba(0,255,255,0.12);
+      border-radius: 18px;
+      background: rgba(4, 12, 26, 0.82);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 24px rgba(0,255,255,0.08);
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .footer-info {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .validation-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .validation-item {
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .validation-item.ok {
+      border-color: rgba(0,231,168,0.16);
+      background: rgba(0,231,168,0.06);
+    }
+
+    .validation-item.warn {
+      border-color: rgba(255,209,102,0.20);
+      background: rgba(255,209,102,0.07);
+    }
+
+    .validation-item.error {
+      border-color: rgba(255,92,122,0.20);
+      background: rgba(255,92,122,0.07);
+    }
+
+    .empty-state {
+      border-radius: 18px;
+      border: 1px dashed rgba(255,255,255,0.12);
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+      background: rgba(255,255,255,0.025);
+    }
+
+    .toast-wrap {
+      position: fixed;
+      top: 22px;
+      right: 22px;
+      z-index: 9999;
+      display: grid;
+      gap: 10px;
+      width: min(360px, calc(100vw - 24px));
+    }
+
+    .toast {
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 22px rgba(0,0,0,0.20);
+      animation: slideIn 180ms ease;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.35;
+      background: rgba(5,12,26,0.92);
+    }
+
+    .toast.success {
+      border-color: rgba(0,231,168,0.18);
+      background: rgba(0,231,168,0.10);
+    }
+
+    .toast.error {
+      border-color: rgba(255,92,122,0.18);
+      background: rgba(255,92,122,0.10);
+    }
+
+    .toast.info {
+      border-color: rgba(0,245,255,0.18);
+      background: rgba(0,245,255,0.10);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) translateX(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) translateX(0);
+      }
+    }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: rgba(2,8,23,0.58);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-box {
+      min-width: 280px;
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: rgba(5,12,26,0.88);
+      padding: 22px;
+      box-shadow: var(--shadow-strong);
+      text-align: center;
+    }
+
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 4px solid rgba(255,255,255,0.08);
+      border-top-color: var(--neon);
+      margin: 0 auto 14px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 1180px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .status-row {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+
+      .incisos-grid-pro {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        padding: 16px;
+      }
+
+      .hero {
+        padding: 20px 18px 18px;
+      }
+
+      .status-row {
+        grid-template-columns: 1fr;
+      }
+
+      .section-grid {
+        grid-template-columns: repeat(1, 1fr);
+      }
+
+      .col-12, .col-9, .col-8, .col-6, .col-4, .col-3, .col-2 {
+        grid-column: auto;
+      }
+
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .faixa-range {
+        grid-template-columns: 1fr;
+      }
+
+      .occ-item {
+        grid-template-columns: 1fr;
+      }
+
+      .occ-actions {
+        justify-content: flex-start;
+      }
+
+      .footer-actions {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div style="font-family:'Orbitron',sans-serif; font-size:18px; margin-bottom:6px;">Processando</div>
+      <div style="color:var(--muted); font-size:15px;">Carregando configuração disciplinar...</div>
+    </div>
+  </div>
+
+  <div class="page">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="title-block">
+          <div class="eyebrow">🧠 Axoriin • Configuração Disciplinar</div>
+          <h1>Centro de controle disciplinar da instituição</h1>
+          <p>
+            Personalize nota inicial, faixas comportamentais, TSMD, linguagem institucional
+            e ocorrências disciplinares em uma interface premium, futurista e pronta para venda.
+          </p>
+        </div>
+
+        <div class="hero-actions">
+          <button class="btn btn-secondary" id="btnRecarregar" type="button">↻ Recarregar</button>
+          <button class="btn btn-primary" id="btnSimularTopo" type="button">⚡ Simular Faixa</button>
+          <button class="btn btn-success" id="btnSalvarTopo" type="button">💾 Salvar Tudo</button>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <div class="status-card">
+          <div class="status-label">Preset</div>
+          <div class="status-value" id="statusPreset">—</div>
+          <div class="status-sub" id="statusTipoReg">Regulamento —</div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-label">Nota Inicial</div>
+          <div class="status-value" id="statusNotaInicial">—</div>
+          <div class="status-sub">Base comportamental da instituição</div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-label">Faixas</div>
+          <div class="status-value" id="statusFaixas">0</div>
+          <div class="status-sub">Classificações configuradas</div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-label">Ocorrências</div>
+          <div class="status-value" id="statusOcorrencias">0</div>
+          <div class="status-sub">Itens disponíveis no cadastro</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+
+      <!-- COLUNA ESQUERDA -->
+      <div class="stack">
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h2>Parâmetros Gerais</h2>
+              <p>Defina a estrutura principal do regulamento aplicado a esta instituição.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip neon">Multi-tenant</span>
+              <span class="chip success">Persistência em API</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="section-grid">
+              <div class="field col-4">
+                <label for="preset">Preset</label>
+                <input class="input" id="preset" type="text" readonly />
+                <div class="field-help">Criado no cadastro da instituição.</div>
+              </div>
+
+              <div class="field col-4">
+                <label for="tipoRegulamento">Tipo de Regulamento</label>
+                <input class="input" id="tipoRegulamento" type="text" />
+                <div class="field-help">Ex.: militar, particular, personalizado.</div>
+              </div>
+
+              <div class="field col-4">
+                <label for="notaInicial">Nota Inicial</label>
+                <input class="input" id="notaInicial" type="number" step="0.01" min="0" max="10" />
+                <div class="field-help">Valor base utilizado no comportamento.</div>
+              </div>
+
+              <div class="field col-6">
+                <label for="regNome">Nome do Regulamento</label>
+                <input class="input" id="regNome" type="text" placeholder="Ex.: Regulamento Disciplinar Institucional" />
+              </div>
+
+              <div class="field col-6">
+                <label for="regTextoCurto">Texto Institucional Curto</label>
+                <input class="input" id="regTextoCurto" type="text" placeholder="Ex.: Formação integral, disciplina e cidadania." />
+              </div>
+
+              <div class="field col-6">
+                <label for="regCidade">Cidade</label>
+                <input class="input" id="regCidade" type="text" placeholder="Ex.: Cruzeiro do Sul" />
+              </div>
+
+              <div class="field col-6">
+                <label for="regEstado">Estado</label>
+                <input class="input" id="regEstado" type="text" placeholder="Ex.: Acre" />
+              </div>
+
+              <div class="field col-12">
+                <label for="regTextoCompleto">Texto Institucional Completo</label>
+                <textarea class="textarea" id="regTextoCompleto" placeholder="Texto que será usado em notificações, documentos e comunicações institucionais."></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h2>TSMD e Regras de Consistência</h2>
+              <p>Controle os parâmetros principais da lógica comportamental e visualize validações automáticas.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip warning">Validação em tempo real</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="section-grid">
+              <div class="field col-3">
+                <label for="tsmdDias">Dias para bônus</label>
+                <input class="input" id="tsmdDias" type="number" min="0" step="1" />
+              </div>
+
+              <div class="field col-3">
+                <label for="tsmdIncremento">Bônus diário</label>
+                <input class="input" id="tsmdIncremento" type="number" min="0" step="0.01" />
+              </div>
+
+              <div class="field col-3">
+                <label for="tsmdMax">Nota máxima</label>
+                <input class="input" id="tsmdMax" type="number" min="0" step="0.01" />
+              </div>
+
+              <div class="field col-3">
+                <label for="tsmdMin">Nota mínima</label>
+                <input class="input" id="tsmdMin" type="number" min="0" step="0.01" />
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="validation-list" id="validationList"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h2>Faixas Comportamentais</h2>
+              <p>Organize as classificações utilizadas pela instituição, definindo nome, mínimo e máximo.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip neon">Simulação integrada</span>
+              <span class="chip success">Ultra visual</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+              <button class="btn btn-secondary" id="btnAdicionarFaixa" type="button">＋ Adicionar Faixa</button>
+              <button class="btn btn-secondary" id="btnOrdenarFaixas" type="button">⇅ Ordenar por Nota</button>
+            </div>
+
+            <div class="faixas-list" id="faixasList"></div>
+
+            <div id="faixasEmpty" class="empty-state" style="display:none;">
+              Nenhuma faixa configurada no momento.
+            </div>
+          </div>
+        </section>        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h2>Ocorrências Disciplinares</h2>
+              <p>Cadastre, edite e remova ocorrências com impacto positivo ou negativo na nota comportamental.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip danger">Impacto disciplinar</span>
+              <span class="chip success">CRUD completo</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="occ-toolbar">
+              <div class="field" style="flex:1 1 340px;">
+                <label for="novaDescricao">Descrição</label>
+                <input class="input" id="novaDescricao" type="text" placeholder="Ex.: Conversa excessiva em sala" />
+              </div>
+
+              <div class="field" style="width:180px;">
+                <label for="novaPontuacao">Pontuação</label>
+                <input class="input" id="novaPontuacao" type="number" step="0.01" placeholder="-0.30" />
+              </div>
+
+              <div class="field" style="width:170px;">
+                <label>&nbsp;</label>
+                <button class="btn btn-primary" id="btnCriarOcorrencia" type="button" style="width:100%;">＋ Adicionar</button>
+              </div>
+            </div>
+
+            <div class="occ-list" id="ocorrenciasList"></div>
+
+            <div id="occEmpty" class="empty-state" style="display:none;">
+              Nenhuma ocorrência cadastrada ainda.
+            </div>
+          </div>
+        </section>
+
+        <!-- REMOVIDO: Regulamento Normativo -->
+
+      </div>
+
+      <!-- COLUNA DIREITA -->
+      <div class="stack">
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h3>Simulador Inteligente</h3>
+              <p>Veja em tempo real em qual faixa a nota se enquadra e como a instituição está distribuindo seus níveis.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip neon">Modo venda</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="simulator">
+              <div class="field">
+                <label for="simuladorNota">Nota para simulação</label>
+                <input class="input" id="simuladorNota" type="number" step="0.01" min="0" max="10" />
+              </div>
+
+              <div class="preview-box">
+                <div class="preview-label">Resultado da simulação</div>
+                <div class="preview-score" id="previewScore">—</div>
+                <div class="preview-band" id="previewBand">Sem classificação</div>
+                <div class="preview-desc" id="previewDesc">
+                  Ajuste a nota para visualizar a faixa correspondente.
+                </div>
+              </div>
+
+              <div class="mini-grid">
+                <div class="mini-stat">
+                  <div class="label">Faixa atual</div>
+                  <div class="value" id="simFaixaAtual">—</div>
+                </div>
+                <div class="mini-stat">
+                  <div class="label">Qtd. de faixas</div>
+                  <div class="value" id="simQtdFaixas">0</div>
+                </div>
+                <div class="mini-stat">
+                  <div class="label">Ocorrências</div>
+                  <div class="value" id="simQtdOcorrencias">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h3>Centro de Comando</h3>
+              <p>Painel tático visual para análise da configuração disciplinar.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip neon">Command Center</span>
+              <span class="chip success">Visual Premium</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+
+            <div style="display:flex; justify-content:center; margin-bottom:20px;">
+              <div class="radar" id="radarPanel"></div>
+            </div>
+
+            <div id="barHudList" style="margin-bottom:20px;"></div>
+
+            <div class="timeline-line" id="timelineLine"></div>
+
+            <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+              <div id="timelineMin"></div>
+              <div id="timelineMax"></div>
+              <div id="timelineNotaBase"></div>
+            </div>
+
+            <div class="mini-grid" style="margin-top:20px;">
+              <div class="mini-stat">
+                <div class="label">Cobertura</div>
+                <div class="value" id="hudCobertura">—</div>
+              </div>
+
+              <div class="mini-stat">
+                <div class="label">Dominante</div>
+                <div class="value" id="hudDominante">—</div>
+              </div>
+
+              <div class="mini-stat">
+                <div class="label">Risco</div>
+                <div class="value" id="hudRisco">—</div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h3>Incisos por Gravidade</h3>
+              <p>Visualize, edite e exclua os incisos já existentes no sistema, organizados por nível disciplinar.</p>
+            </div>
+            <div class="chip-row">
+              <span class="chip neon">Leves</span>
+              <span class="chip warning">Médios</span>
+              <span class="chip danger">Graves / Gravíssimos</span>
+              <span class="chip success">Elogios</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="incisos-grid-pro">
+              <div class="gravidade-card">
+                <div class="gravidade-head leve">
+                  <h4>Leves</h4>
+                  <span id="countIncisosLeve">0</span>
+                </div>
+                <div class="gravidade-lista" id="listaIncisosLeve"></div>
+              </div>
+
+              <div class="gravidade-card">
+                <div class="gravidade-head medio">
+                  <h4>Médios</h4>
+                  <span id="countIncisosMedio">0</span>
+                </div>
+                <div class="gravidade-lista" id="listaIncisosMedio"></div>
+              </div>
+
+              <div class="gravidade-card">
+                <div class="gravidade-head grave">
+                  <h4>Graves</h4>
+                  <span id="countIncisosGrave">0</span>
+                </div>
+                <div class="gravidade-lista" id="listaIncisosGrave"></div>
+              </div>
+
+              <div class="gravidade-card">
+                <div class="gravidade-head gravissimo">
+                  <h4>Gravíssimos</h4>
+                  <span id="countIncisosGravissimo">0</span>
+                </div>
+                <div class="gravidade-lista" id="listaIncisosGravissimo"></div>
+              </div>
+
+              <div class="gravidade-card" style="grid-column: 1 / -1;">
+                <div class="gravidade-head elogio">
+                  <h4>Elogios</h4>
+                  <span id="countIncisosElogio">0</span>
+                </div>
+                <div class="gravidade-lista" id="listaIncisosElogio"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h3>Resumo Executivo</h3>
+              <p>Uma leitura rápida da configuração atual, útil inclusive para demonstrações comerciais.</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="mini-grid">
+              <div class="mini-stat">
+                <div class="label">Maior faixa</div>
+                <div class="value" id="execMaiorFaixa">—</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Menor faixa</div>
+                <div class="value" id="execMenorFaixa">—</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Amplitude</div>
+                <div class="value" id="execAmplitude">—</div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="chip-row" id="execChips"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div class="card-title-wrap">
+              <h3>Textos Institucionais</h3>
+              <p>Pré-visualização rápida de elementos que podem ser usados em DOCX, notificações e relatórios.</p>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="field">
+              <label>Prévia institucional</label>
+              <div style="border:1px solid rgba(255,255,255,0.06); border-radius:18px; background:rgba(255,255,255,0.03); padding:16px; min-height:200px;">
+                <div style="font-family:'Orbitron',sans-serif; font-size:18px; margin-bottom:8px;" id="previewRegNome">Regulamento</div>
+                <div style="color:var(--muted); font-size:14px; margin-bottom:12px;" id="previewCidadeEstado">Cidade / Estado</div>
+                <div style="font-size:16px; line-height:1.45; color:var(--text);" id="previewTextoInstitucional">
+                  A pré-visualização aparecerá aqui.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <div class="footer-info" id="footerInfo">
+        Nenhuma alteração carregada ainda.
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="btnRestaurarSimulador" type="button">↺ Usar Nota Inicial</button>
+        <button class="btn btn-secondary" id="btnRevalidar" type="button">✔ Revalidar</button>
+        <button class="btn btn-success" id="btnSalvarRodape" type="button">💾 Salvar Configuração</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalInciso">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3>Editar Inciso</h3>
+          <p>Edite o inciso já existente no sistema sem alterar a estrutura atual do regulamento.</p>
+        </div>
+        <button class="btn btn-ghost" type="button" id="btnFecharModalInciso">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="section-grid">
+          <div class="field col-2">
+            <label for="modalIncisoCodigo">Código</label>
+            <input class="input" id="modalIncisoCodigo" type="text" />
+          </div>
+
+          <div class="field col-3">
+            <label for="modalIncisoPontuacao">Pontuação</label>
+            <input class="input" id="modalIncisoPontuacao" type="number" step="0.01" />
+          </div>
+
+          <div class="field col-3">
+            <label for="modalIncisoCategoria">Categoria</label>
+            <select class="select" id="modalIncisoCategoria">
+              <option value="leve">Leve</option>
+              <option value="medio">Médio</option>
+              <option value="grave">Grave</option>
+              <option value="gravissimo">Gravíssimo</option>
+              <option value="elogio">Elogio</option>
+            </select>
+          </div>
+
+          <div class="field col-4">
+            <label for="modalIncisoTipo">Tipo</label>
+            <select class="select" id="modalIncisoTipo">
+              <option value="negativa">Negativa</option>
+              <option value="elogio">Elogio</option>
+            </select>
+          </div>
+
+          <div class="field col-12">
+            <label for="modalIncisoTexto">Texto do inciso</label>
+            <textarea class="textarea" id="modalIncisoTexto" placeholder="Descreva o texto do inciso..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" id="btnCancelarModalInciso">Cancelar</button>
+        <button class="btn btn-success" type="button" id="btnSalvarModalInciso">Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+
+ <script>
+  let config = null;
+  let faixasColapsadas = {};
+  let incisoEditandoRef = null;
+
+  function showLoading(show = true) {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.toggle('show', show);
+  }
+
+  function toast(msg, type = 'info') {
+    const wrap = document.getElementById('toastWrap');
+    if (!wrap) return;
+
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerText = msg;
+    wrap.appendChild(el);
+
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  function escapeHtml(valor) {
+    return String(valor ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function normalizarCategoria(cat) {
+    const c = String(cat || '').trim().toLowerCase();
+    if (!c) return 'leve';
+    if (c === 'médio') return 'medio';
+    if (c === 'gravíssimo') return 'gravissimo';
+    return c;
+  }
+
+  function normalizarTipo(tipo, categoria) {
+    const t = String(tipo || '').trim().toLowerCase();
+    const c = normalizarCategoria(categoria);
+    if (t === 'elogio') return 'elogio';
+    if (c === 'elogio') return 'elogio';
+    return 'negativa';
+  }
+
+  function formatarPontuacao(valor, tipo) {
+    const num = Number(valor || 0);
+    if (normalizarTipo(tipo) === 'elogio' && num > 0) return `+${num.toFixed(2)}`;
+    return num.toFixed(2);
+  }
+
+  function garantirEstruturaConfig() {
+    if (!config) config = {};
+
+    if (!config.comportamento) config.comportamento = {};
+    if (!Array.isArray(config.comportamento.faixas)) config.comportamento.faixas = [];
+    if (typeof config.comportamento.notaInicial !== 'number') config.comportamento.notaInicial = 8;
+
+    if (!Array.isArray(config.ocorrencias)) config.ocorrencias = [];
+
+    if (!config.tsmd) config.tsmd = {};
+    if (typeof config.tsmd.diasParaIniciar !== 'number') config.tsmd.diasParaIniciar = 60;
+    if (typeof config.tsmd.incrementoPorDia !== 'number') config.tsmd.incrementoPorDia = 0.01;
+    if (typeof config.tsmd.limiteMaximo !== 'number') config.tsmd.limiteMaximo = 10;
+    if (typeof config.tsmd.limiteMinimo !== 'number') config.tsmd.limiteMinimo = 0;
+
+    if (!config.regulamento) config.regulamento = {};
+    if (!Array.isArray(config.regulamento.artigos)) config.regulamento.artigos = [];
+
+    if (typeof config.regulamento.nome !== 'string') config.regulamento.nome = '';
+    if (typeof config.regulamento.textoCurto !== 'string') config.regulamento.textoCurto = '';
+    if (typeof config.regulamento.textoInstitucional !== 'string') config.regulamento.textoInstitucional = '';
+    if (typeof config.regulamento.cidade !== 'string') config.regulamento.cidade = '';
+    if (typeof config.regulamento.estado !== 'string') config.regulamento.estado = '';
+    if (typeof config.preset !== 'string') config.preset = '';
+    if (typeof config.tipoRegulamento !== 'string') config.tipoRegulamento = '';
+
+    config.comportamento.faixas = config.comportamento.faixas.map((faixa, i) => ({
+      nome: faixa?.nome || `Faixa ${i + 1}`,
+      min: Number(faixa?.min ?? 0),
+      max: Number(faixa?.max ?? 0),
+      descricao: faixa?.descricao || ''
+    }));
+
+    config.ocorrencias = config.ocorrencias.map((item) => ({
+      descricao: item?.descricao || item?.nome || '',
+      pontuacao: Number(item?.pontuacao ?? item?.valor ?? 0)
+    }));
+
+    config.regulamento.artigos = config.regulamento.artigos.map((artigo, artigoIndex) => ({
+      numero: artigo?.numero || `Art. ${artigoIndex + 1}º`,
+      titulo: artigo?.titulo || '',
+      incisos: Array.isArray(artigo?.incisos) ? artigo.incisos.map((inciso, incisoIndex) => ({
+        codigo: inciso?.codigo || `${incisoIndex + 1}`,
+        texto: inciso?.texto || '',
+        pontuacao: Number(inciso?.pontuacao ?? 0),
+        categoria: normalizarCategoria(inciso?.categoria || (normalizarTipo(inciso?.tipo) === 'elogio' ? 'elogio' : 'leve')),
+        tipo: normalizarTipo(inciso?.tipo, inciso?.categoria)
+      })) : []
+    }));
+  }
+
+  async function carregar() {
+    try {
+      showLoading(true);
+
+      const res = await fetch('/api/configuracao-disciplinar');
+      if (!res.ok) throw new Error('Falha ao carregar configuração');
+
+      config = await res.json();
+      garantirEstruturaConfig();
+
+      preencherCampos();
+      renderFaixas();
+      renderOcorrencias();
+      renderIncisosPorGravidade();
+      atualizarResumo();
+      validar();
+      atualizarCentroComando();
+      atualizarPreviaTextos();
+
+      const simuladorNota = document.getElementById('simuladorNota');
+      const notaInicial = document.getElementById('notaInicial');
+      if (simuladorNota && notaInicial && !simuladorNota.value) {
+        simuladorNota.value = Number(notaInicial.value || 0).toFixed(2);
+      }
+      simular();
+    } catch (e) {
+      console.error(e);
+      toast('Erro ao carregar configuração', 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function preencherCampos() {
+    garantirEstruturaConfig();
+
+    const presetEl = document.getElementById('preset');
+    const tipoEl = document.getElementById('tipoRegulamento');
+    const notaEl = document.getElementById('notaInicial');
+
+    const nomeEl = document.getElementById('regNome');
+    const textoCurtoEl = document.getElementById('regTextoCurto');
+    const cidadeEl = document.getElementById('regCidade');
+    const estadoEl = document.getElementById('regEstado');
+    const textoCompletoEl = document.getElementById('regTextoCompleto');
+
+    if (presetEl) presetEl.value = config.preset || '';
+    if (tipoEl) tipoEl.value = config.tipoRegulamento || '';
+    if (notaEl) notaEl.value = Number(config.comportamento.notaInicial || 0).toFixed(2);
+
+    if (nomeEl) nomeEl.value = config.regulamento.nome || '';
+    if (textoCurtoEl) textoCurtoEl.value = config.regulamento.textoCurto || '';
+    if (cidadeEl) cidadeEl.value = config.regulamento.cidade || '';
+    if (estadoEl) estadoEl.value = config.regulamento.estado || '';
+    if (textoCompletoEl) textoCompletoEl.value = config.regulamento.textoInstitucional || '';
+
+    const tsmdDias = document.getElementById('tsmdDias');
+    const tsmdIncremento = document.getElementById('tsmdIncremento');
+    const tsmdMax = document.getElementById('tsmdMax');
+    const tsmdMin = document.getElementById('tsmdMin');
+
+    if (tsmdDias) tsmdDias.value = Number(config.tsmd.diasParaIniciar ?? 60);
+    if (tsmdIncremento) tsmdIncremento.value = Number(config.tsmd.incrementoPorDia ?? 0.01).toFixed(2);
+    if (tsmdMax) tsmdMax.value = Number(config.tsmd.limiteMaximo ?? 10).toFixed(2);
+    if (tsmdMin) tsmdMin.value = Number(config.tsmd.limiteMinimo ?? 0).toFixed(2);
+  }
+
+  function sincronizarCamposParaConfig() {
+    garantirEstruturaConfig();
+
+    config.tipoRegulamento = document.getElementById('tipoRegulamento')?.value?.trim() || '';
+    config.comportamento.notaInicial = Number(document.getElementById('notaInicial')?.value || 0);
+
+    config.regulamento.nome = document.getElementById('regNome')?.value?.trim() || '';
+    config.regulamento.textoCurto = document.getElementById('regTextoCurto')?.value?.trim() || '';
+    config.regulamento.cidade = document.getElementById('regCidade')?.value?.trim() || '';
+    config.regulamento.estado = document.getElementById('regEstado')?.value?.trim() || '';
+    config.regulamento.textoInstitucional = document.getElementById('regTextoCompleto')?.value?.trim() || '';
+
+    config.tsmd.diasParaIniciar = Number(document.getElementById('tsmdDias')?.value || 0);
+    config.tsmd.incrementoPorDia = Number(document.getElementById('tsmdIncremento')?.value || 0);
+    config.tsmd.limiteMaximo = Number(document.getElementById('tsmdMax')?.value || 10);
+    config.tsmd.limiteMinimo = Number(document.getElementById('tsmdMin')?.value || 0);
+  }  function atualizarStatusTopo() {
+    const preset = config?.preset || '—';
+    const tipoReg = config?.tipoRegulamento || '—';
+    const notaInicial = Number(config?.comportamento?.notaInicial ?? 0).toFixed(2);
+    const faixas = Array.isArray(config?.comportamento?.faixas) ? config.comportamento.faixas.length : 0;
+    const ocorrencias = Array.isArray(config?.ocorrencias) ? config.ocorrencias.length : 0;
+
+    const statusPreset = document.getElementById('statusPreset');
+    const statusTipoReg = document.getElementById('statusTipoReg');
+    const statusNotaInicial = document.getElementById('statusNotaInicial');
+    const statusFaixas = document.getElementById('statusFaixas');
+    const statusOcorrencias = document.getElementById('statusOcorrencias');
+
+    if (statusPreset) statusPreset.textContent = preset || '—';
+    if (statusTipoReg) statusTipoReg.textContent = `Regulamento ${tipoReg || '—'}`;
+    if (statusNotaInicial) statusNotaInicial.textContent = notaInicial;
+    if (statusFaixas) statusFaixas.textContent = faixas;
+    if (statusOcorrencias) statusOcorrencias.textContent = ocorrencias;
+  }
+
+  function renderFaixas() {
+    garantirEstruturaConfig();
+    const list = document.getElementById('faixasList');
+    const empty = document.getElementById('faixasEmpty');
+    if (!list || !empty) return;
+
+    if (!config.comportamento.faixas.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      atualizarStatusTopo();
+      return;
+    }
+
+    empty.style.display = 'none';
+
+    list.innerHTML = config.comportamento.faixas.map((faixa, index) => {
+      const min = Number(faixa.min ?? 0);
+      const max = Number(faixa.max ?? 0);
+      const amplitude = Math.max(0, max - min);
+      const percentual = Math.max(0, Math.min(100, (amplitude / 10) * 100));
+
+      return `
+        <div class="faixa-item">
+          <div class="faixa-top">
+            <div class="faixa-title">
+              <span class="faixa-index">${index + 1}</span>
+              <div>
+                <div style="font-size:18px; font-weight:700; color:var(--text);">${escapeHtml(faixa.nome || `Faixa ${index + 1}`)}</div>
+                <div style="font-size:13px; color:var(--muted);">${escapeHtml(faixa.descricao || 'Sem descrição')}</div>
+              </div>
+            </div>
+
+            <div class="faixa-actions">
+              <button class="btn btn-secondary btn-mini" type="button" onclick="duplicarFaixa(${index})">Duplicar</button>
+              <button class="btn btn-danger btn-mini" type="button" onclick="removerFaixa(${index})">Remover</button>
+            </div>
+          </div>
+
+          <div class="faixa-range">
+            <div class="field">
+              <label>Nome</label>
+              <input class="input" type="text" value="${escapeHtml(faixa.nome || '')}" oninput="atualizarFaixaCampo(${index}, 'nome', this.value)" />
+            </div>
+
+            <div class="field">
+              <label>Mínimo</label>
+              <input class="input" type="number" step="0.01" value="${min}" oninput="atualizarFaixaCampo(${index}, 'min', this.value)" />
+            </div>
+
+            <div class="field">
+              <label>Máximo</label>
+              <input class="input" type="number" step="0.01" value="${max}" oninput="atualizarFaixaCampo(${index}, 'max', this.value)" />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label>Descrição</label>
+            <input class="input" type="text" value="${escapeHtml(faixa.descricao || '')}" oninput="atualizarFaixaCampo(${index}, 'descricao', this.value)" />
+          </div>
+
+          <div class="range-bar-wrap">
+            <div class="range-bar">
+              <div class="range-fill" style="width:${percentual}%;"></div>
+            </div>
+            <div class="range-meta">
+              <span>Faixa: ${min.toFixed(2)} até ${max.toFixed(2)}</span>
+              <span>Amplitude: ${amplitude.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    atualizarStatusTopo();
+  }
+
+  function atualizarFaixaCampo(index, campo, valor) {
+    const faixa = config?.comportamento?.faixas?.[index];
+    if (!faixa) return;
+
+    if (campo === 'min' || campo === 'max') {
+      faixa[campo] = Number(valor || 0);
+    } else {
+      faixa[campo] = valor;
+    }
+
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+    atualizarStatusTopo();
+  }
+
+  function adicionarFaixa() {
+    garantirEstruturaConfig();
+    config.comportamento.faixas.push({
+      nome: `Nova Faixa ${config.comportamento.faixas.length + 1}`,
+      min: 0,
+      max: 0,
+      descricao: ''
+    });
+    renderFaixas();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+  }
+
+  function duplicarFaixa(index) {
+    const faixa = config?.comportamento?.faixas?.[index];
+    if (!faixa) return;
+
+    config.comportamento.faixas.splice(index + 1, 0, {
+      nome: `${faixa.nome} (cópia)`,
+      min: Number(faixa.min ?? 0),
+      max: Number(faixa.max ?? 0),
+      descricao: faixa.descricao || ''
+    });
+
+    renderFaixas();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+  }
+
+  function removerFaixa(index) {
+    if (!config?.comportamento?.faixas?.[index]) return;
+    config.comportamento.faixas.splice(index, 1);
+    renderFaixas();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+  }
+
+  function ordenarFaixas() {
+    garantirEstruturaConfig();
+    config.comportamento.faixas.sort((a, b) => Number(a.min ?? 0) - Number(b.min ?? 0));
+    renderFaixas();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+  }
+
+  function renderOcorrencias() {
+    garantirEstruturaConfig();
+    const list = document.getElementById('ocorrenciasList');
+    const empty = document.getElementById('occEmpty');
+    if (!list || !empty) return;
+
+    if (!config.ocorrencias.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      atualizarStatusTopo();
+      return;
+    }
+
+    empty.style.display = 'none';
+
+    list.innerHTML = config.ocorrencias.map((occ, index) => {
+      const classePontuacao = Number(occ.pontuacao ?? 0) > 0 ? 'positive' : 'negative';
+
+      return `
+        <div class="occ-item">
+          <div class="occ-main">
+            <input class="input" type="text" value="${escapeHtml(occ.descricao || '')}" oninput="atualizarOcorrenciaCampo(${index}, 'descricao', this.value)" />
+            <div class="occ-meta">
+              <span class="chip ${Number(occ.pontuacao ?? 0) > 0 ? 'success' : 'danger'}">
+                ${Number(occ.pontuacao ?? 0) > 0 ? 'Positiva' : 'Negativa'}
+              </span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Pontuação</label>
+            <input class="input" type="number" step="0.01" value="${Number(occ.pontuacao ?? 0)}" oninput="atualizarOcorrenciaCampo(${index}, 'pontuacao', this.value)" />
+          </div>
+
+          <div class="occ-actions">
+            <div class="occ-score ${classePontuacao}">
+              ${Number(occ.pontuacao ?? 0) > 0 ? '+' : ''}${Number(occ.pontuacao ?? 0).toFixed(2)}
+            </div>
+
+            <button class="btn btn-danger btn-mini" type="button" onclick="removerOcorrencia(${index})">Remover</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    atualizarStatusTopo();
+  }
+
+  function atualizarOcorrenciaCampo(index, campo, valor) {
+    const occ = config?.ocorrencias?.[index];
+    if (!occ) return;
+
+    if (campo === 'pontuacao') {
+      occ.pontuacao = Number(valor || 0);
+    } else {
+      occ[campo] = valor;
+    }
+
+    renderOcorrencias();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+  }
+
+  function criarOcorrencia() {
+    const descricao = document.getElementById('novaDescricao')?.value?.trim() || '';
+    const pontuacao = Number(document.getElementById('novaPontuacao')?.value || 0);
+
+    if (!descricao) {
+      toast('Informe a descrição da ocorrência.', 'error');
+      return;
+    }
+
+    config.ocorrencias.push({
+      descricao,
+      pontuacao
+    });
+
+    document.getElementById('novaDescricao').value = '';
+    document.getElementById('novaPontuacao').value = '';
+
+    renderOcorrencias();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+    toast('Ocorrência adicionada com sucesso.', 'success');
+  }
+
+  function removerOcorrencia(index) {
+    if (!config?.ocorrencias?.[index]) return;
+    config.ocorrencias.splice(index, 1);
+    renderOcorrencias();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    simular();
+  }
+
+  function obterTodosIncisos() {
+    garantirEstruturaConfig();
+
+    const lista = [];
+    (config.regulamento.artigos || []).forEach((artigo, artigoIndex) => {
+      (artigo.incisos || []).forEach((inciso, incisoIndex) => {
+        const categoria = normalizarCategoria(inciso.categoria || (normalizarTipo(inciso.tipo) === 'elogio' ? 'elogio' : 'leve'));
+        const tipo = normalizarTipo(inciso.tipo, categoria);
+
+        lista.push({
+          ...inciso,
+          categoria,
+          tipo,
+          artigoIndex,
+          incisoIndex,
+          artigoNumero: artigo.numero || `Art. ${artigoIndex + 1}º`,
+          artigoTitulo: artigo.titulo || ''
+        });
+      });
+    });
+
+    return lista;
+  }
+
+  function agruparIncisosPorCategoria() {
+    const todos = obterTodosIncisos();
+
+    return {
+      leve: todos.filter(i => i.tipo !== 'elogio' && i.categoria === 'leve'),
+      medio: todos.filter(i => i.tipo !== 'elogio' && i.categoria === 'medio'),
+      grave: todos.filter(i => i.tipo !== 'elogio' && i.categoria === 'grave'),
+      gravissimo: todos.filter(i => i.tipo !== 'elogio' && i.categoria === 'gravissimo'),
+      elogio: todos.filter(i => i.tipo === 'elogio' || i.categoria === 'elogio')
+    };
+  }
+
+  function cardIncisoGravidade(inciso) {
+    return `
+      <div class="gravidade-item">
+        <div class="gravidade-item-top">
+          <div>
+            <div class="gravidade-item-codigo">${escapeHtml(inciso.codigo || '—')}</div>
+            <div class="gravidade-item-artigo">${escapeHtml(inciso.artigoNumero || '')}${inciso.artigoTitulo ? ' • ' + escapeHtml(inciso.artigoTitulo) : ''}</div>
+          </div>
+        </div>
+
+        <div class="gravidade-item-texto">${escapeHtml(inciso.texto || 'Sem texto informado')}</div>
+
+        <div class="gravidade-item-meta">
+          <span class="badge-mini">Pontuação: ${formatarPontuacao(inciso.pontuacao, inciso.tipo)}</span>
+          <span class="badge-mini">Tipo: ${escapeHtml(inciso.tipo || 'negativa')}</span>
+          <span class="badge-mini">Categoria: ${escapeHtml(inciso.categoria || 'leve')}</span>
+        </div>
+
+        <div class="gravidade-item-actions">
+          <button class="btn-inciso-edit" type="button" onclick="abrirModalEdicaoInciso(${inciso.artigoIndex}, ${inciso.incisoIndex})">Editar</button>
+          <button class="btn btn-danger btn-mini" type="button" onclick="removerIncisoPorGravidade(${inciso.artigoIndex}, ${inciso.incisoIndex})">Excluir</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderIncisosPorGravidade() {
+    const grupos = agruparIncisosPorCategoria();
+
+    const setLista = (id, itens, vazio) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = itens.length
+        ? itens.map(cardIncisoGravidade).join('')
+        : `<div class="empty-state">${vazio}</div>`;
+    };
+
+    const setCount = (id, valor) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(valor);
+    };
+
+    setCount('countIncisosLeve', grupos.leve.length);
+    setCount('countIncisosMedio', grupos.medio.length);
+    setCount('countIncisosGrave', grupos.grave.length);
+    setCount('countIncisosGravissimo', grupos.gravissimo.length);
+    setCount('countIncisosElogio', grupos.elogio.length);
+
+    setLista('listaIncisosLeve', grupos.leve, 'Nenhum inciso leve cadastrado.');
+    setLista('listaIncisosMedio', grupos.medio, 'Nenhum inciso médio cadastrado.');
+    setLista('listaIncisosGrave', grupos.grave, 'Nenhum inciso grave cadastrado.');
+    setLista('listaIncisosGravissimo', grupos.gravissimo, 'Nenhum inciso gravíssimo cadastrado.');
+    setLista('listaIncisosElogio', grupos.elogio, 'Nenhum elogio cadastrado.');
+  }
+
+  function abrirModalEdicaoInciso(artigoIndex, incisoIndex) {
+    const artigo = config?.regulamento?.artigos?.[artigoIndex];
+    const inciso = artigo?.incisos?.[incisoIndex];
+    const modal = document.getElementById('modalInciso');
+    if (!inciso || !modal) return;
+
+    incisoEditandoRef = { artigoIndex, incisoIndex };
+
+    document.getElementById('modalIncisoCodigo').value = inciso.codigo || '';
+    document.getElementById('modalIncisoPontuacao').value = Number(inciso.pontuacao ?? 0);
+    document.getElementById('modalIncisoCategoria').value = normalizarCategoria(inciso.categoria || 'leve');
+    document.getElementById('modalIncisoTipo').value = normalizarTipo(inciso.tipo, inciso.categoria);
+    document.getElementById('modalIncisoTexto').value = inciso.texto || '';
+
+    modal.classList.add('show');
+  }
+
+  function fecharModalEdicaoInciso() {
+    incisoEditandoRef = null;
+    const modal = document.getElementById('modalInciso');
+    if (modal) modal.classList.remove('show');
+  }
+
+  function salvarModalEdicaoInciso() {
+    if (!incisoEditandoRef) return;
+
+    const { artigoIndex, incisoIndex } = incisoEditandoRef;
+    const inciso = config?.regulamento?.artigos?.[artigoIndex]?.incisos?.[incisoIndex];
+    if (!inciso) return;
+
+    const codigo = document.getElementById('modalIncisoCodigo')?.value?.trim() || '';
+    const pontuacao = Number(document.getElementById('modalIncisoPontuacao')?.value || 0);
+    let categoria = document.getElementById('modalIncisoCategoria')?.value || 'leve';
+    let tipo = document.getElementById('modalIncisoTipo')?.value || 'negativa';
+    const texto = document.getElementById('modalIncisoTexto')?.value?.trim() || '';
+
+    categoria = normalizarCategoria(categoria);
+    tipo = normalizarTipo(tipo, categoria);
+
+    inciso.codigo = codigo;
+    inciso.pontuacao = pontuacao;
+    inciso.categoria = categoria;
+    inciso.tipo = tipo;
+    inciso.texto = texto;
+
+    fecharModalEdicaoInciso();
+    renderIncisosPorGravidade();
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    toast('Inciso atualizado com sucesso.', 'success');
+  }
+
+  function removerInciso(artigoIndex, incisoIndex) {
+    const artigo = config?.regulamento?.artigos?.[artigoIndex];
+    if (!artigo?.incisos?.[incisoIndex]) return;
+
+    artigo.incisos.splice(incisoIndex, 1);
+
+    atualizarResumo();
+    validar();
+    atualizarCentroComando();
+    renderIncisosPorGravidade();
+  }
+
+  function removerIncisoPorGravidade(artigoIndex, incisoIndex) {
+    const artigo = config?.regulamento?.artigos?.[artigoIndex];
+    const inciso = artigo?.incisos?.[incisoIndex];
+
+    if (!inciso) return;
+
+    const confirmou = window.confirm(`Deseja excluir o inciso ${inciso.codigo || ''}?`);
+    if (!confirmou) return;
+
+    removerInciso(artigoIndex, incisoIndex);
+    toast('Inciso removido com sucesso.', 'success');
+  }
+
+  function encontrarFaixaPorNota(nota) {
+    const faixas = Array.isArray(config?.comportamento?.faixas) ? config.comportamento.faixas : [];
+    return faixas.find(f => {
+      const min = Number(f.min ?? 0);
+      const max = Number(f.max ?? 0);
+      return nota >= min && nota <= max;
+    }) || null;
+  }
+
+  function simular() {
+    const input = document.getElementById('simuladorNota');
+    if (!input) return;
+
+    const nota = Number(input.value || 0);
+    const faixa = encontrarFaixaPorNota(nota);
+
+    const previewScore = document.getElementById('previewScore');
+    const previewBand = document.getElementById('previewBand');
+    const previewDesc = document.getElementById('previewDesc');
+    const simFaixaAtual = document.getElementById('simFaixaAtual');
+    const simQtdFaixas = document.getElementById('simQtdFaixas');
+    const simQtdOcorrencias = document.getElementById('simQtdOcorrencias');
+
+    if (previewScore) previewScore.textContent = nota.toFixed(2);
+    if (previewBand) previewBand.textContent = faixa?.nome || 'Sem classificação';
+    if (previewDesc) previewDesc.textContent = faixa?.descricao || 'A nota informada não está coberta por nenhuma faixa configurada.';
+    if (simFaixaAtual) simFaixaAtual.textContent = faixa?.nome || '—';
+    if (simQtdFaixas) simQtdFaixas.textContent = String(config?.comportamento?.faixas?.length || 0);
+    if (simQtdOcorrencias) simQtdOcorrencias.textContent = String(config?.ocorrencias?.length || 0);
+  }
+
+  function atualizarResumo() {
+    const faixas = [...(config?.comportamento?.faixas || [])].sort((a, b) => Number(a.min ?? 0) - Number(b.min ?? 0));
+    const maior = faixas[faixas.length - 1];
+    const menor = faixas[0];
+    const minGlobal = faixas.length ? Math.min(...faixas.map(f => Number(f.min ?? 0))) : 0;
+    const maxGlobal = faixas.length ? Math.max(...faixas.map(f => Number(f.max ?? 0))) : 0;
+
+    const execMaiorFaixa = document.getElementById('execMaiorFaixa');
+    const execMenorFaixa = document.getElementById('execMenorFaixa');
+    const execAmplitude = document.getElementById('execAmplitude');
+    const execChips = document.getElementById('execChips');
+
+    if (execMaiorFaixa) execMaiorFaixa.textContent = maior?.nome || '—';
+    if (execMenorFaixa) execMenorFaixa.textContent = menor?.nome || '—';
+    if (execAmplitude) execAmplitude.textContent = (maxGlobal - minGlobal).toFixed(2);
+
+    const chips = [
+      `${config?.comportamento?.faixas?.length || 0} faixa(s)`,
+      `${config?.ocorrencias?.length || 0} ocorrência(s)`,
+      `${obterTodosIncisos().length} inciso(s)`,
+      `${config?.tipoRegulamento || 'tipo não definido'}`
+    ];
+
+    if (execChips) {
+      execChips.innerHTML = chips.map(c => `<span class="chip neon">${escapeHtml(c)}</span>`).join('');
+    }
+
+    atualizarStatusTopo();
+    atualizarPreviaTextos();
+  }
+
+  function validar() {
+    const list = document.getElementById('validationList');
+    if (!list) return;
+
+    const avisos = [];
+    const faixas = config?.comportamento?.faixas || [];
+    const notaInicial = Number(config?.comportamento?.notaInicial ?? 0);
+    const tsmdMin = Number(config?.tsmd?.limiteMinimo ?? 0);
+    const tsmdMax = Number(config?.tsmd?.limiteMaximo ?? 10);
+
+    if (!faixas.length) {
+      avisos.push({ tipo: 'error', texto: 'Nenhuma faixa comportamental foi cadastrada.' });
+    } else {
+      avisos.push({ tipo: 'ok', texto: `Foram encontradas ${faixas.length} faixa(s) comportamental(is).` });
+    }
+
+    if (notaInicial < tsmdMin || notaInicial > tsmdMax) {
+      avisos.push({ tipo: 'warn', texto: 'A nota inicial está fora dos limites mínimo/máximo definidos no TSMD.' });
+    } else {
+      avisos.push({ tipo: 'ok', texto: 'A nota inicial está dentro dos limites definidos.' });
+    }
+
+    const totalIncisos = obterTodosIncisos().length;
+    if (!totalIncisos) {
+      avisos.push({ tipo: 'warn', texto: 'O regulamento ainda não possui incisos cadastrados.' });
+    } else {
+      avisos.push({ tipo: 'ok', texto: `O regulamento possui ${totalIncisos} inciso(s) cadastrado(s).` });
+    }
+
+    if (!config?.regulamento?.nome) {
+      avisos.push({ tipo: 'warn', texto: 'O nome do regulamento ainda não foi informado.' });
+    }
+
+    list.innerHTML = avisos.map(item => `
+      <div class="validation-item ${item.tipo}">
+        ${escapeHtml(item.texto)}
+      </div>
+    `).join('');
+
+    const footerInfo = document.getElementById('footerInfo');
+    if (footerInfo) {
+      footerInfo.textContent = `Faixas: ${faixas.length} • Ocorrências: ${config?.ocorrencias?.length || 0} • Incisos: ${totalIncisos}`;
+    }
+  }
+
+  function atualizarCentroComando() {
+    const faixas = [...(config?.comportamento?.faixas || [])].sort((a, b) => Number(a.min ?? 0) - Number(b.min ?? 0));
+    const radarPanel = document.getElementById('radarPanel');
+    const barHudList = document.getElementById('barHudList');
+    const timelineLine = document.getElementById('timelineLine');
+
+    if (radarPanel) {
+      const totalFaixas = faixas.length || 1;
+      const dots = faixas.map((faixa, index) => {
+        const ang = (Math.PI * 2 * index) / totalFaixas;
+        const r = 78;
+        const x = 50 + Math.cos(ang - Math.PI / 2) * (r / 2);
+        const y = 50 + Math.sin(ang - Math.PI / 2) * (r / 2);
+        return `<span class="radar-dot" style="left:calc(${x}% - 6px); top:calc(${y}% - 6px);"></span>`;
+      }).join('');
+
+      radarPanel.innerHTML = `
+        ${dots}
+        <div class="radar-center-label">
+          ${escapeHtml(config?.tipoRegulamento || 'Regulamento')}<br>
+          ${faixas.length} faixa(s)
+        </div>
+      `;
+    }
+
+    if (barHudList) {
+      barHudList.innerHTML = faixas.map(faixa => {
+        const amplitude = Math.max(0, Number(faixa.max ?? 0) - Number(faixa.min ?? 0));
+        const pct = Math.max(0, Math.min(100, (amplitude / 10) * 100));
+        return `
+          <div class="bar-hud-item">
+            <div class="bar-hud-label">${escapeHtml(faixa.nome || 'Faixa')}</div>
+            <div class="bar-hud-track">
+              <div class="bar-hud-fill" style="width:${pct}%;"></div>
+            </div>
+            <div class="bar-hud-value">${amplitude.toFixed(2)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (timelineLine) {
+      const segs = faixas.map(faixa => {
+        const min = Number(faixa.min ?? 0);
+        const max = Number(faixa.max ?? 0);
+        const left = Math.max(0, Math.min(100, (min / 10) * 100));
+        const width = Math.max(0, Math.min(100 - left, ((max - min) / 10) * 100));
+        return `<span class="timeline-seg" style="left:${left}%; width:${width}%; background:rgba(0,245,255,0.45);"></span>`;
+      }).join('');
+      timelineLine.innerHTML = segs;
+    }
+
+    const hudCobertura = document.getElementById('hudCobertura');
+    const hudDominante = document.getElementById('hudDominante');
+    const hudRisco = document.getElementById('hudRisco');
+    const timelineMin = document.getElementById('timelineMin');
+    const timelineMax = document.getElementById('timelineMax');
+    const timelineNotaBase = document.getElementById('timelineNotaBase');
+
+    const minGlobal = faixas.length ? Math.min(...faixas.map(f => Number(f.min ?? 0))) : 0;
+    const maxGlobal = faixas.length ? Math.max(...faixas.map(f => Number(f.max ?? 0))) : 0;
+    const dominante = faixas.length
+      ? faixas.slice().sort((a, b) => (Number(b.max ?? 0) - Number(b.min ?? 0)) - (Number(a.max ?? 0) - Number(a.min ?? 0)))[0]
+      : null;
+
+    if (hudCobertura) hudCobertura.textContent = `${(maxGlobal - minGlobal).toFixed(2)}`;
+    if (hudDominante) hudDominante.textContent = dominante?.nome || '—';
+    if (hudRisco) hudRisco.textContent = obterTodosIncisos().filter(i => i.categoria === 'gravissimo').length ? 'Alto' : 'Moderado';
+
+    if (timelineMin) timelineMin.textContent = `Mínimo global: ${minGlobal.toFixed(2)}`;
+    if (timelineMax) timelineMax.textContent = `Máximo global: ${maxGlobal.toFixed(2)}`;
+    if (timelineNotaBase) timelineNotaBase.textContent = `Nota base: ${Number(config?.comportamento?.notaInicial ?? 0).toFixed(2)}`;
+  }
+
+  function atualizarPreviaTextos() {
+    const regNome = document.getElementById('previewRegNome');
+    const cidadeEstado = document.getElementById('previewCidadeEstado');
+    const texto = document.getElementById('previewTextoInstitucional');
+
+    if (regNome) regNome.textContent = config?.regulamento?.nome || 'Regulamento';
+    if (cidadeEstado) {
+      const cidade = config?.regulamento?.cidade || 'Cidade';
+      const estado = config?.regulamento?.estado || 'Estado';
+      cidadeEstado.textContent = `${cidade} / ${estado}`;
+    }
+    if (texto) {
+      texto.textContent = config?.regulamento?.textoInstitucional || config?.regulamento?.textoCurto || 'A pré-visualização aparecerá aqui.';
+    }
+  }
+
+  async function salvar() {
+    try {
+      sincronizarCamposParaConfig();
+      garantirEstruturaConfig();
+      showLoading(true);
+
+      const res = await fetch('/api/configuracao-disciplinar', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+      });
+
+      if (!res.ok) {
+        const texto = await res.text().catch(() => '');
+        throw new Error(texto || 'Falha ao salvar configuração');
+      }
+
+      toast('Configuração salva com sucesso.', 'success');
+      atualizarResumo();
+      validar();
+      atualizarCentroComando();
+      atualizarPreviaTextos();
+      atualizarStatusTopo();
+      renderIncisosPorGravidade();
+    } catch (e) {
+      console.error(e);
+      toast('Erro ao salvar configuração.', 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function restaurarSimulador() {
+    const notaInicial = Number(config?.comportamento?.notaInicial ?? 0);
+    const input = document.getElementById('simuladorNota');
+    if (input) input.value = notaInicial.toFixed(2);
+    simular();
+  }
+
+  function ligarEventos() {
+    document.getElementById('btnAdicionarFaixa')?.addEventListener('click', adicionarFaixa);
+    document.getElementById('btnOrdenarFaixas')?.addEventListener('click', ordenarFaixas);
+    document.getElementById('btnCriarOcorrencia')?.addEventListener('click', criarOcorrencia);
+
+    document.getElementById('btnSalvarTopo')?.addEventListener('click', salvar);
+    document.getElementById('btnSalvarRodape')?.addEventListener('click', salvar);
+    document.getElementById('btnRecarregar')?.addEventListener('click', carregar);
+    document.getElementById('btnRevalidar')?.addEventListener('click', () => {
+      sincronizarCamposParaConfig();
+      atualizarResumo();
+      validar();
+      atualizarCentroComando();
+      atualizarPreviaTextos();
+      renderIncisosPorGravidade();
+      simular();
+      toast('Validação executada.', 'info');
+    });
+
+    document.getElementById('btnSimularTopo')?.addEventListener('click', simular);
+    document.getElementById('btnRestaurarSimulador')?.addEventListener('click', restaurarSimulador);
+
+    document.getElementById('simuladorNota')?.addEventListener('input', simular);
+
+    [
+      'tipoRegulamento',
+      'notaInicial',
+      'regNome',
+      'regTextoCurto',
+      'regCidade',
+      'regEstado',
+      'regTextoCompleto',
+      'tsmdDias',
+      'tsmdIncremento',
+      'tsmdMax',
+      'tsmdMin'
+    ].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', () => {
+        sincronizarCamposParaConfig();
+        atualizarResumo();
+        validar();
+        atualizarCentroComando();
+        atualizarPreviaTextos();
+        atualizarStatusTopo();
+        simular();
+      });
+    });
+
+    document.getElementById('btnFecharModalInciso')?.addEventListener('click', fecharModalEdicaoInciso);
+    document.getElementById('btnCancelarModalInciso')?.addEventListener('click', fecharModalEdicaoInciso);
+    document.getElementById('btnSalvarModalInciso')?.addEventListener('click', salvarModalEdicaoInciso);
+
+    document.getElementById('modalInciso')?.addEventListener('click', (e) => {
+      if (e.target?.id === 'modalInciso') fecharModalEdicaoInciso();
+    });
+  }
+
+  ligarEventos();
+  carregar();
+</script>
+<script src="/update-client.js"></script>
+</body>
+</html>

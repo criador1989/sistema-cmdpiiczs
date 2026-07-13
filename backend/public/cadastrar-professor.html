@@ -4,7 +4,173 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cadastrar Professor</title>
-  <link rel="stylesheet" href="/estilos.css" />
+
+  <style>
+    /* =========================
+       TEMA GLASS + FUNDO PAINEL
+    ========================== */
+    :root{
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.40);
+      --glass-highlight: rgba(255,255,255,0.7);
+
+      --glass-radius: 22px;
+      --glass-blur: 18px;
+      --glass-shadow:
+        0 2px 6px rgba(0,0,0,0.15),
+        0 8px 22px rgba(0,0,0,0.20);
+
+      --text-main: #ffffff;
+      --text-soft: rgba(255,255,255,0.78);
+      --rubi-1:#8B0000;
+      --rubi-2:#D82327;
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
+    }
+
+    body{
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text-main);
+      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      color-scheme:dark;
+      -webkit-font-smoothing:antialiased;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    /* =========================
+       CARD PRINCIPAL
+    ========================== */
+    .container{
+      width:100%;
+      max-width:420px;
+      padding:24px 22px 26px;
+      border-radius:var(--glass-radius);
+      background:rgba(10,10,12,0.88);
+      border:1px solid rgba(255,255,255,0.25);
+      box-shadow:var(--glass-shadow);
+      backdrop-filter:blur(var(--glass-blur));
+      -webkit-backdrop-filter:blur(var(--glass-blur));
+      position:relative;
+      overflow:hidden;
+    }
+
+    .container::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.22) 0%,
+        rgba(255,255,255,0.06) 20%,
+        transparent 45%
+      );
+      pointer-events:none;
+    }
+
+    .container > *{
+      position:relative;
+      z-index:1;
+    }
+
+    h2{
+      margin:0 0 16px;
+      font-size:1.3rem;
+      font-weight:700;
+      text-align:center;
+      text-shadow:0 10px 26px rgba(0,0,0,0.8);
+    }
+
+    form{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"]{
+      width:100%;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.25);
+      padding:10px 12px;
+      font-size:0.95rem;
+      background:rgba(0,0,0,0.45);
+      color:#ffffff;
+      outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    input::placeholder{
+      color:var(--text-soft);
+      opacity:0.9;
+    }
+
+    input:focus{
+      border-color:rgba(255,255,255,0.7);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.4),
+        0 10px 26px rgba(0,0,0,0.9);
+    }
+
+    button[type="submit"]{
+      margin-top:4px;
+      border:0;
+      border-radius:999px;
+      padding:11px 18px;
+      font-weight:700;
+      font-size:0.95rem;
+      cursor:pointer;
+      color:#fff;
+      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
+      box-shadow:
+        0 10px 26px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(255,255,255,0.16);
+      transition:
+        transform .16s ease,
+        box-shadow .16s ease,
+        filter .16s ease;
+    }
+
+    button[type="submit"]:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.05);
+      box-shadow:
+        0 14px 34px rgba(0,0,0,0.95),
+        0 0 0 1px rgba(255,255,255,0.22);
+    }
+
+    button[type="submit"]:active{
+      transform:translateY(0);
+      box-shadow:
+        0 8px 20px rgba(0,0,0,0.8),
+        0 0 0 1px rgba(255,255,255,0.16);
+    }
+
+    #mensagem{
+      margin-top:10px;
+      font-size:0.9rem;
+      text-align:center;
+      min-height:1.1em;
+    }
+
+    @media (max-width:480px){
+      .container{
+        padding:20px 16px 22px;
+        border-radius:18px;
+      }
+      h2{font-size:1.15rem;}
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -14,7 +180,7 @@
       <input type="email" id="email" placeholder="E-mail institucional" required />
       <input type="password" id="senha" placeholder="Senha de acesso" required />
       <button type="submit">Cadastrar Professor</button>
-      <p id="mensagem" style="margin-top: 10px;"></p>
+      <p id="mensagem"></p>
     </form>
   </div>
 
@@ -34,13 +200,14 @@
       const msg = document.getElementById('mensagem');
       if (res.ok) {
         msg.textContent = '✅ Professor cadastrado com sucesso.';
-        msg.style.color = 'green';
+        msg.style.color = '#4ade80'; // verde suave
       } else {
-        const erro = await res.json();
-        msg.textContent = '❌ ' + erro.mensagem;
-        msg.style.color = 'red';
+        const erro = await res.json().catch(() => ({}));
+        msg.textContent = '❌ ' + (erro.mensagem || 'Erro ao cadastrar.');
+        msg.style.color = '#f97373'; // vermelho suave
       }
     });
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

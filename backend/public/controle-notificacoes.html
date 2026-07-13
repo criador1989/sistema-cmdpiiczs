@@ -1,73 +1,476 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Controle de Notificações - CMDPII</title>
-  <meta name="theme-color" content="#941a1d">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/icons/icon-192x192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <meta name="theme-color" content="#0A1322"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" href="/icons/icon-192x192.png"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
+
+  <!-- Bootstrap apenas para o modal -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
+    :root{
+      --glass-bg: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.32);
+      --glass-inner: rgba(255,255,255,0.50);
+      --glass-radius: 20px;
+      --glass-shadow:
+        0 10px 30px rgba(0,0,0,0.60),
+        0 20px 55px rgba(0,0,0,0.85);
+
+      --text-main:#ffffff;
+      --text-soft:rgba(233,240,255,0.80);
     }
-    .container {
-      background-color: white;
-      color: black;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
     }
-    .btn {
-      margin-right: 5px;
+
+    body{
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text-main);
+      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      color-scheme:dark;
     }
-    .modal textarea {
-      resize: none;
+
+    /* overlay neutro (sem cor forte) */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:radial-gradient(circle at 15% 0, rgba(255,255,255,0.12), transparent 55%),
+                 radial-gradient(circle at 85% 100%, rgba(0,0,0,0.72), transparent 55%);
     }
-    .table td {
-      color: black;
+
+    .page{
+      position:relative;
+      z-index:1;
+      width:100%;
+      padding:18px 18px 80px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
     }
-    .modal-body p {
-      color: black;
+
+    @media(max-width:768px){
+      .page{ padding:12px 10px 80px; }
     }
+
+    /* ===========================
+       TOPBAR – GLASS AZUL
+    ============================ */
+    .topbar{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-radius:22px;
+      padding:10px 14px;
+      background:rgba(5,12,25,0.86);
+      border:1px solid rgba(255,255,255,0.20);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      box-shadow:0 12px 40px rgba(0,0,0,0.85);
+    }
+
+    .top-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+
+    .brand-pill{
+      width:36px;
+      height:36px;
+      border-radius:999px;
+      background:radial-gradient(circle at 30% 20%, #ffffff80, #111827);
+      box-shadow:0 6px 16px rgba(0,0,0,0.85);
+      flex-shrink:0;
+    }
+
+    .top-title{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .top-title span:first-child{
+      font-weight:700;
+      font-size:.9rem;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--text-soft);
+    }
+    .top-title span:last-child{
+      font-weight:800;
+      font-size:clamp(1rem, 2.2vw, 1.3rem);
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      overflow:hidden;
+    }
+
+    .top-right{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .input, .btn{
+      font-family:inherit;
+      font-size:.9rem;
+    }
+
+    .input{
+      background:rgba(15,23,42,0.92);
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.75);
+      color:#e5edff;
+      padding:8px 12px 8px 10px;
+      min-width:200px;
+      outline:none;
+      box-shadow:0 10px 30px rgba(15,23,42,0.9);
+    }
+    .input::placeholder{ color:rgba(148,163,184,0.85); }
+    .input:focus{
+      border-color:#38bdf8;
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.75),
+        0 12px 34px rgba(15,23,42,1);
+    }
+
+    .btn{
+      appearance:none;
+      border-radius:999px;
+      border:1px solid transparent;
+      padding:8px 13px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      cursor:pointer;
+      font-weight:600;
+      letter-spacing:.02em;
+      transition:
+        background .18s ease,
+        border-color .18s ease,
+        box-shadow .18s ease,
+        transform .18s ease;
+      white-space:nowrap;
+    }
+
+    .btn.primary{
+      background:linear-gradient(135deg, #0ea5e9, #22c55e);
+      border-color:rgba(191,219,254,0.75);
+      color:#0b1120;
+      box-shadow:
+        0 10px 28px rgba(59,130,246,0.7),
+        0 0 0 1px rgba(15,23,42,0.8);
+    }
+    .btn.primary:hover{
+      transform:translateY(-1px);
+      box-shadow:
+        0 14px 34px rgba(59,130,246,0.9),
+        0 0 0 1px rgba(15,23,42,0.9);
+      filter:saturate(1.05);
+    }
+
+    .btn.ghost{
+      background:rgba(15,23,42,0.8);
+      border-color:rgba(148,163,184,0.7);
+      color:var(--text-soft);
+      box-shadow:0 10px 26px rgba(15,23,42,0.9);
+    }
+    .btn.ghost:hover{
+      background:rgba(30,64,175,0.9);
+      color:#e5edff;
+      transform:translateY(-1px);
+      box-shadow:
+        0 14px 32px rgba(15,23,42,1),
+        0 0 0 1px rgba(30,64,175,0.9);
+    }
+
+    .btn.small{
+      padding:6px 10px;
+      border-radius:14px;
+      font-size:.8rem;
+    }
+
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+      box-shadow:none;
+    }
+
+    @media(max-width:720px){
+      .topbar{
+        flex-direction:column;
+        align-items:stretch;
+        gap:10px;
+      }
+      .top-right{
+        justify-content:flex-start;
+      }
+      .input{
+        min-width:0;
+        flex:1;
+      }
+    }
+
+    /* ===========================
+       CONTEÚDO / GRID DE CARDS
+    ============================ */
+    .wrap{
+      width:min(1180px, 100%);
+      margin:0 auto;
+      margin-top:14px;
+    }
+
+    #info{
+      color:var(--text-soft);
+      font-size:.84rem;
+      margin:6px 2px 10px;
+      text-shadow:0 2px 8px rgba(0,0,0,0.9);
+    }
+
+    .grid{
+      margin-top:8px;
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:16px;
+    }
+
+    @media (max-width:1100px){ .grid{ grid-template-columns:repeat(8,1fr); } }
+    @media (max-width:820px){ .grid{ grid-template-columns:repeat(6,1fr); } }
+    @media (max-width:560px){ .grid{ grid-template-columns:repeat(4,1fr); } }
+
+    .card{
+      grid-column:span 6;
+      border-radius:var(--glass-radius);
+      background:rgba(15,23,42,0.84);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      box-shadow:var(--glass-shadow);
+      padding:12px 12px 14px;
+      position:relative;
+      overflow:hidden;
+      transition:
+        transform .20s ease,
+        box-shadow .20s ease,
+        border-color .20s ease,
+        background .20s ease;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.20) 0%,
+        rgba(255,255,255,0.06) 14%,
+        transparent 35%
+      );
+      pointer-events:none;
+    }
+
+    .card > *{ position:relative; z-index:1; }
+
+    @media (max-width:820px){ .card{ grid-column:span 12; } }
+
+    .card:hover{
+      transform:translateY(-2px) scale(1.008);
+      box-shadow:
+        0 14px 40px rgba(15,23,42,1),
+        0 0 0 1px rgba(148,163,184,0.9);
+      background:rgba(15,23,42,0.97);
+    }
+
+    .row-top{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:6px;
+    }
+
+    .aluno{
+      font-weight:700;
+      font-size:.98rem;
+      color:#f9fbff;
+      text-shadow:0 3px 10px rgba(0,0,0,0.9);
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 9px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,0.85);
+      background:rgba(15,23,42,0.8);
+      font-size:.78rem;
+      color:var(--text-soft);
+    }
+
+    .muted{
+      color:var(--text-soft);
+      font-size:.86rem;
+    }
+
+    .kv{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:8px;
+    }
+
+    .box{
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,0.55);
+      background:rgba(15,23,42,0.85);
+      padding:8px 9px;
+      font-size:.88rem;
+      color:#e5edff;
+      box-shadow:0 8px 18px rgba(15,23,42,0.9);
+    }
+
+    .box b{
+      display:block;
+      font-size:.76rem;
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      color:rgba(148,163,184,0.95);
+      margin-bottom:3px;
+    }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .btn.toggle{
+      width:fit-content;
+      background:rgba(15,23,42,0.9);
+      border-color:rgba(148,163,184,0.7);
+      color:var(--text-soft);
+    }
+
+    .btn.toggle:hover{
+      background:rgba(30,64,175,0.96);
+      color:#e5edff;
+    }
+
+    .details{
+      display:none;
+      margin-top:10px;
+    }
+    .details.open{
+      display:block;
+    }
+
+    /* Skeleton */
+    .skeleton{
+      animation:pulse 1.3s ease-in-out infinite;
+      background:linear-gradient(
+        90deg,
+        rgba(148,163,184,0.12),
+        rgba(248,250,252,0.18),
+        rgba(148,163,184,0.10)
+      );
+      background-size:200% 100%;
+      color:transparent;
+    }
+    .sk-card{
+      height:120px;
+      border-radius:var(--glass-radius);
+      border:1px solid rgba(148,163,184,0.55);
+      box-shadow:var(--glass-shadow);
+    }
+    @keyframes pulse{
+      0%{ background-position:200% 0; }
+      100%{ background-position:-200% 0; }
+    }
+
+    /* Footer / Paginação */
+    .footer-ctrl{
+      margin:18px 0 0;
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    /* Modal: fundo escuro + texto claro */
+    .modal-content{
+      background:#020617;
+      color:#e5edff;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,0.5);
+      box-shadow:0 18px 48px rgba(15,23,42,1);
+    }
+    .modal-title,
+    .modal-body,
+    .modal-footer .btn{
+      color:#e5edff;
+    }
+    .btn-close{ filter:invert(1); }
+
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2 class="mb-4 text-center">🛡️ Controle de Notificações Emitidas</h2>
-
-    <div class="mb-3 d-flex justify-content-between">
-      <div>
-        <label for="filtroData" class="form-label">Filtrar por Data:</label>
-        <input type="date" id="filtroData" class="form-control">
+  <div class="page">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="top-left">
+        <div class="brand-pill"></div>
+        <div class="top-title">
+          <span>CMDPII • SISTEMA ESCOLAR</span>
+          <span>Controle de Notificações</span>
+        </div>
       </div>
-      <div class="align-self-end">
-        <button class="btn btn-dark" onclick="carregarNotificacoes()">🔄 Atualizar</button>
-        <a href="/painel.html" class="btn btn-secondary">⬅️ Voltar</a>
+      <div class="top-right">
+        <input id="q" class="input" placeholder="🔎 Buscar por aluno, motivo, turma…" />
+        <button class="btn ghost" id="btnRefresh">🔄 Atualizar</button>
+        <a class="btn primary" href="/painel.html">⬅ Painel</a>
       </div>
-    </div>
+    </header>
 
-    <div class="table-responsive">
-      <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-          <tr>
-            <th>Aluno</th>
-            <th>Turma</th>
-            <th>Motivo</th>
-            <th>Tipo</th>
-            <th>Emissão</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tabelaControle"></tbody>
-      </table>
-    </div>
+    <main class="wrap">
+      <!-- Contador/estado -->
+      <div id="info"></div>
+
+      <!-- GRID de cards -->
+      <div id="grid" class="grid" aria-live="polite" aria-busy="false"></div>
+
+      <!-- Paginação / carregar mais -->
+      <div class="footer-ctrl">
+        <button id="btnPrev" class="btn small ghost" disabled>⟵ Anterior</button>
+        <button id="btnNext" class="btn small ghost">Próxima ⟶</button>
+        <button id="btnLoadMore" class="btn small ghost">Carregar mais</button>
+        <button id="btnTopo" class="btn small ghost">↑ Topo</button>
+      </div>
+    </main>
   </div>
 
+  <!-- Modal Detalhes -->
   <div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -83,49 +486,254 @@
     </div>
   </div>
 
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    async function carregarNotificacoes() {
-      const tabela = document.getElementById('tabelaControle');
-      tabela.innerHTML = '';
-      const data = document.getElementById('filtroData').value;
-      const resposta = await fetch('/api/controle-notificacoes' + (data ? `?data=${data}` : ''), { credentials: 'include' });
-      const lista = await resposta.json();
 
-      if (lista.length === 0) {
-        tabela.innerHTML = '<tr><td colspan="6" class="text-center">Nenhuma notificação pendente.</td></tr>';
-        return;
+  <script>
+    // ================= Helpers / API =================
+    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+    const grid = document.getElementById('grid');
+    const info = document.getElementById('info');
+    const qInput = document.getElementById('q');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnMore = document.getElementById('btnLoadMore');
+    const btnTopo = document.getElementById('btnTopo');
+    const btnRefresh = document.getElementById('btnRefresh');
+
+    let page = 1, limit = 10, totalPages = 1, total=0;
+    let serverPaging = true;
+    let cacheLocal = [];
+    let loading = false;
+
+    // === NOVO: cálculo de valor exibido, blindando contra dupla multiplicação no backend dessa rota
+    const BASES = {
+      'Advertência Escrita': -0.30,
+      'Repreensão': -0.50,
+      'A.E.C.D.E': -0.70,
+      'A.I.A': -1.20
+    };
+    const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+
+    function calcValorExibicao(n) {
+      // 1) Se o backend já mandar valorTotal, usa ele
+      if (typeof n.valorTotal === 'number') return Number(n.valorTotal);
+
+      // 2) Elogio ou medidas que não dependem de dias → usa o que veio
+      const titulo = String(n.tipoMedida || n.tipo || '').trim();
+      const precisaDias = REQUER_DIAS.has(titulo);
+
+      if (!precisaDias) {
+        return Number(n.valorNumerico ?? 0);
       }
 
-      lista.forEach(n => {
-        const linha = document.createElement('tr');
-        linha.innerHTML = `
-          <td>${n.aluno?.nome || ''}</td>
-          <td>${n.aluno?.turma || ''}</td>
-          <td>${n.motivo}</td>
-          <td>${n.tipoMedida}</td>
-          <td>${new Date(n.createdAt).toLocaleString('pt-BR')}</td>
-          <td>
-            <button class="btn btn-info btn-sm" onclick='verDetalhes(${JSON.stringify(n)})'>Ver</button>
-            <button class="btn btn-success btn-sm" onclick="deferir('${n._id}')">Deferir</button>
-            <button class="btn btn-warning btn-sm" onclick="abrirModalRevisao('${n._id}')">Revisar</button>
-            <button class="btn btn-secondary btn-sm" onclick="arquivar('${n._id}')">Arquivar</button>
-            <button class="btn btn-danger btn-sm" onclick="excluir('${n._id}')">Excluir</button>
-          </td>
-        `;
-        tabela.appendChild(linha);
-      });
+      // 3) Para A.E.C.D.E / A.I.A: recomputa como base × dias
+      const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
+      const base = BASES[titulo];
+      if (typeof base === 'number') {
+        return Number((base * dias).toFixed(2));
+      }
+
+      // fallback
+      return Number(n.valorNumerico ?? 0);
     }
 
-    function verDetalhes(n) {
+    function fmtValor(n) {
+      const v = calcValorExibicao(n);
+      return (isFinite(v) ? v.toFixed(2) : '—');
+    }
+
+    function setBusy(state){
+      grid.setAttribute('aria-busy', state ? 'true' : 'false');
+    }
+
+    function showSkeleton(n=6){
+      grid.innerHTML = '';
+      for(let i=0;i<n;i++){
+        const sk = document.createElement('div');
+        sk.className = 'card skeleton sk-card';
+        grid.appendChild(sk);
+      }
+    }
+
+    function fmtData(d){ try{ return new Date(d).toLocaleString('pt-BR'); }catch{ return '—'; } }
+    function safe(v){ return (v ?? '').toString(); }
+    const isMedidaComContraturno = (m)=> ['A.I.A','A.E.C.D.E'].includes((m||'').toUpperCase());
+
+    function debounce(fn, ms=350){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+
+    async function getJSON(url, {timeoutMs=10000}={}){
+      const ctrl = new AbortController(); const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+      try{
+        const r = await fetch(url, { credentials:'include', cache:'no-store', signal:ctrl.signal });
+        const ct = r.headers.get('content-type') || '';
+        if(!r.ok) throw new Error(`${r.status}`);
+        return ct.includes('application/json') ? r.json() : {};
+      }finally{ clearTimeout(id); }
+    }
+
+    function buildURL(){
+      const u = new URL(API('/controle-notificacoes'), location.origin);
+      u.searchParams.set('page', page);
+      u.searchParams.set('limit', limit);
+      const q = qInput.value.trim(); if(q) u.searchParams.set('q', q);
+      return u.toString();
+    }
+
+    function renderInfo(){
+      info.textContent = `Página ${page}/${totalPages} • ${total.toLocaleString('pt-BR')} itens${qInput.value ? ` • filtro: "${qInput.value}"` : ''}`;
+      btnPrev.disabled = page<=1;
+      btnNext.disabled = page>=totalPages;
+    }
+
+    function Card(notif){
+      const aluno = notif.aluno || {};
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <div class="row-top">
+          <div>
+            <div class="aluno">${safe(aluno.nome) || '—'} <span class="pill">${safe(aluno.turma) || '—'}</span></div>
+            <div class="muted">${safe(notif.tipoMedida) || '—'} • ${fmtData(notif.createdAt)}</div>
+          </div>
+          <button class="btn small toggle">Mostrar opções</button>
+        </div>
+        <div class="kv">
+          <div class="box"><b>Motivo</b><div>${safe(notif.motivo) || '—'}</div></div>
+          <div class="box"><b>Tipo</b><div>${safe(notif.tipo) || '—'}</div></div>
+        </div>
+        <div class="details">
+          <div class="kv">
+            <div class="box"><b>Valor</b><div>${fmtValor(notif)}</div></div>
+            <div class="box"><b>Status</b><div>${safe(notif.status) || 'pendente'}</div></div>
+            <div class="box"><b>Nº Sequencial</b><div>${safe(notif.numeroSequencial) || '—'}</div></div>
+            <div class="box"><b>Observação</b><div>${safe(notif.observacao) || '—'}</div></div>
+          </div>
+          <div class="kv" style="margin-top:8px">
+            <div class="box"><b>Artigo</b><div>${safe(notif.artigo) || '—'}</div></div>
+            <div class="box"><b>Parágrafo</b><div>${safe(notif.paragrafo) || '—'}</div></div>
+            <div class="box"><b>Inciso</b><div>${safe(notif.inciso) || '—'}</div></div>
+            <div class="box"><b>Classificação</b><div>${safe(notif.classificacaoRegulamento) || '—'}</div></div>
+          </div>
+          <div class="actions">
+            <button class="btn small ghost" data-acao="ver">📄 Ver</button>
+            <button class="btn small primary" data-acao="deferir">✅ Deferir</button>
+            <button class="btn small ghost" data-acao="revisar">🔁 Revisar</button>
+            <button class="btn small ghost" data-acao="arquivar">📁 Arquivar</button>
+            <button class="btn small ghost" data-acao="excluir">🗑️ Excluir</button>
+            <span class="comPaisWrap" style="display:none">
+              <button class="btn small primary" data-acao="comPais">👪 Comunicação aos Pais</button>
+            </span>
+          </div>
+        </div>
+      `;
+
+      const details = el.querySelector('.details');
+      const toggle = el.querySelector('.toggle');
+      toggle.addEventListener('click', ()=> {
+        const open = details.classList.toggle('open');
+        toggle.textContent = open ? 'Ocultar opções' : 'Mostrar opções';
+        const wrap = el.querySelector('.comPaisWrap');
+        const pode = (notif.status==='deferido' || notif.status==='aprovada') && isMedidaComContraturno(notif.tipoMedida || notif.tipo);
+        wrap.style.display = pode ? '' : 'none';
+      });
+
+      el.addEventListener('click', async (ev)=>{
+        const btn = ev.target.closest('button[data-acao]');
+        if(!btn) return;
+        const acao = btn.dataset.acao;
+        if(acao==='ver'){ return verDetalhes(notif); }
+        if(acao==='deferir'){ await deferir(notif._id); return; }
+        if(acao==='revisar'){
+          const comentario = prompt('Digite o motivo da devolução:');
+          if(!comentario) return;
+          await fetch(API(`/controle-notificacoes/${notif._id}/revisar`), {
+            method:'PUT',
+            headers:{'Content-Type':'application/json'},
+            credentials:'include',
+            body:JSON.stringify({ comentario })
+          });
+          return reload();
+        }
+        if(acao==='arquivar'){
+          await fetch(API(`/controle-notificacoes/${notif._id}/arquivar`), { method:'PUT', credentials:'include' });
+          return reload();
+        }
+        if(acao==='excluir'){
+          if(!confirm('Tem certeza que deseja excluir esta notificação?')) return;
+          await fetch(API(`/controle-notificacoes/${notif._id}`), { method:'DELETE', credentials:'include' });
+          return reload();
+        }
+        if(acao==='comPais'){
+          try{
+            const r = await fetch(API(`/comunicacao/${notif._id}`), { method:'POST', credentials:'include' });
+            if(!r.ok) throw new Error('Falha ao iniciar comunicação');
+            const j = await r.json();
+            location.href = `/comunicacao-pais.html?notificacao=${notif._id}`;
+          }catch(e){ alert('Erro ao abrir comunicação.'); }
+        }
+      });
+
+      return el;
+    }
+
+    function renderList(list){
+      grid.innerHTML = '';
+      if(!Array.isArray(list) || list.length===0){
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.style.margin = '16px 4px';
+        empty.textContent = 'Nenhuma notificação para os filtros atuais.';
+        grid.appendChild(empty);
+        return;
+      }
+      list.forEach(n => grid.appendChild(Card(n)));
+    }
+
+    function appendList(list){ list.forEach(n => grid.appendChild(Card(n))); }
+
+    async function fetchPage(goTo=page){
+      if(loading) return; loading = true; setBusy(true);
+      if(goTo!==page){ page = goTo; }
+      try{
+        const url = buildURL();
+        let data = await getJSON(url).catch(()=>null);
+        if(data && Array.isArray(data.data)){
+          serverPaging = true;
+          totalPages = Number(data.totalPages || 1);
+          total = Number(data.total || data.data.length || 0);
+          if(page===1) renderList(data.data);
+          else appendList(data.data);
+        } else {
+          serverPaging = false;
+          const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          if(page===1) cacheLocal = arr;
+          const start = (page-1)*limit, end = start + limit;
+          total = cacheLocal.length;
+          totalPages = Math.max(1, Math.ceil(total/limit));
+          const slice = cacheLocal.slice(start, end);
+          if(page===1) renderList(slice);
+          else appendList(slice);
+        }
+        renderInfo();
+      } catch(e){
+        grid.innerHTML = '<div class="muted" style="margin:16px 4px">Erro ao carregar notificações.</div>';
+      } finally {
+        loading = false; setBusy(false);
+      }
+    }
+
+    const reload = ()=>{ page = 1; showSkeleton(6); fetchPage(1); };
+
+    function verDetalhes(n){
       const html = `
         <p><strong>Aluno:</strong> ${n.aluno?.nome || ''}</p>
         <p><strong>Turma:</strong> ${n.aluno?.turma || ''}</p>
-        <p><strong>Tipo:</strong> ${n.tipo}</p>
-        <p><strong>Motivo:</strong> ${n.motivo}</p>
-        <p><strong>Tipo de Medida:</strong> ${n.tipoMedida}</p>
-        <p><strong>Valor:</strong> ${n.valorNumerico?.toFixed(2) || ''}</p>
-        <p><strong>Data de Emissão:</strong> ${new Date(n.createdAt).toLocaleString('pt-BR')}</p>
+        <p><strong>Tipo:</strong> ${n.tipo || '—'}</p>
+        <p><strong>Motivo:</strong> ${n.motivo || '—'}</p>
+        <p><strong>Tipo de Medida:</strong> ${n.tipoMedida || '—'}</p>
+        <p><strong>Valor:</strong> ${fmtValor(n)}</p>
+        <p><strong>Data de Emissão:</strong> ${fmtData(n.createdAt)}</p>
         <p><strong>Artigo:</strong> ${n.artigo || '-'}</p>
         <p><strong>Parágrafo:</strong> ${n.paragrafo || '-'}</p>
         <p><strong>Inciso:</strong> ${n.inciso || '-'}</p>
@@ -137,41 +745,30 @@
       new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
     }
 
-    async function deferir(id) {
-      await fetch(`/api/controle-notificacoes/${id}/deferir`, {
-        method: 'PUT', credentials: 'include'
-      });
-      carregarNotificacoes();
+    async function deferir(id){
+      await fetch(API(`/controle-notificacoes/${id}/deferir`), { method:'PUT', credentials:'include' });
+      reload();
     }
 
-    function abrirModalRevisao(id) {
-      const comentario = prompt('Digite o motivo da devolução:');
-      if (!comentario) return;
-      fetch(`/api/controle-notificacoes/${id}/revisar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ comentario })
-      }).then(() => carregarNotificacoes());
-    }
+    // ===== Listeners =====
+    btnRefresh.addEventListener('click', reload);
+    btnPrev.addEventListener('click', ()=>{ if(page>1){ page--; showSkeleton(4); grid.innerHTML=''; fetchPage(page);} });
+    btnNext.addEventListener('click', ()=>{ if(page<totalPages){ page++; showSkeleton(4); fetchPage(page);} });
+    btnMore.addEventListener('click', ()=>{ if(page<totalPages){ page++; fetchPage(page);} });
+    btnTopo.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+    qInput.addEventListener('input', debounce(reload, 350));
 
-    async function arquivar(id) {
-      await fetch(`/api/controle-notificacoes/${id}/arquivar`, {
-        method: 'PUT', credentials: 'include'
-      });
-      carregarNotificacoes();
-    }
+    window.addEventListener('scroll', ()=>{
+      if(loading) return;
+      const nearBottom = window.innerHeight + window.scrollY >= (document.body.offsetHeight - 600);
+      if(nearBottom && page < totalPages){ page++; fetchPage(page); }
+    }, { passive:true });
 
-    async function excluir(id) {
-      if (confirm('Tem certeza que deseja excluir esta notificação?')) {
-        await fetch(`/api/controle-notificacoes/${id}`, {
-          method: 'DELETE', credentials: 'include'
-        });
-        carregarNotificacoes();
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', carregarNotificacoes);
+    (function boot(){
+      showSkeleton(8);
+      fetchPage(1);
+    })();
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

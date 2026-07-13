@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Preservação ambiental",
+    "tipo": "citacao",
+    "fonte": "Chico Mendes",
+    "conteudo": "Ecologia sem luta social é jardinagem."
+  },
+  {
+    "titulo": "Desmatamento da Amazônia",
+    "tipo": "estatistica",
+    "fonte": "INPE",
+    "conteudo": "O desmatamento na Amazônia gera impactos ambientais e climáticos significativos."
+  },
+  {
+    "titulo": "Agenda 2030",
+    "tipo": "legislacao",
+    "fonte": "ONU",
+    "conteudo": "Os Objetivos de Desenvolvimento Sustentável visam proteger o planeta e promover prosperidade."
+  },
+  {
+    "titulo": "Crise hídrica",
+    "tipo": "reportagem",
+    "fonte": "ANA",
+    "conteudo": "O desperdício de água e a poluição comprometem os recursos hídricos brasileiros."
+  },
+  {
+    "titulo": "Poluição urbana",
+    "tipo": "estatistica",
+    "fonte": "OMS",
+    "conteudo": "A poluição atmosférica afeta diretamente a saúde da população mundial."
+  },
+  {
+    "titulo": "Sustentabilidade",
+    "tipo": "citacao",
+    "fonte": "Relatório Brundtland",
+    "conteudo": "O desenvolvimento sustentável atende às necessidades do presente sem comprometer as futuras gerações."
+  }
+]

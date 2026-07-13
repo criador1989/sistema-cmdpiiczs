@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Validação documental • Axoriin</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(circle at top,#1e3c72,#0b1220 60%);
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:30px;
+}
+
+.card{
+  width:100%;
+  max-width:760px;
+
+  background:
+    rgba(255,255,255,.08);
+
+  border:
+    1px solid rgba(255,255,255,.12);
+
+  backdrop-filter:blur(18px);
+
+  border-radius:28px;
+
+  padding:40px;
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.45);
+}
+
+.topo{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  margin-bottom:30px;
+}
+
+.selo{
+  width:72px;
+  height:72px;
+
+  border-radius:50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #16a34a,
+      #15803d
+    );
+
+  box-shadow:
+    0 0 25px rgba(34,197,94,.45);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:38px;
+
+  border:
+    2px solid rgba(255,255,255,.15);
+}
+
+h1{
+  font-size:30px;
+  margin-bottom:6px;
+}
+
+.sub{
+  color:#cbd5e1;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:
+    repeat(auto-fit,minmax(240px,1fr));
+
+  gap:18px;
+  margin-top:20px;
+}
+
+.box{
+  background:
+    rgba(255,255,255,.06);
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  border-radius:18px;
+
+  padding:18px;
+}
+
+.label{
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#94a3b8;
+  margin-bottom:8px;
+}
+
+.valor{
+  font-size:16px;
+  font-weight:600;
+  word-break:break-word;
+}
+
+.hash{
+  font-size:13px;
+  line-height:1.6;
+}
+
+.footer{
+  margin-top:28px;
+  color:#94a3b8;
+  font-size:13px;
+  text-align:center;
+}
+
+.erro{
+  text-align:center;
+}
+
+.erro .selo{
+  margin:0 auto 20px;
+  background:#dc2626;
+}
+
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+
+async function carregar() {
+
+  const app =
+    document.getElementById('app');
+
+  const hash =
+    new URLSearchParams(location.search)
+      .get('hash');
+
+  if (!hash) {
+
+    app.innerHTML = `
+      <div class="card erro">
+        <div class="selo">✖</div>
+        <h1>Hash inválido</h1>
+      </div>
+    `;
+
+    return;
+  }
+
+  try {
+
+    let resp =
+  await fetch(
+    '/api/processos-disciplinares/verificar-documento/' + hash
+  );
+
+let data =
+  await resp.json();
+
+if (!data.ok) {
+  resp = await fetch(
+    '/api/ficha/verificar-documento/' + hash
+  );
+
+  data = await resp.json();
+}
+
+    
+    const doc = data.documento || {};
+    const proc = data.processo || {};
+    const alunoFicha = data.aluno || {};
+    const isFicha = doc.tipo === 'ficha_comportamental_aluno';
+
+    app.innerHTML = `
+
+      <div class="card">
+
+        <div class="topo">
+
+          <div class="selo">✔</div>
+
+          <div>
+            <h1>Documento autêntico</h1>
+
+            <div class="sub">
+        ${
+            isFicha
+            ? 'Ficha comportamental autenticada digitalmente pelo Axoriin'
+            : 'Documento validado com sucesso pelo Axoriin'
+        }
+        </div>
+
+        <div class="grid">
+
+          <div class="box">
+            <div class="label">Procedimento</div>
+            <div class="valor">
+              ${isFicha ? 'Ficha comportamental do aluno' : (proc.numeroProcesso || '-')}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">Status</div>
+            <div class="valor">
+              ${isFicha ? 'Documento verificável' : (proc.status || '-')}
+            </div>
+          </div>
+
+          ${isFicha ? `
+  <div class="box">
+    <div class="label">Nota comportamental</div>
+    <div class="valor">
+      ${doc.metadados?.notaAtual ?? '-'}
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="label">Total de notificações</div>
+    <div class="valor">
+      ${doc.metadados?.totalNotificacoes ?? '-'}
+    </div>
+  </div>
+` : ''}
+
+          <div class="box">
+            <div class="label">Aluno</div>
+            <div class="valor">
+              ${isFicha ? (alunoFicha.nome || '-') : (proc.aluno?.nome || '-')}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">Turma</div>
+            <div class="valor">
+              ${isFicha ? (alunoFicha.turma || '-') : (proc.aluno?.turma || '-')}
+            </div>
+          </div>
+
+          <div class="box">
+  <div class="label">Documento</div>
+
+  <div class="valor">
+    ${
+      isFicha
+        ? 'Ficha Comportamental Individual'
+        : (doc.titulo || '-')
+    }
+  </div>
+</div>
+
+          <div class="box">
+            <div class="label">Gerado por</div>
+            <div class="valor">
+              ${doc.geradoPor || '-'}
+            </div>
+          </div>
+
+          <div class="box" style="grid-column:1/-1">
+            <div class="label">Hash documental</div>
+
+            <div class="valor hash">
+              ${doc.hash || '-'}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="footer">
+          Plataforma Axoriin • Validação documental institucional
+        </div>
+
+      </div>
+    `;
+
+  } catch(e) {
+
+    console.error(e);
+
+    app.innerHTML = `
+      <div class="card erro">
+        <div class="selo">⚠</div>
+        <h1>Erro ao validar documento</h1>
+      </div>
+    `;
+  }
+}
+
+carregar();
+
+</script>
+
+</body>
+</html>

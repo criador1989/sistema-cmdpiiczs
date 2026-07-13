@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APH - Atendimento</title>
+
+<style>
+:root{
+  --bg:#0f172a;
+  --card:#111827;
+  --accent:#38bdf8;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --danger:#ef4444;
+}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:linear-gradient(135deg,#020617,#0f172a);
+  color:var(--text);
+}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
+
+.card{
+  background:rgba(17,24,39,.9);
+  border:1px solid rgba(148,163,184,.2);
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:18px;
+}
+
+h2{
+  margin:0 0 10px 0;
+  font-size:16px;
+  color:#38bdf8;
+}
+
+.grid{
+  display:grid;
+  gap:12px;
+}
+
+.grid-2{ grid-template-columns:1fr 1fr; }
+.grid-3{ grid-template-columns:1fr 1fr 1fr; }
+
+input, select, textarea{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+}
+
+textarea{
+  min-height:90px;
+}
+
+.cards{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.card-choice{
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #334155;
+  cursor:pointer;
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+.card-choice input{
+  accent-color:var(--accent);
+}
+
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+button{
+  padding:10px 16px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.btn-primary{
+  background:linear-gradient(135deg,#1d4ed8,#38bdf8);
+  color:white;
+}
+
+.btn-sec{
+  background:#1e293b;
+  color:white;
+}
+
+.hidden{ display:none; }
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<form id="formAPH">
+
+<!-- IDENTIFICAÇÃO -->
+<div class="card">
+<h2>1. Identificação do Registro</h2>
+
+<div class="grid grid-3">
+<div>
+<label>Nº Registro</label>
+<input id="numeroRegistro" disabled>
+</div>
+
+<div>
+<label>Data</label>
+<input type="date" id="data">
+</div>
+
+<div>
+<label>Hora início</label>
+<input type="time" id="horaInicio">
+</div>
+</div>
+
+<div class="grid grid-3" style="margin-top:10px">
+<div>
+<label>Hora fim</label>
+<input type="time" id="horaFim">
+</div>
+
+<div>
+<label>Local</label>
+<select id="local">
+<option>Sala</option>
+<option>Pátio</option>
+<option>Quadra</option>
+<option>Corredor</option>
+<option>Outro</option>
+</select>
+</div>
+
+<div id="localOutroBox" class="hidden">
+<label>Outro local</label>
+<input id="localOutro">
+</div>
+</div>
+
+<div style="margin-top:10px">
+<label>Servidor responsável</label>
+<input id="servidor">
+</div>
+
+</div>
+
+<!-- ALUNO -->
+<div class="card">
+<h2>2. Identificação do Aluno</h2>
+
+<div class="grid grid-3">
+<input id="alunoNome" placeholder="Nome">
+<input id="turma" placeholder="Turma">
+<input id="matricula" placeholder="Matrícula">
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<input type="date" id="nascimento">
+<input id="telefoneAluno" placeholder="Telefone">
+</div>
+
+</div>
+
+<!-- RESPONSÁVEL -->
+<div class="card">
+<h2>3. Responsável</h2>
+
+<div class="grid grid-2">
+<input id="respNome" placeholder="Nome do responsável">
+<input id="respVinculo" placeholder="Vínculo">
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<input id="respTel1" placeholder="Telefone principal">
+<input id="respTel2" placeholder="Telefone secundário">
+</div>
+
+</div><!-- CLASSIFICAÇÃO -->
+<div class="card">
+<h2>4. Classificação da Ocorrência / Intercorrência</h2>
+
+<div class="cards" id="boxClassificacoes">
+<label class="card-choice"><input type="checkbox" value="Mal-estar"> Mal-estar</label>
+<label class="card-choice"><input type="checkbox" value="Tontura"> Tontura</label>
+<label class="card-choice"><input type="checkbox" value="Desmaio"> Desmaio</label>
+<label class="card-choice"><input type="checkbox" value="Crise emocional/ansiedade"> Crise emocional / ansiedade</label>
+<label class="card-choice"><input type="checkbox" value="Escoriação"> Escoriação</label>
+<label class="card-choice"><input type="checkbox" value="Pequeno corte"> Pequeno corte</label>
+<label class="card-choice"><input type="checkbox" value="Queda"> Queda</label>
+<label class="card-choice"><input type="checkbox" value="Ocorrência em atividade física"> Atividade física</label>
+<label class="card-choice"><input type="checkbox" value="Náusea/vômito"> Náusea / vômito</label>
+<label class="card-choice"><input type="checkbox" value="Cefaleia/dor"> Cefaleia / dor</label>
+<label class="card-choice"><input type="checkbox" value="Outro" id="chkClassOutro"> Outro</label>
+</div>
+
+<div id="classOutroBox" class="hidden" style="margin-top:10px">
+<label>Outro tipo de ocorrência</label>
+<input id="classificacaoOutro">
+</div>
+</div>
+
+<!-- DESCRIÇÃO -->
+<div class="card">
+<h2>5. Descrição Objetiva dos Fatos</h2>
+<textarea id="descricaoFatos" placeholder="Relate de forma clara, impessoal e cronológica os fatos observados e/ou informados, sem juízo de valor."></textarea>
+</div>
+
+<!-- SINAIS -->
+<div class="card">
+<h2>6. Sinais Observados / Queixa Apresentada</h2>
+<textarea id="sinaisESintomas" placeholder="Ex.: dor, tontura, sangramento, ansiedade, náusea, palidez, choro, dificuldade de locomoção..."></textarea>
+</div>
+
+<!-- PROVIDÊNCIAS -->
+<div class="card">
+<h2>7. Providências Adotadas pela Equipe Escolar</h2>
+
+<div class="cards" id="boxProvidencias">
+<label class="card-choice"><input type="checkbox" value="Acolhimento inicial"> Acolhimento inicial</label>
+<label class="card-choice"><input type="checkbox" value="Observação do aluno"> Observação do aluno</label>
+<label class="card-choice"><input type="checkbox" value="Primeiros socorros"> Primeiros socorros</label>
+<label class="card-choice"><input type="checkbox" value="Encaminhamento para ambiente de observação"> Ambiente de observação</label>
+<label class="card-choice"><input type="checkbox" value="Acionamento da Direção"> Direção</label>
+<label class="card-choice"><input type="checkbox" value="Acionamento da Coordenação de Ensino"> Coordenação de Ensino</label>
+<label class="card-choice"><input type="checkbox" value="Acionamento da Coordenação Pedagógica"> Coordenação Pedagógica</label>
+<label class="card-choice"><input type="checkbox" value="Comunicação aos pais/responsáveis"> Comunicação aos responsáveis</label>
+<label class="card-choice"><input type="checkbox" value="Encaminhamento ao pronto socorro"> Pronto socorro</label>
+<label class="card-choice"><input type="checkbox" value="Outro" id="chkProvOutro"> Outro</label>
+</div>
+
+<div id="provOutroBox" class="hidden" style="margin-top:10px">
+<label>Outra providência</label>
+<input id="providenciaOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Descrição das providências adotadas</label>
+<textarea id="descricaoProvidencias" placeholder="Descreva de forma objetiva o que foi feito pela equipe escolar."></textarea>
+</div>
+</div>
+
+<!-- MATERIAIS / PROCEDIMENTOS -->
+<div class="card">
+<h2>Materiais / Recursos Utilizados</h2>
+
+<div class="cards" id="boxMateriais">
+<label class="card-choice"><input type="checkbox" value="Curativo simples"> Curativo simples</label>
+<label class="card-choice"><input type="checkbox" value="Gaze / Atadura"> Gaze / Atadura</label>
+<label class="card-choice"><input type="checkbox" value="Antisséptico"> Antisséptico</label>
+<label class="card-choice"><input type="checkbox" value="Bolsa de gelo"> Bolsa de gelo</label>
+<label class="card-choice"><input type="checkbox" value="Imobilização provisória"> Imobilização provisória</label>
+<label class="card-choice"><input type="checkbox" value="Higienização"> Higienização</label>
+<label class="card-choice"><input type="checkbox" value="Hidratação"> Hidratação</label>
+<label class="card-choice"><input type="checkbox" value="Máscara fornecida"> Máscara fornecida</label>
+<label class="card-choice"><input type="checkbox" value="Apoio emocional"> Apoio emocional</label>
+</div>
+
+<div style="margin-top:10px">
+<label>Procedimentos complementares</label>
+<textarea id="procedimentos" placeholder="Detalhe algum procedimento complementar, se necessário."></textarea>
+</div>
+</div>
+
+<!-- EVOLUÇÃO -->
+<div class="card">
+<h2>8. Tempo de Observação e Evolução do Quadro</h2>
+
+<div class="grid grid-2">
+<div>
+<label>Tempo de observação</label>
+<input id="tempoObservacao" placeholder="Ex.: 15 minutos, 30 minutos, 1 hora">
+</div>
+
+<div>
+<label>Evolução observada</label>
+<select id="evolucaoQuadro">
+<option value="">Selecione</option>
+<option>Houve melhora</option>
+<option>Não houve melhora satisfatória</option>
+<option>Houve agravamento</option>
+<option>Situação estabilizada</option>
+<option>Outro</option>
+</select>
+</div>
+</div>
+
+<div id="evolucaoOutroBox" class="hidden" style="margin-top:10px">
+<label>Outra evolução observada</label>
+<input id="evolucaoOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Descrição complementar da evolução</label>
+<textarea id="descricaoEvolucao" placeholder="Descreva como o aluno evoluiu durante o período de observação."></textarea>
+</div>
+</div><!-- COMUNICAÇÃO -->
+<div class="card">
+<h2>9. Comunicação aos Pais ou Responsáveis</h2>
+
+<div class="grid grid-3">
+<div>
+<label>Responsáveis informados?</label>
+<select id="responsaveisInformados">
+<option value="Não">Não</option>
+<option value="Sim">Sim</option>
+</select>
+</div>
+
+<div>
+<label>Data do contato</label>
+<input type="date" id="dataContato">
+</div>
+
+<div>
+<label>Hora do contato</label>
+<input type="time" id="horaContato">
+</div>
+</div>
+
+<div style="margin-top:10px">
+<label>Meio utilizado</label>
+<div class="cards" id="boxMeios">
+<label class="card-choice"><input type="checkbox" value="Ligação telefônica"> Ligação telefônica</label>
+<label class="card-choice"><input type="checkbox" value="WhatsApp"> WhatsApp</label>
+<label class="card-choice"><input type="checkbox" value="Mensagem escrita"> Mensagem escrita</label>
+<label class="card-choice"><input type="checkbox" value="Presencial"> Presencial</label>
+<label class="card-choice"><input type="checkbox" value="Outro" id="chkMeioOutro"> Outro</label>
+</div>
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Nome da pessoa contatada</label>
+<input id="nomePessoaContatada">
+</div>
+
+<div>
+<label>Vínculo com o aluno</label>
+<input id="vinculoComAluno">
+</div>
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Houve êxito no contato?</label>
+<select id="houveExitoContato">
+<option value="Sim">Sim</option>
+<option value="Não">Não</option>
+</select>
+</div>
+
+<div>
+<label>Orientação principal</label>
+<select id="orientacaoRapida">
+<option value="">Selecione</option>
+<option>Ciência da ocorrência</option>
+<option>Comparecer imediatamente à escola</option>
+<option>Buscar o aluno na escola</option>
+<option>Dirigir-se ao pronto socorro</option>
+<option>Acompanhar/receber o aluno na unidade de saúde</option>
+<option>Outro</option>
+</select>
+</div>
+</div>
+
+<div id="orientacaoOutroBox" class="hidden" style="margin-top:10px">
+<label>Outra orientação</label>
+<input id="orientacaoOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Síntese da informação prestada</label>
+<textarea id="sinteseInformacaoPrestada" placeholder="Informe, de forma objetiva, o que foi comunicado ao responsável."></textarea>
+</div>
+</div>
+
+<!-- DESFECHO -->
+<div class="card">
+<h2>10. Desfecho da Ocorrência / Intercorrência</h2>
+
+<div>
+<label>Desfecho</label>
+<select id="desfecho">
+<option value="">Selecione</option>
+<option>Aluno retornou à sala de aula</option>
+<option>Aluno permaneceu em observação e foi liberado ao responsável</option>
+<option>Aluno foi entregue ao responsável na escola</option>
+<option>Aluno foi encaminhado ao pronto socorro</option>
+<option>Aluno foi entregue à equipe plantonista da unidade de saúde</option>
+<option>Outro</option>
+</select>
+</div>
+
+<div id="desfechoOutroBox" class="hidden" style="margin-top:10px">
+<label>Outro desfecho</label>
+<input id="desfechoOutro">
+</div>
+
+<div style="margin-top:10px">
+<label>Descrição do desfecho</label>
+<textarea id="descricaoDesfecho" placeholder="Descreva como a situação foi finalizada."></textarea>
+</div>
+
+<div style="margin-top:10px">
+<label>
+<input type="checkbox" id="houveEncaminhamento" style="width:auto">
+Houve encaminhamento externo?
+</label>
+</div>
+
+<div id="encaminhamentoBox" class="hidden" style="margin-top:10px">
+<label>Encaminhamento</label>
+<textarea id="encaminhamento" placeholder="Ex.: Responsável conduziu ao pronto socorro; aluno entregue à equipe da unidade de saúde..."></textarea>
+</div>
+</div>
+
+<!-- OBSERVAÇÕES -->
+<div class="card">
+<h2>11. Observações Complementares</h2>
+<textarea id="observacoes" placeholder="Registre observações adicionais, se necessário."></textarea>
+</div>
+
+<!-- ASSINATURAS -->
+<div class="card">
+<h2>12. Assinaturas / Visto</h2>
+
+<div class="grid grid-2">
+<div>
+<label>Nome do servidor responsável</label>
+<input id="assinServidorNome">
+</div>
+
+<div>
+<label>Função do servidor</label>
+<input id="assinServidorFuncao">
+</div>
+</div>
+
+<div class="grid grid-2" style="margin-top:10px">
+<div>
+<label>Visto da Direção/Coordenação</label>
+<input id="vistoNome">
+</div>
+
+<div>
+<label>Função</label>
+<input id="vistoFuncao">
+</div>
+</div>
+</div>
+
+<div class="actions">
+<button type="button" class="btn-sec" id="btnVoltar">Cancelar</button>
+<button type="submit" class="btn-primary">Salvar Atendimento</button>
+</div>
+
+</form>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+
+const alunoId = params.get('alunoId') || params.get('id') || '';
+const atendimentoId = params.get('atendimentoId') || params.get('aid') || params.get('idAtendimento') || '';
+const modo = (params.get('mode') || '').toLowerCase();
+
+function hojeISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function horaAtual(){
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function selecionados(boxId){
+  return Array.from(document.querySelectorAll(`#${boxId} input[type="checkbox"]:checked`))
+    .map(i => i.value)
+    .filter(Boolean);
+}
+
+function setSelecionados(boxId, valores = []){
+  const set = new Set(Array.isArray(valores) ? valores : []);
+  document.querySelectorAll(`#${boxId} input[type="checkbox"]`).forEach(cb => {
+    cb.checked = set.has(cb.value);
+  });
+}
+
+async function api(path, opts = {}){
+  const res = await fetch(path, {
+    credentials:'include',
+    method: opts.method || 'GET',
+    headers:{ 'Content-Type':'application/json', Accept:'application/json' },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    cache:'no-store'
+  });
+
+  const ct = res.headers.get('content-type') || '';
+  const data = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
+
+  if(res.status === 401){
+    alert('Sessão expirada. Faça login novamente.');
+    location.href = '/login.html';
+    throw new Error('401');
+  }
+
+  if(!res.ok){
+    throw new Error(data.message || data.error || `Erro ${res.status}`);
+  }
+
+  return data;
+}
+
+async function carregarAluno(){
+  if(!alunoId) return;
+
+  try{
+    const j = await api(`/api/ficha/dados/${alunoId}`);
+    const a = j.aluno || j || {};
+
+    $('#alunoNome').value = a.nome || '';
+    $('#turma').value = a.turma || '';
+    $('#matricula').value = a.matricula || a.codigoAcesso || '';
+
+    if(a.nascimento){
+      $('#nascimento').value = String(a.nascimento).slice(0,10);
+    }
+
+    $('#telefoneAluno').value = a.telefone || a.contatos?.whatsapp || '';
+
+    $('#respNome').value = a.nomeResponsavel || a.responsavel?.nome || a.nomeMae || a.nomePai || '';
+    $('#respTel1').value = a.telefone || a.contatos?.whatsapp || '';
+  }catch(e){
+    console.warn('Falha ao carregar aluno:', e);
+  }
+}
+
+async function carregarAtendimento(){
+  if(!atendimentoId || modo === 'new') return;
+
+  try{
+    const at = await api(`/api/aph/atendimentos/${atendimentoId}`);
+
+    $('#numeroRegistro').value = at.numeroRegistro || '';
+    $('#data').value = at.data ? String(at.data).slice(0,10) : hojeISO();
+    $('#horaInicio').value = at.horaInicioAtendimento || at.hora || '';
+    $('#horaFim').value = at.horaEncerramentoAtendimento || '';
+
+    $('#local').value = at.local || 'Sala';
+    $('#localOutro').value = at.localOutro || '';
+    $('#servidor').value = at.servidorResponsavelRegistro || at.responsavel || '';
+
+    $('#alunoNome').value = at.alunoNomeSnapshot || $('#alunoNome').value;
+    $('#turma').value = at.alunoTurmaSnapshot || $('#turma').value;
+    $('#matricula').value = at.alunoMatriculaSnapshot || $('#matricula').value;
+    if(at.alunoNascimentoSnapshot) $('#nascimento').value = String(at.alunoNascimentoSnapshot).slice(0,10);
+
+    $('#respNome').value = at.responsavelContato?.nome || '';
+    $('#respVinculo').value = at.responsavelContato?.vinculo || '';
+    $('#respTel1').value = at.responsavelContato?.telefonePrincipal || '';
+    $('#respTel2').value = at.responsavelContato?.telefoneSecundario || '';
+
+    setSelecionados('boxClassificacoes', at.classificacoes || at.tipos || []);
+    $('#classificacaoOutro').value = at.classificacaoOutro || '';
+    $('#descricaoFatos').value = at.descricaoFatos || '';
+    $('#sinaisESintomas').value = at.sinaisESintomas || at.queixaAluno || '';
+
+    setSelecionados('boxProvidencias', at.providenciasAdotadas || []);
+    $('#providenciaOutro').value = at.providenciaOutro || '';
+    $('#descricaoProvidencias').value = at.descricaoProvidencias || at.procedimentos || '';
+
+    setSelecionados('boxMateriais', at.materiais || []);
+    $('#procedimentos').value = at.procedimentos || '';
+
+    $('#tempoObservacao').value = at.tempoObservacao || '';
+    $('#evolucaoQuadro').value = at.evolucaoQuadro || '';
+    $('#evolucaoOutro').value = at.evolucaoOutro || '';
+    $('#descricaoEvolucao').value = at.descricaoEvolucao || '';
+
+    $('#responsaveisInformados').value = at.responsaveisInformados || at.comunicacaoPais?.houveComunicacao || 'Não';
+    if(at.comunicacaoPais?.dataContato) $('#dataContato').value = String(at.comunicacaoPais.dataContato).slice(0,10);
+    $('#horaContato').value = at.comunicacaoPais?.horaContato || '';
+
+    setSelecionados('boxMeios', at.comunicacaoPais?.meiosUtilizados || []);
+    $('#nomePessoaContatada').value = at.comunicacaoPais?.nomePessoaContatada || '';
+    $('#vinculoComAluno').value = at.comunicacaoPais?.vinculoComAluno || '';
+    $('#houveExitoContato').value = at.comunicacaoPais?.houveExitoContato || 'Sim';
+
+    const orientacoes = at.comunicacaoPais?.orientacoesTransmitidas || [];
+    $('#orientacaoRapida').value = orientacoes[0] || '';
+    $('#orientacaoOutro').value = at.comunicacaoPais?.orientacaoOutro || '';
+    $('#sinteseInformacaoPrestada').value = at.comunicacaoPais?.sinteseInformacaoPrestada || '';
+
+    $('#desfecho').value = at.desfecho || '';
+    $('#desfechoOutro').value = at.desfechoOutro || '';
+    $('#descricaoDesfecho').value = at.descricaoDesfecho || '';
+    $('#houveEncaminhamento').checked = !!at.houveEncaminhamento;
+    $('#encaminhamento').value = at.encaminhamento || '';
+
+    $('#observacoes').value = at.observacoes || at.observacao || '';
+
+    $('#assinServidorNome').value = at.assinaturas?.servidorResponsavelNome || at.servidorResponsavelRegistro || '';
+    $('#assinServidorFuncao').value = at.assinaturas?.servidorResponsavelFuncao || at.funcaoServidorResponsavel || '';
+    $('#vistoNome').value = at.assinaturas?.vistoDirecaoCoordenacaoNome || '';
+    $('#vistoFuncao').value = at.assinaturas?.vistoDirecaoCoordenacaoFuncao || '';
+
+    aplicarVisibilidade();
+  }catch(e){
+    alert('Erro ao carregar atendimento: ' + e.message);
+  }
+}
+
+function aplicarVisibilidade(){
+  $('#localOutroBox').classList.toggle('hidden', $('#local').value !== 'Outro');
+  $('#classOutroBox').classList.toggle('hidden', !$('#chkClassOutro')?.checked);
+  $('#provOutroBox').classList.toggle('hidden', !$('#chkProvOutro')?.checked);
+  $('#evolucaoOutroBox').classList.toggle('hidden', $('#evolucaoQuadro').value !== 'Outro');
+  $('#orientacaoOutroBox').classList.toggle('hidden', $('#orientacaoRapida').value !== 'Outro');
+  $('#desfechoOutroBox').classList.toggle('hidden', $('#desfecho').value !== 'Outro');
+  $('#encaminhamentoBox').classList.toggle('hidden', !$('#houveEncaminhamento').checked);
+}
+
+function montarPayload(){
+  const orientacoes = [];
+  if($('#orientacaoRapida').value) orientacoes.push($('#orientacaoRapida').value);
+
+  const classificacoes = selecionados('boxClassificacoes');
+  const providencias = selecionados('boxProvidencias');
+  const materiais = selecionados('boxMateriais');
+  const meios = selecionados('boxMeios');
+
+  return {
+    alunoId,
+
+    data: $('#data').value,
+    hora: $('#horaInicio').value,
+    horaInicioAtendimento: $('#horaInicio').value,
+    horaEncerramentoAtendimento: $('#horaFim').value,
+
+    local: $('#local').value,
+    localOutro: $('#localOutro').value,
+
+    responsavel: $('#servidor').value,
+    servidorResponsavelRegistro: $('#servidor').value,
+
+    alunoNomeSnapshot: $('#alunoNome').value,
+    alunoTurmaSnapshot: $('#turma').value,
+    alunoMatriculaSnapshot: $('#matricula').value,
+    alunoNascimentoSnapshot: $('#nascimento').value || null,
+
+    responsavelContato: {
+      nome: $('#respNome').value,
+      vinculo: $('#respVinculo').value,
+      telefonePrincipal: $('#respTel1').value,
+      telefoneSecundario: $('#respTel2').value
+    },
+
+    tipos: classificacoes,
+    classificacoes,
+    classificacaoOutro: $('#classificacaoOutro').value,
+
+    descricaoFatos: $('#descricaoFatos').value,
+    sinaisESintomas: $('#sinaisESintomas').value,
+    queixaAluno: $('#sinaisESintomas').value,
+
+    providenciasAdotadas: providencias,
+    providenciaOutro: $('#providenciaOutro').value,
+    descricaoProvidencias: $('#descricaoProvidencias').value,
+
+    materiais,
+    procedimentos: $('#procedimentos').value,
+
+    tempoObservacao: $('#tempoObservacao').value,
+    evolucaoQuadro: $('#evolucaoQuadro').value,
+    evolucaoOutro: $('#evolucaoOutro').value,
+    descricaoEvolucao: $('#descricaoEvolucao').value,
+
+    responsaveisInformados: $('#responsaveisInformados').value,
+    meioComunicacao: meios.join(', '),
+
+    comunicacaoPais: {
+      houveComunicacao: $('#responsaveisInformados').value,
+      dataContato: $('#dataContato').value || null,
+      horaContato: $('#horaContato').value,
+      meiosUtilizados: meios,
+      nomePessoaContatada: $('#nomePessoaContatada').value,
+      vinculoComAluno: $('#vinculoComAluno').value,
+      houveExitoContato: $('#houveExitoContato').value,
+      sinteseInformacaoPrestada: $('#sinteseInformacaoPrestada').value,
+      orientacoesTransmitidas: orientacoes,
+      orientacaoOutro: $('#orientacaoOutro').value
+    },
+
+    desfecho: $('#desfecho').value,
+    desfechoOutro: $('#desfechoOutro').value,
+    descricaoDesfecho: $('#descricaoDesfecho').value,
+
+    houveEncaminhamento: $('#houveEncaminhamento').checked,
+    encaminhamento: $('#encaminhamento').value,
+
+    observacoes: $('#observacoes').value,
+
+    assinaturas: {
+      servidorResponsavelNome: $('#assinServidorNome').value || $('#servidor').value,
+      servidorResponsavelFuncao: $('#assinServidorFuncao').value,
+      vistoDirecaoCoordenacaoNome: $('#vistoNome').value,
+      vistoDirecaoCoordenacaoFuncao: $('#vistoFuncao').value
+    },
+
+    statusRegistro: 'finalizado'
+  };
+}
+
+async function salvar(e){
+  e.preventDefault();
+
+  if(!alunoId && !atendimentoId){
+    alert('Aluno não informado.');
+    return;
+  }
+
+  const payload = montarPayload();
+
+  try{
+    const isEdit = !!atendimentoId && modo !== 'new';
+
+    const url = isEdit
+      ? `/api/aph/atendimentos/${atendimentoId}`
+      : '/api/aph/atendimentos';
+
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const j = await api(url, { method, body: payload });
+
+    alert('Atendimento salvo com sucesso.');
+
+    const idFinal = j.atendimento?._id || j.item?._id || atendimentoId;
+    if(idFinal){
+      location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
+    }else{
+      history.back();
+    }
+  }catch(err){
+    alert('Erro ao salvar: ' + err.message);
+  }
+}
+
+function bind(){
+  $('#local').addEventListener('change', aplicarVisibilidade);
+  $('#chkClassOutro')?.addEventListener('change', aplicarVisibilidade);
+  $('#chkProvOutro')?.addEventListener('change', aplicarVisibilidade);
+  $('#evolucaoQuadro').addEventListener('change', aplicarVisibilidade);
+  $('#orientacaoRapida').addEventListener('change', aplicarVisibilidade);
+  $('#desfecho').addEventListener('change', aplicarVisibilidade);
+  $('#houveEncaminhamento').addEventListener('change', aplicarVisibilidade);
+
+  $('#btnVoltar').addEventListener('click', () => history.back());
+  $('#formAPH').addEventListener('submit', salvar);
+}
+
+async function init(){
+  $('#data').value = hojeISO();
+  $('#horaInicio').value = horaAtual();
+  $('#dataContato').value = hojeISO();
+
+  bind();
+  aplicarVisibilidade();
+
+  await carregarAluno();
+  await carregarAtendimento();
+
+  if(!$('#assinServidorNome').value && $('#servidor').value){
+    $('#assinServidorNome').value = $('#servidor').value;
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>

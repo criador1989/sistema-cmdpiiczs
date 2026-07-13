@@ -2,206 +2,789 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Editar Notificação</title>
-  <meta name="theme-color" content="#941a1d" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#0A1322"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" href="/icons/icon-192x192.png"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
+    :root{
+      /* Paleta glass azul (mesma família do painel) */
+      --navy-1:#020617;
+      --navy-2:#020617;
+      --accent-1:#1d4ed8;
+      --accent-2:#38bdf8;
+
+      --glass-bg: rgba(15,23,42,.85);
+      --glass-border: rgba(148,163,184,.45);
+      --glass-inner: rgba(148,163,184,.20);
+      --glass-shadow: 0 18px 40px rgba(15,23,42,.85);
+      --radius: 22px;
+
+      --text:#e5f0ff;
+      --text-soft:#9ca3af;
+      --line: rgba(148,163,184,.55);
     }
-    form {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 700px;
-      margin: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      background:#020617;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #941a1d;
+
+    /* Fundo com textura + luzes azuis (como painel) */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      background:
+        radial-gradient(1200px 800px at -10% -10%, rgba(56,189,248,.12), transparent 60%),
+        radial-gradient(1200px 900px at 110% 110%, rgba(37,99,235,.18), transparent 65%),
+        radial-gradient(900px 900px at 50% 120%, rgba(15,23,42,.95), transparent 70%),
+        linear-gradient(135deg, #020617 0%, #020617 40%, #020617 100%);
+      filter:saturate(120%);
     }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:
+        linear-gradient(135deg, rgba(148,163,184,.12) 0%, transparent 35%, transparent 65%, rgba(56,189,248,.10) 100%),
+        radial-gradient(700px 700px at 10% 40%, rgba(15,23,42,.9), transparent 70%),
+        radial-gradient(700px 700px at 90% 20%, rgba(15,23,42,.9), transparent 70%);
+      mix-blend-mode:soft-light;
     }
-    select, input, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+
+    .wrap{
+      position:relative;
+      z-index:1;
+      width:min(980px,100%);
+      margin:32px auto;
+      padding:0 16px 40px;
     }
-    button {
-      margin-top: 20px;
-      padding: 10px 15px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+
+    .card{
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56,189,248,.10), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(37,99,235,.12), transparent 55%),
+        var(--glass-bg);
+      border:1px solid var(--glass-border);
+      border-radius:24px;
+      backdrop-filter:blur(18px) saturate(140%);
+      box-shadow:var(--glass-shadow);
+      padding:22px 22px 24px;
     }
-    button:hover {
-      background-color: #0056b3;
+
+    h2{
+      margin:0 0 12px;
+      text-align:center;
+      color:#f9fbff;
+      text-shadow:0 2px 10px rgba(15,23,42,.8);
+      letter-spacing:.03em;
     }
-    .voltar-btn {
-      background-color: #6c757d;
-      margin-left: 10px;
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
     }
-    .voltar-btn:hover {
-      background-color: #5a6268;
+
+    .toolbar .left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
     }
-    #mensagem {
-      margin-top: 15px;
-      font-weight: bold;
-      text-align: center;
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(148,163,184,.6);
+      background:linear-gradient(135deg, rgba(15,23,42,.9), rgba(15,23,42,.9));
+      color:#e5f0ff;
+      padding:9px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:.92rem;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      box-shadow:0 10px 24px rgba(15,23,42,.9);
+      transition:background .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      white-space:nowrap;
     }
-    #fotoAluno {
-      display: block;
-      margin: 15px auto 10px;
-      border-radius: 6px;
-      max-height: 100px;
+
+    .btn.primary{
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      border-color:rgba(56,189,248,.8);
+      box-shadow:0 12px 28px rgba(37,99,235,.55);
     }
+
+    .btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 16px 34px rgba(15,23,42,.95);
+      border-color:rgba(148,163,184,.9);
+    }
+
+    .btn.primary:hover{
+      box-shadow:0 18px 40px rgba(37,99,235,.75);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    @media (max-width:780px){
+      .grid, .grid-3{
+        grid-template-columns:1fr;
+      }
+      .toolbar{
+        align-items:flex-start;
+      }
+    }
+
+    .field{
+      background:radial-gradient(circle at 0% 0%, rgba(56,189,248,.12), transparent 60%),
+                 rgba(15,23,42,.88);
+      border:1px solid rgba(148,163,184,.4);
+      border-radius:16px;
+      padding:10px 11px 12px;
+      box-shadow:0 8px 20px rgba(15,23,42,.9);
+    }
+
+    .field label{
+      display:block;
+      font-weight:600;
+      color:var(--text-soft);
+      font-size:.85rem;
+      margin-bottom:6px;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid rgba(51,65,85,.85);
+      background:rgba(15,23,42,.85);
+      color:#e5f0ff;
+      font-size:.92rem;
+      outline:none;
+      box-shadow:inset 0 0 0 1px rgba(15,23,42,.9);
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus{
+      border-color:rgba(56,189,248,.88);
+      box-shadow:0 0 0 1px rgba(56,189,248,.55), 0 0 0 6px rgba(56,189,248,.18);
+    }
+
+    .field textarea{min-height:84px;resize:vertical}
+
+    .alunoBox{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .alunoBox img{
+      width:72px;
+      height:72px;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.55);
+      object-fit:cover;
+      background:#020617;
+      box-shadow:0 10px 22px rgba(15,23,42,.9);
+    }
+
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .chip{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:radial-gradient(circle at 0% 0%, rgba(56,189,248,.18), transparent 60%),
+                 rgba(15,23,42,.95);
+      font-size:.8rem;
+      color:#e5f0ff;
+      box-shadow:0 8px 18px rgba(15,23,42,.9);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+
+    .muted{color:var(--text-soft)}
+
+    .skeleton{
+      height:14px;
+      background:linear-gradient(90deg,rgba(51,65,85,.5),rgba(148,163,184,.7),rgba(51,65,85,.5));
+      background-size:200% 100%;
+      animation:sk 1.1s linear infinite;
+      border-radius:16px;
+    }
+
+    @keyframes sk{to{background-position:-200% 0}}
+
+    /* Modal troca aluno - adaptado para azul */
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background:rgba(15,23,42,.78);
+      z-index:50;
+    }
+
+    .modal .box{
+      width:min(680px,92%);
+      background:radial-gradient(circle at 0% 0%, rgba(56,189,248,.14), transparent 55%),
+                 rgba(15,23,42,.98);
+      border:1px solid rgba(148,163,184,.55);
+      border-radius:18px;
+      box-shadow:0 20px 50px rgba(15,23,42,.95);
+      padding:16px 14px 14px;
+    }
+
+    .list-Alunos{
+      max-height:360px;
+      overflow:auto;
+      margin-top:8px;
+      border-top:1px dashed rgba(148,163,184,.45);
+    }
+
+    .itemAluno{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 4px;
+      border-bottom:1px dashed rgba(51,65,85,.7);
+    }
+
+    .itemAluno button{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.7);
+      background:rgba(15,23,42,.9);
+      color:#e5f0ff;
+      cursor:pointer;
+      font-size:.85rem;
+    }
+
+    .itemAluno button:hover{
+      border-color:rgba(56,189,248,.9);
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow:0 10px 24px rgba(37,99,235,.7);
+    }
+
+    .note{
+      margin-top:10px;
+      font-size:.9rem;
+      color:#e5f0ff;
+    }
+    .ok{color:#4ade80}
+    .err{color:#fb7185}
   </style>
 </head>
 <body>
-  <form id="formEdicao">
-    <h2>Editar Notificação</h2>
+  <div class="wrap">
+    <div class="card">
+      <div class="toolbar">
+        <div class="left">
+          <button class="btn" onclick="location.href='notificacoes.html'">← Ver Notificações</button>
+          <button id="btnPDF" class="btn">📄 PDF</button>
+          <a id="btnVerNotificacao" class="btn" href="#" target="_blank" rel="noopener">🔎 Ver página da notificação</a>
+        </div>
+        <div class="chips">
+          <span id="chipStatus" class="chip">Status: —</span>
+          <span id="chipNumero" class="chip">Nº: —</span>
+          <span id="chipData" class="chip">Data: —</span>
+        </div>
+      </div>
 
-    <label for="aluno">Aluno</label>
-    <select id="aluno" name="aluno" required></select>
+      <h2>Editar Notificação</h2>
 
-    <img id="fotoAluno" src="" alt="Foto do aluno" style="display: none;" />
+      <!-- SKELETON inicial -->
+      <div id="sk" class="skeleton" style="height:120px;margin-bottom:12px"></div>
 
-    <label for="tipo">Gravidade do Ato</label>
-    <select id="tipo" name="tipo" required>
-      <option value="Leve">Leve</option>
-      <option value="Médio">Médio</option>
-      <option value="Grave">Grave</option>
-      <option value="Gravíssimo">Gravíssimo</option>
-    </select>
+      <form id="formEdicao" style="display:none">
+        <!-- Aluno -->
+        <div class="field">
+          <label>Aluno</label>
+          <div class="alunoBox">
+            <img id="fotoAluno" alt="Foto do aluno" />
+            <div style="flex:1">
+              <div id="alunoNome" style="font-weight:800">—</div>
+              <div id="alunoTurma" class="muted">—</div>
+              <div class="muted" style="font-size:.9rem">ID: <span id="alunoId">—</span></div>
+            </div>
+            <button type="button" class="btn" id="btnTrocarAluno">Trocar aluno…</button>
+          </div>
+          <!-- manter compat com backend: campo escondido com _id -->
+          <input type="hidden" id="aluno" name="aluno" />
+        </div>
 
-    <label for="motivo">Motivo (Ato de Indisciplina)</label>
-    <input type="text" id="motivo" name="motivo" required />
+        <!-- Natureza / Status -->
+        <div class="grid" style="margin-top:10px">
+          <div class="field">
+            <label>Natureza</label>
+            <select id="natureza" name="natureza">
+              <option value="indisciplina">Indisciplina</option>
+              <option value="elogio">Elogio</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="status" name="status">
+              <option value="pendente">Pendente</option>
+              <option value="deferido">Deferido</option>
+              <option value="revisao_solicitada">Revisão solicitada</option>
+              <option value="arquivado">Arquivado</option>
+            </select>
+          </div>
+        </div>
 
-    <label for="tipoMedida">Tipo de Medida</label>
-    <select id="tipoMedida" name="tipoMedida" required>
-      <option value="Advertência Escrita">Advertência Escrita</option>
-      <option value="Repreensão">Repreensão</option>
-      <option value="A.E.C.D.E">A.E.C.D.E</option>
-      <option value="A.I.A">A.I.A</option>
-      <option value="Elogio Verbal">Elogio Verbal</option>
-      <option value="Elogio Individual">Elogio Individual</option>
-      <option value="Elogio Coletivo">Elogio Coletivo</option>
-      <option value="Média ≥ 8,5">Média ≥ 8,5</option>
-    </select>
+        <!-- Datas / Tipo de elogio -->
+        <div class="grid" style="margin-top:10px">
+          <div class="field">
+            <label>Data</label>
+            <input type="date" id="data" name="data" required/>
+          </div>
+          <div class="field">
+            <label>Tipo de Elogio (quando Natureza = Elogio)</label>
+            <select id="tipoElogio" name="tipoElogio">
+              <option value="">—</option>
+              <option value="elogioVerbal">Elogio Verbal</option>
+              <option value="boletimInternoIndividual">Boletim Interno Individual</option>
+              <option value="boletimInternoColetivo">Boletim Interno Coletivo</option>
+              <option value="mediaAlta">Média ≥ 8,5</option>
+            </select>
+          </div>
+        </div>
 
-    <label for="valorNumerico">Valor Numérico</label>
-    <input type="text" id="valorNumerico" name="valorNumerico" required />
+        <!-- Medida / Motivo -->
+        <div class="grid" style="margin-top:10px">
+          <div class="field">
+            <label>Tipo / Medida</label>
+            <input type="text" id="tipoMedida" name="tipoMedida" placeholder="Ex.: Repreensão, A.E.C.D.E, A.I.A, Elogio"/>
+          </div>
+          <div class="field">
+            <label>Motivo (Ato)</label>
+            <input type="text" id="motivo" name="motivo" />
+          </div>
+        </div>
 
-    <label for="observacao">Observação</label>
-    <textarea id="observacao" name="observacao" rows="3"></textarea>
+        <!-- Valor / Dias / Classificação -->
+        <div class="grid-3" style="margin-top:10px">
+          <div class="field">
+            <label>Valor Numérico</label>
+            <input type="number" step="0.01" id="valorNumerico" name="valorNumerico"/>
+          </div>
+          <div class="field" id="boxDias" style="display:none">
+            <label>Dias (A.E.C.D.E / A.I.A)</label>
+            <input type="number" min="1" id="quantidadeDias" name="quantidadeDias"/>
+          </div>
+          <div class="field">
+            <label>Classificação (Regulamento)</label>
+            <input type="text" id="classificacaoRegulamento" name="classificacaoRegulamento" placeholder="Leve / Médio / Grave / Gravíssimo"/>
+          </div>
+        </div>
 
-    <label for="data">Data</label>
-    <input type="date" id="data" name="data" required />
+        <!-- Artigo / Parágrafo / Inciso -->
+        <div class="grid-3" style="margin-top:10px">
+          <div class="field"><label>Artigo</label><input type="text" id="artigo" name="artigo"/></div>
+          <div class="field"><label>Parágrafo</label><input type="text" id="paragrafo" name="paragrafo"/></div>
+          <div class="field"><label>Inciso</label><input type="text" id="inciso" name="inciso"/></div>
+        </div>
 
-    <button type="submit">Salvar Alterações</button>
-    <button type="button" class="voltar-btn" onclick="window.location.href='notificacoes.html'">← Ver Notificações</button>
+        <!-- Observação -->
+        <div class="field" style="margin-top:10px">
+          <label>Observação</label>
+          <textarea id="observacao" name="observacao" rows="3"></textarea>
+        </div>
 
-    <p id="mensagem"></p>
-  </form>
+        <div class="actions">
+          <button type="button" class="btn" onclick="location.href='notificacoes.html'">Cancelar</button>
+          <button type="submit" class="btn primary">Salvar alterações</button>
+        </div>
+
+        <div id="mensagem" class="note"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal troca aluno -->
+  <div id="modalAlunos" class="modal" aria-hidden="true">
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0;color:#e5f0ff">Trocar aluno</h3>
+        <button class="btn" type="button" onclick="fecharModal()">✖</button>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Pesquisar</label>
+        <input id="buscaAluno" type="text" placeholder="Digite nome ou turma…"/>
+      </div>
+      <div class="list-Alunos" id="listaAlunos">
+        <div class="skeleton" style="height:50px;margin-top:6px"></div>
+        <div class="skeleton" style="height:50px;margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get("id");
+    // ===== Datas de calendário sem erro de fuso =====
+    function axIsDateOnly(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+    }
 
-    async function carregarAlunos() {
-      try {
-        const res = await fetch('/api/alunos', { credentials: 'include' });
-        const alunos = await res.json();
-        const select = document.getElementById('aluno');
-        alunos.forEach(aluno => {
-          const opt = document.createElement('option');
-          opt.value = aluno._id;
-          opt.textContent = `${aluno.nome} (${aluno.turma})`;
-          select.appendChild(opt);
+    function axDateOnlyFromAny(value) {
+      if (!value) return '';
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, '0');
+        const d = String(value.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      const s = String(value || '').trim();
+      if (!s) return '';
+      if (axIsDateOnly(s)) return s;
+
+      // Para campos de calendário vindos do Mongo como ISO,
+      // preserva a data gravada no documento, sem converter para fuso local.
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return '';
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yy}-${mm}-${dd}`;
+    }
+
+    function axDateOnlyHoje() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dia}`;
+    }
+
+    function axDateOnlyAddDias(dateOnly, dias) {
+      const iso = axDateOnlyFromAny(dateOnly);
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-').map(Number);
+      const utc = new Date(Date.UTC(y, m - 1, d + Number(dias || 0)));
+      return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, '0')}-${String(utc.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    function axDateOnlyParaBR(value) {
+      const iso = axDateOnlyFromAny(value);
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function axDateTimeBR(value) {
+      if (!value) return '—';
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR');
+    }
+  </script>
+  <script>
+    // ===== Helpers =====
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+    const fmtISO = (d)=> axDateOnlyFromAny(d);
+
+    function showMsg(text, ok=true){
+      const el = document.getElementById('mensagem');
+      el.textContent = text;
+      el.className = 'note ' + (ok ? 'ok' : 'err');
+    }
+
+    function setChips(n){
+      document.getElementById('chipStatus').textContent = 'Status: ' + (n.status || '—');
+      document.getElementById('chipNumero').textContent = 'Nº: ' + (n.numeroSequencial || '—');
+      document.getElementById('chipData').textContent = 'Data: ' +
+        (n.data ? axDateOnlyParaBR(n.data) : '—');
+    }
+
+    function toggleCamposPorNatureza(){
+      const nat = document.getElementById('natureza').value;
+      const elogio = nat === 'elogio';
+      document.getElementById('tipoElogio').disabled = !elogio;
+      const t = document.getElementById('tipoMedida');
+      if (elogio && !t.value) t.value = 'Elogio';
+    }
+
+    function toggleDiasPorMedida(){
+      const med = (document.getElementById('tipoMedida').value||'').toUpperCase().trim();
+      const precisa = (med === 'A.E.C.D.E' || med === 'A.I.A' || med === 'AECDE' || med === 'AIA');
+      document.getElementById('boxDias').style.display = precisa ? '' : 'none';
+    }
+
+    const MAPA_NEG = {
+      'ADVERTÊNCIA ESCRITA': -0.30,
+      'REPREENSÃO': -0.50,
+      'A.E.C.D.E': -0.70,
+      'A.E.C.D.E.': -0.70,
+      'AECDE': -0.70,
+      'A.I.A': -1.20,
+      'A.I.A.': -1.20,
+      'AIA': -1.20
+    };
+    const MAPA_ELOG = {
+      'elogioVerbal': 0.15,
+      'boletimInternoIndividual': 0.60,
+      'boletimInternoColetivo': 0.20,
+      'mediaAlta': 0.40
+    };
+
+    function ajustarValorAutomatico(){
+      const nat = document.getElementById('natureza').value;
+      const med = (document.getElementById('tipoMedida').value||'').toUpperCase().trim();
+      const dias = Number(document.getElementById('quantidadeDias').value||1);
+
+      const vInput = document.getElementById('valorNumerico');
+      if (nat === 'elogio') {
+        const tipoElogio = document.getElementById('tipoElogio').value;
+        if (tipoElogio && (vInput.value === '' || vInput._auto)) {
+          vInput.value = (MAPA_ELOG[tipoElogio] ?? 0).toFixed(2);
+          vInput._auto = true;
+        }
+      } else {
+        const base = (MAPA_NEG[med] ?? 0);
+        const precisa = (med === 'A.E.C.D.E' || med === 'A.I.A' || med === 'AECDE' || med === 'AIA');
+        if ((vInput.value === '' || vInput._auto) && (base !== 0)) {
+          const mult = precisa ? Math.max(1, dias) : 1;
+          vInput.value = (base * mult).toFixed(2);
+          vInput._auto = true;
+        }
+      }
+    }
+
+    // ===== Carregar notificação =====
+    async function carregar(){
+      if(!id){
+        showMsg('Parâmetro id ausente.', false);
+        return;
+      }
+      try{
+        const r = await fetch(API(`/notificacoes/${id}`), {
+          credentials:'include',
+          cache:'no-store'
         });
-      } catch (err) {
-        document.getElementById('mensagem').textContent = '❌ Erro ao carregar alunos.';
-      }
-    }
+        if (!r.ok) throw new Error('Falha ao carregar dados');
+        const n = await r.json();
 
-    async function carregarNotificacao() {
-      try {
-        const res = await fetch(`/api/notificacoes/${id}`, { credentials: 'include' });
-        const n = await res.json();
+        setChips(n);
 
-        document.getElementById('aluno').value = n.aluno._id;
-        document.getElementById('tipo').value = n.tipo;
-        document.getElementById('motivo').value = n.motivo;
-        document.getElementById('tipoMedida').value = n.tipoMedida;
-        document.getElementById('valorNumerico').value = n.valorNumerico;
+        document.getElementById('btnPDF').onclick = async ()=>{
+          try{
+            const rp = await fetch(API(`/pdf/${n._id}`), {
+              method:'POST',
+              credentials:'include',
+              cache:'no-store'
+            });
+            if(!rp.ok) throw new Error('Erro ao gerar PDF');
+            const blob = await rp.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+          }catch{
+            showMsg('Erro ao gerar PDF.', false);
+          }
+        };
+        document.getElementById('btnVerNotificacao').href = `notificacao.html?id=${n._id}`;
+
+        const a = n.aluno || {};
+        document.getElementById('aluno').value = a._id || '';
+        document.getElementById('alunoId').textContent = a._id || '—';
+        document.getElementById('alunoNome').textContent = a.nome || '—';
+        document.getElementById('alunoTurma').textContent = a.turma || '—';
+        document.getElementById('fotoAluno').src =
+          a._id ? `/api/imagens/thumb/${a._id}?w=320` : '/img/sem-foto.png';
+
+        document.getElementById('natureza').value = n.natureza || 'indisciplina';
+        document.getElementById('status').value = n.status || 'pendente';
+        document.getElementById('data').value = fmtISO(n.data || n.createdAt);
+        document.getElementById('tipoElogio').value = n.tipoElogio || '';
+        document.getElementById('tipoMedida').value = n.tipoMedida || n.tipo || '';
+        document.getElementById('motivo').value = n.motivo || '';
+        document.getElementById('valorNumerico').value =
+          (typeof n.valorNumerico==='number')
+            ? n.valorNumerico.toFixed(2)
+            : (n.valorNumerico||'');
+        document.getElementById('quantidadeDias').value = n.quantidadeDias || '';
+        document.getElementById('classificacaoRegulamento').value =
+          n.classificacaoRegulamento || '';
+        document.getElementById('artigo').value = n.artigo || '';
+        document.getElementById('paragrafo').value = n.paragrafo || '';
+        document.getElementById('inciso').value = n.inciso || '';
         document.getElementById('observacao').value = n.observacao || '';
-        document.getElementById('data').value = n.data ? new Date(n.data).toISOString().split('T')[0] : '';
 
-        const foto = n.aluno.foto ? `/uploads/${n.aluno.foto}` : '/uploads/sem-foto.png';
-        const fotoImg = document.getElementById('fotoAluno');
-        fotoImg.src = foto;
-        fotoImg.style.display = 'block';
+        toggleCamposPorNatureza();
+        toggleDiasPorMedida();
 
-      } catch (err) {
-        document.getElementById('mensagem').textContent = '❌ Erro ao carregar notificação.';
+        document.getElementById('sk').style.display = 'none';
+        document.getElementById('formEdicao').style.display = 'block';
+      }catch(e){
+        console.error(e);
+        showMsg('❌ Erro ao carregar notificação.', false);
       }
     }
 
-    document.getElementById('formEdicao').addEventListener('submit', async function(e) {
+    // ===== Salvar =====
+    document.getElementById('formEdicao').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const dados = Object.fromEntries(new FormData(this).entries());
+      const dados = Object.fromEntries(new FormData(e.currentTarget).entries());
 
-      if (dados.valorNumerico) {
-        dados.valorNumerico = dados.valorNumerico.replace(',', '.');
-      }
+      if (dados.valorNumerico === '') delete dados.valorNumerico;
+      if (dados.quantidadeDias === '') delete dados.quantidadeDias;
+      if (!dados.tipoElogio) delete dados.tipoElogio;
 
-      try {
-        const res = await fetch(`/api/notificacoes/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+      try{
+        const r = await fetch(API(`/notificacoes/${id}`), {
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          cache:'no-store',
           body: JSON.stringify(dados)
         });
-
-        if (res.ok) {
-          document.getElementById('mensagem').textContent = '✅ Notificação atualizada com sucesso!';
-          setTimeout(() => window.location.href = 'notificacoes.html', 1500);
-        } else {
-          const erro = await res.json();
-          document.getElementById('mensagem').textContent = '❌ ' + (erro.message || 'Erro ao atualizar.');
-        }
-      } catch (err) {
-        document.getElementById('mensagem').textContent = '❌ Erro ao atualizar notificação.';
+        const j = await r.json().catch(()=> ({}));
+        if (!r.ok) throw new Error(j.message || j.mensagem || 'Erro ao atualizar.');
+        showMsg('✅ Notificação atualizada com sucesso!', true);
+        setTimeout(()=>location.href='notificacoes.html', 1000);
+      }catch(err){
+        showMsg('❌ ' + err.message, false);
       }
     });
 
-    (async () => {
-      await carregarAlunos();
-      await carregarNotificacao();
-    })();
+    // ===== Regras UI =====
+    document.getElementById('natureza').addEventListener('change', ()=>{
+      toggleCamposPorNatureza();
+      ajustarValorAutomatico();
+    });
+    document.getElementById('tipoElogio').addEventListener('change', ajustarValorAutomatico);
+    document.getElementById('tipoMedida').addEventListener('input', ()=>{
+      toggleDiasPorMedida();
+      ajustarValorAutomatico();
+    });
+    document.getElementById('quantidadeDias').addEventListener('input', ajustarValorAutomatico);
+    document.getElementById('valorNumerico').addEventListener('input', function(){ this._auto = false; });
 
-    // Registro do Service Worker para PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
-      });
+    // ===== Modal troca aluno =====
+    const modal = document.getElementById('modalAlunos');
+    function abrirModal(){
+      modal.style.display = 'grid';
+      carregarListaAlunos('');
+    }
+    function fecharModal(){ modal.style.display = 'none'; }
+    document.getElementById('btnTrocarAluno').addEventListener('click', abrirModal);
+    window.fecharModal = fecharModal;
+
+    const buscaAluno = document.getElementById('buscaAluno');
+    const listaAlunos = document.getElementById('listaAlunos');
+    const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); } };
+
+    async function carregarListaAlunos(q){
+      const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+      listaAlunos.innerHTML =
+        `<div class="skeleton" style="height:50px;margin-top:6px"></div>
+         <div class="skeleton" style="height:50px;margin-top:6px"></div>`;
+      try{
+        const r = await fetch(API(`/alunos${qs}`), {
+          credentials:'include',
+          cache:'no-store'
+        });
+        const arr = await r.json();
+        const alunos = Array.isArray(arr) ? arr : (arr.data || arr.alunos || []);
+        if (!alunos.length){
+          listaAlunos.innerHTML =
+            `<div class="muted" style="padding:8px">Sem resultados</div>`;
+          return;
+        }
+
+        const frag = document.createDocumentFragment();
+        alunos.slice(0,80).forEach(a=>{
+          const div = document.createElement('div');
+          div.className = 'itemAluno';
+          div.innerHTML = `
+            <div>
+              <div style="font-weight:700;color:#e5f0ff">${a.nome||'—'}</div>
+              <div class="muted">${a.turma||'—'} • ${a._id||a.id}</div>
+            </div>
+            <button type="button">Selecionar</button>
+          `;
+          div.querySelector('button').onclick = ()=>{
+            document.getElementById('aluno').value = a._id || a.id;
+            document.getElementById('alunoId').textContent = a._id || a.id || '—';
+            document.getElementById('alunoNome').textContent = a.nome || '—';
+            document.getElementById('alunoTurma').textContent = a.turma || '—';
+            document.getElementById('fotoAluno').src =
+              a._id ? `/api/imagens/thumb/${a._id}?w=320` : '/img/sem-foto.png';
+            fecharModal();
+          };
+          frag.appendChild(div);
+        });
+        listaAlunos.innerHTML = '';
+        listaAlunos.appendChild(frag);
+      }catch(e){
+        console.warn(e);
+        listaAlunos.innerHTML =
+          `<div class="muted" style="padding:8px">Erro ao buscar alunos.</div>`;
+      }
+    }
+
+    buscaAluno.addEventListener(
+      'input',
+      debounce(()=>carregarListaAlunos(buscaAluno.value.trim()), 300)
+    );
+
+    // ===== Boot =====
+    carregar();
+
+    // PWA
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>
+        navigator.serviceWorker.register('/service-worker.js').catch(()=>{})
+      );
     }
   </script>
+  <script src="notify.js"></script>
 </body>
 </html>

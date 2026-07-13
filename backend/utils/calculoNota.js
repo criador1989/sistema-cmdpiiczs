@@ -1,138 +1,240 @@
 // utils/calculoNota.js
-// Calcula a nota de comportamento com TSMD.
-// Regras:
-// - Nota inicial 8,00.
+// Cálculo da nota de comportamento com T.S.M.D. por DIAS ÚTEIS.
+//
+// Agora configurável por instituição:
+// - nota inicial configurável
+// - TSMD configurável (ativo, dias, incremento, limite)
+// - mantém compatibilidade com a lógica atual
+//
+// Regras preservadas:
 // - Eventos positivos (>0) somam; negativos (<0) subtraem.
-// - Soma TODOS os eventos do MESMO DIA.
-// - Se houver qualquer negativo no dia, o contador de TSMD é zerado.
-// - TSMD: após 60 DIAS ÚTEIS consecutivos sem negativo, +0,01 por dia útil (máx. 10).
-// - >>> POR PADRÃO, inicia no PRIMEIRO EVENTO do aluno (ignora dataEntrada se houver evento anterior).
-//
-// Assinatura (compatível com uso atual):
-// calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes, opts?)
-//
-// Se quiser forçar o início na data de entrada:
-// calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes, { useDataEntradaEstrita: true })
+// - Soma TODOS os eventos do MESMO DIA em um único valor.
+// - Para medidas negativas multi-dia (A.E.C.D.E / A.I.A):
+//   • O desconto (valorNumerico) incide apenas no dia do registro.
+//   • A sequência do TSMD zera em CADA dia útil coberto pela quantidadeDias.
+// - Início estrito em dataEntrada; ignora eventos antes da matrícula e após dataReferencia.
+// - Nota limitada ao intervalo configurado do TSMD (normalmente 10) e piso 0.
+// - Usa `data` da ocorrência ou `createdAt` como fallback.
 
 const { eachDayOfInterval, parseISO, isAfter } = require('date-fns');
+const { CONFIG_PADRAO_CBMAC } = require('./configuracaoDisciplinar');
 
-/** Normaliza para data "seca" (00:00:00.000) */
+const PRECISA_DIAS = new Set(['a.e.c.d.e', 'a.i.a']);
+
+function normalizeText(v) {
+  return String(v || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 function toDateOnly(d) {
   if (!d) return null;
-  const src = typeof d === 'string' ? parseISO(d) : d;
+
+  let src = d;
+
+  if (typeof d === 'string') {
+    src = parseISO(d);
+  }
+
   if (!src || isNaN(src)) return null;
+
   const x = new Date(src);
   x.setHours(0, 0, 0, 0);
   return x;
 }
 
-/** Chave AAAA-MM-DD */
 function keyYYYYMMDD(d) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
-  return x.toISOString().slice(0, 10);
+
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+
+  return `${y}-${m}-${day}`;
 }
 
-/** Retorna true se dia for útil (segunda..sexta) */
 function isBusinessDay(d) {
   const dow = d.getDay();
   return dow >= 1 && dow <= 5;
 }
 
-/**
- * Calcula nota com TSMD.
- * @param {Date|String} dataEntrada
- * @param {Date|String} dataReferencia - normalmente "agora"
- * @param {Array} notificacoes - [{ data?, createdAt?, valorNumerico }]
- * @param {Object} opts
- *   - useDataEntradaEstrita: se true, ignora eventos anteriores à dataEntrada
- */
-function calcularNotaTSMD(
-  dataEntrada,
-  dataReferencia,
-  notificacoes = [],
-  opts = {}
-) {
-  const { useDataEntradaEstrita = false } = opts;
+function nextDay(d) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + 1);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
 
-  let nota = 8.0;
+function clampIntMin1(v) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+function toFiniteNumber(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function getSafeConfig(config) {
+  const base = CONFIG_PADRAO_CBMAC || {};
+
+  const notaInicial = toFiniteNumber(
+    config?.comportamento?.notaInicial,
+    toFiniteNumber(base?.comportamento?.notaInicial, 8.0)
+  );
+
+  const tsmdAtivo =
+    typeof config?.tsmd?.ativo === 'boolean'
+      ? config.tsmd.ativo
+      : (typeof base?.tsmd?.ativo === 'boolean' ? base.tsmd.ativo : true);
+
+  const diasParaIniciar = Math.max(
+    0,
+    toFiniteNumber(config?.tsmd?.diasParaIniciar, toFiniteNumber(base?.tsmd?.diasParaIniciar, 60))
+  );
+
+  const incrementoPorDia = toFiniteNumber(
+    config?.tsmd?.incrementoPorDia,
+    toFiniteNumber(base?.tsmd?.incrementoPorDia, 0.01)
+  );
+
+  const limiteMaximo = toFiniteNumber(
+    config?.tsmd?.limiteMaximo,
+    toFiniteNumber(base?.tsmd?.limiteMaximo, 10)
+  );
+
+  return {
+    comportamento: {
+      notaInicial,
+    },
+    tsmd: {
+      ativo: tsmdAtivo,
+      diasParaIniciar,
+      incrementoPorDia,
+      limiteMaximo,
+    },
+  };
+}
+
+function clampNota(n, limiteMaximo = 10) {
+  const max = Number.isFinite(Number(limiteMaximo)) ? Number(limiteMaximo) : 10;
+  const valor = Number(n);
+
+  if (!Number.isFinite(valor)) return 0;
+  if (valor > max) return +Number(max).toFixed(2);
+
+  // Permite nota negativa
+  return +Number(valor).toFixed(2);
+}
+
+/**
+ * Calcula a nota de comportamento com TSMD por dias úteis.
+ *
+ * @param {Date|string|null} dataEntrada
+ * @param {Date|string|null} dataReferencia
+ * @param {Array<{
+ *   data?: Date|string,
+ *   createdAt?: Date|string,
+ *   valorNumerico?: number,
+ *   quantidadeDias?: number,
+ *   tipoMedida?: string,
+ *   natureza?: string
+ * }>} notificacoes
+ * @param {Object} [config]
+ * @returns {number}
+ */
+function calcularNotaTSMD(dataEntrada, dataReferencia, notificacoes = [], config = null) {
+  const cfg = getSafeConfig(config);
+  let nota = cfg.comportamento.notaInicial;
 
   const end = toDateOnly(dataReferencia || new Date());
-  if (!end) return +nota.toFixed(2);
+  if (!end) return clampNota(nota, cfg.tsmd.limiteMaximo);
 
-  // data base padrão = dataEntrada
   let start = toDateOnly(dataEntrada);
+  if (!start) start = new Date(2000, 0, 1);
 
-  // encontra o PRIMEIRO evento do aluno
-  let earliestEvent = null;
+  if (isAfter(start, end)) {
+    return clampNota(nota, cfg.tsmd.limiteMaximo);
+  }
+
+  const sumByDay = new Map();
+  const penalizeDay = new Set();
+
   for (const n of notificacoes) {
     const raw = n?.data ?? n?.createdAt;
     const dt = toDateOnly(raw);
+
     if (!dt) continue;
-    if (!earliestEvent || dt < earliestEvent) earliestEvent = dt;
-  }
-
-  // Por padrão (useDataEntradaEstrita = false), se existir evento anterior à dataEntrada,
-  // iniciamos no PRIMEIRO EVENTO para que nada seja "ignorado".
-  if (!useDataEntradaEstrita) {
-    if (earliestEvent && (!start || earliestEvent < start)) start = earliestEvent;
-  }
-
-  // fallback: se ainda não temos start, usa o próprio end (intervalo vazio → retorna 8.00)
-  if (!start) start = end;
-
-  // Se o start for depois do end, não há intervalo a percorrer
-  if (isAfter(start, end)) return +nota.toFixed(2);
-
-  // Agrupa eventos por dia (SOMANDO valores) e marca se o dia teve negativo
-  const byDay = new Map(); // key -> { sum, hasNeg }
-  for (const n of notificacoes) {
-    const raw = n?.data ?? n?.createdAt;
-    const dt = toDateOnly(raw);
-    if (!dt || isAfter(dt, end)) continue;
-    if (useDataEntradaEstrita && dt < start) continue; // corta eventos antes do start se estrito
+    if (dt < start) continue;
+    if (isAfter(dt, end)) continue;
 
     const key = keyYYYYMMDD(dt);
-    const prev = byDay.get(key) || { sum: 0, hasNeg: false };
-    const v = Number(n?.valorNumerico || 0);
-    prev.sum += v;
-    if (v < 0) prev.hasNeg = true;
-    byDay.set(key, prev);
-  }
+    const valor = Number(n?.valorNumerico || 0);
 
-  // Percorre dias úteis no intervalo [start..end]
-  const dias = eachDayOfInterval({ start, end }).filter(isBusinessDay);
-  let diasSemNeg = 0;
+    sumByDay.set(key, (sumByDay.get(key) || 0) + valor);
 
-  for (const dia of dias) {
-    const k = keyYYYYMMDD(dia);
-    const e = byDay.get(k);
+    const natureza = normalizeText(n?.natureza);
+    const tipoMedida = normalizeText(n?.tipoMedida);
+    const isNeg = valor < 0 || (natureza === 'indisciplina' && valor <= 0);
+    const precisaDias = PRECISA_DIAS.has(tipoMedida);
 
-    if (e) {
-      // aplica os eventos do dia (soma total)
-      nota += e.sum;
-      if (nota > 10) nota = 10;
-      if (nota < 0) nota = 0;
-
-      // TSMD: reseta se houve negativo no dia
-      if (e.hasNeg) {
-        diasSemNeg = 0;
-      } else {
-        diasSemNeg++;
-        if (diasSemNeg > 60 && nota < 10) {
-          nota = Math.min(10, +((nota + 0.01).toFixed(2)));
-        }
+    if (isNeg) {
+      if (isBusinessDay(dt)) {
+        penalizeDay.add(key);
       }
-    } else {
-      // dia útil sem evento
-      diasSemNeg++;
-      if (diasSemNeg > 60 && nota < 10) {
-        nota = Math.min(10, +((nota + 0.01).toFixed(2)));
+
+      if (precisaDias) {
+        const dias = clampIntMin1(n?.quantidadeDias ?? 1);
+        let cursor = new Date(dt);
+
+        for (let i = 1; i < dias; i++) {
+          cursor = nextDay(cursor);
+
+          if (cursor > end) break;
+          if (cursor < start) continue;
+
+          if (isBusinessDay(cursor)) {
+            penalizeDay.add(keyYYYYMMDD(cursor));
+          }
+        }
       }
     }
   }
 
-  return +nota.toFixed(2);
+  const dias = eachDayOfInterval({ start, end });
+  let diasSemNeg = 0;
+
+  for (const dia of dias) {
+    const k = keyYYYYMMDD(dia);
+
+    const sum = sumByDay.get(k);
+    if (typeof sum === 'number' && sum !== 0) {
+      nota = clampNota(nota + sum, cfg.tsmd.limiteMaximo);
+    }
+
+    if (!isBusinessDay(dia)) {
+      continue;
+    }
+
+    if (penalizeDay.has(k)) {
+      diasSemNeg = 0;
+    } else {
+      diasSemNeg++;
+
+      if (
+        cfg.tsmd.ativo &&
+        diasSemNeg > cfg.tsmd.diasParaIniciar &&
+        nota < cfg.tsmd.limiteMaximo
+      ) {
+        nota = clampNota(nota + cfg.tsmd.incrementoPorDia, cfg.tsmd.limiteMaximo);
+      }
+    }
+  }
+
+  return clampNota(nota, cfg.tsmd.limiteMaximo);
 }
 
 module.exports = calcularNotaTSMD;

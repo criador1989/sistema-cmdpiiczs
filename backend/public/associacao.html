@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#06172f" />
+  <title>Axoriin Associações</title>
+  <link rel="stylesheet" href="/associacao/associacao.css?v=20260712-v33" />
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <div id="mobileBackdrop" class="mobile-backdrop hidden"></div>
+
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand-block">
+        <img id="associationLogo" src="/assets/associacao/logo-apacmdpii-czs.png" alt="Logo da associação" />
+        <div>
+          <span class="brand-kicker">AXORIIN ASSOCIAÇÕES</span>
+          <strong id="associationShortName">Associação</strong>
+          <small id="associationPlan">Plano piloto</small>
+        </div>
+      </div>
+
+      <nav id="mainNav" class="main-nav">
+        <button class="nav-item active" data-view="dashboard"><span>⌂</span>Painel geral</button>
+        <button class="nav-item" data-view="people"><span>◎</span>Pessoas</button>
+        <button class="nav-item" data-view="finance"><span>↕</span>Financeiro</button>
+        <button class="nav-item" data-view="contributions"><span>▣</span>Contribuições</button>
+        <button class="nav-item" data-view="insights"><span>▥</span>Indicadores</button>
+        <button class="nav-item" data-view="reminders"><span>◷</span>Lembretes</button>
+        <button class="nav-item" data-view="projects"><span>◈</span>Projetos</button>
+        <button class="nav-item" data-view="assets"><span>◇</span>Patrimônio</button>
+        <button class="nav-item" data-view="documents"><span>▤</span>Documentos</button>
+        <button class="nav-item" data-view="relationship"><span>♡</span>Relacionamento</button>
+        <span class="nav-label">Administração</span>
+        <button class="nav-item" data-view="settings"><span>⚙</span>Configurações</button>
+        <button class="nav-item" data-view="audit"><span>⌕</span>Auditoria</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="tenant-badge"><span></span><div><strong id="tenantSlug">tenant</strong><small>ambiente isolado</small></div></div>
+        <a id="backToAxoriin" class="back-link" href="#">← Trocar de ambiente</a>
+        <button id="logoutButton" class="logout-button" type="button">Sair do sistema</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-title">
+          <button id="mobileMenuButton" class="mobile-menu" type="button">☰</button>
+          <div><span id="pageKicker">Gestão integrada</span><h1 id="pageTitle">Painel geral</h1></div>
+        </div>
+        <div class="topbar-actions">
+          <label class="environment-select-wrap" title="Trocar de ambiente"><span>Ambiente</span><select id="environmentSwitcher" aria-label="Trocar de ambiente"><option>Carregando...</option></select></label>
+          <div class="connection-pill"><i></i><span>Axoriin online</span></div>
+          <div class="user-chip"><span id="userInitials">PR</span><div><strong id="userName">Presidente</strong><small id="userRole">presidente</small></div></div>
+        </div>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div class="hero-panel">
+          <div>
+            <p>GESTÃO, TRANSPARÊNCIA E PROXIMIDADE</p>
+            <h2 id="heroGreeting">Bem-vindo ao Axoriin Associações.</h2>
+            <span>Todos os dados deste ambiente são isolados pelo tenant da associação.</span>
+          </div>
+          <div class="hero-actions">
+            <button class="button secondary" data-open="personModal">+ Nova pessoa</button>
+            <button class="button primary" data-open="movementModal">+ Nova movimentação</button>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <article class="metric-card featured"><span>Saldo disponível</span><strong id="metricBalance">R$ 0,00</strong><small>Soma das contas ativas</small></article>
+          <article class="metric-card"><span>Receitas no mês</span><strong id="metricIncome">R$ 0,00</strong><small id="metricIncomeCount">0 entradas</small></article>
+          <article class="metric-card"><span>Despesas no mês</span><strong id="metricExpense">R$ 0,00</strong><small id="metricExpenseCount">0 saídas</small></article>
+          <article class="metric-card"><span>Contribuições pendentes</span><strong id="metricPending">R$ 0,00</strong><small id="metricPendingCount">0 pendências</small></article>
+        </div>
+
+        <div class="two-columns">
+          <article class="panel">
+            <div class="panel-head"><div><small>CONTAS FINANCEIRAS</small><h3>Saldos por conta</h3></div><button class="text-button" data-view-target="settings">Gerenciar</button></div>
+            <div id="accountBalanceCards" class="mini-card-grid"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><small>PRÓXIMOS 30 DIAS</small><h3>Aniversariantes</h3></div><button class="text-button" data-view-target="relationship">Relacionamento</button></div>
+            <div id="birthdayList" class="list-stack"></div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head"><div><small>ATIVIDADE RECENTE</small><h3>Últimas movimentações</h3></div><button class="text-button" data-view-target="finance">Ver extrato</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Pessoa</th><th>Conta</th><th>Status</th><th class="right">Valor</th></tr></thead><tbody id="recentMovementsBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-people" class="view">
+        <div class="section-head"><div><span>CADASTROS E VÍNCULOS</span><h2>Pessoas</h2><p>Pais, responsáveis, associados, parceiros, fornecedores e colaboradores.</p></div><button class="button primary" data-open="personModal">+ Cadastrar pessoa</button></div>
+        <article class="panel">
+          <div class="filters"><label><span>Pesquisar</span><input id="peopleSearch" placeholder="Nome, aluno, CPF, telefone..." /></label><label><span>Tipo</span><select id="peopleType"><option value="">Todos</option><option>Pai/Responsável</option><option>Associado</option><option>Parceiro</option><option>Fornecedor</option><option>Colaborador</option><option>Doador</option><option>Outro</option></select></label><label><span>Turma</span><select id="peopleClass"><option value="">Todas</option></select></label><label><span>Status</span><select id="peopleStatus"><option>Ativo</option><option value="">Todos</option><option>Inativo</option></select></label></div>
+          <div class="table-wrap"><table><thead><tr><th>Pessoa</th><th>Vínculo</th><th>Aluno / turma</th><th>Contato</th><th>Comunicação</th><th>Status</th><th></th></tr></thead><tbody id="peopleBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-finance" class="view">
+        <div class="section-head"><div><span>CONTROLE FINANCEIRO</span><h2>Movimentações</h2><p>Entradas, saídas, previstos, pagamentos e prestação de contas.</p></div><button class="button primary" data-open="movementModal">+ Nova movimentação</button></div>
+        <article class="panel">
+          <div class="filters wide"><label><span>Pesquisar</span><input id="movementSearch" placeholder="Descrição, pessoa, aluno..." /></label><label><span>Tipo</span><select id="movementType"><option value="">Todos</option><option>Entrada</option><option>Saída</option></select></label><label><span>Status</span><select id="movementStatus"><option value="">Todos</option><option>Pago</option><option>Pendente</option><option>Previsto</option><option>Atrasado</option><option>Cancelado</option></select></label><label><span>Conta</span><select id="movementAccount"><option value="">Todas</option></select></label><button id="exportMovements" class="button secondary">Baixar CSV</button></div>
+          <div class="summary-strip"><div><span>Entradas</span><strong id="financeIncome">R$ 0,00</strong></div><div><span>Saídas</span><strong id="financeExpense">R$ 0,00</strong></div><div><span>Pendente</span><strong id="financePending">R$ 0,00</strong></div><div class="dark"><span>Resultado</span><strong id="financeResult">R$ 0,00</strong></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Pessoa / aluno</th><th>Categoria</th><th>Conta</th><th>Status</th><th class="right">Valor</th><th></th></tr></thead><tbody id="movementsBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-contributions" class="view">
+        <div class="section-head"><div><span>ACOMPANHAMENTO INDIVIDUAL</span><h2>Contribuições</h2><p>Veja o que foi previsto, pago e ainda está pendente por responsável, aluno e turma.</p></div><button class="button primary" data-open="contributionModal">+ Nova contribuição</button></div>
+        <article class="panel">
+          <div class="filters"><label><span>Pesquisar</span><input id="contributionSearch" placeholder="Responsável ou aluno" /></label><label><span>Turma</span><select id="contributionClass"><option value="">Todas</option></select></label><label><span>Referência</span><input id="contributionReference" type="month" /></label><label><span>Status</span><select id="contributionStatus"><option value="">Todos</option><option>Em dia</option><option>Pendente</option><option>Parcial</option><option>Atrasado</option></select></label></div>
+          <div class="summary-strip"><div><span>Total previsto</span><strong id="contributionExpected">R$ 0,00</strong></div><div><span>Total pago</span><strong id="contributionPaid">R$ 0,00</strong></div><div><span>Total pendente</span><strong id="contributionPending">R$ 0,00</strong></div><div class="dark"><span>Com pendência</span><strong id="contributionPendingCount">0</strong></div></div>
+          <div id="contributionCards" class="cards-grid"></div>
+        </article>
+      </section>
+
+      <section id="view-insights" class="view">
+        <div class="section-head">
+          <div><span>INTELIGÊNCIA FINANCEIRA</span><h2>Inadimplência e previsão de arrecadação</h2><p>Acompanhe a taxa de recebimento, a idade das pendências e a projeção financeira dos próximos 30, 60 e 90 dias.</p></div>
+          <div class="head-actions"><button id="exportInsights" class="button secondary" type="button">Baixar CSV</button><button id="refreshInsights" class="button primary" type="button">Atualizar indicadores</button></div>
+        </div>
+
+        <article class="panel insight-filter-panel">
+          <div class="filters insight-filters">
+            <label><span>Período histórico</span><select id="insightMonths"><option value="3">Últimos 3 meses</option><option value="6">Últimos 6 meses</option><option value="12" selected>Últimos 12 meses</option><option value="18">Últimos 18 meses</option><option value="24">Últimos 24 meses</option></select></label>
+            <label><span>Turma</span><select id="insightClass"><option value="">Todas</option></select></label>
+            <div class="insight-period"><span>Período analisado</span><strong id="insightPeriodLabel">Carregando...</strong></div>
+          </div>
+        </article>
+
+        <div class="metrics-grid insight-metrics">
+          <article class="metric-card featured"><span>Taxa de arrecadação</span><strong id="insightCollectionRate">0%</strong><small id="insightCollectionDetail">R$ 0,00 recebidos</small></article>
+          <article class="metric-card"><span>Taxa de inadimplência</span><strong id="insightDefaultRate">0%</strong><small>Sobre valores já vencidos</small></article>
+          <article class="metric-card"><span>Valor inadimplente</span><strong id="insightOverdueValue">R$ 0,00</strong><small id="insightOverdueCount">0 contribuições</small></article>
+          <article class="metric-card"><span>Contribuintes em atraso</span><strong id="insightOverduePeople">0</strong><small>Responsáveis com pendência vencida</small></article>
+          <article class="metric-card"><span>Atraso médio ponderado</span><strong id="insightAverageLate">0 dias</strong><small>Considera o valor de cada pendência</small></article>
+        </div>
+
+        <div class="two-columns insight-main-grid">
+          <article class="panel">
+            <div class="panel-head"><div><small>EVOLUÇÃO MENSAL</small><h3>Previsto, pago e vencido</h3></div><span class="chart-legend"><i class="expected"></i>Previsto <i class="paid"></i>Pago <i class="overdue"></i>Vencido</span></div>
+            <div id="insightMonthlyChart" class="monthly-comparison"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><small>PROJEÇÃO DE CAIXA</small><h3>Próximos 30, 60 e 90 dias</h3></div></div>
+            <div id="insightForecastCards" class="forecast-grid"></div>
+            <p id="insightMethodology" class="methodology-note"></p>
+          </article>
+        </div>
+
+        <div class="two-columns insight-secondary-grid">
+          <article class="panel">
+            <div class="panel-head"><div><small>IDADE DAS PENDÊNCIAS</small><h3>Faixas de atraso</h3></div></div>
+            <div id="insightAging" class="aging-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><small>LEITURA GERENCIAL</small><h3>Alertas e recomendações</h3></div></div>
+            <div id="insightAlerts" class="insight-alerts"></div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head"><div><small>COMPARATIVO</small><h3>Arrecadação e inadimplência por turma</h3></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Turma</th><th class="right">Previsto</th><th class="right">Pago</th><th class="right">Vencido pendente</th><th class="right">Arrecadação</th><th class="right">Em atraso</th></tr></thead><tbody id="insightClassesBody"></tbody></table></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head"><div><small>PRIORIZAÇÃO DE CONTATO</small><h3>Pendências mais antigas</h3></div><button class="text-button" data-view-target="contributions">Abrir contribuições</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Responsável</th><th>Aluno / turma</th><th>Referência</th><th>Vencimento</th><th class="right">Dias</th><th class="right">Pendente</th></tr></thead><tbody id="insightOverdueBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-reminders" class="view">
+        <div class="section-head">
+          <div><span>COBRANÇAS E COMUNICAÇÃO</span><h2>Lembretes automáticos</h2><p>Envie avisos respeitosos antes e depois do vencimento, com controle contra mensagens duplicadas.</p></div>
+          <button id="processRemindersNow" class="button primary" type="button">Processar agora</button>
+        </div>
+
+        <div class="metrics-grid reminder-metrics">
+          <article class="metric-card featured"><span>Automação</span><strong id="reminderAutomationStatus">Desativada</strong><small id="reminderScheduleSummary">Configure os horários</small></article>
+          <article class="metric-card"><span>Contribuições elegíveis</span><strong id="reminderPendingContributions">0</strong><small>Pendentes e não suspensas</small></article>
+          <article class="metric-card"><span>Enviados em 30 dias</span><strong id="reminderSent30Days">0</strong><small>E-mails e mensagens concluídas</small></article>
+          <article class="metric-card"><span>Falhas aguardando revisão</span><strong id="reminderOpenErrors">0</strong><small>Consulte o histórico abaixo</small></article>
+        </div>
+
+        <form id="reminderConfigForm">
+          <div class="two-columns reminder-config-columns">
+            <article class="panel">
+              <div class="panel-head"><div><small>REGRAS GERAIS</small><h3>Funcionamento da automação</h3></div></div>
+              <div class="reminder-switch-row">
+                <label class="switch-control"><input id="reminderActive" name="ativo" type="checkbox" /><span></span><b>Ativar lembretes automáticos</b></label>
+                <p>Por segurança, a automação começa desligada e só envia após ser ativada e salva.</p>
+              </div>
+              <div class="form-grid reminder-form-grid">
+                <label><span>Horário de envio</span><input id="reminderTime" type="time" value="08:00" required /></label>
+                <label><span>Máximo por execução</span><input id="reminderBatchLimit" type="number" min="1" max="1000" value="200" /></label>
+                <label><span>Máximo de tentativas</span><input id="reminderMaxAttempts" type="number" min="1" max="10" value="3" /></label>
+                <label><span>Intervalo entre tentativas</span><select id="reminderRetryHours"><option value="1">1 hora</option><option value="3">3 horas</option><option value="6" selected>6 horas</option><option value="12">12 horas</option><option value="24">24 horas</option></select></label>
+              </div>
+              <label class="check reminder-consent"><input id="reminderOnlyAuthorized" type="checkbox" checked /><span>Enviar somente para pessoas com autorização de comunicação</span></label>
+              <div class="setting-group">
+                <span class="setting-label">Dias permitidos</span>
+                <div id="reminderWeekdays" class="weekday-grid">
+                  <label><input type="checkbox" value="1" checked /><span>Seg</span></label>
+                  <label><input type="checkbox" value="2" checked /><span>Ter</span></label>
+                  <label><input type="checkbox" value="3" checked /><span>Qua</span></label>
+                  <label><input type="checkbox" value="4" checked /><span>Qui</span></label>
+                  <label><input type="checkbox" value="5" checked /><span>Sex</span></label>
+                  <label><input type="checkbox" value="6" checked /><span>Sáb</span></label>
+                  <label><input type="checkbox" value="0" checked /><span>Dom</span></label>
+                </div>
+                <small>Quando uma etapa cair em dia desmarcado, ela será deslocada para o próximo dia permitido.</small>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head"><div><small>CANAIS E SAÚDE</small><h3>Entrega das mensagens</h3></div></div>
+              <div class="channel-options">
+                <label class="channel-card"><input id="reminderEmailChannel" type="checkbox" checked /><div><strong>E-mail</strong><small>Usa a mensageria já configurada no Axoriin.</small></div><span id="reminderEmailAvailability" class="status ok">Disponível</span></label>
+                <label class="channel-card"><input id="reminderWhatsappChannel" type="checkbox" /><div><strong>WhatsApp automático</strong><small>Requer um provedor automático conectado ao backend.</small></div><span id="reminderWhatsappAvailability" class="status warn">Não configurado</span></label>
+              </div>
+              <div class="automation-health">
+                <div><span>Última execução</span><strong id="reminderLastRun">Ainda não executada</strong></div>
+                <div><span>Resultado da última execução</span><strong id="reminderLastRunSummary">Sem dados</strong></div>
+              </div>
+              <div class="identity-note reminder-note">O registro de cada etapa usa uma chave única por contribuição, vencimento e canal. Reinícios do servidor não provocam reenvio duplicado.</div>
+            </article>
+          </div>
+
+          <article class="panel reminder-stages-panel">
+            <div class="panel-head"><div><small>ETAPAS DA COBRANÇA</small><h3>Quando e o que enviar</h3></div><span class="template-help">Campos: {nome}, {aluno}, {turma}, {referencia}, {vencimento}, {valor_pendente}, {associacao}</span></div>
+            <div id="reminderStagesEditor" class="reminder-stages"></div>
+            <div class="panel-form-actions"><button class="button primary" type="submit">Salvar configuração</button></div>
+          </article>
+        </form>
+
+        <article class="panel">
+          <div class="panel-head"><div><small>RASTREABILIDADE</small><h3>Histórico de lembretes</h3></div><button id="refreshReminderHistory" class="text-button" type="button">Atualizar</button></div>
+          <div class="filters reminder-history-filters"><label><span>Status</span><select id="reminderHistoryStatus"><option value="">Todos</option><option>Enviado</option><option>Erro</option><option>Processando</option><option>Cancelado</option></select></label><label><span>Canal</span><select id="reminderHistoryChannel"><option value="">Todos</option><option>E-mail</option><option>WhatsApp</option></select></label></div>
+          <div class="table-wrap"><table><thead><tr><th>Data</th><th>Responsável</th><th>Contribuição</th><th>Etapa</th><th>Canal</th><th>Status</th><th>Resultado</th></tr></thead><tbody id="reminderHistoryBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-projects" class="view">
+        <div class="section-head"><div><span>PROJETOS, CAMPANHAS E EVENTOS</span><h2>Ações da associação</h2><p>Controle metas, arrecadações, despesas e saldos por iniciativa.</p></div><button class="button primary" data-open="projectModal">+ Nova ação</button></div>
+        <div id="projectCards" class="cards-grid"></div>
+      </section>
+
+      <section id="view-assets" class="view">
+        <div class="section-head"><div><span>INVENTÁRIO</span><h2>Patrimônio</h2><p>Bens adquiridos, recebidos ou cedidos pela associação.</p></div><button class="button primary" data-open="assetModal">+ Novo bem</button></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>Código</th><th>Bem</th><th>Categoria</th><th>Localização</th><th>Conservação</th><th>Status</th><th class="right">Valor</th><th></th></tr></thead><tbody id="assetsBody"></tbody></table></div></article>
+      </section>
+
+      <section id="view-documents" class="view">
+        <div class="section-head"><div><span>GOVERNANÇA DOCUMENTAL</span><h2>Documentos</h2><p>Estatuto, atas, certidões, contratos, comprovantes e prestações de contas.</p></div><button class="button primary" data-open="documentModal">+ Novo documento</button></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>Documento</th><th>Tipo</th><th>Referência</th><th>Emissão</th><th>Validade</th><th>Status</th><th></th></tr></thead><tbody id="documentsBody"></tbody></table></div></article>
+      </section>
+
+      <section id="view-relationship" class="view">
+        <div class="section-head"><div><span>PROXIMIDADE COM AS FAMÍLIAS</span><h2>Relacionamento</h2><p>Modelos, campanhas e envios usando a mensageria já existente no Axoriin.</p></div><div class="head-actions"><button class="button secondary" data-open="templateModal">+ Novo modelo</button><button class="button primary" data-open="campaignModal">+ Nova campanha</button></div></div>
+        <div class="two-columns">
+          <article class="panel"><div class="panel-head"><div><small>CONTEÚDO REUTILIZÁVEL</small><h3>Modelos de mensagem</h3></div></div><div id="templateList" class="list-stack"></div></article>
+          <article class="panel"><div class="panel-head"><div><small>FILA E AUTOMAÇÃO</small><h3>Campanhas</h3></div></div><div id="campaignList" class="list-stack"></div></article>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="section-head"><div><span>CONFIGURAÇÃO DO TENANT</span><h2>Configurações</h2><p>Contas, categorias e usuários exclusivos desta associação.</p></div></div>
+        <div class="three-columns">
+          <article class="panel"><div class="panel-head"><div><small>FINANCEIRO</small><h3>Contas</h3></div><button class="icon-button" data-open="accountModal">+</button></div><div id="accountsList" class="list-stack"></div></article>
+          <article class="panel"><div class="panel-head"><div><small>CLASSIFICAÇÃO</small><h3>Categorias</h3></div><button class="icon-button" data-open="categoryModal">+</button></div><div id="categoriesList" class="list-stack"></div></article>
+          <article id="usersPanel" class="panel"><div class="panel-head"><div><small>ACESSO</small><h3>Usuários</h3></div><button class="icon-button" data-open="userModal">+</button></div><div id="usersList" class="list-stack"></div></article>
+        </div>
+      </section>
+
+      <section id="view-audit" class="view">
+        <div class="section-head"><div><span>RASTREABILIDADE</span><h2>Auditoria</h2><p>Histórico de ações realizadas no módulo da associação.</p></div></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>Data</th><th>Usuário</th><th>Ação</th><th>Entidade</th><th>Registro</th><th>Motivo / detalhes</th></tr></thead><tbody id="auditBody"></tbody></table></div></article>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalRoot"></div>
+
+  <template id="personModalTemplate"><div class="modal-overlay" data-modal="personModal"><form id="personForm" class="modal-card"><div class="modal-head"><div><small>NOVO CADASTRO</small><h3>Pessoa</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Nome completo</span><input name="nome" required /></label><label><span>Tipo</span><select name="tipo"><option>Pai/Responsável</option><option>Associado</option><option>Parceiro</option><option>Fornecedor</option><option>Colaborador</option><option>Doador</option><option>Outro</option></select></label><label><span>CPF/CNPJ</span><input name="cpfCnpj" /></label><label><span>Telefone</span><input name="telefone" /></label><label><span>WhatsApp</span><input name="whatsapp" /></label><label><span>E-mail</span><input name="email" type="email" /></label><label><span>Data de nascimento</span><input name="dataNascimento" type="date" /></label><label><span>Aluno relacionado</span><input name="alunoNome" /></label><label><span>Turma</span><input name="alunoTurma" /></label><label class="check"><input name="autorizacaoComunicacao" type="checkbox" /><span>Autoriza comunicação</span></label><label class="check"><input name="autorizaAniversario" type="checkbox" /><span>Autoriza mensagem de aniversário</span></label><label class="full"><span>Observações</span><textarea name="observacoes" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar pessoa</button></div></form></div></template>
+
+  <template id="movementModalTemplate"><div class="modal-overlay" data-modal="movementModal"><form id="movementForm" class="modal-card"><div class="modal-head"><div><small>CONTROLE FINANCEIRO</small><h3>Nova movimentação</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label><span>Tipo</span><select name="tipo" required><option>Entrada</option><option>Saída</option></select></label><label><span>Status</span><select name="status"><option>Pago</option><option>Pendente</option><option>Previsto</option><option>Atrasado</option></select></label><label><span>Data</span><input name="dataMovimentacao" type="date" required /></label><label><span>Vencimento</span><input name="dataVencimento" type="date" /></label><label class="full"><span>Descrição</span><input name="descricao" required /></label><label><span>Pessoa</span><select name="pessoa" data-select="people"><option value="">Não vinculada</option></select></label><label><span>Conta</span><select name="conta" data-select="accounts"><option value="">Selecione</option></select></label><label><span>Categoria</span><select name="categoria" data-select="categories"><option value="">Selecione</option></select></label><label><span>Projeto/campanha</span><select name="projeto" data-select="projects"><option value="">Sem vínculo</option></select></label><label><span>Forma de pagamento</span><input name="formaPagamento" placeholder="PIX, dinheiro, transferência..." /></label><label><span>Valor</span><input name="valor" type="number" min="0.01" step="0.01" required /></label><label class="check"><input name="gerarRecibo" type="checkbox" /><span>Gerar recibo</span></label><label class="full"><span>Observações</span><textarea name="observacoes" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar movimentação</button></div></form></div></template>
+
+  <template id="contributionModalTemplate"><div class="modal-overlay" data-modal="contributionModal"><form id="contributionForm" class="modal-card compact"><div class="modal-head"><div><small>CONTRIBUIÇÃO</small><h3>Novo lançamento</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Responsável</span><select name="pessoa" data-select="people" required><option value="">Selecione</option></select></label><label><span>Referência</span><input name="referencia" type="month" required /></label><label><span>Vencimento</span><input name="vencimento" type="date" required /></label><label><span>Valor previsto</span><input name="valorPrevisto" type="number" min="0.01" step="0.01" required /></label><label><span>Turma (opcional)</span><input name="alunoTurma" /></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar</button></div></form></div></template>
+
+  <template id="paymentModalTemplate"><div class="modal-overlay" data-modal="paymentModal"><form id="paymentForm" class="modal-card compact"><input name="contributionId" type="hidden" /><div class="modal-head"><div><small>BAIXA FINANCEIRA</small><h3>Registrar pagamento</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label><span>Valor</span><input name="valor" type="number" min="0.01" step="0.01" required /></label><label><span>Data</span><input name="dataPagamento" type="date" required /></label><label><span>Conta</span><select name="conta" data-select="accounts" required></select></label><label><span>Forma</span><input name="formaPagamento" placeholder="PIX, dinheiro..." /></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Confirmar pagamento</button></div></form></div></template>
+
+  <template id="projectModalTemplate"><div class="modal-overlay" data-modal="projectModal"><form id="projectForm" class="modal-card"><div class="modal-head"><div><small>NOVA AÇÃO</small><h3>Projeto, campanha ou evento</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Nome</span><input name="nome" required /></label><label><span>Tipo</span><select name="tipo"><option>Projeto</option><option>Campanha</option><option>Evento</option><option>Rifa</option><option>Reforma</option><option>Aquisição</option><option>Outro</option></select></label><label><span>Status</span><select name="status"><option>Planejamento</option><option>Ativo</option><option>Concluído</option><option>Suspenso</option></select></label><label><span>Data inicial</span><input name="dataInicio" type="date" /></label><label><span>Data final</span><input name="dataFim" type="date" /></label><label><span>Meta de arrecadação</span><input name="metaArrecadacao" type="number" step="0.01" /></label><label><span>Orçamento previsto</span><input name="orcamentoPrevisto" type="number" step="0.01" /></label><label class="full"><span>Responsável</span><input name="responsavelNome" /></label><label class="full"><span>Descrição</span><textarea name="descricao" rows="4"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar ação</button></div></form></div></template>
+
+  <template id="assetModalTemplate"><div class="modal-overlay" data-modal="assetModal"><form id="assetForm" class="modal-card"><div class="modal-head"><div><small>PATRIMÔNIO</small><h3>Novo bem</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label><span>Código patrimonial</span><input name="codigo" required /></label><label><span>Nome do bem</span><input name="nome" required /></label><label><span>Categoria</span><input name="categoria" /></label><label><span>Valor</span><input name="valorAquisicao" type="number" step="0.01" /></label><label><span>Data de aquisição</span><input name="dataAquisicao" type="date" /></label><label><span>Origem</span><select name="origem"><option>Compra</option><option>Doação</option><option>Parceria</option><option>Campanha</option><option>Outro</option></select></label><label><span>Localização</span><input name="localizacao" /></label><label><span>Responsável</span><input name="responsavelNome" /></label><label><span>Conservação</span><select name="estadoConservacao"><option>Novo</option><option selected>Bom</option><option>Regular</option><option>Ruim</option><option>Inservível</option></select></label><label><span>Status</span><select name="status"><option>Em uso</option><option>Em estoque</option><option>Cedido à escola</option><option>Em manutenção</option><option>Baixado</option></select></label><label class="full"><span>Descrição</span><textarea name="descricao" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar bem</button></div></form></div></template>
+
+  <template id="documentModalTemplate"><div class="modal-overlay" data-modal="documentModal"><form id="documentForm" class="modal-card compact"><div class="modal-head"><div><small>DOCUMENTO</small><h3>Novo registro</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Título</span><input name="titulo" required /></label><label><span>Tipo</span><select name="tipo"><option>Estatuto</option><option>Ata</option><option>Certidão</option><option>Contrato</option><option>Prestação de contas</option><option>Nota fiscal</option><option>Comprovante</option><option>Outro</option></select></label><label><span>Número/referência</span><input name="numeroReferencia" /></label><label><span>Emissão</span><input name="dataEmissao" type="date" /></label><label><span>Validade</span><input name="dataValidade" type="date" /></label><label class="full"><span>Responsável</span><input name="responsavelNome" /></label><label class="full"><span>Observações</span><textarea name="observacoes" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar documento</button></div></form></div></template>
+
+  <template id="attachmentModalTemplate"><div class="modal-overlay" data-modal="attachmentModal"><form id="attachmentForm" class="modal-card compact" enctype="multipart/form-data"><input name="entidadeTipo" type="hidden" /><input name="entidadeId" type="hidden" /><input name="entidadeNome" type="hidden" /><div class="modal-head"><div><small>ANEXO</small><h3>Adicionar arquivo</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Arquivo (até 8 MB)</span><input name="arquivo" type="file" required /></label><label class="full"><span>Descrição</span><textarea name="descricao" rows="3"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Enviar anexo</button></div></form></div></template>
+
+  <template id="templateModalTemplate"><div class="modal-overlay" data-modal="templateModal"><form id="templateForm" class="modal-card"><div class="modal-head"><div><small>MODELO</small><h3>Nova mensagem</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label><span>Nome</span><input name="nome" required /></label><label><span>Evento</span><select name="evento"><option>Aniversário</option><option>Natal</option><option>Ano-Novo</option><option>Dia das Mães</option><option>Dia dos Pais</option><option>Boas-vindas</option><option>Comunicado</option><option>Outro</option></select></label><label><span>Canal</span><select name="canal"><option>E-mail</option><option>WhatsApp</option><option>SMS</option></select></label><label><span>Assunto</span><input name="assunto" /></label><label class="full"><span>Conteúdo</span><textarea name="conteudo" rows="7" required placeholder="Use {nome}, {aluno}, {turma}, {email} e {telefone}"></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar modelo</button></div></form></div></template>
+
+  <template id="campaignModalTemplate"><div class="modal-overlay" data-modal="campaignModal"><form id="campaignForm" class="modal-card"><div class="modal-head"><div><small>CAMPANHA</small><h3>Nova campanha</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Título</span><input name="titulo" required /></label><label><span>Evento</span><input name="evento" value="Comunicado" /></label><label><span>Canal</span><select name="canal"><option>E-mail</option><option>WhatsApp</option><option>SMS</option></select></label><label class="full"><span>Assunto</span><input name="assunto" /></label><label><span>Agendar para</span><input name="agendadaPara" type="datetime-local" /></label><label class="check"><input name="apenasAutorizados" type="checkbox" checked /><span>Somente quem autorizou</span></label><label class="full"><span>Conteúdo</span><textarea name="conteudo" rows="7" required></textarea></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Criar campanha</button></div></form></div></template>
+
+  <template id="accountModalTemplate"><div class="modal-overlay" data-modal="accountModal"><form id="accountForm" class="modal-card compact"><div class="modal-head"><div><small>CONTA FINANCEIRA</small><h3>Nova conta</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Nome</span><input name="nome" required /></label><label><span>Tipo</span><select name="tipo"><option>Caixa</option><option>Banco</option><option>PIX</option><option>Poupança</option><option>Fundo</option><option>Outro</option></select></label><label><span>Saldo inicial</span><input name="saldoInicial" type="number" step="0.01" value="0" /></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar conta</button></div></form></div></template>
+
+  <template id="categoryModalTemplate"><div class="modal-overlay" data-modal="categoryModal"><form id="categoryForm" class="modal-card compact"><div class="modal-head"><div><small>CATEGORIA</small><h3>Nova categoria</h3></div><button type="button" data-close>×</button></div><div class="form-grid"><label class="full"><span>Nome</span><input name="nome" required /></label><label class="full"><span>Aplicação</span><select name="tipoMovimentacao"><option>Entrada</option><option>Saída</option><option>Ambos</option></select></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Salvar categoria</button></div></form></div></template>
+
+  <template id="userModalTemplate"><div class="modal-overlay" data-modal="userModal"><form id="userForm" class="modal-card compact"><div class="modal-head"><div><small>USUÁRIO</small><h3>Conceder acesso</h3></div><button type="button" data-close>×</button></div><div class="identity-note">Se o e-mail já existir no Axoriin, o sistema apenas criará o vínculo com a associação e preservará a senha atual.</div><div class="form-grid"><label class="full"><span>E-mail</span><input name="email" type="email" required /></label><label class="full"><span>Nome (obrigatório apenas para novo usuário)</span><input name="nome" /></label><label class="full"><span>Perfil na associação</span><select name="perfil"><option value="presidente">Presidente</option><option value="vice_presidente">Vice-presidente</option><option value="tesoureiro">Tesoureiro</option><option value="secretario">Secretário</option><option value="conselho_fiscal">Conselho Fiscal</option><option value="operador">Operador</option><option value="consulta">Consulta</option></select></label><label class="full"><span>Senha temporária (somente para novo usuário)</span><input name="senha" /></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Conceder acesso</button></div></form></div></template>
+
+  <script src="/associacao/associacao.js?v=20260712-v33" defer></script>
+</body>
+</html>

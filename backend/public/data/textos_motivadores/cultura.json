@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Diversidade cultural",
+    "tipo": "citacao",
+    "fonte": "UNESCO",
+    "conteudo": "A diversidade cultural é patrimônio comum da humanidade."
+  },
+  {
+    "titulo": "Acesso à cultura",
+    "tipo": "reportagem",
+    "fonte": "Ministério da Cultura",
+    "conteudo": "O acesso desigual aos bens culturais limita oportunidades de formação social."
+  },
+  {
+    "titulo": "Patrimônio histórico",
+    "tipo": "reportagem",
+    "fonte": "IPHAN",
+    "conteudo": "A preservação do patrimônio histórico fortalece a identidade nacional."
+  },
+  {
+    "titulo": "Culturas indígenas",
+    "tipo": "reportagem",
+    "fonte": "FUNAI",
+    "conteudo": "Os povos indígenas preservam conhecimentos fundamentais para a diversidade cultural brasileira."
+  },
+  {
+    "titulo": "Arte e sociedade",
+    "tipo": "citacao",
+    "fonte": "Ferreira Gullar",
+    "conteudo": "A arte existe porque a vida não basta."
+  },
+  {
+    "titulo": "Leitura e cidadania",
+    "tipo": "estatistica",
+    "fonte": "Retratos da Leitura no Brasil",
+    "conteudo": "O hábito da leitura influencia diretamente o desenvolvimento educacional e crítico."
+  }
+]

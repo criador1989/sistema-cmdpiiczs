@@ -4,169 +4,542 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Editar Usuário - Sistema Escolar</title>
-  <meta name="theme-color" content="#8B0000" />
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #8B0000, #B22222);
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    :root{
+      --navy-1:#020617;
+      --navy-2:#020617;
+      --accent-1:#1d4ed8;
+      --accent-2:#38bdf8;
+
+      --glass-bg: rgba(15,23,42,.88);
+      --glass-border: rgba(148,163,184,.55);
+      --glass-shadow: 0 22px 60px rgba(15,23,42,.95);
+
+      --text:#e5f0ff;
+      --text-soft:#9ca3af;
+      --line:#4b5563;
+      --student:#ffe29a;
     }
 
-    .container {
-      background: #fff;
-      padding: 30px;
+    *{
+      box-sizing:border-box;
+    }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
+    }
+
+    body{
+      font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+      display:grid;
+      place-items:center;
+      color:var(--text);
+      background:#020617;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      background:
+        radial-gradient(1200px 700px at -10% -10%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(1200px 900px at 110% 110%, rgba(37,99,235,.22), transparent 65%),
+        radial-gradient(900px 900px at 50% 120%, rgba(15,23,42,.96), transparent 70%),
+        linear-gradient(135deg, #020617 0%, #020617 40%, #020617 100%);
+      filter:saturate(115%);
+    }
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:
+        linear-gradient(135deg, rgba(148,163,184,.12) 0%, transparent 35%, transparent 65%, rgba(56,189,248,.12) 100%),
+        radial-gradient(650px 650px at 10% 30%, rgba(15,23,42,.9), transparent 70%),
+        radial-gradient(650px 650px at 90% 20%, rgba(15,23,42,.9), transparent 70%);
+      mix-blend-mode:soft-light;
+    }
+
+    .container{
+      position:relative;
+      z-index:1;
+      width:min(520px,94vw);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56,189,248,.12), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(37,99,235,.16), transparent 55%),
+        var(--glass-bg);
+      border-radius:22px;
+      border:1px solid var(--glass-border);
+      box-shadow:var(--glass-shadow);
+      padding:26px 22px 22px;
+      backdrop-filter:blur(18px) saturate(150%);
+      animation:fade .35s ease-out both;
+    }
+
+    h2{
+      margin:0 0 18px 0;
+      text-align:center;
+      color:#f9fbff;
+      letter-spacing:.04em;
+      text-shadow:0 2px 10px rgba(15,23,42,.9);
+      font-size:1.25rem;
+    }
+
+    label{
+      display:block;
+      font-size:.82rem;
+      margin:10px 0 6px;
+      color:var(--text-soft);
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+
+    input,
+    select{
+      width:100%;
+      padding:10px 11px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      font-size:.95rem;
+      outline:none;
+      background:rgba(15,23,42,.9);
+      color:var(--text);
+      box-shadow:inset 0 0 0 1px rgba(15,23,42,1);
+    }
+
+    input::placeholder{
+      color:rgba(148,163,184,.8);
+    }
+
+    input:disabled{
+      opacity:.8;
+      cursor:not-allowed;
+      background:rgba(15,23,42,.7);
+    }
+
+    input:focus,
+    select:focus{
+      border-color:rgba(56,189,248,.85);
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,.7),
+        0 0 0 6px rgba(56,189,248,.22);
+    }
+
+    .muted{
+      font-size:12px;
+      color:var(--text-soft);
+      margin-top:4px;
+      line-height:1.35;
+    }
+
+    .student-note{
+      margin-top: 10px;
+      padding: 10px 12px;
       border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-      width: 360px;
-      text-align: center;
+      border:1px solid rgba(255,226,154,.22);
+      background: rgba(255,226,154,.08);
+      color: var(--student);
+      font-size: 12px;
+      line-height:1.4;
     }
 
-    h2 {
-      margin-bottom: 20px;
+    button{
+      width:100%;
+      padding:11px 12px;
+      margin-top:16px;
+      border:none;
+      border-radius:999px;
+      background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+      color:#f9fbff;
+      font-weight:700;
+      cursor:pointer;
+      letter-spacing:.03em;
+      box-shadow:0 14px 32px rgba(37,99,235,.7);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
     }
 
-    input, select {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 15px;
+    button:hover{
+      transform:translateY(-1px);
+      box-shadow:0 18px 40px rgba(37,99,235,.8);
+      filter:brightness(1.05);
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #B22222;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
+    button:active{
+      transform:translateY(0);
+      box-shadow:0 10px 26px rgba(15,23,42,.9);
+      filter:brightness(.97);
     }
 
-    button:hover {
-      background-color: #8B0000;
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
     }
 
-    .voltar {
-      margin-top: 10px;
-      display: inline-block;
-      color: #B22222;
-      font-weight: bold;
-      text-decoration: none;
+    @media (max-width:540px){
+      .row{
+        grid-template-columns:1fr;
+      }
     }
 
-    .voltar:hover {
-      text-decoration: underline;
+    .links{
+      margin-top:14px;
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      flex-wrap:wrap;
     }
 
-    .menu-extra {
-      margin-top: 20px;
-      text-align: center;
+    .links a{
+      flex:1;
+      text-align:center;
+      padding:9px 10px;
+      border-radius:999px;
+      text-decoration:none;
+      background:rgba(15,23,42,.85);
+      color:#e5f0ff;
+      border:1px solid rgba(148,163,184,.6);
+      font-weight:600;
+      font-size:.9rem;
+      box-shadow:0 10px 24px rgba(15,23,42,.9);
+      white-space:nowrap;
     }
 
-    .menu-extra a {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background-color: #f2f2f2;
-      color: #B22222;
-      border: 2px solid #B22222;
-      border-radius: 8px;
-      font-weight: bold;
-      text-decoration: none;
-      transition: background 0.3s, color 0.3s;
+    .links a:hover{
+      border-color:rgba(56,189,248,.9);
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow:0 14px 32px rgba(37,99,235,.75);
     }
 
-    .menu-extra a:hover {
-      background-color: #B22222;
-      color: white;
+    .msg{
+      min-height:18px;
+      margin-top:8px;
+      font-size:14px;
+    }
+
+    .ok{
+      color:#4ade80;
+    }
+
+    .err{
+      color:#fb7185;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
+    @keyframes fade{
+      from{
+        opacity:0;
+        transform:translateY(10px);
+      }
+      to{
+        opacity:1;
+        transform:none;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Editar Usuário</h2>
-    <form id="form-editar">
+
+    <form id="form-editar" autocomplete="off">
+      <label for="nome">Nome completo</label>
       <input type="text" id="nome" placeholder="Nome completo" required />
+
+      <label for="email">E-mail (não editável)</label>
       <input type="email" id="email" placeholder="E-mail" required disabled />
-      <select id="tipo">
-        <option value="professor">Professor</option>
-        <option value="coordenador">Coordenador</option>
-        <option value="admin">Administrador</option>
-      </select>
-      <input type="text" id="instituicao" placeholder="Instituição" required />
-      <input type="password" id="novaSenha" placeholder="Nova senha (opcional)" />
+      <div class="muted">
+        O e-mail é único por instituição e não pode ser alterado aqui.
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="tipo">Tipo</label>
+          <select id="tipo" required>
+            <option value="professor">Professor</option>
+            <option value="monitor">Monitor</option>
+            <option value="admin">Administrador</option>
+            <option value="aluno">Aluno</option>
+          </select>
+        </div>
+        <div>
+          <label for="portal">Portal</label>
+          <select id="portal" required>
+            <option value="institucional">Institucional</option>
+            <option value="aluno">Aluno</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="novaSenha">Nova senha (opcional)</label>
+          <input
+            type="password"
+            id="novaSenha"
+            placeholder="Deixe em branco para manter"
+            autocomplete="new-password"
+          />
+          <div class="muted">A senha deve ter no mínimo 8 caracteres e conter ao menos 1 letra maiúscula, 1 letra minúscula e 1 número.</div>
+        </div>
+        <div>
+          <label for="ativo">Status</label>
+          <select id="ativo" required>
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="boxAluno" class="hidden">
+        <label for="alunoId">Aluno vinculado (ObjectId)</label>
+        <input
+          type="text"
+          id="alunoId"
+          placeholder="ObjectId do aluno"
+        />
+        <div class="muted">
+          Para usuário do tipo <b>aluno</b>, esse vínculo é obrigatório. Normalmente ele já vem preenchido quando o acesso foi gerado pelo sistema.
+        </div>
+
+        <div class="student-note">
+          Usuários do tipo aluno pertencem ao <b>portal do aluno</b>. Ao salvar como aluno, o sistema mantém o vínculo com o cadastro do estudante.
+        </div>
+      </div>
+
+      <label for="instituicao">Instituição</label>
+      <input
+        list="lista-instituicoes"
+        id="instituicao"
+        placeholder="Nome da instituição ou ObjectId"
+        required
+      />
+      <datalist id="lista-instituicoes"></datalist>
+      <div class="muted">
+        Pode digitar o <b>nome</b> (sugerido) ou colar o <b>ObjectId</b>. O servidor resolve automaticamente.
+      </div>
+
       <button type="submit">Salvar alterações</button>
+      <div class="msg" id="msg"></div>
     </form>
 
-    <a class="voltar" href="usuarios.html">← Voltar para lista de usuários</a>
-
-    <div class="menu-extra">
+    <div class="links">
       <a href="usuarios.html">👥 Gerenciar Usuários</a>
+      <a href="painel.html">⬅ Voltar ao Painel</a>
     </div>
   </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
-
-    async function carregarDados() {
-      try {
-        const res = await fetch(`/api/usuarios/${id}`, { credentials: 'include' });
-        if (!res.ok) throw new Error('Erro ao carregar dados');
-        const usuario = await res.json();
-        document.getElementById('nome').value = usuario.nome;
-        document.getElementById('email').value = usuario.email;
-        document.getElementById('tipo').value = usuario.tipo;
-        document.getElementById('instituicao').value = usuario.instituicao;
-      } catch (error) {
-        alert('Erro ao carregar dados do usuário.');
-        console.error(error);
+    if (['localhost','127.0.0.1'].includes(location.hostname)) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
     }
 
-    document.getElementById('form-editar').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const dados = {
-        nome: document.getElementById('nome').value.trim(),
-        tipo: document.getElementById('tipo').value,
-        instituicao: document.getElementById('instituicao').value.trim()
+    const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
+    const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
+
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('id');
+
+    function validatePasswordClient(senha) {
+      if (!senha || String(senha).length < 8) return { ok: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
+      if (!/[A-Z]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos uma letra maiúscula.' };
+      if (!/[a-z]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos uma letra minúscula.' };
+      if (!/[0-9]/.test(senha)) return { ok: false, message: 'A senha deve conter ao menos um número.' };
+      return { ok: true };
+    }
+
+    function syncAlunoFields() {
+      const tipo = $('tipo').value;
+      const portal = $('portal');
+      const boxAluno = $('boxAluno');
+
+      if (tipo === 'aluno') {
+        portal.value = 'aluno';
+        portal.disabled = true;
+        boxAluno.classList.remove('hidden');
+      } else {
+        if (portal.value === 'aluno') {
+          portal.value = 'institucional';
+        }
+        portal.disabled = false;
+        boxAluno.classList.add('hidden');
+      }
+    }
+
+    async function garantirAdmin() {
+      try {
+        let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) throw 0;
+        const u = await r.json();
+        if (u?.tipo !== 'admin') {
+          alert('Acesso restrito a administradores.');
+          location.href = '/painel.html';
+        }
+      } catch {
+        location.href = '/login.html';
+      }
+    }
+
+    async function carregarInstituicoes() {
+      try {
+        const r = await fetch(API('/instituicoes?limite=500'), {
+          credentials:'include',
+          cache:'no-store'
+        });
+        const data = await r.json().catch(() => ({}));
+        const itens = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        const dl = $('lista-instituicoes');
+        dl.innerHTML = '';
+        itens.forEach(inst => {
+          const opt = document.createElement('option');
+          opt.value = inst.nome || inst._id || '';
+          if (inst._id) opt.label = inst._id;
+          dl.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn('Falha ao carregar instituições:', e?.message || e);
+      }
+    }
+
+    async function carregarUsuario() {
+      try {
+        const r = await fetch(API(`/usuarios/${userId}`), {
+          credentials:'include',
+          cache:'no-store'
+        });
+        if (!r.ok) throw new Error('Erro ao buscar usuário');
+
+        const u = await r.json();
+
+        $('nome').value  = u.nome  || '';
+        $('email').value = u.email || '';
+        $('tipo').value  = u.tipo  || 'monitor';
+        $('portal').value = u.portal || (u.tipo === 'aluno' ? 'aluno' : 'institucional');
+        $('ativo').value = String(typeof u.ativo === 'boolean' ? u.ativo : true);
+        $('alunoId').value = u.alunoId || '';
+
+        const instValue = typeof u.instituicao === 'object'
+          ? (u.instituicao?.nome || u.instituicao?.id || u.instituicao?._id || '')
+          : (u.instituicao || '');
+        $('instituicao').value = instValue;
+
+        syncAlunoFields();
+      } catch (e) {
+        alert('Erro ao carregar dados do usuário.');
+        console.error(e);
+      }
+    }
+
+    $('tipo').addEventListener('change', syncAlunoFields);
+
+    $('form-editar').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const msg = $('msg');
+      msg.className = 'msg';
+      msg.textContent = '';
+
+      const payload = {
+        nome: $('nome').value.trim(),
+        tipo: $('tipo').value,
+        instituicao: $('instituicao').value.trim(),
+        ativo: $('ativo').value === 'true'
       };
 
-      const novaSenha = document.getElementById('novaSenha').value.trim();
-      if (novaSenha) dados.senha = novaSenha;
+      const novaSenha = $('novaSenha').value.trim();
+      if (novaSenha) {
+        const passCheck = validatePasswordClient(novaSenha);
+        if (!passCheck.ok) {
+          msg.classList.add('err');
+          msg.textContent = passCheck.message || 'A nova senha não atende à política de segurança.';
+          return;
+        }
+        payload.senha = novaSenha;
+      }
+
+      if (!['admin','monitor','professor','aluno'].includes(payload.tipo)) {
+        msg.classList.add('err');
+        msg.textContent = 'Tipo inválido.';
+        return;
+      }
+
+      if (payload.tipo === 'aluno') {
+        payload.alunoId = $('alunoId').value.trim();
+        if (!payload.alunoId) {
+          msg.classList.add('err');
+          msg.textContent = 'Usuário do tipo aluno precisa de um aluno vinculado.';
+          return;
+        }
+      }
+
+      if (!payload.nome || !payload.instituicao) {
+        msg.classList.add('err');
+        msg.textContent = 'Preencha todos os campos obrigatórios.';
+        return;
+      }
 
       try {
-        const resposta = await fetch(`/api/usuarios/${id}`, {
+        const r = await fetch(API(`/usuarios/${userId}`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(dados)
+          cache: 'no-store',
+          body: JSON.stringify(payload)
         });
 
-        const resultado = await resposta.json();
-        if (resposta.ok) {
-          alert('Usuário atualizado com sucesso!');
-          window.location.href = 'usuarios.html';
+        const data = await r.json().catch(() => ({}));
+
+        if (r.ok) {
+          msg.classList.add('ok');
+          msg.textContent = '✅ Usuário atualizado com sucesso.';
+          setTimeout(() => location.href = 'usuarios.html', 700);
         } else {
-          alert(resultado.mensagem || 'Erro ao atualizar usuário.');
+          msg.classList.add('err');
+          msg.textContent = data?.mensagem || 'Erro ao atualizar usuário.';
         }
-      } catch (error) {
-        alert('Erro ao enviar os dados.');
-        console.error(error);
+      } catch (e) {
+        msg.classList.add('err');
+        msg.textContent = 'Erro de conexão com o servidor.';
+        console.error(e);
       }
     });
 
-    carregarDados();
+    (async function boot(){
+      if (!userId) {
+        alert('ID do usuário não informado.');
+        location.href='usuarios.html';
+        return;
+      }
+      await garantirAdmin();
+      await carregarInstituicoes();
+      await carregarUsuario();
+    })();
   </script>
+  <script src="notify.js"></script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

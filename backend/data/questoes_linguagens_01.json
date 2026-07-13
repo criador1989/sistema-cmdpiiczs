@@ -1,0 +1,191 @@
+[
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação de texto",
+    "tema": "Leitura e compreensão",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "Ao ler um texto informativo, o leitor deve buscar principalmente:",
+    "alternativas": [
+      { "letra": "A", "texto": "A opinião pessoal do autor." },
+      { "letra": "B", "texto": "O sentido geral e as informações principais." },
+      { "letra": "C", "texto": "A quantidade de palavras utilizadas." },
+      { "letra": "D", "texto": "A formatação gráfica do texto." },
+      { "letra": "E", "texto": "A repetição de termos técnicos." }
+    ],
+    "gabarito": "B",
+    "explicacao": "A leitura de textos informativos exige compreensão das ideias principais e do sentido global."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Figuras de linguagem",
+    "tema": "Linguagem figurada",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Na frase 'O tempo voa', ocorre a figura de linguagem chamada:",
+    "alternativas": [
+      { "letra": "A", "texto": "Metáfora" },
+      { "letra": "B", "texto": "Ironia" },
+      { "letra": "C", "texto": "Eufemismo" },
+      { "letra": "D", "texto": "Hipérbole" },
+      { "letra": "E", "texto": "Onomatopeia" }
+    ],
+    "gabarito": "A",
+    "explicacao": "Metáfora ocorre quando há comparação implícita, como no caso do tempo sendo associado a algo que voa."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Coesão textual",
+    "tema": "Conectivos",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "A palavra 'porém' indica uma relação de:",
+    "alternativas": [
+      { "letra": "A", "texto": "Causa" },
+      { "letra": "B", "texto": "Conclusão" },
+      { "letra": "C", "texto": "Adição" },
+      { "letra": "D", "texto": "Contraste" },
+      { "letra": "E", "texto": "Explicação" }
+    ],
+    "gabarito": "D",
+    "explicacao": "'Porém' é uma conjunção adversativa, indicando oposição ou contraste."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação de texto",
+    "tema": "Inferência",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "Inferir um sentido em um texto significa:",
+    "alternativas": [
+      { "letra": "A", "texto": "Copiar exatamente o que está escrito." },
+      { "letra": "B", "texto": "Interpretar além do que está explícito." },
+      { "letra": "C", "texto": "Ignorar partes do texto." },
+      { "letra": "D", "texto": "Resumir o texto." },
+      { "letra": "E", "texto": "Traduzir o texto." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Inferir é compreender informações implícitas no texto."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Pontuação",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "O ponto final é usado para:",
+    "alternativas": [
+      { "letra": "A", "texto": "Separar palavras." },
+      { "letra": "B", "texto": "Finalizar uma frase." },
+      { "letra": "C", "texto": "Indicar dúvida." },
+      { "letra": "D", "texto": "Separar sílabas." },
+      { "letra": "E", "texto": "Indicar emoção." }
+    ],
+    "gabarito": "B",
+    "explicacao": "O ponto final indica o término de uma ideia completa."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Inglês",
+    "habilidade": "Compreensão",
+    "tema": "Vocabulário",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A palavra 'book' em inglês significa:",
+    "alternativas": [
+      { "letra": "A", "texto": "Livro" },
+      { "letra": "B", "texto": "Mesa" },
+      { "letra": "C", "texto": "Janela" },
+      { "letra": "D", "texto": "Caneta" },
+      { "letra": "E", "texto": "Caderno" }
+    ],
+    "gabarito": "A",
+    "explicacao": "'Book' significa livro em inglês."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Gêneros textuais",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Um texto narrativo tem como principal característica:",
+    "alternativas": [
+      { "letra": "A", "texto": "Descrever um ambiente." },
+      { "letra": "B", "texto": "Relatar uma sequência de acontecimentos." },
+      { "letra": "C", "texto": "Argumentar sobre um tema." },
+      { "letra": "D", "texto": "Explicar um conceito." },
+      { "letra": "E", "texto": "Dar instruções." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Textos narrativos contam histórias com começo, meio e fim."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Classes de palavras",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "O substantivo é a palavra que:",
+    "alternativas": [
+      { "letra": "A", "texto": "Indica ação." },
+      { "letra": "B", "texto": "Nomeia seres, objetos ou ideias." },
+      { "letra": "C", "texto": "Indica qualidade." },
+      { "letra": "D", "texto": "Substitui o verbo." },
+      { "letra": "E", "texto": "Liga orações." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Substantivos nomeiam seres, coisas, lugares ou conceitos."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Sinonímia",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A palavra 'feliz' tem como sinônimo:",
+    "alternativas": [
+      { "letra": "A", "texto": "Triste" },
+      { "letra": "B", "texto": "Alegre" },
+      { "letra": "C", "texto": "Cansado" },
+      { "letra": "D", "texto": "Bravo" },
+      { "letra": "E", "texto": "Quieto" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Sinonímia é a relação entre palavras com significados semelhantes."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Texto argumentativo",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "O objetivo principal de um texto argumentativo é:",
+    "alternativas": [
+      { "letra": "A", "texto": "Narrar uma história." },
+      { "letra": "B", "texto": "Descrever um objeto." },
+      { "letra": "C", "texto": "Convencer o leitor de uma ideia." },
+      { "letra": "D", "texto": "Relatar um fato histórico." },
+      { "letra": "E", "texto": "Explicar um conceito científico." }
+    ],
+    "gabarito": "C",
+    "explicacao": "Textos argumentativos defendem uma ideia com argumentos para convencer o leitor."
+  }
+]

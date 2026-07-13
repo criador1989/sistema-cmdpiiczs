@@ -1,0 +1,191 @@
+[
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Sentido de palavras",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "O sentido de uma palavra no texto depende principalmente:",
+    "alternativas": [
+      { "letra": "A", "texto": "Do dicionário apenas." },
+      { "letra": "B", "texto": "Do contexto em que ela está inserida." },
+      { "letra": "C", "texto": "Da quantidade de letras." },
+      { "letra": "D", "texto": "Da ordem alfabética." },
+      { "letra": "E", "texto": "Da pontuação." }
+    ],
+    "gabarito": "B",
+    "explicacao": "O contexto define o sentido real das palavras dentro do texto."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Coesão textual",
+    "tema": "Conectivos",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "A palavra 'portanto' indica:",
+    "alternativas": [
+      { "letra": "A", "texto": "Contraste" },
+      { "letra": "B", "texto": "Causa" },
+      { "letra": "C", "texto": "Conclusão" },
+      { "letra": "D", "texto": "Adição" },
+      { "letra": "E", "texto": "Tempo" }
+    ],
+    "gabarito": "C",
+    "explicacao": "'Portanto' é um conectivo conclusivo."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Advérbios",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Os advérbios indicam:",
+    "alternativas": [
+      { "letra": "A", "texto": "Ações." },
+      { "letra": "B", "texto": "Circunstâncias." },
+      { "letra": "C", "texto": "Nomes." },
+      { "letra": "D", "texto": "Conectivos." },
+      { "letra": "E", "texto": "Substantivos." }
+    ],
+    "gabarito": "B",
+    "explicacao": "Advérbios indicam circunstâncias como tempo, modo e lugar."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Sinonímia",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A palavra 'rápido' pode ser substituída por:",
+    "alternativas": [
+      { "letra": "A", "texto": "Lento" },
+      { "letra": "B", "texto": "Ágil" },
+      { "letra": "C", "texto": "Fraco" },
+      { "letra": "D", "texto": "Forte" },
+      { "letra": "E", "texto": "Alto" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Sinonímia envolve palavras com significados semelhantes."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gêneros textuais",
+    "tema": "Argumentativo",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "Um texto argumentativo apresenta:",
+    "alternativas": [
+      { "letra": "A", "texto": "Apenas descrição." },
+      { "letra": "B", "texto": "Sequência de fatos." },
+      { "letra": "C", "texto": "Defesa de uma ideia." },
+      { "letra": "D", "texto": "Diálogo entre personagens." },
+      { "letra": "E", "texto": "Lista de instruções." }
+    ],
+    "gabarito": "C",
+    "explicacao": "O texto argumentativo busca convencer o leitor."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Inglês",
+    "habilidade": "Vocabulário",
+    "tema": "Tradução",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "A palavra 'car' significa:",
+    "alternativas": [
+      { "letra": "A", "texto": "Casa" },
+      { "letra": "B", "texto": "Carro" },
+      { "letra": "C", "texto": "Rua" },
+      { "letra": "D", "texto": "Mesa" },
+      { "letra": "E", "texto": "Livro" }
+    ],
+    "gabarito": "B",
+    "explicacao": "'Car' significa carro em inglês."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Conclusão",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "A conclusão de um texto deve:",
+    "alternativas": [
+      { "letra": "A", "texto": "Introduzir novas ideias." },
+      { "letra": "B", "texto": "Retomar e fechar o tema." },
+      { "letra": "C", "texto": "Ignorar o assunto." },
+      { "letra": "D", "texto": "Criar dúvidas." },
+      { "letra": "E", "texto": "Ser a parte mais longa." }
+    ],
+    "gabarito": "B",
+    "explicacao": "A conclusão encerra o texto retomando o tema principal."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Semântica",
+    "tema": "Denotação e conotação",
+    "dificuldade": "dificil",
+    "origem": "autor",
+    "enunciado": "O sentido figurado de uma palavra é chamado de:",
+    "alternativas": [
+      { "letra": "A", "texto": "Denotação" },
+      { "letra": "B", "texto": "Conotação" },
+      { "letra": "C", "texto": "Sinonímia" },
+      { "letra": "D", "texto": "Antônimo" },
+      { "letra": "E", "texto": "Morfologia" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Conotação é o uso figurado da linguagem."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Gramática",
+    "tema": "Pontuação",
+    "dificuldade": "facil",
+    "origem": "autor",
+    "enunciado": "O ponto de interrogação indica:",
+    "alternativas": [
+      { "letra": "A", "texto": "Afirmação" },
+      { "letra": "B", "texto": "Pergunta" },
+      { "letra": "C", "texto": "Ordem" },
+      { "letra": "D", "texto": "Surpresa" },
+      { "letra": "E", "texto": "Explicação" }
+    ],
+    "gabarito": "B",
+    "explicacao": "O ponto de interrogação indica pergunta."
+  },
+
+  {
+    "area": "Linguagens",
+    "disciplina": "Português",
+    "habilidade": "Interpretação",
+    "tema": "Texto narrativo",
+    "dificuldade": "medio",
+    "origem": "autor",
+    "enunciado": "No texto narrativo, o personagem principal é chamado de:",
+    "alternativas": [
+      { "letra": "A", "texto": "Narrador" },
+      { "letra": "B", "texto": "Protagonista" },
+      { "letra": "C", "texto": "Autor" },
+      { "letra": "D", "texto": "Leitor" },
+      { "letra": "E", "texto": "Observador" }
+    ],
+    "gabarito": "B",
+    "explicacao": "Protagonista é o personagem principal da narrativa."
+  }
+]

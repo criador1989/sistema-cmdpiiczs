@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ciência do Responsável</title>
+  <meta name="theme-color" content="#8B0000" />
+
+  <style>
+    :root{
+      --rubi:#8B0000;
+      --rubi2:#B22222;
+      --bg:#120304;
+      --glass:#ffffff12;
+      --line:#ffffff24;
+      --text:#f8fafc;
+      --soft:#cbd5e1;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:"Segoe UI",system-ui,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(139,0,0,.35), transparent 35%),
+        linear-gradient(135deg,#1b0506,#07111f 70%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+
+    .card{
+      width:min(820px,100%);
+      background:var(--glass);
+      border:1px solid var(--line);
+      border-radius:26px;
+      backdrop-filter:blur(12px);
+      box-shadow:0 25px 70px #0008;
+      overflow:hidden;
+    }
+
+    .head{
+      padding:22px;
+      background:linear-gradient(135deg,var(--rubi),#3b0608);
+      border-bottom:1px solid #ffffff22;
+    }
+
+    .head h1{
+      margin:0;
+      font-size:1.35rem;
+    }
+
+    .head p{
+      margin:6px 0 0;
+      color:#ffe4e6;
+      font-size:.95rem;
+    }
+
+    .body{
+      padding:22px;
+      display:grid;
+      gap:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    @media(max-width:700px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .kv{
+      background:#00000030;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:13px;
+    }
+
+    .kv b{
+      display:block;
+      color:var(--soft);
+      font-size:.86rem;
+      margin-bottom:4px;
+    }
+
+    .box{
+      background:#00000030;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:15px;
+      line-height:1.55;
+    }
+
+    textarea{
+      width:100%;
+      min-height:120px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#00000036;
+      color:#fff;
+      padding:13px;
+      resize:vertical;
+      outline:none;
+      font-family:inherit;
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    button{
+      border:0;
+      border-radius:14px;
+      padding:12px 16px;
+      font-weight:800;
+      cursor:pointer;
+      color:#fff;
+      background:var(--rubi);
+    }
+
+    button:hover{background:var(--rubi2)}
+    button[disabled]{opacity:.6;cursor:not-allowed}
+
+    .status{
+      padding:14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#0000002c;
+      color:var(--soft);
+    }
+
+    .status.ok{
+      border-color:#22c55e66;
+      background:#16a34a22;
+      color:#dcfce7;
+    }
+
+    .status.warn{
+      border-color:#f59e0b66;
+      background:#f59e0b22;
+      color:#fef3c7;
+    }
+
+    .spinner{
+      display:inline-block;
+      width:20px;
+      height:20px;
+      border:3px solid #ffffff33;
+      border-top-color:#fff;
+      border-radius:50%;
+      animation:spin .7s linear infinite;
+      vertical-align:-5px;
+      margin-right:8px;
+    }
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .foot{
+      padding:14px 22px 20px;
+      color:#94a3b8;
+      font-size:.82rem;
+      text-align:center;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <div class="head">
+      <h1>Ciência do Responsável</h1>
+      <p>Procedimento disciplinar escolar — Axoriin</p>
+    </div>
+
+    <div class="body" id="app">
+      <div class="status">
+        <span class="spinner"></span>Carregando procedimento...
+      </div>
+    </div>
+
+    <div class="foot">
+      Este acesso é individual, temporário e destinado exclusivamente ao responsável legal.
+    </div>
+  </main>
+
+  <script>
+    const app = document.getElementById('app');
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token') || '';
+
+    let procedimento = null;
+
+    async function fetchJson(path, options = {}) {
+      const resp = await fetch(path, {
+        cache:'no-store',
+        ...options
+      });
+
+      const text = await resp.text();
+      let data = null;
+
+      try { data = text ? JSON.parse(text) : null; }
+      catch { data = { raw:text }; }
+
+      if (!resp.ok) {
+        throw new Error(data?.message || data?.error || `Erro HTTP ${resp.status}`);
+      }
+
+      return data;
+    }
+
+    function fmtData(dt) {
+      if (!dt) return '—';
+      try { return new Date(dt).toLocaleString('pt-BR'); }
+      catch { return '—'; }
+    }
+
+    function render() {
+      const p = procedimento;
+      const r = p.responsavel || {};
+
+      const jaConfirmou = !!r.confirmouCiencia;
+
+      app.innerHTML = `
+        <div class="${jaConfirmou ? 'status ok' : 'status warn'}">
+          ${jaConfirmou
+            ? `✅ Ciência já confirmada em ${fmtData(r.confirmouCienciaEm)}.`
+            : '⚠️ A confirmação de ciência ainda está pendente.'}
+        </div>
+
+        <div class="grid">
+          <div class="kv"><b>Aluno(a)</b>${p.aluno?.nome || '—'}</div>
+          <div class="kv"><b>Turma</b>${p.aluno?.turma || '—'}</div>
+          <div class="kv"><b>Nº do procedimento</b>${p.numeroProcesso || '—'}</div>
+          <div class="kv"><b>Status</b>${p.status || '—'}</div>
+          <div class="kv"><b>Data do fato</b>${fmtData(p.dataFato)}</div>
+          <div class="kv"><b>Local</b>${p.localFato || '—'}</div>
+          <div class="kv"><b>Prazo de acompanhamento</b>${fmtData(p.prazoAcompanhamentoAte)}</div>
+          <div class="kv"><b>Natureza</b>${p.natureza === 'ato_infracional' ? 'Ato infracional' : 'Indisciplina escolar'}</div>
+        </div>
+
+        <div class="box">
+          <b>Descrição do fato</b><br>
+          ${p.descricaoFato || '—'}
+        </div>
+
+        <div class="box">
+          <b>Providências imediatas</b><br>
+          ${p.providenciasImediatas || '—'}
+        </div>
+
+        <textarea id="resposta" ${jaConfirmou ? 'disabled' : ''} placeholder="Caso deseje, registre uma resposta ou observação para a escola.">${r.resposta || ''}</textarea>
+
+        <div class="actions">
+          <button id="btnConfirmar" onclick="confirmarCiencia()" ${jaConfirmou ? 'disabled' : ''}>
+            ${jaConfirmou ? 'Ciência já confirmada' : 'Confirmar ciência'}
+          </button>
+        </div>
+      `;
+    }
+
+    async function carregar() {
+      if (!token) {
+        app.innerHTML = `<div class="status warn">Token ausente no link.</div>`;
+        return;
+      }
+
+      try {
+        const data = await fetchJson(`/api/processos-disciplinares/publico/${token}`);
+        procedimento = data.processo;
+        render();
+      } catch (e) {
+        app.innerHTML = `<div class="status warn">${e.message || 'Erro ao carregar procedimento.'}</div>`;
+      }
+    }
+
+    async function confirmarCiencia() {
+      const btn = document.getElementById('btnConfirmar');
+      const resposta = document.getElementById('resposta')?.value || '';
+
+      const ok = confirm('Confirma que tomou ciência deste procedimento disciplinar?');
+      if (!ok) return;
+
+      try {
+        if (btn) btn.disabled = true;
+
+        await fetchJson(`/api/processos-disciplinares/publico/${token}/confirmar-ciencia`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ resposta })
+        });
+
+        await carregar();
+        alert('Ciência confirmada com sucesso.');
+      } catch (e) {
+        if (btn) btn.disabled = false;
+        alert(e.message || 'Erro ao confirmar ciência.');
+      }
+    }
+
+    window.confirmarCiencia = confirmarCiencia;
+
+    carregar();
+  </script>
+</body>
+</html>

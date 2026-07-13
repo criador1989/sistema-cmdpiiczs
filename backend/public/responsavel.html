@@ -20,7 +20,6 @@
       height: 100vh;
       color: #fff;
     }
-
     .container {
       background-color: white;
       padding: 30px;
@@ -31,74 +30,26 @@
       color: #333;
       text-align: center;
     }
-
-    h2 {
-      color: #941a1d;
-      margin-bottom: 10px;
-    }
-
-    p {
-      font-size: 15px;
-      margin-bottom: 20px;
-    }
-
+    h2 { color: #941a1d; margin-bottom: 10px; }
+    p { font-size: 15px; margin-bottom: 20px; }
     input {
-      padding: 12px;
-      font-size: 16px;
-      width: 100%;
-      max-width: 300px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      padding: 12px; font-size: 16px; width: 100%; max-width: 300px;
+      margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px;
     }
-
     button {
-      padding: 12px 20px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 5px;
+      padding: 12px 20px; background-color: #d82327; color: white;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 5px;
     }
-
-    button:hover {
-      background-color: #941a1d;
-    }
-
-    .mensagem {
-      margin-top: 15px;
-      color: red;
-    }
-
+    button:hover { background-color: #941a1d; }
+    .mensagem { margin-top: 15px; color: red; }
     table {
-      margin: 20px auto 0;
-      border-collapse: collapse;
-      width: 100%;
-      max-width: 100%;
-      background: #fff;
+      margin: 20px auto 0; border-collapse: collapse; width: 100%; max-width: 100%; background: #fff;
     }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      font-size: 14px;
-    }
-
-    th {
-      background-color: #f2f2f2;
-      color: #333;
-    }
-
+    th, td { border: 1px solid #ccc; padding: 10px; font-size: 14px; }
+    th { background-color: #f2f2f2; color: #333; }
     @media (max-width: 600px) {
-      .container {
-        padding: 20px;
-      }
-
-      input {
-        width: 100%;
-      }
+      .container { padding: 20px; }
+      input { width: 100%; }
     }
   </style>
 </head>
@@ -110,7 +61,6 @@
     <br />
     <button onclick="consultar()">Consultar</button>
     <div class="mensagem" id="mensagem"></div>
-
     <table id="tabela" style="display: none;">
       <thead>
         <tr>
@@ -125,6 +75,22 @@
   </div>
 
   <script>
+    function dateOnlyFromAny(value) {
+      if (!value) return '';
+      const s = String(value || '').trim();
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      const d = new Date(s);
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    }
+
+    function formatarDataCalendarioBR(value) {
+      const iso = dateOnlyFromAny(value);
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
     async function consultar() {
       const codigo = document.getElementById('codigo').value.trim();
       const mensagem = document.getElementById('mensagem');
@@ -152,7 +118,7 @@
         notificacoes.forEach(n => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${new Date(n.data).toLocaleDateString('pt-BR')}</td>
+            <td>${formatarDataCalendarioBR(n.data)}</td>
             <td>${n.motivo}</td>
             <td>${n.tipo}</td>
             <td>${n.justificativa || '—'}</td>
@@ -166,7 +132,6 @@
       }
     }
 
-    // Registrar Service Worker (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')
@@ -175,5 +140,6 @@
       });
     }
   </script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

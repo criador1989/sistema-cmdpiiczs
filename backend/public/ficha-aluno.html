@@ -5,145 +5,460 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ficha do Aluno - CMDPII</title>
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#d82327" />
+  <meta name="theme-color" content="#0A1322" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    :root{
-      --p1:#941a1d; --p2:#d82327; --txt:#1b1b1b; --muted:#6f6f6f;
-      --card:#ffffff; --line:#ebebeb; --radius:16px;
+  :root{
+    --bg-0:#14375f;
+    --bg-1:#0f2f53;
+    --glass:#0f1f36cc;
+    --ink:#ecf2ff;
+    --muted:#b8c7e0;
+    --line:rgba(170,200,240,.36);
+    --card:#102544bf;
+    --rubi:#d82327;
+    --rubi-2:#8B0000;
+    --gold:#e7c873;
+    --radius:18px;
+    --shadow:
+      0 22px 60px rgba(0,0,0,.38),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    --glow-1: radial-gradient(900px 520px at 12% -8%, rgba(120,180,255,.28), transparent 60%);
+    --glow-2: radial-gradient(820px 460px at 108% -6%, rgba(90,210,255,.20), transparent 60%);
+    --glow-3: radial-gradient(700px 380px at -6% 86%, rgba(80,150,255,.18), transparent 60%);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:
+      url("img/bg-painel-smart.png") center/cover fixed no-repeat,
+      var(--glow-1),
+      var(--glow-2),
+      var(--glow-3),
+      radial-gradient(10px 10px at 22% 18%, rgba(255,255,255,.10), transparent 60%),
+      radial-gradient(14px 14px at 36% 28%, rgba(255,255,255,.08), transparent 65%),
+      radial-gradient(12px 12px at 68% 20%, rgba(255,255,255,.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1));
+    background-blend-mode: screen, screen, screen, normal;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    color-scheme: dark;
+  }
+
+  .topbar{
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg, rgba(23,45,82,.72), rgba(20,40,73,.58));
+    border-bottom:1px solid var(--line);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .topbar .inner{
+    max-width:1180px; margin:0 auto; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .brand{font-weight:800; display:flex; align-items:center; gap:10px; letter-spacing:.3px}
+  .brand .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:linear-gradient(135deg,#7fc2ff,#bdf4ff);
+    box-shadow:0 0 14px rgba(160,220,255,.9), 0 0 28px rgba(120,190,255,.45);
+  }
+  .spacer{flex:1}
+
+  .btn{
+    appearance:none; border:1px solid rgba(180,210,245,.28); cursor:pointer; font-weight:700;
+    padding:10px 14px; border-radius:12px; color:#f0f6ff;
+    background:linear-gradient(135deg, rgba(26,46,82,.9), rgba(20,40,73,.85));
+    box-shadow:
+      0 10px 26px rgba(0,0,0,.30),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    transition:.22s transform,.22s filter,.22s border-color,.22s box-shadow;
+    text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn:hover{ transform:translateY(-1px); filter:saturate(1.06); }
+
+  .btn.ghost{
+    background:linear-gradient(135deg, rgba(26,46,82,.55), rgba(20,40,73,.50));
+    color:#e1edff;
+  }
+  .btn.primary{
+    background:linear-gradient(135deg, #1c4f8c, #2a6cbb);
+    border-color:rgba(180,210,245,.38);
+    box-shadow:0 14px 38px rgba(42,108,187,.42), inset 0 1px 0 rgba(255,255,255,.06)
+  }
+  .btn.warn{ background:linear-gradient(135deg,#4b381c,#6a4a22); color:#ffdcae }
+
+  .btn-ghost-light{
+    background:linear-gradient(135deg, rgba(40,70,120,.42), rgba(26,50,92,.38));
+    border:1px solid rgba(190,220,255,.36);
+    color:#eaf3ff;
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.22),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .btn-ghost-light:hover{ filter:brightness(1.05) saturate(1.05) }
+
+  .btn-primary-rubi{
+    background:linear-gradient(135deg, var(--rubi), var(--rubi-2));
+    border:1px solid rgba(231,200,115,.66);
+    color:#fffbe9;
+    box-shadow:
+      0 12px 34px rgba(216,35,39,.35),
+      inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  .btn-primary-rubi:hover{ filter:brightness(1.06) }
+
+  .page{ max-width:1180px; margin:22px auto; padding:0 18px; animation:fadeIn .35s ease-out both; }
+  @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+  .hero{
+    background:linear-gradient(180deg, rgba(26,46,82,.70), rgba(18,36,66,.66));
+    border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);
+    border:1px solid var(--line);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .head{
+    display:flex; gap:16px; align-items:center; padding-bottom:14px;
+    border-bottom:1px dashed rgba(170,200,240,.38);
+  }
+
+  .avatar{
+    width:96px; height:96px; border-radius:999px; overflow:hidden; flex:0 0 96px;
+    background:linear-gradient(180deg,#152c53,#122749);
+    border:1px solid rgba(180,210,245,.36);
+    display:flex; align-items:center; justify-content:center; color:#a7b3c8; font-weight:800;
+    box-shadow:
+      0 6px 28px rgba(0,0,0,.35),
+      0 0 0 8px rgba(160,210,255,.06),
+      inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .avatar img{width:100%; height:100%; object-fit:cover}
+
+  .badges{display:flex; gap:8px; flex-wrap:wrap}
+  .badge{
+    font-size:.78rem; color:#e7f0ff;
+    background:linear-gradient(180deg, rgba(26,46,82,.55), rgba(18,36,66,.52));
+    border:1px solid rgba(180,210,245,.32);
+    padding:4px 10px; border-radius:999px
+  }
+
+  .qr-wrap{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+  .qr-preview{
+    display:none; width:100%;
+    border:1px dashed rgba(180,210,245,.36);
+    background:linear-gradient(180deg, rgba(24,44,78,.46), rgba(18,36,66,.42));
+    border-radius:12px; padding:12px; margin-top:8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .qr-row{display:flex; gap:16px; align-items:center; flex-wrap:wrap}
+  .qr-row img{border:1px solid rgba(180,210,245,.38); border-radius:10px; background:#fff}
+
+  .kvs{ display:grid; gap:12px; margin-top:14px; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .kv{
+    background:linear-gradient(180deg, rgba(22,42,76,.52), rgba(18,36,66,.48));
+    border:1px solid rgba(180,210,245,.32);
+    border-radius:12px; padding:10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .kv b{display:block; color:#cfe1ff; font-size:.85rem}
+  .kv .big{font-weight:800; font-size:26px; color:#ffffff}
+  .kv .pill{
+    display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;
+    border:1px solid rgba(180,210,245,.36);
+    font-weight:700;font-size:.78rem;
+    background:linear-gradient(180deg, rgba(28,50,92,.60), rgba(18,36,66,.55));
+    color:#f0f6ff
+  }
+
+  .columns{ display:grid; gap:18px; margin-top:18px; grid-template-columns: 1fr 1fr; align-items:start; }
+  @media (max-width:900px){ .columns{grid-template-columns:1fr} }
+
+  .card{
+    background:linear-gradient(180deg, rgba(24,44,78,.58), rgba(18,36,66,.54));
+    border-radius:14px; padding:16px;
+    border:1px solid rgba(180,210,245,.34);
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+  }
+  .title{margin:0 0 10px; color:#f0f6ff; font-size:18px; letter-spacing:.2px}
+
+  .list{ display:flex; flex-direction:column; gap:12px; max-height:520px; overflow:auto; padding-right:4px; scroll-behavior:smooth; }
+  .empty{
+    border:1px dashed rgba(180,210,245,.34);
+    border-radius:12px; padding:14px;
+    background:linear-gradient(180deg, rgba(24,44,78,.42), rgba(18,36,66,.38));
+    color:var(--muted); text-align:center
+  }
+  .muted{color:var(--muted)}
+  .chip{
+    display:inline-block; padding:2px 8px;
+    border:1px solid rgba(180,210,245,.34);
+    border-radius:999px;
+    background:linear-gradient(180deg, rgba(24,44,78,.52), rgba(18,36,66,.48));
+    font-size:.78rem; color:#eef5ff
+  }
+
+  .obs,.notif{
+    border:1px solid rgba(180,210,245,.34);
+    border-radius:12px;
+    background:linear-gradient(180deg, rgba(28,50,92,.52), rgba(18,36,66,.48));
+    padding:12px; box-shadow:
+      0 10px 26px rgba(0,0,0,.28),
+      inset 0 1px 0 rgba(255,255,255,.04);
+    position:relative;
+  }
+  .obs{border-left:6px solid #86dcff}
+  .notif{border-left:6px solid #ff9b9b}
+
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .actions{display:flex; gap:8px; flex-wrap:wrap}
+
+  .iconbtn{
+    appearance:none; border:1px solid rgba(180,210,245,.34);
+    background:linear-gradient(135deg, rgba(28,50,92,.58), rgba(18,36,66,.54));
+    border-radius:10px; padding:8px 10px; cursor:pointer;
+    font-weight:600; text-decoration:none; color:#eef5ff;
+    transition:.2s filter,.2s transform,.2s border-color;
+  }
+  .iconbtn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:rgba(210,235,255,.44); }
+
+  .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
+  .editor textarea{
+    flex:1; resize:vertical; min-height:86px;
+    border:1px solid rgba(180,210,245,.36);
+    border-radius:10px; padding:10px;
+    background:linear-gradient(180deg, rgba(26,46,82,.58), rgba(18,36,66,.54));
+    color:#eef3ff
+  }
+
+  .edit-card{
+    background:linear-gradient(180deg, rgba(20,40,73,.66), rgba(18,36,66,.62));
+    border:1px solid rgba(180,210,245,.34);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:16px;
+    margin-top:14px;
+    display:none
+  }
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
+  .edit-card label{font-weight:600;font-size:.9rem;color:#e6f0ff}
+  .edit-card input,.edit-card textarea{
+    width:100%;padding:10px;border:1px solid rgba(180,210,245,.36);
+    border-radius:10px;background:linear-gradient(180deg, rgba(26,46,82,.58), rgba(18,36,66,.54)); color:#eef3ff
+  }
+  .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+
+  .aph-card{
+    background:linear-gradient(135deg, #1c3b69 0%, #24548e 65%, #2b62a8 100%);
+    border:1px solid rgba(150,200,255,.38);
+    border-radius:14px; padding:16px; color:#fff;
+    box-shadow:0 18px 46px rgba(40,90,170,.34);
+  }
+  .aph-card h3{margin:0;color:#fff}
+  .aph-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .aph-pill{
+    background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.24);
+    color:#fff; border-radius:999px; padding:6px 10px; font-size:.85rem; font-weight:700
+  }
+
+  .chart-wrap{
+    background:linear-gradient(180deg, rgba(18,34,60,.36), rgba(18,36,66,.24));
+    border-radius:12px; padding:12px; border:1px solid rgba(180,210,245,.18);
+  }
+
+  .toast{
+    position:fixed; right:16px; bottom:16px; z-index:9999;
+    max-width:min(520px, calc(100vw - 32px));
+    padding:12px 14px;
+    border-radius:14px;
+    border:1px solid rgba(180,210,245,.34);
+    background:linear-gradient(180deg, rgba(24,44,78,.76), rgba(18,36,66,.72));
+    color:#eef5ff;
+    box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    display:none;
+  }
+  .toast strong{display:block; margin-bottom:2px}
+  .toast.ok{ border-left:6px solid rgba(118,255,179,.95) }
+  .toast.err{ border-left:6px solid rgba(255,154,161,.95) }
+
+  .attach-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  .attach-chip{
+    display:inline-flex; gap:8px; align-items:center;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(180,210,245,.34);
+    background:linear-gradient(180deg, rgba(24,44,78,.52), rgba(18,36,66,.48));
+    color:#eef5ff;
+    font-size:.82rem;
+  }
+  .attach-chip a{color:#d7ebff; text-decoration:none}
+  .attach-chip a:hover{text-decoration:underline}
+  .attach-help{color:var(--muted); font-size:.85rem}
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(2,10,24,.68);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9998;
+  }
+  .modal-overlay.open{ display:flex; }
+
+  .modal-card{
+    width:min(980px, 100%);
+    max-height:90vh;
+    overflow:auto;
+    background:linear-gradient(180deg, rgba(20,40,73,.92), rgba(18,36,66,.90));
+    border:1px solid rgba(180,210,245,.34);
+    border-radius:18px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    padding:18px;
+  }
+  .modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+    padding-bottom:12px;
+    border-bottom:1px dashed rgba(170,200,240,.30);
+  }
+  .modal-title{
+    margin:0;
+    font-size:1.1rem;
+    color:#f0f6ff;
+  }
+  .modal-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+  }
+  @media (max-width:800px){
+    .modal-grid{ grid-template-columns:1fr; }
+  }
+  .info-block{
+    background:linear-gradient(180deg, rgba(24,44,78,.56), rgba(18,36,66,.52));
+    border:1px solid rgba(180,210,245,.28);
+    border-radius:14px;
+    padding:14px;
+  }
+  .info-block h4{
+    margin:0 0 10px;
+    font-size:.98rem;
+    color:#eef5ff;
+  }
+  .info-list{
+    display:grid;
+    gap:10px;
+  }
+  .info-item{
+    border:1px solid rgba(180,210,245,.20);
+    border-radius:10px;
+    padding:10px;
+    background:linear-gradient(180deg, rgba(28,50,92,.36), rgba(18,36,66,.32));
+  }
+  .info-label{
+    display:block;
+    font-size:.78rem;
+    color:#b8c7e0;
+    margin-bottom:3px;
+  }
+  .info-value{
+    color:#ffffff;
+    font-weight:600;
+    word-break:break-word;
+  }
+
+  .hidden{display:none !important;}
+
+  @media print {
+    *{
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
+
+    html, body { height:auto !important; }
+
     body{
-      margin:0; color:var(--txt); font-family:'Segoe UI',system-ui,-apple-system,Arial;
-      background:linear-gradient(120deg,var(--p1),var(--p2));
+      margin:0 !important;
+      background:
+        url("img/bg-painel-smart.png") center/cover no-repeat fixed,
+        var(--glow-1),
+        var(--glow-2),
+        var(--glow-3),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1)) !important;
     }
 
-    .topbar{
-      position:sticky; top:0; z-index:10;
-      width:100%; background:linear-gradient(90deg,rgba(255,255,255,.94),rgba(255,255,255,.92));
-      backdrop-filter:saturate(160%) blur(6px);
-      border-bottom:1px solid #e9e9e9;
+    .topbar,
+    .actions,
+    .btn,
+    .iconbtn,
+    #btnTrocarFoto,
+    #btnEditar,
+    #btnVerDados,
+    #btnImprimirTop,
+    #btnPDFTop,
+    #btnVoltarLista,
+    #btnVoltarPainel,
+    #btnEnableQR,
+    #btnShowQR,
+    #btnDisableQR,
+    #editorAluno,
+    .toast,
+    .modal-overlay{
+      display:none !important;
     }
-    .topbar .inner{
-      max-width:1180px; margin:0 auto; padding:14px 18px;
-      display:flex; align-items:center; gap:10px;
-    }
-    .brand{font-weight:800; color:#222; letter-spacing:.4px}
-    .spacer{flex:1}
-    .btn{
-      appearance:none; border:none; cursor:pointer; font-weight:700;
-      padding:10px 14px; border-radius:12px; color:#fff;
-      background:linear-gradient(90deg,var(--p1),var(--p2));
-      box-shadow:0 8px 22px rgba(148,26,29,.28); transition:.2s transform,.2s filter;
-      text-decoration:none; display:inline-flex; align-items:center; gap:8px;
-    }
-    .btn:hover{ transform:translateY(-1px); filter:saturate(1.05) }
-    .btn.ghost{ background:#fff; color:var(--p1); border:1px solid #e0e0e0; box-shadow:none }
 
-    .page{
-      max-width:1180px; margin:22px auto; padding:0 18px;
-      animation:fadeIn .35s ease-out both;
-    }
-    @keyframes fadeIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+    .page{ max-width:100% !important; margin:0 !important; padding:0 !important; }
+    .hero, .card{ break-inside:avoid; page-break-inside:avoid; }
+    .list{ max-height:none !important; overflow:visible !important; }
+    #qrPreview{ display:block !important; }
 
-    .hero{
-      background:linear-gradient(180deg,#fff,#f9f9f9);
-      border-radius:var(--radius); padding:18px; box-shadow:0 18px 50px rgba(0,0,0,.18);
-      border:1px solid #efefef;
-    }
-    .head{
-      display:flex; gap:16px; align-items:center; padding-bottom:14px; border-bottom:1px dashed var(--line);
-    }
-    .avatar{
-      width:88px; height:88px; border-radius:14px; overflow:hidden; flex:0 0 88px;
-      background:#f3f3f3; border:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; color:#9a9a9a; font-weight:800;
-    }
-    .avatar img{width:100%; height:100%; object-fit:cover}
-    .badges{display:flex; gap:8px; flex-wrap:wrap}
-    .badge{ font-size:.78rem; color:#444; background:#f3f3f3; border:1px solid #ececec; padding:4px 10px; border-radius:999px }
-
-    .kvs{
-      display:grid; gap:12px; margin-top:14px;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-    }
-    @media (max-width:1000px){ .kvs{grid-template-columns:repeat(2,minmax(0,1fr))} }
-    .kv{background:#fcfcfc; border:1px solid var(--line); border-radius:10px; padding:10px}
-    .kv b{display:block; color:#777; font-size:.85rem}
-    .kv .big{font-weight:800; font-size:26px; color:var(--p1)}
-
-    .columns{
-      display:grid; gap:18px; margin-top:18px;
-      grid-template-columns: 1fr 1fr;
-      align-items:start;
-    }
-    @media (max-width:900px){ .columns{grid-template-columns:1fr} }
-
-    .card{
-      background:var(--card); border-radius:14px; padding:16px;
-      border:1px solid var(--line); box-shadow:0 10px 28px rgba(0,0,0,.08);
-    }
-    .title{margin:0 0 10px; color:#222; font-size:18px}
-
-    .list{
-      display:flex; flex-direction:column; gap:12px;
-      max-height:520px; overflow:auto; padding-right:4px;
-      scroll-behavior:smooth;
-    }
-    .empty{border:1px dashed var(--line); border-radius:12px; padding:14px; background:#fafafa; color:#777; text-align:center}
-    .muted{color:var(--muted)}
-
-    .obs,.notif{
-      border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,.06); position:relative;
-    }
-    .obs{border-left:6px solid var(--p1)}
-    .notif{border-left:6px solid #b71c1c}
-    .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
-    .chip{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:#f4f4f4; font-size:.78rem}
-    .actions{display:flex; gap:8px; flex-wrap:wrap}
-    .iconbtn{
-      appearance:none; border:1px solid var(--line); background:#fff; border-radius:10px;
-      padding:8px 10px; cursor:pointer; font-weight:600; text-decoration:none; color:#333;
-    }
-    .iconbtn:hover{filter:brightness(.96)}
-
-    .editor{display:flex; gap:8px; align-items:center; margin-top:8px}
-    .editor textarea{flex:1; resize:vertical; min-height:86px; border:1px solid #d7d7d7; border-radius:10px; padding:10px}
-
-    /* ✅ editor do aluno (form embutido) */
-    .edit-card{
-      background:#fff;border:1px solid #e6e6e6;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.15);
-      padding:16px;margin-top:14px;display:none
-    }
-    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .grid-1{display:grid;grid-template-columns:1fr;gap:10px}
-    .edit-card label{font-weight:600;font-size:.9rem}
-    .edit-card input,.edit-card textarea{
-      width:100%;padding:10px;border:1px solid #cfcfcf;border-radius:10px
-    }
-    .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
-
-    @media print{
-      body{ background:#fff }
-      .topbar{ display:none !important }
-      .page{ width:100%; margin:0; padding:0 12mm }
-      .columns{ grid-template-columns:1fr 1fr; gap:12px }
-      .list{ max-height:none; overflow:visible }
-      .obs,.notif{ break-inside:avoid }
-      .hero,.card{ box-shadow:none; border:1px solid #ccc }
-      a.btn, button.btn, .iconbtn{ display:none !important }
-    }
+    .hero, .card, .obs, .notif{ box-shadow:none !important; }
+  }
   </style>
+
+  <script>
+    if (location.hostname === 'localhost') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(rs => rs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
+    }
+  </script>
 </head>
 <body>
   <div class="topbar">
     <div class="inner">
-      <div class="brand">Ficha do Aluno</div>
+      <div class="brand"><span class="dot"></span> Ficha do Aluno</div>
       <div class="spacer"></div>
-      <button class="btn ghost" onclick="location.href='painel.html'">← Voltar ao Painel</button>
-      <button class="btn" id="btnImprimir">Imprimir</button>
-      <a id="btnPDF" class="btn" href="#" target="_blank" rel="noopener">Exportar PDF</a>
+      <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
+      <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
+      <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
+      <a id="btnPDFTop" class="btn primary" href="#" target="_blank" rel="noopener">Exportar PDF</a>
     </div>
   </div>
 
@@ -158,67 +473,109 @@
             <span class="badge" id="badgeCodigo">Código —</span>
             <span class="badge" id="badgeId">ID —</span>
           </div>
+
+          <div class="qr-wrap" id="qrWrap">
+            <button class="btn primary" id="btnEnableQR">🔗 Habilitar link público</button>
+            <button class="btn btn-ghost-light" id="btnShowQR">🧾 Ver/Atualizar QR</button>
+            <button class="btn warn" id="btnDisableQR">Desabilitar</button>
+            <span id="qrStatus" class="muted"></span>
+
+            <div class="qr-preview" id="qrPreview">
+              <div class="qr-row">
+                <img id="qrImg" alt="QR Code" width="140" height="140"/>
+                <div style="min-width:260px">
+                  <div style="word-break:break-all"><b>Link:</b> <a id="qrLink" href="#" target="_blank" rel="noopener">—</a></div>
+                  <div id="qrExpira" class="muted">—</div>
+                  <button class="iconbtn" onclick="window.print()">Imprimir</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <!-- ✅ Botão Editar -->
-        <button class="btn ghost" id="btnEditar">Editar</button>
+
+        <div style="display:flex; gap:8px; flex-direction:column; align-items:flex-end">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
+            <button class="btn primary" id="btnTrocarFoto">Trocar foto</button>
+            <button class="btn ghost" id="btnVerDados">Visualizar dados pessoais</button>
+            <button class="btn ghost" id="btnEditar">Editar</button>
+            <button class="btn ghost" id="btnAbrirProcedimento">⚖️ Abrir procedimento</button>
+          </div>
+          <small class="muted" style="margin-top:8px">Última atualização: <span id="ultimaAtualizacao">—</span></small>
+        </div>
+        <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
       </div>
 
-      <!-- ✅ Formulário de edição do aluno -->
-      <div class="edit-card" id="editorAluno">
+      <form class="edit-card" id="editorAluno">
         <div class="grid-2">
-          <div>
-            <label>Nome</label>
-            <input id="edNome" type="text" />
-          </div>
-          <div>
-            <label>Turma</label>
-            <input id="edTurma" type="text" />
-          </div>
-          <div>
-            <label>Data de Entrada</label>
-            <input id="edEntrada" type="date" />
-          </div>
-          <div>
-            <label>Data de Nascimento</label>
-            <input id="edNasc" type="date" />
-          </div>
-          <div>
-            <label>Nome do Pai</label>
-            <input id="edPai" type="text" />
-          </div>
-          <div>
-            <label>Nome da Mãe</label>
-            <input id="edMae" type="text" />
-          </div>
-          <div>
-            <label>Telefone</label>
-            <input id="edTel" type="text" />
-          </div>
-          <div>
-            <label>Endereço</label>
-            <input id="edEnd" type="text" />
-          </div>
-          <div>
-            <label>Código de Acesso</label>
-            <input id="edCodigo" type="text" />
-          </div>
-          <div>
-            <label>Foto (URL, /uploads/..., ou base64)</label>
-            <input id="edFoto" type="text" placeholder="ex: alunos/123.jpg ou https://..." />
+          <div><label>Nome</label><input id="edNome" type="text" /></div>
+          <div><label>Turma</label><input id="edTurma" type="text" /></div>
+          <div><label>Data de Entrada</label><input id="edEntrada" type="date" /></div>
+          <div><label>Data de Nascimento</label><input id="edNasc" type="date" /></div>
+          <div><label>Nome do Pai</label><input id="edPai" type="text" /></div>
+          <div><label>Nome da Mãe</label><input id="edMae" type="text" /></div>
+          <div><label>Telefone</label><input id="edTel" type="text" /></div>
+          <div><label>Endereço</label><input id="edEnd" type="text" /></div>
+          <div><label>Código de Acesso</label><input id="edCodigo" type="text" /></div>
+          <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: /uploads/alunos/123.jpg ou https://..." /></div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h4 style="margin:0 0 10px;">Contatos do Responsável</h4>
+          <div class="grid-2">
+            <div>
+              <label>E-mail do responsável</label>
+              <input id="edEmailResp" type="email" placeholder="ex: mae@exemplo.com" />
+            </div>
+            <div>
+              <label>WhatsApp (só dígitos, DDI 55...)</label>
+              <input id="edWhats" type="tel" inputmode="numeric" placeholder="5599999999999" />
+            </div>
+            <div>
+              <label>Telegram Chat ID (preenchido via /start)</label>
+              <input id="edTelegramId" type="text" readonly placeholder="Será preenchido quando o responsável usar o link do bot" />
+            </div>
+            <div>
+              <label>Vincular no Telegram</label>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+                <button type="button" class="iconbtn" id="btnGerarLinkTg">Gerar link do Telegram (t.me)</button>
+                <a href="#" id="tgLink" target="_blank" rel="noopener" class="muted" style="max-width:100%; word-break:break-all;">—</a>
+                <button type="button" class="iconbtn" id="btnCopiarTg" style="display:none;">Copiar link</button>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="edit-actions">
-          <button class="btn ghost" id="btnCancelarEd">Cancelar</button>
-          <button class="btn" id="btnSalvarEd">Salvar alterações</button>
+          <button class="btn ghost" type="button" id="btnCancelarEd">Cancelar</button>
+          <button class="btn primary" type="submit" id="btnSalvarEd">Salvar alterações</button>
         </div>
-      </div>
+      </form>
 
       <div class="kvs">
         <div class="kv"><b>Turma</b><span id="kvTurma">—</span></div>
         <div class="kv"><b>Data de Entrada</b><span id="kvEntrada">—</span></div>
-        <div class="kv"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
-        <div class="kv"><b>Nota de Comportamento</b><span class="big" id="kvNota">—</span></div>
+        <div class="kv" id="kvCodigoCard"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
+        <div class="kv">
+          <b>Nota de Comportamento</b>
+          <span class="big" id="kvNota">—</span>
+          <span class="pill" id="kvClassificacao" title="Classificação da nota">—</span>
+        </div>
+      </div>
+
+      <div class="aph-card" id="aphCard" style="margin-top:14px">
+        <div class="row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <h3>Atendimentos APH</h3>
+            <div class="aph-meta">
+              <span class="aph-pill">Total deste aluno: <strong id="aphCount" style="margin-left:6px">0</strong></span>
+              <span class="aph-pill" style="font-weight:600;opacity:.9">Registros de ocorrências e primeiros socorros.</span>
+            </div>
+          </div>
+          <div class="aph-actions">
+            <a class="btn btn-ghost-light" id="btnVerAtendimentos">Ver atendimentos salvos</a>
+            <a class="btn btn-primary-rubi" id="btnNovoAtendimento">Gerar novo atendimento</a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -227,9 +584,17 @@
         <h3 class="title">Observações</h3>
         <div id="observacoes" class="list"></div>
 
-        <div class="editor">
+        <div class="attach-row" id="attachRow">
+          <button class="btn ghost" id="btnAnexarObs" type="button">📎 Anexar arquivo</button>
+          <input id="inputObsFiles" type="file" multiple
+                 accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+                 style="display:none;">
+          <span class="attach-help" id="attachHelp">Nenhum anexo selecionado</span>
+        </div>
+
+        <div class="editor" id="obsEditor">
           <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
-          <button class="btn" id="btnSalvar">Salvar</button>
+          <button class="btn primary" id="btnSalvar">Salvar</button>
         </div>
       </div>
 
@@ -238,214 +603,1211 @@
         <div id="notificacoes" class="list"></div>
       </div>
     </section>
+
+    <section style="margin-top:18px" class="card">
+      <h3 class="title">Histórico de Comportamento</h3>
+      <div class="chart-wrap">
+        <canvas id="comportChart" height="140" style="width:100%;max-width:100%"></canvas>
+      </div>
+    </section>
   </main>
 
+  <div class="modal-overlay" id="dadosModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 class="modal-title">Dados pessoais do aluno</h3>
+        <button class="btn ghost" type="button" id="btnFecharDados">Fechar</button>
+      </div>
+
+      <div class="modal-grid">
+        <div class="info-block">
+          <h4>Dados do aluno</h4>
+          <div class="info-list">
+            <div class="info-item"><span class="info-label">Nome</span><span class="info-value" id="vdNome">—</span></div>
+            <div class="info-item"><span class="info-label">Turma</span><span class="info-value" id="vdTurma">—</span></div>
+            <div class="info-item"><span class="info-label">Data de entrada</span><span class="info-value" id="vdEntrada">—</span></div>
+            <div class="info-item"><span class="info-label">Data de nascimento</span><span class="info-value" id="vdNasc">—</span></div>
+            <div class="info-item"><span class="info-label">Código de acesso</span><span class="info-value" id="vdCodigo">—</span></div>
+            <div class="info-item"><span class="info-label">Telefone</span><span class="info-value" id="vdTelefone">—</span></div>
+            <div class="info-item"><span class="info-label">Endereço</span><span class="info-value" id="vdEndereco">—</span></div>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <h4>Família e responsável</h4>
+          <div class="info-list">
+            <div class="info-item"><span class="info-label">Nome do pai</span><span class="info-value" id="vdPai">—</span></div>
+            <div class="info-item"><span class="info-label">Nome da mãe</span><span class="info-value" id="vdMae">—</span></div>
+            <div class="info-item"><span class="info-label">E-mail do responsável</span><span class="info-value" id="vdEmailResp">—</span></div>
+            <div class="info-item"><span class="info-label">WhatsApp do responsável</span><span class="info-value" id="vdWhats">—</span></div>
+            <div class="info-item"><span class="info-label">Telegram Chat ID</span><span class="info-value" id="vdTelegram">—</span></div>
+            <div class="info-item"><span class="info-label">Status da foto</span><span class="info-value" id="vdFoto">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
+
   <script>
+    const DEBUG_FICHA = location.hostname === 'localhost';
+
+    function dlog(...args){
+      if (DEBUG_FICHA) console.log('[FICHA DEBUG]', ...args);
+    }
+    function derr(...args){
+      if (DEBUG_FICHA) console.error('[FICHA DEBUG]', ...args);
+    }
+
     const qs = (s)=>document.querySelector(s);
+    const byId = (id)=>document.getElementById(id);
     const params = new URLSearchParams(location.search);
     const alunoId = params.get('id');
 
-    const fmtData = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
-    const fmtDataHora = d => d ? new Date(d).toLocaleString('pt-BR') : '—';
-    const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
+    let toastTimer = null;
+    let alunoAtual = null;
+    let chartInstance = null;
+    let usuarioLogado = null;
+    let isProfessorView = false;
+    let isResponsavelView = false;
+    let isReadonlyView = false;
 
-    let alunoAtual = null; // ✅ mantém o aluno carregado
+    function toast(msg, type='ok', title='') {
+      const box = byId('toastBox');
+      if (!box) return alert(msg);
+      box.className = `toast ${type}`;
+      box.innerHTML = `${title ? `<strong>${title}</strong>` : ''}<div>${msg}</div>`;
+      box.style.display = 'block';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>{ box.style.display='none'; }, 3200);
+    }
+
+    function parseDateLike(d){
+      if (!d && d !== 0) return null;
+      if (d instanceof Date) return isNaN(+d) ? null : d;
+      if (typeof d === 'number') {
+        const ms = d < 1e12 ? d * 1000 : d;
+        const dt = new Date(ms);
+        return isNaN(+dt) ? null : dt;
+      }
+      const s = String(d).trim().replace(/\s+/, 'T');
+      const dt = new Date(s);
+      return isNaN(+dt) ? null : dt;
+    }
+    const fmtData = (d)=>{ const x = parseDateLike(d); return x ? x.toLocaleDateString('pt-BR') : '—'; };
+
+    function getDateFrom(obj, ...keys){
+      for (const k of keys){
+        const v = k.includes('.') ? k.split('.').reduce((o,p)=>o?.[p], obj) : obj?.[k];
+        const dt = parseDateLike(v);
+        if (dt) return dt;
+      }
+      return null;
+    }
+
+    function safeText(v){
+      return (v === null || v === undefined || v === '') ? '—' : String(v);
+    }
+
+    function escapeHtml(v){
+      return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function nl2brSafe(v){
+      return escapeHtml(v).replace(/\n/g, '<br>');
+    }
+
+    const fmtValor = v => (typeof v === 'number' ? v.toFixed(2) : (v ?? '—'));
+    function round2(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Number(n.toFixed(2)) : null;
+}
+
+function notaNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function getNotifDateKey(n) {
+  const d = parseDateLike(n?.data || n?.createdAt);
+  if (!d) return 'sem-data';
+
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function enriquecerNotasPorLancamento(notificacoes = []) {
+  const ordenadas = notificacoes.slice().sort((a, b) => {
+    const da = parseDateLike(a?.data || a?.createdAt);
+    const db = parseDateLike(b?.data || b?.createdAt);
+
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+
+    if (ta !== tb) return ta - tb;
+
+    const ca = parseDateLike(a?.createdAt);
+    const cb = parseDateLike(b?.createdAt);
+
+    const tca = ca ? ca.getTime() : 0;
+    const tcb = cb ? cb.getTime() : 0;
+
+    if (tca !== tcb) return tca - tcb;
+
+    return String(a?._id || '').localeCompare(String(b?._id || ''));
+  });
+
+  const grupos = new Map();
+
+  for (const n of ordenadas) {
+    const key = getNotifDateKey(n);
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(n);
+  }
+
+  const extrasPorId = new Map();
+  let ultimaNota = null;
+
+  for (const [, grupo] of grupos) {
+    let corrente = notaNumber(grupo[0]?.notaAnterior);
+
+    if (corrente === null && ultimaNota !== null) {
+      corrente = ultimaNota;
+    }
+
+    for (const n of grupo) {
+      const valor = Number(calcValorExibicao(n) || 0);
+
+      const anterior =
+        corrente !== null
+          ? corrente
+          : notaNumber(n?.notaAnterior);
+
+      const atual =
+        anterior !== null
+          ? round2(anterior + valor)
+          : notaNumber(n?.notaAtual);
+
+      const classAnteriorObj = classificarNota(anterior ?? NaN);
+      const classAtualObj = classificarNota(atual ?? NaN);
+
+      extrasPorId.set(String(n._id || ''), {
+        notaAnteriorExibicao: anterior,
+        notaAtualExibicao: atual,
+        classificacaoAnteriorExibicao: classAnteriorObj.texto,
+        classificacaoAtualExibicao: classAtualObj.texto,
+      });
+
+      corrente = atual;
+      ultimaNota = atual;
+    }
+  }
+
+  return notificacoes.map((n) => ({
+    ...n,
+    ...(extrasPorId.get(String(n._id || '')) || {}),
+  }));
+}
+
+    function calcValorExibicao(n) {
+      if (typeof n.valorNumerico === 'number') return Number(n.valorNumerico);
+      return Number(n?.valorNumerico ?? 0);
+    }
 
     const toISO = (d)=>{
       if(!d) return '';
-      const x = new Date(d);
+      const x = parseDateLike(d);
+      if(!x) return '';
       const yyyy = x.getFullYear();
       const mm = String(x.getMonth()+1).padStart(2,'0');
       const dd = String(x.getDate()).padStart(2,'0');
       return `${yyyy}-${mm}-${dd}`;
     };
 
+    function isExternalOrDataUrl(url='') {
+      return /^https?:\/\//i.test(url) || /^data:image\//i.test(url);
+    }
+    function cloudinaryThumb(url, w=256, h=256){
+      try{
+        if(!url || !/res\.cloudinary\.com/i.test(url)) return url;
+        return url.replace(/\/image\/upload\/(v\d+\/)?/, (m)=> m + `q_auto,f_auto,c_fill,g_face,w_${w},h_${h}/`);
+      }catch{ return url; }
+    }
+    function toUploadsUrl(pathOrUrl, w=256, h=256){
+      if (!pathOrUrl) return '';
+      if (isExternalOrDataUrl(pathOrUrl)) return cloudinaryThumb(pathOrUrl, w, h);
+      let s = String(pathOrUrl).trim().replace(/^\/+/, '');
+      s = s.replace(/\\/g, '/');
+      const low = s.toLowerCase();
+      if (low.startsWith('uploads/')) return '/' + s;
+      if (low.startsWith('alunos/')) return '/uploads/' + s;
+      return '/uploads/' + s;
+    }
+
+    function classificarNota(nota){
+      const n = Number(nota);
+      if (isNaN(n)) return {texto:'—', cor:'#9aa3b2'};
+      if (n >= 9.01) return {texto:'Excepcional', cor:'#76ffb3'};
+      if (n >= 8.01) return {texto:'Ótimo', cor:'#a1ffcf'};
+      if (n >= 7.00) return {texto:'Bom', cor:'#e7c873'};
+      if (n >= 5.00) return {texto:'Regular', cor:'#ffcf9a'};
+      if (n >= 3.00) return {texto:'Insuficiente', cor:'#ff9aa1'};
+      return {texto:'Incompatível', cor:'#e7e9ee'};
+    }
+
+    function detectProfessorView(usuario, aluno){
+      const role = String(usuario?.tipo || usuario?.perfil || '').toLowerCase();
+      if (role.includes('prof')) return true;
+
+      return (
+        aluno?.codigoAcesso == null &&
+        !aluno?.foto &&
+        !aluno?.fotoUrl &&
+        !aluno?.telefone &&
+        !aluno?.endereco &&
+        !aluno?.nomePai &&
+        !aluno?.nomeMae &&
+        (!aluno?.contatos || (
+          !aluno.contatos.emailResponsavel &&
+          !aluno.contatos.whatsapp &&
+          !aluno.contatos.telegramChatId
+        ))
+      );
+    }
+
+    function toggle(el, show){
+      if (!el) return;
+      el.classList.toggle('hidden', !show);
+    }
+
+    function aplicarPermissoesUI(){
+  const hideForProfessor = [
+    'btnTrocarFoto',
+    'btnVerDados',
+    'btnEditar',
+    'btnAbrirProcedimento',
+    'btnPDFTop',
+    'badgeCodigo',
+    'badgeId',
+    'kvCodigoCard',
+    'qrWrap',
+    'editorAluno',
+    'dadosModal',
+    'attachRow',
+    'aphCard'
+  ];
+
+  const hideForResponsavel = [
+    'btnTrocarFoto',
+    'btnEditar',
+    'btnAbrirProcedimento',
+    'btnPDFTop',
+    'badgeCodigo',
+    'badgeId',
+    'kvCodigoCard',
+    'qrWrap',
+    'editorAluno',
+    'attachRow',
+    'obsEditor',
+    'aphCard'
+  ];
+
+  if (isProfessorView) {
+    hideForProfessor.forEach(id => toggle(byId(id), false));
+    byId('btnVoltarPainel')?.classList.remove('hidden');
+    byId('fotoBox').innerHTML = 'Sem foto';
+    return;
+  }
+
+  if (isResponsavelView) {
+    hideForResponsavel.forEach(id => toggle(byId(id), false));
+
+    const btnVoltarLista = byId('btnVoltarLista');
+    if (btnVoltarLista) btnVoltarLista.classList.add('hidden');
+
+    const btnVoltarPainel = byId('btnVoltarPainel');
+    if (btnVoltarPainel) {
+      btnVoltarPainel.classList.remove('hidden');
+      btnVoltarPainel.textContent = 'Sair';
+    }
+
+    return;
+  }
+
+  [...hideForProfessor, ...hideForResponsavel].forEach(id => toggle(byId(id), true));
+}
+
+    async function api(path, opts = {}){
+      const method = (opts.method || 'GET').toUpperCase();
+      const headers = { ...(opts.headers || {}) };
+
+      const token = localStorage.getItem('token');
+      if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type'] && !(opts.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const fullUrl = `/api${path.startsWith('/') ? path : `/${path}`}`;
+
+      const r = await fetch(fullUrl, {
+        credentials:'include',
+        cache:'no-store',
+        headers,
+        ...opts
+      });
+
+      const ct = r.headers.get('content-type') || '';
+      const data = ct.includes('application/json')
+        ? await r.json().catch(()=> ({}))
+        : await r.text().catch(()=> '');
+
+      if(!r.ok){
+        const msg = data?.error || data?.erro || data?.mensagem || data?.message || `Erro ${r.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    async function carregarUsuarioLogado(){
+      try{
+        usuarioLogado = await api('/usuario-logado', { method:'GET' });
+      }catch{
+        usuarioLogado = null;
+      }
+    }
+
+    async function fetchFichaComFallback(id){
+      const endpoints = [
+        `/fichaAluno/${id}`,
+        `/alunos/${id}/ficha`,
+        `/aluno/${id}/ficha`,
+        `/alunos/${id}`,
+        `/aluno/${id}`,
+        `/alunos/find/${id}`,
+        `/alunos/by-id/${id}`,
+        `/alunos/detalhes/${id}`,
+        `/aluno?id=${encodeURIComponent(id)}`,
+        `/alunos?id=${encodeURIComponent(id)}`
+      ];
+
+      let lastErr;
+      for (const ep of endpoints){
+        try{
+          const headers = {};
+          const token = localStorage.getItem('token');
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const resp = await fetch(`/api${ep}`, { credentials:'include', cache:'no-store', headers });
+          const ct = (resp.headers.get('content-type')||'').toLowerCase();
+          if (!ct.includes('application/json')) { lastErr = new Error('NAO_JSON'); continue; }
+          if (!resp.ok){ lastErr = new Error(`HTTP ${resp.status}`); continue; }
+          const data = await resp.json();
+
+          if (data && (data.aluno || data._id || data.id)) {
+            const aluno = data.aluno || data;
+            return {
+              aluno,
+              observacoes: data.observacoes || [],
+              notificacoes: data.notificacoes || []
+            };
+          }
+          if (data && data.result && (data.result.aluno || data.result._id)){
+            const a = data.result.aluno || data.result;
+            return { aluno:a, observacoes: data.result.observacoes||[], notificacoes: data.result.notificacoes||[] };
+          }
+          lastErr = new Error('Formato inesperado');
+        }catch(e){ lastErr = e; }
+      }
+      throw lastErr || new Error('Nenhum endpoint JSON retornou ficha.');
+    }
+
+    async function fetchAphCount(){
+      if(!alunoId || isReadonlyView) return;
+      try{
+        const { total = 0 } = await api(`/aph/atendimentos/count/${alunoId}`);
+        byId('aphCount').textContent = String(total ?? 0);
+      }catch{
+        byId('aphCount').textContent = '0';
+      }
+    }
+
+    function bindAphButtons(){
+      const ver  = byId('btnVerAtendimentos');
+      const novo = byId('btnNovoAtendimento');
+      if (ver) ver.addEventListener('click', ()=>{
+        if (!alunoId || isReadonlyView) return;
+        location.href = `/aph-atendimentos.html?alunoId=${encodeURIComponent(alunoId)}`;
+      });
+      if (novo) novo.addEventListener('click', ()=>{
+        if (!alunoId || isReadonlyView) return;
+        location.href = `/aph-atendimento.html?alunoId=${encodeURIComponent(alunoId)}`;
+      });
+    }
+
+    function renderComportChart(points){
+      const canvas = document.getElementById('comportChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let labels = [], data = [];
+      if (Array.isArray(points) && points.length){
+        const sorted = points.slice().sort((a,b)=> new Date(a.data) - new Date(b.data));
+        labels = sorted.map(r => {
+          try { return new Date(r.data).toLocaleDateString('pt-BR'); } catch { return String(r.data); }
+        });
+        data = sorted.map(r => Number(r.nota ?? r.valor ?? 0));
+      } else {
+        const m = new Date();
+        const example = [
+          { data: new Date(m.getFullYear(), m.getMonth()-5, 1).toISOString(), nota:7.2 },
+          { data: new Date(m.getFullYear(), m.getMonth()-4, 1).toISOString(), nota:7.4 },
+          { data: new Date(m.getFullYear(), m.getMonth()-3, 1).toISOString(), nota:7.6 },
+          { data: new Date(m.getFullYear(), m.getMonth()-2, 1).toISOString(), nota:7.8 },
+          { data: new Date(m.getFullYear(), m.getMonth()-1, 1).toISOString(), nota:7.5 },
+          { data: new Date().toISOString(), nota:7.7 },
+        ];
+        labels = example.map(r=> new Date(r.data).toLocaleDateString('pt-BR'));
+        data = example.map(r=> r.nota);
+      }
+
+      if (chartInstance) {
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets[0].data = data;
+        chartInstance.update();
+        return;
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Nota de comportamento',
+            data,
+            tension: 0.28,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: true,
+            backgroundColor: 'rgba(120,200,255,0.12)',
+            borderColor: 'rgba(120,200,255,0.92)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgba(180,230,255,0.95)',
+            pointBorderColor: 'rgba(20,40,60,0.4)'
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          scales: {
+            y: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 1 } },
+            x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => 'Nota: ' + (ctx.raw != null ? Number(ctx.raw).toFixed(2) : ctx.raw)
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function preencherVisualizacaoDados(aluno){
+      const ct = aluno?.contatos || {};
+      byId('vdNome').textContent = safeText(aluno?.nome);
+      byId('vdTurma').textContent = safeText(aluno?.turma);
+      byId('vdEntrada').textContent = fmtData(aluno?.dataEntrada);
+      byId('vdNasc').textContent = fmtData(aluno?.nascimento);
+      byId('vdCodigo').textContent = safeText(aluno?.codigoAcesso);
+      byId('vdTelefone').textContent = safeText(aluno?.telefone);
+      byId('vdEndereco').textContent = safeText(aluno?.endereco);
+      byId('vdPai').textContent = safeText(aluno?.nomePai);
+      byId('vdMae').textContent = safeText(aluno?.nomeMae);
+      byId('vdEmailResp').textContent = safeText(ct.emailResponsavel);
+      byId('vdWhats').textContent = safeText(ct.whatsapp);
+      byId('vdTelegram').textContent = safeText(ct.telegramChatId);
+      byId('vdFoto').textContent = aluno?.foto || aluno?.fotoUrl ? 'Foto cadastrada' : 'Sem foto';
+    }
+
+    function abrirVisualizacaoDados(){
+      if (!alunoAtual || isProfessorView) return;
+      preencherVisualizacaoDados(alunoAtual);
+      byId('dadosModal').classList.add('open');
+    }
+
+    function fecharVisualizacaoDados(){
+      byId('dadosModal').classList.remove('open');
+    }
+
     async function carregarFicha(){
       if(!alunoId){ alert('ID do aluno não informado.'); return; }
-      const r = await fetch(`/api/ficha/dados/${alunoId}`, { credentials:'include' });
-      if(!r.ok){ alert('Falha ao carregar ficha.'); return; }
-      const { aluno, notificacoes=[], observacoes=[] } = await r.json();
-      alunoAtual = aluno; // ✅ guarda p/ editor
 
-      // Cabeçalho
-      qs('#alunoNome').textContent = aluno?.nome ?? '—';
-      qs('#badgeTurma').textContent = `Turma ${aluno?.turma ?? '—'}`;
-      qs('#badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
-      qs('#badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
-      qs('#btnPDF').href = `/api/ficha/${aluno?._id}`;
+      await carregarUsuarioLogado();
 
-      qs('#kvTurma').textContent = aluno?.turma ?? '—';
-      qs('#kvEntrada').textContent = aluno?.dataEntrada ? fmtData(aluno.dataEntrada) : '—';
-      qs('#kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
-      qs('#kvNota').textContent = (typeof aluno?.comportamento === 'number') ? aluno.comportamento.toFixed(2) : 'N/A';
-
-      // Foto (fallback para aluno.foto caso backend não envie fotoUrl)
-      const fotoBox = qs('#fotoBox');
-      let url = aluno?.fotoUrl || aluno?.foto || '';
-      if (url && !/^https?:\/\//.test(url) && !url.startsWith('data:') && !url.startsWith('/uploads/')) {
-        url = '/uploads/' + url;
+      let payload;
+      try{
+        try{
+          payload = await api(`/fichaAluno/${alunoId}`, { method:'GET' });
+          if (!payload || (!payload.aluno && !payload._id)) throw new Error('Formato inesperado');
+          if (payload && payload._id) payload = { aluno: payload, observacoes: [], notificacoes: [] };
+        }catch(_){
+          payload = await fetchFichaComFallback(alunoId);
+        }
+      }catch(e){
+        derr('Falha ao buscar ficha:', e);
+        if (String(e.message).includes('401') || /não autorizado|token/i.test(String(e.message))) {
+          alert('Sessão expirada. Faça login novamente.');
+          return (window.location.href = '/login.html');
+        }
+        alert('Falha ao carregar ficha.');
+        return;
       }
-      fotoBox.innerHTML = url ? `<img src="${url}" alt="Foto do aluno">` : 'Sem foto';
 
-      // Observações
-      const obsEl = qs('#observacoes');
+      const { aluno, notificacoes = [], observacoes = [] } = payload || {};
+      alunoAtual = aluno;
+
+      const tipoUsuario = String(usuarioLogado?.tipo || usuarioLogado?.perfil || '').toLowerCase();
+
+      isProfessorView = detectProfessorView(usuarioLogado, aluno);
+      isResponsavelView = tipoUsuario === 'responsavel';
+      isReadonlyView = isProfessorView || isResponsavelView;
+
+      aplicarPermissoesUI();
+
+      byId('alunoNome').textContent = aluno?.nome ?? '—';
+      byId('badgeTurma').textContent = `Turma ${aluno?.turma ?? '—'}`;
+      byId('badgeCodigo').textContent = `Código ${aluno?.codigoAcesso ?? '—'}`;
+      byId('badgeId').textContent = `ID ${aluno?._id ?? '—'}`;
+
+      if (!isReadonlyView) {
+  byId('btnPDFTop').href = `/api/ficha/${aluno?._id}`;
+}
+
+      byId('kvTurma').textContent = aluno?.turma ?? '—';
+      byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
+      byId('kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
+
+      const nota =
+        (typeof aluno?.notaComportamental === 'number')
+          ? aluno.notaComportamental
+          : ((typeof aluno?.comportamento === 'number') ? aluno.comportamento : null);
+
+      byId('kvNota').textContent = (nota !== null) ? nota.toFixed(2) : 'N/A';
+      const cls = classificarNota(nota ?? NaN);
+      const pill = byId('kvClassificacao');
+      pill.textContent = cls.texto;
+      pill.style.color = '#000';
+      pill.style.background = cls.cor;
+      pill.style.borderColor = '#0000';
+
+      const fotoBox = byId('fotoBox');
+      const raw = isProfessorView ? '' : (aluno?.fotoUrl || aluno?.foto || '');
+      const finalUrl = raw ? toUploadsUrl(raw, 256, 256) : '';
+      fotoBox.innerHTML = finalUrl
+        ? `<img src="${finalUrl}" alt="Foto do aluno" loading="lazy" decoding="async" width="96" height="96" style="object-fit:cover">`
+        : 'Sem foto';
+
+      const ultDate = getDateFrom(aluno,'updatedAt','atualizadoEm','ultimaAtualizacao','createdAt','criadoEm','lastUpdate');
+      byId('ultimaAtualizacao').textContent = ultDate ? ultDate.toLocaleString('pt-BR') : '—';
+
+      if (!isProfessorView) {
+        preencherVisualizacaoDados(aluno);
+      }
+
+      const obsEl = byId('observacoes');
       obsEl.innerHTML = '';
       if(!observacoes.length){
-        obsEl.innerHTML = `<div class="empty">Nenhuma observação registrada.</div>`;
+        obsEl.innerHTML = '<div class="empty">Nenhuma observação registrada.</div>';
       }else{
-        obsEl.innerHTML = observacoes.map(o=>`
-          <div class="obs">
-            <div class="row">
-              <div class="muted">${fmtDataHora(o.createdAt || o.criadoEm)} — ${o.autor || 'Autor não informado'}</div>
-              <div class="actions">
-                <button class="iconbtn" title="Editar" onclick="editarObs('${o._id}', this)">✏️</button>
-                <button class="iconbtn" title="Excluir" onclick="excluirObs('${o._id}')">🗑️</button>
-              </div>
-            </div>
-            <div style="margin-top:6px" class="texto">${(o.texto||'').replace(/\n/g,'<br>')}</div>
-          </div>
-        `).join('');
+        obsEl.innerHTML = observacoes.map(o=>{
+          const dataObs = getDateFrom(o,'createdAt','criadoEm','data','dataRegistro','updatedAt');
+          const dataObsStr = dataObs ? dataObs.toLocaleString('pt-BR') : '—';
+
+          const anexosRaw = isProfessorView ? [] : (
+            Array.isArray(o.anexos) ? o.anexos
+            : Array.isArray(o.attachments) ? o.attachments
+            : Array.isArray(o.files) ? o.files
+            : []
+          );
+
+          const norm = (x)=> String(x || '').trim();
+          const uniq = [];
+          const seen = new Set();
+          for (const a of anexosRaw) {
+            const nome = norm(a?.nome || a?.filename || a?.name || 'Arquivo');
+            const url  = norm(a?.url || a?.link || a?.path || a?.fileUrl || '');
+            const key = `${nome}__${url}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            uniq.push({ nome, url });
+          }
+
+          const anexosHtml = uniq.length ? (
+            '<div class="attach-row" style="margin-top:10px">' +
+              uniq.map(a=>{
+                if (!a.url) return `<span class="attach-chip">📎 ${escapeHtml(a.nome)}</span>`;
+                return `<span class="attach-chip">📎 <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.nome)}</a></span>`;
+              }).join('') +
+            '</div>'
+          ) : '';
+
+          const actionsHtml = isReadonlyView ? '' : (
+            '<div class="actions">' +
+              '<button class="iconbtn" title="Editar" onclick="editarObs(\'' + (o._id||'') + '\', this)">✏️</button>' +
+              '<button class="iconbtn" title="Excluir" onclick="excluirObs(\'' + (o._id||'') + '\')">🗑️</button>' +
+            '</div>'
+          );
+
+          return (
+            '<div class="obs">' +
+              '<div class="row">' +
+                '<div class="muted">' + escapeHtml(dataObsStr) + ' — ' + escapeHtml(o.autor || 'Autor não informado') + '</div>' +
+                actionsHtml +
+              '</div>' +
+              '<div style="margin-top:6px" class="texto">' + nl2brSafe(o.texto||'') + '</div>' +
+              anexosHtml +
+            '</div>'
+          );
+        }).join('');
       }
 
-      // Notificações
-      const notiEl = qs('#notificacoes');
+      const notiEl = byId('notificacoes');
       notiEl.innerHTML = '';
       if(!notificacoes.length){
-        notiEl.innerHTML = `<div class="empty">Nenhuma notificação encontrada.</div>`;
+        notiEl.innerHTML = '<div class="empty">Nenhuma notificação encontrada.</div>';
       }else{
-        notiEl.innerHTML = notificacoes.map(n=>{
+        const notificacoesParaExibir = enriquecerNotasPorLancamento(notificacoes);
+
+notiEl.innerHTML = notificacoesParaExibir.map(n=>{
           const tipo = n.tipo || n.tipoMedida || 'Medida';
           const motivo = n.motivo || '—';
           const artigo = n.artigo || '—';
           const inciso = n.inciso || '—';
           const classificacao = n.classificacaoRegulamento || '—';
-          const valor = fmtValor(n.valorNumerico);
-          const obsN = n.observacoes ? `<div class="muted" style="margin-top:8px">${n.observacoes}</div>` : '';
+          const valorCorrigido = calcValorExibicao(n);
+          const valor = fmtValor(valorCorrigido);
+          const notaAnterior = typeof n.notaAnteriorExibicao === 'number'
+  ? n.notaAnteriorExibicao.toFixed(2)
+  : (typeof n.notaAnterior === 'number' ? n.notaAnterior.toFixed(2) : '—');
+
+const notaAtual = typeof n.notaAtualExibicao === 'number'
+  ? n.notaAtualExibicao.toFixed(2)
+  : (typeof n.notaAtual === 'number' ? n.notaAtual.toFixed(2) : '—');
+
+const classAnterior = n.classificacaoAnteriorExibicao || n.classificacaoAnterior || '—';
+const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—';
+          const obsN = n.observacoes ? '<div class="muted" style="margin-top:8px">' + escapeHtml(n.observacoes) + '</div>' : '';
           const idN = n._id || '';
-          return `
-            <div class="notif">
-              <div class="row">
-                <div><span class="chip">${tipo}</span></div>
-                <div class="muted">${fmtData(n.data || n.createdAt)}</div>
-              </div>
-              <div style="margin-top:6px"><b>Motivo:</b> ${motivo}</div>
-              <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">
-                <div><b>Valor</b>: ${valor}</div>
-                <div><b>Classificação</b>: ${classificacao}</div>
-                <div><b>Artigo</b>: ${artigo}</div>
-                <div><b>Inciso</b>: ${inciso}</div>
-              </div>
-              ${obsN}
-              <div class="actions" style="margin-top:10px">
-                <a class="iconbtn" href="/notificacao.html?id=${idN}" title="Abrir notificação">Abrir</a>
-                <a class="iconbtn" href="/api/pdf/${idN}" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>
-              </div>
-            </div>
-          `;
+          const dataN = getDateFrom(n,'data','dataNotificacao','createdAt','criadoEm','dataRegistro','updatedAt');
+          const dataNStr = dataN ? dataN.toLocaleDateString('pt-BR') : '—';
+
+          const notifActions = isReadonlyView ? '' : (
+            '<div class="actions" style="margin-top:10px">' +
+              '<a class="iconbtn" href="/notificacao.html?id=' + encodeURIComponent(idN) + '" title="Abrir notificação">Abrir</a>' +
+              '<a class="iconbtn" href="/api/pdf/' + encodeURIComponent(idN) + '" target="_blank" rel="noopener" title="Gerar PDF da notificação">PDF</a>' +
+            '</div>'
+          );
+
+          return (
+            '<div class="notif">' +
+              '<div class="row">' +
+                '<div><span class="chip">' + escapeHtml(tipo) + '</span></div>' +
+                '<div class="muted">' + escapeHtml(dataNStr) + '</div>' +
+              '</div>' +
+              '<div style="margin-top:6px"><b>Motivo:</b> ' + escapeHtml(motivo) + '</div>' +
+              '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">' +
+                '<div><b>Valor aplicado</b>: ' + escapeHtml(valor) + '</div>' +
+              '<div><b>Nota</b>: ' + escapeHtml(notaAnterior + ' → ' + notaAtual) + '</div>' +
+              '<div><b>Classificação</b>: ' + escapeHtml(classAnterior + ' → ' + classAtual) + '</div>' +
+              '<div><b>Regulamento</b>: ' + escapeHtml(classificacao) + '</div>' +
+              '<div><b>Artigo</b>: ' + escapeHtml(artigo) + '</div>' +
+              '<div><b>Inciso</b>: ' + escapeHtml(inciso) + '</div>' +
+              '</div>' +
+              obsN +
+              notifActions +
+            '</div>'
+          );
         }).join('');
+      }
+
+      if (!isReadonlyView) {
+        try { await mostrarQRCode(true); } catch {}
+        try { await fetchAphCount(); } catch {}
+      }
+
+      try {
+        const hist = aluno?.historicoComportamento || aluno?.historico || aluno?.historicoNotas || [];
+        renderComportChart(hist);
+      } catch {
+        renderComportChart([]);
       }
     }
 
-    // Observações: salvar/editar/excluir
+    function updateAttachHelp(){
+      const input = byId('inputObsFiles');
+      const help = byId('attachHelp');
+      if (!input || !help) return;
+      const n = input.files ? input.files.length : 0;
+      help.textContent = n ? `${n} anexo(s) selecionado(s)` : 'Nenhum anexo selecionado';
+    }
+
     async function salvarObservacao(){
-      const texto = qs('#textoObservacao').value.trim();
-      if(!texto) return alert('Digite algo.');
-      const r = await fetch(`/api/observacoes/${alunoId}`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'include',
-        body:JSON.stringify({ texto })
-      });
-      if(r.ok){ qs('#textoObservacao').value=''; carregarFicha(); }
-      else{ const j = await r.json().catch(()=>({})); alert(j.mensagem || 'Erro ao salvar.'); }
+        if (isResponsavelView) return;
+        
+      const texto = byId('textoObservacao').value.trim();
+      if(!texto) return toast('Digite algo na observação.', 'err', 'Atenção');
+
+      if (isReadonlyView) {
+        const inputFiles = byId('inputObsFiles');
+        if (inputFiles) inputFiles.value = '';
+      }
+
+      const inputFiles = byId('inputObsFiles');
+      const files = (!isReadonlyView && inputFiles?.files) ? Array.from(inputFiles.files) : [];
+
+      if (files.length) {
+        try{
+          const fd = new FormData();
+          fd.append('texto', texto);
+          files.forEach(f => fd.append('anexos', f));
+
+          const headers = {};
+          const token = localStorage.getItem('token');
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const r = await fetch('/api/observacoes/' + alunoId,{
+            method:'POST',
+            headers,
+            credentials:'include',
+            body: fd,
+            cache:'no-store'
+          });
+
+          if (r.ok){
+            byId('textoObservacao').value='';
+            if (inputFiles) inputFiles.value = '';
+            updateAttachHelp();
+            toast('Observação salva com sucesso!', 'ok', 'Tudo certo');
+            return carregarFicha();
+          }
+        }catch{}
+
+        toast('Seu backend ainda não está aceitando anexos por aqui. Vou salvar só o texto (sem quebrar nada).', 'err', 'Anexo não suportado (por enquanto)');
+      }
+
+      try{
+        const headers = {'Content-Type':'application/json'};
+        const token = localStorage.getItem('token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const r = await fetch('/api/observacoes/' + alunoId,{
+          method:'POST',
+          headers,
+          credentials:'include',
+          cache:'no-store',
+          body:JSON.stringify({ texto })
+        });
+
+        if(r.ok){
+          byId('textoObservacao').value='';
+          if (inputFiles) inputFiles.value = '';
+          updateAttachHelp();
+          toast('Observação salva com sucesso!', 'ok', 'Tudo certo');
+          carregarFicha();
+        }else{
+          const j = await r.json().catch(()=>({}));
+          toast(j.mensagem || j.message || 'Erro ao salvar observação.', 'err', 'Falha');
+        }
+      }catch(e){
+        toast(e.message || 'Erro ao salvar observação.', 'err', 'Falha');
+      }
     }
 
     async function excluirObs(obsId){
+      if(isReadonlyView) return;
       if(!confirm('Deseja excluir esta observação?')) return;
-      const r = await fetch(`/api/observacoes/${obsId}`,{ method:'DELETE', credentials:'include' });
-      if(r.ok) carregarFicha(); else alert('Erro ao excluir observação.');
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const r = await fetch('/api/observacoes/' + obsId,{ method:'DELETE', credentials:'include', headers, cache:'no-store' });
+      if(r.ok) { toast('Observação excluída.', 'ok'); carregarFicha(); }
+      else toast('Erro ao excluir observação.', 'err', 'Falha');
     }
 
     function editarObs(obsId, btn){
+      if (isReadonlyView) return;
       const card = btn.closest('.obs');
       const textoAtual = card.querySelector('.texto').textContent;
-      card.innerHTML = `
-        <div class="editor">
-          <textarea id="editArea">${textoAtual}</textarea>
-          <button class="btn" id="saveEd">Salvar</button>
-          <button class="btn ghost" id="cancelEd">Cancelar</button>
-        </div>
-      `;
-      card.querySelector('#saveEd').onclick = async ()=>{
+      card.innerHTML =
+        '<div class="editor">' +
+          '<textarea id="editArea">' + escapeHtml(textoAtual) + '</textarea>' +
+          '<button class="btn primary" id="saveEd">Salvar</button>' +
+          '<button class="btn ghost" id="cancelEd">Cancelar</button>' +
+        '</div>';
+      card.querySelector('#saveEd').onclick = async function(){
         const novoTexto = card.querySelector('#editArea').value.trim();
-        if(!novoTexto) return alert('Texto inválido.');
-        const r = await fetch(`/api/observacoes/${obsId}`,{
-          method:'PUT',
-          headers:{'Content-Type':'application/json'},
-          credentials:'include',
-          body:JSON.stringify({ texto: novoTexto })
-        });
-        if(r.ok) carregarFicha(); else alert('Erro ao atualizar.');
+        if(!novoTexto) return toast('Texto inválido.', 'err', 'Atenção');
+        try{
+          await api('/observacoes/' + obsId,{
+            method:'PUT',
+            body: JSON.stringify({ texto: novoTexto })
+          });
+          toast('Observação atualizada com sucesso!', 'ok', 'Tudo certo');
+          carregarFicha();
+        }catch(e){
+          toast(e.message || 'Erro ao atualizar.', 'err', 'Falha');
+        }
       };
-      card.querySelector('#cancelEd').onclick = ()=>carregarFicha();
+      card.querySelector('#cancelEd').onclick = function(){ carregarFicha(); };
     }
 
-    // ====== Editor do Aluno ======
     function abrirEditor(){
-      if(!alunoAtual) return;
-      qs('#editorAluno').style.display = 'block';
-      qs('#edNome').value   = alunoAtual.nome || '';
-      qs('#edTurma').value  = alunoAtual.turma || '';
-      qs('#edEntrada').value= toISO(alunoAtual.dataEntrada);
-      qs('#edNasc').value   = toISO(alunoAtual.nascimento);
-      qs('#edPai').value    = alunoAtual.nomePai || '';
-      qs('#edMae').value    = alunoAtual.nomeMae || '';
-      qs('#edTel').value    = alunoAtual.telefone || '';
-      qs('#edEnd').value    = alunoAtual.endereco || '';
-      qs('#edCodigo').value = alunoAtual.codigoAcesso || '';
-      qs('#edFoto').value   = alunoAtual.foto || '';
+      if(!alunoAtual || isReadonlyView) return;
+
+      byId('editorAluno').style.display = 'block';
+      byId('edNome').value   = alunoAtual.nome || '';
+      byId('edTurma').value  = alunoAtual.turma || '';
+      byId('edEntrada').value= toISO(alunoAtual.dataEntrada);
+      byId('edNasc').value   = toISO(alunoAtual.nascimento);
+      byId('edPai').value    = alunoAtual.nomePai || '';
+      byId('edMae').value    = alunoAtual.nomeMae || '';
+      byId('edTel').value    = alunoAtual.telefone || '';
+      byId('edEnd').value    = alunoAtual.endereco || '';
+      byId('edCodigo').value = alunoAtual.codigoAcesso || '';
+      byId('edFoto').value   = alunoAtual.fotoUrl || alunoAtual.foto || '';
+
+      const ct = alunoAtual.contatos || {};
+      byId('edEmailResp').value = ct.emailResponsavel || '';
+      byId('edWhats').value     = (ct.whatsapp || '').replace(/\D+/g,'');
+      byId('edTelegramId').value= ct.telegramChatId || '';
+      byId('tgLink').textContent = '—';
+      byId('tgLink').href = '#';
+      byId('btnCopiarTg').style.display = 'none';
     }
-    function fecharEditor(){
-      qs('#editorAluno').style.display = 'none';
-    }
+
+    function fecharEditor(){ byId('editorAluno').style.display = 'none'; }
+
     async function salvarEdicao(){
-      if(!alunoAtual) return;
+      if(!alunoAtual || isReadonlyView) return;
+
+      const btn = byId('btnSalvarEd');
+      const oldText = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+      const whatsDigits = byId('edWhats').value.replace(/\D+/g,'');
+      const fotoDigitada = byId('edFoto').value.trim();
+
       const payload = {
-        nome:         qs('#edNome').value.trim(),
-        turma:        qs('#edTurma').value.trim(),
-        dataEntrada:  qs('#edEntrada').value || null,
-        nascimento:   qs('#edNasc').value || null,
-        nomePai:      qs('#edPai').value.trim(),
-        nomeMae:      qs('#edMae').value.trim(),
-        telefone:     qs('#edTel').value.trim(),
-        endereco:     qs('#edEnd').value.trim(),
-        codigoAcesso: qs('#edCodigo').value.trim(),
-        foto:         qs('#edFoto').value.trim()
+        nome:         byId('edNome').value.trim(),
+        turma:        byId('edTurma').value.trim(),
+        dataEntrada:  byId('edEntrada').value || null,
+        nascimento:   byId('edNasc').value || null,
+        nomePai:      byId('edPai').value.trim(),
+        nomeMae:      byId('edMae').value.trim(),
+        telefone:     byId('edTel').value.trim(),
+        endereco:     byId('edEnd').value.trim(),
+        codigoAcesso: byId('edCodigo').value.trim(),
+        contatos: {
+          emailResponsavel: byId('edEmailResp').value.trim() || undefined,
+          whatsapp:         whatsDigits || undefined,
+          telegramChatId:   byId('edTelegramId').value.trim() || undefined,
+        }
       };
 
-      const r = await fetch(`/api/alunos/${alunoAtual._id}`,{
-        method:'PUT',
-        headers:{ 'Content-Type':'application/json' },
-        credentials:'include',
-        body: JSON.stringify(payload)
+      if (fotoDigitada) {
+        payload.foto = fotoDigitada;
+      }
+
+      try{
+        const fullUrl = `/api/alunos/${alunoAtual._id}`;
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const resp = await fetch(fullUrl, {
+          method:'PUT',
+          credentials:'include',
+          cache:'no-store',
+          headers,
+          body: JSON.stringify(payload)
+        });
+
+        let raw;
+        const ct = resp.headers.get('content-type') || '';
+        if (ct.includes('application/json')) raw = await resp.json().catch(()=> ({}));
+        else raw = await resp.text().catch(()=> '');
+
+        if (!resp.ok) {
+          throw new Error(raw?.message || raw?.mensagem || raw?.error || `Erro ${resp.status}`);
+        }
+
+        const alunoSalvo = raw?.aluno || raw?.data || raw || null;
+        if (alunoSalvo && (alunoSalvo._id || alunoSalvo.id)) {
+          alunoAtual = alunoSalvo;
+        } else {
+          alunoAtual = { ...alunoAtual, ...payload };
+        }
+
+        toast('Alterações salvas com sucesso!', 'ok', 'Tudo certo');
+        fecharEditor();
+        await carregarFicha();
+      }catch(e){
+        derr('erro em salvarEdicao', e);
+        toast(e.message || 'Erro ao salvar alterações.', 'err', 'Falha');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = oldText || 'Salvar alterações'; }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const btnTrocarFoto = byId('btnTrocarFoto');
+      const inputFoto = byId('inputFoto');
+      if(btnTrocarFoto) btnTrocarFoto.addEventListener('click', function(){
+        if (isReadonlyView) return;
+        inputFoto.click();
       });
-      const j = await r.json().catch(()=>({}));
-      if(!r.ok){
-        alert(j.message || j.mensagem || 'Erro ao salvar alterações.');
+      if(inputFoto) inputFoto.addEventListener('change', async function(){
+        if (isReadonlyView) return;
+        const file = inputFoto.files && inputFoto.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { alert('Envie uma imagem válida.'); inputFoto.value = ''; return; }
+        if (file.size > 5 * 1024 * 1024)     { alert('Imagem muito grande. Máximo 5MB.'); inputFoto.value = ''; return; }
+
+        const previewURL = URL.createObjectURL(file);
+        const fotoBox = byId('fotoBox');
+        fotoBox.innerHTML = '<img src="' + previewURL + '" alt="Foto do aluno" width="96" height="96" style="object-fit:cover;">';
+
+        try {
+          const fd = new FormData();
+          fd.append('foto', file);
+
+          const headers = {};
+          const token = localStorage.getItem('token');
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const resp = await fetch('/api/alunos/' + alunoId + '/foto', {
+            method: 'PUT',
+            body: fd,
+            headers,
+            credentials: 'include',
+            cache:'no-store'
+          });
+
+          const data = await resp.json().catch(()=> ({}));
+          if (!resp.ok || !data || !data.foto) {
+            throw new Error(data?.mensagem || data?.message || 'Falha ao enviar a foto.');
+          }
+
+          URL.revokeObjectURL(previewURL);
+          fotoBox.innerHTML = '<img src="' + data.foto + '" alt="Foto do aluno" width="96" height="96" style="object-fit:cover;">';
+
+          if (alunoAtual) {
+            alunoAtual.fotoUrl = data.foto;
+            alunoAtual.foto = data.foto;
+            preencherVisualizacaoDados(alunoAtual);
+          }
+
+          toast('Foto atualizada com sucesso!', 'ok', 'Tudo certo');
+        } catch (e) {
+          derr(e);
+          toast(e.message || 'Erro ao atualizar a foto.', 'err', 'Falha');
+          URL.revokeObjectURL(previewURL);
+          carregarFicha();
+        } finally {
+          inputFoto.value = '';
+        }
+      });
+    });
+
+    async function habilitarLinkPublico(){
+      if (isReadonlyView) return;
+      try{
+        byId('qrStatus').textContent = 'Gerando link...';
+        const r = await api('/alunos/' + alunoId + '/public/enable', {
+          method:'POST',
+          body: JSON.stringify({ expiresDays: 0 })
+        });
+        preencherQR(r);
+        byId('qrStatus').textContent = 'Link habilitado.';
+      }catch(e){
+        byId('qrStatus').textContent = '';
+        alert(e.message);
+      }
+    }
+
+    async function mostrarQRCode(silent){
+      if (isReadonlyView) return;
+      try{
+        const r = await api('/alunos/' + alunoId + '/public/qrcode', { method:'GET' });
+        preencherQR(r);
+        if(!silent) byId('qrStatus').textContent = 'QR atualizado.';
+      }catch(e){
+        byId('qrPreview').style.display = 'none';
+        if(!silent) alert(e.message);
+      }
+    }
+
+    async function desabilitarLinkPublico(){
+      if (isReadonlyView) return;
+      if(!confirm('Deseja desabilitar o link público deste aluno?')) return;
+      try{
+        await api('/alunos/' + alunoId + '/public/disable', { method:'POST' });
+        byId('qrPreview').style.display = 'none';
+        byId('qrStatus').textContent = 'Link desabilitado.';
+      }catch(e){
+        alert(e.message);
+      }
+    }
+
+    function preencherQR(r){
+      const prev = byId('qrPreview');
+      byId('qrImg').src = r.qrCode;
+      byId('qrLink').href = r.url;
+      byId('qrLink').textContent = r.url;
+      byId('qrExpira').textContent = r.expiresAt ? ('Expira em: ' + new Date(r.expiresAt).toLocaleDateString('pt-BR')) : 'Sem expiração';
+      prev.style.display = 'block';
+    }
+
+    function voltarLista() {
+      try {
+        const ref = document.referrer || '';
+        if (ref) {
+          const u = new URL(ref, location.href);
+          if (u.origin === location.origin) {
+            history.back();
+            return;
+          }
+        }
+      } catch(_) {}
+      if (alunoAtual?.turma) {
+        location.href = `/turma.html?turma=${encodeURIComponent(alunoAtual.turma)}`;
         return;
       }
-      fecharEditor();
-      await carregarFicha(); // ✅ volta com a nota recalculada pelo backend
+      const turmaParam = params.get('turma');
+      if (turmaParam) {
+        location.href = `/turma.html?turma=${encodeURIComponent(turmaParam)}`;
+        return;
+      }
+      location.href = '/lista-alunos.html';
     }
 
-    // Ações
-    qs('#btnSalvar').addEventListener('click', salvarObservacao);
-    qs('#btnImprimir').addEventListener('click', ()=>window.print());
-    document.getElementById('btnEditar').addEventListener('click', abrirEditor);
-    document.getElementById('btnCancelarEd').addEventListener('click', fecharEditor);
-    document.getElementById('btnSalvarEd').addEventListener('click', salvarEdicao);
+    async function gerarLinkTelegram(){
+      if (isReadonlyView) return;
+      const linkEl = byId('tgLink');
+      const copiarBtn = byId('btnCopiarTg');
+      linkEl.textContent = 'Gerando...';
+      linkEl.href = '#';
+      copiarBtn.style.display = 'none';
+      try{
+        const j = await api(`/telegram/start-link/${alunoId}`, { method:'GET' });
+        if(!j || !j.ok || !j.url) throw new Error(j?.msg || 'Falha ao gerar link do Telegram');
+        linkEl.textContent = j.url;
+        linkEl.href = j.url;
+        copiarBtn.style.display = 'inline-block';
+      }catch(e){
+        linkEl.textContent = '—';
+        linkEl.href = '#';
+        alert(e.message);
+      }
+    }
 
-    carregarFicha();
+    function copiarLinkTelegram(){
+      if (isReadonlyView) return;
+      const url = byId('tgLink').href;
+      if(!url || url === '#') return;
+      navigator.clipboard?.writeText(url).then(
+        ()=> toast('Link copiado!', 'ok'),
+        ()=> {
+          const ta = document.createElement('textarea');
+          ta.value = url; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          toast('Link copiado!', 'ok');
+        }
+      );
+    }
+
+    function bindAll(){
+      byId('btnSalvar').addEventListener('click', salvarObservacao);
+      byId('btnImprimirTop').addEventListener('click', ()=> window.print());
+      byId('btnEditar').addEventListener('click', abrirEditor);
+      byId('btnAbrirProcedimento')?.addEventListener('click', () => {
+        if (!alunoAtual || isReadonlyView) return;
+        window.abrirModalProcedimentoDisciplinar({
+          origem: 'ficha_aluno',
+          alunoId: alunoAtual._id,
+          nomeAluno: alunoAtual.nome || 'Aluno',
+          turma: alunoAtual.turma || 'Turma não informada'
+        });
+      });
+      byId('btnVerDados').addEventListener('click', abrirVisualizacaoDados);
+      byId('btnFecharDados').addEventListener('click', fecharVisualizacaoDados);
+      byId('btnCancelarEd').addEventListener('click', fecharEditor);
+
+      byId('dadosModal').addEventListener('click', (e)=>{
+        if (e.target.id === 'dadosModal') fecharVisualizacaoDados();
+      });
+
+      document.addEventListener('keydown', (e)=>{
+        if (e.key === 'Escape') {
+          fecharVisualizacaoDados();
+        }
+      });
+
+      const formEditor = byId('editorAluno');
+      if (formEditor) {
+        formEditor.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await salvarEdicao();
+        });
+      }
+
+      byId('btnGerarLinkTg').addEventListener('click', gerarLinkTelegram);
+      byId('btnCopiarTg').addEventListener('click', copiarLinkTelegram);
+      byId('btnVoltarLista').addEventListener('click', voltarLista);
+
+      const btnPainel = byId('btnVoltarPainel');
+      if (btnPainel) btnPainel.addEventListener('click', ()=>{
+        location.href = isProfessorView ? '/painel-professor.html' : '/painel.html';
+      });
+
+      byId('btnEnableQR').addEventListener('click', habilitarLinkPublico);
+      byId('btnShowQR').addEventListener('click', ()=> mostrarQRCode(false));
+      byId('btnDisableQR').addEventListener('click', desabilitarLinkPublico);
+
+      const btnAnexar = byId('btnAnexarObs');
+      const inputFiles = byId('inputObsFiles');
+      if (btnAnexar && inputFiles){
+        btnAnexar.addEventListener('click', ()=>{
+          if (isReadonlyView) return;
+          inputFiles.click();
+        });
+        inputFiles.addEventListener('change', updateAttachHelp);
+        updateAttachHelp();
+      }
+
+      bindAphButtons();
+    }
+
+    (function init(){
+      const btnPDF = byId('btnPDFTop'); if (btnPDF) btnPDF.rel = 'noopener';
+      bindAll();
+      carregarFicha();
+    })();
   </script>
+
+  <script src="/assets/js/procedimento-modal.js"></script>
+  <script src="notify.js"></script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

@@ -3,150 +3,916 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Colégio Militar Dom Pedro II</title>
-  <meta name="theme-color" content="#941a1d" />
+  <title>Login - Axoriin</title>
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/axoriin-32x32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/axoriin-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/axoriin-192x192.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+    :root{
+      --bg-0:#0e2442;
+      --bg-1:#081629;
+      --ink:#ecf2ff;
+      --muted:#b8c7e0;
+      --line:rgba(170,200,240,.22);
+      --radius:26px;
+      --shadow:
+        0 40px 100px rgba(0,0,0,.75),
+        inset 0 1px 0 rgba(255,255,255,.05);
+      --glow-1: radial-gradient(1000px 600px at 15% -10%, rgba(0,194,255,.20), transparent 60%);
+      --glow-2: radial-gradient(900px 520px at 110% 0%, rgba(122,92,255,.14), transparent 60%);
+      --glow-3: radial-gradient(780px 420px at -8% 92%, rgba(80,150,255,.14), transparent 60%);
+      --ax-primary:#00C2FF;
+      --ax-secondary:#7A5CFF;
+      --ax-accent:#FFE29A;
+      --ax-focus: rgba(0, 194, 255, .38);
+      --warn-bg: rgba(255,226,154,.10);
+      --warn-bd: rgba(255,226,154,.25);
+      --warn-tx: #ffecc1;
+      --danger-bg: rgba(255, 70, 90, .10);
+      --danger-bd: rgba(255, 70, 90, .22);
+      --danger-tx: #ffb3b8;
+      --mark-size: 300px;
+      --core-x: 50%;
+      --core-y: 55%;
+      --core-size: 130px;
+      --core-opacity: .38;
+      --core-blur: 10px;
+      --core-w1: .65;
+      --core-c1: .62;
+      --core-c2: .28;
+      --field-radius: 14px;
+      --btn-radius: 16px;
     }
 
-    .container {
-      background: white;
-      padding: 40px 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      width: 320px;
-      max-width: 90vw;
+    *{box-sizing:border-box}
+    html,body{ height:100%; margin:0; padding:0; }
+
+    body{
+      font-family: "Rajdhani", system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        var(--glow-1),
+        var(--glow-2),
+        var(--glow-3),
+        radial-gradient(12px 12px at 24% 18%, rgba(255,255,255,.08), transparent 60%),
+        radial-gradient(12px 12px at 68% 24%, rgba(255,255,255,.06), transparent 60%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1));
+      background-blend-mode: screen, screen, screen, normal;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      padding: 18px;
+    }
+
+    .container{
+      position: relative;
+      background: linear-gradient(180deg, rgba(15,32,60,.85), rgba(9,20,40,.95));
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      width: 460px;
+      max-width: 92vw;
+      padding: 38px 40px 30px;
       text-align: center;
-      animation: fadeIn 0.6s ease-in-out;
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      animation: fadeIn .5s ease-out;
+      overflow: hidden;
     }
 
-    .logo {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 10px;
+    .container::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(900px 320px at 40% -18%, rgba(0,194,255,.18), transparent 65%),
+        radial-gradient(800px 280px at 110% 12%, rgba(122,92,255,.12), transparent 60%);
+      pointer-events:none;
     }
 
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.30);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+      font-size: 13px;
+      color: rgba(235,245,255,.72);
       margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
+      position: relative;
+      z-index: 1;
     }
 
-    button {
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
+      box-shadow: 0 0 10px rgba(0,194,255,.45);
+      flex: 0 0 auto;
+    }
+
+    .logo-wrap{
+      display:flex;
+      justify-content:center;
+      margin: 0 0 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mark-stage{
+      width: var(--mark-size);
+      height: var(--mark-size);
+      position: relative;
+      display: grid;
+      place-items: center;
+      pointer-events:none;
+      user-select:none;
+      filter: drop-shadow(0 26px 70px rgba(0,0,0,.70));
+    }
+
+    .mark-stage img{
       width: 100%;
-      padding: 12px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
+      height: 100%;
+      object-fit: contain;
+      display:block;
+      transform-origin: 50% 55%;
+      will-change: transform, filter;
+      animation: heroOrbit 12s ease-in-out infinite alternate,
+                 heroFloat 7s ease-in-out infinite;
     }
 
-    button:hover {
-      background-color: #941a1d;
+    .core-glow{
+      position:absolute;
+      width: var(--core-size);
+      height: var(--core-size);
+      border-radius: 999px;
+      left: var(--core-x);
+      top: var(--core-y);
+      transform: translate(-50%, -50%);
+      pointer-events:none;
+      mix-blend-mode: screen;
+      background: radial-gradient(circle,
+        rgba(255,255,255,var(--core-w1)) 0%,
+        rgba(0,194,255,var(--core-c1)) 24%,
+        rgba(0,194,255,var(--core-c2)) 56%,
+        transparent 80%);
+      filter: blur(var(--core-blur));
+      opacity: var(--core-opacity);
+      will-change: transform, opacity, filter;
+      animation: heroPulse 3.6s ease-in-out infinite;
     }
 
-    .erro {
-      color: red;
+    @keyframes heroOrbit{
+      0%   { transform: rotate(-2deg) scale(1); }
+      100% { transform: rotate( 2deg) scale(1.04); }
+    }
+
+    @keyframes heroFloat{
+      0%   { transform: translateY(0px); }
+      50%  { transform: translateY(-8px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes heroPulse{
+      0%{
+        opacity: calc(var(--core-opacity) * .85);
+        transform: translate(-50%,-50%) scale(.94);
+        filter: blur(calc(var(--core-blur) + 2px));
+      }
+      50%{
+        opacity: calc(var(--core-opacity) * 1.45);
+        transform: translate(-50%,-50%) scale(1.08);
+        filter: blur(calc(var(--core-blur) - 1px));
+      }
+      100%{
+        opacity: calc(var(--core-opacity) * .85);
+        transform: translate(-50%,-50%) scale(.94);
+        filter: blur(calc(var(--core-blur) + 2px));
+      }
+    }
+
+    .brand{
+      font-family: "Orbitron", system-ui, sans-serif;
+      font-size: 1.30rem;
+      letter-spacing: .9px;
+      margin: 0 0 2px;
+      text-shadow: 0 2px 10px rgba(0,0,0,.65);
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand span{
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle{
+      margin: 6px 0 8px;
+      font-size: .95rem;
+      color: rgba(235,245,255,.70);
+      position: relative;
+      z-index: 1;
+      line-height: 1.25;
+    }
+
+    .subtitle strong{
+      color: rgba(236,242,255,.95);
+      font-weight: 700;
+    }
+
+    .portal-hint{
+      margin: 0 0 18px;
       font-size: 14px;
-      margin-bottom: 10px;
+      color: rgba(235,245,255,.64);
+      position: relative;
+      z-index: 1;
     }
 
-    .link-cadastro {
-      margin-top: 15px;
-      font-size: 14px;
+    form{
+      margin:0;
+      text-align:left;
+      position: relative;
+      z-index: 1;
     }
 
-    .link-cadastro a {
-      color: #d82327;
-      text-decoration: none;
+    .erro{
+      color: var(--danger-tx);
+      font-size:14px;
+      margin-bottom:10px;
+      min-height:18px;
+      text-align:left;
+      white-space: pre-line;
     }
 
-    .link-cadastro a:hover {
-      text-decoration: underline;
+    .notice-ok{
+      display:none;
+      margin:-6px 0 10px;
+      padding:10px;
+      border-radius:12px;
+      background: rgba(0,255,140,.12);
+      border: 1px solid rgba(0,255,140,.25);
+      color:#d6ffe9;
+      font-size:14px;
+      text-align:left;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .verify-box{
+      display:none;
+      margin:0 0 10px;
+      padding:10px;
+      border-radius:12px;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-bd);
+      color: var(--warn-tx);
+      font-size:14px;
+      text-align:left;
+    }
+
+    .verify-box .title{ font-weight:900; margin-bottom:6px; }
+    .verify-box .desc{
+      color: rgba(255,236,193,.92);
+      margin-bottom:10px;
+      line-height: 1.25;
+    }
+
+    .tenant-box{
+      display:none;
+      margin:0 0 10px;
+      padding:10px;
+      border-radius:12px;
+      background: rgba(0,194,255,.08);
+      border: 1px solid rgba(0,194,255,.20);
+      color: rgba(236,242,255,.92);
+      font-size:14px;
+      text-align:left;
+    }
+
+    .tenant-box .title{ font-weight:900; margin-bottom:6px; }
+    .tenant-box .desc{
+      color: rgba(236,242,255,.80);
+      margin-bottom:10px;
+      line-height: 1.25;
+    }
+
+    .tenant-list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:8px;
+    }
+
+    .tenant-btn{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.24);
+      color: rgba(236,242,255,.92);
+      font-family: "Rajdhani", system-ui, sans-serif;
+      font-weight: 900;
+      cursor:pointer;
+      text-align:left;
+    }
+
+    .tenant-btn:hover{
+      filter: brightness(1.06);
+      background: rgba(10,19,34,.34);
+    }
+
+    .tenant-meta{
+      font-weight: 700;
+      color: rgba(236,242,255,.70);
+      font-size: 12px;
+    }
+
+    .btn-ghost{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.24);
+      color: rgba(236,242,255,.92);
+      font-family: "Rajdhani", system-ui, sans-serif;
+      font-weight: 900;
+      cursor:pointer;
+    }
+
+    .btn-ghost:disabled{ opacity:.75; cursor:not-allowed; }
+
+    .field{ position: relative; margin-bottom: 12px; }
+
+    .label{
+      display:block;
+      font-size: 13px;
+      color: rgba(210,225,250,.85);
+      margin: 0 0 6px;
+      letter-spacing:.2px;
+    }
+
+    input{
+      width:100%;
+      padding:12px 14px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      font-size:15px;
+      background: rgba(255,255,255,.05);
+      color: var(--ink);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.06),
+        0 10px 22px rgba(0,0,0,.45);
+      outline: none;
+      transition: .18s border-color, .18s box-shadow, .18s filter;
+    }
+
+    input::placeholder{ color: rgba(200,215,235,.70); }
+
+    input:focus{
+      border-color: rgba(0,194,255,.65);
+      box-shadow:
+        0 0 0 2px rgba(0, 194, 255, .38),
+        0 14px 28px rgba(0,0,0,.60);
+    }
+
+    .pass-tools{
+      display:flex;
+      justify-content:flex-end;
+      margin-top: 8px;
+    }
+
+    .toggle-pass{
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(170,200,240,.22);
+      background: rgba(10,19,34,.24);
+      color: rgba(236,242,255,.92);
+      font-family: "Rajdhani", system-ui, sans-serif;
+      font-weight: 800;
+      cursor:pointer;
+      transition: .15s transform, .15s filter, .15s background;
+      user-select: none;
+      min-width: 92px;
+    }
+
+    .toggle-pass:hover{
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+      background: rgba(10,19,34,.32);
+    }
+
+    .actions{ margin-top: 10px; }
+
+    button[type="submit"]{
+      width:100%;
+      padding:13px 14px;
+      border:none;
+      border-radius: 16px;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
+      color:#071018;
+      background: linear-gradient(135deg, var(--ax-primary), var(--ax-secondary));
+      box-shadow:
+        0 18px 40px rgba(0, 194, 255, .22),
+        0 22px 50px rgba(122, 92, 255, .18),
+        inset 0 1px 0 rgba(255,255,255,.14);
+      transition:.18s transform,.18s filter,.18s box-shadow;
+      letter-spacing:.3px;
+    }
+
+    button[type="submit"]:hover{
+      filter: brightness(1.05);
+      transform: translateY(-2px);
+    }
+
+    button[type="submit"]:disabled{
+      cursor:not-allowed;
+      filter: grayscale(.15) brightness(.9);
+      opacity: .9;
+      transform: none;
+    }
+
+    .portal-actions{
+      margin-top: 14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .portal-btn{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(170,200,240,.20);
+      background: rgba(255,255,255,.05);
+      color: rgba(236,242,255,.95);
+      font-family:"Rajdhani", system-ui, sans-serif;
+      font-size:15px;
+      font-weight:800;
+      text-decoration:none;
+      text-align:center;
+      transition:.18s ease;
+      display:block;
+    }
+
+    .portal-btn:hover{
+      background: rgba(255,255,255,.08);
+      transform: translateY(-1px);
+    }
+
+    .portal-btn.aluno{
+      border-color: rgba(255,226,154,.22);
+      background: rgba(255,226,154,.06);
+      color: #fff0c7;
+    }
+
+    .btn-sub{
+      margin-top:12px;
+      font-size: 13px;
+      color: rgba(235,245,255,.60);
+      text-align:center;
+    }
+
+    .btn-sub a{
+      color: var(--ax-accent);
+      text-decoration:none;
+      font-weight:800;
+    }
+
+    .btn-sub a:hover{
+      text-decoration:underline;
+      color:#fff5c8;
+    }
+
+    .spinner{
+      display:inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: rgba(255,255,255,.95);
+      margin-right: 8px;
+      vertical-align: -3px;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    @keyframes fadeIn{
+      from{ opacity:0; transform:translateY(14px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .mark-stage img{ animation: none !important; }
+      .core-glow{ animation: none !important; }
+    }
+
+    @media (max-width: 420px){
+      :root{ --mark-size: 260px; }
+      .container{ padding: 30px 22px 22px; }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <img src="/logo-final.jpg" alt="Logo do Colégio Militar Dom Pedro II" class="logo" />
-    <h2>Login</h2>
+    <div class="badge"><span class="dot"></span> Ambiente seguro • Acesso institucional</div>
+
+    <div class="logo-wrap">
+      <div class="mark-stage" aria-hidden="true">
+        <img src="/assets/axoriin/axoriin-logo-8k.png" alt="Axoriin">
+        <div class="core-glow" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="brand"><span>Axoriin</span></div>
+
+    <div class="subtitle">
+      <strong id="nome-colegio">Instituição</strong> • Portal institucional
+    </div>
+
+    <div class="portal-hint">
+      Professores, monitores e administradores entram por aqui.
+    </div>
+
     <form id="login-form">
       <div class="erro" id="erro"></div>
-      <input type="email" id="email" placeholder="E-mail institucional" required />
-      <input type="password" id="senha" placeholder="Senha" required />
-      <button type="submit">Entrar</button>
-    </form>
+      <div class="notice-ok" id="ok"></div>
 
-    <div class="link-cadastro">
-      Ainda não tem conta? <a href="/cadastro-usuario.html">Cadastre-se</a>
-    </div>
+      <div class="tenant-box" id="tenant-box">
+        <div class="title">Selecione sua instituição</div>
+        <div class="desc">
+          Seu e-mail está cadastrado em mais de uma instituição. Escolha abaixo para entrar no ambiente correto.
+        </div>
+        <div class="tenant-list" id="tenant-list"></div>
+      </div>
+
+      <div class="verify-box" id="verify-box">
+        <div class="title">Conta não confirmada</div>
+        <div class="desc">
+          Verifique sua caixa de e-mail (e o spam). Se quiser, clique abaixo para reenviar o link.
+        </div>
+        <button type="button" class="btn-ghost" id="btn-reenviar">Reenviar confirmação</button>
+      </div>
+
+      <div class="field">
+        <label class="label" for="email">E-mail institucional</label>
+        <input type="email" id="email" placeholder="Digite seu e-mail" required autocomplete="username" autofocus />
+      </div>
+
+      <div class="field">
+        <label class="label" for="senha">Senha</label>
+        <input type="password" id="senha" placeholder="Digite sua senha" required autocomplete="current-password" />
+        <div class="pass-tools">
+          <button type="button" class="toggle-pass" id="toggle-pass" aria-label="Mostrar/ocultar senha">Mostrar</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="btn-entrar">Entrar</button>
+      </div>
+
+      <div class="btn-sub">
+        Ainda não tem conta? <a href="/cadastro-usuario.html" id="link-cadastro">Cadastre-se</a>
+      </div>
+    </form>
   </div>
 
   <script>
-    document.getElementById('login-form').addEventListener('submit', async function (e) {
-      e.preventDefault();
+    if ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') && !sessionStorage.getItem('dev_sw_cleaned')) {
+      sessionStorage.setItem('dev_sw_cleaned', '1');
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
+      console.log('[DEV] SW e caches limpos (uma vez por sessão) para localhost');
+    }
 
-      const email = document.getElementById('email').value.trim();
-      const senha = document.getElementById('senha').value.trim();
-      const erroDiv = document.getElementById('erro');
-      erroDiv.textContent = '';
+    const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
+    const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
+
+    const erroDiv = document.getElementById('erro');
+    const okBox = document.getElementById('ok');
+    const verifyBox = document.getElementById('verify-box');
+    const btnReenviar = document.getElementById('btn-reenviar');
+    const tenantBox = document.getElementById('tenant-box');
+    const tenantList = document.getElementById('tenant-list');
+    const qs = new URLSearchParams(location.search);
+
+    function getTenantFromUrl() {
+      return (qs.get('t') || qs.get('tenant') || '').trim();
+    }
+
+    function getTenantFromStorage() {
+      const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+      if (current) return current;
+
+      const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+      if (legacy) {
+        localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+        return legacy;
+      }
+
+      return '';
+    }
+
+    function setTenantStorage(t) {
+      const value = String(t || '').trim();
+      if (!value) return;
+      localStorage.setItem(TENANT_STORAGE_KEY, value);
+      localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+    }
+
+    function getResolvedTenant() {
+      const tUrl = getTenantFromUrl();
+      const tLs = getTenantFromStorage();
+      const finalTenant = tUrl || tLs || DEFAULT_TENANT;
+      setTenantStorage(finalTenant);
+      return finalTenant;
+    }
+
+    function ensureTenantInUrl() {
+      const finalTenant = getResolvedTenant();
+      const tUrl = getTenantFromUrl();
+
+      if (!tUrl || tUrl !== finalTenant) {
+        const u = new URL(location.href);
+        u.searchParams.set('t', finalTenant);
+        location.replace(u.toString());
+        return finalTenant;
+      }
+
+      return finalTenant;
+    }
+
+    const TENANT = ensureTenantInUrl();
+
+    (function () {
+      const a = document.getElementById('link-cadastro');
+      if (!a) return;
+      a.href = `/cadastro-usuario.html?t=${encodeURIComponent(TENANT)}`;
+    })();
+
+    (function () {
+      const a = document.getElementById('btn-portal-aluno');
+      if (!a) return;
+      a.href = `/login-aluno.html?t=${encodeURIComponent(TENANT)}`;
+    })();
+
+    (async () => {
+      const el = document.getElementById('nome-colegio');
+      if (!el) return;
+
+      const key = `axoriin_nome_colegio__${TENANT}`;
+      const cached = localStorage.getItem(key);
+      if (cached && cached.trim().length > 2) {
+        el.textContent = cached.trim();
+      }
 
       try {
-        const resposta = await fetch('/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, senha })
+        const url = `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}`;
+        const r = await fetch(url, { cache: 'no-store', credentials: 'include' });
+        if (!r.ok) {
+          if (!cached) el.textContent = 'Instituição';
+          return;
+        }
+
+        const data = await r.json().catch(() => ({}));
+        const nome =
+          data?.nomeColegio ||
+          data?.nome_escola ||
+          data?.nome ||
+          data?.instituicao?.nome ||
+          'Instituição';
+
+        if (nome && String(nome).trim().length > 2) {
+          const nomeFinal = String(nome).trim();
+          el.textContent = nomeFinal;
+          localStorage.setItem(key, nomeFinal);
+        } else if (!cached) {
+          el.textContent = 'Instituição';
+        }
+      } catch {
+        if (!cached) el.textContent = 'Instituição';
+      }
+    })();
+
+    (function showVerifiedNotice() {
+      const verified = (qs.get('verified') === '1') || (qs.get('confirmado') === '1');
+      if (!verified) return;
+
+      okBox.textContent = 'E-mail confirmado! Você já pode entrar.';
+      okBox.style.display = 'block';
+
+      try {
+        const u = new URL(location.href);
+        u.searchParams.delete('verified');
+        u.searchParams.delete('confirmado');
+        history.replaceState({}, '', u.toString());
+      } catch {}
+    })();
+
+    const senhaInput = document.getElementById('senha');
+    const togglePass = document.getElementById('toggle-pass');
+    togglePass.addEventListener('click', () => {
+      const isPass = senhaInput.type === 'password';
+      senhaInput.type = isPass ? 'text' : 'password';
+      togglePass.textContent = isPass ? 'Ocultar' : 'Mostrar';
+      senhaInput.focus();
+    });
+
+    const btnEntrar = document.getElementById('btn-entrar');
+    const setLoading = (on) => {
+      btnEntrar.disabled = !!on;
+      btnEntrar.innerHTML = on ? '<span class="spinner"></span>Entrando...' : 'Entrar';
+    };
+
+    function clearMessages() {
+      erroDiv.textContent = '';
+      okBox.style.display = 'none';
+      verifyBox.style.display = 'none';
+      tenantBox.style.display = 'none';
+      tenantList.innerHTML = '';
+    }
+
+    function showTenantChoices(instituicoes) {
+      tenantList.innerHTML = '';
+
+      (instituicoes || []).forEach(inst => {
+        const tenant = inst?.tenant || inst?.slug || inst?.id;
+        const nome = inst?.nome || 'Instituição';
+        const meta = [inst?.sigla, inst?.slug].filter(Boolean).join(' • ');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tenant-btn';
+        btn.innerHTML = `
+          <div>
+            <div>${escapeHtml(nome)}</div>
+            ${meta ? `<div class="tenant-meta">${escapeHtml(meta)}</div>` : `<div class="tenant-meta">Selecionar</div>`}
+          </div>
+          <div class="tenant-meta">→</div>
+        `;
+
+        btn.addEventListener('click', () => {
+          if (!tenant) return;
+          setTenantStorage(tenant);
+
+          const u = new URL(location.href);
+          u.searchParams.set('t', tenant);
+          location.assign(u.toString());
         });
 
-        const data = await resposta.json();
+        tenantList.appendChild(btn);
+      });
 
-        if (resposta.ok) {
-          if (data.nome) {
-            localStorage.setItem('nome', data.nome);
-          }
-          window.location.href = '/painel.html';
+      tenantBox.style.display = 'block';
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    btnReenviar.addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      clearMessages();
+
+      if (!email) {
+        erroDiv.textContent = 'Informe seu e-mail para reenviar a confirmação.';
+        return;
+      }
+
+      btnReenviar.disabled = true;
+      btnReenviar.textContent = 'Reenviando...';
+
+      try {
+        const body = { email, t: TENANT, tenantSlug: TENANT };
+
+        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao?t=${encodeURIComponent(TENANT)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+
+        const data = await r.json().catch(()=> ({}));
+        if (!r.ok) {
+          erroDiv.textContent = data?.mensagem || 'Não foi possível reenviar.';
         } else {
-          erroDiv.textContent = data.mensagem || 'Erro ao fazer login.';
+          const nomeInst =
+            data?.instituicao?.nome ||
+            data?.nomeColegio ||
+            'sua instituição';
+
+          okBox.textContent = data?.mensagem || `Link reenviado! Verifique seu e-mail (${nomeInst}).`;
+          okBox.style.display = 'block';
         }
-      } catch (err) {
-        erroDiv.textContent = 'Erro de conexão com o servidor.';
+      } catch (e) {
+        erroDiv.textContent = 'Erro de conexão ao reenviar.';
+      } finally {
+        btnReenviar.disabled = false;
+        btnReenviar.textContent = 'Reenviar confirmação';
       }
     });
 
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
-      });
-    }
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      clearMessages();
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+
+      setLoading(true);
+
+      try {
+        const body = { email, senha, t: TENANT, tenantSlug: TENANT };
+
+        const resposta = await fetch(`${API_BASE}/auth/login?t=${encodeURIComponent(TENANT)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+
+        let data = {};
+        try { data = await resposta.json(); } catch {}
+
+        if (!resposta.ok) {
+          if (data?.code === 'EMAIL_NOT_VERIFIED') {
+            verifyBox.style.display = 'block';
+            setLoading(false);
+            return;
+          }
+
+          if (data?.code === 'AMBIGUOUS_TENANT') {
+            showTenantChoices(data?.instituicoes || []);
+            erroDiv.textContent = '';
+            setLoading(false);
+            return;
+          }
+
+          erroDiv.textContent = data?.mensagem || 'Erro ao fazer login.';
+          setLoading(false);
+          return;
+        }
+
+        const tenantRetornado =
+          data?.tenant ||
+          data?.instituicao?.slug ||
+          TENANT;
+
+        setTenantStorage(tenantRetornado);
+
+        const ping = await fetch(`${API_BASE}/auth/usuario-logado`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+
+        if (!ping.ok) {
+          erroDiv.textContent = 'Falha ao validar sessão após login.';
+          setLoading(false);
+          return;
+        }
+
+        const next = data.redirecionar || '/painel.html';
+        window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}&t=${encodeURIComponent(tenantRetornado)}`;
+
+      } catch (err) {
+        console.error(err);
+        erroDiv.textContent = 'Erro de conexão com o servidor.';
+        setLoading(false);
+      }
+    });
   </script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

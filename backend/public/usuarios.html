@@ -4,171 +4,504 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gerenciar Usuários - Colégio Militar Dom Pedro II</title>
-  <meta name="theme-color" content="#8B0000" />
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #8B0000, #B22222);
-      margin: 0;
-      padding: 20px;
-      color: #333;
+    :root{
+      --navy:#0b0f19;
+      --panel:#12151d;
+      --line:#262a31;
+
+      --txt:#eaecef;
+      --muted:#9aa3ad;
+
+      --accent1:#1d4ed8;
+      --accent2:#38bdf8;
+
+      --good:#21a67a;
+      --bad:#e55353;
+      --warn:#f59e0b;
+      --student:#ffe29a;
+
+      --radius:16px;
     }
 
-    .container {
-      max-width: 800px;
-      margin: 100px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.2);
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      margin:0;
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--txt);
+      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      color-scheme:dark;
+      padding:32px 16px;
+      -webkit-font-smoothing:antialiased;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
     }
 
-    h2 {
-      text-align: center;
-      color: #8B0000;
+    .container{
+      width:100%;
+      max-width:1180px;
+      margin:0 auto;
+      background:linear-gradient(180deg, rgba(15,18,25,.94), rgba(9,11,18,.9));
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--radius);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow:0 18px 46px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.05);
+      padding:24px 24px 26px;
+      animation: rise .5s ease-out both;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
+    h2{
+      text-align:center;
+      margin:0 0 14px;
+      color:#fff;
     }
 
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ccc;
+    .toolbar{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin:10px 0 14px;
     }
 
-    th {
-      background-color: #8B0000;
-      color: white;
+    .search{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
     }
 
-    .acoes button {
-      margin-right: 5px;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+    .search input,
+    .search select{
+      padding:9px 11px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:#0f1116;
+      color:var(--txt);
+      font-size:14px;
+      min-width:180px;
     }
 
-    .editar {
-      background-color: #4682B4;
-      color: white;
+    .search input::placeholder{
+      color:var(--muted);
     }
 
-    .excluir {
-      background-color: #B22222;
-      color: white;
+    .search input:focus,
+    .search select:focus{
+      outline:none;
+      border-color:var(--accent2);
+      box-shadow:0 0 0 3px rgba(56,189,248,.25);
     }
 
-    .voltar {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 20px;
-      background-color: #8B0000;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
+    .btn{
+      padding:9px 14px;
+      border:0;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:14px;
+      transition:transform .08s ease, filter .08s ease, box-shadow .08s ease;
+      white-space:nowrap;
     }
 
-    .voltar:hover {
-      background-color: #5a0000;
+    .btn-prim{
+      background:linear-gradient(180deg, var(--accent2), var(--accent1));
+      color:#fff;
+      box-shadow:0 8px 20px rgba(37,99,235,.45);
+    }
+    .btn-prim:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.05);
+      box-shadow:0 11px 26px rgba(37,99,235,.6);
+    }
+
+    .btn-warn{
+      background:#b91c1c;
+      color:#fff;
+      box-shadow:0 6px 18px rgba(185,28,28,.45);
+    }
+    .btn-warn:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.05);
+    }
+
+    .btn-ghost{
+      background:#151822;
+      color:var(--accent2);
+      border:1px solid var(--accent2);
+      text-decoration:none;
+      border-radius:999px;
+      padding:10px 16px;
+      display:inline-block;
+    }
+    .btn-ghost:hover{
+      background:linear-gradient(180deg, var(--accent2), var(--accent1));
+      color:#fff;
+      transform:translateY(-1px);
+    }
+
+    .status{
+      min-height:18px;
+      font-size:14px;
+      margin-top:4px;
+    }
+    .ok{ color:var(--good); }
+    .err{ color:var(--bad); }
+
+    .table-wrap{
+      overflow:auto;
+      max-height:60vh;
+      margin-top:8px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(4,6,12,.7);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+
+    th, td{
+      padding:10px 12px;
+      text-align:left;
+      border-bottom:1px solid rgba(255,255,255,.04);
+      vertical-align:middle;
+    }
+
+    th{
+      background:rgba(10,12,20,.98);
+      color:#e5ecff;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+
+    tr:hover td{
+      background:rgba(31,41,55,.75);
+    }
+
+    .acoes{ white-space:nowrap; }
+
+    .pill{
+      padding:4px 9px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.55);
+      background:rgba(15,23,42,.9);
+      font-size:.83rem;
+      color:var(--muted);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .pill.aluno{
+      border-color: rgba(255,226,154,.45);
+      background: rgba(255,226,154,.08);
+      color: var(--student);
+    }
+
+    .pill.portal-aluno{
+      border-color: rgba(255,226,154,.35);
+      background: rgba(255,226,154,.06);
+      color: var(--student);
+    }
+
+    .pill.portal-inst{
+      border-color: rgba(56,189,248,.35);
+      color: #bfeeff;
+    }
+
+    .empty{
+      opacity:.8;
+      padding:16px 0;
+      text-align:center;
+    }
+
+    .pager{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-end;
+      margin-top:12px;
+    }
+
+    .pager button{
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.6);
+      background:#0f1116;
+      color:var(--txt);
+      cursor:pointer;
+      font-size:13px;
+    }
+    .pager button:hover{
+      border-color:var(--accent2);
+      color:var(--accent2);
+    }
+
+    .pager .pill{
+      padding:5px 11px;
+      background:rgba(15,23,42,.9);
+    }
+
+    .hint-box{
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,226,154,.22);
+      background: rgba(255,226,154,.08);
+      color: #fff0c7;
+      line-height: 1.35;
+      font-size: 13px;
+    }
+
+    @keyframes rise{
+      from{opacity:0; transform: translateY(12px);}
+      to{opacity:1; transform: translateY(0);}
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Gerenciar Usuários</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>Tipo</th>
-          <th>Instituição</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaUsuarios">
-        <!-- Linhas inseridas dinamicamente -->
-      </tbody>
-    </table>
-    <a class="voltar" href="painel.html">⬅ Voltar ao Painel</a>
+
+    <div class="hint-box">
+      Esta tela agora também exibe <b>usuários do aluno</b>. Você poderá localizar, editar e redefinir acessos do portal do aluno junto com os demais usuários do sistema.
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <input id="q" type="search" placeholder="Buscar por nome ou e-mail" />
+        <select id="filtroTipo">
+          <option value="">Todos os tipos</option>
+          <option value="admin">Administrador</option>
+          <option value="monitor">Monitor</option>
+          <option value="professor">Professor</option>
+          <option value="aluno">Aluno</option>
+        </select>
+        <select id="filtroPortal">
+          <option value="">Todos os portais</option>
+          <option value="institucional">Portal institucional</option>
+          <option value="aluno">Portal do aluno</option>
+        </select>
+        <button class="btn btn-prim" id="btnBuscar">Buscar</button>
+      </div>
+      <a class="btn-ghost" href="painel.html">⬅ Voltar ao Painel</a>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="table-wrap">
+      <table aria-label="Tabela de usuários">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Tipo</th>
+            <th>Portal</th>
+            <th>Instituição</th>
+            <th style="width:190px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaUsuarios">
+          <tr><td class="empty" colspan="6">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager" id="pager" hidden>
+      <button id="prev">&lt; Anterior</button>
+      <span id="pageInfo" class="pill">Página 1/1</span>
+      <button id="next">Próxima &gt;</button>
+    </div>
   </div>
 
   <script>
-    async function verificarPermissao() {
-      const res = await fetch('/api/usuario-logado', { credentials: 'include' });
-      if (!res.ok) return window.location.href = '/login.html';
-      const usuario = await res.json();
-      if (usuario.tipo !== 'admin') {
-        alert('Acesso restrito a administradores.');
-        window.location.href = '/painel.html';
+    if (['localhost','127.0.0.1'].includes(location.hostname)) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
     }
 
-    async function carregarUsuarios() {
-      try {
-        const resposta = await fetch('/api/usuarios', { credentials: 'include' });
-        const usuarios = await resposta.json();
-        const tabela = document.getElementById('tabelaUsuarios');
-        tabela.innerHTML = '';
+    const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/')?p:'/'+p)}`;
+    const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
-        usuarios.forEach(usuario => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${usuario.nome}</td>
-            <td>${usuario.email}</td>
-            <td>${usuario.tipo}</td>
-            <td>${usuario.instituicao}</td>
-            <td class="acoes">
-              <button class="editar" onclick="editarUsuario('${usuario._id}')">Editar</button>
-              <button class="excluir" onclick="excluirUsuario('${usuario._id}')">Excluir</button>
-            </td>
-          `;
-          tabela.appendChild(tr);
-        });
-      } catch (err) {
-        console.error('Erro ao carregar usuários:', err);
-      }
-    }
+    const $ = (id) => document.getElementById(id);
+    let pagina = 1, paginas = 1, limite = 20, termo = '', tipo = '', portal = '';
 
-    function editarUsuario(id) {
-      window.location.href = `/editar-usuario.html?id=${id}`;
-    }
-
-    async function excluirUsuario(id) {
-      const confirmacao = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
-
-      if (confirmacao === "CONFIRMAR") {
-        try {
-          const res = await fetch(`/api/usuarios/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-          });
-
-          if (res.ok) {
-            alert('✅ Usuário excluído com sucesso!');
-            carregarUsuarios();
-          } else {
-            alert('❌ Erro ao excluir usuário.');
-          }
-        } catch (erro) {
-          console.error('Erro ao excluir:', erro);
-          alert('Erro de conexão com o servidor.');
+    async function garantirAdmin(){
+      try{
+        let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+        if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+        if(!r.ok) throw 0;
+        const u = await r.json();
+        if (u?.tipo !== 'admin') {
+          alert('Acesso restrito a administradores.');
+          location.href = '/painel.html';
         }
-      } else {
-        alert("🔒 Exclusão cancelada.");
+      }catch{
+        location.href = '/login.html';
       }
     }
 
-    verificarPermissao();
-    carregarUsuarios();
+    function setStatus(msg, ok=false){
+      const el = $('status');
+      el.className = 'status ' + (ok ? 'ok' : (msg ? 'err' : ''));
+      el.textContent = msg || '';
+    }
+
+    function escapeHtml(value){
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function renderTipo(tipo){
+      const t = String(tipo || '').toLowerCase();
+      const klass = t === 'aluno' ? 'pill aluno' : 'pill';
+      const label = t ? t.charAt(0).toUpperCase() + t.slice(1) : '—';
+      return `<span class="${klass}">${escapeHtml(label)}</span>`;
+    }
+
+    function renderPortal(portal, tipo){
+      const p = String(portal || (tipo === 'aluno' ? 'aluno' : 'institucional')).toLowerCase();
+      if (p === 'aluno') {
+        return `<span class="pill portal-aluno">Aluno</span>`;
+      }
+      return `<span class="pill portal-inst">Institucional</span>`;
+    }
+
+    function linhaUsuario(u){
+      const inst = typeof u.instituicao === 'object'
+        ? (u.instituicao?.nome || u.instituicao?._id || '—')
+        : (u.instituicao || '—');
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(u.nome || '—')}</td>
+        <td>${escapeHtml(u.email || '—')}</td>
+        <td>${renderTipo(u.tipo)}</td>
+        <td>${renderPortal(u.portal, u.tipo)}</td>
+        <td>${escapeHtml(inst)}</td>
+        <td class="acoes">
+          <button class="btn btn-prim" onclick="editarUsuario('${u._id}')">Editar</button>
+          <button class="btn btn-warn" onclick="excluirUsuario('${u._id}')">Excluir</button>
+        </td>
+      `;
+      return tr;
+    }
+
+    async function carregarUsuarios(){
+      const tbody = $('tabelaUsuarios');
+      tbody.innerHTML = `<tr><td class="empty" colspan="6">Carregando…</td></tr>`;
+
+      try{
+        const qs = new URLSearchParams();
+        qs.set('pagina', String(pagina));
+        qs.set('limite', String(limite));
+        if (termo) qs.set('q', termo);
+        if (tipo) qs.set('tipo', tipo);
+        if (portal) qs.set('portal', portal);
+
+        const r = await fetch(API(`/usuarios?${qs.toString()}`), { credentials:'include', cache:'no-store' });
+        if(!r.ok){
+          const j = await r.json().catch(()=>({}));
+          setStatus(j?.mensagem || 'Erro ao buscar usuários.');
+          tbody.innerHTML = `<tr><td class="empty" colspan="6">Falha ao carregar.</td></tr>`;
+          return;
+        }
+
+        const data = await r.json();
+        const itens = Array.isArray(data?.items) ? data.items : [];
+        paginas = Number(data?.paginas || 1);
+        pagina  = Math.min(Math.max(1, Number(data?.pagina || 1)), paginas);
+
+        if (itens.length === 0){
+          tbody.innerHTML = `<tr><td class="empty" colspan="6">Nenhum usuário encontrado.</td></tr>`;
+        } else {
+          tbody.innerHTML = '';
+          itens.forEach(u => tbody.appendChild(linhaUsuario(u)));
+        }
+
+        $('pager').hidden = paginas <= 1;
+        $('pageInfo').textContent = `Página ${pagina}/${paginas}`;
+      }catch(e){
+        console.error(e);
+        setStatus('Erro de conexão com o servidor.');
+        tbody.innerHTML = `<tr><td class="empty" colspan="6">Erro de conexão.</td></tr>`;
+      }
+    }
+
+    function editarUsuario(id){
+      location.href = `editar-usuario.html?id=${id}`;
+    }
+
+    async function excluirUsuario(id){
+      const conf = prompt("⚠️ Esta ação é irreversível.\nDigite CONFIRMAR para excluir este usuário:");
+      if (conf !== 'CONFIRMAR') return alert('Exclusão cancelada.');
+
+      try{
+        const r = await fetch(API(`/usuarios/${id}`), { method:'DELETE', credentials:'include' });
+        if(r.ok){
+          setStatus('Usuário excluído com sucesso.', true);
+          carregarUsuarios();
+        }else{
+          const j = await r.json().catch(()=>({}));
+          setStatus(j?.mensagem || 'Erro ao excluir usuário.');
+        }
+      }catch(e){
+        console.error(e);
+        setStatus('Erro de conexão ao excluir usuário.');
+      }
+    }
+
+    $('btnBuscar').addEventListener('click', () => {
+      termo = $('q').value.trim();
+      tipo  = $('filtroTipo').value;
+      portal = $('filtroPortal').value;
+      pagina = 1;
+      carregarUsuarios();
+    });
+
+    $('prev').addEventListener('click', () => {
+      if(pagina>1){
+        pagina--;
+        carregarUsuarios();
+      }
+    });
+
+    $('next').addEventListener('click', () => {
+      if(pagina<paginas){
+        pagina++;
+        carregarUsuarios();
+      }
+    });
+
+    (async function(){
+      await garantirAdmin();
+      await carregarUsuarios();
+    })();
   </script>
+  <script src="notify.js"></script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

@@ -1,6 +1,34 @@
+// public/notificacoes.js (ou o script equivalente da página de controle)
 document.addEventListener('DOMContentLoaded', async () => {
   const corpo = document.getElementById('tabelaNotificacoes');
   const filtroTurma = document.getElementById('filtroTurma');
+
+  function criarBotaoComunicacao(notif, celulaAcoes) {
+    const medida = (notif.tipoMedida || notif.tipo || '').toUpperCase();
+    const deferida = notif.deferido === true || notif.status === 'deferido' || notif.status === 'aprovada';
+
+    if (!deferida) return;
+    if (!['A.I.A', 'A.E.C.D.E'].includes(medida)) return;
+
+    const btn = document.createElement('button');
+    btn.textContent = 'Comunicação aos Pais';
+    btn.className = 'comunicacao-btn';
+    btn.style.marginLeft = '6px';
+
+    btn.onclick = async () => {
+      try {
+        const resp = await fetch(`/api/comunicacao/${notif._id}`, { method: 'POST', credentials: 'include' });
+        if (!resp.ok) throw new Error('Falha ao iniciar comunicação');
+        const comunic = await resp.json();
+        window.location.href = `/comunicacao-pais.html?comunicacao=${comunic._id}&notificacao=${notif._id}`;
+      } catch (e) {
+        console.warn(e);
+        alert('Erro ao abrir comunicação.');
+      }
+    };
+
+    celulaAcoes.appendChild(btn);
+  }
 
   async function carregarNotificacoes() {
     try {
@@ -10,7 +38,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const lista = await resposta.json();
+      const payload = await resposta.json();
+      const lista = Array.isArray(payload) ? payload : (payload.data || []);
+
       const turmas = new Set();
       corpo.innerHTML = '';
 
@@ -18,10 +48,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!n.aluno) return;
         turmas.add(n.aluno.turma);
 
-        const observacaoLimite = n.observacao 
-          ? n.observacao.length > 30 
-            ? n.observacao.substring(0, 30) + '...' 
-            : n.observacao 
+        const observacaoLimite = n.observacao
+          ? n.observacao.length > 30
+            ? n.observacao.substring(0, 30) + '...'
+            : n.observacao
           : '';
 
         const tr = document.createElement('tr');
@@ -30,11 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>${n.aluno.nome}</td>
           <td>${n.numeroSequencial || '-'}</td>
           <td>${n.aluno.turma}</td>
-          <td>${n.tipo}</td>
-          <td>${n.motivo}</td>
-          <td>${n.tipoMedida}</td>
-          <td>${n.valorNumerico}</td>
-          <td>${new Date(n.data).toLocaleDateString()}</td>
+          <td>${n.tipo || '-'}</td>
+          <td>${n.motivo || '-'}</td>
+          <td>${n.tipoMedida || '-'}</td>
+          <td>${typeof n.valorNumerico === 'number' ? n.valorNumerico : '-'}</td>
+          <td>${n.data ? new Date(n.data).toLocaleDateString() : '-'}</td>
           <td title="${n.observacao || ''}">${observacaoLimite}</td>
           <td class="actions">
             <button class="delete-btn" onclick="excluirNotificacao(this, '${n._id}')">Excluir</button>
@@ -42,6 +72,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             <a class="edit-btn" href="editar-notificacao.html?id=${n._id}">Editar</a>
           </td>
         `;
+
+        // ➕ injeta o botão "Comunicação aos Pais" quando aplicável
+        const celAcoes = tr.querySelector('.actions');
+        criarBotaoComunicacao(n, celAcoes);
+
         corpo.appendChild(tr);
       });
 
@@ -94,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   carregarNotificacoes();
 });
 
-/* Estilo do Spinner */
+/* Estilo do Spinner + botão */
 const estilo = document.createElement('style');
 estilo.innerHTML = `
 .spinner {
@@ -110,6 +145,16 @@ estilo.innerHTML = `
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+.comunicacao-btn {
+  background: #eee;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.comunicacao-btn:hover {
+  filter: brightness(0.95);
 }
 `;
 document.head.appendChild(estilo);

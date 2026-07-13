@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin | Analytics do Site</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root {
+      --bg: #030815;
+      --panel: rgba(8, 23, 44, 0.88);
+      --panel-2: rgba(11, 33, 62, 0.92);
+      --line: rgba(77, 163, 255, 0.18);
+      --line-strong: rgba(49, 215, 255, 0.42);
+      --text: #f3f8ff;
+      --muted: #a7bad0;
+      --cyan: #31d7ff;
+      --green: #54ef9e;
+      --gold: #f7c873;
+      --red: #ff5a6e;
+      --radius: 24px;
+      --shadow: 0 18px 55px rgba(0,0,0,.35), inset 0 0 22px rgba(49,215,255,.04);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(49, 215, 255, .16), transparent 30%),
+        radial-gradient(circle at 85% 20%, rgba(100, 120, 255, .16), transparent 32%),
+        linear-gradient(180deg, #020813 0%, #061326 60%, #030815 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(120,178,255,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(120,178,255,.05) 1px, transparent 1px);
+      background-size: 36px 36px;
+      opacity: .24;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(4, 13, 27, .72);
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .brand strong {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+
+    .brand span { color: var(--muted); }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button, select {
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      background: linear-gradient(135deg, rgba(22, 119, 255, .32), rgba(49, 215, 255, .12));
+      border-radius: 14px;
+      padding: 12px 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    select { background-color: #061326; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--panel), rgba(6, 17, 33, .94));
+      box-shadow: var(--shadow);
+      padding: 20px;
+      min-height: 136px;
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: .95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .metric {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -.05em;
+      line-height: 1;
+    }
+
+    .metric.online { color: var(--green); }
+    .metric.cyan { color: var(--cyan); }
+    .metric.gold { color: var(--gold); }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: .95rem;
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 13px 10px;
+      border-bottom: 1px solid rgba(117,179,255,.10);
+      text-align: left;
+      color: #dfeeff;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: .78rem;
+      letter-spacing: .08em;
+    }
+
+    .status {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 12px 0;
+    }
+
+    @media (max-width: 900px) {
+      header, .columns { grid-template-columns: 1fr; flex-direction: column; align-items: flex-start; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      th:nth-child(2), td:nth-child(2) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="brand">
+        <strong>Analytics do Site Axoriin</strong>
+        <span>Pessoas online, acessos, visitantes únicos e cliques comerciais.</span>
+      </div>
+      <div class="actions">
+        <select id="period">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+        </select>
+        <button type="button" id="refresh">Atualizar</button>
+        <button type="button" id="changeKey">Chave de acesso</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h3>Online agora</h3>
+        <div class="metric online" id="onlineNow">—</div>
+        <div class="hint">Considera atividade nos últimos 2 minutos.</div>
+      </article>
+      <article class="card">
+        <h3>Acessos hoje</h3>
+        <div class="metric cyan" id="todayViews">—</div>
+        <div class="hint"><span id="todayVisitors">—</span> visitantes únicos hoje.</div>
+      </article>
+      <article class="card">
+        <h3>Acessos em 7 dias</h3>
+        <div class="metric" id="views7d">—</div>
+        <div class="hint"><span id="visitors7d">—</span> visitantes únicos.</div>
+      </article>
+      <article class="card">
+        <h3>Acessos em 30 dias</h3>
+        <div class="metric gold" id="views30d">—</div>
+        <div class="hint"><span id="visitors30d">—</span> visitantes únicos.</div>
+      </article>
+    </section>
+
+    <section class="grid" style="margin-top:14px;">
+      <article class="card">
+        <h3>Cliques WhatsApp</h3>
+        <div class="metric cyan" id="clicksWhatsapp">—</div>
+        <div class="hint">Soma dos dois números comerciais.</div>
+      </article>
+      <article class="card">
+        <h3>Interesse comercial</h3>
+        <div class="metric" id="clicksDemo">—</div>
+        <div class="hint">Demonstração, apresentação, piloto e contato.</div>
+      </article>
+      <article class="card">
+        <h3>Acessar sistema</h3>
+        <div class="metric" id="clicksLogin">—</div>
+        <div class="hint">Cliques no botão de acesso institucional.</div>
+      </article>
+      <article class="card">
+        <h3>Portal do Aluno</h3>
+        <div class="metric" id="clicksPortalAluno">—</div>
+        <div class="hint">Cliques no portal do aluno/responsável.</div>
+      </article>
+    </section>
+
+    <section class="columns">
+      <article class="card">
+        <h3>Páginas mais acessadas</h3>
+        <table>
+          <thead>
+            <tr><th>Página</th><th>Visitantes</th><th>Acessos</th></tr>
+          </thead>
+          <tbody id="topPages"><tr><td colspan="3" class="empty">Carregando...</td></tr></tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h3>Dispositivos</h3>
+        <table>
+          <thead>
+            <tr><th>Tipo</th><th>Visitantes</th><th>Acessos</th></tr>
+          </thead>
+          <tbody id="devices"><tr><td colspan="3" class="empty">Carregando...</td></tr></tbody>
+        </table>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:14px;">
+      <h3>Eventos recentes mais frequentes</h3>
+      <table>
+        <thead>
+          <tr><th>Evento</th><th>Rótulo</th><th>Cliques</th></tr>
+        </thead>
+        <tbody id="events"><tr><td colspan="3" class="empty">Carregando...</td></tr></tbody>
+      </table>
+      <div class="status" id="status">Aguardando dados...</div>
+    </section>
+  </main>
+
+  <script>
+    const API = '/api/site-analytics/summary';
+    const KEY_STORAGE = 'axoriin_site_analytics_key';
+
+    const els = {
+      onlineNow: document.getElementById('onlineNow'),
+      todayViews: document.getElementById('todayViews'),
+      todayVisitors: document.getElementById('todayVisitors'),
+      views7d: document.getElementById('views7d'),
+      visitors7d: document.getElementById('visitors7d'),
+      views30d: document.getElementById('views30d'),
+      visitors30d: document.getElementById('visitors30d'),
+      clicksWhatsapp: document.getElementById('clicksWhatsapp'),
+      clicksDemo: document.getElementById('clicksDemo'),
+      clicksLogin: document.getElementById('clicksLogin'),
+      clicksPortalAluno: document.getElementById('clicksPortalAluno'),
+      topPages: document.getElementById('topPages'),
+      devices: document.getElementById('devices'),
+      events: document.getElementById('events'),
+      status: document.getElementById('status'),
+      period: document.getElementById('period')
+    };
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString('pt-BR');
+    }
+
+    function getKey() {
+      return localStorage.getItem(KEY_STORAGE) || '';
+    }
+
+    function askKey() {
+      const current = getKey();
+      const key = prompt('Informe a chave SITE_ANALYTICS_KEY configurada no servidor:', current);
+      if (key !== null) {
+        localStorage.setItem(KEY_STORAGE, key.trim());
+        load();
+      }
+    }
+
+    function renderRows(target, rows, columns, emptyText) {
+      if (!rows || rows.length === 0) {
+        target.innerHTML = `<tr><td colspan="${columns.length}" class="empty">${emptyText}</td></tr>`;
+        return;
+      }
+
+      target.innerHTML = rows.map((row) => {
+        return '<tr>' + columns.map((col) => `<td>${col(row)}</td>`).join('') + '</tr>';
+      }).join('');
+    }
+
+    async function load() {
+      const key = getKey();
+
+      try {
+        els.status.textContent = 'Atualizando dados...';
+
+        const res = await fetch(API, {
+          headers: key ? { 'x-site-analytics-key': key } : {},
+          credentials: 'same-origin'
+        });
+
+        if (res.status === 401) {
+          els.status.textContent = 'Acesso não autorizado. Configure a chave do painel.';
+          askKey();
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.ok) throw new Error('Resposta inválida do servidor.');
+
+        els.onlineNow.textContent = formatNumber(data.onlineNow);
+        els.todayViews.textContent = formatNumber(data.today?.pageViews);
+        els.todayVisitors.textContent = formatNumber(data.today?.visitors);
+        els.views7d.textContent = formatNumber(data.last7d?.pageViews);
+        els.visitors7d.textContent = formatNumber(data.last7d?.visitors);
+        els.views30d.textContent = formatNumber(data.last30d?.pageViews);
+        els.visitors30d.textContent = formatNumber(data.last30d?.visitors);
+        els.clicksWhatsapp.textContent = formatNumber(data.commercial?.clicksWhatsapp);
+        els.clicksDemo.textContent = formatNumber(data.commercial?.clicksDemo);
+        els.clicksLogin.textContent = formatNumber(data.commercial?.clicksLogin);
+        els.clicksPortalAluno.textContent = formatNumber(data.commercial?.clicksPortalAluno);
+
+        renderRows(els.topPages, data.topPages, [
+          (row) => row.path || '/',
+          (row) => formatNumber(row.visitors),
+          (row) => formatNumber(row.views)
+        ], 'Ainda não há páginas registradas.');
+
+        renderRows(els.devices, data.deviceBreakdown, [
+          (row) => row.deviceType || 'unknown',
+          (row) => formatNumber(row.visitors),
+          (row) => formatNumber(row.views)
+        ], 'Ainda não há dispositivos registrados.');
+
+        renderRows(els.events, data.recentEvents, [
+          (row) => row.name || '-',
+          (row) => row.label || '-',
+          (row) => formatNumber(row.count)
+        ], 'Ainda não há eventos registrados.');
+
+        const generatedAt = new Date(data.generatedAt).toLocaleString('pt-BR');
+        els.status.textContent = `Última atualização: ${generatedAt}. Referência diária: Acre/Rio Branco.`;
+      } catch (err) {
+        els.status.textContent = 'Não foi possível carregar os dados. Verifique se a rota /api/site-analytics está registrada e se a chave está correta.';
+      }
+    }
+
+    document.getElementById('refresh').addEventListener('click', load);
+    document.getElementById('changeKey').addEventListener('click', askKey);
+    window.setInterval(load, 30000);
+    load();
+  </script>
+</body>
+</html>

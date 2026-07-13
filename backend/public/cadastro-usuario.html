@@ -3,178 +3,522 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cadastro de Usuário - Colégio Militar Dom Pedro II</title>
-  <meta name="theme-color" content="#941a1d" />
+  <title>Cadastro de Usuário - SmartClass</title>
+  <meta name="theme-color" content="#0A1322" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <link rel="icon" href="/icons/icon-192x192.png" />
 
-  <script>
-    // Proteção: só admin pode acessar esta página
-    async function verificarPermissao() {
-      try {
-        const resposta = await fetch('/api/usuario-logado', {
-          credentials: 'include'
-        });
-
-        if (!resposta.ok) {
-          window.location.href = '/login.html';
-          return;
-        }
-
-        const usuario = await resposta.json();
-        if (usuario.tipo !== 'admin') {
-          alert('Apenas administradores podem acessar esta página.');
-          window.location.href = '/painel.html';
-        }
-      } catch (erro) {
-        console.error('Erro ao verificar login:', erro);
-        window.location.href = '/login.html';
-      }
-    }
-
-    verificarPermissao();
-  </script>
-
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+    :root{
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.40);
+      --glass-radius: 22px;
+      --glass-blur: 18px;
+      --glass-shadow: 0 8px 22px rgba(0,0,0,0.30);
+
+      --text-main:#ffffff;
+      --text-soft:rgba(255,255,255,0.78);
+
+      --sc-primary:#00D1FF;
+      --sc-secondary:#7A5CFF;
+
+      --ok-bg: rgba(0,255,140,.12);
+      --ok-bd: rgba(0,255,140,.25);
+      --ok-tx: #d6ffe9;
+
+      --err-bg: rgba(255,70,70,.12);
+      --err-bd: rgba(255,70,70,.25);
+      --err-tx: #ffb3b8;
+
+      --warn-bg: rgba(255,226,154,.10);
+      --warn-bd: rgba(255,226,154,.25);
+      --warn-tx: #ffecc1;
+
+      --info-bg: rgba(0,209,255,.10);
+      --info-bd: rgba(0,209,255,.25);
+      --info-tx: #dff8ff;
     }
 
-    .container {
-      background: white;
-      padding: 40px 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      width: 340px;
-      text-align: center;
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:"Segoe UI", system-ui, sans-serif;
+      background:linear-gradient(180deg,#0f2f53,#0a1f3a);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      color:var(--text-main);
     }
 
-    .logo {
-      width: 100px;
-      margin-bottom: 10px;
+    .container{
+      background:rgba(10,10,12,0.92);
+      border-radius:var(--glass-radius);
+      border:1px solid rgba(255,255,255,0.25);
+      box-shadow:var(--glass-shadow);
+      backdrop-filter:blur(var(--glass-blur));
+      padding:28px 24px 30px;
+      width:100%;
+      max-width:430px;
+      text-align:center;
     }
 
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
+    .logo{
+      width:92px;
+      margin-bottom:12px;
+      filter:drop-shadow(0 10px 26px rgba(0,0,0,0.8));
     }
 
-    input, select {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
+    h2{
+      margin:6px 0 4px;
+      font-size:1.35rem;
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
+    .sub{
+      margin:0 0 10px;
+      font-size:.95rem;
+      color:var(--text-soft);
+      line-height:1.35;
+    }
+
+    .info-box,
+    .instituicao-box{
+      margin:0 0 14px;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:0.92rem;
+      line-height:1.35;
+      text-align:left;
+    }
+
+    .info-box{
+      background:var(--info-bg);
+      border:1px solid var(--info-bd);
+      color:var(--info-tx);
+    }
+
+    .instituicao-box{
+      background:rgba(0,209,255,.10);
+      border:1px solid rgba(0,209,255,.25);
+      color:#e8faff;
+      text-align:center;
+    }
+
+    form{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    input, select{
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.28);
+      background:rgba(0,0,0,0.45);
+      color:white;
+      font-size:0.95rem;
+      outline:none;
+    }
+
+    input:focus, select:focus{
+      border-color: rgba(255,255,255,0.50);
+      box-shadow: 0 0 0 2px rgba(0,209,255,.22);
+    }
+
+    button{
+      margin-top:6px;
+      padding:12px;
+      border:none;
+      border-radius:999px;
+      font-size:1rem;
+      font-weight:700;
+      cursor:pointer;
+      color:#071018;
+      background:linear-gradient(135deg,var(--sc-primary),var(--sc-secondary));
+    }
+
+    button:disabled{
+      opacity:.85;
+      cursor:not-allowed;
+      filter: grayscale(.12) brightness(.95);
+    }
+
+    .mensagem{
+      font-size:0.92rem;
+      margin-top:10px;
+      min-height:18px;
+      text-align:left;
+      padding:10px 12px;
+      border-radius:12px;
+      display:none;
+      white-space: pre-line;
+      line-height: 1.25;
+    }
+
+    .mensagem.ok{
+      display:block;
+      color:var(--ok-tx);
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-bd);
+    }
+
+    .mensagem.err{
+      display:block;
+      color:var(--err-tx);
+      background: var(--err-bg);
+      border: 1px solid var(--err-bd);
+    }
+
+    .mensagem.warn{
+      display:block;
+      color:var(--warn-tx);
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-bd);
+    }
+
+    .actions-row{
+      display:none;
+      margin-top:10px;
+      gap:10px;
+    }
+
+    .actions-row.show{
+      display:flex;
+    }
+
+    .btn-ghost{
+      flex:1;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.28);
+      background: rgba(0,0,0,0.35);
+      color: #ffffff;
+      font-weight: 700;
       cursor: pointer;
     }
 
-    button:hover {
-      background-color: #941a1d;
+    .btn-ghost:hover{
+      filter: brightness(1.05);
     }
 
-    .mensagem {
-      font-size: 14px;
-      margin-top: 10px;
+    .voltar{
+      margin-top:15px;
+      display:block;
+      font-size:0.9rem;
+      color:#ffffff;
+      text-decoration:none;
+      opacity:.85;
     }
 
-    .voltar {
-      margin-top: 15px;
-      display: block;
-      font-size: 14px;
-      color: #d82327;
-      text-decoration: none;
-    }
-
-    .voltar:hover {
+    .voltar:hover{
+      opacity:1;
       text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <img src="/logo-final.jpg" alt="Logo do Colégio" class="logo" />
+    <img src="/assets/smartclass-coruja.png" alt="SmartClass" class="logo"
+         onerror="this.onerror=null; this.src='/icons/icon-192x192.png';"/>
+
     <h2>Cadastrar Usuário</h2>
+    <p class="sub">
+      Cadastre-se como <b>Professor</b> ou <b>Monitor</b>.
+      Você receberá um e-mail de confirmação para liberar seu acesso.
+    </p>
+
+    <div class="info-box">
+      <b>Importante:</b> este formulário é destinado ao cadastro público de <b>Professor</b> e <b>Monitor</b>.
+      Cadastros administrativos internos são realizados no painel master da instituição.
+    </div>
+
+    <div class="instituicao-box">
+      Cadastro vinculado à instituição:<br>
+      <b id="nomeInstituicao">Carregando...</b>
+    </div>
+
     <form id="formCadastro">
       <input type="text" id="nome" placeholder="Nome completo" required />
-      <input type="email" id="email" placeholder="E-mail institucional" required />
-      <input type="password" id="senha" placeholder="Senha" required />
-      <input type="text" id="instituicao" placeholder="Instituição (ex: Colégio Militar D. Pedro II)" required />
+      <input type="email" id="email" placeholder="E-mail válido" required />
+      <input type="password" id="senha" placeholder="Senha (mín. 8 caracteres; 1 maiúsc., 1 min., 1 número)" required />
+      <input type="password" id="senha2" placeholder="Confirmar senha" required />
+
       <select id="tipo" required>
-        <option value="">Selecione o tipo de usuário</option>
-        <option value="admin">Administrador</option>
+        <option value="">Selecione o tipo</option>
         <option value="monitor">Monitor</option>
         <option value="professor">Professor</option>
       </select>
-      <button type="submit">Cadastrar</button>
+
+      <button type="submit" id="btnCadastrar">Enviar cadastro</button>
+
       <div class="mensagem" id="mensagem"></div>
+
+      <div class="actions-row" id="actions-row">
+        <button type="button" class="btn-ghost" id="btn-ir-login">Ir para o login</button>
+        <button type="button" class="btn-ghost" id="btn-reenviar">Reenviar confirmação</button>
+      </div>
     </form>
-    <a href="/login.html" class="voltar">⬅ Voltar para o login</a>
+
+    <a href="/login.html" class="voltar" id="link-voltar">⬅ Voltar para o login</a>
   </div>
 
   <script>
-    document.getElementById('formCadastro').addEventListener('submit', async function (e) {
-      e.preventDefault();
+    const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
 
-      const nome = document.getElementById('nome').value;
-      const email = document.getElementById('email').value;
-      const senha = document.getElementById('senha').value;
-      const instituicao = document.getElementById('instituicao').value;
-      const tipo = document.getElementById('tipo').value;
-      const mensagem = document.getElementById('mensagem');
+    function getTenantSlug() {
+      const qs = new URLSearchParams(location.search);
+      const byQuery = (qs.get('t') || qs.get('tenant') || '').trim();
+      const byStorage = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
 
-      try {
-        const resposta = await fetch('/auth/cadastrar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome, email, senha, instituicao, tipo })
+      const finalTenant = byQuery || byStorage || DEFAULT_TENANT;
+
+      if (finalTenant) {
+        localStorage.setItem(TENANT_STORAGE_KEY, finalTenant);
+      }
+
+      return finalTenant;
+    }
+
+    const TENANT = getTenantSlug();
+
+    const elNome = document.getElementById('nome');
+    const elEmail = document.getElementById('email');
+    const elSenha = document.getElementById('senha');
+    const elSenha2 = document.getElementById('senha2');
+    const elTipo = document.getElementById('tipo');
+
+    const form = document.getElementById('formCadastro');
+    const msg = document.getElementById('mensagem');
+    const btn = document.getElementById('btnCadastrar');
+    const nomeInstituicaoEl = document.getElementById('nomeInstituicao');
+
+    const actionsRow = document.getElementById('actions-row');
+    const btnIrLogin = document.getElementById('btn-ir-login');
+    const btnReenviar = document.getElementById('btn-reenviar');
+    const linkVoltar = document.getElementById('link-voltar');
+
+    let instituicaoAtual = {
+      slug: TENANT,
+      nome: 'Instituição'
+    };
+
+    function syncLinks() {
+      const loginUrl = `/login.html?t=${encodeURIComponent(TENANT)}`;
+      linkVoltar.href = loginUrl;
+
+      btnIrLogin.addEventListener('click', () => {
+        location.href = `${loginUrl}&from=cadastro`;
+      });
+    }
+    syncLinks();
+
+    function showBox(kind, text) {
+      msg.className = `mensagem ${kind}`;
+      msg.textContent = text || '';
+      msg.style.display = 'block';
+      actionsRow.classList.add('show');
+    }
+
+    function showErr(t){ showBox('err', t || 'Erro.'); }
+    function showOk(t){ showBox('ok', t || 'OK.'); }
+    function showWarn(t){ showBox('warn', t || 'Atenção.'); }
+
+    function clearMsg(){
+      msg.className = 'mensagem';
+      msg.textContent = '';
+      msg.style.display = 'none';
+      actionsRow.classList.remove('show');
+    }
+
+    function isValidEmail(email){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    }
+
+    function validatePasswordClient(senha) {
+      if (!senha || String(senha).length < 8) {
+        return { ok: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
+      }
+      if (!/[A-Z]/.test(senha)) {
+        return { ok: false, message: 'A senha deve conter ao menos uma letra maiúscula.' };
+      }
+      if (!/[a-z]/.test(senha)) {
+        return { ok: false, message: 'A senha deve conter ao menos uma letra minúscula.' };
+      }
+      if (!/[0-9]/.test(senha)) {
+        return { ok: false, message: 'A senha deve conter ao menos um número.' };
+      }
+      return { ok: true };
+    }
+
+    async function carregarInstituicao(){
+      try{
+        const url = `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}`;
+
+        const r = await fetch(url, {
+          cache: 'no-store',
+          credentials:'include'
         });
 
-        const resultado = await resposta.json();
+        const data = await r.json().catch(()=> ({}));
 
-        if (resposta.ok) {
-          mensagem.style.color = 'green';
-          mensagem.textContent = '✅ Usuário cadastrado com sucesso!';
-          document.getElementById('formCadastro').reset();
+        const nome =
+          data?.nomeColegio ||
+          data?.nome ||
+          data?.instituicao?.nome ||
+          'Instituição';
 
-          // Mantém mensagem por 5 segundos
-          setTimeout(() => {
-            mensagem.textContent = '';
-          }, 5000);
+        const slug =
+          data?.slug ||
+          data?.tenantSlug ||
+          data?.instituicao?.slug ||
+          TENANT;
+
+        instituicaoAtual = { nome, slug };
+        nomeInstituicaoEl.textContent = nome;
+      } catch {
+        instituicaoAtual = { nome: 'Instituição', slug: TENANT };
+        nomeInstituicaoEl.textContent = 'Instituição';
+      }
+    }
+    carregarInstituicao();
+
+    btnReenviar.addEventListener('click', async () => {
+      const email = String(elEmail.value || '').trim().toLowerCase();
+      clearMsg();
+
+      if (!email || !isValidEmail(email)) {
+        showErr('Informe um e-mail válido para reenviar a confirmação.');
+        return;
+      }
+
+      btnReenviar.disabled = true;
+      const old = btnReenviar.textContent;
+      btnReenviar.textContent = 'Reenviando...';
+
+      try{
+        const body = { email, t: TENANT };
+
+        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao?t=${encodeURIComponent(TENANT)}`,{
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify(body)
+        });
+
+        const data = await r.json().catch(()=>({}));
+
+        if (!r.ok) {
+          showErr(data?.mensagem || 'Não foi possível reenviar. Tente novamente.');
         } else {
-          mensagem.style.color = 'red';
-          mensagem.textContent = resultado.mensagem || 'Erro ao cadastrar.';
+          showOk(`Link reenviado para ${instituicaoAtual.nome}. Verifique seu e-mail.`);
         }
-      } catch (erro) {
-        mensagem.style.color = 'red';
-        mensagem.textContent = 'Erro de conexão com o servidor.';
+      } catch {
+        showErr('Erro de conexão ao reenviar. Tente novamente.');
+      } finally {
+        btnReenviar.disabled = false;
+        btnReenviar.textContent = old || 'Reenviar confirmação';
       }
     });
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar o Service Worker:', err));
-      });
-    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMsg();
+
+      const nomeVal = String(elNome.value || '').trim();
+      const emailVal = String(elEmail.value || '').trim().toLowerCase();
+      const senhaVal = String(elSenha.value || '');
+      const senha2Val = String(elSenha2.value || '');
+      const tipoVal = String(elTipo.value || '').trim().toLowerCase();
+
+      if (!TENANT){
+        showErr('Link sem instituição (tenant).');
+        return;
+      }
+
+      if (!nomeVal || nomeVal.length < 3){
+        showErr('Informe um nome válido (mín. 3 caracteres).');
+        return;
+      }
+
+      if (!isValidEmail(emailVal)){
+        showErr('Informe um e-mail válido.');
+        return;
+      }
+
+      const passCheck = validatePasswordClient(senhaVal);
+      if (!passCheck.ok) {
+        showErr(passCheck.message || 'A senha não atende à política de segurança.');
+        return;
+      }
+
+      if (senhaVal !== senha2Val){
+        showErr('As senhas não conferem.');
+        return;
+      }
+
+      if (!['monitor','professor'].includes(tipoVal)){
+        showErr('Selecione Monitor ou Professor.');
+        return;
+      }
+
+      btn.disabled = true;
+      const oldText = btn.textContent;
+      btn.textContent = 'Enviando...';
+
+      try{
+        const body = {
+          nome: nomeVal,
+          email: emailVal,
+          senha: senhaVal,
+          tipo: tipoVal,
+          t: TENANT,
+          tenantSlug: TENANT
+        };
+
+        const r = await fetch(`${API_BASE}/auth/cadastro?t=${encodeURIComponent(TENANT)}`,{
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify(body)
+        });
+
+        const data = await r.json().catch(()=>({}));
+
+        if (r.ok){
+          showOk(
+            `Cadastro enviado. Verifique seu e-mail para confirmar o acesso (${instituicaoAtual.nome}).` +
+            `\n\n➡️ Agora abra seu e-mail e clique em “Confirmar meu e-mail”.` +
+            `\nDepois volte aqui e faça login.`
+          );
+
+          elNome.value = '';
+          elSenha.value = '';
+          elSenha2.value = '';
+          elTipo.value = '';
+        } else {
+          if (r.status === 409) {
+            showWarn(
+              `Este e-mail já está cadastrado em ${instituicaoAtual.nome}.` +
+              `\n\nSe você já confirmou o e-mail, clique em “Ir para o login”.` +
+              `\nSe ainda não confirmou, clique em “Reenviar confirmação”.`
+            );
+          } else {
+            showErr(data?.mensagem || 'Erro ao cadastrar.');
+          }
+        }
+      } catch {
+        showErr('Erro de conexão com o servidor.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldText || 'Enviar cadastro';
+      }
+    });
   </script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

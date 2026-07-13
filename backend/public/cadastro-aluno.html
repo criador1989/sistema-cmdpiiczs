@@ -8,153 +8,393 @@
   <meta name="theme-color" content="#941a1d" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <link rel="icon" href="/icons/icon-192x192.png" />
+
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #941a1d, #d82327);
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
+    :root{
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.40);
+      --glass-highlight: rgba(255,255,255,0.7);
+      --glass-radius: 22px;
+      --glass-blur: 18px;
+      --glass-shadow:
+        0 2px 6px rgba(0,0,0,0.15),
+        0 8px 22px rgba(0,0,0,0.20);
+
+      --text-main: #ffffff;
+      --text-soft: rgba(255,255,255,0.78);
+
+      --rubi-1:#941a1d;
+      --rubi-2:#d82327;
+
+      --ok:#22c55e;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+
+      --card:#0a0a0cd9;
+      --card2:#0a0a0cae;
+      --line:rgba(255,255,255,0.18);
     }
 
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
-      width: 380px;
-      text-align: center;
-      animation: fadeInUp 0.9s ease-out;
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
     }
 
-    .logo {
-      width: 80px;
-      margin-bottom: 10px;
-      animation: flutuar 3s ease-in-out infinite;
+    body{
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text-main);
+      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      color-scheme:dark;
     }
 
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
+    .container{
+      width:100%;
+      max-width:460px;
+      padding:28px 24px 22px;
+      border-radius:var(--glass-radius);
+      background:rgba(10,10,12,0.88);
+      border:1px solid rgba(255,255,255,0.25);
+      box-shadow:var(--glass-shadow);
+      backdrop-filter:blur(var(--glass-blur));
+      -webkit-backdrop-filter:blur(var(--glass-blur));
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      animation:fade .6s ease-out;
     }
 
-    form input, form select {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
+    .container::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.22) 0%,
+        rgba(255,255,255,0.06) 18%,
+        transparent 45%
+      );
+      pointer-events:none;
     }
 
-    form button {
-      width: 100%;
-      padding: 12px;
-      background-color: #d82327;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.2s;
+    .container > *{ position:relative; z-index:1; }
+
+    @keyframes fade{
+      from{opacity:0; transform:translateY(40px);}
+      to{opacity:1; transform:translateY(0);}
     }
 
-    form button:hover {
-      background-color: #941a1d;
-      transform: scale(1.03);
+    .logo{
+      width:80px;
+      margin-bottom:10px;
+      filter:drop-shadow(0 8px 20px rgba(0,0,0,.7));
+      animation:float 3s ease-in-out infinite;
     }
 
-    .mensagem {
-      margin-top: 10px;
-      font-weight: bold;
+    @keyframes float{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-6px)}
     }
 
-    .voltar {
-      display: block;
-      margin-top: 20px;
-      color: #d82327;
-      text-decoration: none;
-      font-weight: bold;
+    h2{
+      margin:10px 0 18px;
+      font-size:1.35rem;
+      font-weight:800;
+      text-shadow:0 10px 22px rgba(0,0,0,.8);
     }
 
-    .voltar:hover {
-      text-decoration: underline;
+    form{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      text-align:left;
     }
 
-    .campo-label {
-      font-size: 13px;
-      color: #555;
-      display: block;
-      text-align: left;
-      margin-bottom: 5px;
+    label.campo-label{
+      font-size:.86rem;
+      color:var(--text-soft);
+      margin-bottom:4px;
     }
 
-    .campo-label small {
-      font-weight: normal;
-      font-size: 12px;
-      color: #777;
+    label.campo-label small{
+      color:rgba(255,255,255,0.55);
+      font-size:.75rem;
+      display:block;
+      margin-top:2px;
     }
 
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(40px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    input, select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.28);
+      background:rgba(0,0,0,0.45);
+      color:#ffffff;
+      font-size:0.95rem;
+      outline:none;
+      backdrop-filter:blur(6px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
     }
 
-    @keyframes flutuar {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(-6px);
-      }
+    input::placeholder{
+      color:rgba(255,255,255,0.55);
+    }
+
+    input:focus, select:focus{
+      border-color:rgba(255,255,255,0.8);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.35),
+        0 10px 26px rgba(0,0,0,0.85);
+    }
+
+    input[type="file"]{
+      padding:6px;
+      background:rgba(0,0,0,0.35);
+      border-radius:10px;
+    }
+
+    button{
+      width:100%;
+      padding:12px;
+      margin-top:6px;
+      border:0;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:1rem;
+      font-weight:700;
+      color:#fff;
+      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
+      box-shadow:0 10px 26px rgba(0,0,0,0.85);
+      transition:transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+
+    button:hover{
+      transform:translateY(-2px);
+      filter:brightness(1.06);
+      box-shadow:0 14px 32px rgba(0,0,0,0.95);
+    }
+
+    button:active{
+      transform:translateY(0);
+      box-shadow:0 8px 20px rgba(0,0,0,0.85);
+    }
+
+    #mensagem{
+      margin-top:12px;
+      text-align:center;
+      font-weight:700;
+      min-height:1.3em;
+    }
+
+    .voltar{
+      display:block;
+      margin-top:18px;
+      color:#ffffff;
+      opacity:.85;
+      font-size:.9rem;
+      text-decoration:none;
+      text-align:center;
+    }
+
+    .voltar:hover{
+      text-decoration:underline;
+      opacity:1;
+    }
+
+    details.manager{
+      margin-top:14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, var(--card2), rgba(0,0,0,0.35));
+      overflow:hidden;
+      box-shadow:0 10px 26px rgba(0,0,0,0.55);
+    }
+    details.manager summary{
+      list-style:none;
+      cursor:pointer;
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:#fff;
+      font-weight:800;
+      user-select:none;
+    }
+    details.manager summary::-webkit-details-marker{ display:none; }
+    .sum-left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width:0;
+    }
+    .chip{
+      font-size:.72rem;
+      padding:.18rem .55rem;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.30);
+      color:rgba(255,255,255,.85);
+      background:rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .sum-sub{
+      font-size:.82rem;
+      color:rgba(255,255,255,.72);
+      font-weight:600;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:220px;
+    }
+    .mgr-body{
+      padding:12px 14px 14px;
+      border-top:1px solid rgba(255,255,255,.10);
+      text-align:left;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .row.one{ grid-template-columns: 1fr; }
+    .row .mini{
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.20);
+      background:rgba(0,0,0,0.38);
+      color:#fff;
+      outline:none;
+    }
+    .mgr-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    .btn2{
+      border:1px solid rgba(255,255,255,0.22);
+      background:rgba(255,255,255,0.06);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:800;
+      transition:.15s;
+      width:auto;
+      box-shadow:0 10px 22px rgba(0,0,0,.45);
+    }
+    .btn2:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+    .btn2:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+    .btn-add{ border-color: rgba(34,197,94,.45); }
+    .btn-undo{ border-color: rgba(251,191,36,.45); }
+    .btn-reset{ border-color: rgba(251,113,133,.40); }
+
+    .turmas-list{
+      margin-top:12px;
+      display:grid;
+      gap:8px;
+    }
+    .turma-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(0,0,0,0.34);
+    }
+    .turma-item strong{
+      font-size:.95rem;
+      letter-spacing:.2px;
+    }
+    .turma-item small{
+      display:block;
+      margin-top:2px;
+      color:rgba(255,255,255,.65);
+      font-weight:600;
+      font-size:.78rem;
+    }
+    .del{
+      width:auto;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(251,113,133,.45);
+      background:rgba(251,113,133,.10);
+      color:#fff;
+      cursor:pointer;
+      font-weight:900;
+    }
+    .del:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+
+    .note{
+      margin-top:10px;
+      font-size:.82rem;
+      color:rgba(255,255,255,.68);
+      line-height:1.35;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <img src="img/logo.png" alt="Logo" class="logo" />
+    <img src="img/logo.png" class="logo" />
     <h2>Cadastrar Novo Aluno</h2>
+
     <form id="form-aluno">
+
       <input type="text" id="nome" name="nome" placeholder="Nome do aluno" required />
 
       <label class="campo-label">Turma</label>
-      <select id="turma" name="turma" required>
-        <optgroup label="Fundamental II">
-          <option value="6ºA">6ºA</option>
-          <option value="6ºB">6ºB</option>
-          <option value="7ºA">7ºA</option>
-          <option value="7ºB">7ºB</option>
-          <option value="7ºC">7ºC</option>
-          <option value="7ºD">7ºD</option>
-          <option value="8ºA">8ºA</option>
-          <option value="8ºB">8ºB</option>
-          <option value="9ºA">9ºA</option>
-          <option value="9ºB">9ºB</option>
-          <option value="9ºC">9ºC</option>
-        </optgroup>
-        <optgroup label="Ensino Médio">
-          <option value="1ºA">1ºA</option>
-          <option value="1ºB">1ºB</option>
-          <option value="1ºC">1ºC</option>
-          <option value="1ºD">1ºD</option>
-          <option value="2ºA">2ºA</option>
-          <option value="2ºB">2ºB</option>
-          <option value="2ºC">2ºC</option>
-          <option value="3ºA">3ºA</option>
-          <option value="3ºB">3ºB</option>
-          <option value="3ºC">3ºC</option>
-          <option value="3ºD">3ºD</option>
-        </optgroup>
-      </select>
+      <select id="turma" name="turma" required></select>
+
+      <details class="manager" id="turmas-manager">
+        <summary>
+          <div class="sum-left">
+            <span>⚙️ Gerenciar turmas</span>
+            <span class="chip" id="chip-qtd">—</span>
+          </div>
+          <span class="sum-sub" id="sum-sub">Adicionar / excluir / desfazer</span>
+        </summary>
+
+        <div class="mgr-body">
+          <div class="row">
+            <input class="mini" id="novaTurmaCodigo" placeholder="Ex: 6ºC, 8ºD, 2ºD" />
+            <select class="mini" id="novaTurmaSegmento">
+              <option value="Fundamental II">Fundamental II</option>
+              <option value="Ensino Médio">Ensino Médio</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <select class="mini" id="novaTurmaTurno">
+              <option value="Manhã">Manhã</option>
+              <option value="Tarde">Tarde</option>
+            </select>
+            <button type="button" class="btn2 btn-add" id="btnAddTurma">➕ Adicionar turma</button>
+          </div>
+
+          <div class="mgr-actions">
+            <button type="button" class="btn2 btn-undo" id="btnUndo" disabled>↩️ Desfazer última ação</button>
+            <button type="button" class="btn2 btn-reset" id="btnReset">🧹 Restaurar padrão</button>
+          </div>
+
+          <div class="note">
+            • As turmas aqui são salvas no <b>navegador (localStorage)</b> e passam a aparecer também em <b>Transferir Turmas</b> e <b>Lista de Alunos</b>.<br>
+            • Excluir turma aqui <b>não apaga alunos</b>; apenas remove a opção dos seletores.
+          </div>
+
+          <div class="turmas-list" id="listaTurmas"></div>
+        </div>
+      </details>
 
       <label class="campo-label">
         Data de entrada no colégio
@@ -164,7 +404,7 @@
 
       <label class="campo-label">
         Telefone do responsável
-        <small>(com DDD, sem espaços ou traços. Ex: 5599999999999)</small>
+        <small>(com DDD, sem espaços ou traços)</small>
       </label>
       <input type="tel" id="telefone" name="telefone" placeholder="Ex: 5599999999999" required />
 
@@ -176,96 +416,444 @@
       <button type="submit">Cadastrar</button>
       <div class="mensagem" id="mensagem"></div>
     </form>
+
     <a href="/painel.html" class="voltar">⬅ Voltar ao Painel</a>
   </div>
 
   <script>
-    async function verificarAutenticacao() {
-      try {
-        const res = await fetch('/api/usuario', { credentials: 'include' });
-        if (!res.ok) return window.location.href = '/login.html';
-        const usuario = await res.json();
+    (async function () {
+      const form       = document.getElementById('form-aluno');
+      const msgEl      = document.getElementById('mensagem');
+      const instInput  = document.getElementById('instituicao');
+      const selTurma   = document.getElementById('turma');
 
-        const campoInstituicao = document.getElementById('instituicao');
-        if (usuario.instituicao && campoInstituicao) {
-          campoInstituicao.value = usuario.instituicao;
+      // ====== TURMAS (base + custom + removed + undo) ======
+      const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
+      const LS_REMOVED = 'cmdpii_turmas_removed_v1';
+      const LS_UNDO    = 'cmdpii_turmas_last_action_v1';
+
+      const BASE = [
+        { code:'6ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'6ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'6ºC', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'7ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'7ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'7ºC', seg:'Fundamental II', turno:'Manhã' },
+        { code:'7ºD', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'8ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'8ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'8ºC', seg:'Fundamental II', turno:'Manhã' },
+        { code:'8ºD', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'9ºA', seg:'Fundamental II', turno:'Manhã' },
+        { code:'9ºB', seg:'Fundamental II', turno:'Manhã' },
+        { code:'9ºC', seg:'Fundamental II', turno:'Manhã' },
+
+        { code:'1ºA', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'1ºB', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'1ºC', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'1ºD', seg:'Ensino Médio', turno:'Manhã' },
+
+        { code:'2ºA', seg:'Ensino Médio', turno:'Tarde' },
+        { code:'2ºB', seg:'Ensino Médio', turno:'Tarde' },
+        { code:'2ºC', seg:'Ensino Médio', turno:'Tarde' },
+        { code:'2ºD', seg:'Ensino Médio', turno:'Tarde' },
+
+        { code:'3ºA', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'3ºB', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'3ºC', seg:'Ensino Médio', turno:'Manhã' },
+        { code:'3ºD', seg:'Ensino Médio', turno:'Manhã' },
+      ];
+
+      const byCode = (arr) => {
+        const m = new Map();
+        for (const t of (Array.isArray(arr)?arr:[])) {
+          const code = String(t?.code || t?.turma || '').trim();
+          if (!code) continue;
+          const seg = String(t?.seg || t?.segmento || '').trim() || guessSeg(code);
+          const turno = String(t?.turno || '').trim() || guessTurno(code);
+          m.set(code, { code, seg, turno });
         }
-      } catch {
-        window.location.href = '/login.html';
+        return m;
+      };
+
+      function guessSeg(code){
+        return /^\d+º/.test(code) && (code.startsWith('1º')||code.startsWith('2º')||code.startsWith('3º'))
+          ? 'Ensino Médio'
+          : 'Fundamental II';
       }
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      await verificarAutenticacao();
-    });
-
-    document.getElementById('form-aluno').addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      const mensagem = document.getElementById('mensagem');
-      const nome = document.getElementById('nome').value;
-      const turma = document.getElementById('turma').value;
-      const dataEntrada = document.getElementById('dataEntrada').value;
-      const telefone = document.getElementById('telefone').value;
-      const instituicao = document.getElementById('instituicao').value;
-      const fotoInput = document.getElementById('foto');
-      const fotoFile = fotoInput.files[0];
-
-      if (!instituicao || instituicao === 'undefined') {
-        mensagem.textContent = 'Erro: instituição não definida.';
-        mensagem.style.color = 'red';
-        return;
+      function guessTurno(code){
+        if (code === '2ºD') return 'Tarde';
+        return 'Manhã';
       }
 
-      let fotoBase64 = '';
-      if (fotoFile) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          fotoBase64 = reader.result;
-          await enviarCadastro({ nome, turma, dataEntrada, telefone, foto: fotoBase64, instituicao });
+      function safeParseLS(key, fallback){
+        try{
+          const v = JSON.parse(localStorage.getItem(key) || 'null');
+          return (v ?? fallback);
+        }catch(_){
+          return fallback;
+        }
+      }
+      function saveUndoSnapshot(label){
+        const snapshot = {
+          label: label || 'Ação',
+          when: Date.now(),
+          custom: safeParseLS(LS_CUSTOM, []),
+          removed: safeParseLS(LS_REMOVED, [])
         };
-        reader.readAsDataURL(fotoFile);
-      } else {
-        await enviarCadastro({ nome, turma, dataEntrada, telefone, foto: '', instituicao });
+        localStorage.setItem(LS_UNDO, JSON.stringify(snapshot));
+      }
+      function hasUndo(){
+        const x = safeParseLS(LS_UNDO, null);
+        return !!(x && x.custom && x.removed);
       }
 
-      async function enviarCadastro(dadosAluno) {
+      function getMergedTurmas(){
+        const custom = safeParseLS(LS_CUSTOM, []);
+        const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
+        const m = byCode(BASE);
+
+        for (const [code, obj] of byCode(custom).entries()){
+          m.set(code, obj);
+        }
+
+        for (const code of removed){
+          m.delete(code);
+        }
+
+        const list = Array.from(m.values());
+        list.sort((a,b)=>{
+          const segA = a.seg.localeCompare(b.seg,'pt-BR');
+          if (segA !== 0) return segA;
+          return a.code.localeCompare(b.code,'pt-BR', { numeric:true, sensitivity:'base' });
+        });
+
+        return list;
+      }
+
+      function renderTurmaSelect(keepValue){
+        const current = keepValue || selTurma.value || '6ºA';
+        const turmas = getMergedTurmas();
+
+        const groups = new Map();
+        for (const t of turmas){
+          if (!groups.has(t.seg)) groups.set(t.seg, []);
+          groups.get(t.seg).push(t);
+        }
+
+        const frag = document.createDocumentFragment();
+
+        for (const seg of ['Fundamental II','Ensino Médio']){
+          const items = groups.get(seg) || [];
+          if (!items.length) continue;
+          const og = document.createElement('optgroup');
+          og.label = seg;
+          for (const t of items){
+            const opt = document.createElement('option');
+            opt.value = t.code;
+            opt.textContent = t.code;
+            og.appendChild(opt);
+          }
+          frag.appendChild(og);
+        }
+
+        selTurma.innerHTML = '';
+        selTurma.appendChild(frag);
+
+        const exists = Array.from(selTurma.options).some(o => o.value === current);
+        selTurma.value = exists ? current : (selTurma.options[0]?.value || '');
+      }
+
+      const chipQtd = document.getElementById('chip-qtd');
+      const listaTurmasEl = document.getElementById('listaTurmas');
+      const btnAdd = document.getElementById('btnAddTurma');
+      const btnUndo = document.getElementById('btnUndo');
+      const btnReset = document.getElementById('btnReset');
+
+      const inpCode = document.getElementById('novaTurmaCodigo');
+      const selSeg  = document.getElementById('novaTurmaSegmento');
+      const selTurno= document.getElementById('novaTurmaTurno');
+
+      function normalizeCode(raw){
+        let s = String(raw || '').trim();
+        s = s.replace(/\s+/g,'');
+        s = s.replace(/^(\d+)(o)([A-Za-z])$/i, '$1º$3');
+        return s;
+      }
+
+      function renderManagerList(){
+        const list = getMergedTurmas();
+
+        chipQtd.textContent = `${list.length} turmas`;
+        btnUndo.disabled = !hasUndo();
+
+        listaTurmasEl.innerHTML = '';
+        for (const t of list){
+          const row = document.createElement('div');
+          row.className = 'turma-item';
+
+          const left = document.createElement('div');
+          left.innerHTML = `<strong>${escapeHtml(t.code)}</strong><small>${escapeHtml(t.seg)} • ${escapeHtml(t.turno)}</small>`;
+
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'del';
+          del.textContent = 'Excluir';
+          del.addEventListener('click', () => excluirTurma(t.code));
+
+          row.append(left, del);
+          listaTurmasEl.appendChild(row);
+        }
+      }
+
+      function escapeHtml(s){
+        return String(s)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function addTurma(){
+        const code = normalizeCode(inpCode.value);
+        if (!code) { alert('Informe o código da turma (ex: 8ºD).'); return; }
+
+        const seg = String(selSeg.value || '').trim() || guessSeg(code);
+        const turno = String(selTurno.value || '').trim() || guessTurno(code);
+
+        const beforeSel = selTurma.value;
+
+        saveUndoSnapshot(`Adicionar ${code}`);
+
+        const custom = safeParseLS(LS_CUSTOM, []);
+        const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
+
+        removed.delete(code);
+        localStorage.setItem(LS_REMOVED, JSON.stringify(Array.from(removed)));
+
+        const m = byCode(custom);
+        m.set(code, { code, seg, turno });
+        localStorage.setItem(LS_CUSTOM, JSON.stringify(Array.from(m.values())));
+
+        inpCode.value = '';
+
+        renderTurmaSelect(beforeSel);
+        renderManagerList();
+
+        const exists = Array.from(selTurma.options).some(o => o.value === code);
+        if (exists) selTurma.value = code;
+      }
+
+      function excluirTurma(code){
+        const c = String(code||'').trim();
+        if (!c) return;
+
+        if (!confirm(`Excluir a turma "${c}" dos seletores?\n\nIsso NÃO apaga alunos; apenas remove a opção.`)) return;
+
+        const beforeSel = selTurma.value;
+
+        saveUndoSnapshot(`Excluir ${c}`);
+
+        const custom = safeParseLS(LS_CUSTOM, []);
+        const m = byCode(custom);
+        m.delete(c);
+        localStorage.setItem(LS_CUSTOM, JSON.stringify(Array.from(m.values())));
+
+        const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s=>String(s).trim()));
+        removed.add(c);
+        localStorage.setItem(LS_REMOVED, JSON.stringify(Array.from(removed)));
+
+        renderTurmaSelect(beforeSel);
+        renderManagerList();
+      }
+
+      function undo(){
+        const snap = safeParseLS(LS_UNDO, null);
+        if (!snap) return;
+
+        localStorage.setItem(LS_CUSTOM, JSON.stringify(snap.custom || []));
+        localStorage.setItem(LS_REMOVED, JSON.stringify(snap.removed || []));
+        localStorage.removeItem(LS_UNDO);
+
+        renderTurmaSelect(selTurma.value);
+        renderManagerList();
+      }
+
+      function resetPadrao(){
+        if (!confirm('Restaurar turmas para o padrão?\n\nIsso remove suas turmas personalizadas e desfaz exclusões.')) return;
+
+        saveUndoSnapshot('Restaurar padrão');
+
+        localStorage.removeItem(LS_CUSTOM);
+        localStorage.removeItem(LS_REMOVED);
+
+        renderTurmaSelect(selTurma.value);
+        renderManagerList();
+      }
+
+      btnAdd.addEventListener('click', addTurma);
+      btnUndo.addEventListener('click', undo);
+      btnReset.addEventListener('click', resetPadrao);
+
+      inpCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addTurma();
+        }
+      });
+
+      renderTurmaSelect('6ºA');
+      renderManagerList();
+
+      try {
+        const res = await fetch('/api/usuario', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store'
+        });
+
+        if (!res.ok) {
+          throw new Error('Falha ao carregar usuário (' + res.status + ')');
+        }
+
+        const data = await res.json();
+        console.log('Dados do usuário logado:', data);
+
+        if (!data.instituicao) {
+          msgEl.textContent = '⚠ Não foi possível identificar a instituição do usuário logado.';
+          msgEl.style.color = '#ffb4b4';
+        } else {
+          instInput.value = data.instituicao;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar /api/usuario:', err);
+        msgEl.textContent = 'Erro ao carregar dados do usuário. Tente sair e entrar novamente no sistema.';
+        msgEl.style.color = '#ffb4b4';
+      }
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        msgEl.style.color = '#ffffff';
+        msgEl.textContent = 'Salvando cadastro...';
+
+        const payload = {
+          nome:        form.nome.value.trim(),
+          turma:       form.turma.value,
+          dataEntrada: form.dataEntrada.value,
+          telefone:    form.telefone.value.trim(),
+          instituicao: instInput.value || null
+        };
+
+        console.log('Enviando para /api/alunos:', payload);
+
         try {
-          const resposta = await fetch('/api/alunos', {
+          const res = await fetch('/api/alunos', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dadosAluno)
+            cache: 'no-store',
+            body: JSON.stringify(payload)
           });
 
-          if (resposta.ok) {
-            const aluno = await resposta.json();
-            mensagem.style.color = 'green';
-            mensagem.innerHTML = `
-              ✅ Aluno cadastrado com sucesso!<br>
-              <strong>Código de Acesso:</strong> ${aluno.codigoAcesso}
-            `;
-            document.getElementById('form-aluno').reset();
-          } else {
-            const erro = await resposta.json();
-            mensagem.style.color = 'red';
-            mensagem.textContent = erro.message || 'Erro ao criar aluno';
-          }
-        } catch (err) {
-          mensagem.style.color = 'red';
-          mensagem.textContent = 'Erro de conexão com o servidor.';
-        }
-      }
-    });
+          let body = {};
+          try { body = await res.json(); } catch (_) {}
 
-    // Service Worker para PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(() => console.log('✅ Service Worker registrado'))
-        .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
-    }
+          console.log('Resposta de /api/alunos:', res.status, body);
+
+          if (!res.ok || body.ok === false) {
+            const msgErro = body.error || body.message || 'Erro ao salvar aluno (verifique os campos).';
+            msgEl.textContent = '❌ ' + msgErro;
+            msgEl.style.color = '#ffb4b4';
+            return;
+          }
+
+          msgEl.textContent = '✅ Aluno cadastrado com sucesso!';
+          msgEl.style.color = '#9effb4';
+
+          let fotoEnviadaComSucesso = false;
+
+          try {
+            const fileInput = document.getElementById('foto');
+            const file = fileInput?.files?.[0];
+            const alunoId = body?._id || body?.id || body?.aluno?._id || body?.aluno?.id;
+
+            if (alunoId && file) {
+              if (!file.type?.startsWith('image/')) {
+                msgEl.textContent = '⚠️ Aluno cadastrado, mas o arquivo selecionado não é uma imagem válida.';
+                msgEl.style.color = '#ffdcae';
+              } else {
+                msgEl.textContent = '📷 Enviando foto do aluno...';
+                msgEl.style.color = '#ffffff';
+
+                const fd = new FormData();
+                fd.append('foto', file);
+
+                const headers = {};
+                const token = localStorage.getItem('token');
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const up = await fetch(`/api/alunos/${encodeURIComponent(alunoId)}/foto`, {
+                  method: 'PUT',
+                  body: fd,
+                  headers,
+                  credentials: 'include',
+                  cache: 'no-store'
+                });
+
+                const upBody = await up.json().catch(() => ({}));
+
+                if (!up.ok || !upBody?.foto) {
+                  console.error('❌ Falha ao enviar foto do aluno:', {
+                    status: up.status,
+                    resposta: upBody,
+                    alunoId
+                  });
+
+                  msgEl.textContent = '⚠️ Aluno cadastrado, mas a foto NÃO foi salva. Abra a ficha do aluno e envie novamente.';
+                  msgEl.style.color = '#ffdcae';
+                } else {
+                  fotoEnviadaComSucesso = true;
+                  console.log('✅ Foto enviada com sucesso:', upBody.foto);
+                  msgEl.textContent = '✅ Aluno cadastrado com foto!';
+                  msgEl.style.color = '#9effb4';
+                }
+              }
+            } else if (alunoId && !file) {
+              console.log('ℹ️ Aluno cadastrado sem foto selecionada.');
+              msgEl.textContent = '✅ Aluno cadastrado sem foto.';
+              msgEl.style.color = '#9effb4';
+            } else {
+              console.error('❌ Não foi possível identificar o ID do aluno recém-cadastrado.', body);
+              msgEl.textContent = '⚠️ Aluno cadastrado, mas não foi possível associar a foto automaticamente.';
+              msgEl.style.color = '#ffdcae';
+            }
+          } catch (e) {
+            console.error('❌ Erro no upload pós-cadastro:', e);
+            msgEl.textContent = '⚠️ Aluno cadastrado, mas houve erro ao enviar a foto. Envie novamente pela ficha.';
+            msgEl.style.color = '#ffdcae';
+          }
+
+          const keepTurma = form.turma.value || '6ºA';
+          form.reset();
+          renderTurmaSelect(keepTurma);
+
+          const fotoInput = document.getElementById('foto');
+          if (fotoInput) fotoInput.value = '';
+
+        } catch (err) {
+          console.error('Erro de rede ao cadastrar aluno:', err);
+          msgEl.textContent = '❌ Erro de comunicação com o servidor. Tente novamente.';
+          msgEl.style.color = '#ffb4b4';
+        }
+      });
+    })();
   </script>
+
+  <script src="notify.js"></script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

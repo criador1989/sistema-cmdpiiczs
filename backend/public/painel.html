@@ -2,544 +2,4551 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, viewport-fit=cover" />
   <title>Painel - Sistema Escolar</title>
   <meta name="theme-color" content="#8B0000" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
-  <style>
-    :root{
-      --rubi-1:#8B0000;
-      --rubi-2:#B22222;
-      --glass-bg: rgba(255,255,255,.07);
-      --glass-border: rgba(255,255,255,.38);
-      --glass-inner: rgba(255,255,255,.40);
-      --glass-shadow: 0 18px 40px rgba(0,0,0,.35);
-      --radius: 22px;
-      --text: #f2f4f8;
-      --text-soft: #cfd6de;
-    }
-    *{ box-sizing:border-box }
-    html,body{ height:auto }
-    body{
-      margin:0; font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; color: var(--text);
-      background:#1e0506; display:block; min-height:100vh; overflow-y:auto;
-    }
-    /* Fundo texturizado rubi */
-    body::before{ content:""; position:fixed; inset:0; z-index:0; background:
-      linear-gradient(45deg, rgba(255,120,120,.06) 25%, transparent 25%, transparent 75%, rgba(255,120,120,.06) 75%) 0 0/16px 16px,
-      linear-gradient(45deg, rgba(0,0,0,.28) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.28) 75%) 8px 8px/16px 16px,
-      linear-gradient(0deg, #2a0607, #3c0a0d);
-      filter: saturate(125%);
-    }
-    body::after{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:
-      radial-gradient(1100px 600px at 50% -10%, rgba(255,90,90,.10), transparent 60%),
-      radial-gradient(1200px 800px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
-      radial-gradient(900px 900px at -10% 50%, rgba(0,0,0,.45), transparent 60%),
-      radial-gradient(900px 900px at 110% 50%, rgba(0,0,0,.45), transparent 60%);
-    }
+<style>
+:root{
+  --bg-deep:#030a14;
+  --bg-mid:#071220;
+  --bg-soft:#0b1b2f;
 
-    /* GRID geral: sidebar (desktop) + conteúdo */
-    .page{ position:relative; z-index:1; width:100%; display:grid; grid-template-columns: 280px 1fr; gap:20px; padding:24px; min-height:100vh; }
-    @media (max-width: 1024px){ .page{ grid-template-columns: 1fr; padding:16px; gap:16px; } }
+  --glass-bg:rgba(7,17,29,0.58);
+  --glass-bg-2:rgba(7,15,26,0.76);
+  --glass-border:rgba(90,220,255,0.14);
+  --glass-border-strong:rgba(110,235,255,0.28);
+  --glass-highlight:rgba(180,245,255,0.14);
 
-    /* Sidebar (desktop) */
-    .sidebar{ display:flex; flex-direction:column; gap:10px; height:calc(100dvh - 48px);
-      position:sticky; top:24px; border-radius:20px; background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.14); backdrop-filter: blur(10px); box-shadow: 0 10px 28px rgba(0,0,0,.35);
-      animation: slideIn .6s ease both;
-    }
-    .sb-head{ display:flex; align-items:center; gap:12px; padding:16px; border-bottom:1px solid rgba(255,255,255,.12); }
-    .brand{ width:36px; height:36px; border-radius:12px; background: var(--rubi-1); box-shadow: inset 0 0 0 2px rgba(255,255,255,.22); }
-    .sb-title{ font-weight:700; letter-spacing:.3px }
-    .nav{ padding:10px; display:grid; gap:6px }
-    .nav a{ text-decoration:none; color:var(--text); font-size:.95rem; padding:10px 12px; border-radius:12px;
-      display:flex; align-items:center; gap:10px; border:1px solid transparent; }
-    .nav a:hover{ background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
-    .nav a.active{ background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.28); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
-    .sb-foot{ margin-top:auto; padding:12px; border-top:1px solid rgba(255,255,255,.12); }
-    .sb-logout{ width:100%; border:0; background:var(--rubi-2); color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer }
-    .sb-logout:hover{ background:var(--rubi-1) }
-    @media (max-width:1024px){ .sidebar{ display:none } }
+  --glass-radius:22px;
+  --glass-blur:15px;
 
-    /* Conteúdo */
-    .content{ width:100%; overflow:visible; }
-    .wrap{ width:min(1180px, 100%); margin: 0 auto 84px; }
+  --glass-shadow:
+    0 0 0 1px rgba(90,220,255,0.04),
+    0 14px 38px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,255,255,0.03);
 
-    /* Topo */
-    .topo{ display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center }
-    .logos{ display:flex; gap:18px; align-items:center; justify-content:center; flex-wrap:wrap }
-    .logos img{ width:94px; height:auto; animation: floatLogo 5s ease-in-out infinite; }
-    .titulo{ font-size: clamp(24px, 3vw, 38px); font-weight:800; letter-spacing:.2px }
-    .sub{ color: var(--text-soft); font-size: clamp(14px, 1.8vw, 18px) }
+  --hud-cyan:#59e7ff;
+  --hud-cyan-2:#25d7ff;
+  --hud-cyan-soft:rgba(89,231,255,0.12);
+  --hud-cyan-line:rgba(89,231,255,0.20);
+  --hud-cyan-dim:rgba(89,231,255,0.08);
 
-    /* Painel caixa */
-    .painel{ margin-top:20px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-      border-radius: 24px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 10px 28px rgba(0,0,0,.35);
-      padding: 26px 24px 30px; }
+  --text-main:#f3fbff;
+  --text-soft:rgba(218,238,248,0.74);
+  --text-dim:rgba(182,211,227,0.56);
 
-    /* Métricas (cards pequenos) */
-    .metrics{ display:grid; grid-template-columns: repeat(12, 1fr); gap:16px; margin-bottom:18px; min-width:0; }
-    .metric{ grid-column: span 3; background: var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:14px; box-shadow: var(--glass-shadow); }
-    .metric .k{ font-size:11px; text-transform:uppercase; letter-spacing:.14em; color:rgba(255,255,255,.8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .metric .v{ font-size:26px; font-weight:700; line-height:1.1 }
-    @media (max-width:1200px){ .metric{ grid-column: span 4 } }
-    @media (max-width:640px){ .metric{ grid-column: span 6 } }
+  --danger:#ff8686;
+  --warn:#ffd38a;
+  --ok:#7cf2c9;
+}
 
-    /* Grade de janelas (atalhos) */
-    .menu-windows{
-      margin-top:10px;
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap:22px;
-      grid-auto-flow: row dense;
-      grid-auto-rows: 170px;
-    }
-    @media (max-width:1200px){ .menu-windows{ grid-template-columns: repeat(8,1fr) } }
-    @media (max-width:820px){  .menu-windows{ grid-template-columns: repeat(6,1fr) } }
-    @media (max-width:560px){  .menu-windows{ grid-template-columns: repeat(4,1fr) } }
+*{ box-sizing:border-box; }
 
-    .window-card{
-      grid-column: span 4;
-      height:170px;
-      position:relative;
-      border-radius: var(--radius);
-      background: var(--glass-bg);
-      border:1px solid var(--glass-border);
-      overflow:hidden;
-      cursor:pointer;
-      box-shadow: var(--glass-shadow);
-      transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background .22s ease;
-      backdrop-filter: blur(14px) saturate(140%);
-      -webkit-backdrop-filter: blur(14px) saturate(140%);
-      isolation:isolate;
-      opacity:0; animation: fadeUp .6s ease both;
-    }
-    .window-card::before{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:1; pointer-events:none; background:
-      linear-gradient(to bottom, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 9%, rgba(255,255,255,0) 28%),
-      linear-gradient(135deg, rgba(255,255,255,.15) 0%, rgba(255,255,255,.08) 40%, rgba(255,255,255,0) 70%); }
-    .window-card::after{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:1; pointer-events:none; background:
-      radial-gradient(130% 80% at 50% 120%, rgba(0,0,0,.40) 0%, rgba(0,0,0,0) 60%),
-      linear-gradient(to bottom, transparent 96%, rgba(255,255,255,.35) 100%);
-      box-shadow: inset 0 1px 0 var(--glass-inner); }
-    .window-card:hover{ transform: translateY(-3px); box-shadow: 0 22px 50px rgba(0,0,0,.55); filter: saturate(1.02); }
-    .window-card:focus{ outline:3px solid rgba(255,255,255,.65); outline-offset:3px }
+html,body{
+  margin:0;
+  padding:0;
+  min-height:100vh;
+}
 
-    .window-content{ position:absolute; inset:0; z-index:2; display:flex; align-items:flex-start; justify-content:flex-start; padding:18px; }
-    .card-copy{ max-width:88% }
-    .kicker{ font-size:.72rem; letter-spacing:.28em; text-transform:uppercase; color:rgba(255,255,255,.80); }
-    .card-copy h3{
-      margin:6px 0 8px 0;
-      font-size: clamp(16px, 1.2vw, 20px);
-      line-height:1.2;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      color:#fff;
-      text-shadow: 0 2px 6px rgba(0,0,0,.25);
-    }
-    .ghost{ margin-top:6px; }
-    .ghost .gl{ display:block; height:6px; border-radius:4px; background: rgba(255,255,255,.18); margin-top:6px; }
-    .ghost .l1{ width:72% } .ghost .l2{ width:56% } .ghost .l3{ width:40% }
+body{
+  font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color:var(--text-main);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(48,128,255,0.12), transparent 24%),
+    radial-gradient(circle at 84% 20%, rgba(62,228,255,0.08), transparent 18%),
+    radial-gradient(circle at 80% 82%, rgba(38,121,255,0.10), transparent 23%),
+    linear-gradient(135deg, var(--bg-deep), var(--bg-mid) 56%, #06111d 100%);
+  color-scheme:dark;
+  overflow-x:hidden;
+}
 
-    /* Seção de gráficos */
-    .charts{ margin-top:24px; display:grid; grid-template-columns: 1fr 1fr; gap:22px; }
-    .chart-card{ background: var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:14px; box-shadow: var(--glass-shadow); }
-    .chart-title{ font-size:.9rem; color:var(--text-soft); margin-bottom:8px; }
-    canvas{ width:100%; height:280px; display:block; }
-    @media (max-width:900px){ .charts{ grid-template-columns: 1fr } }
+#bg-wallpaper{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-attachment:scroll;
+  transform:translateZ(0);
+  will-change:opacity;
+  filter:brightness(0.34) saturate(0.86);
+  opacity:.42;
+  transition:opacity .35s ease;
+}
 
-    /* Atenção especial */
-    .attention{ margin-top:22px; background: var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:16px; box-shadow: var(--glass-shadow); }
-    .attention h3{ margin:0 0 8px 0; font-size:1rem; }
-    .attention small{ color: var(--text-soft); }
-    .attention ul{ list-style:none; padding:0; margin:8px 0 0 0; max-height: 420px; overflow:auto; }
-    .attention li{ display:grid; grid-template-columns: 1fr auto auto; gap:10px; align-items:center; padding:10px 8px; border-top:1px dashed rgba(255,255,255,.16);}
-    .pill{ padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.22); background: rgba(0,0,0,.2);}
-    .link{ color:#fff; text-decoration:underline; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(89,231,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(89,231,255,0.02) 1px, transparent 1px);
+  background-size:120px 120px;
+  mask-image:radial-gradient(circle at center, black 30%, transparent 92%);
+  opacity:.28;
+}
 
-    /* Bottom bar (mobile) */
-    .bottom-nav{ position:fixed; inset-inline:0; bottom:0; display:none; z-index:50; backdrop-filter: blur(10px); background: rgba(30,5,6,.6); border-top:1px solid rgba(255,255,255,.14); }
-    .bottom-nav .row{ max-width:900px; margin:0 auto; display:grid; grid-template-columns: repeat(5, 1fr); }
-    .bottom-nav button{ appearance:none; background:transparent; color:#fff; border:0; padding:10px 6px; font-size:.8rem; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; }
-    .bottom-nav button.active{ background: rgba(255,255,255,.08); }
-    @media (max-width:1024px){ .bottom-nav{ display:block } .wrap{ margin-bottom:84px } }
+body, html,
+h1, h2, h3, h4, h5, h6,
+.metric *, .window-card *, .pend-card *,
+.alertas-comportamento *, .chart-card *, .qrcode-box *,
+.kicker, .card-copy h3,
+.sidebar, .sidebar *, .nav a, .nav a span,
+.sb-logout, .sb-logout *, .nav a.active,
+.nav a i, .sidebar i,
+.muted, span{
+  color:var(--text-main) !important;
+}
 
-    /* Animações */
-    @keyframes floatLogo{ 0%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } 100%{ transform: translateY(0) } }
-    @keyframes fadeUp{ from{ opacity:0; transform: translateY(10px) } to{ opacity:1; transform: translateY(0) } }
-    @keyframes slideIn{ from{ opacity:0; transform: translateX(-8px) } to{ opacity:1; transform: translateX(0) } }
-    .menu-windows .window-card:nth-child(1){ animation-delay:.05s }
-    .menu-windows .window-card:nth-child(2){ animation-delay:.10s }
-    .menu-windows .window-card:nth-child(3){ animation-delay:.15s }
-    .menu-windows .window-card:nth-child(4){ animation-delay:.20s }
-    .menu-windows .window-card:nth-child(5){ animation-delay:.25s }
-    .menu-windows .window-card:nth-child(6){ animation-delay:.30s }
-    .menu-windows .window-card:nth-child(7){ animation-delay:.35s }
-    .menu-windows .window-card:nth-child(8){ animation-delay:.40s }
+#intro-hex-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  overflow:hidden;
+  opacity:.72;
+  transition:opacity .45s ease;
+}
 
-    /* Centralizar QR Code */
-    .qrcode-box{
-      max-width:560px;
-      margin: 26px auto 0;
-      text-align:center;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:12px;
-      padding:16px;
-    }
-  </style>
+#intro-hex-overlay::before,
+#intro-hex-overlay::after{
+  content:"";
+  position:absolute;
+  inset:0;
+}
+
+#intro-hex-overlay::before{
+  background:
+    radial-gradient(circle at 18% 10%, rgba(34,211,238,.08), transparent 34%),
+    radial-gradient(circle at 82% 84%, rgba(249,115,22,.04), transparent 28%),
+    linear-gradient(180deg, rgba(2,6,23,.10), rgba(2,6,23,.02));
+}
+
+#intro-hex-overlay::after{
+  opacity:.10;
+  background-image:
+    linear-gradient(rgba(94,234,212,.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94,234,212,.18) 1px, transparent 1px);
+  background-size:44px 44px;
+  transform:perspective(1200px) rotateX(72deg) scale(1.4) translateY(18vh);
+  transform-origin:center bottom;
+  filter:drop-shadow(0 0 10px rgba(45,212,191,.10));
+}
+
+.overlay-glow-scan{
+  position:absolute;
+  inset:auto -12% -12% -12%;
+  height:42%;
+  background:linear-gradient(180deg, transparent 0%, rgba(34,211,238,.08) 42%, rgba(34,211,238,.01) 100%);
+  filter:blur(12px);
+  animation:overlayScan 1.15s ease-out forwards;
+  transform:translateY(28%);
+}
+
+@keyframes overlayScan{
+  0%{ opacity:0; transform:translateY(36%); }
+  20%{ opacity:1; }
+  100%{ opacity:0; transform:translateY(-78%); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #intro-hex-overlay{ display:none; }
+}
+
+.page{
+  position:relative;
+  width:100%;
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:22px;
+  padding:20px;
+}
+
+@media(max-width:1024px){
+  .page{
+    grid-template-columns:1fr;
+    padding:14px;
+  }
+}
+
+.sidebar{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  height:calc(100dvh - 40px);
+  max-height:calc(100dvh - 40px);
+  position:sticky;
+  top:20px;
+  border-radius:28px;
+  background:
+    linear-gradient(180deg, rgba(6,14,25,0.92), rgba(4,10,19,0.86));
+  border:1px solid rgba(90,220,255,0.08);
+  backdrop-filter:blur(var(--glass-blur));
+  -webkit-backdrop-filter:blur(var(--glass-blur));
+  box-shadow:
+    0 0 0 1px rgba(90,220,255,0.03),
+    0 20px 50px rgba(0,0,0,0.50);
+  z-index:120;
+  overflow:hidden;
+}
+
+@media(max-width:1024px){
+  .sidebar{ display:none; }
+}
+
+.sb-head{
+  padding:16px 16px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  border-bottom:1px solid rgba(90,220,255,0.08);
+}
+
+.sb-head-top{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.brand{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255,255,255,0.82), rgba(102,207,255,0.34) 30%, rgba(10,18,28,0.9) 72%);
+  box-shadow:0 0 18px rgba(92,212,255,0.16);
+}
+
+.sb-title{
+  font-weight:700;
+  font-size:.98rem;
+  letter-spacing:.03em;
+}
+
+.sb-subtitle{
+  font-size:.8rem;
+  color:var(--text-soft) !important;
+}
+
+.sb-top-actions{
+  display:flex;
+  width:100%;
+}
+
+.sb-logout-top{
+  width:100%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  text-decoration:none;
+  border:1px solid rgba(90,220,255,0.16);
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+  padding:10px 14px;
+  cursor:pointer;
+  box-shadow:0 8px 22px rgba(0,0,0,0.30);
+  transition:
+    transform .20s ease,
+    box-shadow .20s ease,
+    background .20s ease,
+    border-color .20s ease;
+}
+
+.sb-logout-top:hover{
+  transform:translateY(-1px);
+  background:rgba(255,255,255,0.05);
+  border-color:rgba(90,220,255,0.26);
+  box-shadow:0 12px 28px rgba(0,0,0,0.38), 0 0 12px rgba(37,215,255,0.06);
+}
+
+.sb-logout-top:active{
+  transform:translateY(0);
+}
+
+.sb-logout-icon{
+  font-size:1rem;
+  line-height:1;
+}
+
+.sb-logout-label{
+  font-size:.9rem;
+  font-weight:600;
+  letter-spacing:.02em;
+}
+
+.nav{
+  padding:10px 12px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  position:relative;
+  z-index:1;
+  overflow:auto;
+  min-height:0;
+  flex:1 1 auto;
+
+  scrollbar-width:thin;
+  scrollbar-color:rgba(89,231,255,0.22) transparent;
+}
+
+.nav::-webkit-scrollbar{
+  width:8px;
+}
+
+.nav::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.nav::-webkit-scrollbar-thumb{
+  background:rgba(89,231,255,0.18);
+  border-radius:999px;
+}
+
+.nav::-webkit-scrollbar-thumb:hover{
+  background:rgba(89,231,255,0.28);
+}
+
+.nav a{
+  text-decoration:none;
+  font-size:.92rem;
+  padding:11px 14px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid transparent;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    transform .2s ease,
+    box-shadow .2s ease;
+  position:relative;
+  overflow:hidden;
+}
+
+.nav a::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.08), transparent);
+  transform:translateX(-120%);
+  transition:transform .55s ease;
+}
+
+.nav a:hover{
+  background:rgba(255,255,255,0.045);
+  border-color:rgba(90,220,255,0.15);
+  box-shadow:0 8px 18px rgba(0,0,0,0.42);
+  transform:translateY(-1px);
+}
+
+.nav a:hover::before,
+.nav a.active::before{
+  transform:translateX(120%);
+}
+
+.nav a.active{
+  background:
+    linear-gradient(180deg, rgba(89,231,255,0.12), rgba(89,231,255,0.04));
+  border-color:rgba(90,220,255,0.24);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.42),
+    inset 0 0 0 1px rgba(180,245,255,0.04);
+}
+
+.sb-foot{
+  display:none !important;
+}
+
+.content{ width:100%; }
+
+.wrap{
+  width:min(1260px,100%);
+  margin:0 auto 150px;
+  position:relative;
+  z-index:5;
+}
+
+.topo{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  text-align:center;
+  margin-bottom:8px;
+}
+
+.titulo{
+  font-size:clamp(24px,3vw,42px);
+  font-weight:800;
+  letter-spacing:.01em;
+  text-shadow:0 8px 22px rgba(0,0,0,0.55);
+}
+
+.sub{
+  color:var(--text-soft);
+}
+
+.btn-wallpaper{
+  margin-top:6px;
+  border:1px solid rgba(90,220,255,0.12);
+  border-radius:999px;
+  padding:.48rem .96rem;
+  font-size:.84rem;
+  cursor:pointer;
+  background:rgba(7,18,30,.64);
+  color:#e5f6ff !important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  box-shadow:
+    0 0 0 1px rgba(90,220,255,0.03),
+    0 10px 24px rgba(0,0,0,0.32);
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease,
+    opacity .18s ease,
+    border-color .18s ease;
+}
+
+.btn-wallpaper:hover{
+  transform:translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(90,220,255,0.08),
+    0 16px 34px rgba(0,0,0,0.42);
+  background:rgba(10,28,48,.88);
+  border-color:rgba(90,220,255,0.20);
+}
+
+.btn-wallpaper:active{
+  transform:translateY(0);
+}
+
+@media(max-width:480px){
+  .btn-wallpaper{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+.painel{
+  margin-top:18px;
+  background:transparent;
+  border-radius:28px;
+  padding:12px 10px 26px;
+  position:relative;
+  z-index:5;
+}
+
+.metric,
+.window-card,
+.pend-card,
+.alertas-comportamento,
+.chart-card,
+.qrcode-box{
+  border-radius:var(--glass-radius);
+  background:
+    linear-gradient(180deg, rgba(8,18,30,0.72), rgba(6,13,24,0.60));
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(var(--glass-blur));
+  -webkit-backdrop-filter:blur(var(--glass-blur));
+  box-shadow:var(--glass-shadow);
+  position:relative;
+  overflow:hidden;
+  transition:
+    transform 0.22s ease,
+    background-color 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color .22s ease;
+}
+
+.metric::before,
+.window-card::before,
+.pend-card::before,
+.alertas-comportamento::before,
+.chart-card::before,
+.qrcode-box::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(to bottom, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 14%, transparent 32%);
+  pointer-events:none;
+}
+
+.metric::after,
+.window-card::after,
+.pend-card::after,
+.alertas-comportamento::after,
+.chart-card::after,
+.qrcode-box::after{
+  content:"";
+  position:absolute;
+  left:16px;
+  right:16px;
+  bottom:0;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.44), transparent);
+  opacity:.30;
+  pointer-events:none;
+}
+
+.metric:hover,
+.window-card:hover,
+.chart-card:hover,
+.qrcode-box:hover{
+  transform:translateY(-3px);
+  border-color:var(--glass-border-strong);
+  box-shadow:
+    0 0 0 1px rgba(90,220,255,0.04),
+    0 16px 42px rgba(0,0,0,0.44),
+    0 0 18px rgba(37,215,255,0.05);
+}
+
+.pend-card:hover,
+.alertas-comportamento:hover{
+  transform:none !important;
+  border-color:var(--glass-border);
+  box-shadow:var(--glass-shadow) !important;
+}
+
+/* ===== MÉTRICAS HUD ===== */
+.metrics{
+  display:grid;
+  grid-template-columns:1.25fr 1fr 1fr 1fr 1fr;
+  gap:10px;
+  margin-bottom:26px;
+  align-items:start;
+  position:relative;
+}
+
+.metrics::before{
+  content:"";
+  position:absolute;
+  left:1.5%;
+  right:1.5%;
+  top:50%;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.08), transparent);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+
+.metrics::after{
+  content:"";
+  position:absolute;
+  left:4%;
+  right:4%;
+  top:18px;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.05), transparent);
+  pointer-events:none;
+}
+
+.metric{
+  grid-column:span 1;
+  min-height:196px;
+  padding:6px 4px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  isolation:isolate;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  position:relative;
+}
+
+.metric:first-child{
+  transform:translateY(-2px);
+}
+
+.metric.metric--hud{
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+
+.metric.metric--hud::before{
+  display:none;
+}
+
+.metric.metric--hud::after{
+  display:none;
+}
+
+.metric.metric--hud > *{
+  position:relative;
+  z-index:1;
+}
+
+.metric-hud-frame{
+  position:absolute;
+  inset:8px 0 2px 0;
+  border-radius:18px;
+  pointer-events:none;
+  border:none;
+  clip-path:none;
+  opacity:.92;
+}
+
+.metric-hud-frame::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:4px;
+  width:72%;
+  height:1px;
+  transform:translateX(-50%);
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.22), transparent);
+  box-shadow:0 0 8px rgba(37,215,255,0.06);
+}
+
+.metric-hud-frame::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:8px;
+  width:58%;
+  height:1px;
+  transform:translateX(-50%);
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.16), transparent);
+}
+
+.metric-hud-corners::before,
+.metric-hud-corners::after{
+  content:"";
+  position:absolute;
+  width:36px;
+  height:36px;
+  pointer-events:none;
+  opacity:.42;
+}
+
+.metric-hud-corners::before{
+  top:18px;
+  left:10px;
+  border-top:1px solid rgba(89,231,255,0.18);
+  border-left:1px solid rgba(89,231,255,0.18);
+  border-top-left-radius:10px;
+}
+
+.metric-hud-corners::after{
+  right:10px;
+  bottom:18px;
+  border-right:1px solid rgba(89,231,255,0.16);
+  border-bottom:1px solid rgba(89,231,255,0.16);
+  border-bottom-right-radius:10px;
+}
+
+.metric .k{
+  width:100%;
+  font-size:.68rem;
+  text-transform:uppercase;
+  letter-spacing:.18em;
+  text-align:center;
+  color:var(--text-dim) !important;
+  margin-bottom:6px;
+}
+
+.metric-hud-wrap{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  margin-top:0;
+}
+
+.metric-hud{
+  --size:112px;
+  --seg-fill:0deg;
+  position:relative;
+  width:var(--size);
+  height:var(--size);
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  filter:
+    drop-shadow(0 0 7px rgba(37,215,255,0.10))
+    drop-shadow(0 0 14px rgba(37,215,255,0.04));
+}
+
+.metric:first-child .metric-hud{
+  --size:132px;
+}
+
+.metric-hud::before{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:50%;
+  border:1px dashed rgba(89,231,255,0.08);
+  animation:hudSpinSlow 18s linear infinite;
+}
+
+.metric-hud::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border-radius:50%;
+  border:1px solid rgba(89,231,255,0.05);
+  box-shadow:
+    0 0 8px rgba(37,215,255,0.04),
+    inset 0 0 8px rgba(37,215,255,0.02);
+}
+
+.metric-hud-outer{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at center,
+      transparent 58%,
+      rgba(89,231,255,0.10) 59%,
+      rgba(89,231,255,0.035) 63%,
+      transparent 64%);
+  opacity:.95;
+}
+
+.metric-hud-segments{
+  position:absolute;
+  inset:2px;
+  border-radius:50%;
+  background:
+    repeating-conic-gradient(
+      from -90deg,
+      rgba(89,231,255,0.92) 0deg 3.2deg,
+      transparent 3.2deg 7.2deg
+    );
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 16px));
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 16px));
+  opacity:.10;
+  transition:opacity .25s ease, filter .25s ease;
+}
+
+.metric-hud-segments.is-active{
+  opacity:1;
+  background:
+    conic-gradient(
+      from -90deg,
+      rgba(117,245,255,0.96) 0deg,
+      rgba(117,245,255,0.96) var(--seg-fill),
+      rgba(89,231,255,0.06) var(--seg-fill),
+      rgba(89,231,255,0.06) 360deg
+    );
+  -webkit-mask:
+    repeating-conic-gradient(
+      from -90deg,
+      #000 0deg 3.2deg,
+      transparent 3.2deg 7.2deg
+    ),
+    radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 16px));
+  -webkit-mask-composite: source-in;
+  mask:
+    repeating-conic-gradient(
+      from -90deg,
+      #000 0deg 3.2deg,
+      transparent 3.2deg 7.2deg
+    ),
+    radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 16px));
+  mask-composite: intersect;
+  filter:
+    drop-shadow(0 0 7px rgba(37,215,255,0.14))
+    drop-shadow(0 0 12px rgba(37,215,255,0.06));
+}
+
+.metric-hud-mid{
+  position:absolute;
+  inset:16px;
+  border-radius:50%;
+  border:1px solid rgba(89,231,255,0.08);
+  box-shadow:
+    inset 0 0 12px rgba(89,231,255,0.03),
+    0 0 5px rgba(37,215,255,0.02);
+}
+
+.metric-hud-mid::before{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  border:1px dashed rgba(89,231,255,0.10);
+  animation:hudSpinReverse 13s linear infinite;
+}
+
+.metric-hud-core{
+  position:relative;
+  z-index:3;
+  width:62px;
+  height:62px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 40% 30%, rgba(89,231,255,0.08), rgba(7,16,27,0.96));
+  border:1px solid rgba(89,231,255,0.08);
+  box-shadow:
+    inset 0 0 14px rgba(89,231,255,0.05),
+    0 0 8px rgba(37,215,255,0.03);
+}
+
+.metric:first-child .metric-hud-core{
+  width:72px;
+  height:72px;
+}
+
+.metric .v{
+  font-size:1.28rem;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.01em;
+  text-align:center;
+  text-shadow:0 0 8px rgba(89,231,255,0.10);
+}
+
+.metric:first-child .v{
+  font-size:1.62rem;
+}
+
+.metric-hud-meta{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:2px;
+  padding-inline:6px;
+}
+
+.metric-hud-status{
+  font-size:.74rem;
+  letter-spacing:.04em;
+  color:var(--text-soft) !important;
+}
+
+.metric-hud-percent{
+  font-size:.84rem;
+  font-weight:700;
+  color:#dffaff !important;
+  text-shadow:0 0 8px rgba(89,231,255,0.10);
+}
+
+.metric-hud-line{
+  width:100%;
+  height:8px;
+  display:grid;
+  grid-template-columns:repeat(18,1fr);
+  gap:3px;
+  margin-top:0;
+  padding-inline:6px;
+}
+
+.metric-hud-line span{
+  height:100%;
+  border-radius:2px;
+  background:rgba(89,231,255,0.08);
+  transition:
+    background .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease,
+    opacity .18s ease;
+}
+
+.metric-hud-line span.on{
+  background:linear-gradient(180deg, rgba(114,241,255,0.95), rgba(37,215,255,0.70));
+  box-shadow:0 0 6px rgba(37,215,255,0.12);
+}
+
+.metric-hud-line span.pulse{
+  transform:scaleY(1.08);
+}
+
+.metric-hud-decor-left,
+.metric-hud-decor-right{
+  position:absolute;
+  top:50%;
+  width:18px;
+  height:60px;
+  transform:translateY(-50%);
+  opacity:.36;
+}
+
+.metric-hud-decor-left{
+  left:-12px;
+  border-left:1px solid rgba(89,231,255,0.12);
+  border-top-left-radius:10px;
+  border-bottom-left-radius:10px;
+}
+
+.metric-hud-decor-right{
+  right:-12px;
+  border-right:1px solid rgba(89,231,255,0.12);
+  border-top-right-radius:10px;
+  border-bottom-right-radius:10px;
+}
+
+.metric-hud-decor-left::before,
+.metric-hud-decor-right::before{
+  content:"";
+  position:absolute;
+  top:6px;
+  bottom:6px;
+  width:6px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(89,231,255,0.58) 0 3px,
+      transparent 3px 6px
+    );
+  opacity:.68;
+}
+
+.metric-hud-decor-left::before{ left:8px; }
+.metric-hud-decor-right::before{ right:8px; }
+
+
+.metric-hud-sweep{
+  position:absolute;
+  inset:-9px;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:2;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 20px), #000 calc(100% - 20px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 20px), #000 calc(100% - 20px));
+}
+
+.metric-hud-sweep::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg 338deg,
+      rgba(140,250,255,0.00) 338deg,
+      rgba(140,250,255,0.14) 348deg,
+      rgba(140,250,255,0.36) 354deg,
+      rgba(140,250,255,0.00) 360deg
+    );
+  animation:hudSweepSpin 3.2s linear infinite;
+  filter:blur(.3px);
+}
+
+@keyframes hudSweepSpin{
+  from{ transform:rotate(0deg); }
+  to{ transform:rotate(360deg); }
+}
+
+@keyframes hudSpinSlow{
+  from{ transform:rotate(0deg); }
+  to{ transform:rotate(360deg); }
+}
+
+@keyframes hudSpinReverse{
+  from{ transform:rotate(360deg); }
+  to{ transform:rotate(0deg); }
+}
+
+@media(max-width:1400px){
+  .metrics{
+    grid-template-columns:1.2fr 1fr 1fr 1fr;
+  }
+
+  .metric:last-child{
+    display:none;
+  }
+}
+
+@media(max-width:1180px){
+  .metrics{
+    grid-template-columns:repeat(3, minmax(170px, 1fr));
+  }
+
+  .metric:last-child{
+    display:flex;
+  }
+}
+
+@media(max-width:860px){
+  .metrics{
+    grid-template-columns:repeat(2, minmax(160px, 1fr));
+  }
+
+  .metric{
+    min-height:190px;
+  }
+
+  .metric-hud{
+    --size:104px;
+  }
+
+  .metric:first-child .metric-hud{
+    --size:118px;
+  }
+
+  .metric-hud-core{
+    width:58px;
+    height:58px;
+  }
+
+  .metric:first-child .metric-hud-core{
+    width:66px;
+    height:66px;
+  }
+}
+
+@media(max-width:560px){
+  .metrics{
+    grid-template-columns:1fr;
+  }
+}
+
+/* ===== JANELAS ===== */
+.menu-windows{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:18px;
+}
+
+.window-card{
+  grid-column:span 4;
+  min-height:168px;
+  height:170px;
+  cursor:pointer;
+  isolation:isolate;
+  transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+
+.window-content{
+  position:absolute;
+  inset:0;
+  padding:18px 20px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+}
+
+.card-copy{
+  max-width:100%;
+  text-align:left;
+}
+
+.kicker{
+  font-size:.70rem;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:var(--text-dim) !important;
+}
+
+.card-copy h3{
+  margin:8px 0 0 0;
+  font-size:1.7rem;
+  line-height:1.14;
+  font-weight:800;
+  text-shadow:none;
+}
+
+@media(max-width:1200px){
+  .menu-windows{ grid-template-columns:repeat(8,1fr); }
+  .window-card{ grid-column:span 4; }
+}
+@media(max-width:820px){
+  .menu-windows{ grid-template-columns:repeat(6,1fr); }
+  .window-card{ grid-column:span 6; }
+}
+@media(max-width:560px){
+  .menu-windows{ grid-template-columns:repeat(4,1fr); }
+  .window-card{ grid-column:span 4; }
+}
+@media(max-width:460px){
+  .window-card{ grid-column:span 4; min-height:150px; height:150px; }
+  .card-copy h3{ font-size:1.4rem; }
+}
+
+/* ===== DEMAIS BLOCOS ===== */
+.pend-card,
+.alertas-comportamento,
+.chart-card,
+.qrcode-box{
+  margin-top:22px;
+  border-radius:22px;
+  padding:18px 18px;
+}
+
+.pend-card > *,
+.alertas-comportamento > *,
+.chart-card > *,
+.qrcode-box > *{
+  position:relative;
+  z-index:1;
+}
+
+.pend-card header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+
+.pend-chip{
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(90,220,255,.14);
+  background:rgba(7,16,28,.68);
+  font-size:.76rem;
+  color:#dff7ff !important;
+}
+
+.pend-atraso{
+  background:rgba(255,100,100,0.10);
+  border-color:rgba(255,190,190,0.26);
+  color:#ffd6d6 !important;
+}
+
+.pend-table,
+.tabela{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.85rem;
+}
+
+.pend-table th,
+.pend-table td,
+.tabela th,
+.tabela td{
+  padding:10px 8px;
+  border-top:1px solid rgba(90,220,255,0.08);
+  text-align:left;
+}
+
+.pend-table th,
+.tabela th{
+  font-size:.76rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--text-dim) !important;
+}
+
+.alertas-comportamento .ac-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+
+.ac-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 10px;
+  border-radius:999px;
+  background:rgba(6,14,25,0.70);
+  border:1px solid rgba(90,220,255,0.12);
+  font-size:.78rem;
+}
+
+.ac-pill .n{ font-weight:700; }
+.ac-pill.reg .n{ color:#ffe9a9; }
+.ac-pill.ins .n{ color:#ffd1d1; }
+
+.tabs{
+  display:flex;
+  gap:8px;
+  margin:12px 0;
+  flex-wrap:wrap;
+}
+
+.tab-btn{
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(90,220,255,0.12);
+  background:rgba(7,16,28,0.72);
+  font-size:.82rem;
+  cursor:pointer;
+  transition:background .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+
+.tab-btn.active{
+  background:rgba(89,231,255,0.10);
+  border-color:rgba(90,220,255,0.22);
+  box-shadow:0 10px 26px rgba(0,0,0,0.26);
+  transform:translateY(-1px);
+}
+
+.table-wrap{ overflow:auto; }
+
+.muted{
+  margin:6px 0 10px;
+  font-size:.85rem;
+  color:var(--text-soft) !important;
+}
+
+.ac-foot{
+  margin-top:10px;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.charts{
+  margin-top:24px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+
+.chart-card{
+  background:
+    linear-gradient(180deg, rgba(10,22,38,.76), rgba(7,15,27,.62)),
+    radial-gradient(circle at top center, rgba(34,211,238,.04), transparent 48%);
+  border:1px solid rgba(90,220,255,.12);
+  box-shadow:
+    0 0 0 1px rgba(90,220,255,0.03),
+    0 18px 45px rgba(0,0,0,.34);
+}
+
+.chart-title{
+  font-size:.84rem;
+  margin-bottom:12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:#dffcff !important;
+}
+
+.chart-stage{
+  position:relative;
+  border-radius:18px;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg, rgba(8,15,32,.26), rgba(6,12,28,.08)),
+    linear-gradient(180deg, rgba(34,211,238,.04), transparent 22%);
+  border:1px solid rgba(120,255,244,.08);
+}
+
+.chart-stage::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(94,234,212,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94,234,212,.04) 1px, transparent 1px);
+  background-size:28px 28px;
+  opacity:.18;
+}
+
+.chart-stage::after{
+  content:"";
+  position:absolute;
+  left:8%;
+  right:8%;
+  bottom:-18px;
+  height:52px;
+  border-radius:50%;
+  background:radial-gradient(ellipse at center, rgba(34,211,238,.10) 0%, rgba(34,211,238,.02) 45%, transparent 72%);
+  filter:blur(10px);
+  pointer-events:none;
+}
+
+canvas{
+  position:relative;
+  z-index:1;
+  width:100%;
+  height:300px;
+  display:block;
+}
+
+@media (max-width:900px){
+  canvas{ height:260px; }
+}
+
+@media(max-width:900px){
+  .charts{ grid-template-columns:1fr; }
+}
+
+.qrcode-box input[type="text"]{
+  width:100%;
+  max-width:320px;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid rgba(90,220,255,.16);
+  background:rgba(0,0,0,0.22);
+  color:#fff;
+  margin-bottom:8px;
+}
+
+.bottom-nav{
+  position:fixed;
+  inset-inline:0;
+  bottom:0;
+  display:none;
+  z-index:50;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  background:rgba(7,15,28,0.86);
+  border-top:1px solid rgba(90,220,255,0.10);
+}
+
+.bottom-nav .row{
+  display:flex;
+  max-width:100%;
+  overflow-x:auto;
+}
+
+.bottom-nav button{
+  appearance:none;
+  background:transparent;
+  border:0;
+  padding:8px 10px 10px;
+  font-size:.8rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  flex:0 0 80px;
+  white-space:nowrap;
+}
+
+.bottom-nav button span{
+  font-size:.72rem;
+  color:var(--text-soft) !important;
+}
+
+.bottom-nav button.active{
+  background:rgba(89,231,255,0.10);
+  border-radius:16px 16px 0 0;
+}
+
+@media(max-width:1024px){
+  .bottom-nav{ display:block; z-index:70; }
+  .wrap{ margin-bottom:140px; }
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:110px;
+  transform:translateX(-50%) translateY(20px);
+  opacity:0;
+  transition:all .6s ease;
+  z-index:100;
+  padding:12px 18px;
+  border-radius:12px;
+  font:14px/1.3 system-ui;
+  color:#fff;
+  box-shadow:0 10px 28px rgba(0,0,0,0.55);
+  min-width:240px;
+  max-width:min(92vw, 560px);
+  text-align:center;
+  pointer-events:none;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.toast.ok{
+  background:rgba(16,88,62,0.85);
+  border:1px solid rgba(187,247,208,.28);
+}
+
+.toast.err{
+  background:rgba(113,29,29,0.86);
+  border:1px solid rgba(254,202,202,.26);
+}
+
+.pager{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  font-size:.82rem;
+}
+
+.pager .info{
+  opacity:.82;
+  color:var(--text-soft) !important;
+}
+
+.pager input[type="number"]{
+  width:72px;
+  padding:6px 8px;
+  border-radius:8px;
+  border:1px solid rgba(90,220,255,.16);
+  background:rgba(7,16,28,.72);
+  color:#f4f5f7;
+}
+
+.btn{
+  padding:6px 10px;
+  border-radius:10px;
+  border:1px solid rgba(90,220,255,.14);
+  background:rgba(7,16,28,.72);
+  color:#fff;
+  font-size:.8rem;
+  cursor:pointer;
+  transition:background .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+
+.btn:hover{
+  background:rgba(11,24,40,.96);
+  box-shadow:0 10px 22px rgba(0,0,0,.30);
+  transform:translateY(-1px);
+  border-color:rgba(90,220,255,.22);
+}
+
+.btn-primary{
+  background:rgba(89,231,255,0.10);
+  border-color:rgba(90,220,255,0.20);
+}
+
+.btn[disabled]{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.btn-glass{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:10px 22px;
+  border-radius:999px;
+  border:1px solid rgba(90,220,255,0.14);
+  background:rgba(7,16,28,0.64);
+  color:#fff;
+  font-size:.9rem;
+  font-weight:500;
+  letter-spacing:.03em;
+  text-decoration:none;
+  cursor:pointer;
+  box-shadow:0 10px 26px rgba(0,0,0,0.32);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    background .2s ease,
+    border-color .2s ease;
+}
+
+.btn-glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.10) 0%,
+    rgba(255,255,255,0.03) 25%,
+    transparent 55%
+  );
+  pointer-events:none;
+}
+
+.btn-glass > *{
+  position:relative;
+  z-index:1;
+}
+
+.btn-glass:hover{
+  background:rgba(11,24,40,.88);
+  border-color:rgba(90,220,255,0.24);
+  box-shadow:0 14px 34px rgba(0,0,0,0.40);
+  transform:translateY(-2px);
+}
+
+.btn-glass:active{
+  transform:translateY(0);
+  box-shadow:0 8px 20px rgba(0,0,0,0.34);
+}
+
+.btn-glass-circle{
+  width:46px;
+  height:46px;
+  padding:0;
+  border-radius:999px;
+}
+
+.icon-reload{
+  font-size:1.1rem;
+  line-height:1;
+}
+
+.icon-power{
+  position:relative;
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,0.85);
+}
+
+.icon-power::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:0;
+  width:0;
+  height:10px;
+  border-left:2px solid rgba(255,255,255,0.85);
+  transform:translateX(-50%);
+}
+
+#smartclass-mascote{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  width:76px;
+  height:76px;
+  z-index:60;
+  pointer-events:none;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.45));
+  opacity:0.86;
+  display:grid;
+  place-items:center;
+}
+
+#smartclass-mascote .ax-stage{
+  width:76px;
+  height:76px;
+  position:relative;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+}
+
+#smartclass-mascote img{
+  width:76px;
+  height:76px;
+  object-fit:contain;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform-origin:50% 56%;
+  animation:
+    axOrbit 8.8s ease-in-out infinite alternate,
+    axFloat 3.2s ease-in-out infinite;
+}
+
+#smartclass-mascote .ax-core{
+  position:absolute;
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  left:50%;
+  top:56%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,
+    rgba(255,255,255,.55) 0%,
+    rgba(0,194,255,.30) 18%,
+    rgba(0,194,255,.12) 44%,
+    rgba(0,194,255,.04) 60%,
+    transparent 76%);
+  filter:blur(10px);
+  opacity:.55;
+  mix-blend-mode:screen;
+  animation:axCorePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes axFloat{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-6px); }
+}
+
+@keyframes axOrbit{
+  0%{ transform:rotate(-1.2deg) scale(1.00); }
+  100%{ transform:rotate(1.2deg) scale(1.02); }
+}
+
+@keyframes axCorePulse{
+  0%,100%{ opacity:.35; transform:translate(-50%,-50%) scale(.92); filter:blur(11px); }
+  50%{ opacity:.70; transform:translate(-50%,-50%) scale(1.10); filter:blur(9px); }
+}
+
+@media(max-width:1024px){
+  #smartclass-mascote{
+    bottom:86px;
+    width:70px;
+    height:70px;
+  }
+  #smartclass-mascote .ax-stage,
+  #smartclass-mascote img{
+    width:70px;
+    height:70px;
+  }
+  #smartclass-mascote .ax-core{
+    width:44px;
+    height:44px;
+  }
+}
+
+#axoriin-footer-phrase{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:55;
+  padding:10px 14px;
+  text-align:center;
+  font-size:.92rem;
+  letter-spacing:.02em;
+  color:var(--text-soft) !important;
+  background:rgba(7,15,28,0.68);
+  border-top:1px solid rgba(90,220,255,0.08);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  pointer-events:none;
+}
+
+@media(max-width:1024px){
+  #axoriin-footer-phrase{ bottom:54px; }
+}
+/* ===== MENU MOBILE / SIDEBAR RETRÁTIL ===== */
+.mobile-menu-btn{
+  display:none;
+  position:fixed;
+  top:14px;
+  left:14px;
+  z-index:260;
+  border:1px solid rgba(90,220,255,0.14);
+  border-radius:14px;
+  background:rgba(7,16,28,0.78);
+  color:#fff;
+  padding:10px 14px;
+  font-size:.95rem;
+  font-weight:600;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:0 8px 18px rgba(0,0,0,0.24);
+  cursor:pointer;
+  transition:opacity .18s ease, transform .18s ease;
+}
+
+.mobile-sidebar-backdrop{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:200; /* menor que a sidebar */
+  background:rgba(0,0,0,0.32);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .22s ease;
+}
+
+.mobile-close-sidebar{
+  display:none;
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:5;
+  width:38px;
+  height:38px;
+  border:none;
+  border-radius:12px;
+  background:rgba(255,255,255,0.06);
+  color:#fff;
+  font-size:1rem;
+  cursor:pointer;
+}
+
+@media (max-width: 1024px){
+  .page{
+    grid-template-columns:1fr;
+    padding:12px;
+  }
+
+  .mobile-menu-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+
+  .mobile-close-sidebar{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .mobile-sidebar-backdrop.show{
+    display:block;
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .sidebar{
+    display:flex !important;
+    position:fixed !important;
+    top:0 !important;
+    left:0 !important;
+    bottom:0 !important;
+    width:min(88vw, 320px);
+    height:100vh !important;
+    max-height:100vh !important;
+    border-radius:0 22px 22px 0;
+    z-index:250;
+    transform:translateX(-105%);
+    transition:transform .24s ease;
+    overflow:hidden;
+  }
+
+  .sidebar.open{
+    transform:translateX(0);
+  }
+
+  .sb-head{
+    padding-top:56px;
+  }
+
+  .nav{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    padding-bottom:18px;
+  }
+
+  .content{
+    width:100%;
+    min-width:0;
+  }
+
+  .wrap{
+    margin-top:58px;
+  }
+}
+
+/* ===== AJUSTE DE CLIQUE SIDEBAR MOBILE ===== */
+.sidebar{
+  pointer-events:auto;
+}
+
+.mobile-sidebar-backdrop.show{
+  pointer-events:auto;
+}
+
+.mobile-sidebar-backdrop{
+  pointer-events:none;
+}
+/* ===== CORREÇÃO DE CLIQUES NO MENU MOBILE ===== */
+.sidebar,
+.sidebar *{
+  pointer-events:auto !important;
+}
+
+.mobile-sidebar-backdrop{
+  z-index:200 !important;
+  pointer-events:none;
+}
+
+.mobile-sidebar-backdrop.show{
+  pointer-events:auto;
+}
+
+.sidebar{
+  z-index:250 !important;
+}
+
+.mobile-menu-btn{
+  z-index:260 !important;
+}
+
+.mobile-menu-btn.is-hidden{
+  opacity:0 !important;
+  pointer-events:none !important;
+  transform:translateY(-8px);
+}
+/* ===== MOBILE APP UX ===== */
+.mobile-appbar{
+  display:none;
+}
+
+@media (max-width: 1024px){
+  .mobile-appbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    position:fixed;
+    top:10px;
+    left:10px;
+    right:10px;
+    z-index:280;
+    height:58px;
+    padding:8px 10px;
+    border-radius:18px;
+    background:rgba(7,16,28,0.82);
+    border:1px solid rgba(90,220,255,0.12);
+    box-shadow:0 10px 28px rgba(0,0,0,0.28);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+
+  .mobile-appbar-center{
+    min-width:0;
+    flex:1;
+    text-align:center;
+    pointer-events:none;
+  }
+
+  .mobile-appbar-title{
+    font-size:.95rem;
+    font-weight:800;
+    line-height:1.1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .mobile-appbar-subtitle{
+    font-size:.7rem;
+    color:var(--text-soft) !important;
+    margin-top:2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .mobile-appbar-btn{
+    flex:0 0 auto;
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:12px;
+    background:rgba(255,255,255,0.05);
+    color:#fff;
+    font-size:1rem;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:inset 0 0 0 1px rgba(90,220,255,0.08);
+  }
+
+  .mobile-menu-btn{
+    display:none !important;
+  }
+
+  .mobile-close-sidebar{
+    top:14px;
+    right:14px;
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.06);
+    box-shadow:inset 0 0 0 1px rgba(90,220,255,0.08);
+  }
+
+  .sidebar{
+    width:min(86vw, 330px) !important;
+    border-radius:0 22px 22px 0 !important;
+    background:
+      linear-gradient(180deg, rgba(5,12,22,0.96), rgba(4,10,18,0.94)) !important;
+    box-shadow:18px 0 36px rgba(0,0,0,0.28);
+  }
+
+  .sb-head{
+    padding-top:64px !important;
+  }
+
+  .sb-head-top{
+    align-items:flex-start;
+  }
+
+  .brand{
+    width:40px;
+    height:40px;
+  }
+
+  .sb-title{
+    font-size:1rem;
+  }
+
+  .sb-subtitle{
+    font-size:.76rem;
+  }
+
+  .sb-top-actions{
+    margin-top:2px;
+  }
+
+  .sb-logout-top{
+    min-height:42px;
+    border-radius:14px;
+  }
+
+  .nav{
+    padding:10px 10px 20px !important;
+    gap:10px !important;
+  }
+
+  .nav a{
+    min-height:46px;
+    border-radius:14px;
+    font-size:.95rem;
+    padding:12px 14px;
+  }
+
+  .wrap{
+    margin-top:74px !important;
+    margin-bottom:110px !important;
+  }
+
+  .topo{
+    align-items:flex-start;
+    text-align:left;
+    padding:0 4px;
+  }
+
+  .titulo{
+    font-size:1.65rem;
+    line-height:1.05;
+  }
+
+  .sub{
+    font-size:.92rem;
+  }
+
+  .btn-wallpaper{
+    display:none;
+  }
+
+  .painel{
+    padding:6px 2px 22px;
+  }
+
+  .metrics{
+    grid-template-columns:repeat(2, minmax(0,1fr)) !important;
+    gap:10px !important;
+    margin-bottom:18px !important;
+  }
+
+  .metric{
+    min-height:170px !important;
+    padding:6px 2px 8px !important;
+  }
+
+  .metric:first-child{
+    grid-column:1 / -1;
+  }
+
+  .metric-hud{
+    --size:94px !important;
+  }
+
+  .metric:first-child .metric-hud{
+    --size:112px !important;
+  }
+
+  .metric-hud-core{
+    width:54px !important;
+    height:54px !important;
+  }
+
+  .metric:first-child .metric-hud-core{
+    width:64px !important;
+    height:64px !important;
+  }
+
+  .metric .v{
+    font-size:1.15rem !important;
+  }
+
+  .metric:first-child .v{
+    font-size:1.45rem !important;
+  }
+
+  .metric .k{
+    font-size:.62rem !important;
+  }
+
+  .metric-hud-meta{
+    padding-inline:4px !important;
+  }
+
+  .metric-hud-status{
+    font-size:.68rem !important;
+  }
+
+  .metric-hud-percent{
+    font-size:.78rem !important;
+  }
+
+  .menu-windows{
+    grid-template-columns:repeat(2,1fr) !important;
+    gap:12px !important;
+  }
+
+  .window-card{
+    grid-column:span 1 !important;
+    min-height:120px !important;
+    height:120px !important;
+    border-radius:18px !important;
+  }
+
+  .window-content{
+    padding:14px 14px !important;
+  }
+
+  .kicker{
+    font-size:.58rem !important;
+  }
+
+  .card-copy h3{
+    font-size:1.08rem !important;
+    line-height:1.1 !important;
+  }
+
+  .pend-card,
+  .alertas-comportamento,
+  .chart-card,
+  .qrcode-box{
+    padding:14px 12px !important;
+    border-radius:18px !important;
+  }
+
+  .pend-card header,
+  .ac-head{
+    align-items:flex-start !important;
+  }
+
+  .pend-card h3,
+  .ac-head h3{
+    font-size:1rem;
+    line-height:1.2;
+  }
+
+  .charts{
+    grid-template-columns:1fr !important;
+    gap:14px !important;
+  }
+
+  .chart-title{
+    font-size:.76rem !important;
+  }
+
+  .bottom-nav{
+    display:block;
+    z-index:270;
+    background:rgba(7,15,28,0.92);
+    border-top:1px solid rgba(90,220,255,0.10);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+  }
+
+  .bottom-nav .row{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    overflow:hidden;
+  }
+
+  .bottom-nav button{
+    min-height:58px;
+    padding:8px 4px 9px;
+    flex:none;
+    border-radius:0;
+  }
+
+  .bottom-nav button span{
+    font-size:.68rem;
+    margin-top:2px;
+  }
+
+  .bottom-nav button.active{
+    background:linear-gradient(180deg, rgba(89,231,255,0.14), rgba(89,231,255,0.05));
+    border-radius:0;
+  }
+
+  #axoriin-footer-phrase{
+    bottom:58px !important;
+    font-size:.8rem;
+    padding:8px 10px;
+  }
+
+  #smartclass-mascote{
+    bottom:72px !important;
+    right:10px !important;
+    width:58px !important;
+    height:58px !important;
+  }
+
+  #smartclass-mascote .ax-stage,
+  #smartclass-mascote img{
+    width:58px !important;
+    height:58px !important;
+  }
+
+  #smartclass-mascote .ax-core{
+    width:36px !important;
+    height:36px !important;
+  }
+}
+
+@media (max-width: 560px){
+  .metrics{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  .metric:first-child{
+    grid-column:1 / -1;
+  }
+
+  .menu-windows{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  .window-card{
+    min-height:110px !important;
+    height:110px !important;
+  }
+
+  .bottom-nav .row{
+    grid-template-columns:repeat(5, 1fr);
+  }
+}
+.review-alert-box{
+  margin:0 0 18px;
+  padding:18px;
+  border-radius:24px;
+  border:1px solid rgba(255,196,0,.20);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,196,0,.12), transparent 32%),
+    radial-gradient(circle at 100% 100%, rgba(255,120,0,.10), transparent 34%),
+    linear-gradient(180deg, rgba(18,28,46,.72), rgba(10,18,34,.78));
+  box-shadow:0 18px 44px rgba(0,0,0,.34);
+}
+
+.review-alert-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.review-alert-kicker{
+  font-size:.76rem;
+  font-weight:800;
+  letter-spacing:.18em;
+  color:#ffd98b !important;
+}
+
+.review-alert-title{
+  margin:6px 0 6px;
+  color:#fff8dc;
+}
+
+.review-alert-text{
+  margin:0;
+  color:rgba(255,248,220,.82);
+}
+
+.review-alert-btn{
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+  text-decoration:none;
+  font-weight:800;
+  color:#1b1200 !important;
+  background:linear-gradient(135deg, #ffd24d, #ffb347);
+}
+
+.review-alert-count{
+  margin-top:14px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  font-weight:700;
+}
+
+@media (max-width: 768px){
+  .review-alert-box{
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .review-alert-btn{
+    width:100%;
+    text-align:center;
+    justify-content:center;
+    display:inline-flex;
+    align-items:center;
+  }
+}
+</style>
 </head>
+
 <body>
+  <div class="mobile-appbar">
+  <button id="mobileMenuBtn" class="mobile-appbar-btn mobile-appbar-menu" type="button" aria-label="Abrir menu">
+    ☰
+  </button>
+
+  <div class="mobile-appbar-center">
+    <div class="mobile-appbar-title" id="mobileAppbarTitle">CMDPII-CZS</div>
+    <div class="mobile-appbar-subtitle">Sistema Escolar</div>
+  </div>
+
+  <button class="mobile-appbar-btn mobile-appbar-exit" type="button" onclick="logout()" aria-label="Sair do sistema">
+    ⏻
+  </button>
+</div>
+
+<div id="mobileSidebarBackdrop" class="mobile-sidebar-backdrop"></div>
+  <div id="bg-wallpaper"></div>
+  <div id="intro-hex-overlay"></div>
+
+  <div id="smartclass-mascote" aria-hidden="true">
+    <div class="ax-stage">
+      <img
+        src="/assets/axoriin/axoriin-logo-8k.png"
+        alt="Axoriin"
+        onerror="this.onerror=null; this.style.display='none';"
+      />
+      <div class="ax-core"></div>
+    </div>
+  </div>
+
+  <div id="axoriin-footer-phrase">O eixo que organiza e ilumina a gestão educacional.</div>
+
   <div class="page">
-    <!-- SIDEBAR (Desktop) -->
     <aside class="sidebar" aria-label="Navegação lateral">
+      <button id="mobileCloseSidebar" class="mobile-close-sidebar" type="button" aria-label="Fechar menu">
+  ✕
+</button>
       <div class="sb-head">
-        <div class="brand"></div>
-        <div>
-          <div class="sb-title">CMDPII</div>
-          <div style="font-size:.8rem; color:var(--text-soft)">Sistema Escolar</div>
-        </div>
-      </div>
-      <nav class="nav">
-        <a class="active" href="#">🏠 Painel</a>
-        <a href="lista-alunos.html">👥 Alunos</a>
-        <a href="/notificacoes">🔔 Notificações</a>
-        <a href="estatisticas.html">📉 Relatórios</a>
-        <a href="mensagens.html">✉️ Mensagens</a>
-        <a href="usuarios.html">⚙️ Administração</a>
-        <a href="logs.html">🧾 Logs</a>
-      </nav>
-      <div class="sb-foot">
-        <button class="sb-logout" onclick="logout()">🚪 Sair</button>
-      </div>
+  <div class="sb-head-top">
+    <div class="brand"></div>
+    <div>
+      <div class="sb-title" id="sbNomeInstituicao">CMDPII</div>
+      <div class="sb-subtitle">Sistema Escolar</div>
+    </div>
+  </div>
+
+  <div class="sb-top-actions">
+    <button
+      class="sb-logout-top"
+      onclick="logout()"
+      title="Sair do sistema"
+      aria-label="Sair do sistema"
+      type="button"
+    >
+      <span class="sb-logout-icon">⏻</span>
+      <span class="sb-logout-label">Sair do sistema</span>
+    </button>
+  </div>
+</div>
+
+            <nav class="nav" id="sb-nav">
+  <a class="active" href="painel.html?t=cmdpii" id="sbPainel">🏠 Painel</a>
+  <a href="lista-alunos.html?t=cmdpii" id="sbAlunos">👥 Alunos</a>
+  <a href="chamadas.html?t=cmdpii" id="sbChamada">📋 Chamada</a>
+  <a href="ranking-alunos.html?t=cmdpii" id="sbRanking">🏆 Ranking de Alunos</a>
+  <a href="/notificacoes?t=cmdpii" id="sbNotificacoes">🔔 Notificações</a>
+  <a href="livro-ocorrencias.html?t=cmdpii" id="sbLivroOcorrencias">📘 Livro Digital</a>
+  <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
+  <a href="rifas.html?t=cmdpii" id="sbRifas">🎟️ Rifas</a>
+  <a href="baile-formatura.html?t=cmdpii" id="sbBaile">💃 Baile de Formatura</a>
+  <a href="mensagens.html?t=cmdpii" id="sbMensagens">✉️ Mensagens</a>
+  <a href="/monitores.html?t=cmdpii" id="sbMonitores">🧭 Monitores</a>
+  <a href="transferir-turma.html?t=cmdpii" id="sbTransferir">🔁 Transferir Turmas</a>
+  <a href="usuarios.html?t=cmdpii" id="sbAdmin">⚙️ Administração</a>
+  <a href="configuracao-disciplinar.html?t=cmdpii" id="sbConfigDisciplinar">🧠 Configuração Disciplinar</a>
+  <a href="configuracao-documentos.html?t=cmdpii" id="sbConfigDocumentos">🏛️ Configuração de Documentos</a>
+  <a href="logs.html?t=cmdpii" id="sbLogs">🧾 Logs</a>
+</nav>
     </aside>
 
-    <!-- CONTEÚDO -->
     <main class="content">
       <div class="wrap">
         <div class="topo">
-          <div class="logos">
-            <img src="img/logo.png" alt="Logo da Instituição" />
-            <img src="img/logo-colegio-militar.png" alt="Logo Colégio Militar Dom Pedro II" />
-          </div>
           <div class="titulo">Bem-vindo ao Sistema Escolar</div>
           <div class="sub">Olá, <span id="nomeUsuario">Usuário</span></div>
+
+          <button id="btn-wallpaper" class="btn-wallpaper" type="button">
+            🎨 Papel de parede
+          </button>
         </div>
 
         <section class="painel">
-          <!-- Métricas rápidas -->
-          <div class="metrics" id="metrics">
-            <div class="metric"><div class="k">Alunos ativos</div><div class="v" id="mAlunos">—</div></div>
-            <div class="metric"><div class="k">Notificações emitidas</div><div class="v" id="mNotif">—</div></div>
-            <div class="metric"><div class="k">Comportamento médio</div><div class="v" id="mMedia">—</div></div>
-            <div class="metric"><div class="k">Mensagens não lidas</div><div class="v" id="mMsgs">—</div></div>
+  <section id="reviewAlertBox" style="display:none;" class="review-alert-box">
+    <div class="review-alert-head">
+      <div>
+        <div class="review-alert-kicker">REVISÃO PENDENTE</div>
+        <h3 class="review-alert-title">Existem notificações aguardando correção</h3>
+        <p class="review-alert-text">Abra as notificações e ajuste os documentos devolvidos pelo controle.</p>
+      </div>
+      <a href="/notificacoes?t=cmdpii" class="review-alert-btn">Abrir notificações</a>
+    </div>
+    <div id="reviewAlertCount" class="review-alert-count">0 pendências</div>
+  </section>
+
+  <div class="metrics" id="metrics">
+  <div class="metric metric--hud" id="metricAlunos">
+    <div class="metric-hud-frame"></div>
+    <div class="metric-hud-corners"></div>
+
+    <div class="k">Alunos ativos</div>
+
+    <div class="metric-hud-wrap">
+      <div
+        class="metric-hud"
+        data-hud
+        data-target="0"
+        data-progress="0"
+        data-decimals="0"
+      >
+        <div class="metric-hud-outer"></div>
+        <div class="metric-hud-sweep"></div>
+        <div class="metric-hud-segments"></div>
+        <div class="metric-hud-mid"></div>
+        <div class="metric-hud-core">
+          <div class="v" id="mAlunos">0</div>
+        </div>
+        <div class="metric-hud-decor-left"></div>
+        <div class="metric-hud-decor-right"></div>
+      </div>
+
+      <div class="metric-hud-meta">
+        <div class="metric-hud-status">Processando...</div>
+        <div class="metric-hud-percent" id="mAlunosPct">0%</div>
+      </div>
+
+      <div class="metric-hud-line" id="mAlunosLine">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric metric--hud" id="metricNotif">
+    <div class="metric-hud-frame"></div>
+    <div class="metric-hud-corners"></div>
+
+    <div class="k">Notificações pendentes</div>
+
+    <div class="metric-hud-wrap">
+      <div
+        class="metric-hud"
+        data-hud
+        data-target="0"
+        data-progress="0"
+        data-decimals="0"
+      >
+        <div class="metric-hud-outer"></div>
+        <div class="metric-hud-sweep"></div>
+        <div class="metric-hud-segments"></div>
+        <div class="metric-hud-mid"></div>
+        <div class="metric-hud-core">
+          <div class="v" id="mNotif">0</div>
+        </div>
+        <div class="metric-hud-decor-left"></div>
+        <div class="metric-hud-decor-right"></div>
+      </div>
+
+      <div class="metric-hud-meta">
+        <div class="metric-hud-status">Processando...</div>
+        <div class="metric-hud-percent" id="mNotifPct">0%</div>
+      </div>
+
+      <div class="metric-hud-line" id="mNotifLine">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric metric--hud" id="metricMedia">
+    <div class="metric-hud-frame"></div>
+    <div class="metric-hud-corners"></div>
+
+    <div class="k">Comportamento médio</div>
+
+    <div class="metric-hud-wrap">
+      <div
+        class="metric-hud"
+        data-hud
+        data-target="0"
+        data-progress="0"
+        data-decimals="1"
+      >
+        <div class="metric-hud-outer"></div>
+        <div class="metric-hud-sweep"></div>
+        <div class="metric-hud-segments"></div>
+        <div class="metric-hud-mid"></div>
+        <div class="metric-hud-core">
+          <div class="v" id="mMedia">0,0</div>
+        </div>
+        <div class="metric-hud-decor-left"></div>
+        <div class="metric-hud-decor-right"></div>
+      </div>
+
+      <div class="metric-hud-meta">
+        <div class="metric-hud-status">Processando...</div>
+        <div class="metric-hud-percent" id="mMediaPct">0%</div>
+      </div>
+
+      <div class="metric-hud-line" id="mMediaLine">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric metric--hud" id="metricMsgs">
+    <div class="metric-hud-frame"></div>
+    <div class="metric-hud-corners"></div>
+
+    <div class="k">Mensagens não lidas</div>
+
+    <div class="metric-hud-wrap">
+      <div
+        class="metric-hud"
+        data-hud
+        data-target="0"
+        data-progress="0"
+        data-decimals="0"
+      >
+        <div class="metric-hud-outer"></div>
+        <div class="metric-hud-sweep"></div>
+        <div class="metric-hud-segments"></div>
+        <div class="metric-hud-mid"></div>
+        <div class="metric-hud-core">
+          <div class="v" id="mMsgs">0</div>
+        </div>
+        <div class="metric-hud-decor-left"></div>
+        <div class="metric-hud-decor-right"></div>
+      </div>
+
+      <div class="metric-hud-meta">
+        <div class="metric-hud-status">Processando...</div>
+        <div class="metric-hud-percent" id="mMsgsPct">0%</div>
+      </div>
+
+      <div class="metric-hud-line" id="mMsgsLine">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric metric--hud" id="metricPendDev">
+    <div class="metric-hud-frame"></div>
+    <div class="metric-hud-corners"></div>
+
+    <div class="k">Devoluções em atraso</div>
+
+    <div class="metric-hud-wrap">
+      <div
+        class="metric-hud"
+        data-hud
+        data-target="0"
+        data-progress="0"
+        data-decimals="0"
+      >
+        <div class="metric-hud-outer"></div>
+        <div class="metric-hud-sweep"></div>
+        <div class="metric-hud-segments"></div>
+        <div class="metric-hud-mid"></div>
+        <div class="metric-hud-core">
+          <div class="v" id="mPendDevol">0</div>
+        </div>
+        <div class="metric-hud-decor-left"></div>
+        <div class="metric-hud-decor-right"></div>
+      </div>
+
+      <div class="metric-hud-meta">
+        <div class="metric-hud-status">Processando...</div>
+        <div class="metric-hud-percent" id="mPendDevolPct">0%</div>
+      </div>
+
+      <div class="metric-hud-line" id="mPendDevolLine">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+          <div class="menu-windows" id="menuWindows">
+            <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('cadastro-aluno.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">MÓDULO</div>
+                  <h3>Cadastrar Aluno</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardChamada" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('chamadas.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">ROTINA</div>
+                  <h3>Chamada</h3>
+                </div>
+              </div>
+            </div>
+            <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('/notificacoes')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">PAINEL</div>
+                  <h3>Ver Notificações</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardControleNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('controle-notificacoes.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">GESTÃO</div>
+                  <h3>Controle de Notificações</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('ranking-alunos.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">CLASSIFICAÇÃO</div>
+                  <h3>Ranking de Alunos</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('estatisticas.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">DASHBOARD</div>
+                  <h3>Painel de Estatísticas</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardMensagens" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('mensagens.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">COMUNICAÇÃO</div>
+                  <h3>Mensagens</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardAssociacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="window.AxoriinAmbientes?.abrirPrimeiraAssociacao()">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">NOVO MÓDULO</div>
+                  <h3>Axoriin Associações</h3>
+                </div>
+              </div>
+            </div>
+
+            <div id="cardTransferirTurma" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('transferir-turma.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">AÇÃO</div>
+                  <h3>Transferir Turma</h3>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Atalhos (janelas) -->
-          <div class="menu-windows">
-            <!-- Transferir Turma primeiro (coluna esquerda) -->
-            <div class="window-card" data-transferir role="link" tabindex="0" onclick="location.href='transferir-turma.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">AÇÃO</div><h3>Transferir Turma</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+          <section class="pend-card" id="pendDevolucaoSection" aria-live="polite">
+            <header>
+              <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
+              <span id="pendResumo" class="pend-chip">Carregando…</span>
+
+              <button id="pend-show-hidden"
+                      class="btn"
+                      type="button"
+                      title="Mostra novamente os itens marcados como OK neste navegador">
+                Reexibir ocultos
+              </button>
+
+              <button onclick="location.href=withTenant('/notificacoes')"
+                      style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">
+                Ir para Notificações
+              </button>
+            </header>
+
+            <div style="overflow:auto">
+              <table class="pend-table" aria-describedby="pendResumo">
+                <thead>
+                  <tr><th>Aluno</th><th>Turma</th><th>Entregue em</th><th>Prazo</th><th>Atraso / OK</th></tr>
+                </thead>
+                <tbody id="pendTableBody">
+                  <tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>
+                </tbody>
+              </table>
             </div>
 
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='cadastro-aluno.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">MÓDULO</div><h3>Cadastrar Aluno</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
+            <div class="pager" aria-label="Paginação pendências devolução">
+              <button class="btn" id="pend-prev">◀</button>
+              <span class="info">Página <span id="pend-page">1</span> de <span id="pend-pages">1</span></span>
+              <button class="btn" id="pend-next">▶</button>
+              <span class="info">10 por página</span>
             </div>
+          </section>
 
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='/notificacoes'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">PAINEL</div><h3>Ver Notificações</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-            </div>
+          <section class="alertas-comportamento" id="acSection">
+  <header class="ac-head">
+    <h3 style="margin:0">✅ Comportamento — Ações Obrigatórias</h3>
+    <div class="ac-controls">
+      <span class="ac-pill reg">NP: <span class="n" id="cnt-regular">0</span></span>
+      <span class="ac-pill ins">Pais: <span class="n" id="cnt-insuficiente">0</span></span>
+      <span class="ac-pill ins">Incompatível: <span class="n" id="cnt-incompativel">0</span></span>
+      <button id="btn-recarregar-alertas" class="btn btn-ghost" type="button">Recarregar</button>
+    </div>
+  </header>
 
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='controle-notificacoes.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">GESTÃO</div><h3>Controle de Notificações</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-            </div>
+  <nav class="tabs" role="tablist" aria-label="Ações por comportamento">
+    <button class="tab-btn active" data-tab="tab-regular" role="tab" aria-selected="true">
+      Encaminhar ao NP (5,00–6,99)
+    </button>
 
-            <!-- Admin (apenas se for admin) -->
-            <div id="cardNovoUsuario" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='cadastro-usuario.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">ADMIN</div><h3>Novo Usuário</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-            </div>
+    <button class="tab-btn" data-tab="tab-insuficiente" role="tab" aria-selected="false">
+      Informar responsáveis (3,00–4,99)
+    </button>
 
-            <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href='estatisticas.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">DASHBOARD</div><h3>Painel de Estatísticas</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-            </div>
+    <button class="tab-btn" data-tab="tab-incompativel" role="tab" aria-selected="false">
+      Incompatível — informar responsáveis (0,00–2,99)
+    </button>
+  </nav>
 
-            <div class="window-card" role="link" tabindex="0" onclick="location.href='mensagens.html'" onkeyup="if(event.key==='Enter') this.click()">
-              <div class="window-content"><div class="card-copy"><div class="kicker">COMUNICAÇÃO</div><h3>Mensagens</h3><div class="ghost"><span class="gl l1"></span><span class="gl l2"></span><span class="gl l3"></span></div></div></div>
-              <span id="mensagensBadge" class="badge" style="display:none;">0</span>
-            </div>
-          </div>
+  <div id="tab-regular" class="tab-panel" aria-hidden="false">
+    <p class="muted">
+      <strong>Art. 51</strong> — Encaminhar ao Núcleo Psicossocial (NP) e registrar no histórico.
+      O NP deve informar os responsáveis.
+    </p>
 
-          <!-- Atenção especial -->
-          <div class="attention" id="attentionSection">
-            <h3>⚠️ Atenção especial: abaixo de 4,0 <small>(<span id="attentionCount">0</span> alunos)</small></h3>
-            <ul id="attentionList"></ul>
-          </div>
+    <div class="table-wrap">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Nota</th>
+            <th style="width:260px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-regular">
+          <tr><td colspan="4" style="opacity:.7">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
 
-          <!-- Gráficos simples -->
+    <div class="pager">
+      <button class="btn" id="reg-prev">◀</button>
+      <span class="info">Página <span id="reg-page">1</span> de <span id="reg-pages">1</span></span>
+      <button class="btn" id="reg-next">▶</button>
+      <span class="info">10 por página</span>
+    </div>
+  </div>
+
+  <div id="tab-insuficiente" class="tab-panel" aria-hidden="true" style="display:none">
+    <p class="muted">
+      <strong>Art. 52</strong> — Coordenador informa responsáveis sobre a situação e a possível não renovação
+      se evoluir para incompatível.
+    </p>
+
+    <div class="table-wrap">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Nota</th>
+            <th style="width:260px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-insuficiente">
+          <tr><td colspan="4" style="opacity:.7">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button class="btn" id="ins-prev">◀</button>
+      <span class="info">Página <span id="ins-page">1</span> de <span id="ins-pages">1</span></span>
+      <button class="btn" id="ins-next">▶</button>
+      <span class="info">10 por página</span>
+    </div>
+  </div>
+
+  <div id="tab-incompativel" class="tab-panel" aria-hidden="true" style="display:none">
+    <p class="muted">
+      <strong>Comportamento incompatível</strong> — Alunos com nota de 0,00 a 2,99.
+      Os responsáveis devem ser comunicados.
+    </p>
+
+    <div class="table-wrap">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Turma</th>
+            <th>Nota</th>
+            <th style="width:260px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-incompativel">
+          <tr><td colspan="4" style="opacity:.7">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button class="btn" id="inc-prev">◀</button>
+      <span class="info">Página <span id="inc-page">1</span> de <span id="inc-pages">1</span></span>
+      <button class="btn" id="inc-next">▶</button>
+      <span class="info">10 por página</span>
+    </div>
+  </div>
+
+  <div class="ac-foot">
+    <small class="muted">
+      Atualiza automaticamente a cada 60s • <span id="ac-last-update">—</span>
+    </small>
+  </div>
+</section>
+
           <div class="charts">
             <div class="chart-card">
               <div class="chart-title">Média de comportamento por turma</div>
-              <canvas id="barChart" width="640" height="280" aria-label="Gráfico de barras"></canvas>
+              <div class="chart-stage">
+                <canvas id="barChart" width="640" height="280" aria-label="Gráfico de barras"></canvas>
+              </div>
             </div>
             <div class="chart-card">
               <div class="chart-title">Distribuição por faixa</div>
-              <canvas id="donutChart" width="640" height="280" aria-label="Gráfico de rosca"></canvas>
+              <div class="chart-stage">
+                <canvas id="donutChart" width="640" height="280" aria-label="Gráfico de rosca"></canvas>
+              </div>
             </div>
           </div>
-
-          <!-- QR Code -->
-          <div class="qrcode-box">
-            <h3>🔐 Gerar QR Code de Acesso do Professor</h3>
-            <input type="text" id="campoIdentificacao" placeholder="Digite nome ou e-mail do professor">
-            <button onclick="gerarQRCode()" style="padding:10px 20px; border:none; background:#B22222; color:white; border-radius:8px;">🎟️ Gerar QR Code</button>
-            <div id="qrImagem" style="margin-top:10px;"></div>
-            <button id="btnImprimirQR" class="print-btn" style="display:none;" onclick="imprimirQRCode()">🖨️ Imprimir QR Code</button>
-          </div>
-
-          <button class="logout-btn" onclick="logout()">🚪 Sair</button>
         </section>
       </div>
     </main>
   </div>
 
-  <!-- Bottom bar (mobile) -->
-  <nav class="bottom-nav" aria-label="Navegação inferior">
+  <div id="tab-incompativel" class="tab-panel" aria-hidden="true" style="display:none">
+  <p class="muted">
+    <strong>Comportamento incompatível</strong> — Alunos com nota de 0,00 a 2,99.
+    Os responsáveis devem ser comunicados.
+  </p>
+
+  <div class="table-wrap">
+    <table class="tabela">
+      <thead>
+        <tr><th>Aluno</th><th>Turma</th><th>Nota</th><th style="width:260px">Ações</th></tr>
+      </thead>
+      <tbody id="tbody-incompativel">
+        <tr><td colspan="4" style="opacity:.7">Carregando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <button class="btn" id="inc-prev">◀</button>
+    <span class="info">Página <span id="inc-page">1</span> de <span id="inc-pages">1</span></span>
+    <button class="btn" id="inc-next">▶</button>
+    <span class="info">10 por página</span>
+    <input type="number" id="inc-size" min="10" max="10" step="10" value="10" disabled />
+  </div>
+</div>
+
+  <nav class="bottom-nav" aria-label="Navegação inferior" id="bottomNav">
     <div class="row">
-      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})">🏠<span>Painel</span></button>
-      <button onclick="location.href='lista-alunos.html'">👥<span>Alunos</span></button>
-      <button onclick="location.href='/notificacoes'">🔔<span>Notifs</span></button>
-      <button onclick="document.getElementById('barChart').scrollIntoView({behavior:'smooth'})">📊<span>Gráficos</span></button>
-      <button onclick="location.href='usuarios.html'">⚙️<span>Perfil</span></button>
+      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})" id="bnPainel">
+        🏠<span>Painel</span>
+      </button>
+      <button onclick="location.href=withTenant('lista-alunos.html')" id="bnAlunos">
+        👥<span>Alunos</span>
+      </button>
+      <button onclick="location.href=withTenant('ranking-alunos.html')" id="bnRanking">
+        🏆<span>Ranking</span>
+      </button>
+      <button onclick="location.href=withTenant('/notificacoes')" id="bnNotifs">
+        🔔<span>Notifs</span>
+      </button>
+      <button onclick="location.href=withTenant('estatisticas.html')" id="bnRelatorios">
+        📉<span>Relatórios</span>
+      </button>
+      <button onclick="location.href=withTenant('mensagens.html')" id="bnMensagens">
+        ✉️<span>Mensagens</span>
+      </button>
+      <button type="button" id="bnMais">
+  ☰<span>Mais</span>
+</button>
     </div>
-  </nav>
+  </nav>  <script>
+  const DEFAULT_TENANT = 'cmdpii';
+  const TENANT_STORAGE_KEY = 'smartclass_tenant';
+  const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
 
-  <script>
-    // ====== CONFIG ======
-    const CLASS_THRESHOLDS = { excepcional: 9.6, otimo: 8.6, bom: 7.6, regular: 6.1, insuficiente: 5.1 };
-    const API = (p) => p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/') ? p : '/'+p}`);
+  function getTenantFromUrl() {
+    const qs = new URLSearchParams(location.search);
+    return (qs.get('t') || qs.get('tenant') || '').trim();
+  }
 
-    function showError(msg){
-      let el = document.getElementById('errBanner');
-      if(!el){
-        el = document.createElement('div');
-        el.id = 'errBanner';
-        el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:10px;background:#5f1212;color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 20px rgba(0,0,0,.4);z-index:9999;font:14px/1.3 system-ui';
-        document.body.appendChild(el);
+  function getTenantFromStorage() {
+    const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+    if (current) return current;
+
+    const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+    if (legacy) {
+      localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+      return legacy;
+    }
+
+    return '';
+  }
+
+  function setTenantStorage(t) {
+    const value = String(t || '').trim();
+    if (!value) return;
+    localStorage.setItem(TENANT_STORAGE_KEY, value);
+    localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+  }
+
+  function getResolvedTenant() {
+    const finalTenant = getTenantFromUrl() || getTenantFromStorage() || DEFAULT_TENANT;
+    setTenantStorage(finalTenant);
+    return finalTenant;
+  }
+
+  function withTenant(url) {
+    const tenant = window.__TENANT__ || DEFAULT_TENANT;
+
+    try {
+      const isAbsolute = /^https?:\/\//i.test(url);
+      const u = isAbsolute ? new URL(url) : new URL(url, location.origin);
+      u.searchParams.set('t', tenant);
+      return isAbsolute ? u.toString() : `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      const sep = String(url).includes('?') ? '&' : '?';
+      return `${url}${sep}t=${encodeURIComponent(tenant)}`;
+    }
+  }
+
+  window.__TENANT__ = getResolvedTenant();
+
+  if (!getTenantFromUrl()) {
+    const u = new URL(location.href);
+    u.searchParams.set('t', window.__TENANT__);
+    history.replaceState({}, '', u.toString());
+  }
+
+  /* ===== PAPEL DE PAREDE DINÂMICO ===== */
+  (function(){
+    const wallpapers = [
+      'url("img/bg-painel-smart.png")',
+      'url("img/bg-painel-smart-2.png")',
+      'url("img/bg-painel-smart-3.png")'
+    ];
+    const STORAGE_KEY = 'painelWallpaperIndex';
+
+    let current = 0;
+    try{
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const idx = parseInt(saved,10);
+      if(!Number.isNaN(idx) && idx >= 0 && idx < wallpapers.length){
+        current = idx;
       }
-      el.textContent = `Erro: ${msg}`;
-      clearTimeout(el._t); el._t = setTimeout(()=>{ el.remove(); }, 8000);
+    }catch(e){
+      console.warn('Não foi possível ler o wallpaper salvo:', e);
     }
 
-    // ====== Helpers ======
-    async function getJSON(url){
-      const r = await fetch(API(url), { credentials:'include', cache:'no-store' });
-      if(!r.ok) throw new Error(`${url} -> ${r.status}`);
-      try { return { json: await r.json(), headers: r.headers }; }
-      catch { return { json: {}, headers: r.headers }; }
-    }
-    async function tryMany(urls, mapper=(x)=>x){
-      let lastErr;
-      for(const u of urls){
-        try{ const { json, headers } = await getJSON(u); return mapper(json, headers); }catch(e){ lastErr = e; console.warn('Falha em', u, e); }
+    function applyWallpaper(idx, fade){
+      const layer = document.getElementById('bg-wallpaper');
+      if(!layer) return;
+      const safeIdx = (idx >= 0 && idx < wallpapers.length) ? idx : 0;
+
+      if(fade){
+        layer.style.opacity = '0';
+        setTimeout(()=>{
+          layer.style.backgroundImage = wallpapers[safeIdx];
+          layer.style.opacity = '1';
+        }, 220);
+      }else{
+        layer.style.backgroundImage = wallpapers[safeIdx];
+        layer.style.opacity = '1';
       }
-      throw lastErr || new Error('Todas as tentativas falharam');
     }
 
-    // ====== Cargas reais ======
-    async function loadDashboardData(){
-      // 1) Contagem de alunos
-      const alunosCount = await tryMany([
-        '/api/alunos/contagem', '/api/alunos?limit=5000', '/api/alunos'
-      ], (json)=> Array.isArray(json) ? json.length : (json.total ?? json.count ?? (json.alunos?.length ?? json.data?.length ?? 0)));
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyWallpaper(current, false);
 
-      // 2) Notificações emitidas (Controle de Notificações)
-      const notifPend = await (async ()=>{
+      const btn = document.getElementById('btn-wallpaper');
+      if(!btn) return;
+
+      btn.addEventListener('click', ()=>{
+        current = (current + 1) % wallpapers.length;
+        applyWallpaper(current, true);
         try{
-          return await tryMany([
-            '/api/controle-notificacoes/emitidas/contagem',
-            '/api/controle-notificacoes/contagem',
-            '/api/controle-notificacoes?tipo=emitida&limit=1000',
-            '/api/controle-notificacoes?limit=1000',
-            // fallbacks antigos:
-            '/api/notificacoes/pendentes/contagem',
-            '/api/notificacoes?status=pendente&limit=1000'
-          ], (json)=> Array.isArray(json) ? json.length : (json.total ?? json.count ?? 0));
-        }catch{ return 0; }
-      })();
-
-      // 3) Mensagens não lidas
-      const msgs = await (async ()=>{ try{ const { json } = await getJSON('/api/mensagens/novas'); return json.total ?? 0; }catch{ return 0; } })();
-
-      // 4) Comportamento por turma
-      let porTurma = [];
-      try{ const { json } = await getJSON('/api/estatisticas/comportamento-por-turma'); porTurma = json; }
-      catch{
-        const alunosData = await tryMany(['/api/alunos?limit=5000','/api/alunos']);
-        const arr = Array.isArray(alunosData) ? alunosData : (alunosData.alunos||alunosData.data||[]);
-        const grupos = {};
-        arr.forEach(a=>{ const turma = (a.turma||'—').trim(); const comp = Number(a.comportamento ?? a.notaComportamento ?? 0); if(!grupos[turma]) grupos[turma]=[]; if(!Number.isNaN(comp)&&comp>0) grupos[turma].push(comp); });
-        porTurma = Object.entries(grupos).map(([turma, xs])=>({ turma, media: xs.reduce((s,n)=>(s+n),0)/xs.length }));
-      }
-      const medias = porTurma.map(t=>t.media).filter((n)=>Number.isFinite(n) && n>0);
-      const mediaGeral = medias.length ? (medias.reduce((s,n)=>s+n,0)/medias.length) : 0;
-
-      // 5) Distribuição e atenção <4.0
-      let dist = { exc:0, oti:0, bom:0, reg:0, ins:0, inc:0 };
-      let attention = [];
-      try{
-        const alunosData = await tryMany(['/api/alunos?limit=5000','/api/alunos']);
-        const arr = Array.isArray(alunosData) ? alunosData : (alunosData.alunos||alunosData.data||[]);
-        for(const a of arr){
-          const n = Number(a.comportamento ?? a.notaComportamento ?? 0);
-          if(Number.isNaN(n)) continue;
-          if(n >= CLASS_THRESHOLDS.excepcional) dist.exc++;
-          else if(n >= CLASS_THRESHOLDS.otimo) dist.oti++;
-          else if(n >= CLASS_THRESHOLDS.bom) dist.bom++;
-          else if(n >= CLASS_THRESHOLDS.regular) dist.reg++;
-          else if(n >= CLASS_THRESHOLDS.insuficiente) dist.ins++;
-          else dist.inc++;
-          if(n < 4){ attention.push({ id: a._id || a.id, nome: a.nome, turma: (a.turma||'—').trim(), nota: n }); }
+          localStorage.setItem(STORAGE_KEY, String(current));
+        }catch(e){
+          console.warn('Não foi possível salvar o wallpaper:', e);
         }
-        attention.sort((x,y)=>x.nota-y.nota);
-      }catch(e){ console.warn('Distribuição/atenção falharam', e); }
-
-      return { alunosCount, notifPend, msgs, mediaGeral, porTurma, dist, attention, _ts: Date.now() };
-    }
-
-    // ====== Render ======
-    function renderMetrics(state){
-      document.getElementById('mAlunos').textContent = state.alunosCount.toLocaleString('pt-BR');
-      document.getElementById('mNotif').textContent  = state.notifPend;
-      document.getElementById('mMsgs').textContent   = state.msgs;
-      document.getElementById('mMedia').textContent  = state.mediaGeral.toFixed(1).replace('.', ',');
-    }
-    function renderAttention(state){
-      const list = document.getElementById('attentionList');
-      const count = document.getElementById('attentionCount');
-      const all = (state.attention||[]);              // <- lista TODOS
-      count.textContent = all.length || 0;
-      list.innerHTML = all.map(a=>`<li>
-          <strong>${a.nome}</strong>
-          <span class="pill">${a.turma}</span>
-          <span class="pill" title="Nota de comportamento">${a.nota.toFixed(2).replace('.', ',')}</span>
-        </li>`).join('') || '<li style="opacity:.7">Nenhum aluno com nota &lt; 4,0</li>';
-    }
-    function drawBarChart(data){
-      const c = document.getElementById('barChart'); const ctx = c.getContext('2d');
-      const W = c.width, H = c.height; ctx.clearRect(0,0,W,H);
-      const padding = 40, max = 10; const gw = W - padding*2, gh = H - padding*2;
-      ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(padding, padding); ctx.lineTo(padding, H-padding); ctx.lineTo(W-padding, H-padding); ctx.stroke();
-      const barW = gw / (data.length*1.6);
-      data.forEach((d,i)=>{
-        const h = (Math.min(d.media??0,10)/max)*gh;
-        const x = padding + i*(barW*1.6) + barW*0.3; const y = H - padding - h;
-        const grad = ctx.createLinearGradient(0,y,0,y+h); grad.addColorStop(0,'#d64545'); grad.addColorStop(1,'#8B0000');
-        ctx.fillStyle = grad; ctx.fillRect(x, y, barW, h);
-        ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '12px Segoe UI'; ctx.textAlign='center';
-        ctx.fillText(d.turma, x+barW/2, H - padding + 16);
-        ctx.fillText((d.media??0).toFixed(1), x+barW/2, y-6);
       });
-    }
-    function drawDonutChart(dist){
-      const c = document.getElementById('donutChart'); const ctx = c.getContext('2d');
-      const W=c.width, H=c.height; ctx.clearRect(0,0,W,H);
-      const items = [
-        { name:'Excepcional', value:dist.exc, color:'#22c55e' },
-        { name:'Ótimo', value:dist.oti, color:'#3b82f6' },
-        { name:'Bom', value:dist.bom, color:'#f59e0b' },
-        { name:'Regular', value:dist.reg, color:'#ef4444' },
-        { name:'Insuficiente', value:dist.ins, color:'#dc2626' },
-        { name:'Incompatível', value:dist.inc, color:'#7f1d1d' },
-      ].filter(i=>i.value>0);
-      const total = items.reduce((s,i)=>s+i.value,0) || 1;
-      const cx=W/2, cy=H/2, r= Math.min(W,H)/3, ir = r*0.6; let start = -Math.PI/2;
-      items.forEach(d=>{ const ang = (d.value/total)*Math.PI*2; const end = start+ang;
-        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath(); ctx.fillStyle=d.color; ctx.fill(); start=end; });
-      ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(cx,cy,ir,0,Math.PI*2); ctx.fill(); ctx.globalCompositeOperation='source-over';
-      ctx.font='12px Segoe UI'; ctx.fillStyle='rgba(255,255,255,.9)';
-      items.forEach((d,i)=>{ const y=20+i*18; ctx.fillStyle=d.color; ctx.fillRect(W-170,y-10,10,10); ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillText(`${d.name}: ${d.value}`, W-154, y); });
+    });
+  })();
+
+    /* ===== OVERLAY LEVE DE ABERTURA ===== */
+  (function(){
+    const overlay = document.getElementById('intro-hex-overlay');
+    if (!overlay) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      overlay.remove();
+      return;
     }
 
-    // ====== Fluxo ======
-    async function verificarUsuario(){
-      try{ const { json } = await getJSON('/api/usuario'); document.getElementById('nomeUsuario').textContent = json.nome || 'Usuário'; }
-      catch(err){ showError('Sessão inválida. Redirecionando...'); location.href = './login.html'; }
-    }
-    async function verificarAdmin(){
-      try{
-        const { json: usuario } = await getJSON('/api/usuario-logado');
-        if(usuario.tipo==='admin'){
-          ['cardNovoUsuario','cardEstatisticas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=''; });
-        }
-      }catch(e){ console.warn('verificarAdmin:', e); }
-    }
-    async function verificarMensagensNovas(){
-      try{
-        const { json } = await getJSON('/api/mensagens/novas');
-        const total=json.total ?? 0;
-        const badge=document.getElementById('mensagensBadge');
-        if(badge){ badge.style.display=total>0?'inline-block':'none'; if(total>0) badge.textContent=total; }
-        document.getElementById('mMsgs').textContent=String(total);
-      }catch(e){ console.warn('verificarMensagensNovas:', e); }
-    }
+    const scan = document.createElement('div');
+    scan.className = 'overlay-glow-scan';
+    overlay.appendChild(scan);
 
-    async function gerarQRCode(){
-      const campo = document.getElementById('campoIdentificacao');
-      const destino = document.getElementById('qrImagem');
-      const btnImprimir = document.getElementById('btnImprimirQR');
-      destino.innerHTML = '⏳ Gerando QR Code...'; btnImprimir.style.display = 'none';
-      try{
-        const r = await fetch(API('/api/professores/qrcode'), {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          credentials:'include', cache:'no-store',
-          body: JSON.stringify({ identificador: campo.value })
-        });
-        const data = await r.json();
-        if(!r.ok) throw new Error(data.mensagem || 'Erro desconhecido');
-        destino.innerHTML = `<p>Link de acesso: <a href="${data.url}" target="_blank">${data.url}</a></p><img id="imgQRCode" src="${data.qrCode}" width="200" />`;
-        btnImprimir.style.display = 'inline-block';
-      }catch(err){ showError(err.message); destino.innerHTML = `<span style="color:#ff8a8a;">❌ ${err.message}</span>`; }
-    }
-    function imprimirQRCode(){
-      const img = document.getElementById('imgQRCode');
-      const link = document.querySelector('#qrImagem a')?.href || '';
-      const win = window.open('', '_blank');
-      win.document.write(`<html><head><title>QR Code</title></head><body style="text-align:center; padding:40px; background:#fff; color:#111;"><h2>QR Code de Acesso</h2><img src="${img?.src || ''}" /><p>${link}</p></body></html>`);
-      win.document.close(); win.print();
-    }
-    async function logout(){ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); location.href='./login.html'; }
+    setTimeout(() => {
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 460);
+    }, 1050);
+  })();
 
-    async function gerarRelatorioGeral(){
-      fetch('/api/relatorio-notificacoes', { method:'GET', credentials:'include', cache:'no-store' })
-        .then(r => { if(!r.ok) throw new Error('Erro ao gerar relatório.'); return r.blob(); })
-        .then(blob => { const url = URL.createObjectURL(blob); window.open(url, '_blank'); })
-        .catch(err => showError(err.message));
-    }
+  /* ===== TOASTS ===== */
+  function createToastEl(type, msg){
+    const d = document.createElement('div');
+    d.className = 'toast ' + (type === 'ok' ? 'ok' : 'err');
+    d.textContent = msg;
+    document.body.appendChild(d);
+    requestAnimationFrame(()=> d.classList.add('show'));
+    const ttl = (type === 'ok') ? 4500 : 8000;
+    d._t = setTimeout(()=> {
+      d.classList.remove('show');
+      setTimeout(()=>d.remove(), 600);
+    }, ttl);
+    return d;
+  }
+  function showOK(msg){ createToastEl('ok', msg || 'Feito.'); }
+  function showError(msg){ createToastEl('err', msg || 'Ocorreu um erro.'); }
 
-    async function boot(){
-      try{
-        await verificarUsuario();
-        await verificarAdmin();
-        await verificarMensagensNovas();
-        const state = await loadDashboardData();
-        renderMetrics(state);
-        renderAttention(state);
-        drawBarChart(state.porTurma);
-        drawDonutChart(state.dist);
-      }catch(e){ console.error('Falha ao carregar dados do painel:', e); showError(e.message || 'Falha ao carregar dados'); }
-    }
-    boot();
-
-    // SW
+  if (['localhost','127.0.0.1'].includes(location.hostname)) {
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('✅ SW registrado:', reg.scope))
-          .catch(err => console.error('❌ SW falhou:', err));
+      navigator.serviceWorker.getRegistrations?.().then(r => r.forEach(sw => sw.unregister()));
+    }
+    if (window.caches) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
+  }
+
+  const BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+  const API  = (p)=> `${BASE}${p.startsWith('/api') ? p : '/api' + (p.startsWith('/') ? p : '/' + p)}`;
+  const AUTH = (p)=> `${BASE}${p.startsWith('/auth') ? p : '/auth' + (p.startsWith('/') ? p : '/' + p)}`;
+
+  (function syncPanelLinks() {
+  const map = {
+    sbAlunos: 'lista-alunos.html',
+    sbRanking: 'ranking-alunos.html',
+    sbNotificacoes: '/notificacoes',
+    sbEstatisticas: 'estatisticas.html',
+    sbMensagens: 'mensagens.html',
+    sbMonitores: '/monitores.html',
+    sbTransferir: 'transferir-turma.html',
+    sbAdmin: 'usuarios.html',
+    sbLogs: 'logs.html',
+    sbConfigDisciplinar: 'configuracao-disciplinar.html'
+  };
+
+  Object.entries(map).forEach(([id, url]) => {
+    const el = document.getElementById(id);
+    if (el) el.href = withTenant(url);
+  });
+
+  const sbPainel = document.getElementById('sbPainel');
+  if (sbPainel) sbPainel.href = withTenant('painel.html');
+})();
+
+  (async function carregarNomeInstituicaoPainel() {
+    const el = document.getElementById('sbNomeInstituicao');
+    if (!el) return;
+
+    const key = `axoriin_nome_colegio__${window.__TENANT__}`;
+    const cached = localStorage.getItem(key);
+    if (cached && cached.trim()) {
+      el.textContent = cached.trim();
+    }
+
+    try {
+      const r = await fetch(`/public/tenant?t=${encodeURIComponent(window.__TENANT__)}`, {
+        cache: 'no-store',
+        credentials: 'include'
+      });
+      if (!r.ok) return;
+
+      const data = await r.json().catch(() => ({}));
+      const nome = data?.nomeColegio || data?.nome || data?.instituicao?.nome;
+      if (nome) {
+        const nomeFinal = String(nome).trim();
+        el.textContent = nomeFinal;
+        localStorage.setItem(key, nomeFinal);
+      }
+    } catch {}
+  })();
+
+  async function aplicarPermissoesNoPainel(){
+    const hide = (...ids) => ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    const SB = {
+      sbRanking:'sbRanking',
+      sbNotificacoes:'sbNotificacoes',
+      sbEstatisticas:'sbEstatisticas',
+      sbMonitores:'sbMonitores',
+      sbTransferir:'sbTransferir',
+      sbAdmin:'sbAdmin',
+      sbLogs:'sbLogs',
+    };
+
+    const CARDS = {
+      cardCadastrarAluno:'cardCadastrarAluno',
+      cardVerNotificacoes:'cardVerNotificacoes',
+      cardControleNotificacoes:'cardControleNotificacoes',
+      cardRankingAlunos:'cardRankingAlunos',
+      cardEstatisticas:'cardEstatisticas',
+      cardTransferirTurma:'cardTransferirTurma'
+    };
+
+    const SECOES = {
+      metricNotif:'metricNotif',
+      metricMedia:'metricMedia',
+      metricMsgs:'metricMsgs',
+      metricPendDev:'metricPendDev',
+      pendDevolucaoSection:'pendDevolucaoSection',
+      acSection:'acSection',
+    };
+
+    const BN = {
+      bnRanking:'bnRanking',
+      bnNotifs:'bnNotifs',
+      bnRelatorios:'bnRelatorios',
+      bnMonitores:'bnMonitores',
+    };
+
+    try{
+      let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) throw 0;
+
+      const u = await r.json();
+      const tipo = String(u?.tipo || '').toLowerCase();
+
+      if (tipo === 'admin') return;
+      if (tipo === 'monitor') return;
+
+      if (tipo === 'professor') {
+        hide(
+          SB.sbRanking,
+          SB.sbNotificacoes,
+          SB.sbEstatisticas,
+          SB.sbMonitores,
+          SB.sbTransferir,
+          SB.sbAdmin,
+          SB.sbLogs
+        );
+
+        hide(
+          CARDS.cardCadastrarAluno,
+          CARDS.cardVerNotificacoes,
+          CARDS.cardControleNotificacoes,
+          CARDS.cardRankingAlunos,
+          CARDS.cardEstatisticas,
+          CARDS.cardTransferirTurma
+        );
+
+        hide(
+          SECOES.metricNotif,
+          SECOES.metricMedia,
+          SECOES.metricMsgs,
+          SECOES.metricPendDev,
+          SECOES.pendDevolucaoSection,
+          SECOES.acSection
+        );
+
+        hide(
+          BN.bnRanking,
+          BN.bnNotifs,
+          BN.bnRelatorios,
+          BN.bnMonitores
+        );
+        return;
+      }
+
+      location.href = withTenant('./login.html');
+    }catch{
+      location.href = withTenant('./login.html');
+    }
+  }
+
+  async function getJSON(url, { timeoutMs=8000 } = {}) {
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
+
+    try {
+      const r = await fetch(url, {
+        credentials:'include',
+        cache:'no-store',
+        signal: ctrl.signal
+      });
+
+      const ct = r.headers.get('content-type') || '';
+      const data = ct.includes('application/json') ? await r.json() : {};
+
+      if (!r.ok || data.ok === false) {
+        const faixa = data?.faixa ? ` • faixa: ${data.faixa}` : '';
+        const nota  = (typeof data?.nota === 'number') ? ` • nota: ${data.nota.toFixed(2)}` : '';
+        const msg = data?.mensagem || data?.message || `Falha de aplicação (${r.status})${faixa}${nota}`;
+        showError(msg);
+        console.log('Resposta lógica:', data);
+        return {};
+      }
+
+      return data;
+    } catch (e) {
+      showError('Falha ao comunicar com o servidor.');
+      console.error('Erro getJSON:', e);
+      return {};
+    } finally {
+      clearTimeout(id);
+    }
+  }
+
+function hudEaseOutCubic(t){
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function hudFormatNumber(value, decimals = 0){
+    if (!Number.isFinite(value)) return '0';
+    if (decimals > 0) {
+      return Number(value).toFixed(decimals).replace('.', ',');
+    }
+    return Math.round(value).toLocaleString('pt-BR');
+  }
+
+  function hudGetSafePercentFromValue(value, type){
+    const n = Number(value || 0);
+
+    if (type === 'media') {
+      const pct = Math.max(0, Math.min(100, (n / 10) * 100));
+      return pct;
+    }
+
+    if (type === 'alunos') {
+      return Math.max(8, Math.min(100, n >= 1000 ? 100 : (n / 1000) * 100));
+    }
+
+    if (type === 'notif') {
+      return Math.max(6, Math.min(100, n >= 100 ? 100 : (n / 100) * 100));
+    }
+
+    if (type === 'msgs') {
+      return Math.max(4, Math.min(100, n >= 30 ? 100 : (n / 30) * 100));
+    }
+
+    if (type === 'pend') {
+      return Math.max(4, Math.min(100, n >= 20 ? 100 : (n / 20) * 100));
+    }
+
+    return Math.max(0, Math.min(100, n));
+  }
+
+  function hudUpdateLineSegments(lineEl, percent){
+    if (!lineEl) return;
+    const spans = Array.from(lineEl.querySelectorAll('span'));
+    if (!spans.length) return;
+
+    const total = spans.length;
+    const active = Math.round((percent / 100) * total);
+
+    spans.forEach((span, index) => {
+      span.classList.remove('on', 'pulse');
+
+      if (index < active) {
+        span.classList.add('on');
+        if (index === active - 1) {
+          span.classList.add('pulse');
+        }
+      }
+    });
+  }
+
+  function hudUpdateRing(metricCard, percent){
+    if (!metricCard) return;
+    const hud = metricCard.querySelector('[data-hud]');
+    if (!hud) return;
+
+    const seg = hud.querySelector('.metric-hud-segments');
+    if (!seg) return;
+
+    const clamped = Math.max(0, Math.min(100, percent));
+    const deg = (clamped / 100) * 360;
+
+    seg.classList.add('is-active');
+    seg.style.setProperty('--seg-fill', `${deg}deg`);
+  }
+
+  function hudAnimateMetric({
+    metricId,
+    valueId,
+    percentId,
+    lineId,
+    finalValue,
+    decimals = 0,
+    duration = 1800,
+    type = 'default'
+  }){
+    const metricCard = document.getElementById(metricId);
+    const valueEl = document.getElementById(valueId);
+    const percentEl = document.getElementById(percentId);
+    const lineEl = document.getElementById(lineId);
+
+    if (!metricCard || !valueEl || !percentEl) return;
+
+    const safeFinal = Number(finalValue || 0);
+    const finalPercent = hudGetSafePercentFromValue(safeFinal, type);
+
+    let startTime = null;
+
+    function frame(ts){
+      if (!startTime) startTime = ts;
+      const elapsed = ts - startTime;
+      const linear = Math.min(elapsed / duration, 1);
+      const eased = hudEaseOutCubic(linear);
+
+      const currentValue = safeFinal * eased;
+      const currentPercent = finalPercent * eased;
+
+      valueEl.textContent = hudFormatNumber(currentValue, decimals);
+      percentEl.textContent = `${Math.round(currentPercent)}%`;
+
+      hudUpdateRing(metricCard, currentPercent);
+      hudUpdateLineSegments(lineEl, currentPercent);
+
+      if (linear < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        valueEl.textContent = hudFormatNumber(safeFinal, decimals);
+        percentEl.textContent = `${Math.round(finalPercent)}%`;
+        hudUpdateRing(metricCard, finalPercent);
+        hudUpdateLineSegments(lineEl, finalPercent);
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function hudResetMetric(metricId, valueId, percentId, lineId, decimals = 0){
+    const metricCard = document.getElementById(metricId);
+    const valueEl = document.getElementById(valueId);
+    const percentEl = document.getElementById(percentId);
+    const lineEl = document.getElementById(lineId);
+
+    if (valueEl) valueEl.textContent = hudFormatNumber(0, decimals);
+    if (percentEl) percentEl.textContent = '0%';
+
+    if (metricCard) {
+      const seg = metricCard.querySelector('.metric-hud-segments');
+      if (seg) {
+        seg.classList.remove('is-active');
+        seg.style.setProperty('--seg-fill', `0deg`);
+      }
+    }
+
+    if (lineEl) {
+      Array.from(lineEl.querySelectorAll('span')).forEach(span => {
+        span.classList.remove('on', 'pulse');
       });
     }
+  }
+
+  function hudAnimateAllMetrics(values){
+    hudAnimateMetric({
+      metricId: 'metricAlunos',
+      valueId: 'mAlunos',
+      percentId: 'mAlunosPct',
+      lineId: 'mAlunosLine',
+      finalValue: values.alunos || 0,
+      decimals: 0,
+      duration: 2200,
+      type: 'alunos'
+    });
+
+    setTimeout(() => {
+      hudAnimateMetric({
+        metricId: 'metricNotif',
+        valueId: 'mNotif',
+        percentId: 'mNotifPct',
+        lineId: 'mNotifLine',
+        finalValue: values.notif || 0,
+        decimals: 0,
+        duration: 1700,
+        type: 'notif'
+      });
+    }, 120);
+
+    setTimeout(() => {
+      hudAnimateMetric({
+        metricId: 'metricMedia',
+        valueId: 'mMedia',
+        percentId: 'mMediaPct',
+        lineId: 'mMediaLine',
+        finalValue: values.media || 0,
+        decimals: 1,
+        duration: 1900,
+        type: 'media'
+      });
+    }, 220);
+
+    setTimeout(() => {
+      hudAnimateMetric({
+        metricId: 'metricMsgs',
+        valueId: 'mMsgs',
+        percentId: 'mMsgsPct',
+        lineId: 'mMsgsLine',
+        finalValue: values.msgs || 0,
+        decimals: 0,
+        duration: 1500,
+        type: 'msgs'
+      });
+    }, 320);
+
+    setTimeout(() => {
+      hudAnimateMetric({
+        metricId: 'metricPendDev',
+        valueId: 'mPendDevol',
+        percentId: 'mPendDevolPct',
+        lineId: 'mPendDevolLine',
+        finalValue: values.pend || 0,
+        decimals: 0,
+        duration: 1600,
+        type: 'pend'
+      });
+    }, 420);
+  }
+
+  function hudResetAllMetrics(){
+    hudResetMetric('metricAlunos', 'mAlunos', 'mAlunosPct', 'mAlunosLine', 0);
+    hudResetMetric('metricNotif', 'mNotif', 'mNotifPct', 'mNotifLine', 0);
+    hudResetMetric('metricMedia', 'mMedia', 'mMediaPct', 'mMediaLine', 1);
+    hudResetMetric('metricMsgs', 'mMsgs', 'mMsgsPct', 'mMsgsLine', 0);
+    hudResetMetric('metricPendDev', 'mPendDevol', 'mPendDevolPct', 'mPendDevolLine', 0);
+  }
+  
+  async function carregarMetricas(){
+    hudResetAllMetrics();
+
+    let alunosCount = 0;
+    let notifPend = 0;
+    let msgs = 0;
+    let mediaGeral = 0;
+    let pendTotal = 0;
+
+    try{
+      const overview = await getJSON(API('/metrics/overview'), { timeoutMs: 8000 });
+      alunosCount = Number(overview?.alunosCount || 0);
+      notifPend   = Number(overview?.notifPend || 0);
+      msgs        = Number(overview?.msgs || 0);
+    }catch(e){
+      console.log('overview falhou:', e?.message);
+    }
+
+    try{
+      const porTurma = await getJSON(API('/estatisticas/comportamento-por-turma'), { timeoutMs: 9000 });
+      window.__lastBarChartData = Array.isArray(porTurma) ? porTurma : [];
+      drawBarChart(window.__lastBarChartData);
+
+      const medias = (porTurma || [])
+        .map(t => Number(t.media))
+        .filter(n => Number.isFinite(n) && n > 0);
+
+      mediaGeral = medias.length
+        ? (medias.reduce((s,n)=>s+n,0) / medias.length)
+        : 0;
+    }catch(e){
+      console.log('por turma falhou:', e?.message);
+      mediaGeral = 0;
+      window.__lastBarChartData = [];
+      drawBarChart(window.__lastBarChartData);
+    }
+
+    try{
+      const dist = await getJSON(API('/estatisticas/distribuicao'), { timeoutMs: 9000 });
+      window.__lastDonutChartData = {
+        exc: dist?.excepcional || 0,
+        oti: dist?.otimo || 0,
+        bom: dist?.bom || 0,
+        reg: dist?.regular || 0,
+        ins: dist?.insuficiente || 0,
+        inc: dist?.incompativel || 0
+      };
+      drawDonutChart(window.__lastDonutChartData);
+    }catch(e){
+      console.log('distribuicao falhou:', e?.message);
+      window.__lastDonutChartData = {exc:0,oti:0,bom:0,reg:0,ins:0,inc:0};
+      drawDonutChart(window.__lastDonutChartData);
+    }
+
+    try{
+      const k = await getJSON(API('/notificacoes/pendencias/devolucao/contador'), { timeoutMs: 7000 });
+      pendTotal = Number(k?.total || 0);
+    }catch(e){
+      console.log('contador pendencias falhou:', e?.message);
+      pendTotal = 0;
+    }
+
+    hudAnimateAllMetrics({
+      alunos: alunosCount,
+      notif: notifPend,
+      media: mediaGeral,
+      msgs: msgs,
+      pend: pendTotal
+    });
+  }
+
+  const PEND_STATE = { page: 1, size: 10 };
+let PEND_DATA = [];
+const PEND_OK_KEY = 'painelPendDevolOkIds';
+
+function pendGetOkSet(){
+  try{
+    const raw = localStorage.getItem(PEND_OK_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  }catch{
+    return new Set();
+  }
+}
+
+function pendSaveOkSet(set){
+  try{
+    localStorage.setItem(PEND_OK_KEY, JSON.stringify(Array.from(set)));
+  }catch{}
+}
+
+function renderPendenciasPaged(){
+  const resumo = document.getElementById('pendResumo');
+  const tbody  = document.getElementById('pendTableBody');
+
+  const pageEl  = document.getElementById('pend-page');
+  const pagesEl = document.getElementById('pend-pages');
+  const prevBtn = document.getElementById('pend-prev');
+  const nextBtn = document.getElementById('pend-next');
+
+  const okSet = pendGetOkSet();
+
+  const visibleData = (Array.isArray(PEND_DATA) ? PEND_DATA : []).filter(n => {
+    const id = String(n?.id || n?._id || '');
+    return id && !okSet.has(id);
+  });
+
+  const total = visibleData.length;
+  const pages = Math.max(1, Math.ceil(total / PEND_STATE.size));
+  PEND_STATE.page = Math.min(Math.max(1, PEND_STATE.page), pages);
+
+  if (pageEl) pageEl.textContent = String(PEND_STATE.page);
+  if (pagesEl) pagesEl.textContent = String(pages);
+
+  if (prevBtn) prevBtn.disabled = PEND_STATE.page <= 1;
+  if (nextBtn) nextBtn.disabled = PEND_STATE.page >= pages;
+
+  if (total === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Nenhuma pendência de devolução.</td></tr>`;
+    if (resumo) resumo.textContent = `Total pendente: 0`;
+    return;
+  }
+
+  const start = (PEND_STATE.page - 1) * PEND_STATE.size;
+  const slice = visibleData.slice(start, start + PEND_STATE.size);
+
+  const rows = slice.map(n => {
+    const nome  = n.aluno?.nome || '—';
+    const turma = n.aluno?.turma || '—';
+    const entr  = n.entregueEm ? new Date(n.entregueEm) : null;
+    const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
+
+    let atraso = 0;
+    if (prazo) {
+      const ms = Date.now() - prazo.getTime();
+      atraso = Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+    }
+
+    const atrasoChip = atraso > 0
+      ? `<span class="pend-chip pend-atraso" title="Dias corridos">${atraso} dia(s)</span>`
+      : `<span class="pend-chip">no prazo</span>`;
+
+    const stableId = String(n?.id || n?._id || '');
+
+    const okBtn = stableId
+      ? `<button class="btn btn-primary pend-ok-btn" data-pend-ok="${stableId}" type="button" title="Oculta este item no Painel (não altera o servidor)">✅ OK</button>`
+      : `<span class="pend-chip">—</span>`;
+
+    return `<tr>
+      <td>${nome}</td>
+      <td><span class="pend-chip">${turma}</span></td>
+      <td>${entr ? entr.toLocaleString('pt-BR') : '—'}</td>
+      <td>${prazo ? prazo.toLocaleString('pt-BR') : '—'}</td>
+      <td style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${atrasoChip}${okBtn}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+  if (resumo) resumo.textContent = `Total pendente: ${total}`;
+}
+
+  async function carregarPendenciasDevolucao(){
+    const resumo = document.getElementById('pendResumo');
+    const tbody  = document.getElementById('pendTableBody');
+
+    if (resumo) resumo.textContent = 'Carregando…';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>`;
+
+    PEND_STATE.page = 1;
+    PEND_DATA = [];
+
+    try{
+      const j = await getJSON(API('/notificacoes/pendencias/devolucao'), { timeoutMs: 12000 });
+      const arr = Array.isArray(j?.itens) ? j.itens : [];
+      arr.sort((a,b)=> new Date(a.prazoDevolucao) - new Date(b.prazoDevolucao));
+      PEND_DATA = arr;
+      renderPendenciasPaged();
+    }catch(e){
+      console.error(e);
+      if (resumo) resumo.textContent = 'Erro ao carregar';
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Falha ao carregar pendências.</td></tr>`;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const prevBtn = document.getElementById('pend-prev');
+    const nextBtn = document.getElementById('pend-next');
+
+    if (prevBtn) prevBtn.addEventListener('click', ()=>{
+      PEND_STATE.page--;
+      renderPendenciasPaged();
+    });
+
+    if (nextBtn) nextBtn.addEventListener('click', ()=>{
+      PEND_STATE.page++;
+      renderPendenciasPaged();
+    });
+
+    const tbody = document.getElementById('pendTableBody');
+    tbody?.addEventListener('click', (ev)=>{
+      const btn = ev.target.closest('button[data-pend-ok]');
+      if(!btn) return;
+
+      const id = String(btn.dataset.pendOk || '');
+      if(!id) return;
+
+      const okSet = pendGetOkSet();
+      okSet.add(id);
+      pendSaveOkSet(okSet);
+
+      showOK('OK registrado no Painel. Item removido da lista.');
+      renderPendenciasPaged();
+    });
+
+    const showHiddenBtn = document.getElementById('pend-show-hidden');
+    showHiddenBtn?.addEventListener('click', ()=>{
+      if(!confirm('Deseja reexibir TODOS os itens ocultados por "OK" neste navegador?')) return;
+      try{ localStorage.removeItem(PEND_OK_KEY); }catch{}
+      showOK('Itens ocultos reexibidos.');
+      renderPendenciasPaged();
+    });
+  });
+
+  (function(){
+    const $ = (sel, ctx=document)=>ctx.querySelector(sel);
+    const $$= (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
+
+    const tbodyReg = $('#tbody-regular');
+const tbodyIns = $('#tbody-insuficiente');
+const tbodyInc = $('#tbody-incompativel');
+
+const cntReg = $('#cnt-regular');
+const cntIns = $('#cnt-insuficiente');
+const cntInc = $('#cnt-incompativel');
+
+const lastUp = $('#ac-last-update');
+const btnReload = $('#btn-recarregar-alertas');
+
+let REG_DATA = [], INS_DATA = [], INC_DATA = [];
+
+const state = {
+  reg: { page: 1, size: 10 },
+  ins: { page: 1, size: 10 },
+  inc: { page: 1, size: 10 },
+};
+
+const el = {
+  regPrev: $('#reg-prev'), regNext: $('#reg-next'),
+  regPage: $('#reg-page'), regPages: $('#reg-pages'), regSize: $('#reg-size'),
+
+  insPrev: $('#ins-prev'), insNext: $('#ins-next'),
+  insPage: $('#ins-page'), insPages: $('#ins-pages'), insSize: $('#ins-size'),
+
+  incPrev: $('#inc-prev'), incNext: $('#inc-next'),
+  incPage: $('#inc-page'), incPages: $('#inc-pages'), incSize: $('#inc-size'),
+};
+
+function rowReg(a) {
+  const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
+  return `
+    <tr>
+      <td>${a.nome}</td>
+      <td>${a.turma || '-'}</td>
+      <td><strong>${nota}</strong></td>
+      <td class="acoes">
+        <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+        <button class="btn" data-acao="comPais" data-id="${a._id}" data-nota="${nota}" data-faixa="regular" title="E-mail e Telegram">👪 Comunicar Pais</button>
+      </td>
+    </tr>`;
+}
+
+function rowIns(a) {
+  const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
+  return `
+    <tr>
+      <td>${a.nome}</td>
+      <td>${a.turma || '-'}</td>
+      <td><strong>${nota}</strong></td>
+      <td class="acoes">
+        <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+        <button class="btn" data-acao="comPais" data-id="${a._id}" data-nota="${nota}" data-faixa="insuficiente" title="E-mail e Telegram">👪 Comunicar Pais</button>
+      </td>
+    </tr>`;
+}
+
+function rowInc(a) {
+  const nota = Number(a.nota ?? a.comportamento ?? a.n).toFixed(2);
+  return `
+    <tr>
+      <td>${a.nome}</td>
+      <td>${a.turma || '-'}</td>
+      <td><strong>${nota}</strong></td>
+      <td class="acoes">
+        <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+        <button class="btn" data-acao="comPais" data-id="${a._id}" data-nota="${nota}" data-faixa="incompativel" title="E-mail e Telegram">👪 Comunicar Pais</button>
+      </td>
+    </tr>`;
+}
+
+function renderPaged(tbody, arr, st, pageEl, pagesEl, rowFn) {
+  const total = arr.length;
+  const pages = Math.max(1, Math.ceil(total / st.size));
+  st.page = Math.min(Math.max(1, st.page), pages);
+
+  pageEl.textContent = String(st.page);
+  pagesEl.textContent = String(pages);
+
+  const start = (st.page - 1) * st.size;
+  const slice = arr.slice(start, start + st.size);
+
+  tbody.innerHTML = slice.length
+    ? slice.map(rowFn).join('')
+    : `<tr><td colspan="4" style="opacity:.7">Sem itens.</td></tr>`;
+
+  return { pages };
+}
+
+function renderAll() {
+  const r = renderPaged(tbodyReg, REG_DATA, state.reg, el.regPage, el.regPages, rowReg);
+  const i = renderPaged(tbodyIns, INS_DATA, state.ins, el.insPage, el.insPages, rowIns);
+  const c = renderPaged(tbodyInc, INC_DATA, state.inc, el.incPage, el.incPages, rowInc);
+
+  el.regPrev.disabled = state.reg.page <= 1;
+  el.regNext.disabled = state.reg.page >= r.pages;
+
+  el.insPrev.disabled = state.ins.page <= 1;
+  el.insNext.disabled = state.ins.page >= i.pages;
+
+  el.incPrev.disabled = state.inc.page <= 1;
+  el.incNext.disabled = state.inc.page >= c.pages;
+}
+
+async function carregarAlertasComportamento() {
+  try {
+    const {
+      regular = [],
+      insuficiente = [],
+      incompativel = [],
+    } = await getJSON(API('/alertas/comportamento'), { timeoutMs: 12000 });
+
+    REG_DATA = regular
+  .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+  .sort((x, y) => x.n - y.n);
+
+INS_DATA = insuficiente
+  .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+  .sort((x, y) => x.n - y.n);
+
+INC_DATA = incompativel
+  .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+  .sort((x, y) => x.n - y.n);
+
+    cntReg.textContent = REG_DATA.length;
+    cntIns.textContent = INS_DATA.length;
+    cntInc.textContent = INC_DATA.length;
+
+    state.reg.page = 1;
+    state.ins.page = 1;
+    state.inc.page = 1;
+
+    if (el.regSize) el.regSize.value = '10';
+    if (el.insSize) el.insSize.value = '10';
+    if (el.incSize) el.incSize.value = '10';
+
+    renderAll();
+
+    const dt = new Date();
+    lastUp.textContent = dt.toLocaleString('pt-BR');
+  } catch (e) {
+    console.error(e);
+    tbodyReg.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+    tbodyIns.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+    tbodyInc.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+  }
+}
+if (el.incPrev) {
+  el.incPrev.addEventListener('click', () => {
+    state.inc.page--;
+    renderAll();
+  });
+}
+
+if (el.incNext) {
+  el.incNext.addEventListener('click', () => {
+    state.inc.page++;
+    renderAll();
+  });
+}
+    btnReload?.addEventListener('click', carregarAlertasComportamento);
+
+window._carregarAlertasComportamento = carregarAlertasComportamento;
+})();
+
+document.addEventListener('click', (ev) => {
+  const tabBtn = ev.target.closest('.tab-btn');
+
+  if (!tabBtn) return;
+
+  const target = tabBtn.dataset.tab;
+
+  if (!target) return;
+
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
+  });
+
+  tabBtn.classList.add('active');
+  tabBtn.setAttribute('aria-selected', 'true');
+
+  document.querySelectorAll('.tab-panel').forEach((panel) => {
+    const show = panel.id === target;
+
+    panel.style.display = show ? '' : 'none';
+    panel.setAttribute('aria-hidden', show ? 'false' : 'true');
+  });
+});
+
+
+
+  function setupHiDPICanvas(canvas){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cssWidth = Math.max(320, Math.round(rect.width || canvas.clientWidth || 640));
+    const cssHeight = Math.max(220, Math.round(rect.height || canvas.clientHeight || 280));
+
+    if (canvas.width !== Math.round(cssWidth * dpr) || canvas.height !== Math.round(cssHeight * dpr)) {
+      canvas.width = Math.round(cssWidth * dpr);
+      canvas.height = Math.round(cssHeight * dpr);
+    }
+
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W: cssWidth, H: cssHeight };
+  }
+
+  function drawEmptyState(ctx, W, H, text='Sem dados'){
+    ctx.save();
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = 'rgba(225,255,255,.72)';
+    ctx.font = '500 14px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, W / 2, H / 2);
+    ctx.restore();
+  }
+
+  function roundedRect(ctx, x, y, w, h, r){
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function neonLine(ctx, x1, y1, x2, y2, color, width=1){
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBarChart(data){
+    const canvas = document.getElementById('barChart');
+    if(!canvas) return;
+
+    const { ctx, W, H } = setupHiDPICanvas(canvas);
+    ctx.clearRect(0,0,W,H);
+
+    if(!Array.isArray(data) || data.length === 0){
+      drawEmptyState(ctx, W, H);
+      return;
+    }
+
+    const list = data
+      .map(item => ({
+        turma: String(item?.turma || ''),
+        media: Math.max(0, Math.min(10, Number(item?.media) || 0))
+      }))
+      .filter(item => item.turma);
+
+    if(!list.length){
+      drawEmptyState(ctx, W, H);
+      return;
+    }
+
+    const pad = { top: 24, right: 20, bottom: 58, left: 46 };
+    const chartW = W - pad.left - pad.right;
+    const chartH = H - pad.top - pad.bottom;
+    const max = 10;
+
+    for(let i = 0; i <= 5; i++){
+      const y = pad.top + (chartH / 5) * i;
+      neonLine(ctx, pad.left, y, W - pad.right, y, 'rgba(110,255,244,.10)', 1);
+      const val = (max - (max / 5) * i).toFixed(0);
+      ctx.fillStyle = 'rgba(225,255,255,.58)';
+      ctx.font = '12px Segoe UI';
+      ctx.textAlign = 'right';
+      ctx.fillText(val, pad.left - 8, y + 4);
+    }
+
+    neonLine(ctx, pad.left, pad.top, pad.left, H - pad.bottom, 'rgba(110,255,244,.25)', 1.2);
+    neonLine(ctx, pad.left, H - pad.bottom, W - pad.right, H - pad.bottom, 'rgba(110,255,244,.25)', 1.2);
+
+    const slot = chartW / list.length;
+    const barW = Math.max(18, Math.min(56, slot * 0.52));
+
+    list.forEach((item, i) => {
+      const x = pad.left + slot * i + (slot - barW) / 2;
+      const h = (item.media / max) * chartH;
+      const y = H - pad.bottom - h;
+
+      ctx.save();
+
+      const reflH = Math.min(30, Math.max(12, h * 0.22));
+      const reflGrad = ctx.createLinearGradient(0, H - pad.bottom, 0, H - pad.bottom + reflH);
+      reflGrad.addColorStop(0, 'rgba(110,255,244,.16)');
+      reflGrad.addColorStop(1, 'rgba(110,255,244,0)');
+      roundedRect(ctx, x, H - pad.bottom + 6, barW, reflH, 10);
+      ctx.fillStyle = reflGrad;
+      ctx.fill();
+
+      const bodyGrad = ctx.createLinearGradient(x, y, x, H - pad.bottom);
+      bodyGrad.addColorStop(0, 'rgba(132,255,246,.95)');
+      bodyGrad.addColorStop(.58, 'rgba(65,217,255,.68)');
+      bodyGrad.addColorStop(1, 'rgba(124,92,255,.34)');
+
+      roundedRect(ctx, x, y, barW, h, 12);
+      ctx.fillStyle = bodyGrad;
+      ctx.shadowColor = 'rgba(93,241,255,.55)';
+      ctx.shadowBlur = 18;
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(220,255,255,.9)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,.9)';
+      ctx.font = '600 12px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.media.toFixed(1).replace('.', ','), x + barW / 2, Math.max(16, y - 8));
+
+      ctx.fillStyle = 'rgba(220,252,255,.82)';
+      ctx.font = '12px Segoe UI';
+      const label = item.turma.length > 10 ? item.turma.slice(0, 10) + '…' : item.turma;
+      ctx.fillText(label, x + barW / 2, H - pad.bottom + 22);
+      ctx.restore();
+    });
+  }
+
+  function drawDonutChart(dist){
+    const canvas = document.getElementById('donutChart');
+    if(!canvas) return;
+
+    const { ctx, W, H } = setupHiDPICanvas(canvas);
+    ctx.clearRect(0,0,W,H);
+
+    const items = [
+      {name:'Excepcional', value:dist.exc||0, color:'#7CFFEA'},
+      {name:'Ótimo',       value:dist.oti||0, color:'#3DD9FF'},
+      {name:'Bom',         value:dist.bom||0, color:'#FFD166'},
+      {name:'Regular',     value:dist.reg||0, color:'#FF7A59'},
+      {name:'Insuficiente',value:dist.ins||0, color:'#FF5C8A'},
+      {name:'Incompatível',value:dist.inc||0, color:'#A855F7'},
+    ].filter(i => i.value > 0);
+
+    if(!items.length){
+      drawEmptyState(ctx, W, H);
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+    const cx = Math.min(W * 0.34, 176);
+    const cy = H * 0.50;
+    const r = Math.min(86, H * 0.3);
+    const lw = Math.max(18, Math.round(r * 0.34));
+
+    let start = -Math.PI / 2;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(125,255,234,.12)';
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    items.forEach(item => {
+      const ang = (item.value / total) * Math.PI * 2;
+      const end = start + ang;
+
+      ctx.save();
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = lw;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = item.color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, start, end);
+      ctx.stroke();
+      ctx.restore();
+
+      start = end;
+    });
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(230,255,255,.92)';
+    ctx.textAlign = 'center';
+    ctx.font = '700 26px Segoe UI';
+    ctx.fillText(String(total), cx, cy - 4);
+    ctx.font = '12px Segoe UI';
+    ctx.fillStyle = 'rgba(230,255,255,.62)';
+    ctx.fillText('registros', cx, cy + 18);
+    ctx.restore();
+
+    const legendX = Math.max(260, W * 0.54);
+    let legendY = 40;
+
+    items.forEach(item => {
+      const pct = ((item.value / total) * 100).toFixed(1).replace('.', ',') + '%';
+
+      ctx.save();
+      roundedRect(ctx, legendX - 14, legendY - 16, W - legendX - 10, 30, 10);
+      ctx.fillStyle = 'rgba(9,18,34,.34)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(legendX, legendY - 1, 5, 0, Math.PI * 2);
+      ctx.fillStyle = item.color;
+      ctx.shadowColor = item.color;
+      ctx.shadowBlur = 12;
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      ctx.textAlign = 'left';
+      ctx.font = '600 12px Segoe UI';
+      ctx.fillStyle = 'rgba(235,255,255,.92)';
+      ctx.fillText(item.name, legendX + 14, legendY + 3);
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(235,255,255,.64)';
+      ctx.fillText(pct, W - 26, legendY + 3);
+      ctx.restore();
+
+      legendY += 36;
+    });
+  }
+
+  let __chartResizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(__chartResizeTimer);
+    __chartResizeTimer = setTimeout(() => {
+      if (window.__lastBarChartData) drawBarChart(window.__lastBarChartData);
+      if (window.__lastDonutChartData) drawDonutChart(window.__lastDonutChartData);
+    }, 120);
+  });
+
+  async function verificarUsuario(){
+    try{
+      let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) throw 0;
+
+      const j = await r.json();
+      document.getElementById('nomeUsuario').textContent = j.nome || 'Usuário';
+    }catch{
+      location.href = withTenant('./login.html');
+    }
+  }
+
+  async function verificarAdmin(){
+    try{
+      let r = await fetch(AUTH('/usuario-logado'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) r = await fetch(AUTH('/me'), { credentials:'include', cache:'no-store' });
+      if (!r.ok) return;
+
+      const j = await r.json();
+      if(j.tipo === 'admin'){
+        ['cardEstatisticas'].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.style.display='';
+        });
+      }
+    }catch{}
+  }
+
+  async function logout(){
+    try{
+      await fetch(AUTH('/logout'), {
+        method:'POST',
+        credentials:'include',
+        cache:'no-store'
+      });
+    }catch{}
+
+    location.href = withTenant('./login.html');
+  }
+async function carregarAlertaRevisoes() {
+  try {
+    const r = await fetch('/api/notificacoes/revisoes/pendentes', {
+      credentials: 'include',
+      cache: 'no-store'
+    });
+
+    if (!r.ok) return;
+
+    const payload = await r.json();
+    const total = Number(payload?.total || 0);
+
+    const box = document.getElementById('reviewAlertBox');
+    const count = document.getElementById('reviewAlertCount');
+
+    if (!box || !count) return;
+
+    if (total <= 0) {
+      box.style.display = 'none';
+      return;
+    }
+
+    box.style.display = 'block';
+    count.textContent = `${total} pendência${total > 1 ? 's' : ''} de revisão`;
+  } catch (err) {
+    console.warn('[painel] erro ao carregar alerta de revisões:', err);
+  }
+}
+  async function boot(){
+  await aplicarPermissoesNoPainel();
+  await verificarUsuario();
+  await verificarAdmin();
+  await carregarMetricas();
+  await carregarPendenciasDevolucao();
+  await carregarAlertaRevisoes();
+
+  if (window._carregarAlertasComportamento) {
+    await window._carregarAlertasComportamento();
+    setInterval(window._carregarAlertasComportamento, 60000);
+  }
+}
+
+  boot();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      const swUrl = `${location.origin}/service-worker.js`;
+      navigator.serviceWorker.register(swUrl)
+        .then(reg => console.log('SW registrado:', reg.scope))
+        .catch(err => console.warn('Falha ao registrar SW:', err));
+    });
+  }
+  (function mobileSidebarController(){
+  const sidebar = document.querySelector('.sidebar');
+  const openBtn = document.getElementById('mobileMenuBtn');
+  const closeBtn = document.getElementById('mobileCloseSidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+
+  if (!sidebar || !openBtn || !closeBtn || !backdrop) return;
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+    openBtn.classList.add('is-hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+    openBtn.classList.remove('is-hidden');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    openSidebar();
+  });
+
+  closeBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  });
+
+  backdrop.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  });
+
+  document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', function(){
+      if (window.innerWidth <= 1024) {
+        setTimeout(() => {
+          closeSidebar();
+        }, 80);
+      }
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) {
+      closeSidebar();
+    }
+  });
+})();
+(function mobileAppUx(){
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  const openBtn = document.getElementById('mobileMenuBtn');
+  const closeBtn = document.getElementById('mobileCloseSidebar');
+  const moreBtn = document.getElementById('bnMais');
+  const appbarTitle = document.getElementById('mobileAppbarTitle');
+
+  if (!sidebar || !backdrop || !openBtn || !closeBtn) return;
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    openSidebar();
+  });
+
+  closeBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  });
+
+  backdrop.addEventListener('click', function(){
+    closeSidebar();
+  });
+
+  if (moreBtn) {
+    moreBtn.addEventListener('click', function(){
+      openSidebar();
+    });
+  }
+
+  document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', function(){
+      if (window.innerWidth <= 1024) {
+        setTimeout(closeSidebar, 80);
+      }
+    });
+  });
+
+  function setActiveBottomNav(){
+    const path = location.pathname.toLowerCase();
+    const buttons = document.querySelectorAll('.bottom-nav button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    const byId = (id) => document.getElementById(id);
+
+    if (path.includes('lista-alunos')) byId('bnAlunos')?.classList.add('active');
+    else if (path.includes('ranking-alunos')) byId('bnRanking')?.classList.add('active');
+    else if (path.includes('mensagens')) byId('bnMensagens')?.classList.add('active');
+    else if (path.includes('estatisticas')) byId('bnRelatorios')?.classList.add('active');
+    else if (path.includes('notific')) byId('bnNotifs')?.classList.add('active');
+    else byId('bnPainel')?.classList.add('active');
+  }
+
+  function syncMobileTitle(){
+    const el = document.getElementById('sbNomeInstituicao');
+    if (el && appbarTitle) {
+      appbarTitle.textContent = el.textContent.trim() || 'CMDPII-CZS';
+    }
+  }
+
+  let touchStartX = 0;
+  let touchCurrentX = 0;
+
+  sidebar.addEventListener('touchstart', (e) => {
+    if (!sidebar.classList.contains('open')) return;
+    touchStartX = e.touches[0].clientX;
+    touchCurrentX = touchStartX;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchmove', (e) => {
+    if (!sidebar.classList.contains('open')) return;
+    touchCurrentX = e.touches[0].clientX;
+  }, { passive: true });
+
+  sidebar.addEventListener('touchend', () => {
+    if (!sidebar.classList.contains('open')) return;
+    const delta = touchCurrentX - touchStartX;
+    if (delta < -60) {
+      closeSidebar();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) {
+      closeSidebar();
+    }
+  });
+
+  syncMobileTitle();
+  setActiveBottomNav();
+})();
   </script>
+<script>
+(function(){
+  const PAGE_SIZE = 10;
+
+  const state = {
+    regular: { page: 1, data: [] },
+    insuficiente: { page: 1, data: [] },
+    incompativel: { page: 1, data: [] }
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function apiUrl(path){
+    if (typeof API === 'function') return API(path);
+
+    const t = new URLSearchParams(location.search).get('t') || localStorage.getItem('smartclass_tenant') || 'cmdpii';
+    const base = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
+    const sep = base.includes('?') ? '&' : '?';
+    return `${base}${sep}t=${encodeURIComponent(t)}`;
+  }
+
+  function fmtNota(v){
+    const n = Number(v ?? 0);
+    return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+  }
+
+  function rowAluno(a, faixa){
+    const nota = fmtNota(a.nota ?? a.comportamento ?? a.n);
+
+    return `
+      <tr>
+        <td>${a.nome || '-'}</td>
+        <td>${a.turma || '-'}</td>
+        <td><strong>${nota}</strong></td>
+        <td class="acoes">
+          <button class="btn btn-primary" data-acao="registrar" data-id="${a._id}">Registrar</button>
+          <button class="btn" data-acao="comPais" data-id="${a._id}" data-nota="${nota}" data-faixa="${faixa}" title="E-mail e Telegram">
+            👪 Comunicar Pais
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderGrupo(nome, tbodyId, pageId, pagesId, prevId, nextId){
+    const grupo = state[nome];
+    const tbody = $(tbodyId);
+    const pageEl = $(pageId);
+    const pagesEl = $(pagesId);
+    const prev = $(prevId);
+    const next = $(nextId);
+
+    if (!tbody) return;
+
+    const total = grupo.data.length;
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    grupo.page = Math.min(Math.max(1, grupo.page), pages);
+
+    const start = (grupo.page - 1) * PAGE_SIZE;
+    const slice = grupo.data.slice(start, start + PAGE_SIZE);
+
+    tbody.innerHTML = slice.length
+      ? slice.map(a => rowAluno(a, nome)).join('')
+      : '<tr><td colspan="4" style="opacity:.7">Sem itens.</td></tr>';
+
+    if (pageEl) pageEl.textContent = String(grupo.page);
+    if (pagesEl) pagesEl.textContent = String(pages);
+    if (prev) prev.disabled = grupo.page <= 1;
+    if (next) next.disabled = grupo.page >= pages;
+  }
+
+  function renderAll(){
+    renderGrupo('regular', 'tbody-regular', 'reg-page', 'reg-pages', 'reg-prev', 'reg-next');
+    renderGrupo('insuficiente', 'tbody-insuficiente', 'ins-page', 'ins-pages', 'ins-prev', 'ins-next');
+    renderGrupo('incompativel', 'tbody-incompativel', 'inc-page', 'inc-pages', 'inc-prev', 'inc-next');
+  }
+
+  async function carregarAlertasComportamento(){
+    try {
+      const r = await fetch(apiUrl('/alertas/comportamento'), {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+      const j = await r.json();
+
+      state.regular.data = (j.regular || [])
+        .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+        .sort((a, b) => a.n - b.n);
+
+      state.insuficiente.data = (j.insuficiente || [])
+        .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+        .sort((a, b) => a.n - b.n);
+
+      state.incompativel.data = (j.incompativel || [])
+        .map(a => ({ ...a, n: Number(a.nota ?? a.comportamento ?? 0) }))
+        .sort((a, b) => a.n - b.n);
+
+      state.regular.page = 1;
+      state.insuficiente.page = 1;
+      state.incompativel.page = 1;
+
+      if ($('cnt-regular')) $('cnt-regular').textContent = state.regular.data.length;
+      if ($('cnt-insuficiente')) $('cnt-insuficiente').textContent = state.insuficiente.data.length;
+      if ($('cnt-incompativel')) $('cnt-incompativel').textContent = state.incompativel.data.length;
+
+      renderAll();
+
+      if ($('ac-last-update')) {
+        $('ac-last-update').textContent = new Date().toLocaleString('pt-BR');
+      }
+    } catch (err) {
+      console.error('[alertas-comportamento]', err);
+
+      ['tbody-regular', 'tbody-insuficiente', 'tbody-incompativel'].forEach(id => {
+        const el = $(id);
+        if (el) el.innerHTML = '<tr><td colspan="4" style="opacity:.7">Erro ao carregar.</td></tr>';
+      });
+    }
+  }
+
+  document.addEventListener('click', async (ev) => {
+    const tabBtn = ev.target.closest('.tab-btn');
+
+    if (tabBtn) {
+      const target = tabBtn.dataset.tab;
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+
+      tabBtn.classList.add('active');
+      tabBtn.setAttribute('aria-selected', 'true');
+
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        const show = panel.id === target;
+        panel.style.display = show ? '' : 'none';
+        panel.setAttribute('aria-hidden', show ? 'false' : 'true');
+      });
+
+      return;
+    }
+
+    const btn = ev.target.closest('button[data-acao]');
+    if (!btn) return;
+
+    const id = btn.dataset.id;
+    const acao = btn.dataset.acao;
+
+    if (acao === 'registrar') {
+      location.href = typeof withTenant === 'function'
+        ? withTenant(`./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`)
+        : `./ficha-aluno.html?id=${encodeURIComponent(id)}&registrar=1#observacoes`;
+      return;
+    }
+
+    if (acao === 'comPais') {
+      const nota = btn.dataset.nota || '';
+      const faixa = btn.dataset.faixa || '';
+
+      if (!confirm('Deseja enviar aviso aos pais sobre a nota comportamental deste aluno?')) return;
+
+      btn.disabled = true;
+
+      try {
+        const r = await fetch(apiUrl(`/comunicacao/nota-comportamental/${id}`), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nota, faixa })
+        });
+
+        const j = await r.json().catch(() => ({}));
+
+        const ok =
+          r.ok && (
+            j?.ok === true ||
+            j?.sucesso === true ||
+            !!j?.resultados ||
+            j?.comunicacao?.telegramEnviado === true ||
+            j?.comunicacao?.emailEnviado === true ||
+            !!j?.comunicacao?.whatsappLink
+          );
+
+        if (ok) {
+          const wa = j?.comunicacao?.whatsappLink;
+
+          if (wa) {
+            if (typeof showOK === 'function') showOK('Comunicação preparada. Abrindo conversa no WhatsApp…');
+            window.open(wa, '_blank');
+          } else {
+            if (typeof showOK === 'function') showOK('Comunicação enviada aos pais. ✅');
+            else alert('Comunicação enviada aos pais. ✅');
+          }
+        } else {
+          const msg = j?.mensagem || j?.error || 'Falha ao enviar comunicação.';
+          if (typeof showError === 'function') showError(msg);
+          else alert(msg);
+        }
+      } catch {
+        if (typeof showError === 'function') showError('Erro ao enviar comunicação.');
+        else alert('Erro ao enviar comunicação.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  });
+
+  function bindPager(prevId, nextId, grupo){
+    const prev = $(prevId);
+    const next = $(nextId);
+
+    if (prev) {
+      prev.addEventListener('click', () => {
+        state[grupo].page--;
+        renderAll();
+      });
+    }
+
+    if (next) {
+      next.addEventListener('click', () => {
+        state[grupo].page++;
+        renderAll();
+      });
+    }
+  }
+
+  bindPager('reg-prev', 'reg-next', 'regular');
+  bindPager('ins-prev', 'ins-next', 'insuficiente');
+  bindPager('inc-prev', 'inc-next', 'incompativel');
+
+  const reload = $('btn-recarregar-alertas');
+  if (reload) reload.addEventListener('click', carregarAlertasComportamento);
+
+  window._carregarAlertasComportamento = carregarAlertasComportamento;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', carregarAlertasComportamento);
+  } else {
+    carregarAlertasComportamento();
+  }
+})();
+</script>
+
+
+
+  <script src="/js/axoriin-ambientes.js"></script>
+  <script src="notify.js"></script>
+  <script src="/painel.js"></script>
+  <script src="/update-client.js"></script>
 </body>
 </html>

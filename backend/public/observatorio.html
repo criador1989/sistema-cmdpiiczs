@@ -1,0 +1,2276 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Observatório Educacional | Axoriin</title>
+  <style>
+    :root {
+      --azul-900: #07182f;
+      --azul-800: #0b2447;
+      --azul-700: #103b7a;
+      --azul-600: #155eef;
+      --azul-100: #eaf1ff;
+      --cinza-950: #07111f;
+      --cinza-700: #39465a;
+      --cinza-500: #667085;
+      --cinza-300: #d0d5dd;
+      --cinza-200: #e4e7ec;
+      --cinza-100: #f2f4f7;
+      --branco: #ffffff;
+      --verde: #16a34a;
+      --verde-bg: #dcfce7;
+      --amarelo: #d97706;
+      --amarelo-bg: #fef3c7;
+      --vermelho: #dc2626;
+      --vermelho-bg: #fee2e2;
+      --roxo: #7c3aed;
+      --roxo-bg: #ede9fe;
+      --sombra: 0 18px 40px rgba(16, 24, 40, 0.08);
+      --borda: 1px solid rgba(208, 213, 221, 0.86);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111827;
+      background: linear-gradient(180deg, #f8fbff 0%, #f2f4f7 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .layout {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 285px 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      color: #eaf1ff;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(21, 94, 239, .35), transparent 32%),
+        linear-gradient(180deg, var(--azul-900), #061120 100%);
+      border-right: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 8px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #155eef, #60a5fa);
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+      box-shadow: 0 10px 28px rgba(21, 94, 239, .35);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 4px;
+      font-size: 13px;
+      color: #bcd0ee;
+    }
+
+    .nav-title {
+      padding: 0 10px;
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #9fb4d5;
+      font-weight: 700;
+    }
+
+    .nav {
+      display: grid;
+      gap: 7px;
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 12px 12px;
+      border-radius: 12px;
+      color: #d7e4f8;
+      font-size: 14px;
+      transition: .2s ease;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      background: linear-gradient(90deg, #155eef, #0f4bc6);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(21,94,239,.22);
+    }
+
+    .nav-icon {
+      width: 22px;
+      display: inline-grid;
+      place-items: center;
+      opacity: .95;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      display: grid;
+      gap: 12px;
+    }
+
+    .profile-mini {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 8px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.18);
+      font-weight: 800;
+    }
+
+    .profile-mini strong { display: block; font-size: 13px; }
+    .profile-mini span { display: block; margin-top: 2px; color: #bcd0ee; font-size: 12px; }
+
+    .logout {
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 78px;
+      background: rgba(255,255,255,.84);
+      backdrop-filter: blur(14px);
+      border-bottom: var(--borda);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      background: #fff;
+      border: var(--borda);
+      border-radius: 12px;
+      padding: 0 14px;
+      color: #344054;
+      font-size: 14px;
+    }
+
+    .field strong { color: #0f172a; }
+
+
+    .period-field {
+      gap: 8px;
+      padding: 8px 10px;
+    }
+
+    .period-field select,
+    .period-field input[type="date"] {
+      min-height: 34px;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      background: #fff;
+      color: #0f172a;
+      font-weight: 700;
+      padding: 0 10px;
+      outline: none;
+    }
+
+    .period-field input[type="date"] {
+      width: 142px;
+      font-weight: 650;
+    }
+
+    .period-field .period-current {
+      padding-left: 2px;
+      color: #667085;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .mini-btn {
+      min-height: 34px;
+      border: 1px solid #155eef;
+      border-radius: 10px;
+      padding: 0 12px;
+      background: #155eef;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .mini-btn:disabled {
+      opacity: .58;
+      cursor: not-allowed;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .notification {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      border: var(--borda);
+      color: var(--azul-700);
+      font-size: 18px;
+    }
+
+    .notification b {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--vermelho);
+      font-size: 11px;
+      border: 2px solid #fff;
+    }
+
+    .userbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 14px;
+      border-left: var(--borda);
+    }
+
+    .userbox .avatar { background: #eef4ff; color: var(--azul-700); border-color: #d6e4ff; }
+    .userbox strong { display: block; font-size: 13px; }
+    .userbox span { display: block; margin-top: 2px; color: var(--cinza-500); font-size: 12px; }
+
+    .content {
+      padding: 28px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .page-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .page-head h1 {
+      margin: 0;
+      font-size: 31px;
+      line-height: 1.12;
+      letter-spacing: -1px;
+      color: #0f172a;
+    }
+
+    .page-head p {
+      margin: 6px 0 0;
+      color: var(--cinza-500);
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      border: 1px solid #155eef;
+      background: #fff;
+      color: #155eef;
+      border-radius: 12px;
+      min-height: 42px;
+      padding: 0 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .notice-demo {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .notice-demo.show { display: flex; }
+
+    .notice-criteria {
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.45;
+      margin-top: -2px;
+    }
+
+    .notice-criteria.show { display: flex; }
+
+    .empty-list.criterio {
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      line-height: 1.5;
+      color: #475569;
+      background: #f8fafc;
+    }
+
+    .empty-list.criterio strong { color: #0f172a; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: rgba(255,255,255,.92);
+      border: var(--borda);
+      border-radius: var(--radius);
+      box-shadow: var(--sombra);
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .kpi {
+      display: grid;
+      gap: 12px;
+    }
+
+    .kpi-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .i-blue { background: var(--azul-100); color: var(--azul-600); }
+    .i-green { background: var(--verde-bg); color: var(--verde); }
+    .i-yellow { background: var(--amarelo-bg); color: var(--amarelo); }
+    .i-red { background: var(--vermelho-bg); color: var(--vermelho); }
+    .i-purple { background: var(--roxo-bg); color: var(--roxo); }
+
+    .kpi-label { color: #344054; font-size: 12px; font-weight: 700; }
+    .kpi-value { margin-top: 5px; font-size: 25px; font-weight: 900; letter-spacing: -.5px; color: #0f172a; }
+    .kpi-change { color: var(--cinza-500); font-size: 12px; line-height: 1.4; }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.15fr 1.15fr .9fr;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr .95fr;
+      gap: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -.2px;
+      color: #0f172a;
+    }
+
+    .section-title small { color: var(--cinza-500); font-weight: 700; }
+
+    .donut-wrap {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .donut {
+      --p1: 32%;
+      --p2: 72%;
+      --p3: 100%;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--verde) 0 var(--p1),
+        #fbbf24 var(--p1) var(--p2),
+        #ef4444 var(--p2) var(--p3),
+        #64748b var(--p3) 100%
+      );
+      position: relative;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.02);
+    }
+
+    .donut::after {
+      content: attr(data-center);
+      white-space: pre;
+      text-align: center;
+      line-height: 1.2;
+      position: absolute;
+      inset: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: #0f172a;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 1px #eef2f7;
+    }
+
+    .legend {
+      display: grid;
+      gap: 12px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 14px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: #344054;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .bg-green { background: var(--verde); }
+    .bg-yellow { background: #fbbf24; }
+    .bg-red { background: #ef4444; }
+    .bg-blue { background: #3b82f6; }
+    .bg-purple { background: #8b5cf6; }
+    .bg-cyan { background: #14b8a6; }
+    .bg-gray { background: #64748b; }
+
+    .chart-lines {
+      height: 210px;
+      position: relative;
+      border-left: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb;
+      margin: 8px 8px 0 38px;
+      background: repeating-linear-gradient(to top, transparent 0 41px, #edf2f7 42px);
+    }
+
+    .chart-lines svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--cinza-700);
+      margin: -6px 0 12px 38px;
+    }
+
+    .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .line-sample { width: 22px; height: 3px; border-radius: 999px; display: inline-block; }
+
+    .months {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      margin: 8px 0 0 38px;
+      color: var(--cinza-500);
+      font-size: 12px;
+    }
+
+    .bar-list {
+      display: grid;
+      gap: 11px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 40px;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--cinza-700);
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: #edf2f7;
+      overflow: hidden;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #155eef, #60a5fa);
+    }
+
+    .ranking {
+      display: grid;
+      gap: 8px;
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 13px;
+    }
+
+    .rank-row:last-child { border-bottom: 0; }
+    .rank-pos { color: var(--cinza-500); font-weight: 900; }
+    .rank-school { color: #1f2937; font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .pill {
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .pill.green { color: #166534; background: #dcfce7; }
+    .pill.yellow { color: #92400e; background: #fef3c7; }
+    .pill.red { color: #991b1b; background: #fee2e2; }
+
+    .heatmap {
+      height: 252px;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      background:
+        radial-gradient(circle at 18% 34%, rgba(34,197,94,.75) 0 7px, transparent 8px),
+        radial-gradient(circle at 30% 56%, rgba(245,158,11,.85) 0 8px, transparent 9px),
+        radial-gradient(circle at 46% 25%, rgba(34,197,94,.75) 0 7px, transparent 8px),
+        radial-gradient(circle at 57% 70%, rgba(239,68,68,.85) 0 8px, transparent 9px),
+        radial-gradient(circle at 68% 38%, rgba(245,158,11,.85) 0 8px, transparent 9px),
+        radial-gradient(circle at 79% 57%, rgba(34,197,94,.75) 0 7px, transparent 8px),
+        radial-gradient(circle at 90% 27%, rgba(239,68,68,.85) 0 9px, transparent 10px),
+        linear-gradient(135deg, #eef6ef, #f8fafc);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .heatmap::before {
+      content: "";
+      position: absolute;
+      inset: 28px 22px;
+      border-radius: 45% 55% 48% 52%;
+      border: 2px dashed rgba(15, 59, 122, .12);
+      transform: rotate(-5deg);
+    }
+
+    .gauge-wrap {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .gauge {
+      width: 190px;
+      height: 110px;
+      border-radius: 190px 190px 0 0;
+      background: conic-gradient(from 270deg at 50% 100%, var(--vermelho) 0 22%, #fbbf24 22% 45%, var(--verde) 45% 78%, #e5e7eb 78% 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gauge::after {
+      content: attr(data-value);
+      position: absolute;
+      left: 38px;
+      right: 38px;
+      bottom: 0;
+      height: 74px;
+      border-radius: 120px 120px 0 0;
+      background: #fff;
+      display: grid;
+      place-items: end center;
+      padding-bottom: 7px;
+      color: #0f172a;
+      font-size: 30px;
+      font-weight: 950;
+    }
+
+    .eng-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .eng-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--cinza-700);
+    }
+
+    .eng-row strong { color: #0f172a; }
+
+    .alerts {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+    }
+
+    .alert-card {
+      min-height: 122px;
+      border-radius: 16px;
+      padding: 15px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .alert-card.red { background: #fff7f7; border-color: #fecaca; }
+    .alert-card.yellow { background: #fffbeb; border-color: #fde68a; }
+    .alert-card.blue { background: #eff6ff; border-color: #bfdbfe; }
+
+    .alert-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .alert-card p {
+      margin: 0;
+      color: #344054;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .alert-card a {
+      color: #155eef;
+      font-size: 12px;
+      font-weight: 900;
+      text-decoration: underline;
+      margin-top: 4px;
+    }
+
+    .footer-note {
+      color: var(--cinza-500);
+      font-size: 12px;
+      text-align: center;
+      padding: 2px 0 10px;
+    }
+
+
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, .52);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal {
+      width: min(980px, 100%);
+      max-height: min(86vh, 820px);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      background: rgba(255,255,255,.98);
+      border: 1px solid #dbe4f0;
+      border-radius: 22px;
+      box-shadow: 0 28px 90px rgba(15, 23, 42, .32);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 22px;
+      letter-spacing: -.4px;
+    }
+
+    .modal-head p {
+      margin: 5px 0 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .modal-close {
+      width: 38px;
+      height: 38px;
+      border: 1px solid #dbe4f0;
+      border-radius: 12px;
+      background: #fff;
+      color: #334155;
+      cursor: pointer;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .modal-search {
+      padding: 14px 22px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-search input {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 0 14px;
+      background: #fff;
+      color: #0f172a;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .modal-search input:focus {
+      border-color: #155eef;
+      box-shadow: 0 0 0 3px rgba(21, 94, 239, .12);
+    }
+
+    .school-list {
+      overflow: auto;
+      padding: 16px 22px 22px;
+      display: grid;
+      gap: 12px;
+      background: #fff;
+    }
+
+    .school-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fff, #f8fafc);
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+    }
+
+    .school-item:hover {
+      border-color: #bfdbfe;
+      box-shadow: 0 16px 34px rgba(15, 23, 42, .08);
+    }
+
+    .school-main strong {
+      display: block;
+      color: #0f172a;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .school-main small {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 3px;
+    }
+
+    .school-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .school-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .school-chip.green { background:#dcfce7; color:#166534; }
+    .school-chip.yellow { background:#fef3c7; color:#92400e; }
+    .school-chip.red { background:#fee2e2; color:#991b1b; }
+    .school-chip.gray { background:#e2e8f0; color:#475569; }
+    .school-chip.blue { background:#dbeafe; color:#1d4ed8; }
+
+    .school-actions { display: flex; justify-content: flex-end; }
+
+    .school-item button {
+      min-height: 40px;
+      border: 1px solid #155eef;
+      color: #155eef;
+      background: #fff;
+      border-radius: 12px;
+      padding: 0 14px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .school-item button:hover { background: #eff6ff; }
+
+    .empty-list {
+      border: 1px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 18px;
+      color: #64748b;
+      background: #f8fafc;
+      line-height: 1.45;
+    }
+
+    body.modal-open { overflow: hidden; }
+
+    @media (max-width: 1320px) {
+      .cards { grid-template-columns: repeat(3, 1fr); }
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .alerts { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .topbar { height: auto; padding: 16px; align-items: flex-start; gap: 12px; flex-direction: column; }
+      .content { padding: 18px; }
+      .cards { grid-template-columns: 1fr; }
+      .page-head { align-items: flex-start; flex-direction: column; }
+      .donut-wrap, .gauge-wrap { grid-template-columns: 1fr; justify-items: center; }
+      .alerts { grid-template-columns: 1fr; }
+      .userbox { border-left: 0; padding-left: 0; }
+      .modal-backdrop { padding: 12px; align-items: stretch; }
+      .modal { max-height: calc(100vh - 24px); border-radius: 18px; }
+      .school-item { grid-template-columns: 1fr; }
+      .school-actions { justify-content: stretch; }
+      .school-item button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <strong>Axoriin</strong>
+          <span>Observatório Educacional</span>
+        </div>
+      </div>
+
+      <div class="nav-title">Visão Geral</div>
+      <nav class="nav" aria-label="Navegação do Observatório">
+        <a class="active" href="#dashboardTop" data-nav-action="scroll" data-target="dashboardTop"><span class="nav-icon">▣</span> Dashboard</a>
+        <a href="#escolas" data-nav-action="schools"><span class="nav-icon">🏫</span> Escolas</a>
+        <a href="#cardsIndicadores" data-nav-action="scroll" data-target="cardsIndicadores"><span class="nav-icon">📊</span> Indicadores</a>
+        <a href="#ocorrencias" data-nav-action="scroll" data-target="ocorrencias"><span class="nav-icon">⚠️</span> Ocorrências Estratégicas</a>
+        <a href="#risco" data-nav-action="toast" data-title="Alunos em risco" data-message="Esta visão será ligada à camada de risco agregado. Ela não exibirá nomes de estudantes para o perfil Secretaria."><span class="nav-icon">🛡️</span> Alunos em Risco</a>
+        <a href="#familia" data-nav-action="scroll" data-target="familia"><span class="nav-icon">👨‍👩‍👧</span> Engajamento Familiar</a>
+        <a href="#relatorios" data-nav-action="export"><span class="nav-icon">📄</span> Relatórios</a>
+        <a href="#alertas" data-nav-action="scroll" data-target="alertas"><span class="nav-icon">🔔</span> Alertas</a>
+        <a href="#comparar" data-nav-action="toast" data-title="Comparar escolas" data-message="O comparador será a próxima camada: selecionar duas ou mais escolas autorizadas e comparar taxas proporcionais, sem dados individuais."><span class="nav-icon">⇄</span> Comparar Escolas</a>
+        <a href="#config" data-nav-action="toast" data-title="Configurações do Observatório" data-message="Esta área ficará reservada para escopo, permissões e mapeamento estratégico dos regulamentos por instituição."><span class="nav-icon">⚙️</span> Configurações</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="profile-mini">
+          <div class="avatar">SE</div>
+          <div>
+            <strong id="sidebarUserName">Secretaria de Educação</strong>
+            <span id="sidebarScope">Observatório Estadual</span>
+          </div>
+        </div>
+        <button class="logout" type="button" id="btnLogout">⎋ Sair</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="filters">
+          <div class="field">Estado: <strong id="filterEstado">Acre</strong></div>
+          <div class="field period-field">
+            <span>Período:</span>
+            <select id="periodoPreset" aria-label="Selecionar período do Observatório">
+              <option value="hoje">Hoje</option>
+              <option value="7d">Últimos 7 dias</option>
+              <option value="30d">Últimos 30 dias</option>
+              <option value="mes_atual">Mês atual</option>
+              <option value="bimestre_atual">Bimestre atual</option>
+              <option value="semestre_atual">Semestre atual</option>
+              <option value="ano_letivo">Ano letivo</option>
+              <option value="personalizado">Personalizado</option>
+            </select>
+            <input type="date" id="periodoInicio" aria-label="Data inicial" style="display:none" />
+            <input type="date" id="periodoFim" aria-label="Data final" style="display:none" />
+            <button class="mini-btn" type="button" id="btnAplicarPeriodo">Aplicar</button>
+            <strong id="filterPeriodo" class="period-current">Mês atual</strong>
+          </div>
+          <div class="field">Escopo: <strong id="filterEscopo">Rede estadual</strong></div>
+        </div>
+
+        <div class="top-actions">
+          <div class="notification" title="Alertas estratégicos">🔔<b id="alertCount">5</b></div>
+          <div class="userbox">
+            <div class="avatar">SE</div>
+            <div>
+              <strong id="topUserName">Secretaria</strong>
+              <span id="topUserRole">Perfil Observatório</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="page-head" id="dashboardTop">
+          <div>
+            <h1>Dashboard</h1>
+            <p>Visão executiva de convivência, proteção escolar e indicadores estratégicos da rede.</p>
+          </div>
+          <div class="page-actions"><button class="btn-secondary" type="button" id="btnVoltarRede" style="display:none">← Voltar para rede</button><button class="btn-primary" type="button" id="btnExportar">⇩ Exportar Relatório</button></div>
+        </div>
+
+        <div class="notice-demo" id="noticeDemo">
+          ⚠️ Esta tela está usando dados demonstrativos até a rota <strong>/api/observatorio/resumo</strong> ser criada.
+        </div>
+
+        <div class="notice-criteria" id="noticeCriterio">
+          ℹ️ Os indicadores estratégicos só consideram ocorrências com mapeamento explícito ou flags objetivas. Regras regimentais internas não são classificadas automaticamente como violência, bullying ou crime.
+        </div>
+
+        <section class="cards" id="cardsIndicadores" aria-label="Indicadores principais">
+          <article class="card kpi card-clickable" id="cardEscolas" role="button" tabindex="0" title="Clique para ver a lista de escolas">
+            <div class="kpi-top"><div class="kpi-icon i-blue">🏫</div></div>
+            <div>
+              <div class="kpi-label">Escolas Monitoradas</div>
+              <div class="kpi-value" id="kpiEscolas">0</div>
+              <div class="kpi-change">Unidades ativas no escopo</div>
+            </div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top"><div class="kpi-icon i-green">👥</div></div>
+            <div>
+              <div class="kpi-label">Alunos Monitorados</div>
+              <div class="kpi-value" id="kpiAlunos">0</div>
+              <div class="kpi-change">Total consolidado da rede</div>
+            </div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top"><div class="kpi-icon i-purple">📨</div></div>
+            <div>
+              <div class="kpi-label">Notificações Expedidas</div>
+              <div class="kpi-value" id="kpiNotificacoes">0</div>
+              <div class="kpi-change">Registros disciplinares e pedagógicos</div>
+            </div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top"><div class="kpi-icon i-yellow">⭐</div></div>
+            <div>
+              <div class="kpi-label">Elogios e Condecorações</div>
+              <div class="kpi-value" id="kpiElogios">0</div>
+              <div class="kpi-change">Reconhecimentos positivos</div>
+            </div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top"><div class="kpi-icon i-red">🚨</div></div>
+            <div>
+              <div class="kpi-label">Ocorrências Estratégicas</div>
+              <div class="kpi-value" id="kpiGraves">0</div>
+              <div class="kpi-change">Casos relevantes para gestão</div>
+            </div>
+          </article>
+
+          <article class="card kpi">
+            <div class="kpi-top"><div class="kpi-icon i-green">📈</div></div>
+            <div>
+              <div class="kpi-label">Índice Geral da Rede</div>
+              <div class="kpi-value" id="kpiIndice">0%</div>
+              <div class="kpi-change" id="kpiIndiceNota"><span style="color:var(--verde);font-weight:900">●</span> Classificação consolidada</div>
+            </div>
+          </article>
+        </section>
+
+        <section class="grid-3" id="indicadores">
+          <article class="card">
+            <div class="section-title"><h2>Saúde Comportamental das Escolas</h2><small>ISE</small></div>
+            <div class="donut-wrap">
+              <div class="donut" id="donutSaude" data-center="0\A Escolas"></div>
+              <div class="legend" id="legendSaude"></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="section-title"><h2>Evolução Mensal</h2><small>últimos 5 meses</small></div>
+            <div class="chart-legend">
+              <span><i class="line-sample" style="background:#155eef"></i> Notificações</span>
+              <span><i class="line-sample" style="background:#16a34a"></i> Elogios</span>
+              <span><i class="line-sample" style="background:#dc2626"></i> Ocorrências estratégicas</span>
+            </div>
+            <div class="chart-lines">
+              <svg viewBox="0 0 460 210" preserveAspectRatio="none" aria-hidden="true">
+                <polyline id="lineNotificacoes" points="" fill="none" stroke="#155eef" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                <polyline id="lineElogios" points="" fill="none" stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                <polyline id="lineGraves" points="" fill="none" stroke="#dc2626" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+            <div class="months" id="months"></div>
+          </article>
+
+          <article class="card" id="ocorrencias">
+            <div class="section-title"><h2>Casos Estratégicos Mapeados</h2><small id="labelTiposEscopo">sem inferência automática</small></div>
+            <div class="bar-list" id="listaTipos"></div>
+          </article>
+        </section>
+
+        <section class="grid-2" id="escolas">
+          <article class="card">
+            <div class="section-title"><h2>Ranking de Escolas</h2><small>melhor desempenho</small></div>
+            <div class="ranking" id="rankingEscolas"></div>
+          </article>
+
+          <article class="card">
+            <div class="section-title"><h2>Mapa de Calor das Escolas</h2><small>risco por concentração</small></div>
+            <div class="heatmap" role="img" aria-label="Mapa de calor demonstrativo das escolas"></div>
+            <div class="legend" style="grid-template-columns:repeat(3,1fr); margin-top:14px;">
+              <div class="legend-row" style="grid-template-columns:14px 1fr"><i class="dot bg-green"></i><span>Baixo</span></div>
+              <div class="legend-row" style="grid-template-columns:14px 1fr"><i class="dot bg-yellow"></i><span>Médio</span></div>
+              <div class="legend-row" style="grid-template-columns:14px 1fr"><i class="dot bg-red"></i><span>Alto</span></div>
+            </div>
+          </article>
+
+          <article class="card" id="familia">
+            <div class="section-title"><h2>Engajamento Familiar</h2><small>média geral</small></div>
+            <div class="gauge-wrap">
+              <div class="gauge" id="gaugeFamilia" data-value="0%"></div>
+              <div class="eng-list" id="engajamentoLista"></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="card" id="alertas">
+          <div class="section-title"><h2>Alertas e Avisos Estratégicos</h2><small>prioridades de gestão</small></div>
+          <div class="alerts" id="alertsList"></div>
+        </section>
+
+        <div class="footer-note">
+          Axoriin Observatório Educacional — painel executivo com dados agregados, sem exposição de histórico individual de estudantes.
+        </div>
+      </section>
+    </main>
+  </div>
+
+
+  <div class="modal-backdrop" id="modalEscolas" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalEscolasTitulo">
+      <div class="modal-head">
+        <div>
+          <h3 id="modalEscolasTitulo">Escolas monitoradas</h3>
+          <p>Selecione uma escola para visualizar o dashboard individual com dados agregados, sem identificação de alunos.</p>
+        </div>
+        <button class="modal-close" type="button" id="btnFecharModalEscolas" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal-search">
+        <input type="search" id="inputBuscaEscola" placeholder="Digite o nome, sigla ou município da escola..." autocomplete="off" />
+      </div>
+      <div class="school-list" id="listaEscolasModal"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toastNav" role="status" aria-live="polite"></div>
+
+  <script>
+    const fmt = new Intl.NumberFormat('pt-BR');
+
+    let modoAtual = 'rede';
+    let cacheEscolas = [];
+    let cacheResumoNormalizado = null;
+
+    const demoData = {
+      meta: { demonstrativo: true, estado: 'AC', periodo: 'Mês atual', escopo: 'Rede estadual' },
+      kpis: { escolas: 9, alunos: 8432, notificacoes: 2145, elogios: 812, ocorrenciasEstrategicas: 127, indiceGeral: 86 },
+      saude: { excelente: 3, atencao: 4, critico: 2 },
+      evolucao: { meses: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'], notificacoes: [360, 410, 438, 462, 475], elogios: [120, 148, 170, 181, 193], graves: [18, 21, 25, 30, 33] },
+      tipos: [
+        { nome: 'Bullying / intimidação', total: 36, percentual: 28 },
+        { nome: 'Agressão física', total: 29, percentual: 23 },
+        { nome: 'Ameaças', total: 20, percentual: 16 },
+        { nome: 'Dano ao patrimônio', total: 17, percentual: 13 },
+        { nome: 'Furto', total: 12, percentual: 9 },
+        { nome: 'Produto/substância não permitida', total: 8, percentual: 6 },
+        { nome: 'Arma/objeto perigoso', total: 5, percentual: 4 }
+      ],
+      ranking: [
+        { escola: 'Colégio Militar Dom Pedro II - CZS', indice: 94 },
+        { escola: 'Colégio Militar de Rio Branco', indice: 92 },
+        { escola: 'E.E. Plácido de Castro', indice: 89 },
+        { escola: 'E.E. Acreano', indice: 84 },
+        { escola: 'E.E. Senador Guiomard', indice: 72 }
+      ],
+      engajamento: { media: 65, acessaramPortal: 4872, visualizaramNotificacoes: 3901, responderamComunicados: 2588 },
+      alertas: [
+        { nivel: 'red', titulo: 'Escola em estado crítico', texto: '1 escola apresenta índice geral abaixo de 65%.' },
+        { nivel: 'yellow', titulo: 'Aumento de ocorrências', texto: 'Crescimento de 18% nos casos estratégicos no mês.' },
+        { nivel: 'blue', titulo: 'Relatório mensal', texto: 'Relatório executivo do mês disponível para exportação.' }
+      ]
+    };
+
+    function getTenantParam() {
+      const qs = new URLSearchParams(window.location.search);
+      return qs.get('t') || qs.get('tenant') || localStorage.getItem('tenant') || '';
+    }
+
+    function getEscolaParam() {
+      const qs = new URLSearchParams(window.location.search);
+      return qs.get('escola') || qs.get('instituicao') || '';
+    }
+
+    const UF_NOMES = {
+      AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal',
+      ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais',
+      PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte',
+      RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins'
+    };
+
+    function nomeUf(uf) {
+      const sigla = String(uf || '').trim().toUpperCase();
+      return UF_NOMES[sigla] || sigla || 'Todos';
+    }
+
+    function isoDateLocal(date) {
+      // Data de calendário deve permanecer como YYYY-MM-DD.
+      // Não usar new Date('YYYY-MM-DD'), pois isso pode voltar um dia em fusos como Acre/Amazonas.
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) return date.trim();
+      const d = date instanceof Date ? date : new Date(date);
+      if (Number.isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function addDays(date, days) {
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function periodoPorPreset(preset) {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = hoje.getMonth();
+      const p = String(preset || 'mes_atual');
+
+      if (p === 'hoje') return { inicio: isoDateLocal(hoje), fim: isoDateLocal(hoje), rotulo: 'Hoje' };
+      if (p === '7d') return { inicio: isoDateLocal(addDays(hoje, -6)), fim: isoDateLocal(hoje), rotulo: 'Últimos 7 dias' };
+      if (p === '30d') return { inicio: isoDateLocal(addDays(hoje, -29)), fim: isoDateLocal(hoje), rotulo: 'Últimos 30 dias' };
+      if (p === 'mes_atual') return { inicio: isoDateLocal(new Date(ano, mes, 1)), fim: isoDateLocal(hoje), rotulo: 'Mês atual' };
+      if (p === 'bimestre_atual') {
+        const inicioMes = Math.floor(mes / 2) * 2;
+        return { inicio: isoDateLocal(new Date(ano, inicioMes, 1)), fim: isoDateLocal(hoje), rotulo: 'Bimestre atual' };
+      }
+      if (p === 'semestre_atual') {
+        const inicioMes = mes < 6 ? 0 : 6;
+        return { inicio: isoDateLocal(new Date(ano, inicioMes, 1)), fim: isoDateLocal(hoje), rotulo: 'Semestre atual' };
+      }
+      return { inicio: `${ano}-01-01`, fim: isoDateLocal(hoje), rotulo: 'Ano letivo' };
+    }
+
+    function getPeriodoAtual() {
+      const qs = new URLSearchParams(window.location.search);
+      const preset = qs.get('periodo') || localStorage.getItem('observatorioPeriodoPreset') || 'mes_atual';
+      const inicioUrl = qs.get('inicio') || '';
+      const fimUrl = qs.get('fim') || '';
+
+      if (preset === 'personalizado' || inicioUrl || fimUrl) {
+        const base = periodoPorPreset('mes_atual');
+        return {
+          preset: 'personalizado',
+          inicio: inicioUrl || base.inicio,
+          fim: fimUrl || base.fim,
+          rotulo: 'Período personalizado'
+        };
+      }
+
+      return { preset, ...periodoPorPreset(preset) };
+    }
+
+    function appendQuery(url, key, value) {
+      if (value === null || value === undefined || value === '') return url;
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    }
+
+    function withPeriodo(url) {
+      if (!url.startsWith('/api/observatorio')) return url;
+      const p = getPeriodoAtual();
+      let out = url;
+      out = appendQuery(out, 'inicio', p.inicio);
+      out = appendQuery(out, 'fim', p.fim);
+      out = appendQuery(out, 'periodo', p.preset);
+      return out;
+    }
+
+    function withTenant(url) {
+      const tenant = getTenantParam();
+      let out = url;
+      if (tenant) out = appendQuery(out, 't', tenant);
+      return withPeriodo(out);
+    }
+
+    async function fetchJson(url, options = {}) {
+      const res = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(txt || ('HTTP ' + res.status));
+      }
+      return await res.json();
+    }
+
+    async function carregarUsuario() {
+      try {
+        const me = await fetchJson('/auth/me');
+        const tipo = String(me.tipo || '').toLowerCase();
+
+        if (!['secretaria', 'admin'].includes(tipo)) {
+          window.location.href = '/painel.html?erro=sem_permissao';
+          return null;
+        }
+
+        document.getElementById('topUserName').textContent = me.nome || 'Secretaria';
+        document.getElementById('sidebarUserName').textContent = me.nome || 'Secretaria de Educação';
+        document.getElementById('topUserRole').textContent = tipo === 'admin' ? 'Administrador' : 'Perfil Observatório';
+        return me;
+      } catch (err) {
+        window.location.href = '/login.html?t=' + encodeURIComponent(getTenantParam());
+        return null;
+      }
+    }
+
+    function normalizarNivelAlerta(nivel) {
+      const n = String(nivel || '').toLowerCase();
+      if (['critico', 'crítico', 'alto', 'red', 'vermelho'].includes(n)) return 'red';
+      if (['atencao', 'atenção', 'medio', 'médio', 'yellow', 'amarelo'].includes(n)) return 'yellow';
+      return 'blue';
+    }
+
+    function statusParaSaude(statusEscolas = {}, totalFallback = 0) {
+      const excelente = Number(statusEscolas.excelente || 0);
+      const atencao = Number(statusEscolas.atencao || 0) + Number(statusEscolas.bom || 0);
+      const critico = Number(statusEscolas.critico || 0);
+      const insuficientes = Number(statusEscolas.dados_insuficientes || statusEscolas.dadosInsuficientes || statusEscolas.insuficiente || 0);
+      if (!excelente && !atencao && !critico && !insuficientes && totalFallback) {
+        return { excelente: 0, atencao: 0, critico: 0, insuficientes: totalFallback };
+      }
+      return { excelente, atencao, critico, insuficientes };
+    }
+
+    function rotuloIndicadorSeguro(t) {
+      const chave = String(t?.chave || t?.key || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const nomeOriginal = String(t?.nome || t?.rotulo || t?.chave || 'Indicador');
+      const nomeNorm = nomeOriginal.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+      // Evita interpretação indevida pela Secretaria: o item pode ser energético, produto de consumo proibido,
+      // cigarro, álcool, medicamento sem autorização ou outra substância/item vedado pelo regulamento local.
+      if (chave.includes('substancia_proibida') || chave.includes('substanciailicita') ||
+          nomeNorm.includes('alcool, cigarro ou drogas') || nomeNorm.includes('substancia ilicita')) {
+        return 'Produto/substância não permitida';
+      }
+
+      return nomeOriginal;
+    }
+
+    function calcularPercentuaisTipos(tipos) {
+      const total = (tipos || []).reduce((s, t) => s + Number(t.total || 0), 0);
+      return (tipos || []).map(t => {
+        const chave = String(t.chave || t.key || t.nome || t.rotulo || '').toLowerCase();
+        return {
+          chave,
+          nome: rotuloIndicadorSeguro(t),
+          total: Number(t.total || 0),
+          percentual: total ? Math.round((Number(t.total || 0) / total) * 100) : 0
+        };
+      });
+    }
+
+    function ehTipoPositivo(t) {
+      const chave = String(t?.chave || t?.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return chave.includes('elogio') || chave.includes('condecor') || chave.includes('reconhecimento');
+    }
+
+    function normalizarEvolucao(rows = []) {
+      if (!Array.isArray(rows) || !rows.length) {
+        return { meses: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'], notificacoes: [0,0,0,0,0], elogios: [0,0,0,0,0], graves: [0,0,0,0,0] };
+      }
+      const ultimos = rows.slice(-5);
+      return {
+        meses: ultimos.map(r => r.label || `${String(r.mes || '').padStart(2, '0')}/${r.ano || ''}`),
+        notificacoes: ultimos.map(r => Number(r.notificacoes || 0)),
+        elogios: ultimos.map(r => Number(r.elogios || 0)),
+        graves: ultimos.map(r => Number(r.ocorrenciasEstrategicas || r.ocorrenciasGraves || r.graves || 0))
+      };
+    }
+
+    function normalizarAlertas(alertas = []) {
+      return (alertas || []).map(a => ({
+        nivel: normalizarNivelAlerta(a.nivel),
+        titulo: a.titulo || a.tipo || 'Alerta estratégico',
+        texto: a.texto || a.mensagem || ''
+      }));
+    }
+
+    function transformarRede(api) {
+      const r = api.resumo || {};
+      const tipos = calcularPercentuaisTipos(api.tiposEstrategicos || []);
+      const ocorrenciasEstrategicasCalculadas = Math.max(
+        Number(r.ocorrenciasGraves || 0),
+        Number(r.violencia || 0) + Number(r.lesao || 0) + Number(r.danoPatrimonial || 0) +
+        Number(r.substanciaIlicita || 0) + Number(r.armaOuObjetoPerigoso || 0) + Number(r.encaminhamentosExternos || 0)
+      );
+      const ocorrenciasEstrategicas = Number.isFinite(Number(r.ocorrenciasEstrategicas))
+        ? Number(r.ocorrenciasEstrategicas || 0)
+        : ocorrenciasEstrategicasCalculadas;
+
+      return {
+        meta: {
+          estado: api.escopo?.estadoNome || nomeUf(api.escopo?.estado || api.escopo?.uf || ''),
+          periodo: api.periodo?.label || (api.periodo?.inicioDateOnly && api.periodo?.fimDateOnly ? `${api.periodo.inicioDateOnly} a ${api.periodo.fimDateOnly}` : getPeriodoAtual().rotulo) || 'Período atual',
+          escopo: api.escopo?.descricao || api.escopo?.rotulo || 'Rede estadual',
+          criterioClassificacao: api.criterioClassificacao || '',
+          avisoInterpretativo: api.avisoInterpretativo || '',
+          lgpd: api.lgpd || ''
+        },
+        kpis: {
+          escolas: r.escolas || 0,
+          alunos: r.alunos || 0,
+          notificacoes: r.notificacoes || 0,
+          elogios: Number(r.elogios || 0) + Number(r.condecoracoes || 0),
+          ocorrenciasEstrategicas,
+          indiceGeral: r.indiceConvivenciaGeral === null || r.indiceConvivenciaGeral === undefined ? null : Math.round(Number(r.indiceConvivenciaGeral || 0)),
+          escolasClassificadas: Number(r.escolasClassificadas || 0),
+          escolasDadosInsuficientes: Number(r.escolasDadosInsuficientes || 0)
+        },
+        saude: statusParaSaude(api.statusEscolas, r.escolas || 0),
+        evolucao: normalizarEvolucao(api.evolucaoMensal),
+        tipos,
+        ranking: (api.rankingEscolas || []).map(e => ({ escola: e.nome || e.sigla || 'Escola', indice: Math.round(Number(e.indiceConvivencia || 0)), id: e.id })),
+        engajamento: {
+          media: Math.round(Number(r.familia?.percentualCiencia || 0)),
+          acessaramPortal: r.familia?.registrosComCiencia || 0,
+          visualizaramNotificacoes: r.familia?.registrosComCiencia || 0,
+          responderamComunicados: r.familia?.mensagensEnviadas || 0
+        },
+        alertas: normalizarAlertas(api.alertas)
+      };
+    }
+
+    function transformarEscola(api) {
+      const e = api.escola || {};
+      const ind = e.indicadores || {};
+      const tipos = calcularPercentuaisTipos(api.tiposEstrategicos || []);
+      const ocorrenciasEstrategicasCalculadas = Math.max(
+        Number(ind.ocorrenciasGraves || 0),
+        Number(ind.violencia || 0) + Number(ind.lesao || 0) + Number(ind.danoPatrimonial || 0) +
+        Number(ind.substanciaIlicita || 0) + Number(ind.armaOuObjetoPerigoso || 0) + Number(ind.encaminhamentosExternos || 0)
+      );
+      const ocorrenciasEstrategicas = Number.isFinite(Number(ind.ocorrenciasEstrategicas))
+        ? Number(ind.ocorrenciasEstrategicas || 0)
+        : ocorrenciasEstrategicasCalculadas;
+
+      return {
+        meta: {
+          estado: e.estado || 'AC',
+          periodo: api.periodo?.label || (api.periodo?.inicioDateOnly && api.periodo?.fimDateOnly ? `${api.periodo.inicioDateOnly} a ${api.periodo.fimDateOnly}` : 'Período atual'),
+          escopo: e.nome || 'Escola',
+          criterioClassificacao: api.criterioClassificacao || '',
+          avisoInterpretativo: api.avisoInterpretativo || '',
+          lgpd: api.lgpd || ''
+        },
+        kpis: {
+          escolas: 1,
+          alunos: e.alunos || 0,
+          notificacoes: e.notificacoes || 0,
+          elogios: Number(ind.elogios || 0) + Number(ind.condecoracoes || 0),
+          ocorrenciasEstrategicas,
+          indiceGeral: e.indiceConvivencia === null || e.indiceConvivencia === undefined ? null : Math.round(Number(e.indiceConvivencia || 0)),
+          escolasClassificadas: e.classificavel ? 1 : 0,
+          escolasDadosInsuficientes: e.classificavel ? 0 : 1
+        },
+        saude: statusParaSaude({ [e.status?.chave || 'critico']: 1 }, 1),
+        evolucao: normalizarEvolucao(api.evolucaoMensal),
+        tipos,
+        ranking: [{ escola: e.nome || 'Escola', indice: Math.round(Number(e.indiceConvivencia || 0)), id: e.id }],
+        engajamento: {
+          media: Math.round(Number(e.familia?.percentualCiencia || 0)),
+          acessaramPortal: e.familia?.registrosComCiencia || 0,
+          visualizaramNotificacoes: e.familia?.registrosComCiencia || 0,
+          responderamComunicados: e.familia?.mensagensEnviadas || 0
+        },
+        alertas: normalizarAlertas(api.alertas)
+      };
+    }
+
+    function normalizarResumo(data) {
+      if (!data) return demoData;
+      if (data.ok && data.modo === 'rede') return transformarRede(data);
+      if (data.ok && data.modo === 'escola') return transformarEscola(data);
+      if (data.ok && data.resumo) return transformarRede(data);
+      return data;
+    }
+
+    async function carregarResumo() {
+      const escolaId = getEscolaParam();
+      const url = escolaId
+        ? withTenant(`/api/observatorio/escolas/${encodeURIComponent(escolaId)}/resumo`)
+        : withTenant('/api/observatorio/resumo');
+
+      try {
+        const data = await fetchJson(url);
+        modoAtual = escolaId ? 'escola' : 'rede';
+        const normalizado = normalizarResumo(data);
+        cacheResumoNormalizado = normalizado;
+        document.getElementById('noticeDemo').classList.remove('show');
+        document.getElementById('btnVoltarRede').style.display = modoAtual === 'escola' ? 'inline-flex' : 'none';
+        document.querySelector('.page-head h1').textContent = modoAtual === 'escola' ? 'Dashboard da Escola' : 'Dashboard';
+        document.querySelector('.page-head p').textContent = modoAtual === 'escola'
+          ? 'Visão agregada da escola selecionada, sem exposição de dados individuais de estudantes.'
+          : 'Visão executiva de convivência, proteção escolar e indicadores estratégicos da rede.';
+        return normalizado;
+      } catch (err) {
+        console.warn('[Observatório] Falha ao carregar API:', err);
+        document.getElementById('noticeDemo').classList.add('show');
+        return demoData;
+      }
+    }
+
+    async function carregarEscolasModal() {
+      try {
+        const data = await fetchJson(withTenant('/api/observatorio/escolas'));
+        cacheEscolas = Array.isArray(data.escolas) ? data.escolas : [];
+        renderizarListaEscolas(cacheEscolas);
+      } catch (err) {
+        document.getElementById('listaEscolasModal').innerHTML = '<div class="empty-list">Não foi possível carregar a lista de escolas.</div>';
+      }
+    }
+
+    function renderizarListaEscolas(escolas) {
+      const el = document.getElementById('listaEscolasModal');
+      if (!escolas.length) {
+        el.innerHTML = '<div class="empty-list">Nenhuma escola encontrada neste escopo.</div>';
+        return;
+      }
+
+      el.innerHTML = escolas.map(e => {
+        const statusChave = e.status?.chave || 'sem_status';
+        const status = e.status?.rotulo || 'Sem status';
+        const classificavel = e.classificavel !== false && statusChave !== 'dados_insuficientes';
+        const indice = classificavel && e.indiceConvivencia !== null && e.indiceConvivencia !== undefined
+          ? `${Math.round(Number(e.indiceConvivencia || 0))}%`
+          : 'sem classificação';
+        const msgSuficiencia = e.suficienciaDados?.mensagem || e.culturaRegistro?.mensagem || 'Dados agregados disponíveis para análise.';
+        const statusClass = statusChave === 'excelente' ? 'green'
+          : (statusChave === 'atencao' || statusChave === 'bom') ? 'yellow'
+          : statusChave === 'critico' ? 'red'
+          : statusChave === 'dados_insuficientes' ? 'gray'
+          : 'blue';
+
+        return `
+          <div class="school-item">
+            <div class="school-main">
+              <strong>${e.nome || 'Escola'}</strong>
+              <small>${e.sigla || 'Sem sigla'} • ${e.municipio || 'Município não informado'}/${e.estado || 'UF'} • ${e.redeEnsino || 'rede não informada'} • ${e.tipoEscola || 'tipo não informado'}</small>
+              <div class="school-metrics">
+                <span class="school-chip blue">${fmt.format(e.alunos || 0)} alunos</span>
+                <span class="school-chip blue">${fmt.format(e.notificacoes || 0)} registros</span>
+                <span class="school-chip ${statusClass}">${status}</span>
+                <span class="school-chip ${classificavel ? 'green' : 'gray'}">Índice: ${indice}</span>
+              </div>
+              <small>${msgSuficiencia}</small>
+            </div>
+            <div class="school-actions">
+              <button type="button" data-escola-id="${e.id}">Ver dashboard</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      el.querySelectorAll('[data-escola-id]').forEach(btn => {
+        btn.addEventListener('click', () => abrirDashboardEscola(btn.dataset.escolaId));
+      });
+    }
+
+    function abrirModalEscolas() {
+      if (modoAtual === 'escola') return;
+      const modal = document.getElementById('modalEscolas');
+      modal.classList.add('show');
+      document.body.classList.add('modal-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.getElementById('inputBuscaEscola').value = '';
+      document.getElementById('inputBuscaEscola').focus();
+      carregarEscolasModal();
+    }
+
+    function fecharModalEscolas() {
+      const modal = document.getElementById('modalEscolas');
+      modal.classList.remove('show');
+      document.body.classList.remove('modal-open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function montarQueryNavegacao({ escola = null } = {}) {
+      const tenant = getTenantParam();
+      const p = getPeriodoAtual();
+      const qs = new URLSearchParams();
+      if (tenant) qs.set('t', tenant);
+      if (escola) qs.set('escola', escola);
+      qs.set('periodo', p.preset || 'mes_atual');
+      if (p.inicio) qs.set('inicio', p.inicio);
+      if (p.fim) qs.set('fim', p.fim);
+      return qs.toString();
+    }
+
+    function abrirDashboardEscola(id) {
+      window.location.href = `/observatorio.html?${montarQueryNavegacao({ escola: id })}`;
+    }
+
+    function voltarRede() {
+      const qs = montarQueryNavegacao();
+      window.location.href = '/observatorio.html' + (qs ? `?${qs}` : '');
+    }
+
+    function preencherKpis(data) {
+      const k = data.kpis || {};
+      document.getElementById('kpiEscolas').textContent = fmt.format(k.escolas || 0);
+      document.getElementById('kpiAlunos').textContent = fmt.format(k.alunos || 0);
+      document.getElementById('kpiNotificacoes').textContent = fmt.format(k.notificacoes || 0);
+      document.getElementById('kpiElogios').textContent = fmt.format(k.elogios || 0);
+      document.getElementById('kpiGraves').textContent = fmt.format(k.ocorrenciasEstrategicas || k.ocorrenciasGraves || 0);
+      document.getElementById('kpiIndice').textContent = k.indiceGeral === null || k.indiceGeral === undefined
+        ? '—'
+        : `${Number(k.indiceGeral || 0)}%`;
+
+      const notaIndice = document.getElementById('kpiIndiceNota');
+      if (notaIndice) {
+        const classificadas = Number(k.escolasClassificadas || 0);
+        const insuficientes = Number(k.escolasDadosInsuficientes || 0);
+        if (modoAtual === 'rede' && insuficientes > 0) {
+          notaIndice.innerHTML = `<span style="color:#64748b;font-weight:900">●</span> Base: ${fmt.format(classificadas)} classificadas • ${fmt.format(insuficientes)} insuficientes`;
+        } else if (modoAtual === 'escola' && k.indiceGeral === null) {
+          notaIndice.innerHTML = `<span style="color:#64748b;font-weight:900">●</span> Dados insuficientes para classificar`;
+        } else {
+          notaIndice.innerHTML = `<span style="color:var(--verde);font-weight:900">●</span> Classificação consolidada`;
+        }
+      }
+
+      if (data.meta) {
+        document.getElementById('filterEstado').textContent = data.meta.estado || 'Todos';
+        document.getElementById('filterPeriodo').textContent = data.meta.periodo || getPeriodoAtual().rotulo || 'Mês atual';
+        document.getElementById('filterEscopo').textContent = data.meta.escopo || 'Rede estadual';
+      }
+    }
+
+    function preencherSaude(data) {
+      const s = data.saude || {};
+      const excelente = Number(s.excelente || 0);
+      const atencao = Number(s.atencao || 0);
+      const critico = Number(s.critico || 0);
+      const insuficientes = Number(s.insuficientes || 0);
+      const totalGeral = excelente + atencao + critico + insuficientes || Number(data.kpis?.escolas || 0) || 1;
+      const totalClassificadas = excelente + atencao + critico;
+
+      const p1 = totalClassificadas ? Math.round((excelente / totalClassificadas) * 100) : 0;
+      const p2 = totalClassificadas ? Math.round(((excelente + atencao) / totalClassificadas) * 100) : 0;
+
+      const donut = document.getElementById('donutSaude');
+      donut.style.setProperty('--p1', p1 + '%');
+      donut.style.setProperty('--p2', p2 + '%');
+      donut.setAttribute('data-center', `${totalGeral}
+Escolas`);
+
+      const pct = (n, base = totalGeral) => Math.round((Number(n || 0) / Math.max(Number(base || 0), 1)) * 100);
+
+      document.getElementById('legendSaude').innerHTML = `
+        <div class="legend-row"><i class="dot bg-green"></i><span>Excelente (≥ 90%)<br><small>${excelente} escolas</small></span><strong>${pct(excelente)}%</strong></div>
+        <div class="legend-row"><i class="dot bg-yellow"></i><span>Atenção/Bom (75% - 89%)<br><small>${atencao} escolas</small></span><strong>${pct(atencao)}%</strong></div>
+        <div class="legend-row"><i class="dot bg-red"></i><span>Crítico (&lt; 75%)<br><small>${critico} escolas</small></span><strong>${pct(critico)}%</strong></div>
+        <div class="legend-row"><i class="dot bg-gray"></i><span>Dados insuficientes<br><small>${insuficientes} escolas fora do índice geral</small></span><strong>${pct(insuficientes)}%</strong></div>
+      `;
+    }
+
+    function pontosLinha(valores) {
+      const arr = valores && valores.length ? valores : [0, 0, 0, 0, 0];
+      const max = Math.max(...arr, 1);
+      const step = 460 / Math.max(arr.length - 1, 1);
+      return arr.map((v, i) => {
+        const x = i * step;
+        const y = 190 - ((Number(v || 0) / max) * 160);
+        return `${x},${y}`;
+      }).join(' ');
+    }
+
+    function preencherEvolucao(data) {
+      const e = data.evolucao || demoData.evolucao;
+      document.getElementById('lineNotificacoes').setAttribute('points', pontosLinha(e.notificacoes));
+      document.getElementById('lineElogios').setAttribute('points', pontosLinha(e.elogios));
+      document.getElementById('lineGraves').setAttribute('points', pontosLinha(e.graves || e.ocorrenciasEstrategicas));
+      document.getElementById('months').innerHTML = (e.meses || []).map(m => `<span>${m}</span>`).join('');
+    }
+
+    function preencherTipos(data) {
+      const todos = (data.tipos || []).filter(t => Number(t.total || 0) > 0);
+      const positivos = todos.filter(ehTipoPositivo).reduce((s, t) => s + Number(t.total || 0), 0);
+      const tipos = todos.filter(t => !ehTipoPositivo(t)).slice(0, 9);
+
+      if (!tipos.length) {
+        const msgPositivos = positivos
+          ? `<br><br><strong>${fmt.format(positivos)}</strong> elogios/reconhecimentos positivos foram contabilizados no card próprio, sem serem tratados como ocorrência negativa.`
+          : '';
+
+        document.getElementById('listaTipos').innerHTML = `
+          <div class="empty-list criterio">
+            <strong>Nenhum caso estratégico mapeado no período.</strong><br>
+            As notificações regimentais continuam no total geral, mas não são classificadas automaticamente como violência, bullying, crime ou risco crítico.
+            ${msgPositivos}
+          </div>
+        `;
+        return;
+      }
+
+      const totalCasos = tipos.reduce((s, t) => s + Number(t.total || 0), 0) || 1;
+      document.getElementById('listaTipos').innerHTML = tipos.map((t) => {
+        const percentual = Math.round((Number(t.total || 0) / totalCasos) * 100);
+        return `
+          <div class="bar-row" title="${fmt.format(t.total || 0)} registros mapeados">
+            <span>${t.nome}</span>
+            <div class="bar"><i style="width:${Math.min(percentual, 100)}%"></i></div>
+            <strong>${percentual}%</strong>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function preencherRanking(data) {
+      const ranking = data.ranking || [];
+      document.getElementById('rankingEscolas').innerHTML = ranking.length ? ranking.map((r, idx) => {
+        const indice = Number(r.indice || 0);
+        const cls = indice >= 90 ? 'green' : indice >= 75 ? 'yellow' : 'red';
+        return `
+          <div class="rank-row" ${r.id ? `data-rank-escola="${r.id}"` : ''}>
+            <div class="rank-pos">${idx + 1}º</div>
+            <div class="rank-school" title="${r.escola || ''}">${r.escola || 'Escola'}</div>
+            <div class="pill ${cls}">${indice}%</div>
+          </div>
+        `;
+      }).join('') : '<div class="empty-list">Nenhuma escola disponível no ranking.</div>';
+
+      document.querySelectorAll('[data-rank-escola]').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => abrirDashboardEscola(row.dataset.rankEscola));
+      });
+    }
+
+    function preencherEngajamento(data) {
+      const e = data.engajamento || {};
+      const media = Number(e.media || 0);
+      document.getElementById('gaugeFamilia').setAttribute('data-value', `${media}%`);
+      document.getElementById('engajamentoLista').innerHTML = `
+        <div class="eng-row"><span>Registros com ciência</span><strong>${fmt.format(e.acessaramPortal || 0)}</strong></div>
+        <div class="eng-row"><span>Visualizaram notificações</span><strong>${fmt.format(e.visualizaramNotificacoes || 0)}</strong></div>
+        <div class="eng-row"><span>Mensagens enviadas</span><strong>${fmt.format(e.responderamComunicados || 0)}</strong></div>
+      `;
+    }
+
+    function preencherAlertas(data) {
+      const alertas = data.alertas || [];
+      document.getElementById('alertCount').textContent = alertas.length;
+      document.getElementById('alertsList').innerHTML = alertas.length ? alertas.map(a => {
+        const icon = a.nivel === 'red' ? '🚨' : a.nivel === 'yellow' ? '⚠️' : 'ℹ️';
+        return `
+          <article class="alert-card ${a.nivel || 'blue'}">
+            <div class="alert-head"><span>${icon}</span>${a.titulo || 'Alerta'}</div>
+            <p>${a.texto || ''}</p>
+            <a href="#">Ver detalhes</a>
+          </article>
+        `;
+      }).join('') : '<div class="empty-list">Nenhum alerta estratégico no período.</div>';
+    }
+
+    function preencherCriterio(data) {
+      const box = document.getElementById('noticeCriterio');
+      if (!box) return;
+      const meta = data.meta || {};
+      let criterio = meta.criterioClassificacao || 'Sem inferência por palavras-chave amplas. Apenas flags explícitas ou mapeamento local exato do regulamento são usados para classificar casos estratégicos.';
+      if (criterio && typeof criterio === 'object') {
+        const fontes = Array.isArray(criterio.fontesValidas) ? criterio.fontesValidas.join('; ') : '';
+        const regra = criterio.regra || criterio.descricao || criterio.mensagem || '';
+        criterio = [regra, fontes ? `Fontes válidas: ${fontes}` : ''].filter(Boolean).join(' ');
+      }
+      if (!criterio || String(criterio).trim() === '[object Object]') {
+        criterio = 'Sem inferência por palavras-chave amplas. Apenas flags explícitas ou mapeamento local exato do regulamento são usados para classificar casos estratégicos.';
+      }
+      const aviso = meta.avisoInterpretativo || 'Os indicadores são agregados e devem ser analisados proporcionalmente ao número de alunos, à cultura de registro e à suficiência estatística de cada escola.';
+      box.innerHTML = `ℹ️ <div><strong>Critério do Observatório:</strong> ${criterio}<br><span>${aviso}</span></div>`;
+      box.classList.add('show');
+    }
+
+
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function destacarSecao(el) {
+      if (!el) return;
+      el.classList.add('section-focus');
+      window.setTimeout(() => el.classList.remove('section-focus'), 1100);
+    }
+
+    function rolarPara(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      destacarSecao(el);
+    }
+
+    let toastTimer = null;
+    function mostrarToast(titulo, mensagem) {
+      const toast = document.getElementById('toastNav');
+      if (!toast) return;
+      toast.innerHTML = `<strong>${escapeHtml(titulo || 'Observatório')}</strong>${escapeHtml(mensagem || '')}`;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
+    }
+
+    function marcarNavAtivo(linkAtivo) {
+      document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+      if (linkAtivo) linkAtivo.classList.add('active');
+    }
+
+    function acionarExportacaoRelatorio() {
+      const btn = document.getElementById('btnExportar');
+      if (btn) btn.click();
+    }
+
+    function atualizarVisibilidadePeriodo() {
+      const presetEl = document.getElementById('periodoPreset');
+      const inicioEl = document.getElementById('periodoInicio');
+      const fimEl = document.getElementById('periodoFim');
+      if (!presetEl || !inicioEl || !fimEl) return;
+      const personalizado = presetEl.value === 'personalizado';
+      inicioEl.style.display = personalizado ? 'inline-block' : 'none';
+      fimEl.style.display = personalizado ? 'inline-block' : 'none';
+    }
+
+    function sincronizarControlesPeriodo() {
+      const p = getPeriodoAtual();
+      const presetEl = document.getElementById('periodoPreset');
+      const inicioEl = document.getElementById('periodoInicio');
+      const fimEl = document.getElementById('periodoFim');
+      if (presetEl) presetEl.value = p.preset || 'mes_atual';
+      if (inicioEl) inicioEl.value = p.inicio || '';
+      if (fimEl) fimEl.value = p.fim || '';
+      atualizarVisibilidadePeriodo();
+    }
+
+    async function aplicarPeriodoSelecionado() {
+      const presetEl = document.getElementById('periodoPreset');
+      const inicioEl = document.getElementById('periodoInicio');
+      const fimEl = document.getElementById('periodoFim');
+      const btn = document.getElementById('btnAplicarPeriodo');
+      const preset = presetEl?.value || 'mes_atual';
+      const calculado = preset === 'personalizado'
+        ? { preset, inicio: inicioEl?.value || '', fim: fimEl?.value || '', rotulo: 'Período personalizado' }
+        : { preset, ...periodoPorPreset(preset) };
+
+      if (!calculado.inicio || !calculado.fim) {
+        mostrarToast('Período incompleto', 'Informe a data inicial e a data final para aplicar o filtro personalizado.');
+        return;
+      }
+
+      if (calculado.inicio > calculado.fim) {
+        mostrarToast('Período inválido', 'A data inicial não pode ser maior que a data final.');
+        return;
+      }
+
+      localStorage.setItem('observatorioPeriodoPreset', preset);
+
+      const qs = new URLSearchParams(window.location.search);
+      qs.set('periodo', preset);
+      qs.set('inicio', calculado.inicio);
+      qs.set('fim', calculado.fim);
+      history.replaceState(null, '', `${window.location.pathname}?${qs.toString()}`);
+      sincronizarControlesPeriodo();
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Aplicando...';
+        }
+        cacheEscolas = [];
+        cacheResumoNormalizado = null;
+        const data = await carregarResumo();
+        render(data);
+        mostrarToast('Período atualizado', `Indicadores recalculados para ${data.meta?.periodo || calculado.rotulo}.`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Aplicar';
+        }
+      }
+    }
+
+    function configurarPeriodo() {
+      sincronizarControlesPeriodo();
+      const presetEl = document.getElementById('periodoPreset');
+      const btn = document.getElementById('btnAplicarPeriodo');
+      if (presetEl) {
+        presetEl.addEventListener('change', () => {
+          const p = presetEl.value === 'personalizado'
+            ? getPeriodoAtual()
+            : { preset: presetEl.value, ...periodoPorPreset(presetEl.value) };
+          const inicioEl = document.getElementById('periodoInicio');
+          const fimEl = document.getElementById('periodoFim');
+          if (inicioEl && p.inicio) inicioEl.value = p.inicio;
+          if (fimEl && p.fim) fimEl.value = p.fim;
+          atualizarVisibilidadePeriodo();
+          if (presetEl.value !== 'personalizado') aplicarPeriodoSelecionado();
+        });
+      }
+      if (btn) btn.addEventListener('click', aplicarPeriodoSelecionado);
+    }
+
+    function configurarMenuLateral() {
+      document.querySelectorAll('.nav a[data-nav-action]').forEach(link => {
+        link.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          marcarNavAtivo(link);
+
+          const action = link.dataset.navAction;
+          if (action === 'schools') {
+            abrirModalEscolas();
+            return;
+          }
+
+          if (action === 'scroll') {
+            rolarPara(link.dataset.target || 'dashboardTop');
+            return;
+          }
+
+          if (action === 'export') {
+            acionarExportacaoRelatorio();
+            return;
+          }
+
+          if (action === 'toast') {
+            mostrarToast(link.dataset.title, link.dataset.message);
+          }
+        });
+      });
+
+      const sino = document.querySelector('.notification');
+      if (sino) {
+        sino.style.cursor = 'pointer';
+        sino.addEventListener('click', () => rolarPara('alertas'));
+      }
+    }
+
+    function render(data) {
+      preencherCriterio(data);
+      preencherKpis(data);
+      preencherSaude(data);
+      preencherEvolucao(data);
+      preencherTipos(data);
+      preencherRanking(data);
+      preencherEngajamento(data);
+      preencherAlertas(data);
+    }
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try { await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
+      window.location.href = '/login.html?t=' + encodeURIComponent(getTenantParam());
+    });
+
+    function valorRelatorio(v, sufixo = '') {
+      if (v === null || v === undefined || v === '') return '—';
+      if (typeof v === 'number') return `${fmt.format(v)}${sufixo}`;
+      return `${escapeHtml(v)}${sufixo}`;
+    }
+
+    function linhasTabelaRelatorio(linhas, colunas) {
+      if (!Array.isArray(linhas) || !linhas.length) {
+        return `<tr><td colspan="${colunas.length}" class="muted">Nenhum dado disponível.</td></tr>`;
+      }
+      return linhas.map(item => `
+        <tr>
+          ${colunas.map(c => `<td>${c.render ? c.render(item) : escapeHtml(item[c.key] ?? '—')}</td>`).join('')}
+        </tr>
+      `).join('');
+    }
+
+    function montarHtmlRelatorio(data, escolas) {
+      const hoje = new Date().toLocaleString('pt-BR');
+      const meta = data.meta || {};
+      const k = data.kpis || {};
+      const saude = data.saude || {};
+      const tiposNegativos = (data.tipos || []).filter(t => Number(t.total || 0) > 0 && !ehTipoPositivo(t));
+      const alertas = data.alertas || [];
+      const eng = data.engajamento || {};
+      const indice = k.indiceGeral === null || k.indiceGeral === undefined ? 'Base insuficiente' : `${k.indiceGeral}%`;
+      const criterio = String(meta.criterioClassificacao || 'Sem inferência por palavras-chave amplas. Apenas flags explícitas e mapeamento local exato são usados para casos estratégicos. O indicador Produto/substância não permitida pode incluir itens proibidos pelo regulamento interno, sem afirmar automaticamente droga ilícita.');
+      const aviso = String(meta.avisoInterpretativo || 'Os indicadores são agregados e devem ser analisados proporcionalmente ao número de alunos, à cultura de registro e à suficiência estatística de cada escola.');
+
+      const cards = [
+        ['Escolas monitoradas', valorRelatorio(k.escolas)],
+        ['Alunos monitorados', valorRelatorio(k.alunos)],
+        ['Notificações expedidas', valorRelatorio(k.notificacoes)],
+        ['Elogios e condecorações', valorRelatorio(k.elogios)],
+        ['Ocorrências estratégicas', valorRelatorio(k.ocorrenciasEstrategicas)],
+        ['Índice geral da rede', escapeHtml(indice)],
+        ['Escolas classificadas', valorRelatorio(k.escolasClassificadas)],
+        ['Dados insuficientes', valorRelatorio(k.escolasDadosInsuficientes)],
+      ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join('');
+
+      const escolasHtml = linhasTabelaRelatorio(escolas || [], [
+        { key: 'nome', render: e => `<strong>${escapeHtml(e.nome || e.sigla || 'Escola')}</strong><br><small>${escapeHtml(e.municipio || '—')}/${escapeHtml(e.estado || '—')}</small>` },
+        { key: 'alunos', render: e => valorRelatorio(e.alunos) },
+        { key: 'notificacoes', render: e => valorRelatorio(e.notificacoes) },
+        { key: 'elogios', render: e => valorRelatorio((e.indicadores?.elogios || 0) + (e.indicadores?.condecoracoes || 0)) },
+        { key: 'ocorrenciasEstrategicas', render: e => valorRelatorio(e.indicadores?.ocorrenciasEstrategicas || e.ocorrenciasEstrategicas || 0) },
+        { key: 'indice', render: e => e.classificavel === false || e.status?.chave === 'dados_insuficientes' ? '<span class="tag gray">Dados insuficientes</span>' : `<span class="tag">${Math.round(Number(e.indiceConvivencia || 0))}%</span>` },
+        { key: 'status', render: e => `<span class="tag ${escapeHtml(e.status?.chave || '')}">${escapeHtml(e.status?.rotulo || '—')}</span>` },
+      ]);
+
+      const tiposHtml = linhasTabelaRelatorio(tiposNegativos, [
+        { key: 'nome', render: t => escapeHtml(t.nome || 'Indicador') },
+        { key: 'total', render: t => valorRelatorio(t.total) },
+        { key: 'percentual', render: t => `${Math.round(Number(t.percentual || 0))}%` },
+      ]);
+
+      const alertasHtml = alertas.length ? alertas.map(a => `
+        <div class="alert ${escapeHtml(a.nivel || 'blue')}">
+          <strong>${escapeHtml(a.titulo || 'Alerta')}</strong>
+          <p>${escapeHtml(a.texto || '')}</p>
+        </div>
+      `).join('') : '<p class="muted">Nenhum alerta estratégico no período.</p>';
+
+      return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Relatório Executivo - Observatório Axoriin</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color:#102033; margin:0; background:#fff; }
+    .header { border-bottom: 3px solid #155eef; padding-bottom: 14px; margin-bottom: 18px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    h1 { margin:0; font-size: 24px; color:#071a3a; }
+    h2 { margin: 22px 0 10px; font-size: 16px; color:#071a3a; border-left:4px solid #155eef; padding-left:8px; }
+    p { line-height:1.45; }
+    .muted, small { color:#63708a; }
+    .meta { text-align:right; font-size:12px; color:#475569; }
+    .notice { border:1px solid #b9d5ff; background:#eef6ff; border-radius:12px; padding:12px 14px; font-size:13px; color:#0b3a7a; }
+    .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin:14px 0; }
+    .metric { border:1px solid #d9e2ef; border-radius:12px; padding:12px; background:#f8fafc; min-height:76px; }
+    .metric span { display:block; font-size:12px; color:#536179; margin-bottom:8px; }
+    .metric strong { font-size:22px; color:#071a3a; }
+    table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+    th { text-align:left; background:#0f2f66; color:white; padding:8px; }
+    td { border:1px solid #d8e1ef; padding:8px; vertical-align:top; }
+    tr:nth-child(even) td { background:#f8fafc; }
+    .tag { display:inline-block; padding:4px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-weight:700; font-size:11px; }
+    .tag.critico { background:#fee2e2; color:#991b1b; }
+    .tag.atencao, .tag.bom { background:#fef3c7; color:#92400e; }
+    .tag.gray, .tag.dados_insuficientes { background:#e2e8f0; color:#334155; }
+    .summary { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+    .box { border:1px solid #d9e2ef; border-radius:12px; padding:12px; background:#fff; }
+    .alert { border:1px solid #d9e2ef; border-radius:12px; padding:10px 12px; margin:8px 0; background:#f8fafc; }
+    .alert.red { border-color:#fecaca; background:#fff1f2; color:#7f1d1d; }
+    .alert.yellow { border-color:#fde68a; background:#fffbeb; color:#78350f; }
+    .alert.blue { border-color:#bfdbfe; background:#eff6ff; color:#1e3a8a; }
+    .footer { margin-top:24px; padding-top:10px; border-top:1px solid #d9e2ef; font-size:11px; color:#64748b; }
+    .actions { position: sticky; top:0; background:#fff; padding:10px 0 12px; margin-bottom:10px; display:flex; gap:8px; justify-content:flex-end; }
+    button { border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
+    .primary { background:#155eef; color:#fff; }
+    .secondary { background:#e2e8f0; color:#102033; }
+    @media print { .actions { display:none; } .header { break-after:avoid; } h2 { break-after:avoid; } }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button class="secondary" onclick="window.close()">Fechar</button>
+    <button class="primary" onclick="window.print()">Imprimir / salvar em PDF</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1>Relatório Executivo do Observatório Axoriin</h1>
+      <p class="muted">Visão agregada de convivência, proteção escolar e indicadores estratégicos.</p>
+    </div>
+    <div class="meta">
+      <strong>${escapeHtml(meta.escopo || 'Rede')}</strong><br>
+      Estado: ${escapeHtml(meta.estado || '—')}<br>
+      Período: ${escapeHtml(meta.periodo || '—')}<br>
+      Emitido em: ${escapeHtml(hoje)}
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>Critério do Observatório:</strong> ${escapeHtml(criterio)}<br>
+    ${escapeHtml(aviso)}
+  </div>
+
+  <h2>Indicadores principais</h2>
+  <div class="grid">${cards}</div>
+
+  <h2>Saúde comportamental das escolas</h2>
+  <div class="summary">
+    <div class="box"><strong>${valorRelatorio(saude.excelente || 0)}</strong><br><span class="muted">Excelente</span></div>
+    <div class="box"><strong>${valorRelatorio(saude.atencao || 0)}</strong><br><span class="muted">Atenção/Bom</span></div>
+    <div class="box"><strong>${valorRelatorio(saude.critico || 0)}</strong><br><span class="muted">Crítico</span></div>
+    <div class="box"><strong>${valorRelatorio(saude.insuficientes || 0)}</strong><br><span class="muted">Dados insuficientes</span></div>
+  </div>
+
+  <h2>Casos estratégicos mapeados</h2>
+  <table>
+    <thead><tr><th>Categoria</th><th>Total</th><th>Participação</th></tr></thead>
+    <tbody>${tiposHtml}</tbody>
+  </table>
+
+  <h2>Engajamento familiar</h2>
+  <div class="summary">
+    <div class="box"><strong>${valorRelatorio(eng.media || 0, '%')}</strong><br><span class="muted">Média geral</span></div>
+    <div class="box"><strong>${valorRelatorio(eng.acessaramPortal || 0)}</strong><br><span class="muted">Registros com ciência</span></div>
+    <div class="box"><strong>${valorRelatorio(eng.visualizaramNotificacoes || 0)}</strong><br><span class="muted">Visualizações</span></div>
+    <div class="box"><strong>${valorRelatorio(eng.responderamComunicados || 0)}</strong><br><span class="muted">Mensagens enviadas</span></div>
+  </div>
+
+  <h2>Escolas monitoradas</h2>
+  <table>
+    <thead><tr><th>Escola</th><th>Alunos</th><th>Notificações</th><th>Elogios</th><th>Estratégicas</th><th>Índice</th><th>Status</th></tr></thead>
+    <tbody>${escolasHtml}</tbody>
+  </table>
+
+  <h2>Alertas e avisos estratégicos</h2>
+  ${alertasHtml}
+
+  <div class="footer">
+    Relatório gerado pelo Axoriin Observatório Educacional. Dados agregados, sem exposição de nomes ou histórico individual de estudantes.
+  </div>
+</body>
+</html>`;
+    }
+
+    async function gerarRelatorioExecutivo() {
+      const btn = document.getElementById('btnExportar');
+      const textoOriginal = btn ? btn.textContent : '';
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Gerando relatório...';
+        }
+
+        let data = cacheResumoNormalizado;
+        if (!data) {
+          data = await carregarResumo();
+        }
+
+        let escolas = cacheEscolas;
+        if (modoAtual === 'rede' && (!Array.isArray(escolas) || !escolas.length)) {
+          const resp = await fetchJson(withTenant('/api/observatorio/escolas'));
+          escolas = Array.isArray(resp.escolas) ? resp.escolas : [];
+          cacheEscolas = escolas;
+        }
+
+        if (modoAtual === 'escola') {
+          escolas = (data.ranking || []).map(r => ({
+            nome: r.escola,
+            alunos: data.kpis?.alunos || 0,
+            notificacoes: data.kpis?.notificacoes || 0,
+            indicadores: {
+              elogios: data.kpis?.elogios || 0,
+              condecoracoes: 0,
+              ocorrenciasEstrategicas: data.kpis?.ocorrenciasEstrategicas || 0
+            },
+            indiceConvivencia: data.kpis?.indiceGeral,
+            classificavel: !(data.kpis?.escolasDadosInsuficientes > 0),
+            status: (data.saude?.insuficientes || 0) ? { chave: 'dados_insuficientes', rotulo: 'Dados insuficientes' } : { chave: 'excelente', rotulo: 'Classificada' }
+          }));
+        }
+
+        const html = montarHtmlRelatorio(data, escolas);
+        const w = window.open('', '_blank');
+        if (!w) {
+          mostrarToast('Pop-up bloqueado', 'Autorize pop-ups para abrir o relatório imprimível.');
+          return;
+        }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+      } catch (err) {
+        console.error('[Observatório][relatório]', err);
+        mostrarToast('Erro ao gerar relatório', 'Não foi possível montar o relatório executivo neste momento.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = textoOriginal || '⇩ Exportar Relatório';
+        }
+      }
+    }
+
+    document.getElementById('btnExportar').addEventListener('click', gerarRelatorioExecutivo);
+
+    document.getElementById('btnVoltarRede').addEventListener('click', voltarRede);
+    document.getElementById('cardEscolas').addEventListener('click', abrirModalEscolas);
+    document.getElementById('cardEscolas').addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') abrirModalEscolas();
+    });
+    document.getElementById('btnFecharModalEscolas').addEventListener('click', fecharModalEscolas);
+    document.getElementById('modalEscolas').addEventListener('click', (ev) => {
+      if (ev.target.id === 'modalEscolas') fecharModalEscolas();
+    });
+    document.getElementById('inputBuscaEscola').addEventListener('input', (ev) => {
+      const q = String(ev.target.value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      const filtradas = !q ? cacheEscolas : cacheEscolas.filter(e => `${e.nome || ''} ${e.sigla || ''} ${e.municipio || ''} ${e.estado || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(q));
+      renderizarListaEscolas(filtradas);
+    });
+
+    configurarPeriodo();
+    configurarMenuLateral();
+
+    (async function init() {
+      const me = await carregarUsuario();
+      if (!me) return;
+      const data = await carregarResumo();
+      render(data);
+    })();
+  </script>
+</body>
+</html>

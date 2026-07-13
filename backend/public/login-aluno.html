@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin • Portal do Aluno</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    :root {
+      --blue-900: #063b78;
+      --blue-800: #074b96;
+      --blue-700: #0b63c7;
+      --blue-500: #1683f5;
+      --blue-100: #eaf4ff;
+      --text: #102033;
+      --muted: #687789;
+      --line: #dce6f2;
+      --white: #ffffff;
+      --danger: #d93f4c;
+      --success: #128c55;
+      --radius: 28px;
+      --shadow: 0 24px 70px rgba(12, 45, 92, 0.20);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #eaf4ff, #f7fbff);
+      color: var(--text);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .login-shell {
+      width: 100%;
+      max-width: 1180px;
+      min-height: 680px;
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+      overflow-x: hidden;
+      border: 1px solid rgba(12, 75, 140, 0.08);
+    }
+      .sidebar::-webkit-scrollbar {
+      width: 6px;
+}
+
+      .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(37, 99, 235, 0.18);
+      border-radius: 999px;
+}
+    .hero {
+      position: relative;
+      padding: 48px;
+      background:
+        linear-gradient(135deg, rgba(4, 50, 104, 0.94), rgba(8, 96, 190, 0.86)),
+        url("https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1400&q=80");
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18), transparent 26%),
+        radial-gradient(circle at 80% 75%, rgba(52,169,255,0.28), transparent 34%);
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(to bottom, rgba(255,255,255,0.65), transparent 90%);
+      pointer-events: none;
+    }
+
+    .hero-content,
+    .hero-bottom {
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 60px;
+    }
+
+    .brand-mark {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 0.08em;
+      font-size: 21px;
+    }
+
+    .brand-text span {
+      display: block;
+      font-size: 13px;
+      opacity: 0.86;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .welcome-small {
+      font-size: 23px;
+      font-weight: 600;
+      opacity: 0.92;
+      margin-bottom: 10px;
+    }
+
+    .hero h1 {
+      font-size: clamp(42px, 5vw, 66px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      margin-bottom: 20px;
+      font-weight: 800;
+    }
+
+    .hero-lead {
+      max-width: 520px;
+      font-size: 21px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.88);
+      font-weight: 500;
+    }
+
+    .secure-card {
+      width: min(100%, 420px);
+      border-radius: 24px;
+      padding: 20px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.24);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.18);
+    }
+
+    .secure-card strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .secure-card p {
+      color: rgba(255,255,255,0.82);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .form-side {
+      background: #fff;
+      padding: 54px 52px 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    .mobile-brand {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .mobile-brand .brand-mark {
+      background: var(--blue-100);
+      color: var(--blue-800);
+      border-color: #d7eaff;
+      box-shadow: none;
+    }
+
+    .mobile-brand strong {
+      color: var(--blue-900);
+    }
+
+    .form-title {
+      font-size: 34px;
+      line-height: 1.12;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      margin-bottom: 10px;
+      color: #0c2340;
+    }
+
+    .form-subtitle {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .tenant-box {
+      display: none;
+      margin-bottom: 18px;
+      padding: 13px 15px;
+      border-radius: 16px;
+      background: #eef7ff;
+      border: 1px solid #cfe8ff;
+      color: #16446f;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .tenant-box strong {
+      color: var(--blue-700);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 18px;
+      background: #eef4fb;
+      border: 1px solid #e1ebf6;
+      margin-bottom: 22px;
+    }
+
+    .tab-btn {
+      height: 44px;
+      border: 0;
+      border-radius: 13px;
+      background: transparent;
+      cursor: pointer;
+      color: #65768a;
+      font-weight: 800;
+      font-size: 14px;
+      transition: 0.18s ease;
+    }
+
+    .tab-btn.active {
+      background: #fff;
+      color: var(--blue-800);
+      box-shadow: 0 8px 20px rgba(12, 75, 140, 0.10);
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #24374f;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .field input {
+      width: 100%;
+      height: 56px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fbfdff;
+      color: var(--text);
+      outline: none;
+      padding: 0 16px;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      transition: 0.18s ease;
+    }
+
+    .field input::placeholder {
+      color: #9aa8b8;
+    }
+
+    .field input:focus {
+      border-color: rgba(22, 131, 245, 0.62);
+      box-shadow: 0 0 0 4px rgba(22, 131, 245, 0.10);
+      background: #fff;
+    }
+
+    .password-input {
+      padding-right: 92px !important;
+    }
+
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 9px;
+      transform: translateY(-50%);
+      border: 0;
+      background: #eef7ff;
+      color: var(--blue-700);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 9px 12px;
+      border-radius: 12px;
+      transition: 0.18s ease;
+    }
+
+    .password-toggle:hover {
+      background: #dcedff;
+    }
+
+    .hint {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 56px;
+      margin-top: 4px;
+      border: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--blue-700), var(--blue-500));
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      box-shadow: 0 16px 34px rgba(22, 131, 245, 0.28);
+      transition: 0.18s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(22, 131, 245, 0.34);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.68;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .support-row {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .support-row a {
+      color: var(--blue-700);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .support-row a:hover {
+      text-decoration: underline;
+    }
+
+    .back-row {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-link {
+      border: 0;
+      background: transparent;
+      color: #708195;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 8px 10px;
+    }
+
+    .btn-link:hover {
+      color: var(--blue-700);
+      text-decoration: underline;
+    }
+
+    .feedback {
+      min-height: 44px;
+      margin-top: 16px;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 14px;
+      display: none;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    .feedback.show {
+      display: block;
+    }
+
+    .feedback.error {
+      background: #fff0f2;
+      color: var(--danger);
+      border: 1px solid #ffd0d6;
+    }
+
+    .feedback.success {
+      background: #effaf5;
+      color: var(--success);
+      border: 1px solid #c9f1df;
+    }
+
+    .copyright {
+      margin-top: 34px;
+      text-align: center;
+      color: #92a0b0;
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 18px;
+      }
+
+      .login-shell {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+        min-height: auto;
+      }
+
+      .hero {
+        display: none;
+      }
+
+      .form-side {
+        padding: 34px 24px 26px;
+      }
+
+      .mobile-brand {
+        display: flex;
+      }
+
+      .form-card {
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      .login-shell {
+        border-radius: 22px;
+      }
+
+      .form-side {
+        padding: 26px 18px 22px;
+      }
+
+      .form-title {
+        font-size: 29px;
+      }
+
+      .tabs {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="login-shell">
+    <section class="hero">
+      <div class="hero-content">
+        <div class="brand-row">
+          <div class="brand-mark">A</div>
+          <div class="brand-text">
+            <strong>AXORIIN</strong>
+            <span>Gestão escolar inteligente</span>
+          </div>
+        </div>
+
+        <p class="welcome-small">Bem-vindo(a) ao</p>
+        <h1>Portal do Aluno e Responsável</h1>
+        <p class="hero-lead">
+          Aluno acessa atividades e estudos. Responsável acompanha a ficha disciplinar do estudante.
+        </p>
+      </div>
+
+      <div class="hero-bottom">
+        <div class="secure-card">
+          <strong>Acesso seguro</strong>
+          <p>
+            Aluno e responsável possuem acessos diferentes. Use a opção correta antes de entrar.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-side">
+      <div class="form-card">
+        <div class="mobile-brand">
+          <div class="brand-mark">A</div>
+          <div class="brand-text">
+            <strong>AXORIIN</strong>
+            <span>Portal do Aluno e Responsável</span>
+          </div>
+        </div>
+
+        <h2 class="form-title">Login do Aluno e Responsável</h2>
+        <p class="form-subtitle">
+          Aluno: use código de acesso e senha. Responsável: use e-mail e senha.
+        </p>
+
+        <div id="tenantInfo" class="tenant-box"></div>
+
+        <form id="formLoginAluno" autocomplete="on">
+          <div class="tabs" role="tablist" aria-label="Tipo de acesso">
+            <button type="button" class="tab-btn active" id="tabCodigo" data-mode="codigo">
+              Aluno: Código
+            </button>
+            <button type="button" class="tab-btn" id="tabEmail" data-mode="email">
+              Responsável: E-mail
+            </button>
+          </div>
+
+          <div class="field">
+            <label for="login" id="loginLabel">Código de acesso do aluno</label>
+            <div class="input-wrap">
+              <input
+                type="text"
+                id="login"
+                name="login"
+                placeholder="Ex.: AXR-ABC-123456"
+                autocomplete="username"
+                required
+              />
+            </div>
+            <div class="hint" id="loginHint">
+              Uso exclusivo do aluno. Exemplo: AXR-12345 ou código informado pela escola.
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="senha">Senha de acesso</label>
+            <div class="input-wrap">
+              <input
+                type="password"
+                id="senha"
+                name="senha"
+                class="password-input"
+                placeholder="Digite sua senha"
+                autocomplete="current-password"
+                required
+              />
+              <button type="button" class="password-toggle" id="toggleSenha">
+                Mostrar
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btnEntrar">
+            Entrar
+          </button>
+
+          <div id="feedback" class="feedback"></div>
+
+          <div class="support-row">
+            <span>Não possui acesso?</span>
+            <a href="#" onclick="return false;">Procure a administração da sua instituição.</a>
+          </div>
+
+          <div class="back-row">
+            <button type="button" class="btn-link" id="btnVoltar">
+              Voltar
+            </button>
+          </div>
+
+          <div class="support-row">
+            <a href="login.html" id="linkLoginPadrao">Login administrativo</a>
+          </div>
+
+          <div class="copyright">
+            © 2026 Axoriin
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const form = document.getElementById('formLoginAluno');
+      const inputLogin = document.getElementById('login');
+      const inputSenha = document.getElementById('senha');
+      const btnEntrar = document.getElementById('btnEntrar');
+      const btnVoltar = document.getElementById('btnVoltar');
+      const feedback = document.getElementById('feedback');
+      const tenantInfo = document.getElementById('tenantInfo');
+      const toggleSenha = document.getElementById('toggleSenha');
+      const linkLoginPadrao = document.getElementById('linkLoginPadrao');
+
+      const tabCodigo = document.getElementById('tabCodigo');
+      const tabEmail = document.getElementById('tabEmail');
+      const loginLabel = document.getElementById('loginLabel');
+      const loginHint = document.getElementById('loginHint');
+
+      const params = new URLSearchParams(window.location.search);
+      const tenant = (params.get('t') || '').trim();
+      const redirect = (params.get('redirect') || '').trim();
+
+      let loginMode = 'codigo';
+
+      const STORAGE = {
+        token: 'axoriin_aluno_token',
+        usuario: 'axoriin_aluno_usuario',
+        tenant: 'axoriin_tenant',
+        aluno: 'axoriin_aluno',
+        authType: 'axoriin_auth_type'
+      };
+
+      function setFeedback(message, type) {
+        feedback.textContent = message || '';
+        feedback.className = 'feedback show ' + (type || 'error');
+      }
+
+      function clearFeedback() {
+        feedback.textContent = '';
+        feedback.className = 'feedback';
+      }
+
+      function setLoading(isLoading) {
+        btnEntrar.disabled = isLoading;
+        inputLogin.disabled = isLoading;
+        inputSenha.disabled = isLoading;
+        tabCodigo.disabled = isLoading;
+        tabEmail.disabled = isLoading;
+        btnEntrar.textContent = isLoading ? 'Entrando...' : 'Entrar';
+      }
+
+      function buildUrl(path) {
+        if (!tenant) return path;
+        const join = path.includes('?') ? '&' : '?';
+        return path + join + 't=' + encodeURIComponent(tenant);
+      }
+
+      function detectIfEmail(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+      }
+
+      function setLoginMode(mode) {
+        loginMode = mode === 'email' ? 'email' : 'codigo';
+
+        tabCodigo.classList.toggle('active', loginMode === 'codigo');
+        tabEmail.classList.toggle('active', loginMode === 'email');
+
+        inputLogin.value = '';
+        clearFeedback();
+
+        if (loginMode === 'email') {
+          loginLabel.textContent = 'E-mail';
+          inputLogin.type = 'email';
+          inputLogin.placeholder = 'Ex.: aluno@email.com';
+          loginHint.textContent = 'Use o e-mail vinculado ao seu usuário de aluno.';
+          return;
+        }
+
+        loginLabel.textContent = 'Código de acesso';
+        inputLogin.type = 'text';
+        inputLogin.placeholder = 'Ex.: AXR-ABC-123456';
+        loginHint.textContent = 'Use o código de acesso fornecido pela escola.';
+      }
+
+      function showTenantInfo() {
+        if (!tenant) return;
+
+        tenantInfo.style.display = 'block';
+        tenantInfo.innerHTML = 'Instituição/tenant detectado: <strong>' + tenant + '</strong>';
+      }
+
+      function applyTenantToLinks() {
+        if (tenant) {
+          linkLoginPadrao.href = buildUrl('login.html');
+        }
+      }
+
+      function maybeRedirectIfAlreadyLogged() {
+        try {
+          const token = localStorage.getItem(STORAGE.token);
+          const usuario = JSON.parse(localStorage.getItem(STORAGE.usuario) || 'null');
+
+          if (token && usuario) {
+  const portalSalvo =
+    usuario.portal ||
+    (usuario.tipo === 'responsavel' ? 'responsavel' : 'aluno');
+
+  const destino = portalSalvo === 'responsavel'
+    ? 'ficha-responsavel.html'
+    : 'painel-aluno.html';
+
+  window.location.href = buildUrl(destino);
+}
+        } catch (_) {}
+      }
+
+      async function fazerLoginAluno(event) {
+        event.preventDefault();
+        clearFeedback();
+
+        const login = String(inputLogin.value || '').trim();
+        const senha = String(inputSenha.value || '').trim();
+
+        if (!login || !senha) {
+          setFeedback('Informe suas credenciais e também a senha.', 'error');
+          return;
+        }
+
+        if (loginMode === 'email' && !detectIfEmail(login)) {
+          setFeedback('Informe um e-mail válido para acessar o portal.', 'error');
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const payload = {
+            senha
+          };
+
+          if (loginMode === 'email' || detectIfEmail(login)) {
+            payload.email = login;
+          } else {
+            payload.codigoAcesso = login;
+          }
+
+          if (tenant) {
+            payload.tenant = tenant;
+            payload.t = tenant;
+          }
+
+          const response = await fetch('/auth/login-aluno', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+          });
+
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            setFeedback(
+              data.message || data.mensagem || 'Não foi possível realizar o login do aluno.',
+              'error'
+            );
+            return;
+          }
+
+          const token = data.token || data.accessToken || data.jwt || '';
+          const usuario = data.usuario || data.user || null;
+          const aluno = data.aluno || null;
+          const tenantFinal =
+            data.tenant ||
+            data.instituicao?.slug ||
+            data.instituicao?.id ||
+            data.instituicao?._id ||
+            usuario?.tenant ||
+            usuario?.instituicaoSlug ||
+            tenant ||
+            'cmdpii';
+
+          if (!token) {
+            setFeedback('Login realizado, mas o token não foi retornado pela API.', 'error');
+            return;
+          }
+
+          const portalFinal =
+  data.portal ||
+  usuario?.portal ||
+  (usuario?.tipo === 'responsavel' ? 'responsavel' : 'aluno');
+
+localStorage.setItem(STORAGE.token, token);
+localStorage.setItem(STORAGE.authType, portalFinal);
+
+if (usuario) {
+  localStorage.setItem(STORAGE.usuario, JSON.stringify({
+    ...usuario,
+    portal: portalFinal
+  }));
+}
+
+if (aluno) {
+  localStorage.setItem(STORAGE.aluno, JSON.stringify(aluno));
+}
+
+localStorage.setItem(STORAGE.tenant, tenantFinal);
+localStorage.setItem('smartclass_tenant', tenantFinal);
+
+setFeedback('Login realizado com sucesso. Redirecionando...', 'success');
+
+let destino = redirect;
+
+if (!destino) {
+  if (portalFinal === 'responsavel') {
+    const alunoId =
+      aluno?._id ||
+      usuario?.alunoId;
+
+    destino =
+      'ficha-aluno.html?id=' +
+      encodeURIComponent(alunoId);
+  } else {
+    destino = 'painel-aluno.html';
+  }
+}
+
+const separador = destino.includes('?') ? '&' : '?';
+
+window.location.href =
+  destino +
+  separador +
+  't=' +
+  encodeURIComponent(tenantFinal);
+        } catch (error) {
+          console.error('Erro no login do aluno:', error);
+          setFeedback('Erro de conexão ao tentar entrar no portal do aluno.', 'error');
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function alternarSenha() {
+        const isPassword = inputSenha.type === 'password';
+        inputSenha.type = isPassword ? 'text' : 'password';
+        toggleSenha.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+      }
+
+      function voltar() {
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+        window.location.href = buildUrl('index.html');
+      }
+
+      tabCodigo.addEventListener('click', function () {
+        setLoginMode('codigo');
+      });
+
+      tabEmail.addEventListener('click', function () {
+        setLoginMode('email');
+      });
+
+      toggleSenha.addEventListener('click', alternarSenha);
+      form.addEventListener('submit', fazerLoginAluno);
+      btnVoltar.addEventListener('click', voltar);
+
+      showTenantInfo();
+      applyTenantToLinks();
+      setLoginMode('codigo');
+
+      // IMPORTANTE:
+      // Não redirecionar automaticamente para o painel apenas porque existe token salvo.
+      // O token pode estar expirado/antigo e isso fazia o aluno pular o login e cair em “Token ausente”.
+      // maybeRedirectIfAlreadyLogged();
+    })();
+  </script>
+</body>
+</html>

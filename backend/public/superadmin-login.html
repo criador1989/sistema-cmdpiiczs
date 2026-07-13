@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperAdmin • Axoriin</title>
+  <style>
+    :root{
+      --bg:#050816;
+      --panel:#0d1630;
+      --panel-2:#101d3f;
+      --line:rgba(120,170,255,.22);
+      --text:#eaf2ff;
+      --muted:#9db2d9;
+      --cyan:#22c7ff;
+      --violet:#7b6dff;
+      --danger:#ff6b81;
+      --ok:#36d399;
+      --shadow:0 20px 60px rgba(0,0,0,.38);
+      --radius:20px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#0c1d4e 0%,#061028 35%,#030712 100%);color:var(--text);min-height:100%}
+    body{display:flex;align-items:center;justify-content:center;padding:24px}
+
+    .card{
+      width:100%;
+      max-width:460px;
+      background:linear-gradient(180deg,rgba(14,28,63,.95),rgba(9,18,41,.96));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .head{
+      padding:24px 24px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(34,199,255,.25);
+      color:#bfeeff;
+      background:rgba(34,199,255,.08);
+      font-size:12px;
+      margin-bottom:14px;
+    }
+
+    h1{
+      margin:0 0 8px;
+      font-size:28px;
+      line-height:1.1;
+    }
+
+    p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    form{
+      padding:24px;
+    }
+
+    .field{
+      margin-bottom:16px;
+    }
+
+    label{
+      display:block;
+      font-size:13px;
+      color:#cfe0ff;
+      margin-bottom:8px;
+      font-weight:700;
+    }
+
+    input{
+      width:100%;
+      height:52px;
+      border-radius:14px;
+      border:1px solid rgba(122,157,224,.28);
+      background:rgba(8,18,44,.8);
+      color:var(--text);
+      padding:0 16px;
+      outline:none;
+      font-size:16px;
+    }
+
+    input:focus{
+      border-color:rgba(34,199,255,.7);
+      box-shadow:0 0 0 4px rgba(34,199,255,.12);
+    }
+
+    .actions{
+      display:flex;
+      gap:12px;
+      margin-top:8px;
+    }
+
+    button{
+      width:100%;
+      height:54px;
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:16px;
+      font-weight:800;
+      color:#06111f;
+      background:linear-gradient(90deg,var(--cyan),var(--violet));
+      transition:transform .15s ease, opacity .15s ease;
+    }
+
+    button:hover{transform:translateY(-1px)}
+    button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+    .msg{
+      margin-top:14px;
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:14px;
+      line-height:1.45;
+      display:none;
+    }
+
+    .msg.error{
+      display:block;
+      background:rgba(255,107,129,.12);
+      border:1px solid rgba(255,107,129,.25);
+      color:#ffc2cb;
+    }
+
+    .msg.ok{
+      display:block;
+      background:rgba(54,211,153,.1);
+      border:1px solid rgba(54,211,153,.25);
+      color:#b6ffe4;
+    }
+
+    .foot{
+      padding:0 24px 24px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .foot a{
+      color:#bfeeff;
+      text-decoration:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div class="badge">Acesso restrito • SuperAdmin</div>
+      <h1>Painel Central</h1>
+      <p>Entre com sua conta de SuperAdmin para gerenciar instituições, usuários master e multi-tenant.</p>
+    </div>
+
+    <form id="formLogin">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" autocomplete="username" required />
+      </div>
+
+      <div class="field">
+        <label for="senha">Senha</label>
+        <input id="senha" name="senha" type="password" autocomplete="current-password" required />
+      </div>
+
+      <div class="actions">
+        <button id="btnEntrar" type="submit">Entrar</button>
+      </div>
+
+      <div id="msg" class="msg"></div>
+    </form>
+
+    <div class="foot">
+      Após autenticar, você será levado ao <a href="/master-instituicoes.html">painel master</a>.
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('formLogin');
+    const btn = document.getElementById('btnEntrar');
+    const msg = document.getElementById('msg');
+
+    function setMsg(text, type) {
+      msg.className = 'msg ' + type;
+      msg.textContent = text;
+    }
+
+    function clearMsg() {
+      msg.className = 'msg';
+      msg.textContent = '';
+    }
+
+    async function checkSession() {
+      try {
+        const r = await fetch('/api/superadmin/me', {
+          credentials: 'include'
+        });
+
+        if (r.ok) {
+          window.location.href = '/master-instituicoes.html';
+        }
+      } catch (_) {}
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMsg();
+      btn.disabled = true;
+      btn.textContent = 'Entrando...';
+
+      try {
+        const email = document.getElementById('email').value.trim();
+        const senha = document.getElementById('senha').value;
+
+        const r = await fetch('/api/superadmin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, senha })
+        });
+
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok || !data.ok) {
+          throw new Error(data.erro || 'Falha no login.');
+        }
+
+        setMsg('Login realizado com sucesso. Redirecionando...', 'ok');
+
+        setTimeout(() => {
+          window.location.href = '/master-instituicoes.html';
+        }, 700);
+      } catch (err) {
+        setMsg(err.message || 'Não foi possível entrar.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
+    });
+
+    checkSession();
+  </script>
+  <script src="/update-client.js"></script>
+</body>
+</html>

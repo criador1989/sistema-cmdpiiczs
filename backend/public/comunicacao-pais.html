@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comunicação aos Pais</title>
+  <meta name="theme-color" content="#8B0000"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <link rel="icon" href="./icons/icon-192x192.png"/>
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png"/>
+
+  <style>
+    /* =========================
+       VARIÁVEIS GERAIS GLASS
+    ========================== */
+    :root{
+      /* vidro neutro */
+      --glass-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.40);
+      --glass-highlight: rgba(255,255,255,0.7);
+
+      --glass-radius: 22px;
+      --glass-blur: 18px;
+      --glass-shadow:
+        0 2px 6px rgba(0,0,0,0.15),
+        0 8px 22px rgba(0,0,0,0.20);
+
+      --text-main: #ffffff;
+      --text-soft: rgba(255,255,255,0.78);
+
+      --rubi-1:#8B0000;
+      --rubi-2:#B22222;
+
+      --ok:#1aa46f;
+      --warn:#e2b93b;
+      --bad:#e55353;
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100vh;
+    }
+
+    /* =========================
+       FUNDO – MESMO DO PAINEL
+    ========================== */
+    body{
+      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color:var(--text-main);
+      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      color-scheme:dark;
+      -webkit-font-smoothing:antialiased;
+      display:block;
+      min-height:100vh;
+    }
+
+    /* sem overlay colorido forte aqui */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:transparent;
+    }
+
+    /* Forçar textos para branco (igual painel) */
+    body, html,
+    h1, h2, h3, h4, h5, h6,
+    label, input, textarea, select,
+    .card *, .sidebar *, .nav a, .nav a span,
+    .sb-logout, .sb-logout *, .nav a.active,
+    .nav a i, .sidebar i,
+    .statusbar *, .toast, .bottom-nav button, .bottom-nav button span {
+      color:#ffffff !important;
+    }
+
+    /* =========================
+       LAYOUT GERAL
+    ========================== */
+    .page{
+      position:relative;
+      z-index:1;
+      width:100%;
+      display:grid;
+      grid-template-columns:280px 1fr;
+      gap:22px;
+      padding:20px;
+      min-height:100vh;
+    }
+
+    @media(max-width:1024px){
+      .page{
+        grid-template-columns:1fr;
+        padding:14px;
+      }
+    }
+
+    /* =========================
+       SIDEBAR – VIDRO ESCURO
+    ========================== */
+    .sidebar{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      height:calc(100dvh - 40px);
+      position:sticky;
+      top:20px;
+      border-radius:26px;
+      background:rgba(10,10,12,0.82);
+      border:1px solid rgba(255,255,255,0.10);
+      backdrop-filter:blur(var(--glass-blur));
+      -webkit-backdrop-filter:blur(var(--glass-blur));
+      box-shadow:0 10px 40px rgba(0,0,0,0.65);
+      animation:slideIn .6s ease both;
+    }
+
+    @media(max-width:1024px){
+      .sidebar{ display:none; }
+    }
+
+    .sb-head{
+      padding:18px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      border-bottom:1px solid rgba(255,255,255,0.16);
+    }
+
+    .brand{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:radial-gradient(circle at 30% 20%, #ffffff66, #111);
+      box-shadow:0 6px 16px rgba(0,0,0,0.75);
+    }
+
+    .sb-title{
+      font-weight:700;
+      font-size:.98rem;
+    }
+
+    .nav{
+      padding:10px 12px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .nav a{
+      text-decoration:none;
+      font-size:.92rem;
+      padding:11px 14px;
+      border-radius:18px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border:1px solid transparent;
+      background:rgba(255,255,255,0.04);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      transition:
+        background .2s ease,
+        border-color .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
+    }
+
+    .nav a:hover{
+      background:rgba(255,255,255,0.08);
+      border-color:rgba(255,255,255,0.20);
+      box-shadow:0 6px 16px rgba(0,0,0,0.7);
+      transform:translateY(-1px);
+    }
+
+    .nav a.active{
+      background:rgba(255,255,255,0.18);
+      border-color:rgba(255,255,255,0.35);
+      box-shadow:0 8px 20px rgba(0,0,0,0.8);
+    }
+
+    .sb-foot{
+      margin-top:auto;
+      padding:12px 14px 16px;
+      border-top:1px solid rgba(255,255,255,0.16);
+    }
+
+    /* =========================
+       BOTÃO SAIR – PÍLULA GLASS
+    ========================== */
+    .sb-logout{
+      position: relative;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.5);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      padding: 10px 0;
+      cursor: pointer;
+      font-size: 0;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.7);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow: hidden;
+      transition:
+        transform .20s ease,
+        box-shadow .20s ease,
+        background .20s ease,
+        border-color .20s ease;
+    }
+
+    .sb-logout::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.35) 0%,
+        rgba(255,255,255,0.08) 30%,
+        transparent 60%
+      );
+      pointer-events:none;
+    }
+
+    .sb-logout::after{
+      content:"⏻";
+      position:relative;
+      display:inline-block;
+      font-size:1.2rem;
+      font-weight:600;
+    }
+
+    .sb-logout:hover{
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.7);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.9);
+      transform: translateY(-2px);
+    }
+    .sb-logout:active{
+      transform: translateY(0);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    }
+
+    /* =========================
+       CONTEÚDO / CARD
+    ========================== */
+    .content{ width:100%; }
+    .wrap{
+      width:min(1180px,100%);
+      margin:0 auto 84px;
+    }
+
+    .card{
+      border-radius: var(--glass-radius);
+      background: rgba(255,255,255,0.015);
+      border: 1px solid rgba(255,255,255,0.25);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      box-shadow: var(--glass-shadow);
+      position:relative;
+      overflow:hidden;
+      padding:26px 24px 30px;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.25) 0%,
+        rgba(255,255,255,0.08) 12%,
+        transparent 32%
+      );
+      pointer-events:none;
+    }
+
+    .card > *{
+      position:relative;
+      z-index:1;
+    }
+
+    h2{
+      margin:0 0 6px;
+      text-align:center;
+      color:#fff;
+      text-shadow:0 2px 6px rgba(0,0,0,0.7);
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+
+    .subtitle{
+      text-align:center;
+      color:var(--text-soft);
+      margin-bottom:18px;
+      font-size:.95rem;
+    }
+
+    /* =========================
+       GRID / FORM / CAMPOS
+    ========================== */
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width:900px){
+      .grid{grid-template-columns:1fr;}
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+    @media (max-width:900px){
+      .row{grid-template-columns:1fr 1fr;}
+    }
+    @media (max-width:640px){
+      .row{grid-template-columns:1fr;}
+    }
+
+    label{
+      font-weight:700;
+      font-size:.9rem;
+      color:var(--text-soft);
+      margin-bottom:4px;
+      display:block;
+    }
+
+    input, textarea, select{
+      width:100%;
+      padding:11px 11px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.24);
+      background:rgba(0,0,0,0.45);
+      color:#fff;
+      font-size:.95rem;
+      outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    input::placeholder,
+    textarea::placeholder{
+      color:var(--text-soft);
+    }
+
+    input:focus, textarea:focus, select:focus{
+      border-color:rgba(255,255,255,0.80);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.36),
+        0 10px 26px rgba(0,0,0,0.9);
+    }
+
+    textarea{
+      min-height:120px;
+      resize:vertical;
+    }
+
+    /* =========================
+       AÇÕES / BOTÕES
+    ========================== */
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-top:18px;
+    }
+
+    .btn{
+      appearance:none;
+      border:0;
+      border-radius:999px;
+      padding:10px 16px;
+      cursor:pointer;
+      color:#fff;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      font-size:.9rem;
+      box-shadow:0 10px 26px rgba(0,0,0,0.75);
+      background:rgba(0,0,0,0.55);
+      transition:
+        background .18s ease,
+        box-shadow .18s ease,
+        transform .18s ease,
+        filter .18s ease;
+    }
+
+    .btn.primary{
+      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
+      border:1px solid rgba(255,255,255,0.45);
+    }
+
+    .btn.pdf{
+      background:linear-gradient(135deg,#0f6abf,#0ea5e9);
+      border:1px solid rgba(186,230,253,0.8);
+    }
+
+    .btn.ghost{
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.32);
+    }
+
+    .btn:hover{
+      filter:brightness(1.06);
+      transform:translateY(-1px);
+      box-shadow:0 14px 34px rgba(0,0,0,0.9);
+    }
+
+    .btn:active{
+      transform:translateY(0);
+      box-shadow:0 8px 22px rgba(0,0,0,0.8);
+    }
+
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      box-shadow:none;
+    }
+
+    /* =========================
+       STATUS / PILLS / PRINT
+    ========================== */
+    .statusbar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:10px 0 0;
+      justify-content:flex-end;
+      font-size:.8rem;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(0,0,0,.45);
+      font-weight:800;
+      font-size:.8rem;
+    }
+    .pill.ok{border-color:rgba(33,166,122,.7);}
+    .pill.bad{border-color:rgba(229,83,83,.7);}
+
+    .print-area{
+      background:rgba(0,0,0,0.40);
+      border:1px dashed rgba(255,255,255,0.24);
+      border-radius:16px;
+      padding:16px;
+      margin-top:18px;
+    }
+
+    .sig-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:22px;
+      margin-top:32px;
+    }
+    @media (max-width:700px){
+      .sig-row{grid-template-columns:1fr;}
+    }
+
+    .sig{
+      position:relative;
+      height:68px;
+    }
+    .sig::before{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:18px;
+      border-bottom:1px solid rgba(255,255,255,.6);
+    }
+    .sig span{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      text-align:center;
+      color:var(--text-soft);
+      font-size:.9rem;
+    }
+
+    /* =========================
+       TOAST
+    ========================== */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:24px;
+      transform:translateX(-50%);
+      background:rgba(12,17,26,0.95);
+      border:1px solid #2a303a;
+      color:#e9ecf1;
+      padding:10px 14px;
+      border-radius:12px;
+      box-shadow:0 12px 35px rgba(0,0,0,.6);
+      z-index:9999;
+      display:none;
+      font-size:.9rem;
+    }
+    .toast.ok{border-color:#1f6e52;}
+    .toast.err{border-color:#6e1f1f;}
+
+    /* =========================
+       NAV INFERIOR (CELULAR)
+    ========================== */
+    .bottom-nav{
+      position:fixed;
+      inset-inline:0;
+      bottom:0;
+      display:none;
+      z-index:50;
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      background:rgba(10,10,12,0.9);
+      border-top:1px solid rgba(255,255,255,0.16);
+    }
+
+    .bottom-nav .row{
+      display:flex;
+      max-width:100%;
+      margin:0 auto;
+    }
+
+    .bottom-nav button{
+      appearance:none;
+      background:transparent;
+      border:0;
+      padding:8px 10px 10px;
+      font-size:.8rem;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+      flex:1 1 0;
+      white-space:nowrap;
+    }
+
+    .bottom-nav button span{ font-size:.72rem; }
+
+    .bottom-nav button.active{
+      background:rgba(255,255,255,0.18);
+    }
+
+    @media(max-width:1024px){
+      .bottom-nav{ display:block; }
+      .wrap{ margin-bottom:80px; }
+    }
+
+    /* =========================
+       PRINT
+    ========================== */
+    @media print{
+      .sidebar, .actions, .bottom-nav, .statusbar { display:none!important; }
+      .page{display:block;padding:0;}
+      body{
+        background:#fff;
+        color:#000;
+      }
+      .card{
+        box-shadow:none;
+        border:0;
+        background:#fff;
+      }
+      input,textarea,select{
+        background:#fff;
+        color:#000 !important;
+        border-color:#888;
+      }
+    }
+
+    @keyframes slideIn{
+      from{opacity:0; transform:translateX(-8px);}
+      to{opacity:1; transform:translateX(0);}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Navegação lateral">
+      <div class="sb-head">
+        <div class="brand"></div>
+        <div>
+          <div class="sb-title">CMDPII</div>
+          <div style="font-size:.8rem;color:var(--text-soft)">Sistema Escolar</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="painel.html">🏠 Painel</a>
+        <a href="lista-alunos.html">👥 Alunos</a>
+        <a class="active" href="/notificacoes">🔔 Notificações</a>
+        <a href="estatisticas.html">📉 Relatórios</a>
+        <a href="mensagens.html">✉️ Mensagens</a>
+        <a href="usuarios.html">⚙️ Administração</a>
+        <a href="logs.html">🧾 Logs</a>
+      </nav>
+      <div class="sb-foot">
+        <button class="sb-logout" onclick="logout()">🚪 Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="wrap">
+        <section class="card">
+          <h2>Comunicação aos Pais/Responsáveis</h2>
+          <div class="subtitle">Cumprimento de medida disciplinar em contraturno</div>
+
+          <!-- Status da mensageria -->
+          <div class="statusbar" id="statusbar" aria-live="polite"></div>
+
+          <!-- Dados básicos (somente leitura) -->
+          <div class="grid" style="margin-top:10px">
+            <div>
+              <label>Aluno</label>
+              <input type="text" id="nomeAluno" readonly>
+            </div>
+            <div>
+              <label>Turma</label>
+              <input type="text" id="turma" readonly>
+            </div>
+            <div>
+              <label>Instituição</label>
+              <input type="text" id="instituicao" readonly>
+            </div>
+            <div>
+              <label>Data da Notificação</label>
+              <input type="date" id="dataNotificacao" readonly>
+            </div>
+          </div>
+
+          <div class="grid" style="margin-top:12px">
+            <div>
+              <label>Medida Disciplinar</label>
+              <input type="text" id="tipoMedida" readonly>
+            </div>
+            <div>
+              <label>Nº da Notificação</label>
+              <input type="text" id="numeroSequencial" readonly>
+            </div>
+          </div>
+
+          <!-- Editáveis -->
+          <div class="row" style="margin-top:16px">
+            <div>
+              <label>Data de Início</label>
+              <input type="date" id="dataInicio">
+            </div>
+            <div>
+              <label>Data de Fim</label>
+              <input type="date" id="dataFim">
+            </div>
+            <div>
+              <label>Hora de Apresentação</label>
+              <input type="time" id="horaApresentacao" value="14:00">
+            </div>
+            <div>
+              <label>Hora de Saída</label>
+              <input type="time" id="horaSaida" value="18:00">
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Observações (opcional)</label>
+            <textarea id="observacao" placeholder="Escreva orientações para os responsáveis, atividades a cumprir, local de apresentação, etc."></textarea>
+          </div>
+
+          <div class="actions">
+            <button class="btn ghost" onclick="history.back()">← Voltar</button>
+            <button class="btn pdf" id="btnPdf" disabled>📄 Gerar PDF</button>
+            <button class="btn primary" id="btnSalvar">💾 Salvar</button>
+            <button class="btn ghost" id="btnEnviar">✉️ Enviar aos responsáveis</button>
+            <button class="btn ghost" onclick="window.print()">🖨️ Imprimir</button>
+          </div>
+
+          <!-- Área pensada para impressão -->
+          <div class="print-area" id="previewArea" style="display:none"></div>
+
+          <div class="sig-row">
+            <div class="sig"><span>Assinatura do Responsável</span></div>
+            <div class="sig"><span>Assinatura do Coordenador do Corpo de Alunos</span></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="bottom-nav" aria-label="Navegação inferior">
+    <div class="row">
+      <button onclick="location.href='painel.html'">🏠<span>Painel</span></button>
+      <button onclick="location.href='lista-alunos.html'">👥<span>Alunos</span></button>
+      <button class="active" onclick="location.href='/notificacoes'">🔔<span>Notifs</span></button>
+      <button onclick="location.href='estatisticas.html'">📊<span>Gráficos</span></button>
+      <button onclick="location.href='usuarios.html'">⚙️<span>Perfil</span></button>
+    </div>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // ===== Helpers =====
+    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
+
+    function showError(msg){
+      toast(`Erro: ${msg}`, 'error');
+    }
+    function toast(msg, type='ok'){
+      const el = document.getElementById('toast');
+      el.className = `toast ${type==='error'?'err':'ok'}`;
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(el._t); el._t = setTimeout(()=>el.style.display='none', 2800);
+    }
+
+    function toISODate(d){
+      if(!d) return '';
+      const x=new Date(d); const y=x.getFullYear(); const m=String(x.getMonth()+1).padStart(2,'0'); const dd=String(x.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    }
+    function fromISODate(s){
+      if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y, (m-1), d);
+    }
+
+    async function fetchJSON(url, opts={}){
+      const ctl = new AbortController();
+      const id = setTimeout(()=>ctl.abort(), opts.timeoutMs ?? 12000);
+      try{
+        const r = await fetch(url, { credentials:'include', ...opts, signal: ctl.signal });
+        const ct = r.headers.get('content-type')||'';
+        const data = ct.includes('application/json') ? await r.json().catch(()=> ({})) : {};
+        if (r.status === 401){ location.href = './login.html'; throw new Error('401'); }
+        if (!r.ok) throw new Error(data.mensagem || data.message || data.error || `Erro ${r.status}`);
+        return data;
+      } finally { clearTimeout(id); }
+    }
+
+    async function logout(){
+      try{ await fetch(API('/auth/logout'), { method:'POST', credentials:'include', cache:'no-store' }); }catch{}
+      location.href='./login.html';
+    }
+
+    let gNotificacao = null; // notificação (para pegar alunoId etc.)
+    let gComunicDoc = null;  // documento da comunicação (objeto do Mongo)
+    let gComunicId  = null;  // _id do documento
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    async function init(){
+      const params = new URLSearchParams(location.search);
+      const notifParam = params.get('notificacao'); // obrigatório
+      if(!notifParam){
+        showError('Parâmetro ?notificacao= é obrigatório.');
+        return;
+      }
+
+      // Status da mensageria
+      renderStatus(await lerStatusMensageria().catch(()=>null));
+
+      // 1) Garante comunicação idempotente para essa notificação
+      try{
+        // tenta GET por notificação
+        let r = await fetch(`/api/comunicacao/${notifParam}`, { credentials:'include' });
+        if (r.status === 404) {
+          // cria se não existir
+          r = await fetch(`/api/comunicacao/${notifParam}`, {
+            method:'POST',
+            credentials:'include'
+          });
+        }
+        if(!r.ok) throw new Error('Não foi possível abrir/criar a comunicação.');
+        const j = await r.json();
+        // Se a API vier como {ok, data}, desembrulha; se vier direta, usa direto
+        gComunicDoc = j?.data || j;
+        gComunicId  = gComunicDoc?._id || null;
+        if(!gComunicId){
+          throw new Error('Documento de comunicação sem _id.');
+        }
+      }catch(e){
+        showError(e.message||'Falha ao inicializar a comunicação.');
+        return;
+      }
+
+      // 2) Carrega dados da notificação (para alunoId, nº sequencial, etc.)
+      try{
+        const r = await fetch(`/api/notificacoes/${notifParam}`, { credentials:'include' });
+        if (r.ok) gNotificacao = await r.json();
+      }catch{}
+
+      // 3) Preenche UI
+      preencherUI(gComunicDoc, gNotificacao);
+
+      // 4) Bind botões
+      const btnPdf = document.getElementById('btnPdf');
+      btnPdf.disabled = false;
+      btnPdf.onclick = () => window.open(`/api/comunicacao/${gComunicId}/pdf`, '_blank');
+
+      document.getElementById('btnSalvar').onclick = () => salvar(gComunicId);
+      document.getElementById('btnEnviar').onclick = () => enviarAgora();
+    }
+
+    function renderStatus(st){
+      const el = document.getElementById('statusbar');
+      if(!st || !st.ok){
+        el.innerHTML = `<span class="pill bad">Mensageria: indisponível</span>`;
+        return;
+      }
+      const s = st.mensageria || {};
+      const pills = [];
+      pills.push(`<span class="pill ${s.MAIL_ENABLED?'ok':'bad'}">📧 MAIL: ${s.MAIL_ENABLED?'ON':'OFF'}</span>`);
+      pills.push(`<span class="pill ${s.TG_ENABLED?'ok':'bad'}">🤖 TG: ${s.TG_ENABLED?'ON':'OFF'}</span>`);
+      pills.push(`<span class="pill">Modo: ${s.transportMode || '—'}</span>`);
+      el.innerHTML = pills.join('');
+    }
+
+    async function lerStatusMensageria(){
+      // rota protegida (preferencial)
+      return fetchJSON('/api/comunicacao/status').catch(async ()=>{
+        // fallback público (se mantido)
+        return fetchJSON('/api/comunicacao/status-public');
+      });
+    }
+
+    function preencherUI(c, n){
+      document.getElementById('nomeAluno').value = c.nomeAluno || (n?.aluno?.nome || '');
+      document.getElementById('turma').value     = c.turma || (n?.aluno?.turma || '');
+      document.getElementById('instituicao').value = c.instituicao || (n?.instituicao || '');
+      document.getElementById('dataNotificacao').value = toISODate(c.dataNotificacao || n?.data || Date.now());
+      document.getElementById('tipoMedida').value = c.tipoMedida || (n?.tipoMedida || n?.tipo || '');
+      document.getElementById('numeroSequencial').value = n?.numeroSequencial || '';
+
+      document.getElementById('observacao').value = c.observacao || '';
+      document.getElementById('dataInicio').value = toISODate(c.dataInicio || Date.now());
+      document.getElementById('dataFim').value    = toISODate(c.dataFim    || Date.now());
+      document.getElementById('horaApresentacao').value = c.horaApresentacao || '14:00';
+      document.getElementById('horaSaida').value        = c.horaSaida || '18:00';
+    }
+
+    async function salvar(id){
+      if(!id){ return showError('ID de comunicação não disponível.'); }
+      // validações simples
+      const di = fromISODate(document.getElementById('dataInicio').value);
+      const df = fromISODate(document.getElementById('dataFim').value);
+      if (!di || !df) return showError('Informe as datas de início e fim.');
+      if (df < di) return showError('Data de fim não pode ser anterior ao início.');
+
+      const payload = {
+        observacao: document.getElementById('observacao').value.trim(),
+        dataInicio: document.getElementById('dataInicio').value,
+        dataFim: document.getElementById('dataFim').value,
+        horaApresentacao: document.getElementById('horaApresentacao').value || '14:00',
+        horaSaida: document.getElementById('horaSaida').value || '18:00'
+      };
+
+      try{
+        const j = await fetchJSON(`/api/comunicacao/${id}`, {
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        // suporte a {ok,data}
+        gComunicDoc = j?.data || j;
+        toast('Salvo com sucesso!');
+      }catch(e){
+        showError(e.message);
+      }
+    }
+
+    function buildMensagem(){
+      const nome   = document.getElementById('nomeAluno').value || 'Aluno(a)';
+      const turma  = document.getElementById('turma').value || '—';
+      const nseq   = document.getElementById('numeroSequencial').value || '—';
+      const di     = document.getElementById('dataInicio').value;
+      const df     = document.getElementById('dataFim').value;
+      const hi     = document.getElementById('horaApresentacao').value || '14:00';
+      const hf     = document.getElementById('horaSaida').value || '18:00';
+      const obs    = (document.getElementById('observacao').value || '').trim();
+
+      const titulo = `Comunicado — Contraturno (Notif. Nº ${nseq}) — ${nome}`;
+      const linhas = [
+        `Prezados responsáveis de ${nome} (${turma}),`,
+        ``,
+        `Informamos o cumprimento de medida disciplinar em contraturno conforme Notificação Nº ${nseq}.`,
+        `• Período: ${formatBR(di)} a ${formatBR(df)}`,
+        `• Horários: apresentação ${hi} — saída ${hf}`,
+      ];
+      if (obs) linhas.push(`• Observações: ${obs}`);
+      linhas.push(
+        ``,
+        `Solicitamos que o(a) estudante apresente-se pontualmente no local indicado pela coordenação.`,
+        `Atenciosamente,`,
+        `Coordenação — CMDPII/CZS`
+      );
+
+      const texto = linhas.join('\n');
+      const html = `<pre style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace; white-space: pre-wrap">${texto}</pre>`;
+      return { titulo, texto, html };
+    }
+
+    function formatBR(iso){
+      if(!iso) return '—';
+      try{ return new Date(iso).toLocaleDateString('pt-BR'); }catch{ return iso; }
+    }
+
+    async function enviarAgora(){
+      try{
+        const alunoId = gNotificacao?.aluno?._id || gNotificacao?.alunoId;
+        if(!alunoId){
+          return showError('Não foi possível identificar o aluno desta notificação.');
+        }
+        const { titulo, texto, html } = buildMensagem();
+
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = true; btn.textContent = 'Enfileirando...';
+
+        const payload = {
+          titulo,
+          texto,
+          html,
+          alunoId,
+          preferenciaCanais: ['email','telegram','whatsapp'],
+          meta: { origem:'comunicacao_pais_html', notificacaoId: gNotificacao?._id || null }
+        };
+
+        const j = await fetchJSON('/api/comunicacao/enviar', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+
+        if (j?.ok) {
+          toast('Comunicado enfileirado para envio.', 'ok');
+        } else {
+          showError('Envio não confirmado. Verifique logs.');
+        }
+      } catch(e){
+        showError(e.message || 'Falha ao enfileirar comunicado.');
+      } finally {
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = false; btn.textContent = '✉️ Enviar aos responsáveis';
+        // Atualiza status de mensageria após tentativa
+        renderStatus(await lerStatusMensageria().catch(()=>null));
+      }
+    }
+  </script>
+  <script src="/update-client.js"></script>
+</body>
+</html>

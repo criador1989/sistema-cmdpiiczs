@@ -1,0 +1,38 @@
+[
+  {
+    "titulo": "Saúde como direito",
+    "tipo": "legislacao",
+    "fonte": "Constituição Federal de 1988",
+    "conteudo": "A saúde é direito de todos e dever do Estado."
+  },
+  {
+    "titulo": "Saúde mental dos jovens",
+    "tipo": "estatistica",
+    "fonte": "OMS",
+    "conteudo": "Casos de ansiedade e depressão entre jovens cresceram significativamente nos últimos anos."
+  },
+  {
+    "titulo": "Importância da atividade física",
+    "tipo": "reportagem",
+    "fonte": "Ministério da Saúde",
+    "conteudo": "A prática regular de atividades físicas contribui para prevenção de doenças e melhora da qualidade de vida."
+  },
+  {
+    "titulo": "Obesidade infantil",
+    "tipo": "estatistica",
+    "fonte": "OPAS",
+    "conteudo": "O aumento do consumo de alimentos ultraprocessados tem elevado os índices de obesidade infantil."
+  },
+  {
+    "titulo": "Sistema Único de Saúde",
+    "tipo": "reportagem",
+    "fonte": "SUS",
+    "conteudo": "O SUS é considerado um dos maiores sistemas públicos de saúde do mundo."
+  },
+  {
+    "titulo": "Bem-estar social",
+    "tipo": "citacao",
+    "fonte": "OMS",
+    "conteudo": "Saúde não é apenas ausência de doença, mas completo bem-estar físico, mental e social."
+  }
+]

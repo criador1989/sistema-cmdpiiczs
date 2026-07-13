@@ -1,37 +1,229 @@
-// backend/index.js
-require('dotenv').config(); // garante que o .env seja lido antes de usar process.env
+﻿'use strict';
+
+require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
-const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
 const path = require('path');
-const { spawn } = require('child_process'); // mantido se você usa em outro lugar
-const fs = require('fs');                   // mantido
-const crypto = require('crypto');           // mantido
+const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+const fs = require('fs');
+const compression = require('compression');
+const cors = require('cors');
+const os = require('os');
 
-// Models
-const Aluno = require('./models/Aluno');
-const Notificacao = require('./models/Notificacao');
-const Usuario = require('./models/Usuario');
-const Log = require('./models/Log');
+// âœ… NOVOS HELPERS DE RECÃLCULO AUTOMÃTICO
+const { iniciarAgendadorRecalculo } = require('./services/agendadorRecalculoComportamento');
+const { recalcularTodosAlunos } = require('./utils/recalculoComportamento');
 
-// Rotas
-const alunoRoutes = require('./routes/alunoRoutes');
+// ðŸš€ NOVO: SNAPSHOTS DE COMPORTAMENTO
+const { iniciarAgendadorSnapshotsComportamento } = require('./jobs/agendadorSnapshotsComportamento');
+const { iniciarAgendadorLembretesAssociacao } = require('./jobs/agendadorLembretesAssociacao');
+
+// âœ… NOVOS MIDDLEWARES / AUTH SUPERADMIN
+const resolveTenant = require('./middleware/resolveTenant');
+const requireSuperAdmin = require('./middleware/requireSuperAdmin');
+const superadminAuthRoutes = require('./routes/api/superadminAuth');
+
+const app = express();/* =========================
+   DIAGNÃ“STICO / SEGURANÃ‡A
+   ========================= */
+console.log('NODE_ENV =', process.env.NODE_ENV || '(nÃ£o definido)');
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    next();
+  });
+}
+
+/* =========================
+   CORS
+   ========================= */
+const CLIENT_URL = (process.env.CLIENT_URL || 'http://localhost:5173').toLowerCase();
+const RENDER_HOST = (process.env.RENDER_EXTERNAL_HOSTNAME || '').toLowerCase();
+const allowedOrigins = new Set([
+  CLIENT_URL,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://localhost:5173',
+  'https://127.0.0.1:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  (process.env.RENDER_EXTERNAL_URL || '').toLowerCase(),
+  (process.env.DASHBOARD_URL || '').toLowerCase(),
+]);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  try {
+    const o = origin.toLowerCase();
+    if (allowedOrigins.has(o)) return true;
+    const u = new URL(o);
+    if (RENDER_HOST && u.hostname === RENDER_HOST) return true;
+    if (u.hostname.endsWith('.onrender.com')) return true;
+    if (u.hostname === os.hostname()) return true;
+  } catch {}
+  return false;
+}
+
+app.use(
+  cors((req, cb) => {
+    cb(null, {
+      origin: isAllowedOrigin(req.headers.origin),
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'x-tenant', 'x-tenant-slug'],
+      optionsSuccessStatus: 200,
+    });
+  })
+);/* =========================
+   PARSERS
+   ========================= */
+app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+/* =========================
+   âœ… TENANT RESOLVER (ANTES DE TUDO)
+   ========================= */
+app.use(resolveTenant);
+console.log('ðŸ·ï¸  ResolveTenant ligado (subdomÃ­nio/query/cookie).');
+
+/* =========================
+   MODELS
+   ========================= */
+[
+  'Aluno',
+  'Notificacao',
+  'Usuario',
+  'Log',
+  'Instituicao',
+  'ConfiguracaoDisciplinar',
+  'ConfiguracaoDocumentos',
+  'ComportamentoSnapshot',
+  'AphAtendimento',
+  'Counter',
+  'Observacao',
+  'Monitor',
+  'MonitorPresenca',
+  'MonitorNota',
+  'MonitorAtividade',
+  'SuperAdmin',
+  'Questao',
+  'QuestionarioTentativa',
+  'CampanhaRifa',
+  'RifaNumero',
+  'BaileContrato',
+  'BaileMesa',
+  'BaileMovimentoFinanceiro',
+  'ProcessoDisciplinar',
+  'LivroOcorrencia',
+  'LivroOcorrenciaExportacao',
+  'SiteAnalyticsSession',
+  'SiteAnalyticsEvent',
+  'AssociacaoPessoa',
+  'AssociacaoConta',
+  'AssociacaoCategoria',
+  'AssociacaoProjeto',
+  'AssociacaoMovimentacao',
+  'AssociacaoContribuicao',
+  'AssociacaoPagamento',
+  'AssociacaoRecibo',
+  'AssociacaoPatrimonio',
+  'AssociacaoDocumento',
+  'AssociacaoAnexo',
+  'AssociacaoMensagemModelo',
+  'AssociacaoCampanha',
+  'AssociacaoMensagemFila',
+  'AssociacaoLembreteConfig',
+  'AssociacaoLembreteEnvio'
+].forEach(m => { try { require(`./models/${m}`); } catch {} });
+
+/* =========================
+   MENSAEGERIA
+   ========================= */
+try {
+  const { initMensageria, getStatus } = require('./services/mensageria');
+  initMensageria(app);
+  global.mensageria = app.locals.mensageria;
+  console.log('âœ‰ï¸  Mensageria injetada (email/telegram/whatsapp).');
+  app.get('/debug/mensageria/status', (_req, res) => {
+    try { res.json({ ...(getStatus?.() || {}), ativo: !!app.locals.mensageria }); }
+    catch (e) { res.status(500).json({ erro: String(e.message || e) }); }
+  });
+} catch (e) {
+  console.warn('âš ï¸  Mensageria nÃ£o carregada:', e?.message || e);
+}
+
+/* =========================
+   DEBUG DE E-MAIL
+   ========================= */
+const {
+  verify: verifyMail,
+  verifyAll,
+  MAIL_ENABLED,
+  SMTP_HOST,
+  SMTP_PORT,
+  MAIL_USER,
+  MAIL_FROM,
+  getLastMailError,
+  getLastProvider
+} = require('./utils/mailer');
+
+app.get('/debug/mail/verify', async (_req, res) => {
+  try {
+    if (!MAIL_ENABLED) return res.status(200).json({ ok: false, reason: 'MAIL_DISABLED' });
+    const result = await verifyMail();
+    return res.status(result.ok ? 200 : 500).json({ ...result, lastError: getLastMailError() });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+app.get('/debug/mail/status', (_req, res) => {
+  res.json({
+    MAIL_ENABLED: !!MAIL_ENABLED,
+    SMTP_HOST,
+    SMTP_PORT,
+    MAIL_USER: MAIL_USER ? '(definido)' : '(vazio)',
+    MAIL_FROM,
+    provider: getLastProvider?.(),
+    nodeEnv: process.env.NODE_ENV || '(unset)',
+  });
+});
+
+try {
+  app.use('/api', require('./routes/api/mail-health'));
+  console.log('ðŸ©º  Mail health ligado em /api/_mail/health');
+} catch {
+  console.warn('â„¹ï¸  /api/_mail/health indisponÃ­vel.');
+}
+
+/* =========================
+   IMPORTS DE ROTAS
+   ========================= */
+const alunoRoutes = require('./routes/api/alunos');
+const notificacoesMetricsRoutes = require('./routes/api/notificacoes.metrics');
 const notificacoesApiRoutes = require('./routes/api/notificacoes');
-const notificacoesViewRoutes = require('./routes/views/notificacoes');
-const responsavelRoutes = require('./routes/api/responsavel');
-const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
-const fichaTesteRoute = require('./routes/api/fichaTeste');
-const cartoesRoutes = require('./routes/api/cartoes');
-const cartoesProfessoresRoute = require('./routes/api/cartoesProfessores');
-const professoresRoute = require('./routes/api/professores');
-const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores');
-const acessoProfessorRoute = require('./routes/api/acessoProfessor');
+const alertasRoutes = require('./routes/api/alunos-alertas');
+const dashboardFastRoutes = require('./routes/api/dashboard-fast');
+const observatorioRoutes = require('./routes/api/observatorio');
 
-const pdfRoutes = require('./routes/api/pdf');
+const pdfRoutes = require('./routes/api/pdf.js');
+
 const fichaPdfRoutes = require('./routes/api/fichapdf');
 const fichaApiRoutes = require('./routes/api/ficha');
+const fichaAlunoRoutes = require('./routes/api/fichaAluno');
 const fichaViewRoutes = require('./routes/views/fichaView');
 const motivosRoutes = require('./routes/api/motivos');
 const controleNotificacoesRoutes = require('./routes/api/controleNotificacoes');
@@ -39,211 +231,936 @@ const usuariosRoutes = require('./routes/api/usuarios');
 const logsRoutes = require('./routes/api/logs');
 const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
 const estatisticasRoutes = require('./routes/api/estatisticas');
+const estatisticasComportamentoRoutes = require('./routes/api/estatisticasComportamento');
 const mensagensRoutes = require('./routes/api/mensagens');
 const observacoesRoutes = require('./routes/api/observacoes');
+const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
+const metricsRoutes = require('./routes/api/metrics');
+const publicAlunoRoutes = require('./routes/api/publicAluno');
+const instituicoesRoutes = require('./routes/api/instituicoes');
+const configuracaoDisciplinarRoutes = require('./routes/api/configuracaoDisciplinar');
+const configuracaoDocumentosRoutes = require('./routes/api/configuracaoDocumentos');
+const notificacoesViewRoutes = require('./routes/views/notificacoes');
+const qrcodeProfessoresRoute = require('./routes/api/qrcodeProfessores');
+const professoresRoute = require('./routes/api/professores');
+const cartoesRoutes = require('./routes/api/cartoes');
+const cartoesProfessoresRoute = require('./routes/api/cartoesProfessores');
+const acessoProfessorRoute = require('./routes/api/acessoProfessor');
+const responsavelRoutes = require('./routes/api/responsavel');
+const fichaResponsavelRoute = require('./routes/api/fichaResponsavel');
+const fichaTesteRoute = require('./routes/api/fichaTeste');
+const telegramBotRoutes = require('./routes/api/telegramBot');
+const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
+const comunicacaoAutoRoutes = require('./routes/api/comunicacao');
+const monitoresApiRoutes = require('./routes/api/monitores');
+const rankingAlunosRouter = require('./routes/api/rankingAlunos');
+const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
+const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
+const chamadasRoutes = require('./routes/api/chamadas');
+const redacaoRoutes = require('./routes/api/redacao');
+const questionariosRoutes = require('./routes/api/questionarios');
+const portalAlunoRoutes = require('./routes/api/portalAluno');
+const rifasRoutes = require('./routes/api/rifas');
+const baileContratosRoutes = require('./routes/api/baileContratos');
+const baileMesasRoutes = require('./routes/api/baileMesas');
+const baileFinanceiroRoutes = require('./routes/api/baileFinanceiro');
+const baileControleRoutes = require('./routes/api/baileControle');
+const processosDisciplinaresRoutes = require('./routes/api/processosDisciplinares');
+const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
+const siteAdminRoutes = require('./routes/api/siteAdmin');
+const sitePublicoRoutes = require('./routes/api/sitePublico');
+const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
 
-const autenticarTokenProfessor = require('./middleware/tokenProfessor');
+// Axoriin AssociaÃ§Ãµes â€” mÃ³dulo multi-tenant
+const associacaoRoutes = require('./routes/api/associacao');
+const masterAssociacoesRoutes = require('./routes/api/masterAssociacoes');
+const { carregarContextoAssociacao } = require('./middleware/associacaoAuth');
 
-const app = express();
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
+let masterInstituicoesRoutes = null;
+try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } catch {}
 
-// ====== arquivos estáticos ======
-// /uploads separado
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+/* =========================
+   AUTH
+   ========================= */
+const authRoutes = require('./routes/authRoutes');
+app.use('/auth', authRoutes);
 
-// raiz estática: backend/public
-// adiciona no-store para .html para forçar pegar a versão nova no deploy
-const staticRoot = path.join(__dirname, 'public');
-app.use(express.static(staticRoot, {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-store');
+app.use('/api', pdfRoutes);
+
+// âœ… AUTH SEPARADA DO SUPERADMIN
+app.use('/api/superadmin', superadminAuthRoutes);/* ==========================================================
+   âœ… FALLBACK: /auth/confirmar-email (se authRoutes nÃ£o tiver)
+   ========================================================== */
+app.get('/auth/confirmar-email', async (req, res, next) => {
+  try {
+    const token = String(req.query.token || '').trim();
+    if (!token) return res.status(400).send('Token ausente.');
+
+    const Usuario = mongoose.models.Usuario || mongoose.model('Usuario');
+
+    const tokenFields = [
+      'emailConfirmToken',
+      'emailConfirmacaoToken',
+      'confirmEmailToken',
+      'tokenConfirmacaoEmail',
+      'tokenConfirmacao',
+      'confirmacaoEmailToken',
+      'emailToken',
+      'token'
+    ];
+
+    const or = tokenFields.map(f => ({ [f]: token }));
+
+    let usuario = await Usuario.findOne({ $or: or }).catch(() => null);
+
+    if (!usuario) {
+      usuario = await Usuario.findOne({
+        $or: [
+          { 'emailConfirm.token': token },
+          { 'confirmacaoEmail.token': token },
+          { 'email.confirm.token': token }
+        ]
+      }).catch(() => null);
     }
-  }
-}));
 
-// ====== rota inicial ======
-app.get('/', (req, res) => {
-  res.redirect('/login.html');
+    if (!usuario) {
+      return res.status(400).send('Token invÃ¡lido ou usuÃ¡rio nÃ£o encontrado.');
+    }
+
+    const now = new Date();
+    const expCandidates = [
+      usuario.emailConfirmExpires,
+      usuario.emailConfirmacaoExpires,
+      usuario.confirmEmailExpires,
+      usuario.tokenExpires,
+      usuario.expiraEm,
+      usuario['emailConfirm']?.expires,
+      usuario['confirmacaoEmail']?.expires
+    ].filter(Boolean);
+
+    if (expCandidates.length) {
+      const exp = expCandidates.find(d => d instanceof Date) || null;
+      if (exp && exp <= now) {
+        return res.status(400).send('Token expirado. Solicite um novo cadastro/confirmacÌ§aÌƒo.');
+      }
+    }
+
+    if ('emailConfirmado' in usuario) usuario.emailConfirmado = true;
+    if ('emailVerificado' in usuario) usuario.emailVerificado = true;
+    if ('confirmado' in usuario) usuario.confirmado = true;
+
+    if ('status' in usuario) usuario.status = 'ATIVO';
+    if ('ativo' in usuario) usuario.ativo = true;
+
+    if ('confirmadoEm' in usuario) usuario.confirmadoEm = now;
+    if ('emailConfirmadoEm' in usuario) usuario.emailConfirmadoEm = now;
+
+    tokenFields.forEach(f => { if (f in usuario) usuario[f] = undefined; });
+    if (usuario.emailConfirm) {
+      if ('token' in usuario.emailConfirm) usuario.emailConfirm.token = undefined;
+      if ('expires' in usuario.emailConfirm) usuario.emailConfirm.expires = undefined;
+    }
+    if (usuario.confirmacaoEmail) {
+      if ('token' in usuario.confirmacaoEmail) usuario.confirmacaoEmail.token = undefined;
+      if ('expires' in usuario.confirmacaoEmail) usuario.confirmacaoEmail.expires = undefined;
+    }
+
+    await usuario.save();
+
+    const front = (process.env.FRONTEND_URL || process.env.CLIENT_URL || '').trim();
+    const target = front
+      ? `${front.replace(/\/+$/, '')}/login.html?confirmado=1`
+      : `/login.html?confirmado=1`;
+
+    return res.redirect(target);
+  } catch (err) {
+    console.error('Erro fallback /auth/confirmar-email:', err);
+    return res.status(500).send('Erro interno ao confirmar e-mail.');
+  }
 });
 
-// ====== middleware de autenticação ======
-function autenticar(req, res, next) {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ mensagem: 'Acesso negado. Token ausente.' });
-  try {
-    const verificado = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = verificado;
-    next();
-  } catch (err) {
-    return res.status(401).json({ mensagem: 'Token inválido.' });
-  }
+const { autenticar } = require('./middleware/autenticacao');
+
+/* =========================
+   APH
+   ========================= */
+let aphCrudRoutes = null, aphEstatisticasRoutes = null, aphPdfRoutes = null;
+try { aphCrudRoutes = require('./routes/api/aph'); } catch {}
+try { aphEstatisticasRoutes = require('./routes/api/aph-estatisticas'); } catch {}
+try { aphPdfRoutes = require('./routes/api/aph-pdf'); } catch {}
+
+/* =========================
+   HELPERS DE PERFIL
+   ========================= */
+function getRole(req) {
+  const u = req.usuario || {};
+  const raw = String(u.tipo ?? u.perfil ?? u.role ?? u.cargo ?? u.funcao ?? '').toLowerCase();
+  return raw.trim().replace(/\s+/g, ' ');
 }
 
-// ====== LOGIN / LOGOUT ======
-app.post('/auth/login', async (req, res) => {
-  const { email, senha } = req.body;
-  try {
-    const usuario = await Usuario.findOne({ email }).select('+senha');
-    if (!usuario || !(await usuario.compararSenha(senha))) {
-      return res.status(401).json({ mensagem: 'E-mail ou senha inválidos.' });
-    }
+function send403(res, publicRoot) {
+  const p403 = path.join(publicRoot, '403.html');
+  if (fs.existsSync(p403)) return res.status(403).sendFile(p403);
+  return res.status(403).send('403 - Acesso negado');
+}
 
-    const token = jwt.sign({
-      id: usuario._id,
-      nome: usuario.nome,
-      tipo: usuario.tipo,
-      instituicao: usuario.instituicao
-    }, process.env.JWT_SECRET, { expiresIn: '2h' });
+/* ==========================================================
+   ðŸš§ BLOQUEIO TEMPORÃRIO DO SITE INSTITUCIONAL
+   MantÃ©m o sistema Axoriin funcionando normalmente.
+   Ative no Render com:
+   SITE_INSTITUCIONAL_BLOQUEADO=true
+   ========================================================== */
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false, // ajuste para true se for HTTPS obrigatório
-      sameSite: 'Lax',
-      maxAge: 2 * 60 * 60 * 1000
-    });
+const SITE_INSTITUCIONAL_BLOQUEADO =
+  process.env.SITE_INSTITUCIONAL_BLOQUEADO === 'true';
 
-    // >>> direciona para o painel novo <<<
-    const redirecionar = usuario.tipo === 'professor' ? '/painel-professor.html' : '/painel.html';
-    res.json({ mensagem: 'Login bem-sucedido', redirecionar });
-  } catch (erro) {
-    console.error('Erro no login:', erro);
-    res.status(500).json({ mensagem: 'Erro no servidor ao fazer login.' });
+function enviarPaginaSiteBloqueado(res) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+
+  return res.status(503).send(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="robots" content="noindex, nofollow" />
+      <title>Site temporariamente indisponÃ­vel</title>
+      <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          min-height: 100vh;
+          font-family: Arial, Helvetica, sans-serif;
+          background: linear-gradient(135deg, #07111f, #10233f);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          text-align: center;
+        }
+
+        .container {
+          width: 100%;
+          max-width: 760px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 18px;
+          padding: 44px 34px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+        }
+
+        h1 {
+          margin: 0 0 18px;
+          font-size: 31px;
+          line-height: 1.25;
+          font-weight: 700;
+        }
+
+        p {
+          margin: 10px 0;
+          font-size: 18px;
+          line-height: 1.5;
+          color: #e5e7eb;
+        }
+
+        .aviso {
+          margin-top: 26px;
+          font-size: 15px;
+          color: #cbd5e1;
+        }
+      </style>
+    </head>
+    <body>
+      <main class="container">
+        <h1>Site temporariamente indisponÃ­vel</h1>
+        <p>O site institucional encontra-se temporariamente indisponÃ­vel.</p>
+        <p>Os acessos aos sistemas internos permanecem funcionando normalmente.</p>
+        <div class="aviso">
+          ColÃ©gio Militar Dom Pedro II â€” Unidade Cruzeiro do Sul
+        </div>
+      </main>
+    </body>
+    </html>
+  `);
+}
+
+app.use((req, res, next) => {
+  if (!SITE_INSTITUCIONAL_BLOQUEADO) {
+    return next();
   }
+
+  const p = req.path;
+
+  const rotaDoSiteInstitucional =
+    p === '/' ||
+    p === '/index.html' ||
+    p === '/site-cmdpii' ||
+    p.startsWith('/site-cmdpii/') ||
+    p === '/api/site-publico' ||
+    p.startsWith('/api/site-publico/') ||
+    p === '/api/site-analytics' ||
+    p.startsWith('/api/site-analytics/');
+
+  if (rotaDoSiteInstitucional) {
+    return enviarPaginaSiteBloqueado(res);
+  }
+
+  return next();
 });
 
-app.post('/auth/logout', (req, res) => {
-  res.clearCookie('token');
-  res.json({ mensagem: 'Logout realizado com sucesso' });
+app.use((req, res, next) => {
+  const host = (req.hostname || '').toLowerCase();
+
+  const isDominioColegio =
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br';
+
+  if (!isDominioColegio) {
+    return next();
+  }
+
+  if (req.path === '/' || req.path === '/index.html') {
+    return res.redirect(301, '/site-cmdpii/index.html');
+  }
+
+  return next();
 });
 
-// ====== CADASTRO ======
-app.post('/auth/cadastrar', autenticar, async (req, res) => {
-  if (req.usuario.tipo !== 'admin') {
-    return res.status(403).json({ mensagem: 'Apenas administradores podem criar usuários.' });
-  }
+/* =========================
+   âœ… BLOQUEIO REAL POR URL (ANTES DO express.static)
+   ========================= */
+function buildProfessorGuard(publicRoot) {
+  const blockedExact = new Set([
+    '/notificacoes.html',
+    '/ver-notificacoes.html',
+    '/usuarios.html',
+    '/estatisticas.html',
+    '/logs.html',
+    '/controle-notificacoes.html',
+    '/cadastro-aluno.html',
+    '/transferir-turma.html',
+    '/monitores.html',
+    '/monitor-ficha.html',
+    '/ranking-alunos.html',
+    '/master-instituicoes.html',
+    '/master-associacoes.html',
+    '/rifas.html',
+    '/livro-ocorrencias.html',
+    '/configuracao-documentos.html'
+  ]);
 
-  const { nome, email, senha, instituicao, tipo = 'professor' } = req.body;
-  if (!nome || !email || !senha || !instituicao) {
-    return res.status(400).json({ mensagem: 'Preencha todos os campos.' });
-  }
+  const blockedPrefixes = [
+    '/admin-site',
+    '/api/site-admin',
+    '/notificacoes',
+    '/ver-notificacoes',
+    '/usuarios',
+    '/estatisticas',
+    '/logs',
+    '/controle-notificacoes',
+    '/cadastro-aluno',
+    '/transferir-turma',
+    '/monitores',
+    '/api/ranking-alunos',
+    '/api/usuarios',
+    '/api/logs',
+    '/api/estatisticas',
+    '/api/controle-notificacoes',
+    '/api/master',
+    '/rifas',
+    '/api/rifas',
+    '/configuracao-documentos',
+    '/api/configuracao-documentos',
+  ];
 
-  try {
-    const usuarioExistente = await Usuario.findOne({ email });
-    if (usuarioExistente) {
-      return res.status(409).json({ mensagem: 'E-mail já cadastrado.' });
+  const alwaysPublic = new Set([
+    '/admin-site/login.html',
+    '/admin-site/painel-site.html',
+    '/admin-site/admin-site.css',
+    '/admin-site/admin-site.js',
+    '/site-cmdpii',
+    '/site-cmdpii/',
+    '/api/site-publico',
+    '/login.html',
+    '/login-aluno.html',
+    '/painel-aluno.html',
+    '/painel-aluno.js',
+    '/aluno-jogos.html',
+    '/aluno-simulados.html',
+    '/ficha-responsavel.html',
+    '/ficha-responsavel.js',
+    '/procedimento-responsavel.html',
+    '/aluno-redacao.html',
+    '/aluno-questionarios.html',
+    '/superadmin-login.html',
+    '/cadastro-usuario.html',
+    '/bem-vindo.html',
+    '/manifest.json',
+    '/service-worker.js',
+    '/icons/icon-192x192.png',
+    '/icons/icon-512x512.png',
+    '/icons/axoriin-32x32.png',
+    '/icons/axoriin-192x192.png',
+    '/icons/axoriin-512x512.png',
+    '/favicon.ico',
+    '/__version',
+    '/healthz',
+    '/public/tenant',
+    '/assets',
+    '/assets/',
+    '/icons',
+    '/icons/',
+    '/img',
+    '/img/',
+    '/uploads',
+    '/uploads/'
+  ]);
+
+  return function professorGuard(req, res, next) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const p = req.path;
+
+    if (
+  p.startsWith('/site-cmdpii/') ||
+  p.startsWith('/assets/') ||
+  p.startsWith('/icons/') ||
+  p.startsWith('/img/') ||
+  p.startsWith('/uploads/')
+) return next();
+
+    if (alwaysPublic.has(p)) return next();
+
+    const looksLikeHtml = p.endsWith('.html');
+    const prefixHit = blockedPrefixes.some(pref => p === pref || p.startsWith(pref + '/'));
+    const shouldCheck = looksLikeHtml || prefixHit;
+    if (!shouldCheck) return next();
+
+    // âœ… Tratamento especial do painel master: nÃ£o depende do login comum
+    if (p === '/master-instituicoes.html' || p === '/master-associacoes.html' || p === '/api/master' || p.startsWith('/api/master/')) {
+      return next();
     }
 
-    const novoUsuario = new Usuario({
-      nome,
-      email,
-      senha,
-      instituicao,
-      tipo,
-      ...(tipo === 'professor' && { tokenAcessoProfessor: crypto.randomBytes(12).toString('hex') })
-    });
+    autenticar(req, res, () => {
+      const role = getRole(req);
 
-    await novoUsuario.save();
-    res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
-  } catch (erro) {
-    console.error('Erro no cadastro:', erro);
-    res.status(500).json({ mensagem: 'Erro no servidor ao cadastrar usuário.' });
-  }
+      const isAdmin = role.includes('admin');
+      const isMonitor = role.includes('monitor');
+      const isProfessor = role.includes('prof') && !isAdmin && !isMonitor;
+
+      if (isProfessor) {
+        if (blockedExact.has(p) || prefixHit) return send403(res, publicRoot);
+      }
+
+      return next();
+    });
+  };
+}
+
+/* =========================
+   ENDPOINTS p/ PAINEL (whoami)
+   ========================= */
+app.get('/api/usuario', autenticar, (req, res) => {
+  const u = req.usuario || {};
+  res.json({
+    id: u._id || u.id || null,
+    nome: u.nome || u.login || 'UsuÃ¡rio',
+    email: u.email || null,
+    tipo: u.tipo || u.perfil || 'usuario',
+    perfil: u.perfil || u.tipo || 'usuario',
+    instituicao: u.instituicao || null,
+    tenantId: u.tenantId || u.instituicao || null,
+    associacao: u.associacaoAcesso || u.acessosModulos?.associacao || null,
+  });
 });
 
 app.get('/api/usuario-logado', autenticar, (req, res) => {
-  res.json(req.usuario);
+  const u = req.usuario || {};
+  res.json({
+    id: u._id || u.id || null,
+    nome: u.nome || u.login || 'UsuÃ¡rio',
+    tipo: u.tipo || u.perfil || 'usuario',
+    instituicao: u.instituicao || null,
+    tenantId: u.tenantId || u.instituicao || null,
+    associacao: u.associacaoAcesso || u.acessosModulos?.associacao || null,
+  });
 });
 
-app.get('/api/usuario', autenticar, async (req, res) => {
+app.get('/api/debug/whoami-raw', (req, res) => {
+  res.json({
+    tenant: req.tenantSlug || null,
+    cookies: req.cookies || {},
+    authHeader: req.headers['authorization'] || null,
+    origin: req.headers.origin || null,
+    host: req.headers.host || null,
+    superAdminCookie: !!req.cookies?.[process.env.SUPERADMIN_COOKIE_NAME || 'superadmin_token']
+  });
+});
+
+/* =========================
+   FALLBACKS LEVES
+   ========================= */
+app.get('/api/dashboard/alertas', async (_req, res) => {
   try {
-    const usuario = await Usuario.findById(req.usuario.id).select('nome tipo instituicao');
-    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado' });
-    res.json(usuario);
-  } catch (err) {
-    res.status(500).json({ mensagem: 'Erro ao buscar usuário' });
+    const Aluno = mongoose.model('Aluno');
+    const alunos = await Aluno.find({ ativo: true }).select('nome turma comportamento notaComportamento').lean();
+    const comp = a => Number(a.comportamento ?? a.notaComportamento ?? 0);
+    const regular = alunos.filter(a => { const n = comp(a); return n >= 5 && n < 7; });
+    const insuf = alunos.filter(a => { const n = comp(a); return n >= 3 && n < 5; });
+    res.json({ regular, insuficiente: insuf });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
   }
 });
 
-// ====== HTMLs protegidos ======
-app.get('/ficha-aluno.html', autenticar, (req, res) => {
-  res.sendFile(path.join(staticRoot, 'ficha-aluno.html'));
-});
-app.get('/painel-professor.html', autenticar, (req, res) => {
-  res.sendFile(path.join(staticRoot, 'painel-professor.html'));
-});
-app.get('/lista-alunos.html', autenticarTokenProfessor, (req, res) => {
-  res.sendFile(path.join(staticRoot, 'lista-alunos.html'));
-});
-
-// ====== Rotas protegidas ou públicas ======
-app.use('/api/ficha', autenticar, fichaApiRoutes);
-app.use('/ficha', autenticar, fichaViewRoutes);
-app.use('/api', fichaTesteRoute);
-app.use('/api/alunos', alunoRoutes);
-app.use('/api/notificacoes', notificacoesApiRoutes);
-app.use('/api', pdfRoutes);
-app.use('/api', fichaPdfRoutes);
-app.use('/notificacoes', notificacoesViewRoutes);
-app.use('/api/responsavel', responsavelRoutes);
-app.use('/api/motivos', motivosRoutes);
-app.use('/api/cartoes', cartoesRoutes);
-app.use('/api/cartoes-professores', cartoesProfessoresRoute);
-app.use('/api/professores', professoresRoute);
-
-// QRCode — montar o mesmo router em múltiplos caminhos para compatibilidade com o front
-app.use('/api/qrcode-professor', qrcodeProfessoresRoute);   // caminho atual
-app.use('/api/qrcode-professores', qrcodeProfessoresRoute); // plural
-app.use('/api/professores/qrcode', qrcodeProfessoresRoute); // compat com fetch antigo
-
-app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/logs', logsRoutes);
-app.use('/api/controle-notificacoes', controleNotificacoesRoutes);
-app.use('/api', relatorioNotificacoesRoute);
-app.use('/api/estatisticas', estatisticasRoutes);
-app.use('/api/mensagens', mensagensRoutes);
-app.use('/api/observacoes', observacoesRoutes);
-app.use('/api/usuarios', acessoProfessorRoute);
-
-// ====== versão/saúde (opcional, útil para verificar commit em produção) ======
-app.get('/__version', (req, res) => {
-  res.json({
-    commit: process.env.RENDER_GIT_COMMIT || 'desconhecido',
-    builtAt: new Date().toISOString()
-  });
-});
-
-// =======================
-//  Conexão Mongo + Start
-// =======================
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || '';
-if (!/^mongodb(\+srv)?:\/\//i.test(MONGO_URI)) {
-  console.error('❌ MONGO_URI inválido ou ausente. Valor lido:', JSON.stringify(MONGO_URI));
-  console.error('   -> Ajuste o arquivo .env (remova duplicatas e mantenha só a URI válida).');
-  process.exit(1);
-}
-const masked = MONGO_URI.replace(/\/\/.*?@/, '//***@');
-console.log('🔎 MONGO_URI lido:', masked);
-
-mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
-  .then(() => {
-    console.log('🟢 Conectado ao MongoDB');
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log('🧪 Rota de teste carregada');
-      console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+app.get('/api/dashboard/graficos', async (_req, res) => {
+  try {
+    const Aluno = mongoose.model('Aluno');
+    const alunos = await Aluno.find({ ativo: true }).select('turma comportamento notaComportamento').lean();
+    const comp = a => Number(a.comportamento ?? a.notaComportamento ?? 0);
+    const turmas = [...new Set(alunos.map(a => (a.turma || 'â€”').trim()))];
+    const medias = turmas.map(t => {
+      const g = alunos.filter(a => (a.turma || 'â€”').trim() === t).map(comp).filter(n => Number.isFinite(n) && n > 0);
+      const m = g.length ? g.reduce((s, n) => s + n, 0) / g.length : 0;
+      return Number(m.toFixed(2));
     });
-  })
-  .catch(err => {
-    console.error('❌ Erro ao conectar ao MongoDB:', err);
-    process.exit(1);
+    const dist = { labels: ['<3', '3-5', '5-7', '7-10'], valores: [0, 0, 0, 0] };
+    alunos.forEach(a => {
+      const c = comp(a);
+      if (!Number.isFinite(c) || c <= 0) return;
+      if (c < 3) dist.valores[0]++; else if (c < 5) dist.valores[1]++;
+      else if (c < 7) dist.valores[2]++; else dist.valores[3]++;
+    });
+    res.json({ turmas, medias, distribuicao: dist });
+  } catch (e) {
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+/* =========================
+   MONTAGEM DE ROTAS
+   ========================= */
+function mountIf(prefix, router, ...middlewares) {
+  if (!router) return;
+  if (middlewares && middlewares.length) app.use(prefix, ...middlewares, router);
+  else app.use(prefix, router);
+}
+
+mountIf('/api/notificacoes', notificacoesMetricsRoutes);
+mountIf('/api/notificacoes', notificacoesApiRoutes);
+
+mountIf('/api/dashboard-fast', dashboardFastRoutes, autenticar);
+mountIf('/api/observatorio', observatorioRoutes);
+
+mountIf('/api/ficha', fichaApiRoutes, autenticar);
+mountIf('/api/fichaAluno', fichaAlunoRoutes, autenticar);
+mountIf('/ficha', fichaViewRoutes, autenticar);
+mountIf('/api', fichaTesteRoute);
+
+// ðŸ”¥ IMPORTANTE: rotas pÃºblicas do aluno precisam vir ANTES de /api/alunos
+// para /api/alunos/:id/public/qrcode, /enable e /disable nÃ£o caÃ­rem no CRUD normal.
+mountIf('/api', publicAlunoRoutes);
+mountIf('/api/alunos', alunoRoutes);
+
+// mountIf('/api', pdfRoutes);
+mountIf('/api', fichaPdfRoutes);
+mountIf('/notificacoes', notificacoesViewRoutes);
+mountIf('/api/responsavel', responsavelRoutes);
+mountIf('/api/ficha-responsavel', fichaResponsavelRoute);
+mountIf('/api/motivos', motivosRoutes);
+mountIf('/api/cartoes', cartoesRoutes);
+mountIf('/api/cartoes-professores', cartoesProfessoresRoute);
+mountIf('/api/professores', professoresRoute);
+mountIf('/api/qrcode-professores', qrcodeProfessoresRoute);
+mountIf('/api/usuarios', usuariosRoutes);
+mountIf('/api/logs', logsRoutes);
+mountIf('/api/controle-notificacoes', controleNotificacoesRoutes);
+mountIf('/api', relatorioNotificacoesRoute);
+mountIf('/api/estatisticas', estatisticasRoutes);
+mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, autenticar);
+mountIf('/api/mensagens', mensagensRoutes);
+mountIf('/api/observacoes', observacoesRoutes);
+mountIf('/api/diagnostico', diagnosticoNotaRoutes);
+mountIf('/api/metrics', metricsRoutes);
+mountIf('/api/instituicoes', instituicoesRoutes);
+mountIf('/api/configuracao-disciplinar', configuracaoDisciplinarRoutes, autenticar);
+mountIf('/api/configuracao-documentos', configuracaoDocumentosRoutes, autenticar);
+mountIf('/api/alertas', alertasRoutes);
+mountIf('/api/ranking-alunos', rankingAlunosRouter, autenticar);
+mountIf('/api/fix-recalculo-comportamento', fixRecalculoComportamento, autenticar);
+
+mountIf('/api/telegram', telegramBotRoutes);
+mountIf('/api/comunicacao', comunicacaoPaisRoutes);
+mountIf('/api/comunicacao', comunicacaoAutoRoutes);
+
+mountIf('/api/monitores', monitoresApiRoutes, autenticar);
+mountIf('/api/chamadas', chamadasRoutes);
+mountIf('/api/aph', aphCrudRoutes, autenticar);
+mountIf('/api/aph', aphEstatisticasRoutes);
+mountIf('/api/aph', aphPdfRoutes);
+
+/* =========================
+   âœ… NOVA ROTA: REDAÃ‡ÃƒO ENEM
+   ========================= */
+mountIf('/api/redacao', redacaoRoutes);
+
+/* =========================
+   âœ… NOVA ROTA: QUESTIONÃRIOS
+   ========================= */
+mountIf('/api/questionarios', questionariosRoutes);
+
+/* Portal do Aluno segmentado */
+mountIf('/api/portal-aluno', portalAlunoRoutes);
+
+/* =========================
+   ðŸš€ RIFAS (NOVO MÃ“DULO)
+   ========================= */
+mountIf('/api/rifas', rifasRoutes, autenticar);
+
+/* =========================
+   ðŸš€ BAILE FORMATURA (NOVO MÃ“DULO)
+   ========================= */
+mountIf('/api/baile-contratos', baileContratosRoutes, autenticar);
+
+mountIf('/api/baile-mesas', baileMesasRoutes, autenticar);
+
+mountIf('/api/baile-financeiro', baileFinanceiroRoutes, autenticar);
+
+mountIf('/api/baile-controle', baileControleRoutes);
+/* =========================
+   ðŸš€ PROCESSOS DISCIPLINARES (NOVO MÃ“DULO)
+   ========================= */
+
+mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes.publicRouter);
+mountIf('/api/processos-disciplinares', processosDisciplinaresRoutes, autenticar);
+
+/* =========================
+   ðŸš€ LIVRO DE OCORRENCIAS (NOVO MÃ“DULO)
+   ========================= */
+mountIf('/api/livro-ocorrencias', livroOcorrenciasRoutes, autenticar);
+
+/* =========================
+   ðŸ¤ AXORIIN ASSOCIAÃ‡Ã•ES
+   ========================= */
+mountIf('/api/associacao', associacaoRoutes, autenticar, carregarContextoAssociacao);
+
+/* =========================
+   ðŸŒ CMS SITE INSTITUCIONAL
+   ========================= */
+
+// ADMIN DO SITE
+mountIf('/api/site-admin', siteAdminRoutes, autenticar);
+
+// API PÃšBLICA DO SITE
+mountIf('/api/site-publico', sitePublicoRoutes);
+
+// ANALYTICS INTERNO DO SITE
+// NÃ£o colocar "autenticar" aqui, pois a landing page precisa registrar visitas pÃºblicas.
+mountIf('/api/site-analytics', siteAnalyticsRoutes);
+
+/* =========================
+   âœ… MASTER INSTITUIÃ‡Ã•ES (SuperAdmin)
+   ========================= */
+mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
+mountIf('/api/master/associacoes', masterAssociacoesRoutes, requireSuperAdmin);
+
+/* =========================
+   âœ… FIX TEMPORÃRIO DE INSTITUIÃ‡ÃƒO LEGADA (SuperAdmin)
+   ========================= */
+mountIf('/api/fix-instituicao', fixInstituicaoLegacy, requireSuperAdmin);
+
+/* =========================
+   ESTÃTICOS / HTML
+   ========================= */
+const uploadRoot = path.join(__dirname, 'uploads');
+const publicRoot = path.join(__dirname, 'public');
+const imgRoot = path.join(__dirname, 'img');
+const assetsRoot = path.join(publicRoot, 'assets');
+
+fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
+fs.mkdirSync(path.join(uploadRoot, 'observacoes'), { recursive: true });
+fs.mkdirSync(path.join(publicRoot, 'uploads'), { recursive: true });
+fs.mkdirSync(imgRoot, { recursive: true });
+fs.mkdirSync(assetsRoot, { recursive: true });
+
+app.use('/uploads', express.static(uploadRoot));
+app.use('/uploads', express.static(path.join(publicRoot, 'uploads'), {
+  maxAge: '7d',
+  immutable: true
+}));
+
+app.use('/img', express.static(imgRoot, {
+  maxAge: '30d',
+  immutable: true
+}));
+
+app.use('/assets', express.static(assetsRoot, {
+  maxAge: '30d',
+  immutable: true
+}));
+
+app.use((req, res, next) => {
+  const host = (req.hostname || '').toLowerCase();
+
+  if (
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br'
+  ) {
+    if (req.path === '/' || req.path === '/index.html') {
+      return res.sendFile(path.join(publicRoot, 'site-cmdpii', 'index.html'));
+    }
+  }
+
+  next();
+});
+
+/* =========================
+   âœ… GUARD ANTES DO STATIC
+   ========================= */
+app.use(buildProfessorGuard(publicRoot));
+
+/* =========================
+   âœ… ROTAS HTML ESPECIAIS ANTES DO STATIC
+   ========================= */
+app.get('/superadmin-login.html', (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'superadmin-login.html'));
+});
+
+app.get('/master-instituicoes.html', requireSuperAdmin, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'master-instituicoes.html'));
+});
+
+app.get('/master-associacoes.html', requireSuperAdmin, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'master-associacoes.html'));
+});
+
+app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'admin-site', 'site-analytics.html'));
+});
+
+app.get('/', (req, res) => {
+  const host = (req.hostname || '').toLowerCase();
+
+  if (
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br'
+  ) {
+    return res.redirect('/site-cmdpii/index.html');
+  }
+
+  return res.sendFile(path.join(publicRoot, 'index.html'));
+});
+
+/* =========================
+   STATIC (HTML)
+   ========================= */
+app.use(express.static(publicRoot, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
+  }
+}));
+
+app.get('/service-worker.js', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(publicRoot, 'service-worker.js'));
+});
+
+/* =========================
+   âœ… PUBLIC TENANT
+   ========================= */
+function normalizeSlug(s) {
+  return String(s || '').trim().toLowerCase();
+}
+
+function slugToNameRegex(slug) {
+  const safe = String(slug || '').replace(/[^a-z0-9]+/gi, ' ').trim();
+  if (!safe) return null;
+  const parts = safe
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(parts.join('\\s*'), 'i');
+}
+
+app.get('/public/tenant', async (req, res) => {
+  try {
+    const InstituicaoModel = mongoose.models.Instituicao || mongoose.model('Instituicao');
+
+    const slug = normalizeSlug(req.tenantSlug);
+
+    let inst = null;
+
+    if (slug) {
+      inst =
+        (await InstituicaoModel.findOne({ slug, ativo: true }).select('nome sigla slug ativo').lean().catch(() => null)) ||
+        (await InstituicaoModel.findOne({ slug }).select('nome sigla slug ativo').lean().catch(() => null));
+
+      if (!inst) {
+        const rx = slugToNameRegex(slug);
+        if (rx) {
+          inst =
+            (await InstituicaoModel.findOne({ nome: rx, ativo: true }).select('nome sigla ativo').lean().catch(() => null)) ||
+            (await InstituicaoModel.findOne({ nome: rx }).select('nome sigla ativo').lean().catch(() => null));
+        }
+      }
+    }
+
+    if (!inst) {
+      inst =
+        (await InstituicaoModel.findOne({ ativo: true }).select('nome sigla slug ativo').lean().catch(() => null)) ||
+        (await InstituicaoModel.findOne({}).select('nome sigla slug ativo').lean().catch(() => null));
+    }
+
+    const nome = inst?.nome || process.env.NOME_COLEGIO || 'SmartClass';
+    const sigla = inst?.sigla || null;
+
+    return res.json({
+      nomeColegio: nome,
+      sigla,
+      tenant: slug || inst?.slug || null,
+    });
+  } catch (e) {
+    return res.json({
+      nomeColegio: process.env.NOME_COLEGIO || 'SmartClass',
+      sigla: null,
+      tenant: normalizeSlug(req.tenantSlug) || null,
+    });
+  }
+});
+
+/* =========================
+   AUTH / HTML PROTEGIDOS
+   ========================= */
+function exigirAdmin(req, res, next) {
+  const u = req.usuario || {};
+  const role = String(u.perfil || u.role || u.tipo || '').toLowerCase();
+  if (!role.includes('admin')) return send403(res, publicRoot);
+  next();
+}
+
+app.get('/ficha-aluno.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
+app.get('/lista-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
+app.get('/ranking-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
+app.get('/monitores.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
+app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
+app.get('/livro-ocorrencias.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'livro-ocorrencias.html')));
+app.get('/configuracao-documentos.html', autenticar, exigirAdmin, (_req, res) => { return res.sendFile(path.join(publicRoot, 'configuracao-documentos.html'));});
+app.get('/associacao.html', autenticar, carregarContextoAssociacao, (_req, res) => res.sendFile(path.join(publicRoot, 'associacao.html')));
+
+/* =========================
+   DIAGNÃ“STICOS / ERRORS
+   ========================= */
+app.get('/__version', (_req, res) =>
+  res.json({ commit: process.env.RENDER_GIT_COMMIT || 'desconhecido', associacoes: '3.2.0', builtAt: new Date().toISOString() })
+);
+
+app.get('/healthz', (_req, res) => res.json({
+  ok: true,
+  mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+  ts: Date.now()
+}));
+
+app.use((req, res) => {
+  if (req.method === 'GET') {
+    const nf = path.join(publicRoot, '404.html');
+    if (fs.existsSync(nf)) return res.status(404).sendFile(nf);
+  }
+  res.status(404).json({ error: 'Rota nÃ£o encontrada' });
+});
+
+app.use((err, _req, res, _next) => {
+  console.error('âŒ Erro nÃ£o tratado:', err);
+  res.status(500).json({ error: 'Erro interno do servidor' });
+});
+
+/* =========================
+   START HTTP + MONGO
+   ========================= */
+const URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
+const PORT = process.env.PORT || 5000;
+let agendadorRecalculoIniciado = false;
+
+async function connectMongo() {
+  if (!/^mongodb(\+srv)?:\/\//i.test(URI)) {
+    throw new Error('URI do Mongo invÃ¡lida ou ausente no .env.');
+  }
+
+  const masked = URI.replace(/\/\/.*?@/, '//***@');
+  console.log('ðŸ” Conectando no Mongo:', masked);
+
+  await mongoose.connect(URI, {
+    serverSelectionTimeoutMS: Number(process.env.DB_SERVER_SEL_MS || 60000),
+    socketTimeoutMS: Number(process.env.DB_SOCKET_MS || 60000),
+    heartbeatFrequencyMS: 10000,
+    maxPoolSize: Number(process.env.DB_MAX_POOL || 20),
+    minPoolSize: Number(process.env.DB_MIN_POOL || 0),
+    retryWrites: true,
+    family: 4,
   });
 
-// Encerramento limpo
+  console.log('ðŸŸ¢ Conectado ao MongoDB');
+
+  setTimeout(async () => {
+    try {
+      const resultado = await recalcularTodosAlunos();
+      console.log(`[startup] recÃ¡lculo inicial concluÃ­do. Alunos recalculados: ${resultado.total}`);
+    } catch (err) {
+      console.error('[startup] erro no recÃ¡lculo inicial:', err);
+    }
+  }, 5000);
+
+  if (!agendadorRecalculoIniciado) {
+    try {
+      iniciarAgendadorRecalculo();
+      console.log('âœ… Agendador de recÃ¡lculo diÃ¡rio iniciado');
+
+      iniciarAgendadorSnapshotsComportamento();
+      console.log('ðŸ“Š Agendador de snapshots de comportamento iniciado');
+
+      iniciarAgendadorLembretesAssociacao({
+        mensageria: app.locals.mensageria || null,
+        intervalMs: Number(process.env.ASSOCIACAO_LEMBRETES_INTERVAL_MS || 15 * 60 * 1000),
+      });
+      console.log('âœ‰ï¸  Agendador de lembretes das associaÃ§Ãµes iniciado');
+
+      agendadorRecalculoIniciado = true;
+    } catch (err) {
+      console.error('âŒ Falha ao iniciar agendadores:', err);
+    }
+  }
+}
+
+async function startServer() {
+  try {
+    await connectMongo();
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`ðŸš€ Servidor ligado em: http://localhost:${PORT}`);
+      console.log('ðŸ§ª Health pronto: /__version e /healthz');
+      console.log('ðŸŒ CORS: Render + localhost + *.onrender.com');
+
+      (async () => {
+        try {
+          await verifyAll();
+        } catch {}
+      })();
+    });
+  } catch (err) {
+    console.error('âŒ Falha crÃ­tica ao iniciar servidor:', err?.message || err);
+    process.exit(1);
+  }
+}
+
+startServer();
+
 process.on('SIGINT', async () => {
-  await mongoose.disconnect().catch(() => {});
-  console.log('\n👋 Encerrado com sucesso');
+  try { await mongoose.disconnect(); } catch {}
+  console.log('\nðŸ‘‹ Encerrado com sucesso');
   process.exit(0);
 });

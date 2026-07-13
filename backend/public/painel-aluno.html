@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06101f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Axoriin • Portal do Aluno</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest-aluno.json">
+  <link rel="stylesheet" href="/portal-aluno/portal-aluno.css?v=1.0.0">
+</head>
+<body>
+  <section class="boot-state" id="loadingState" aria-live="polite">
+    <div class="boot-card">
+      <div class="loader" aria-hidden="true"></div>
+      <h1>Preparando seu portal</h1>
+      <p>Estamos identificando sua turma e organizando os módulos disponíveis.</p>
+    </div>
+  </section>
+
+  <section class="boot-state hidden" id="errorState" aria-live="assertive">
+    <div class="boot-card">
+      <div style="font-size:48px" aria-hidden="true">⚠️</div>
+      <h1>Não foi possível abrir o portal</h1>
+      <p id="errorMessage">Verifique sua conexão e tente novamente.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+        <button class="btn btn-primary" id="btnRetry" type="button">Tentar novamente</button>
+        <button class="btn btn-ghost" id="btnErrorLogout" type="button">Voltar ao login</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="portal-layout hidden" id="portalApp">
+    <aside class="sidebar">
+      <a class="brand" href="#inicio" aria-label="Axoriin Portal do Aluno">
+        <div class="brand-mark">A</div>
+        <div><strong>AXORIIN</strong><small>Portal do Aluno</small></div>
+      </a>
+
+      <div class="profile-mini">
+        <div class="avatar" id="sidebarAvatar">AL</div>
+        <div>
+          <strong id="sidebarName">Aluno</strong>
+          <span id="sidebarClass">Turma</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" aria-label="Navegação principal">
+        <a class="nav-link active" href="#inicio"><span class="nav-icon">⌂</span>Visão geral</a>
+        <a class="nav-link" href="#modulos"><span class="nav-icon">▦</span>Módulos</a>
+        <a class="nav-link" href="#atividades"><span class="nav-icon">↗</span>Atividades</a>
+        <a class="nav-link" href="#perfil"><span class="nav-icon">◎</span>Meu acesso</a>
+      </nav>
+
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-note" id="sidebarNote">A experiência será adaptada automaticamente ao seu segmento de ensino.</div>
+      <div class="sidebar-actions">
+        <button class="btn btn-ghost" id="btnInstall" type="button" hidden>Instalar app</button>
+        <button class="btn btn-ghost" id="btnLogout" type="button" title="Sair" aria-label="Sair">↪</button>
+      </div>
+    </aside>
+
+    <header class="mobile-top">
+      <div class="mobile-person">
+        <div class="avatar" id="mobileAvatar">AL</div>
+        <div><strong id="mobileName">Aluno</strong><span id="mobileClass">Turma</span></div>
+      </div>
+      <button class="btn btn-ghost" id="btnMobileLogout" type="button" aria-label="Sair">↪</button>
+    </header>
+
+    <main class="main">
+      <section class="hero" id="inicio">
+        <div>
+          <span class="eyebrow" id="segmentBadge">Portal personalizado</span>
+          <h1 id="heroTitle">Olá! Vamos aprender?</h1>
+          <p id="heroText">Seu painel reúne os recursos disponíveis para sua turma, com uma experiência pensada para computador e celular.</p>
+          <div class="hero-actions" id="heroActions"></div>
+        </div>
+        <div class="hero-orbit" aria-hidden="true">
+          <div class="orbit-core"><span id="heroIcon">🎓</span></div>
+          <div class="orbit-chip" id="orbitChip1">Aprendizagem</div>
+          <div class="orbit-chip" id="orbitChip2">Evolução</div>
+          <div class="orbit-chip" id="orbitChip3">Autonomia</div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="metricsTitle">
+        <div class="section-head">
+          <div><h2 id="metricsTitle">Seu panorama</h2><p id="metricsSubtitle">Dados reais das atividades já realizadas.</p></div>
+          <span class="section-tag" id="contextLabel">Carregando contexto</span>
+        </div>
+        <div class="metrics-grid" id="metricsGrid"></div>
+      </section>
+
+      <section class="section" id="modulos" aria-labelledby="modulesTitle">
+        <div class="section-head">
+          <div><h2 id="modulesTitle">Módulos do portal</h2><p id="modulesSubtitle">Abra uma atividade ou acompanhe o que está sendo preparado.</p></div>
+          <span class="section-tag" id="modulesTag">Experiência Axoriin</span>
+        </div>
+        <div class="modules-grid" id="modulesGrid"></div>
+      </section>
+
+      <section class="section split-grid" id="atividades">
+        <article class="panel">
+          <h3>Atividades e próximos passos</h3>
+          <p class="panel-sub" id="activitySubtitle">Seu histórico mais recente aparecerá aqui.</p>
+          <div class="activity-list" id="activityList"></div>
+        </article>
+
+        <article class="panel" id="perfil">
+          <h3>Meu acesso</h3>
+          <p class="panel-sub">Informações da sessão atual do aluno.</p>
+          <div class="profile-panel">
+            <div class="profile-row"><span>Aluno</span><strong id="profileName">—</strong></div>
+            <div class="profile-row"><span>Turma</span><strong id="profileClass">—</strong></div>
+            <div class="profile-row"><span>Segmento</span><strong id="profileSegment">—</strong></div>
+            <div class="profile-row"><span>Instituição</span><strong id="profileInstitution">—</strong></div>
+            <div class="profile-row"><span>Código de acesso</span><strong id="profileCode">—</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="section" aria-labelledby="roadmapTitle">
+        <div class="section-head">
+          <div><h2 id="roadmapTitle">Evolução do portal</h2><p id="roadmapSubtitle">Estrutura preparada para receber os próximos recursos sem refazer o painel.</p></div>
+        </div>
+        <div class="roadmap" id="roadmapGrid"></div>
+
+        <div class="install-card" id="installCard" hidden>
+          <div><strong>Use como aplicativo no celular</strong><span>Instale o Portal do Aluno na tela inicial para abrir mais rápido.</span></div>
+          <button class="btn btn-primary" id="btnInstallCard" type="button">Instalar agora</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="mobile-dock" aria-label="Navegação móvel">
+      <a class="dock-link active" href="#inicio"><b>⌂</b>Início</a>
+      <a class="dock-link" href="#modulos"><b>▦</b>Módulos</a>
+      <a class="dock-link" href="#atividades"><b>↗</b>Atividades</a>
+      <a class="dock-link" href="#perfil"><b>◎</b>Perfil</a>
+    </nav>
+  </div>
+
+  <script src="/portal-aluno/portal-runtime.js?v=1.0.0"></script>
+  <script src="/portal-aluno/portal-aluno.js?v=1.0.0"></script>
+</body>
+</html>
