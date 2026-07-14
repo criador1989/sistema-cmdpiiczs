@@ -31,6 +31,51 @@
     configuracao: '⚙'
   };
 
+  const ARENA_CONHECIMENTO_ROTA = '/aluno-jogo.html';
+
+  function moduloArenaConhecimento() {
+    return {
+      tipo: 'arena',
+      icone: 'jogos',
+      titulo: 'Arena do Conhecimento',
+      descricao: 'RPG educacional com missões, quiz, XP, medalhas e ranking demonstrativo para o Ensino Fundamental II.',
+      status: 'ativo',
+      rota: ARENA_CONHECIMENTO_ROTA,
+      destaque: true,
+      meta: 'MVP disponível'
+    };
+  }
+
+  function prepararModulos(portal) {
+    let modulos = Array.isArray(portal?.modulos) ? [...portal.modulos] : [];
+
+    if (portal?.segmento === 'fundamental_ii') {
+      const arena = moduloArenaConhecimento();
+      const ehArena = (modulo) => {
+        const titulo = String(modulo?.titulo || '');
+        const rota = String(modulo?.rota || '');
+        return /arena do conhecimento/i.test(titulo) || rota.includes('aluno-jogo');
+      };
+
+      const existeArena = modulos.some(ehArena);
+      modulos = existeArena
+        ? modulos.map((modulo) => ehArena(modulo)
+          ? {
+              ...arena,
+              ...modulo,
+              tipo: 'arena',
+              status: 'ativo',
+              rota: modulo.rota || ARENA_CONHECIMENTO_ROTA,
+              destaque: true,
+              meta: modulo.meta || arena.meta
+            }
+          : modulo)
+        : [arena, ...modulos];
+    }
+
+    return modulos;
+  }
+
   function texto(elemento, valor) {
     if (elemento) elemento.textContent = valor == null || valor === '' ? '—' : String(valor);
   }
@@ -103,7 +148,7 @@
   }
 
   function renderModulos(portal) {
-    const modulos = Array.isArray(portal?.modulos) ? portal.modulos : [];
+    const modulos = prepararModulos(portal);
     el.modulesGrid.innerHTML = modulos.map((modulo) => {
       const status = statusModulo(modulo.status);
       const ativo = modulo.status === 'ativo' && modulo.rota;
@@ -114,13 +159,13 @@
           : '<button class="btn btn-ghost" type="button" disabled>Aguardando</button>';
 
       return `
-        <article class="module-card ${modulo.destaque ? 'is-featured' : ''}">
+        <article class="module-card ${modulo.destaque ? 'is-featured' : ''} ${modulo.tipo === 'arena' ? 'is-arena' : ''}">
           <span class="module-status ${status.classe}">${status.texto}</span>
           <div class="module-icon" aria-hidden="true">${ICONES[modulo.icone] || '•'}</div>
           <h3>${runtime.escapeHtml(modulo.titulo)}</h3>
           <p>${runtime.escapeHtml(modulo.descricao)}</p>
           <div class="module-footer">
-            <span class="module-meta">${ativo ? 'Pronto para usar' : 'Estrutura reservada'}</span>
+            <span class="module-meta">${runtime.escapeHtml(modulo.meta || (ativo ? 'Pronto para usar' : 'Estrutura reservada'))}</span>
             ${acao}
           </div>
         </article>`;
@@ -147,10 +192,10 @@
 
   function renderMetricasFundamental() {
     el.metricsGrid.innerHTML = [
-      metricCard('Jornada', 'Preparação', 'O Mundo Axoriin será liberado em uma etapa futura.'),
-      metricCard('Personagem', 'A definir', 'Avatares próprios já estão previstos na arquitetura.'),
-      metricCard('Missões', 'Em construção', 'Quizzes e desafios serão organizados em fases.'),
-      metricCard('Ranking', 'Aguardando', 'A classificação será saudável e separada por turmas e temporadas.')
+      metricCard('Arena', 'MVP ativo', 'Primeira missão gamificada disponível para teste no portal.'),
+      metricCard('Personagem', 'Disponível', 'Avatar inicial controlável no mapa da Arena do Conhecimento.'),
+      metricCard('Quiz', '5 questões', 'Desafio demonstrativo com pontuação, XP e medalha.'),
+      metricCard('Ranking', 'Demo', 'Classificação fictícia até a integração com o banco do Axoriin.')
     ].join('');
   }
 
@@ -183,9 +228,9 @@
 
   function renderAtividadesFundamental() {
     el.activityList.innerHTML = [
-      atividade('✦', 'Mundo de aprendizagem', 'Mapa de fases preparado para receber os jogos educativos.', 'Planejado'),
-      atividade('☺', 'Personagens próprios', 'O aluno poderá escolher e evoluir seu avatar pelas atividades.', 'Planejado'),
-      atividade('♛', 'Ranking por temporada', 'Conquistas, ligas e recompensas sem expor dados sensíveis.', 'Planejado')
+      atividade('✦', 'Arena do Conhecimento', 'MVP disponível com mapa, NPC professor e quiz educacional.', 'Ativo'),
+      atividade('☺', 'Personagens próprios', 'O aluno poderá escolher e evoluir seu avatar nas próximas etapas.', 'Próximo'),
+      atividade('♛', 'Ranking por temporada', 'Conquistas, ligas e recompensas serão integradas sem expor dados sensíveis.', 'Próximo')
     ].join('');
   }
 
@@ -197,7 +242,7 @@
       ['4', 'Evolução contínua', 'Histórico consolidado para aluno, família e escola.']
     ];
     const fundamental = [
-      ['1', 'Universo visual', 'Mapa, identidade e personagens próprios do Axoriin.'],
+      ['1', 'MVP liberado', 'Arena do Conhecimento disponível para teste pelo painel.'],
       ['2', 'Quizzes gamificados', 'Questões rápidas organizadas por missões e níveis.'],
       ['3', 'Conquistas', 'Experiência, itens e recompensas vinculadas à aprendizagem.'],
       ['4', 'Ranking saudável', 'Ligas por turma e temporadas com regras de proteção.']
@@ -219,19 +264,19 @@
 
     if (fundamental) {
       texto(el.heroTitle, `${saudacao()}, ${primeiroNome}! Seu mundo está sendo preparado.`);
-      texto(el.heroText, 'O mesmo portal já está estruturado para receber jogos, quizzes gamificados, ranking, personagens e missões do Ensino Fundamental II.');
+      texto(el.heroText, 'O Portal do Aluno já recebeu a primeira versão da Arena do Conhecimento, com mapa, NPC professor, quiz, XP e medalha para o Ensino Fundamental II.');
       texto(el.heroIcon, '✦');
       texto(el.orbitChip1, 'Missões');
       texto(el.orbitChip2, 'Personagens');
       texto(el.orbitChip3, 'Ranking');
-      texto(el.metricsSubtitle, 'A área gamificada ainda não possui dados porque os jogos serão implementados ao final.');
-      texto(el.modulesSubtitle, 'A arquitetura já reserva cada parte da futura experiência gamificada.');
+      texto(el.metricsSubtitle, 'A primeira versão já está disponível; os dados reais serão integrados por etapas.');
+      texto(el.modulesSubtitle, 'Abra a Arena do Conhecimento ou acompanhe as próximas áreas gamificadas.');
       texto(el.modulesTag, 'Mundo Axoriin');
       texto(el.activitySubtitle, 'Veja os componentes já previstos para a jornada do Fundamental II.');
-      texto(el.sidebarNote, 'Este acesso foi identificado como Ensino Fundamental II e já está separado da experiência ENEM.');
+      texto(el.sidebarNote, 'Este acesso foi identificado como Ensino Fundamental II e já pode testar a Arena do Conhecimento.');
       texto(el.roadmapTitle, 'Estrutura do Mundo Axoriin');
       texto(el.roadmapSubtitle, 'Os jogos poderão ser acrescentados por etapas sem alterar o login nem o painel principal.');
-      el.heroActions.innerHTML = `<a class="btn btn-primary" href="${runtime.escapeHtml(runtime.buildUrl('/aluno-jogos.html'))}">Ver estrutura dos jogos</a><a class="btn btn-ghost" href="#modulos">Explorar módulos</a>`;
+      el.heroActions.innerHTML = `<a class="btn btn-primary" href="${runtime.escapeHtml(runtime.buildUrl(ARENA_CONHECIMENTO_ROTA))}">Entrar na Arena</a><a class="btn btn-ghost" href="#modulos">Explorar módulos</a>`;
     } else if (indefinido) {
       texto(el.heroTitle, `${saudacao()}, ${primeiroNome}!`);
       texto(el.heroText, 'Não conseguimos identificar o segmento a partir do nome da turma. O acesso permanece seguro, mas os módulos ficarão em configuração.');
