@@ -414,6 +414,48 @@ button { color: inherit; }
 .install-card strong { display: block; margin-bottom: 4px; }
 .install-card span { color: var(--muted); font-size: 13px; }
 
+
+.module-card.is-arena {
+  color: #ffffff;
+  border-color: rgba(255, 199, 93, .58);
+  background:
+    radial-gradient(circle at 86% 8%, rgba(255, 199, 93, .35), transparent 30%),
+    radial-gradient(circle at 8% 95%, rgba(81, 214, 255, .20), transparent 34%),
+    linear-gradient(145deg, #17265b 0%, #0b2c4d 52%, #07182e 100%);
+}
+
+.module-card.is-arena::after {
+  background: rgba(255, 199, 93, .15);
+}
+
+.module-card.is-arena .module-icon {
+  background: rgba(255, 243, 213, .18);
+  color: #ffd66b;
+  border: 1px solid rgba(255, 214, 107, .28);
+}
+
+.module-card.is-arena h3,
+.module-card.is-arena p,
+.module-card.is-arena .module-meta {
+  color: #ffffff;
+}
+
+.module-card.is-arena p {
+  color: rgba(255,255,255,.82);
+}
+
+.module-card.is-arena .module-status {
+  background: rgba(68, 210, 140, .16);
+  color: #9effc8;
+  border: 1px solid rgba(158, 255, 200, .30);
+}
+
+.module-card.is-arena .btn-primary {
+  background: linear-gradient(135deg, #ffc75d, #ff9f43);
+  color: #10203a;
+  box-shadow: 0 12px 28px rgba(255, 159, 67, .22);
+}
+
 .segment-fundamental .hero { background: radial-gradient(circle at 84% 16%, rgba(255,199,93,.25), transparent 27%), linear-gradient(135deg, rgba(47, 54, 103, .96), rgba(12, 38, 67, .94)); }
 .segment-fundamental .orbit-core { background: linear-gradient(145deg, rgba(255,199,93,.22), rgba(155,120,255,.14)); }
 .segment-fundamental .module-icon { background: #fff3d5; color: #a66400; }
