@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Arena do Conhecimento | Portal do Aluno</title>
+  <link rel="stylesheet" href="./jogo/arena.css" />
+</head>
+<body>
+  <noscript>Ative o JavaScript para acessar a Arena do Conhecimento.</noscript>
+
+  <div class="arena-shell">
+    <header class="arena-topbar">
+      <div class="arena-brand">
+        <div class="arena-mark">A</div>
+        <div>
+          <strong>Arena do Conhecimento</strong>
+          <span>Missões educacionais do Portal do Aluno</span>
+        </div>
+      </div>
+
+      <nav class="arena-actions" aria-label="Ações da Arena">
+        <button id="btn-fullscreen" type="button">Tela cheia</button>
+        <a href="./painel-aluno.html" id="btn-voltar-portal">Voltar ao Portal</a>
+      </nav>
+    </header>
+
+    <main class="arena-main">
+      <section class="arena-stage" aria-label="Jogo Arena do Conhecimento">
+        <div id="game-container"></div>
+      </section>
+
+      <aside class="arena-helper">
+        <h2>Como jogar</h2>
+        <p><strong>Computador:</strong> use as setas ou WASD para andar. Pressione <kbd>E</kbd> perto do professor para iniciar a missão.</p>
+        <p><strong>Celular:</strong> use os botões virtuais na tela e toque em <strong>Interagir</strong>.</p>
+        <hr />
+        <p class="muted">Esta primeira versão usa dados demonstrativos quando a API do Axoriin ainda não estiver conectada.</p>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    window.AXORIIN_ARENA = {
+      apiBase: '/api/aluno/jogo',
+      portalUrl: './painel-aluno.html',
+      debug: true
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script type="module" src="./jogo/main.js"></script>
+</body>
+</html>
