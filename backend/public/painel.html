@@ -527,7 +527,7 @@ h1, h2, h3, h4, h5, h6,
 /* ===== MÉTRICAS HUD ===== */
 .metrics{
   display:grid;
-  grid-template-columns:1.25fr 1fr 1fr 1fr 1fr;
+  grid-template-columns:1.25fr 1fr 1fr 1fr;
   gap:10px;
   margin-bottom:26px;
   align-items:start;
@@ -970,21 +970,13 @@ h1, h2, h3, h4, h5, h6,
 
 @media(max-width:1400px){
   .metrics{
-    grid-template-columns:1.2fr 1fr 1fr 1fr;
-  }
-
-  .metric:last-child{
-    display:none;
+    grid-template-columns:repeat(4, minmax(160px, 1fr));
   }
 }
 
 @media(max-width:1180px){
   .metrics{
-    grid-template-columns:repeat(3, minmax(170px, 1fr));
-  }
-
-  .metric:last-child{
-    display:flex;
+    grid-template-columns:repeat(2, minmax(170px, 1fr));
   }
 }
 
@@ -1043,15 +1035,42 @@ h1, h2, h3, h4, h5, h6,
   position:absolute;
   inset:0;
   padding:18px 20px;
-  display:flex;
-  align-items:flex-start;
-  justify-content:flex-start;
+  overflow:hidden;
 }
 
 .card-copy{
-  max-width:100%;
+  position:relative;
+  z-index:2;
+  max-width:72%;
   text-align:left;
 }
+
+.card-watermark{
+  position:absolute;
+  right:18px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:4.5rem;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:-0.04em;
+  color:rgba(226,242,255,.16);
+  opacity:.18;
+  filter:grayscale(1) saturate(0) brightness(1.15) contrast(.95);
+  pointer-events:none;
+  user-select:none;
+  z-index:1;
+}
+
+.card-watermark--cadastro{ color:rgba(226,242,255,.16); }
+.card-watermark--notificacoes{ color:rgba(226,242,255,.16); }
+.card-watermark--controle{ color:rgba(226,242,255,.16); }
+.card-watermark--ranking{ color:rgba(226,242,255,.16); }
+.card-watermark--estatisticas{ color:rgba(226,242,255,.16); }
+.card-watermark--financeiro{ color:rgba(226,242,255,.15); font-size:6.0rem; letter-spacing:-0.09em; opacity:.14; filter:none; }
+.card-watermark--associacao{ color:rgba(226,242,255,.16); }
+.card-watermark--transferencia{ color:rgba(226,242,255,.16); }
+.card-watermark--redacao{ color:rgba(226,242,255,.16); }
 
 .kicker{
   font-size:.70rem;
@@ -1083,6 +1102,9 @@ h1, h2, h3, h4, h5, h6,
 @media(max-width:460px){
   .window-card{ grid-column:span 4; min-height:150px; height:150px; }
   .card-copy h3{ font-size:1.4rem; }
+  .card-copy{ max-width:74%; }
+  .card-watermark{ right:14px; font-size:3.4rem; opacity:.16; }
+  .card-watermark--financeiro{ font-size:4.5rem; opacity:.13; }
 }
 
 /* ===== DEMAIS BLOCOS ===== */
@@ -2025,6 +2047,21 @@ canvas{
     line-height:1.1 !important;
   }
 
+  .card-copy{
+    max-width:76% !important;
+  }
+
+  .card-watermark{
+    right:12px !important;
+    font-size:3rem !important;
+    opacity:.15 !important;
+  }
+
+  .card-watermark--financeiro{
+    font-size:4rem !important;
+    opacity:.12 !important;
+  }
+
   .pend-card,
   .alertas-comportamento,
   .chart-card,
@@ -2202,6 +2239,406 @@ canvas{
     align-items:center;
   }
 }
+
+
+/* ===== MÉTRICAS FUTURISTAS V3 — ESTADO FINAL ESTÁVEL ===== */
+.metrics{
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:18px;
+  align-items:stretch;
+  margin-bottom:30px;
+}
+
+.metrics::before,
+.metrics::after{
+  display:none;
+}
+
+.metric.metric--hud{
+  min-height:294px;
+  padding:18px 16px 16px;
+  overflow:hidden !important;
+  border:1px solid rgba(89,231,255,.30) !important;
+  border-radius:28px !important;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(37,215,255,.10), transparent 43%),
+    linear-gradient(180deg, rgba(7,21,36,.92), rgba(3,11,21,.96)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    inset 0 0 0 1px rgba(89,231,255,.025),
+    0 18px 42px rgba(0,0,0,.34),
+    0 0 22px rgba(37,215,255,.035) !important;
+  transform:none;
+}
+
+.metric.metric--hud::before{
+  content:"";
+  display:block;
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:
+    linear-gradient(135deg, rgba(89,231,255,.07), transparent 18%) top left / 78px 78px no-repeat,
+    linear-gradient(315deg, rgba(89,231,255,.05), transparent 18%) bottom right / 78px 78px no-repeat;
+  pointer-events:none;
+}
+
+.metric.metric--hud::after{
+  content:"";
+  display:block;
+  position:absolute;
+  left:22px;
+  right:22px;
+  bottom:10px;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,.24), transparent);
+  opacity:.62;
+  pointer-events:none;
+}
+
+.metric.metric--hud:hover{
+  transform:translateY(-2px);
+  border-color:rgba(89,231,255,.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(89,231,255,.035),
+    0 20px 46px rgba(0,0,0,.38),
+    0 0 26px rgba(37,215,255,.055) !important;
+}
+
+.metric:first-child{
+  transform:none;
+}
+
+.metric-hud-frame{
+  inset:0;
+  border-radius:28px;
+  opacity:1;
+}
+
+.metric-hud-frame::before{
+  top:0;
+  width:58%;
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,.48), transparent);
+  box-shadow:0 0 10px rgba(37,215,255,.12);
+}
+
+.metric-hud-frame::after{
+  bottom:0;
+  width:42%;
+  background:linear-gradient(90deg, transparent, rgba(89,231,255,.30), transparent);
+}
+
+.metric-hud-corners::before,
+.metric-hud-corners::after{
+  width:48px;
+  height:48px;
+  opacity:.86;
+}
+
+.metric-hud-corners::before{
+  top:0;
+  left:0;
+  border-top:1px solid rgba(89,231,255,.46);
+  border-left:1px solid rgba(89,231,255,.46);
+  border-top-left-radius:27px;
+}
+
+.metric-hud-corners::after{
+  right:0;
+  bottom:0;
+  border-right:1px solid rgba(89,231,255,.34);
+  border-bottom:1px solid rgba(89,231,255,.34);
+  border-bottom-right-radius:27px;
+}
+
+.metric .k{
+  position:relative;
+  width:auto;
+  max-width:calc(100% - 30px);
+  margin:0 auto 13px;
+  padding:7px 24px 8px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.13em;
+  color:rgba(230,247,255,.90) !important;
+  background:
+    linear-gradient(90deg, transparent, rgba(37,215,255,.075) 18%, rgba(37,215,255,.075) 82%, transparent);
+  border-top:1px solid rgba(89,231,255,.20);
+  border-bottom:1px solid rgba(89,231,255,.12);
+  clip-path:polygon(9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 9px 100%, 0 50%);
+  text-shadow:0 0 10px rgba(89,231,255,.08);
+}
+
+.metric .k::before,
+.metric .k::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:rgba(89,231,255,.78);
+  box-shadow:0 0 7px rgba(37,215,255,.38);
+  transform:translateY(-50%);
+}
+
+.metric .k::before{ left:11px; }
+.metric .k::after{ right:11px; }
+
+.metric-hud-wrap{
+  gap:10px;
+}
+
+.metric-hud{
+  --size:154px;
+  filter:
+    drop-shadow(0 0 8px rgba(37,215,255,.15))
+    drop-shadow(0 0 20px rgba(37,215,255,.06));
+}
+
+.metric:first-child .metric-hud{
+  --size:154px;
+}
+
+.metric-hud::before{
+  inset:-8px;
+  border:1px dashed rgba(89,231,255,.15);
+  animation:none !important;
+  opacity:.82;
+}
+
+.metric-hud::after{
+  inset:-3px;
+  border:1px solid rgba(89,231,255,.14);
+  box-shadow:
+    0 0 11px rgba(37,215,255,.07),
+    inset 0 0 13px rgba(37,215,255,.035);
+}
+
+.metric-hud-outer{
+  inset:-1px;
+  background:
+    radial-gradient(circle at center,
+      transparent 54%,
+      rgba(89,231,255,.08) 55%,
+      rgba(89,231,255,.035) 57%,
+      transparent 58%),
+    radial-gradient(circle at center,
+      transparent 68%,
+      rgba(89,231,255,.12) 69%,
+      transparent 70%);
+}
+
+.metric-hud-outer::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  border-radius:50%;
+  background:
+    repeating-conic-gradient(
+      from -90deg,
+      rgba(89,231,255,.15) 0deg 1deg,
+      transparent 1deg 5deg
+    );
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  opacity:.42;
+}
+
+.metric-hud-segments{
+  inset:5px;
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - 22px), #000 calc(100% - 22px));
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 22px), #000 calc(100% - 22px));
+  opacity:.12;
+}
+
+.metric-hud-segments.is-active{
+  background:
+    conic-gradient(
+      from -90deg,
+      rgba(167,252,255,.99) 0deg,
+      rgba(80,234,255,.98) var(--seg-fill),
+      rgba(48,112,139,.20) var(--seg-fill),
+      rgba(48,112,139,.20) 360deg
+    );
+  -webkit-mask:
+    repeating-conic-gradient(
+      from -90deg,
+      #000 0deg 3.6deg,
+      transparent 3.6deg 7.2deg
+    ),
+    radial-gradient(farthest-side, transparent calc(100% - 22px), #000 calc(100% - 22px));
+  -webkit-mask-composite:source-in;
+  mask:
+    repeating-conic-gradient(
+      from -90deg,
+      #000 0deg 3.6deg,
+      transparent 3.6deg 7.2deg
+    ),
+    radial-gradient(farthest-side, transparent calc(100% - 22px), #000 calc(100% - 22px));
+  mask-composite:intersect;
+  filter:
+    drop-shadow(0 0 4px rgba(121,246,255,.90))
+    drop-shadow(0 0 10px rgba(37,215,255,.34))
+    drop-shadow(0 0 18px rgba(37,215,255,.16));
+}
+
+.metric-hud-mid{
+  inset:23px;
+  border:1px solid rgba(89,231,255,.20);
+  box-shadow:
+    inset 0 0 18px rgba(89,231,255,.045),
+    0 0 10px rgba(37,215,255,.045);
+}
+
+.metric-hud-mid::before{
+  inset:7px;
+  border:1px dashed rgba(89,231,255,.12);
+  animation:none !important;
+}
+
+.metric-hud-core,
+.metric:first-child .metric-hud-core{
+  width:82px;
+  height:82px;
+  background:
+    radial-gradient(circle at 42% 30%, rgba(89,231,255,.08), rgba(4,14,25,.98) 68%);
+  border:1px solid rgba(89,231,255,.20);
+  box-shadow:
+    inset 0 0 22px rgba(89,231,255,.055),
+    0 0 14px rgba(37,215,255,.055);
+}
+
+.metric .v,
+.metric:first-child .v{
+  font-size:2rem;
+  font-weight:800;
+  color:#f6fbff !important;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.20),
+    0 0 12px rgba(89,231,255,.14);
+}
+
+.metric-hud-sweep{
+  display:none !important;
+}
+
+.metric-hud-sweep::before,
+.metric-hud::before,
+.metric-hud-mid::before{
+  animation:none !important;
+}
+
+.metric-hud-decor-left,
+.metric-hud-decor-right{
+  width:22px;
+  height:76px;
+  opacity:.44;
+}
+
+.metric-hud-decor-left{ left:-16px; }
+.metric-hud-decor-right{ right:-16px; }
+
+.metric-hud-meta{
+  margin-top:1px;
+  padding-inline:4px;
+}
+
+.metric-hud-status{
+  font-size:.76rem;
+  color:rgba(218,236,246,.78) !important;
+}
+
+.metric-hud-percent{
+  font-size:.87rem;
+  color:#e9fbff !important;
+  text-shadow:0 0 7px rgba(89,231,255,.12);
+}
+
+.metric-hud-line{
+  height:7px;
+  gap:4px;
+  padding-inline:4px;
+}
+
+.metric-hud-line span{
+  border-radius:2px;
+  background:rgba(64,128,153,.16);
+  border:1px solid rgba(89,231,255,.025);
+  box-shadow:none;
+}
+
+.metric-hud-line span.on{
+  background:linear-gradient(180deg, rgba(73,170,199,.76), rgba(39,112,141,.74));
+  border-color:rgba(89,231,255,.13);
+  box-shadow:none;
+}
+
+.metric-hud-line span.pulse{
+  transform:none;
+}
+
+@media(max-width:1180px){
+  .metrics{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+}
+
+@media(max-width:1024px){
+  .metrics{
+    grid-template-columns:repeat(2, minmax(0,1fr)) !important;
+    gap:12px !important;
+  }
+
+  .metric.metric--hud{
+    min-height:258px !important;
+    padding:14px 12px 13px !important;
+  }
+
+  .metric:first-child{
+    grid-column:auto !important;
+  }
+
+  .metric-hud,
+  .metric:first-child .metric-hud{
+    --size:128px !important;
+  }
+
+  .metric-hud-core,
+  .metric:first-child .metric-hud-core{
+    width:68px !important;
+    height:68px !important;
+  }
+
+  .metric .v,
+  .metric:first-child .v{
+    font-size:1.55rem !important;
+  }
+
+  .metric .k{
+    max-width:calc(100% - 12px);
+    padding:6px 18px 7px;
+    font-size:.61rem !important;
+  }
+}
+
+@media(max-width:560px){
+  .metrics{
+    grid-template-columns:1fr !important;
+  }
+
+  .metric.metric--hud{
+    min-height:250px !important;
+  }
+}
+
 </style>
 </head>
 
@@ -2269,20 +2706,13 @@ canvas{
             <nav class="nav" id="sb-nav">
   <a class="active" href="painel.html?t=cmdpii" id="sbPainel">🏠 Painel</a>
   <a href="lista-alunos.html?t=cmdpii" id="sbAlunos">👥 Alunos</a>
-  <a href="chamadas.html?t=cmdpii" id="sbChamada">📋 Chamada</a>
   <a href="ranking-alunos.html?t=cmdpii" id="sbRanking">🏆 Ranking de Alunos</a>
   <a href="/notificacoes?t=cmdpii" id="sbNotificacoes">🔔 Notificações</a>
   <a href="livro-ocorrencias.html?t=cmdpii" id="sbLivroOcorrencias">📘 Livro Digital</a>
   <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
-  <a href="rifas.html?t=cmdpii" id="sbRifas">🎟️ Rifas</a>
-  <a href="baile-formatura.html?t=cmdpii" id="sbBaile">💃 Baile de Formatura</a>
-  <a href="mensagens.html?t=cmdpii" id="sbMensagens">✉️ Mensagens</a>
-  <a href="/monitores.html?t=cmdpii" id="sbMonitores">🧭 Monitores</a>
+  <a href="financeiro.html?t=cmdpii" id="sbFinanceiro">💰 Financeiro</a>
   <a href="transferir-turma.html?t=cmdpii" id="sbTransferir">🔁 Transferir Turmas</a>
-  <a href="usuarios.html?t=cmdpii" id="sbAdmin">⚙️ Administração</a>
-  <a href="configuracao-disciplinar.html?t=cmdpii" id="sbConfigDisciplinar">🧠 Configuração Disciplinar</a>
-  <a href="configuracao-documentos.html?t=cmdpii" id="sbConfigDocumentos">🏛️ Configuração de Documentos</a>
-  <a href="logs.html?t=cmdpii" id="sbLogs">🧾 Logs</a>
+  <a href="gestao-sistema.html?t=cmdpii" id="sbGestaoSistema">⚙️ Gestão do Sistema</a>
 </nav>
     </aside>
 
@@ -2425,43 +2855,6 @@ canvas{
     </div>
   </div>
 
-  <div class="metric metric--hud" id="metricMsgs">
-    <div class="metric-hud-frame"></div>
-    <div class="metric-hud-corners"></div>
-
-    <div class="k">Mensagens não lidas</div>
-
-    <div class="metric-hud-wrap">
-      <div
-        class="metric-hud"
-        data-hud
-        data-target="0"
-        data-progress="0"
-        data-decimals="0"
-      >
-        <div class="metric-hud-outer"></div>
-        <div class="metric-hud-sweep"></div>
-        <div class="metric-hud-segments"></div>
-        <div class="metric-hud-mid"></div>
-        <div class="metric-hud-core">
-          <div class="v" id="mMsgs">0</div>
-        </div>
-        <div class="metric-hud-decor-left"></div>
-        <div class="metric-hud-decor-right"></div>
-      </div>
-
-      <div class="metric-hud-meta">
-        <div class="metric-hud-status">Processando...</div>
-        <div class="metric-hud-percent" id="mMsgsPct">0%</div>
-      </div>
-
-      <div class="metric-hud-line" id="mMsgsLine">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
-    </div>
-  </div>
 
   <div class="metric metric--hud" id="metricPendDev">
     <div class="metric-hud-frame"></div>
@@ -2509,23 +2902,17 @@ canvas{
                   <div class="kicker">MÓDULO</div>
                   <h3>Cadastrar Aluno</h3>
                 </div>
+                <div class="card-watermark card-watermark--cadastro" aria-hidden="true">🎓</div>
               </div>
             </div>
 
-            <div id="cardChamada" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('chamadas.html')">
-              <div class="window-content">
-                <div class="card-copy">
-                  <div class="kicker">ROTINA</div>
-                  <h3>Chamada</h3>
-                </div>
-              </div>
-            </div>
             <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('/notificacoes')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">PAINEL</div>
                   <h3>Ver Notificações</h3>
                 </div>
+                <div class="card-watermark card-watermark--notificacoes" aria-hidden="true">🔔</div>
               </div>
             </div>
 
@@ -2535,6 +2922,7 @@ canvas{
                   <div class="kicker">GESTÃO</div>
                   <h3>Controle de Notificações</h3>
                 </div>
+                <div class="card-watermark card-watermark--controle" aria-hidden="true">🛡️</div>
               </div>
             </div>
 
@@ -2544,6 +2932,7 @@ canvas{
                   <div class="kicker">CLASSIFICAÇÃO</div>
                   <h3>Ranking de Alunos</h3>
                 </div>
+                <div class="card-watermark card-watermark--ranking" aria-hidden="true">🏆</div>
               </div>
             </div>
 
@@ -2553,24 +2942,27 @@ canvas{
                   <div class="kicker">DASHBOARD</div>
                   <h3>Painel de Estatísticas</h3>
                 </div>
+                <div class="card-watermark card-watermark--estatisticas" aria-hidden="true">📊</div>
               </div>
             </div>
 
-            <div id="cardMensagens" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('mensagens.html')">
+            <div id="cardFinanceiro" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('financeiro.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">COMUNICAÇÃO</div>
-                  <h3>Mensagens</h3>
+                  <div class="kicker">GESTÃO FINANCEIRA</div>
+                  <h3>Módulo Financeiro</h3>
                 </div>
+                <div class="card-watermark card-watermark--financeiro" aria-hidden="true">R$</div>
               </div>
             </div>
 
             <div id="cardAssociacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="window.AxoriinAmbientes?.abrirPrimeiraAssociacao()">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">NOVO MÓDULO</div>
+                  <div class="kicker">MÓDULO VINCULADO</div>
                   <h3>Axoriin Associações</h3>
                 </div>
+                <div class="card-watermark card-watermark--associacao" aria-hidden="true">🤝</div>
               </div>
             </div>
 
@@ -2580,6 +2972,7 @@ canvas{
                   <div class="kicker">AÇÃO</div>
                   <h3>Transferir Turma</h3>
                 </div>
+                <div class="card-watermark card-watermark--transferencia" aria-hidden="true">🔄</div>
               </div>
             </div>
             <div id="cardGestaoRedacao" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
@@ -2588,6 +2981,7 @@ canvas{
                   <div class="kicker">PEDAGÓGICO</div>
                   <h3>Painel ENEM — Redação</h3>
                 </div>
+                <div class="card-watermark card-watermark--redacao" aria-hidden="true">✍️</div>
               </div>
             </div>
           </div>
@@ -2813,8 +3207,8 @@ canvas{
       <button onclick="location.href=withTenant('estatisticas.html')" id="bnRelatorios">
         📉<span>Relatórios</span>
       </button>
-      <button onclick="location.href=withTenant('mensagens.html')" id="bnMensagens">
-        ✉️<span>Mensagens</span>
+      <button onclick="location.href=withTenant('financeiro.html')" id="bnFinanceiro">
+        💰<span>Financeiro</span>
       </button>
       <button type="button" id="bnMais">
   ☰<span>Mais</span>
@@ -2989,12 +3383,9 @@ canvas{
     sbRanking: 'ranking-alunos.html',
     sbNotificacoes: '/notificacoes',
     sbEstatisticas: 'estatisticas.html',
-    sbMensagens: 'mensagens.html',
-    sbMonitores: '/monitores.html',
+    sbFinanceiro: 'financeiro.html',
     sbTransferir: 'transferir-turma.html',
-    sbAdmin: 'usuarios.html',
-    sbLogs: 'logs.html',
-    sbConfigDisciplinar: 'configuracao-disciplinar.html'
+    sbGestaoSistema: 'gestao-sistema.html'
   };
 
   Object.entries(map).forEach(([id, url]) => {
@@ -3043,10 +3434,9 @@ canvas{
       sbRanking:'sbRanking',
       sbNotificacoes:'sbNotificacoes',
       sbEstatisticas:'sbEstatisticas',
-      sbMonitores:'sbMonitores',
+      sbFinanceiro:'sbFinanceiro',
       sbTransferir:'sbTransferir',
-      sbAdmin:'sbAdmin',
-      sbLogs:'sbLogs',
+      sbGestaoSistema:'sbGestaoSistema',
     };
 
     const CARDS = {
@@ -3055,13 +3445,13 @@ canvas{
       cardControleNotificacoes:'cardControleNotificacoes',
       cardRankingAlunos:'cardRankingAlunos',
       cardEstatisticas:'cardEstatisticas',
+      cardFinanceiro:'cardFinanceiro',
       cardTransferirTurma:'cardTransferirTurma'
     };
 
     const SECOES = {
       metricNotif:'metricNotif',
       metricMedia:'metricMedia',
-      metricMsgs:'metricMsgs',
       metricPendDev:'metricPendDev',
       pendDevolucaoSection:'pendDevolucaoSection',
       acSection:'acSection',
@@ -3071,7 +3461,7 @@ canvas{
       bnRanking:'bnRanking',
       bnNotifs:'bnNotifs',
       bnRelatorios:'bnRelatorios',
-      bnMonitores:'bnMonitores',
+      bnFinanceiro:'bnFinanceiro',
     };
 
     try{
@@ -3083,17 +3473,25 @@ canvas{
       const tipo = String(u?.tipo || '').toLowerCase();
 
       if (tipo === 'admin') return;
-      if (tipo === 'monitor') return;
+
+      if (tipo === 'monitor') {
+        hide(
+          SB.sbFinanceiro,
+          SB.sbGestaoSistema,
+          CARDS.cardFinanceiro,
+          BN.bnFinanceiro
+        );
+        return;
+      }
 
       if (tipo === 'professor') {
         hide(
           SB.sbRanking,
           SB.sbNotificacoes,
           SB.sbEstatisticas,
-          SB.sbMonitores,
+          SB.sbFinanceiro,
           SB.sbTransferir,
-          SB.sbAdmin,
-          SB.sbLogs
+          SB.sbGestaoSistema
         );
 
         hide(
@@ -3102,13 +3500,13 @@ canvas{
           CARDS.cardControleNotificacoes,
           CARDS.cardRankingAlunos,
           CARDS.cardEstatisticas,
+          CARDS.cardFinanceiro,
           CARDS.cardTransferirTurma
         );
 
         hide(
           SECOES.metricNotif,
           SECOES.metricMedia,
-          SECOES.metricMsgs,
           SECOES.metricPendDev,
           SECOES.pendDevolucaoSection,
           SECOES.acSection
@@ -3118,7 +3516,7 @@ canvas{
           BN.bnRanking,
           BN.bnNotifs,
           BN.bnRelatorios,
-          BN.bnMonitores
+          BN.bnFinanceiro
         );
         return;
       }
@@ -3190,9 +3588,6 @@ function hudEaseOutCubic(t){
       return Math.max(6, Math.min(100, n >= 100 ? 100 : (n / 100) * 100));
     }
 
-    if (type === 'msgs') {
-      return Math.max(4, Math.min(100, n >= 30 ? 100 : (n / 30) * 100));
-    }
 
     if (type === 'pend') {
       return Math.max(4, Math.min(100, n >= 20 ? 100 : (n / 20) * 100));
@@ -3250,8 +3645,10 @@ function hudEaseOutCubic(t){
     const valueEl = document.getElementById(valueId);
     const percentEl = document.getElementById(percentId);
     const lineEl = document.getElementById(lineId);
+    const statusEl = metricCard?.querySelector('.metric-hud-status');
 
     if (!metricCard || !valueEl || !percentEl) return;
+    if (statusEl) statusEl.textContent = 'Sincronizando...';
 
     const safeFinal = Number(finalValue || 0);
     const finalPercent = hudGetSafePercentFromValue(safeFinal, type);
@@ -3280,6 +3677,8 @@ function hudEaseOutCubic(t){
         percentEl.textContent = `${Math.round(finalPercent)}%`;
         hudUpdateRing(metricCard, finalPercent);
         hudUpdateLineSegments(lineEl, finalPercent);
+        if (statusEl) statusEl.textContent = 'Dados atualizados';
+        metricCard.classList.add('hud-ready');
       }
     }
 
@@ -3296,6 +3695,9 @@ function hudEaseOutCubic(t){
     if (percentEl) percentEl.textContent = '0%';
 
     if (metricCard) {
+      metricCard.classList.remove('hud-ready');
+      const statusEl = metricCard.querySelector('.metric-hud-status');
+      if (statusEl) statusEl.textContent = 'Aguardando dados...';
       const seg = metricCard.querySelector('.metric-hud-segments');
       if (seg) {
         seg.classList.remove('is-active');
@@ -3348,18 +3750,6 @@ function hudEaseOutCubic(t){
       });
     }, 220);
 
-    setTimeout(() => {
-      hudAnimateMetric({
-        metricId: 'metricMsgs',
-        valueId: 'mMsgs',
-        percentId: 'mMsgsPct',
-        lineId: 'mMsgsLine',
-        finalValue: values.msgs || 0,
-        decimals: 0,
-        duration: 1500,
-        type: 'msgs'
-      });
-    }, 320);
 
     setTimeout(() => {
       hudAnimateMetric({
@@ -3379,7 +3769,6 @@ function hudEaseOutCubic(t){
     hudResetMetric('metricAlunos', 'mAlunos', 'mAlunosPct', 'mAlunosLine', 0);
     hudResetMetric('metricNotif', 'mNotif', 'mNotifPct', 'mNotifLine', 0);
     hudResetMetric('metricMedia', 'mMedia', 'mMediaPct', 'mMediaLine', 1);
-    hudResetMetric('metricMsgs', 'mMsgs', 'mMsgsPct', 'mMsgsLine', 0);
     hudResetMetric('metricPendDev', 'mPendDevol', 'mPendDevolPct', 'mPendDevolLine', 0);
   }
   
@@ -3388,7 +3777,6 @@ function hudEaseOutCubic(t){
 
     let alunosCount = 0;
     let notifPend = 0;
-    let msgs = 0;
     let mediaGeral = 0;
     let pendTotal = 0;
 
@@ -3396,7 +3784,6 @@ function hudEaseOutCubic(t){
       const overview = await getJSON(API('/metrics/overview'), { timeoutMs: 8000 });
       alunosCount = Number(overview?.alunosCount || 0);
       notifPend   = Number(overview?.notifPend || 0);
-      msgs        = Number(overview?.msgs || 0);
     }catch(e){
       console.log('overview falhou:', e?.message);
     }
@@ -3449,7 +3836,6 @@ function hudEaseOutCubic(t){
       alunos: alunosCount,
       notif: notifPend,
       media: mediaGeral,
-      msgs: msgs,
       pend: pendTotal
     });
   }
@@ -4258,7 +4644,7 @@ async function carregarAlertaRevisoes() {
 
     if (path.includes('lista-alunos')) byId('bnAlunos')?.classList.add('active');
     else if (path.includes('ranking-alunos')) byId('bnRanking')?.classList.add('active');
-    else if (path.includes('mensagens')) byId('bnMensagens')?.classList.add('active');
+    else if (path.includes('financeiro') || path.includes('rifas') || path.includes('baile-formatura')) byId('bnFinanceiro')?.classList.add('active');
     else if (path.includes('estatisticas')) byId('bnRelatorios')?.classList.add('active');
     else if (path.includes('notific')) byId('bnNotifs')?.classList.add('active');
     else byId('bnPainel')?.classList.add('active');

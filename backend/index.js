@@ -114,10 +114,6 @@ console.log('ðŸ·ï¸  ResolveTenant ligado (subdomÃ­nio/query/cookie).'
   'AphAtendimento',
   'Counter',
   'Observacao',
-  'Monitor',
-  'MonitorPresenca',
-  'MonitorNota',
-  'MonitorAtividade',
   'SuperAdmin',
   'Questao',
   'QuestionarioTentativa',
@@ -232,7 +228,6 @@ const logsRoutes = require('./routes/api/logs');
 const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
 const estatisticasRoutes = require('./routes/api/estatisticas');
 const estatisticasComportamentoRoutes = require('./routes/api/estatisticasComportamento');
-const mensagensRoutes = require('./routes/api/mensagens');
 const observacoesRoutes = require('./routes/api/observacoes');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
@@ -252,11 +247,9 @@ const fichaTesteRoute = require('./routes/api/fichaTeste');
 const telegramBotRoutes = require('./routes/api/telegramBot');
 const comunicacaoPaisRoutes = require('./routes/api/comunicacaoPais');
 const comunicacaoAutoRoutes = require('./routes/api/comunicacao');
-const monitoresApiRoutes = require('./routes/api/monitores');
 const rankingAlunosRouter = require('./routes/api/rankingAlunos');
 const fixInstituicaoLegacy = require('./routes/api/fixInstituicaoLegacy');
 const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportamento');
-const chamadasRoutes = require('./routes/api/chamadas');
 const redacaoRoutes = require('./routes/api/redacao');
 const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
@@ -547,12 +540,13 @@ function buildProfessorGuard(publicRoot) {
     '/controle-notificacoes.html',
     '/cadastro-aluno.html',
     '/transferir-turma.html',
-    '/monitores.html',
-    '/monitor-ficha.html',
     '/ranking-alunos.html',
     '/master-instituicoes.html',
     '/master-associacoes.html',
     '/rifas.html',
+    '/financeiro.html',
+    '/gestao-sistema.html',
+    '/baile-formatura.html',
     '/livro-ocorrencias.html',
     '/configuracao-documentos.html'
   ]);
@@ -568,7 +562,6 @@ function buildProfessorGuard(publicRoot) {
     '/controle-notificacoes',
     '/cadastro-aluno',
     '/transferir-turma',
-    '/monitores',
     '/api/ranking-alunos',
     '/api/usuarios',
     '/api/logs',
@@ -577,6 +570,13 @@ function buildProfessorGuard(publicRoot) {
     '/api/master',
     '/rifas',
     '/api/rifas',
+    '/financeiro',
+    '/gestao-sistema',
+    '/baile-formatura',
+    '/api/baile-contratos',
+    '/api/baile-mesas',
+    '/api/baile-financeiro',
+    '/api/baile-controle',
     '/configuracao-documentos',
     '/api/configuracao-documentos',
   ];
@@ -785,7 +785,6 @@ mountIf('/api/controle-notificacoes', controleNotificacoesRoutes);
 mountIf('/api', relatorioNotificacoesRoute);
 mountIf('/api/estatisticas', estatisticasRoutes);
 mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, autenticar);
-mountIf('/api/mensagens', mensagensRoutes);
 mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
 mountIf('/api/metrics', metricsRoutes);
@@ -800,8 +799,6 @@ mountIf('/api/telegram', telegramBotRoutes);
 mountIf('/api/comunicacao', comunicacaoPaisRoutes);
 mountIf('/api/comunicacao', comunicacaoAutoRoutes);
 
-mountIf('/api/monitores', monitoresApiRoutes, autenticar);
-mountIf('/api/chamadas', chamadasRoutes);
 mountIf('/api/aph', aphCrudRoutes, autenticar);
 mountIf('/api/aph', aphEstatisticasRoutes);
 mountIf('/api/aph', aphPdfRoutes);
@@ -1077,8 +1074,6 @@ function exigirAdmin(req, res, next) {
 app.get('/ficha-aluno.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ficha-aluno.html')));
 app.get('/lista-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'lista-alunos.html')));
 app.get('/ranking-alunos.html', autenticar, (_req, res) => res.sendFile(path.join(publicRoot, 'ranking-alunos.html')));
-app.get('/monitores.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitores.html')));
-app.get('/monitor-ficha.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'monitor-ficha.html')));
 app.get('/livro-ocorrencias.html', autenticar, exigirAdmin, (_req, res) => res.sendFile(path.join(publicRoot, 'livro-ocorrencias.html')));
 app.get('/configuracao-documentos.html', autenticar, exigirAdmin, (_req, res) => { return res.sendFile(path.join(publicRoot, 'configuracao-documentos.html'));});
 app.get('/associacao.html', autenticar, carregarContextoAssociacao, (_req, res) => res.sendFile(path.join(publicRoot, 'associacao.html')));
