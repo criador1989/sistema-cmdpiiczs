@@ -3,578 +3,760 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lista de Alunos</title>
+  <title>Central de Alunos</title>
 
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#0A1322" />
+  <meta name="theme-color" content="#07111f" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <link rel="icon" href="/icons/icon-192x192.png" />
 
   <style>
     :root{
-      --rubi-1:#0A1322;
-      --rubi-2:#163B63;
-      --text:#ECF2FF;
-      --muted:#9FB3D1;
-      --fine:rgba(176,205,255,.30);
-      --fine2:rgba(7,15,30,.88);
-      --glass: rgba(15,30,56,.78);
-      --glass-b: rgba(176,205,255,.55);
-      --edge: rgba(0,0,0,.55);
-      --ok:#16a34a;
-      --card-shadow:
-        0 10px 28px rgba(0,0,0,.70),
-        0 20px 46px rgba(0,0,0,.80);
-      --radius: 18px;
+      --bg:#050d19;
+      --panel:rgba(8,22,43,.88);
+      --panel-2:rgba(10,29,57,.80);
+      --panel-3:rgba(13,37,72,.72);
+      --line:rgba(111,175,255,.26);
+      --line-strong:rgba(92,179,255,.68);
+      --text:#eef7ff;
+      --muted:#91a8c5;
+      --cyan:#39c6ff;
+      --cyan-soft:rgba(57,198,255,.16);
+      --blue:#4f7cff;
+      --ok:#21c36b;
+      --danger:#ff6b7b;
+      --shadow:0 24px 64px rgba(0,0,0,.48);
+      --radius:22px;
     }
 
     *{box-sizing:border-box}
+    [hidden]{display:none !important}
+
+    html{color-scheme:dark}
 
     body{
       margin:0;
-      color:var(--text);
-      font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
       min-height:100vh;
-      color-scheme: dark;
-
+      color:var(--text);
+      font-family:"Segoe UI",Inter,system-ui,-apple-system,Arial,sans-serif;
       background:
-        radial-gradient(900px 700px at 10% -10%, rgba(120,190,255,.25), transparent 60%),
-        radial-gradient(900px 700px at 90% -10%, rgba(80,170,255,.18), transparent 60%),
-        radial-gradient(1000px 800px at 50% 130%, rgba(2,10,30,.95), transparent 65%),
-        url("img/bg-painel-smart.png");
-      background-size:cover;
-      background-position:center;
-      background-attachment:fixed;
+        radial-gradient(1100px 600px at 75% -10%, rgba(16,108,191,.24), transparent 65%),
+        radial-gradient(800px 550px at 8% 15%, rgba(38,122,220,.18), transparent 68%),
+        linear-gradient(rgba(3,11,22,.75),rgba(3,11,22,.86)),
+        url("img/bg-painel-smart.png") center/cover fixed;
     }
 
     body::before{
       content:"";
       position:fixed;
       inset:0;
-      z-index:-1;
       pointer-events:none;
+      z-index:-1;
       background:
-        radial-gradient(1200px 900px at 50% 120%, rgba(0,0,0,.75), transparent 70%);
+        linear-gradient(90deg,rgba(3,10,20,.88),transparent 22%,transparent 78%,rgba(3,10,20,.88)),
+        radial-gradient(circle at center,transparent 20%,rgba(0,0,0,.36) 90%);
     }
+
+    button,input,select{font:inherit}
+    button{color:inherit}
 
     .topbar{
       position:sticky;
       top:0;
-      z-index:30;
+      z-index:50;
+      min-height:76px;
+      padding:13px clamp(14px,2.1vw,34px);
       display:flex;
-      gap:.75rem;
       align-items:center;
-      padding:12px 16px;
-
-      background:linear-gradient(135deg,
-        rgba(10,22,40,.95),
-        rgba(8,18,35,.90)
-      );
-      border-bottom:1px solid rgba(176,205,255,.30);
-      backdrop-filter: blur(14px) saturate(140%);
-      -webkit-backdrop-filter: blur(14px) saturate(140%);
-      box-shadow:0 10px 26px rgba(0,0,0,.55);
+      gap:18px;
+      background:rgba(5,15,30,.91);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(18px) saturate(135%);
+      -webkit-backdrop-filter:blur(18px) saturate(135%);
+      box-shadow:0 12px 36px rgba(0,0,0,.34);
     }
 
-    .brand{
-      font-weight:800;
-      letter-spacing:.5px;
-      margin-right:.5rem;
-      text-shadow:0 2px 10px rgba(0,0,0,.75);
-    }
-
-    .spacer{flex:1}
-
-    .pill-btn{
-      border:1px solid rgba(176,205,255,.35);
-      color:#f5f7ff;
+    .back-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-height:44px;
+      padding:0 15px;
+      border-radius:14px;
+      color:var(--text);
       text-decoration:none;
-      background:linear-gradient(135deg,
-        rgba(18,38,72,.92),
-        rgba(10,26,52,.88)
-      );
-      padding:.55rem .8rem;
-      border-radius:12px;
-      white-space:nowrap;
-      box-shadow:
-        0 10px 24px rgba(0,0,0,.60),
-        inset 0 1px 0 rgba(255,255,255,.08);
+      font-weight:700;
+      background:linear-gradient(145deg,rgba(17,43,81,.92),rgba(8,24,48,.92));
+      border:1px solid rgba(128,185,255,.42);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
       transition:.18s ease;
     }
 
-    .pill-btn:hover{
-      border-color:var(--glass-b);
-      filter:brightness(1.06);
-      transform:translateY(-1px);
-    }
+    .back-btn:hover{transform:translateY(-1px);border-color:var(--line-strong)}
 
-    .input{
+    .brand-wrap{min-width:0}
+    .brand{font-size:clamp(1rem,1.35vw,1.28rem);font-weight:850;letter-spacing:.01em}
+    .brand-sub{margin-top:2px;font-size:.78rem;color:var(--muted)}
+
+    .top-spacer{flex:1}
+
+    .count-chip{
       display:flex;
       align-items:center;
-      gap:.5rem;
-      padding:.65rem .8rem;
-      border-radius:14px;
-      min-width:220px;
-
-      background:linear-gradient(135deg,
-        rgba(19,39,74,.90),
-        rgba(11,26,50,.92)
-      );
-      border:1px solid rgba(176,205,255,.40);
-      color:var(--text);
-      box-shadow:
-        0 8px 22px rgba(0,0,0,.65),
-        inset 0 1px 0 rgba(255,255,255,.10);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .input input{
-      all:unset;
-      width:100%;
-      color:inherit;
-    }
-
-    .input input::placeholder{
-      color:var(--muted);
-      opacity:.95;
-    }
-
-    select{
-      appearance:none;
-      -webkit-appearance:none;
-      -moz-appearance:none;
-      background:linear-gradient(135deg,
-        rgba(19,39,74,.90),
-        rgba(11,26,50,.92)
-      );
-      color:#fff;
-      border:1px solid rgba(176,205,255,.40);
-      padding:.65rem .9rem;
-      border-radius:14px;
-      padding-right: 36px;
-      box-shadow:
-        0 8px 22px rgba(0,0,0,.65),
-        inset 0 1px 0 rgba(255,255,255,.08);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-
-      background-image:
-        url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%23bcd5ff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      background-repeat:no-repeat;
-      background-position: right 10px center;
-      background-size: 18px 18px;
-    }
-
-    select:focus{
-      outline: none;
-      border-color: var(--glass-b);
-      box-shadow:
-        0 0 0 3px rgba(80,150,255,.40),
-        0 10px 26px rgba(0,0,0,.70);
-    }
-
-    select option,
-    select optgroup{
-      background-color:#07101b;
-      color:#f5f7ff;
-    }
-
-    .wrap{
-      padding:16px;
-      max-width:1400px;
-      margin:0 auto;
-    }
-
-    .helper{
-      display:flex;
-      gap:.5rem;
-      align-items:center;
-      color:#dbe7ffcc;
-      font-size:.9rem;
-      text-shadow:0 1px 4px rgba(0,0,0,.7);
-    }
-
-    .helper .dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:#16a34a;
-      box-shadow:0 0 10px rgba(22,163,74,.9);
-    }
-
-    #grade-alunos{
-      display:grid;
-      gap:14px;
-      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
-    }
-
-    .card{
-      position:relative;
-      display:flex;
-      gap:.9rem;
-      align-items:center;
-      padding:12px 14px;
-      border-radius:18px;
-
-      background:linear-gradient(145deg,
-        rgba(17,37,70,.92),
-        rgba(9,24,48,.96)
-      );
-      border:1px solid rgba(176,205,255,.40);
-      box-shadow: var(--card-shadow);
-      transition: transform .15s, box-shadow .15s, border-color .15s, background .15s;
-      cursor:pointer;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    .card:hover{
-      transform: translateY(-2px);
-      border-color: rgba(198,223,255,.95);
-      background:linear-gradient(145deg,
-        rgba(24,52,96,.98),
-        rgba(11,30,60,1)
-      );
-      box-shadow:
-        0 18px 42px rgba(0,0,0,.85),
-        0 0 22px rgba(90,170,255,.35);
-    }
-
-    .info{
-      display:flex;
-      flex-direction:column;
-      gap:.25rem;
-      min-width:0;
-    }
-
-    .nome{
-      font-weight:800;
-      font-size:1.05rem;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      color:#dcecff;
+      background:rgba(14,34,64,.66);
+      border:1px solid var(--line);
       white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      text-shadow: 0 2px 8px rgba(0,0,0,.8);
     }
 
-    .turma{
-      font-size:.9rem;
-      color:var(--muted);
+    .count-chip svg{color:var(--cyan)}
+
+    .page{
+      width:min(1500px,calc(100% - 30px));
+      margin:20px auto 54px;
     }
 
-    .skeleton{
-      animation: pulse 1.2s infinite;
-      background: linear-gradient(90deg, #ffffff10, #ffffff18, #ffffff10);
-      background-size:200% 100%;
-      border-radius:12px;
-    }
-
-    @keyframes pulse{
-      0%{background-position:0 0}
-      100%{background-position:200% 0}
-    }
-
-    .avatar-wrap{
+    .hero{
       position:relative;
-      width:64px;
-      height:64px;
-      border-radius:50%;
       overflow:hidden;
-      box-shadow:
-        inset 0 0 0 2px rgba(176,205,255,.55),
-        0 10px 18px rgba(0,0,0,.7);
-      flex:0 0 auto;
-      background:radial-gradient(circle at 20% 0%, #4db8ff, #0b213d);
+      padding:clamp(24px,3vw,42px);
+      border-radius:28px;
+      background:
+        linear-gradient(135deg,rgba(10,31,61,.93),rgba(6,19,38,.88)),
+        radial-gradient(circle at 80% 25%,rgba(40,160,255,.16),transparent 34%);
+      border:1px solid rgba(87,174,255,.30);
+      box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.05);
     }
 
-    .avatar-iniciais{
+    .hero::after{
+      content:"";
       position:absolute;
-      inset:0;
+      width:410px;
+      height:410px;
+      right:-120px;
+      top:-160px;
+      border-radius:50%;
+      border:1px solid rgba(57,198,255,.13);
+      box-shadow:0 0 90px rgba(37,148,255,.10);
+      pointer-events:none;
+    }
+
+    .eyebrow{
+      color:#75d9ff;
+      text-transform:uppercase;
+      letter-spacing:.22em;
+      font-size:.73rem;
+      font-weight:800;
+    }
+
+    .hero h1{
+      margin:9px 0 6px;
+      font-size:clamp(1.75rem,3vw,3rem);
+      line-height:1.08;
+      letter-spacing:-.035em;
+    }
+
+    .hero p{margin:0;color:#afc1d8;font-size:clamp(.95rem,1.2vw,1.08rem)}
+
+    .search-row{
+      position:relative;
+      z-index:2;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(220px,310px);
+      gap:14px;
+      margin-top:28px;
+    }
+
+    .search-shell{
+      min-height:64px;
+      display:flex;
+      align-items:center;
+      gap:13px;
+      padding:0 18px;
+      border-radius:18px;
+      background:rgba(5,17,34,.88);
+      border:1px solid rgba(104,170,255,.48);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 16px 38px rgba(0,0,0,.32);
+      transition:.2s ease;
+    }
+
+    .search-shell:focus-within{
+      border-color:var(--cyan);
+      box-shadow:0 0 0 3px rgba(57,198,255,.12),0 0 28px rgba(57,198,255,.16),inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .search-shell svg{flex:0 0 auto;color:#dceeff}
+
+    .search-shell input{
+      width:100%;
+      border:0;
+      outline:0;
+      color:var(--text);
+      background:transparent;
+      font-size:1.04rem;
+    }
+
+    .search-shell input::placeholder{color:#7890ae}
+
+    .clear-search{
+      width:36px;
+      height:36px;
+      border:0;
+      border-radius:11px;
+      cursor:pointer;
+      background:transparent;
+      color:#8fa6c1;
+    }
+
+    .clear-search:hover{background:rgba(255,255,255,.06);color:#fff}
+
+    .filter-shell{
+      position:relative;
+      min-height:64px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:0 16px;
+      border-radius:18px;
+      background:rgba(8,23,45,.88);
+      border:1px solid rgba(111,175,255,.32);
+    }
+
+    .filter-shell svg{color:#cfe8ff;pointer-events:none}
+
+    .filter-shell select{
+      flex:1;
+      width:100%;
+      border:0;
+      outline:0;
+      color:#eef7ff;
+      background:transparent;
+      appearance:none;
+      cursor:pointer;
+      padding-right:28px;
+    }
+
+    .filter-shell::after{
+      content:"⌄";
+      position:absolute;
+      right:16px;
+      top:50%;
+      transform:translateY(-56%);
+      color:#a9bdd5;
+      pointer-events:none;
+      font-size:1.2rem;
+    }
+
+    select option{background:#061120;color:#eef7ff}
+
+    .search-helper{
+      min-height:22px;
+      margin:10px 2px 0;
+      color:#8198b4;
+      font-size:.82rem;
+    }
+
+    .content-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(280px,350px);
+      gap:18px;
+      margin-top:18px;
+      align-items:start;
+    }
+
+    .glass-panel{
+      background:linear-gradient(145deg,rgba(8,23,45,.91),rgba(6,17,34,.88));
+      border:1px solid rgba(103,169,250,.25);
+      border-radius:22px;
+      box-shadow:0 18px 52px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.035);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+    }
+
+    .panel-head{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:17px 18px 14px;
+      border-bottom:1px solid rgba(107,168,238,.16);
+    }
+
+    .panel-head h2,.panel-head h3{margin:0;font-size:1rem}
+    .panel-head .panel-spacer{flex:1}
+
+    .result-count{
+      padding:5px 9px;
+      border-radius:999px;
+      font-size:.76rem;
+      color:#b9d4f1;
+      background:rgba(29,64,108,.45);
+      border:1px solid rgba(110,176,255,.18);
+    }
+
+    .result-list{padding:10px}
+
+    .result-row{
+      width:100%;
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      align-items:center;
+      gap:13px;
+      padding:13px 14px;
+      margin:0 0 8px;
+      border:1px solid rgba(108,171,247,.16);
+      border-radius:16px;
+      text-align:left;
+      cursor:pointer;
+      background:linear-gradient(135deg,rgba(17,43,78,.72),rgba(9,25,49,.78));
+      transition:.16s ease;
+    }
+
+    .result-row:last-child{margin-bottom:0}
+    .result-row:hover,.result-row.is-active{transform:translateY(-1px);border-color:rgba(75,190,255,.52);background:linear-gradient(135deg,rgba(22,56,100,.82),rgba(11,31,60,.88))}
+
+    .mini-avatar,.recent-avatar{
+      position:relative;
       display:grid;
       place-items:center;
-      font-weight:900;
-      font-size:1.02rem;
-      letter-spacing:.3px;
+      overflow:hidden;
+      border-radius:50%;
       color:#fff;
-      background: linear-gradient(135deg,#163b63,#0a1322);
-      text-shadow: 0 2px 6px rgba(0,0,0,.7);
+      font-weight:800;
+      background:linear-gradient(145deg,#4778ff,#15b7c8);
+      box-shadow:0 8px 20px rgba(0,0,0,.32),inset 0 0 0 1px rgba(255,255,255,.18);
     }
 
-    .avatar-img{
+    .mini-avatar{width:48px;height:48px;font-size:.9rem}
+    .recent-avatar{width:40px;height:40px;font-size:.78rem}
+
+    .mini-avatar img,.recent-avatar img{
       position:absolute;
       inset:0;
       width:100%;
       height:100%;
       object-fit:cover;
-      opacity:0;
-      transition:opacity .25s ease;
     }
 
-    .avatar-img.show{ opacity:1; }
+    .result-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .result-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:5px;color:#8fa6c2;font-size:.82rem}
+
+    .turma-pill{
+      display:inline-flex;
+      align-items:center;
+      min-height:22px;
+      padding:2px 8px;
+      border-radius:999px;
+      color:#cdeaff;
+      background:rgba(47,117,185,.22);
+      border:1px solid rgba(102,180,255,.22);
+    }
+
+    .open-link{color:#55c7ff;font-size:.86rem;font-weight:700;white-space:nowrap}
+
+    .results-footer{
+      padding:4px 10px 12px;
+      text-align:center;
+    }
+
+    .text-btn{
+      border:0;
+      background:transparent;
+      color:#56c5ff;
+      cursor:pointer;
+      font-weight:750;
+      padding:10px 12px;
+      border-radius:12px;
+    }
+
+    .text-btn:hover{background:rgba(57,198,255,.08)}
+
+    .status-message{
+      padding:26px 18px;
+      color:#91a7c1;
+      text-align:center;
+    }
+
+    .welcome-panel{padding:24px}
+    .welcome-title{font-size:1.1rem;font-weight:800;margin-bottom:7px}
+    .welcome-copy{color:#92a8c2;line-height:1.65;max-width:720px}
+
+    .recent-cards{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+      margin-top:18px;
+    }
+
+    .recent-card{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      padding:11px;
+      border-radius:15px;
+      border:1px solid rgba(103,169,250,.16);
+      background:rgba(15,38,71,.52);
+      cursor:pointer;
+      transition:.16s ease;
+    }
+
+    .recent-card:hover{border-color:rgba(73,190,255,.48);transform:translateY(-1px)}
+    .recent-card-copy{min-width:0}
+    .recent-card-name{font-size:.83rem;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .recent-card-turma{font-size:.74rem;color:#8299b5;margin-top:2px}
+
+    .side-panel{overflow:hidden}
+    .side-list{padding:8px 12px 13px}
+
+    .side-item{
+      width:100%;
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:10px 5px;
+      border:0;
+      border-bottom:1px solid rgba(109,170,240,.13);
+      background:transparent;
+      text-align:left;
+      cursor:pointer;
+    }
+
+    .side-item:last-child{border-bottom:0}
+    .side-item:hover .side-name{color:#66ccff}
+    .side-name{font-size:.83rem;font-weight:720;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .side-meta{font-size:.73rem;color:#8196b0;margin-top:2px}
+    .side-arrow{color:#4fc5ff}
+
+    .tips{padding:16px;color:#8fa6c1;font-size:.84rem;line-height:1.55}
+    .tips strong{color:#dceeff}
+
+    .quick-panel{margin-top:18px;padding:18px}
+    .quick-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;font-weight:800}
+    .quick-head svg{color:#64cbff}
+
+    .grade-buttons,.turma-buttons{display:flex;gap:10px;flex-wrap:wrap}
+
+    .grade-btn,.turma-btn{
+      min-height:43px;
+      border-radius:13px;
+      border:1px solid rgba(87,168,255,.35);
+      background:linear-gradient(145deg,rgba(18,45,82,.68),rgba(8,25,49,.74));
+      cursor:pointer;
+      padding:0 15px;
+      font-weight:700;
+      transition:.16s ease;
+    }
+
+    .grade-btn:hover,.grade-btn.is-active,.turma-btn:hover{
+      border-color:rgba(59,200,255,.72);
+      box-shadow:0 0 20px rgba(57,198,255,.10);
+      background:linear-gradient(145deg,rgba(24,64,112,.80),rgba(10,33,65,.84));
+    }
+
+    .turma-buttons{margin-top:12px;padding-top:12px;border-top:1px solid rgba(101,163,231,.14)}
+
+    .listing-panel{margin-top:18px;padding:18px}
+
+    .listing-toolbar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:15px;
+    }
+
+    .listing-title{font-weight:850;font-size:1.05rem}
+    .listing-sub{font-size:.82rem;color:#8098b4;margin-top:3px}
+    .listing-spacer{flex:1}
+
+    .secondary-btn,.primary-btn{
+      border-radius:12px;
+      min-height:42px;
+      padding:0 14px;
+      border:1px solid rgba(101,174,255,.32);
+      cursor:pointer;
+      font-weight:750;
+    }
+
+    .secondary-btn{background:rgba(13,34,64,.72)}
+    .primary-btn{background:linear-gradient(145deg,#2765c9,#125495);border-color:rgba(108,190,255,.55)}
+
+    #grade-alunos{
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    }
+
+    .student-card{
+      position:relative;
+      min-height:88px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px 13px;
+      border-radius:17px;
+      border:1px solid rgba(102,169,248,.22);
+      background:linear-gradient(145deg,rgba(16,42,78,.72),rgba(7,23,46,.82));
+      cursor:pointer;
+      text-align:left;
+      transition:.16s ease;
+    }
+
+    .student-card:hover{transform:translateY(-2px);border-color:rgba(73,190,255,.56);box-shadow:0 12px 30px rgba(0,0,0,.28),0 0 18px rgba(57,198,255,.08)}
+
+    .avatar-wrap{
+      position:relative;
+      width:56px;
+      height:56px;
+      flex:0 0 auto;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      border-radius:50%;
+      background:linear-gradient(145deg,#356ed6,#0fa8bb);
+      font-weight:850;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 8px 20px rgba(0,0,0,.30);
+    }
+
+    .avatar-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .student-copy{min-width:0}
+    .student-name{font-weight:820;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .student-meta{margin-top:5px;color:#849bb7;font-size:.8rem}
 
     .trash{
       position:absolute;
       top:8px;
       right:8px;
-      z-index:2;
-      background: rgba(1,8,22,.85);
-      border:1px solid rgba(176,205,255,.55);
-      color:#fff;
-      border-radius:10px;
-      padding:6px;
+      width:34px;
+      height:34px;
       display:none;
-      box-shadow:
-        0 6px 18px rgba(0,0,0,.75),
-        0 0 12px rgba(90,170,255,.5);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      place-items:center;
+      border-radius:10px;
+      border:1px solid rgba(255,107,123,.28);
+      background:rgba(80,19,31,.82);
+      color:#ff9aa7;
+      cursor:pointer;
     }
 
-    .card:hover .trash{ display:block; }
-    .trash svg{display:block}
+    .student-card:hover .trash{display:grid}
+
+    .list-status{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:9px;
+      margin-top:16px;
+      color:#849bb6;
+      font-size:.82rem;
+    }
+
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px rgba(33,195,107,.75)}
+
+    .skeleton{
+      position:relative;
+      overflow:hidden;
+      min-height:78px;
+      border-radius:16px;
+      background:rgba(22,46,79,.50);
+    }
+
+    .skeleton::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+      animation:shimmer 1.1s infinite;
+    }
+
+    @keyframes shimmer{to{transform:translateX(100%)}}
 
     .modal-backdrop{
       position:fixed;
       inset:0;
+      z-index:100;
       display:none;
       place-items:center;
-      z-index:50;
-      background:rgba(0,5,15,.75);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      padding:20px;
+      background:rgba(0,6,17,.78);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
     }
 
     .modal-backdrop.aberto{display:grid}
 
     .modal{
-      width:min(960px, 92vw);
-      max-height:88vh;
+      width:min(930px,96vw);
+      max-height:90vh;
       overflow:auto;
-      background:linear-gradient(180deg,
-        rgba(12,24,46,.96),
-        rgba(6,14,28,.98)
-      );
-      border:1px solid rgba(176,205,255,.60);
-      border-radius:20px;
-      padding:18px;
-      box-shadow:
-        0 20px 70px rgba(0,0,0,.9),
-        0 0 32px rgba(80,150,255,.45);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      padding:20px;
+      border-radius:22px;
+      background:linear-gradient(145deg,rgba(10,29,56,.98),rgba(5,16,32,.99));
+      border:1px solid rgba(102,179,255,.43);
+      box-shadow:0 30px 90px rgba(0,0,0,.72),0 0 36px rgba(57,198,255,.10);
     }
 
-    .modal-header{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      border-bottom:1px dashed rgba(176,205,255,.45);
-      padding-bottom:10px;
-      margin-bottom:14px;
+    .modal-header{display:flex;align-items:center;gap:11px;padding-bottom:13px;margin-bottom:16px;border-bottom:1px solid rgba(102,169,239,.18)}
+    .badge{padding:5px 9px;border-radius:999px;background:rgba(43,114,183,.24);border:1px solid rgba(92,182,255,.30);color:#ccecff;font-size:.78rem}
+    .close{margin-left:auto;min-height:38px;padding:0 12px;border-radius:11px;border:1px solid rgba(105,173,249,.30);background:rgba(19,42,74,.70);cursor:pointer}
+    .ficha{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px}
+    .foto{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:17px;background:#06101e;border:1px solid rgba(102,175,255,.30)}
+    .kv{display:grid;grid-template-columns:140px minmax(0,1fr);gap:10px 14px;align-items:center}
+    .kv label{color:#849ab5}
+    .nota{width:max-content;padding:7px 12px;border-radius:12px;border:1px solid rgba(99,175,255,.28);background:rgba(4,15,31,.72);font-size:1.35rem;font-weight:900}
+    .nota.ok{border-color:rgba(57,198,255,.62);box-shadow:0 0 18px rgba(57,198,255,.12)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+    .btn{min-height:42px;padding:0 14px;border-radius:12px;border:1px solid rgba(99,177,255,.36);background:linear-gradient(145deg,rgba(33,83,145,.90),rgba(16,52,99,.92));cursor:pointer;font-weight:750}
+
+    @media(max-width:1050px){
+      .content-grid{grid-template-columns:1fr}
+      .side-panel{order:2}
+      .side-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
     }
 
-    .badge{
-      font-size:.8rem;
-      border:1px solid rgba(176,205,255,.75);
-      padding:.25rem .55rem;
-      border-radius:999px;
-      color:#b6d7ff;
-      background: radial-gradient(circle at 0 0, rgba(100,180,255,.35), rgba(6,14,28,1));
+    @media(max-width:760px){
+      .topbar{flex-wrap:wrap;gap:10px;min-height:auto}
+      .brand-wrap{flex:1}
+      .count-chip{width:100%;justify-content:center;order:3}
+      .page{width:min(100% - 20px,1500px);margin-top:12px}
+      .hero{padding:22px 16px}
+      .search-row{grid-template-columns:1fr}
+      .recent-cards{grid-template-columns:1fr}
+      .listing-toolbar{align-items:flex-start;flex-wrap:wrap}
+      .listing-spacer{display:none}
+      .ficha{grid-template-columns:1fr}
+      .foto{max-width:250px;margin:0 auto}
+      .kv{grid-template-columns:1fr}
     }
 
-    .close{
-      margin-left:auto;
-      background:rgba(255,255,255,.06);
-      color:#fff;
-      border:1px solid rgba(176,205,255,.55);
-      border-radius:10px;
-      padding:.45rem .7rem;
-      cursor:pointer;
-      box-shadow:
-        0 8px 22px rgba(0,0,0,.7),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    }
-
-    .ficha{
-      display:grid;
-      gap:14px;
-      grid-template-columns: 220px 1fr;
-    }
-
-    .foto{
-      width:100%;
-      aspect-ratio:3/4;
-      object-fit:cover;
-      border-radius:14px;
-      border:1px solid rgba(176,205,255,.55);
-      background:#050b16;
-      box-shadow:
-        0 10px 26px rgba(0,0,0,.85),
-        0 0 18px rgba(60,130,255,.35);
-    }
-
-    .kv{
-      display:grid;
-      grid-template-columns: 160px 1fr;
-      gap:8px 14px;
-      align-items:center;
-    }
-
-    .kv label{color:var(--muted)}
-
-    .nota{
-      font-size:1.6rem;
-      font-weight:900;
-      letter-spacing:.5px;
-      padding:.4rem .8rem;
-      border-radius:12px;
-      width:max-content;
-      background:#050b16;
-      border:1px solid rgba(176,205,255,.55);
-      box-shadow:
-        inset 0 0 18px rgba(60,120,255,.20);
-    }
-
-    .nota.ok{
-      border-color:#4db8ff;
-      box-shadow:
-        0 0 14px rgba(77,184,255,.8),
-        inset 0 0 22px rgba(77,184,255,.35);
-      color:#dff5ff;
-    }
-
-    .actions{
-      display:flex;
-      gap:.5rem;
-      margin-top:12px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      background: linear-gradient(180deg,
-        rgba(35,72,128,.95),
-        rgba(21,46,90,.96)
-      );
-      border:1px solid rgba(176,205,255,.75);
-      color:#fff;
-      border-radius:12px;
-      padding:.6rem .9rem;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow:
-        0 10px 26px rgba(0,0,0,.8),
-        inset 0 1px 0 rgba(255,255,255,.10);
-    }
-
-    .btn:hover{
-      border-color:#ffffff;
-      filter:brightness(1.08);
-      transform:translateY(-1px);
-    }
-
-    .btn-load-more{
-      min-width: 220px;
-      text-align:center;
-    }
-
-    .empty{
-      opacity:.85;
-      color:var(--muted);
-      padding:14px;
-      background:rgba(4,10,22,.8);
-      border-radius:14px;
-      border:1px dashed rgba(176,205,255,.45);
-      backdrop-filter:blur(6px);
-      -webkit-backdrop-filter:blur(6px);
-    }
-
-    @media (max-width: 900px) {
-      .topbar{
-        flex-wrap:wrap;
-        gap:.5rem .75rem;
-      }
-
-      .brand{
-        flex-basis: 100%;
-        font-size:.95rem;
-      }
-
-      .spacer{ display:none; }
-
-      .input,
-      #selTurma{
-        flex:1 1 calc(50% - .75rem);
-        min-width:0;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .topbar{ padding:10px 10px; }
-      .pill-btn{ font-size:.8rem; padding:.45rem .7rem; }
-      .wrap{ padding:12px; }
-      #grade-alunos{ grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); }
-      .avatar-wrap{ width:52px; height:52px; }
-      .card{ padding:10px 12px; }
-      .input,
-      #selTurma{ flex:1 1 100%; }
-      .input{ order:2; }
-      #selTurma{ order:3; }
-    }
-
-    @media (max-width: 768px) {
-      .modal{ padding:14px; }
-      .ficha{ grid-template-columns: 1fr; }
-      .foto{ max-width:260px; margin:0 auto 10px; }
-      .kv{ grid-template-columns: 1fr; }
-      .nota{ font-size:1.3rem; }
+    @media(max-width:520px){
+      .brand-sub{display:none}
+      .back-btn{padding:0 11px}
+      .result-row{grid-template-columns:auto minmax(0,1fr)}
+      .open-link{display:none}
+      .side-list{grid-template-columns:1fr}
+      #grade-alunos{grid-template-columns:1fr}
+      .grade-btn,.turma-btn{flex:1 1 calc(50% - 10px)}
     }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <a class="pill-btn" id="btnVoltar" href="/painel.html">← Voltar</a>
-    <div class="brand">CMDPII • Lista de Alunos</div>
-    <div class="spacer"></div>
-
-    <div class="input" title="Buscar por nome">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.5"/>
+  <header class="topbar">
+    <a class="back-btn" id="btnVoltar" href="/painel.html">← Voltar</a>
+    <div class="brand-wrap">
+      <div class="brand">CMDPII • Central de Alunos</div>
+      <div class="brand-sub">Busca global e acesso rápido às fichas estudantis</div>
+    </div>
+    <div class="top-spacer"></div>
+    <div class="count-chip" aria-live="polite">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M16 20v-1.7a4.3 4.3 0 0 0-4.3-4.3H6.3A4.3 4.3 0 0 0 2 18.3V20M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 20v-1.6a4.3 4.3 0 0 0-3.2-4.15M16.2 2.3a4 4 0 0 1 0 7.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
-      <input id="busca" placeholder="Buscar aluno..." />
+      <span id="totalAlunos">Carregando alunos...</span>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Busca inteligente</div>
+      <h1>Encontre qualquer estudante</h1>
+      <p>Pesquise diretamente pelo nome ou pela turma. O filtro de turma é opcional.</p>
+
+      <div class="search-row">
+        <label class="search-shell" for="busca">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+          <input id="busca" autocomplete="off" placeholder="Digite o nome do aluno..." />
+          <button id="limparBusca" class="clear-search" type="button" title="Limpar pesquisa" hidden>✕</button>
+        </label>
+
+        <label class="filter-shell" for="selTurma">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+          <select id="selTurma" aria-label="Filtrar por turma">
+            <option value="">Todas as turmas</option>
+          </select>
+        </label>
+      </div>
+      <div id="searchHelper" class="search-helper">Comece digitando pelo menos 2 letras para pesquisar em todas as turmas.</div>
+    </section>
+
+    <div class="content-grid">
+      <div>
+        <section id="searchPanel" class="glass-panel" hidden>
+          <div class="panel-head">
+            <h2 id="searchTitle">Resultados da pesquisa</h2>
+            <div class="panel-spacer"></div>
+            <span id="searchCount" class="result-count">0 encontrados</span>
+          </div>
+          <div id="searchResults" class="result-list"></div>
+          <div id="searchFooter" class="results-footer" hidden>
+            <button id="verTodosResultados" class="text-btn" type="button">Ver todos os resultados →</button>
+          </div>
+        </section>
+
+        <section id="welcomePanel" class="glass-panel welcome-panel">
+          <div class="welcome-title">Acesso rápido, sem precisar abrir turma por turma</div>
+          <div class="welcome-copy">Digite o nome do estudante na busca acima. Os resultados aparecem automaticamente e você pode abrir a ficha com um clique. Se preferir navegar por sala, use os atalhos de turma logo abaixo.</div>
+          <div id="recentCards" class="recent-cards"></div>
+        </section>
+
+        <section id="listingPanel" class="glass-panel listing-panel" hidden>
+          <div class="listing-toolbar">
+            <div>
+              <div id="listingTitle" class="listing-title">Alunos</div>
+              <div id="listingSub" class="listing-sub"></div>
+            </div>
+            <div class="listing-spacer"></div>
+            <button id="limparFiltroTurma" class="secondary-btn" type="button">Mostrar todas as turmas</button>
+          </div>
+          <div id="grade-alunos"></div>
+          <div id="listagemStatus" class="list-status" hidden>
+            <span class="status-dot"></span>
+            <span id="statusListagemTexto"></span>
+          </div>
+          <div style="display:flex;justify-content:center;margin-top:12px">
+            <button id="btnCarregarMais" class="primary-btn" type="button" hidden>Carregar mais alunos</button>
+          </div>
+          <div id="sentinel" style="height:1px"></div>
+        </section>
+      </div>
+
+      <aside class="glass-panel side-panel">
+        <div class="panel-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 8v5l3 2M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <h3>Acessados recentemente</h3>
+        </div>
+        <div id="recentSide" class="side-list"></div>
+        <div id="recentEmpty" class="tips"><strong>Nenhum acesso recente.</strong><br>Os alunos abertos por esta página aparecerão aqui automaticamente.</div>
+      </aside>
     </div>
 
-    <select id="selTurma" aria-label="Selecionar turma">
-      <option value="">Selecionar turma…</option>
-    </select>
-  </div>
-
-  <div class="wrap">
-    <div class="helper" style="margin: 8px 2px 14px;">
-      <span class="dot"></span> 
-    </div>
-
-    <div id="grade-alunos"></div>
-
-    <div id="listagem-status" class="helper" style="margin: 14px 2px 10px; display:none;">
-      <span class="dot"></span>
-      <span id="status-listagem-texto">Exibindo 0 de 0 alunos</span>
-    </div>
-
-    <div id="acoes-listagem" style="display:none; justify-content:center; margin: 0 0 14px;">
-      <button id="btn-carregar-mais" class="btn btn-load-more" type="button">Carregar mais alunos</button>
-    </div>
-
-    <div id="sentinel" style="height:1px"></div>
-
-    <div id="empty" class="empty" style="display:none">Escolha uma turma para começar.</div>
-  </div>
+    <section class="glass-panel quick-panel">
+      <div class="quick-head">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M16 20v-1.7a4.3 4.3 0 0 0-4.3-4.3H6.3A4.3 4.3 0 0 0 2 18.3V20M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 20v-1.6a4.3 4.3 0 0 0-3.2-4.15M16.2 2.3a4 4 0 0 1 0 7.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Acesso rápido por turma
+      </div>
+      <div id="gradeButtons" class="grade-buttons"></div>
+      <div id="turmaButtons" class="turma-buttons" hidden></div>
+    </section>
+  </main>
 
   <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true">
     <div class="modal" role="document">
       <div class="modal-header">
         <span class="badge" id="badge-turma">—</span>
         <strong id="modal-nome">Aluno</strong>
-        <button class="close" id="btn-fechar">Fechar ✕</button>
+        <button class="close" id="btn-fechar" type="button">Fechar ✕</button>
       </div>
       <div class="ficha">
         <img id="modal-foto" class="foto" alt="Foto do aluno" />
@@ -582,30 +764,23 @@
           <div class="kv">
             <label>Nota atual</label>
             <div class="nota" id="modal-nota">—</div>
-
             <label>Nome</label>
             <div id="kv-nome">—</div>
-
             <label>Turma</label>
             <div id="kv-turma">—</div>
-
             <label>Entrada</label>
             <div id="kv-entrada">—</div>
-
             <label>Pai / Mãe</label>
             <div id="kv-resp">—</div>
-
             <label>Telefone</label>
             <div id="kv-telefone">—</div>
-
             <label>Endereço</label>
             <div id="kv-endereco">—</div>
           </div>
-
           <div class="actions">
-            <button class="btn" id="btn-ver-ficha">Ver ficha completa</button>
-            <button class="btn" id="btn-notificar">Notificar aluno</button>
-            <button class="btn" id="btn-procedimento">Abrir procedimento disciplinar</button>
+            <button class="btn" id="btn-ver-ficha" type="button">Ver ficha completa</button>
+            <button class="btn" id="btn-notificar" type="button">Notificar aluno</button>
+            <button class="btn" id="btn-procedimento" type="button">Abrir procedimento disciplinar</button>
           </div>
         </div>
       </div>
@@ -614,765 +789,765 @@
 
 <script>
 (() => {
-  const qs = (s, el=document) => el.querySelector(s);
+  'use strict';
 
+  const qs = (seletor, raiz = document) => raiz.querySelector(seletor);
   const urlParams = new URLSearchParams(location.search);
-  const token = (urlParams.get('token') || '').trim();
-  const MODE_TOKEN = !!token;
+  const token = String(urlParams.get('token') || '').trim();
+  const MODE_TOKEN = Boolean(token);
 
   const btnVoltar = qs('#btnVoltar');
-  if (MODE_TOKEN) {
-    btnVoltar.href = `/lista-alunos.html?token=${encodeURIComponent(token)}`;
-  }
+  if (MODE_TOKEN) btnVoltar.href = '/painel-professor.html';
 
-  const LS_CUSTOM  = 'cmdpii_turmas_custom_v1';
+  const LS_CUSTOM = 'cmdpii_turmas_custom_v1';
   const LS_REMOVED = 'cmdpii_turmas_removed_v1';
+  const LS_RECENTES = 'cmdpii_alunos_recentes_v2';
 
-  function safeParseLS(key, fallback){
-    try{
-      const v = JSON.parse(localStorage.getItem(key) || 'null');
-      return (v ?? fallback);
-    }catch(_){
+  const PAGE_SIZE = 24;
+  let turma = String(urlParams.get('turma') || '').trim();
+  let termo = '';
+  let turmasDisponiveis = [];
+  let allAlunosToken = [];
+  let allAlunosAdmin = [];
+  let viewList = [];
+  let pageIndex = 0;
+  let carregando = false;
+  let requestSeq = 0;
+  let searchController = null;
+  let searchTimer = null;
+  let currentSearchItems = [];
+  let currentSearchTotal = 0;
+  let keyboardIndex = -1;
+
+  const busca = qs('#busca');
+  const limparBusca = qs('#limparBusca');
+  const selTurma = qs('#selTurma');
+  const searchHelper = qs('#searchHelper');
+  const searchPanel = qs('#searchPanel');
+  const searchTitle = qs('#searchTitle');
+  const searchCount = qs('#searchCount');
+  const searchResults = qs('#searchResults');
+  const searchFooter = qs('#searchFooter');
+  const verTodosResultados = qs('#verTodosResultados');
+  const welcomePanel = qs('#welcomePanel');
+  const listingPanel = qs('#listingPanel');
+  const listingTitle = qs('#listingTitle');
+  const listingSub = qs('#listingSub');
+  const grade = qs('#grade-alunos');
+  const listagemStatus = qs('#listagemStatus');
+  const statusListagemTexto = qs('#statusListagemTexto');
+  const btnCarregarMais = qs('#btnCarregarMais');
+  const limparFiltroTurma = qs('#limparFiltroTurma');
+  const recentCards = qs('#recentCards');
+  const recentSide = qs('#recentSide');
+  const recentEmpty = qs('#recentEmpty');
+  const gradeButtons = qs('#gradeButtons');
+  const turmaButtons = qs('#turmaButtons');
+  const totalAlunos = qs('#totalAlunos');
+  const sentinel = qs('#sentinel');
+
+  function safeParseLS(chave, fallback) {
+    try {
+      const valor = JSON.parse(localStorage.getItem(chave) || 'null');
+      return valor ?? fallback;
+    } catch (_) {
       return fallback;
     }
   }
 
-  function guessSeg(code){
-    return /^\d+º/.test(code) && (code.startsWith('1º')||code.startsWith('2º')||code.startsWith('3º'))
-      ? 'Ensino Médio'
-      : 'Fundamental II';
+  function escapeHTML(valor) {
+    return String(valor ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
-  function byCode(arr){
-    const m = new Map();
-    for (const t of (Array.isArray(arr)?arr:[])) {
-      const code = String(t?.code || t?.turma || t || '').trim();
-      if (!code) continue;
-      m.set(code, { code, seg: String(t?.seg || t?.segmento || '').trim() || guessSeg(code) });
-    }
-    return m;
-  }
-
-  function getLocalTurmasCodes(){
-    const custom = safeParseLS(LS_CUSTOM, []);
-    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
-    const m = byCode(custom);
-    for (const r of removed) m.delete(r);
-    return Array.from(m.keys());
-  }
-
-  function mergeTurmas(backendTurmas){
-    const b = (Array.isArray(backendTurmas) ? backendTurmas : [])
+  function iniciais(nome) {
+    return String(nome || '')
+      .split(/\s+/)
       .filter(Boolean)
-      .map(t => String(t).trim())
-      .filter(Boolean);
-
-    const local = getLocalTurmasCodes();
-    const set = new Set([...b, ...local]);
-
-    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map(s => String(s).trim()));
-    for (const r of removed) set.delete(r);
-
-    const list = Array.from(set);
-    list.sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
-    return list;
+      .slice(0, 2)
+      .map((parte) => parte[0]?.toUpperCase() || '')
+      .join('') || '?';
   }
 
-  const params = new URLSearchParams(location.search);
-  let turma = (params.get('turma') || '').trim();
-  let termo = '';
-  let carregando = false;
-  let reqSeq = 0;
-
-  const PAGE_SIZE = 24;
-  let pageIndex = 0;
-  let VIEW_LIST = [];
-  let ALL_ALUNOS_TOKEN = [];
-  let ALL_ALUNOS_ADMIN = [];  const selTurma = qs('#selTurma');
-  const grade = qs('#grade-alunos');
-  const empty = qs('#empty');
-  const listagemStatus = qs('#listagem-status');
-  const statusListagemTexto = qs('#status-listagem-texto');
-  const acoesListagem = qs('#acoes-listagem');
-  const btnCarregarMais = qs('#btn-carregar-mais');
-  const sentinel = qs('#sentinel');
-
-  function buildURL(path, extraParams={}) {
-    const u = new URL(path, location.origin);
-    const p = new URLSearchParams(extraParams);
-    Object.entries(extraParams).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && String(v) !== '') p.set(k, v);
-    });
-    u.search = p.toString();
-    return u.toString();
+  function normalizarUploadsPath(caminho) {
+    if (!caminho) return '';
+    let valor = String(caminho).trim();
+    if (!valor) return '';
+    if (/^data:image\//i.test(valor) || /^https?:\/\//i.test(valor)) return valor;
+    valor = valor.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!/^uploads\//i.test(valor)) valor = `uploads/${valor}`;
+    return `/${valor}`;
   }
 
-  function normalizarUploadsPath(p){
-    if(!p) return '';
-
-    let s = String(p).trim();
-
-    if (!s) return '';
-    if (/^data:image\//i.test(s)) return s;
-    if (/^https?:\/\//i.test(s)) return s;
-
-    s = s.replace(/\\/g,'/').replace(/^\/+/, '');
-
-    if (!/^uploads\//i.test(s)) {
-      s = 'uploads/' + s;
-    }
-
-    return '/' + s;
-  }
-
-  function fotoSeguraDoAluno(a){
+  function fotoSeguraDoAluno(aluno) {
     const candidatas = [
-      a?.fotoThumbUrl,
-      a?.fotoThumb,
-      a?.fotoUrl,
-      a?.foto
+      aluno?.fotoThumbUrl,
+      aluno?.fotoThumb,
+      aluno?.fotoUrl,
+      aluno?.fotoOriginal,
+      aluno?.foto
     ].filter(Boolean);
 
     for (const valor of candidatas) {
       const src = normalizarUploadsPath(valor);
       if (!src) continue;
-
-      if (/^data:image\//i.test(src)) {
-        if (src.length > 300000) continue;
-        return src;
-      }
-
-      if (/^https?:\/\//i.test(src) || src.startsWith('/uploads/')) {
-        return src;
-      }
+      if (/^data:image\//i.test(src) && src.length > 300000) continue;
+      return src;
     }
-
     return '';
   }
 
-  function avatarComFoto(a){
-    const wrap = document.createElement('div');
-    wrap.className = 'avatar-wrap';
-
-    const inic = document.createElement('div');
-    inic.className = 'avatar-iniciais';
-    const letras = (a.nome||'')
-      .split(' ')
-      .filter(Boolean)
-      .slice(0,2)
-      .map(p=>p[0].toUpperCase())
-      .join('');
-
-    inic.textContent = letras || '?';
-
-    const src = fotoSeguraDoAluno(a);
-    if (!src) {
-      wrap.append(inic);
-      return wrap;
-    }
-
-    const img = document.createElement('img');
-    img.className = 'avatar-img';
-    img.alt = `Foto de ${a.nome || 'aluno'}`;
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    img.referrerPolicy = 'no-referrer';
-    img.dataset.src = src;
-
-    img.addEventListener('load', () => img.classList.add('show'));
-    img.addEventListener('error', () => {
-      img.remove();
-    });
-
-    wrap.append(inic, img);
-    return wrap;
+  function avatarHTML(aluno, classe = 'mini-avatar') {
+    const foto = fotoSeguraDoAluno(aluno);
+    const imagem = foto
+      ? `<img src="${escapeHTML(foto)}" alt="" loading="lazy" onerror="this.remove()">`
+      : '';
+    return `<span class="${classe}">${escapeHTML(iniciais(aluno?.nome))}${imagem}</span>`;
   }
 
-  function trashButton(id){
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'trash';
-    b.title = 'Excluir aluno';
-    b.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    </svg>`;
+  function getRecentes() {
+    const lista = safeParseLS(LS_RECENTES, []);
+    return Array.isArray(lista) ? lista.filter((item) => item?._id && item?.nome).slice(0, 8) : [];
+  }
 
-    b.addEventListener('click', async (e) => {
-      e.stopPropagation();
+  function salvarRecente(aluno) {
+    if (!aluno?._id) return;
+    const novo = {
+      _id: String(aluno._id),
+      nome: String(aluno.nome || 'Aluno'),
+      turma: String(aluno.turma || ''),
+      fotoThumbUrl: fotoSeguraDoAluno(aluno),
+      acessadoEm: Date.now()
+    };
+    const atuais = getRecentes().filter((item) => String(item._id) !== novo._id);
+    localStorage.setItem(LS_RECENTES, JSON.stringify([novo, ...atuais].slice(0, 8)));
+    renderRecentes();
+  }
+
+  function renderRecentes() {
+    const recentes = getRecentes();
+    recentCards.innerHTML = '';
+    recentSide.innerHTML = '';
+    recentEmpty.hidden = recentes.length > 0;
+
+    if (!recentes.length) {
+      recentCards.innerHTML = '<div style="grid-column:1/-1;color:#7f96b1;font-size:.83rem">Os últimos alunos acessados aparecerão aqui.</div>';
+      return;
+    }
+
+    recentes.slice(0, 3).forEach((aluno) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'recent-card';
+      card.innerHTML = `${avatarHTML(aluno, 'recent-avatar')}<span class="recent-card-copy"><span class="recent-card-name">${escapeHTML(aluno.nome)}</span><span class="recent-card-turma">${escapeHTML(aluno.turma || 'Turma não informada')}</span></span>`;
+      card.addEventListener('click', () => abrirFicha(aluno));
+      recentCards.appendChild(card);
+    });
+
+    recentes.slice(0, 5).forEach((aluno) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'side-item';
+      item.innerHTML = `${avatarHTML(aluno, 'recent-avatar')}<span><span class="side-name">${escapeHTML(aluno.nome)}</span><span class="side-meta">${escapeHTML(aluno.turma || 'Turma não informada')}</span></span><span class="side-arrow">↗</span>`;
+      item.addEventListener('click', () => abrirFicha(aluno));
+      recentSide.appendChild(item);
+    });
+  }
+
+  function guessSeg(codigo) {
+    return /^\d+º/.test(codigo) && /^(1º|2º|3º)/.test(codigo)
+      ? 'Ensino Médio'
+      : 'Fundamental II';
+  }
+
+  function byCode(lista) {
+    const mapa = new Map();
+    for (const item of Array.isArray(lista) ? lista : []) {
+      const code = String(item?.code || item?.turma || item || '').trim();
+      if (!code) continue;
+      mapa.set(code, { code, seg: String(item?.seg || item?.segmento || '').trim() || guessSeg(code) });
+    }
+    return mapa;
+  }
+
+  function getLocalTurmasCodes() {
+    const custom = safeParseLS(LS_CUSTOM, []);
+    const removed = new Set((safeParseLS(LS_REMOVED, []) || []).map((item) => String(item).trim()));
+    const mapa = byCode(custom);
+    for (const item of removed) mapa.delete(item);
+    return Array.from(mapa.keys());
+  }
+
+  function mergeTurmas(backendTurmas) {
+    const backend = (Array.isArray(backendTurmas) ? backendTurmas : [])
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+    const set = new Set([...backend, ...getLocalTurmasCodes()]);
+    const removidas = new Set((safeParseLS(LS_REMOVED, []) || []).map((item) => String(item).trim()));
+    for (const item of removidas) set.delete(item);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+  }
+
+  function atualizarURLTurma() {
+    const url = new URL(location.href);
+    if (turma) url.searchParams.set('turma', turma);
+    else url.searchParams.delete('turma');
+    history.replaceState({}, '', url.toString());
+  }
+
+  function preencherTurmas() {
+    selTurma.innerHTML = '<option value="">Todas as turmas</option>';
+    turmasDisponiveis.forEach((codigo) => {
+      const option = document.createElement('option');
+      option.value = codigo;
+      option.textContent = codigo;
+      option.selected = codigo === turma;
+      selTurma.appendChild(option);
+    });
+    renderGradeButtons();
+  }
+
+  function grupoDaTurma(codigo) {
+    const match = String(codigo || '').match(/^\s*([1236789])/);
+    return match ? match[1] : '';
+  }
+
+  const grupos = [
+    { key: '1', label: '1ª série' },
+    { key: '2', label: '2ª série' },
+    { key: '3', label: '3ª série' },
+    { key: '6', label: '6º ano' },
+    { key: '7', label: '7º ano' },
+    { key: '8', label: '8º ano' },
+    { key: '9', label: '9º ano' }
+  ];
+
+  function renderGradeButtons() {
+    gradeButtons.innerHTML = '';
+    grupos.forEach((grupo) => {
+      const correspondentes = turmasDisponiveis.filter((codigo) => grupoDaTurma(codigo) === grupo.key);
+      if (!correspondentes.length) return;
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'grade-btn';
+      botao.textContent = grupo.label;
+      botao.addEventListener('click', () => renderTurmaButtons(grupo.key, botao));
+      gradeButtons.appendChild(botao);
+    });
+  }
+
+  function renderTurmaButtons(grupoKey, botaoAtivo) {
+    gradeButtons.querySelectorAll('.grade-btn').forEach((botao) => botao.classList.remove('is-active'));
+    botaoAtivo?.classList.add('is-active');
+    turmaButtons.innerHTML = '';
+    const correspondentes = turmasDisponiveis.filter((codigo) => grupoDaTurma(codigo) === grupoKey);
+    correspondentes.forEach((codigo) => {
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'turma-btn';
+      botao.textContent = codigo;
+      botao.addEventListener('click', () => selecionarTurma(codigo));
+      turmaButtons.appendChild(botao);
+    });
+    turmaButtons.hidden = correspondentes.length === 0;
+  }
+
+  async function carregarDadosIniciais() {
+    if (MODE_TOKEN) {
+      const resposta = await fetch(`/api/usuarios/acesso/${encodeURIComponent(token)}`, { cache: 'no-store' });
+      if (!resposta.ok) throw new Error('Falha ao buscar o acesso do professor.');
+      const dados = await resposta.json();
+      if (!dados.professor) throw new Error('Token inválido ou professor não encontrado.');
+      allAlunosToken = Array.isArray(dados.alunos) ? dados.alunos : [];
+      turmasDisponiveis = Array.from(new Set(allAlunosToken.map((aluno) => String(aluno.turma || '').trim()).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+      totalAlunos.textContent = `${allAlunosToken.length} alunos disponíveis`;
+    } else {
+      const [resTurmas, resTotal] = await Promise.all([
+        fetch('/api/alunos/turmas', { credentials: 'include', cache: 'no-store' }),
+        fetch('/api/alunos/contagem', { credentials: 'include', cache: 'no-store' })
+      ]);
+      if (!resTurmas.ok) throw new Error('Falha ao buscar turmas.');
+      const dadosTurmas = await resTurmas.json();
+      turmasDisponiveis = mergeTurmas(dadosTurmas.turmas || []);
+      if (resTotal.ok) {
+        const dadosTotal = await resTotal.json();
+        const total = Number(dadosTotal.total ?? dadosTotal.count ?? 0);
+        totalAlunos.textContent = `${total.toLocaleString('pt-BR')} alunos cadastrados`;
+      } else {
+        totalAlunos.textContent = 'Alunos cadastrados';
+      }
+    }
+    preencherTurmas();
+  }
+
+  function normalizarTexto(valor) {
+    return String(valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  function pesquisarToken(consulta, limite = 10) {
+    const q = normalizarTexto(consulta);
+    const turmaSelecionada = String(turma || '').trim();
+    const lista = allAlunosToken
+      .filter((aluno) => !turmaSelecionada || String(aluno.turma || '').trim() === turmaSelecionada)
+      .filter((aluno) => {
+        const haystack = normalizarTexto(`${aluno.nome || ''} ${aluno.turma || ''}`);
+        return haystack.includes(q);
+      })
+      .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+    return { items: lista.slice(0, limite), total: lista.length };
+  }
+
+  function renderSearchLoading() {
+    searchResults.innerHTML = '';
+    searchPanel.hidden = false;
+    welcomePanel.hidden = true;
+    listingPanel.hidden = true;
+    searchFooter.hidden = true;
+    searchCount.textContent = 'Buscando...';
+    Array.from({ length: 3 }).forEach(() => {
+      const div = document.createElement('div');
+      div.className = 'skeleton';
+      div.style.marginBottom = '8px';
+      searchResults.appendChild(div);
+    });
+  }
+
+  function renderSearchResults(items, total, consulta) {
+    currentSearchItems = items;
+    currentSearchTotal = total;
+    keyboardIndex = -1;
+    searchPanel.hidden = false;
+    welcomePanel.hidden = true;
+    listingPanel.hidden = true;
+    searchTitle.textContent = `Resultados para “${consulta}”`;
+    searchCount.textContent = `${total} encontrado${total === 1 ? '' : 's'}`;
+    searchResults.innerHTML = '';
+
+    if (!items.length) {
+      searchResults.innerHTML = '<div class="status-message">Nenhum aluno encontrado. Tente outro nome ou remova o filtro de turma.</div>';
+      searchFooter.hidden = true;
+      return;
+    }
+
+    items.forEach((aluno, indice) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'result-row';
+      row.dataset.index = String(indice);
+      row.innerHTML = `${avatarHTML(aluno)}<span><span class="result-name">${escapeHTML(aluno.nome || 'Aluno')}</span><span class="result-meta"><span class="turma-pill">${escapeHTML(aluno.turma || 'Sem turma')}</span></span></span><span class="open-link">Abrir ficha →</span>`;
+      row.addEventListener('click', () => abrirFicha(aluno));
+      searchResults.appendChild(row);
+    });
+
+    searchFooter.hidden = total <= items.length;
+  }
+
+  async function executarPesquisa(limite = 10) {
+    const consulta = termo.trim();
+    limparBusca.hidden = consulta.length === 0;
+
+    if (consulta.length < 2) {
+      searchPanel.hidden = true;
+      searchHelper.textContent = consulta.length === 1
+        ? 'Digite mais uma letra para iniciar a pesquisa.'
+        : 'Comece digitando pelo menos 2 letras para pesquisar em todas as turmas.';
+      if (turma) await carregarTurma();
+      else {
+        welcomePanel.hidden = false;
+        listingPanel.hidden = true;
+      }
+      return;
+    }
+
+    renderSearchLoading();
+    searchHelper.textContent = turma
+      ? `Pesquisando dentro da turma ${turma}.`
+      : 'Pesquisa global em todas as turmas.';
+
+    const consultaAtual = consulta;
+    const seq = ++requestSeq;
+
+    try {
+      let resultado;
+      if (MODE_TOKEN) {
+        resultado = pesquisarToken(consultaAtual, limite);
+      } else {
+        searchController?.abort();
+        searchController = new AbortController();
+        const url = new URL('/api/alunos/busca', location.origin);
+        url.searchParams.set('q', consultaAtual);
+        url.searchParams.set('limit', String(limite));
+        if (turma) url.searchParams.set('turma', turma);
+        const resposta = await fetch(url, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: searchController.signal
+        });
+        if (!resposta.ok) throw new Error('Falha ao pesquisar alunos.');
+        resultado = await resposta.json();
+      }
+
+      if (seq !== requestSeq || consultaAtual !== termo.trim()) return;
+      renderSearchResults(Array.isArray(resultado.items) ? resultado.items : [], Number(resultado.total || 0), consultaAtual);
+    } catch (erro) {
+      if (erro?.name === 'AbortError') return;
+      console.error(erro);
+      searchResults.innerHTML = '<div class="status-message">Não foi possível realizar a pesquisa agora.</div>';
+      searchCount.textContent = 'Erro na busca';
+      searchFooter.hidden = true;
+    }
+  }
+
+  function selecionarTurma(codigo) {
+    turma = String(codigo || '').trim();
+    selTurma.value = turma;
+    atualizarURLTurma();
+    if (termo.trim().length >= 2) executarPesquisa();
+    else carregarTurma();
+  }
+
+  function limparListagem() {
+    pageIndex = 0;
+    viewList = [];
+    allAlunosAdmin = [];
+    grade.innerHTML = '';
+    listagemStatus.hidden = true;
+    btnCarregarMais.hidden = true;
+  }
+
+  function aplicarFiltroTokenTurma() {
+    const turmaSelecionada = String(turma || '').trim();
+    viewList = allAlunosToken
+      .filter((aluno) => !turmaSelecionada || String(aluno.turma || '').trim() === turmaSelecionada)
+      .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+  }
+
+  function renderSkeletons() {
+    grade.innerHTML = '';
+    Array.from({ length: 8 }).forEach(() => {
+      const div = document.createElement('div');
+      div.className = 'skeleton';
+      grade.appendChild(div);
+    });
+  }
+
+  function avatarElemento(aluno) {
+    const avatar = document.createElement('span');
+    avatar.className = 'avatar-wrap';
+    avatar.textContent = iniciais(aluno.nome);
+    const foto = fotoSeguraDoAluno(aluno);
+    if (foto) {
+      const img = document.createElement('img');
+      img.src = foto;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.addEventListener('error', () => img.remove());
+      avatar.appendChild(img);
+    }
+    return avatar;
+  }
+
+  function botaoExcluirAluno(id) {
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'trash';
+    botao.title = 'Excluir aluno';
+    botao.textContent = '🗑';
+    botao.addEventListener('click', async (evento) => {
+      evento.stopPropagation();
       if (!confirm('Tem certeza que deseja excluir este aluno permanentemente?')) return;
-
-      try{
-        const r = await fetch(`/api/alunos/${id}`, { method:'DELETE', credentials:'include' });
-        if(!r.ok) throw new Error('Falha ao excluir');
-
-        const card = document.querySelector(`.card[data-id="${id}"]`);
-        if(card) card.remove();
-
-        VIEW_LIST = VIEW_LIST.filter(a => String(a._id) !== String(id));
-        ALL_ALUNOS_ADMIN = ALL_ALUNOS_ADMIN.filter(a => String(a._id) !== String(id));
+      try {
+        const resposta = await fetch(`/api/alunos/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+        if (!resposta.ok) throw new Error('Falha ao excluir.');
+        viewList = viewList.filter((aluno) => String(aluno._id) !== String(id));
+        allAlunosAdmin = allAlunosAdmin.filter((aluno) => String(aluno._id) !== String(id));
+        grade.querySelector(`[data-id="${CSS.escape(String(id))}"]`)?.remove();
         atualizarStatusListagem();
-      }catch(err){
+      } catch (erro) {
+        console.error(erro);
         alert('Erro ao excluir aluno.');
       }
     });
-
-    return b;
+    return botao;
   }
 
-  function infoBlock(a){
-    const info = document.createElement('div');
-    info.className = 'info';
-
-    const nome = document.createElement('div');
-    nome.className = 'nome';
-    nome.textContent = a.nome || '—';
-
-    const trm = document.createElement('div');
-    trm.className = 'turma';
-    trm.textContent = a.turma || '';
-
-    info.append(nome, trm);
-    return info;
+  function cardAluno(aluno) {
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'student-card';
+    botao.dataset.id = aluno._id;
+    if (!MODE_TOKEN) botao.appendChild(botaoExcluirAluno(aluno._id));
+    botao.appendChild(avatarElemento(aluno));
+    const texto = document.createElement('span');
+    texto.className = 'student-copy';
+    texto.innerHTML = `<span class="student-name">${escapeHTML(aluno.nome || 'Aluno')}</span><span class="student-meta">${escapeHTML(aluno.turma || 'Sem turma')}</span>`;
+    botao.appendChild(texto);
+    botao.addEventListener('click', () => abrirFicha(aluno));
+    return botao;
   }
 
-  function cardAluno(a) {
-    const btn = document.createElement('button');
-    btn.className = 'card';
-    btn.type = 'button';
-    btn.dataset.id = a._id;
-
-    if (!MODE_TOKEN) btn.append(trashButton(a._id));
-    btn.append(avatarComFoto(a), infoBlock(a));
-
-    btn.addEventListener('click', () => abrirFicha(a));
-    ioImg.observe(btn);
-    return btn;
-  }
-
-  function renderLista(lista){
-    grade.innerHTML = '';
-
-    if (!lista.length) {
-      const div = document.createElement('div');
-      div.className = 'empty';
-      div.textContent = 'Nenhum aluno encontrado para esta turma.';
-      grade.appendChild(div);
-      atualizarStatusListagem();
-      return;
+  function renderProximoLote() {
+    if (carregando) return;
+    carregando = true;
+    const inicio = pageIndex * PAGE_SIZE;
+    const lote = viewList.slice(inicio, inicio + PAGE_SIZE);
+    if (pageIndex === 0) grade.innerHTML = '';
+    if (!lote.length && pageIndex === 0) {
+      grade.innerHTML = '<div class="status-message" style="grid-column:1/-1">Nenhum aluno encontrado nesta turma.</div>';
+    } else {
+      lote.forEach((aluno) => grade.appendChild(cardAluno(aluno)));
+      pageIndex += 1;
     }
-
-    lista.forEach(a => grade.appendChild(cardAluno(a)));
+    carregando = false;
     atualizarStatusListagem();
-  }
-
-  function appendLista(lista){
-    if (!lista.length) {
-      atualizarStatusListagem();
-      return;
-    }
-
-    lista.forEach(a => grade.appendChild(cardAluno(a)));
-    atualizarStatusListagem();
-  }
-
-  function renderSkeletons(qtd = 8){
-    grade.innerHTML = '';
-    listagemStatus.style.display = 'none';
-    acoesListagem.style.display = 'none';
-
-    Array.from({length: qtd}).forEach(() => {
-      const ph = document.createElement('div');
-      ph.className = 'card skeleton';
-      ph.style.height = '88px';
-      grade.appendChild(ph);
-    });
-  }
-
-  function totalCardsRenderizados() {
-    return grade.querySelectorAll('.card[data-id]').length;
-  }
-
-  function haMaisParaRenderizar() {
-    return totalCardsRenderizados() < VIEW_LIST.length;
   }
 
   function atualizarStatusListagem() {
-    if (!turma) {
-      listagemStatus.style.display = 'none';
-      acoesListagem.style.display = 'none';
-      return;
-    }
-
-    const total = VIEW_LIST.length;
-    const exibidos = totalCardsRenderizados();
-
-    listagemStatus.style.display = 'flex';
+    const exibidos = grade.querySelectorAll('.student-card').length;
+    const total = viewList.length;
+    listagemStatus.hidden = false;
     statusListagemTexto.textContent = `Exibindo ${exibidos} de ${total} alunos`;
-
-    if (total > 0 && exibidos < total) {
-      acoesListagem.style.display = 'flex';
-    } else {
-      acoesListagem.style.display = 'none';
-    }
+    btnCarregarMais.hidden = exibidos >= total;
   }
 
-  async function carregarTurmas() {
-    selTurma.innerHTML = '<option value="">Selecionar turma…</option>';
-
-    if (MODE_TOKEN) {
-      const res = await fetch(`/api/usuarios/acesso/${encodeURIComponent(token)}`, { cache:'no-store' });
-      if (!res.ok) throw new Error('Falha ao buscar acesso do professor');
-
-      const data = await res.json();
-      if (!data.professor) throw new Error('Token inválido ou professor não encontrado');
-
-      ALL_ALUNOS_TOKEN = Array.isArray(data.alunos) ? data.alunos : [];
-
-      const turmas = Array.from(
-        new Set(
-          ALL_ALUNOS_TOKEN
-            .map(a => (a.turma||'').trim())
-            .filter(Boolean)
-        )
-      ).sort((a,b)=>a.localeCompare(b,'pt-BR', { numeric:true, sensitivity:'base' }));
-
-      for (const t of turmas) {
-        const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
-        if (t === turma) opt.selected = true;
-        selTurma.appendChild(opt);
-      }
-
-      empty.style.display = turma ? 'none' : 'block';
-      atualizarStatusListagem();
-      return;
-    }
-
-    const res = await fetch('/api/alunos/turmas', { credentials: 'include', cache:'no-store' });
-    if (!res.ok) throw new Error('Falha ao buscar turmas');
-
-    const data = await res.json();
-    const backendTurmas = data.turmas || [];
-    const turmas = mergeTurmas(backendTurmas);
-
-    for (const t of turmas) {
-      const opt = document.createElement('option');
-      opt.value = t;
-      opt.textContent = t;
-      if (t === turma) opt.selected = true;
-      selTurma.appendChild(opt);
-    }
-
-    empty.style.display = turma ? 'none' : 'block';
-    atualizarStatusListagem();
-  }
-
-  function resetListagem() {
-    carregando = false;
-    grade.innerHTML = '';
-    pageIndex = 0;
-    VIEW_LIST = [];
-    ALL_ALUNOS_ADMIN = [];
-    atualizarStatusListagem();
-  }
-
-  function applyFilterTokenMode() {
-    const t = (turma || '').trim();
-    const q = (termo || '').toLowerCase();
-
-    const list = ALL_ALUNOS_TOKEN
-      .filter(a => !t || String(a.turma||'').trim() === t)
-      .filter(a => !q || String(a.nome||'').toLowerCase().includes(q));
-
-    list.sort((a,b)=> String(a.nome||'').localeCompare(String(b.nome||''), 'pt-BR'));
-    VIEW_LIST = list;
-  }
-
-  function renderNextChunkTokenMode() {
-    if (carregando) return;
-    carregando = true;
-
-    const start = pageIndex * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    const slice = VIEW_LIST.slice(start, end);
-
-    if (pageIndex === 0) grade.innerHTML = '';
-
-    if (!slice.length && pageIndex === 0) {
-      renderLista([]);
-      carregando = false;
-      return;
-    }
-
-    appendLista(slice);
-    pageIndex++;
-    carregando = false;
-    atualizarStatusListagem();
-  }
-
-  function applyFilterAdminMode() {
-    const q = (termo || '').toLowerCase();
-
-    let list = Array.isArray(ALL_ALUNOS_ADMIN) ? [...ALL_ALUNOS_ADMIN] : [];
-
-    if (q) {
-      list = list.filter(a => String(a.nome || '').toLowerCase().includes(q));
-    }
-
-    list.sort((a,b)=> String(a.nome||'').localeCompare(String(b.nome||''), 'pt-BR'));
-    VIEW_LIST = list;
-  }
-
-  function renderNextChunkAdminMode() {
-    if (carregando) return;
-    carregando = true;
-
-    const start = pageIndex * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    const slice = VIEW_LIST.slice(start, end);
-
-    if (pageIndex === 0) grade.innerHTML = '';
-
-    if (!slice.length && pageIndex === 0) {
-      renderLista([]);
-      carregando = false;
-      return;
-    }
-
-    appendLista(slice);
-    pageIndex++;
-    carregando = false;
-    atualizarStatusListagem();
-  }
-
-  async function carregarAdminMode() {
+  async function carregarTurma() {
+    searchPanel.hidden = true;
+    welcomePanel.hidden = Boolean(turma);
+    listingPanel.hidden = !turma;
+    limparListagem();
     if (!turma) return;
 
-    const myReq = ++reqSeq;
-    renderSkeletons(8);
+    listingTitle.textContent = turma;
+    listingSub.textContent = 'Alunos da turma selecionada';
+    renderSkeletons();
+    const seq = ++requestSeq;
 
     try {
-      const url = buildURL(`/api/alunos/turma/${encodeURIComponent(turma)}`, {});
-      const res = await fetch(url, { credentials: 'include', cache:'no-store' });
-      if (!res.ok) throw new Error('Falha ao listar alunos da turma');
-
-      const data = await res.json();
-
-      if (myReq !== reqSeq) return;
-
-      let lista = [];
-      if (Array.isArray(data)) lista = data;
-      else if (Array.isArray(data.items)) lista = data.items;
-      else if (Array.isArray(data.alunos)) lista = data.alunos;
-
-      ALL_ALUNOS_ADMIN = lista;
+      if (MODE_TOKEN) {
+        aplicarFiltroTokenTurma();
+      } else {
+        const resposta = await fetch(`/api/alunos/turma/${encodeURIComponent(turma)}`, { credentials: 'include', cache: 'no-store' });
+        if (!resposta.ok) throw new Error('Falha ao listar alunos da turma.');
+        const dados = await resposta.json();
+        if (seq !== requestSeq) return;
+        allAlunosAdmin = Array.isArray(dados) ? dados : (Array.isArray(dados.items) ? dados.items : (Array.isArray(dados.alunos) ? dados.alunos : []));
+        viewList = [...allAlunosAdmin].sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+      }
       pageIndex = 0;
-      applyFilterAdminMode();
-      renderNextChunkAdminMode();
-    } catch (e) {
-      console.error(e);
-      if (myReq !== reqSeq) return;
-      grade.innerHTML = '';
-      atualizarStatusListagem();
-      alert('Erro ao carregar alunos.');
-    } finally {
-      if (myReq === reqSeq) carregando = false;
+      renderProximoLote();
+    } catch (erro) {
+      console.error(erro);
+      grade.innerHTML = '<div class="status-message" style="grid-column:1/-1">Erro ao carregar os alunos desta turma.</div>';
+      listagemStatus.hidden = true;
     }
   }
 
-  btnCarregarMais.addEventListener('click', () => {
-    if (!turma || !haMaisParaRenderizar()) return;
+  async function mostrarTodosResultados() {
+    if (termo.trim().length < 2) return;
+    await executarPesquisa(30);
+    viewList = [...currentSearchItems];
+    pageIndex = 0;
+    listingTitle.textContent = `Resultados para “${termo.trim()}”`;
+    listingSub.textContent = currentSearchTotal > currentSearchItems.length
+      ? `Mostrando os primeiros ${currentSearchItems.length} de ${currentSearchTotal} resultados`
+      : `${currentSearchTotal} resultado${currentSearchTotal === 1 ? '' : 's'}`;
+    searchPanel.hidden = true;
+    welcomePanel.hidden = true;
+    listingPanel.hidden = false;
+    grade.innerHTML = '';
+    renderProximoLote();
+  }
 
-    if (MODE_TOKEN) {
-      renderNextChunkTokenMode();
+  busca.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    termo = busca.value.trim();
+    limparBusca.hidden = termo.length === 0;
+    searchTimer = setTimeout(() => executarPesquisa(), 280);
+  });
+
+  busca.addEventListener('keydown', (evento) => {
+    const linhas = Array.from(searchResults.querySelectorAll('.result-row'));
+    if (!linhas.length) return;
+    if (evento.key === 'ArrowDown') {
+      evento.preventDefault();
+      keyboardIndex = (keyboardIndex + 1) % linhas.length;
+    } else if (evento.key === 'ArrowUp') {
+      evento.preventDefault();
+      keyboardIndex = (keyboardIndex - 1 + linhas.length) % linhas.length;
+    } else if (evento.key === 'Enter' && keyboardIndex >= 0) {
+      evento.preventDefault();
+      const aluno = currentSearchItems[keyboardIndex];
+      if (aluno) abrirFicha(aluno);
+      return;
     } else {
-      renderNextChunkAdminMode();
+      return;
     }
+    linhas.forEach((linha, indice) => linha.classList.toggle('is-active', indice === keyboardIndex));
+    linhas[keyboardIndex]?.scrollIntoView({ block: 'nearest' });
+  });
+
+  limparBusca.addEventListener('click', () => {
+    busca.value = '';
+    termo = '';
+    limparBusca.hidden = true;
+    searchController?.abort();
+    executarPesquisa();
+    busca.focus();
   });
 
   selTurma.addEventListener('change', () => {
     turma = selTurma.value;
-
-    const u = new URL(location.href);
-    if (turma) u.searchParams.set('turma', turma);
-    else u.searchParams.delete('turma');
-    window.history.replaceState({}, '', u.toString());
-
-    resetListagem();
-    empty.style.display = turma ? 'none' : 'block';
-
-    if (MODE_TOKEN) {
-      applyFilterTokenMode();
-      renderNextChunkTokenMode();
-    } else if (turma) {
-      carregarAdminMode();
-    }
+    atualizarURLTurma();
+    if (termo.length >= 2) executarPesquisa();
+    else carregarTurma();
   });
 
-  let tmr;
-  qs('#busca').addEventListener('input', (e) => {
-    clearTimeout(tmr);
-    tmr = setTimeout(() => {
-      termo = (e.target.value || '').trim();
-      pageIndex = 0;
-
-      if (!turma) {
-        grade.innerHTML = '';
-        atualizarStatusListagem();
-        return;
-      }
-
-      if (MODE_TOKEN) {
-        applyFilterTokenMode();
-        renderNextChunkTokenMode();
-      } else {
-        applyFilterAdminMode();
-        renderNextChunkAdminMode();
-      }
-    }, 300);
+  limparFiltroTurma.addEventListener('click', () => {
+    turma = '';
+    selTurma.value = '';
+    atualizarURLTurma();
+    turmaButtons.hidden = true;
+    gradeButtons.querySelectorAll('.grade-btn').forEach((botao) => botao.classList.remove('is-active'));
+    if (termo.length >= 2) executarPesquisa();
+    else carregarTurma();
   });
 
-  const io = new IntersectionObserver((entries) => {
-    if (!entries.some(e => e.isIntersecting)) return;
-    if (!turma) return;
-    if (!haMaisParaRenderizar()) return;
+  verTodosResultados.addEventListener('click', mostrarTodosResultados);
+  btnCarregarMais.addEventListener('click', renderProximoLote);
 
-    if (MODE_TOKEN) {
-      renderNextChunkTokenMode();
-    } else {
-      renderNextChunkAdminMode();
-    }
-  }, {
-    root: null,
-    rootMargin: '300px 0px',
-    threshold: 0
-  });
-
-  io.observe(sentinel);
-
-  const ioImg = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-
-      const card = entry.target;
-      const img = card.querySelector('.avatar-img');
-
-      if (img && !img.src && img.dataset.src) {
-        img.src = img.dataset.src;
-      }
-
-      ioImg.unobserve(card);
-    });
-  }, { root: null, rootMargin: '200px 0px', threshold: 0 });
+  const observer = new IntersectionObserver((entradas) => {
+    if (!entradas.some((entrada) => entrada.isIntersecting)) return;
+    if (listingPanel.hidden || btnCarregarMais.hidden) return;
+    renderProximoLote();
+  }, { rootMargin: '280px 0px' });
+  observer.observe(sentinel);
 
   const modal = qs('#modal-backdrop');
   const btnFechar = qs('#btn-fechar');
 
-  function abrirModal(){
-    modal.classList.add('aberto');
-  }
-
-  function fecharModal(){
-    modal.classList.remove('aberto');
-  }
-
+  function abrirModal() { modal.classList.add('aberto'); }
+  function fecharModal() { modal.classList.remove('aberto'); }
   btnFechar.addEventListener('click', fecharModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) fecharModal();
-  });
+  modal.addEventListener('click', (evento) => { if (evento.target === modal) fecharModal(); });
+  addEventListener('keydown', (evento) => { if (evento.key === 'Escape') fecharModal(); });
 
-  addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharModal();
-  });
-
-  function fmtData(dStr){
-  if (!dStr) return '—';
-
-  const d = new Date(dStr);
-
-  return Number.isNaN(+d)
-    ? '—'
-    : d.toLocaleDateString('pt-BR');
-}
-
-async function abrirFicha(aCard) {
-  const id = aCard._id;
-
-  try {
-    const img = qs('#modal-foto');
-
-    img.removeAttribute('src');
-
-    const fotoLocal = fotoSeguraDoAluno(aCard);
-
-    if (fotoLocal) {
-      img.src = fotoLocal;
-      img.onerror = () => {
-        img.removeAttribute('src');
-      };
-    }
-
-    let a = {};
-
-    if (!MODE_TOKEN) {
-      const url = `/api/fichaAluno/${id}`;
-
-      const res = await fetch(url, {
-        credentials: 'include',
-        cache: 'no-store'
-      });
-
-      if (!res.ok) {
-        throw new Error('Falha ao buscar detalhes');
-      }
-
-      const data = await res.json();
-
-      a = data.aluno || {};
-    } else {
-      a = aCard || {};
-    }
-
-    const fotoFicha = fotoSeguraDoAluno(a);
-
-    if (fotoFicha) {
-      img.src = fotoFicha;
-
-      img.onerror = () => {
-        img.removeAttribute('src');
-      };
-    } else {
-      img.removeAttribute('src');
-    }
-
-    qs('#badge-turma').textContent = a.turma || '—';
-    qs('#modal-nome').textContent = a.nome || 'Aluno';
-
-    qs('#kv-nome').textContent = a.nome || '—';
-    qs('#kv-turma').textContent = a.turma || '—';
-
-    qs('#kv-entrada').textContent = fmtData(a.dataEntrada);
-
-    qs('#kv-resp').textContent =
-      [a.nomePai, a.nomeMae]
-        .filter(Boolean)
-        .join(' / ') || '—';
-
-    qs('#kv-telefone').textContent = a.telefone || '—';
-    qs('#kv-endereco').textContent = a.endereco || '—';
-
-    const notaEl = qs('#modal-nota');
-
-    if (typeof a.comportamento === 'number') {
-      notaEl.textContent =
-        a.comportamento
-          .toFixed(2)
-          .replace('.', ',');
-
-      notaEl.classList.toggle(
-        'ok',
-        a.comportamento >= 8.5
-      );
-    } else {
-      notaEl.textContent = '—';
-      notaEl.classList.remove('ok');
-    }
-
-    const btnFicha = qs('#btn-ver-ficha');
-    const btnNotif = qs('#btn-notificar');
-    const btnProcedimento = qs('#btn-procedimento');
-
-    if (MODE_TOKEN) {
-      btnFicha.textContent = 'Ver ficha (professor)';
-
-      btnFicha.onclick = () => {
-        const u = new URL(
-          '/ficha-aluno-professor.html',
-          location.origin
-        );
-
-        u.searchParams.set('id', a._id);
-        u.searchParams.set('token', token);
-
-        location.href = u.toString();
-      };
-
-      btnNotif.style.display = 'none';
-      btnProcedimento.style.display = 'none';
-
-    } else {
-
-      btnFicha.textContent = 'Ver ficha completa';
-
-      btnFicha.onclick = () => {
-        const u = new URL(
-          '/ficha-aluno.html',
-          location.origin
-        );
-
-        u.searchParams.set('id', a._id);
-
-        location.href = u.toString();
-      };
-
-      btnNotif.style.display = '';
-      btnProcedimento.style.display = '';
-
-      btnNotif.onclick = () => {
-        const u = new URL(
-          '/cadastrar-notificacao.html',
-          location.origin
-        );
-
-        u.searchParams.set('aluno', a._id);
-
-        location.href = u.toString();
-      };
-
-      btnProcedimento.onclick = () => {
-        if (!a?._id) {
-          alert('Aluno não identificado.');
-          return;
-        }
-        window.abrirModalProcedimentoDisciplinar({
-          origem: 'ficha_aluno',
-          alunoId: a._id,
-          nomeAluno: a.nome || 'Aluno',
-          turma: a.turma || 'Turma não informada'
-        });
-      };
-    }
-
-    abrirModal();
-
-  } catch (e) {
-    console.error(e);
-
-    alert('Erro ao abrir a ficha do aluno.');
+  function fmtData(valor) {
+    if (!valor) return '—';
+    const data = new Date(valor);
+    return Number.isNaN(Number(data)) ? '—' : data.toLocaleDateString('pt-BR');
   }
-}
 
-  carregarTurmas()
-    .then(() => {
-      empty.style.display = turma ? 'none' : 'block';
+  async function abrirFicha(alunoCard) {
+    const id = alunoCard?._id;
+    if (!id) return;
+    try {
+      const imagem = qs('#modal-foto');
+      imagem.removeAttribute('src');
+      imagem.onerror = () => imagem.removeAttribute('src');
+      const fotoCard = fotoSeguraDoAluno(alunoCard);
+      if (fotoCard) imagem.src = fotoCard;
 
-      if (turma) {
-        resetListagem();
-
-        if (MODE_TOKEN) {
-          applyFilterTokenMode();
-          renderNextChunkTokenMode();
-        } else {
-          carregarAdminMode();
-        }
-      } else {
-        atualizarStatusListagem();
+      let aluno = alunoCard;
+      if (!MODE_TOKEN) {
+        const resposta = await fetch(`/api/fichaAluno/${encodeURIComponent(id)}`, { credentials: 'include', cache: 'no-store' });
+        if (!resposta.ok) throw new Error('Falha ao buscar detalhes do aluno.');
+        const dados = await resposta.json();
+        aluno = dados.aluno || alunoCard;
       }
+
+      const fotoFicha = fotoSeguraDoAluno(aluno);
+      if (fotoFicha) imagem.src = fotoFicha;
+
+      qs('#badge-turma').textContent = aluno.turma || '—';
+      qs('#modal-nome').textContent = aluno.nome || 'Aluno';
+      qs('#kv-nome').textContent = aluno.nome || '—';
+      qs('#kv-turma').textContent = aluno.turma || '—';
+      qs('#kv-entrada').textContent = fmtData(aluno.dataEntrada);
+      qs('#kv-resp').textContent = [aluno.nomePai, aluno.nomeMae].filter(Boolean).join(' / ') || '—';
+      qs('#kv-telefone').textContent = aluno.telefone || '—';
+      qs('#kv-endereco').textContent = aluno.endereco || '—';
+
+      const nota = qs('#modal-nota');
+      if (typeof aluno.comportamento === 'number') {
+        nota.textContent = aluno.comportamento.toFixed(2).replace('.', ',');
+        nota.classList.toggle('ok', aluno.comportamento >= 8.5);
+      } else {
+        nota.textContent = '—';
+        nota.classList.remove('ok');
+      }
+
+      const btnFicha = qs('#btn-ver-ficha');
+      const btnNotif = qs('#btn-notificar');
+      const btnProcedimento = qs('#btn-procedimento');
+
+      if (MODE_TOKEN) {
+        btnFicha.textContent = 'Ver ficha (professor)';
+        btnFicha.onclick = () => {
+          const url = new URL('/ficha-aluno-professor.html', location.origin);
+          url.searchParams.set('id', aluno._id);
+          url.searchParams.set('token', token);
+          location.href = url.toString();
+        };
+        btnNotif.hidden = true;
+        btnProcedimento.hidden = true;
+      } else {
+        btnFicha.textContent = 'Ver ficha completa';
+        btnFicha.onclick = () => {
+          const url = new URL('/ficha-aluno.html', location.origin);
+          url.searchParams.set('id', aluno._id);
+          location.href = url.toString();
+        };
+        btnNotif.hidden = false;
+        btnProcedimento.hidden = false;
+        btnNotif.onclick = () => {
+          const url = new URL('/cadastrar-notificacao.html', location.origin);
+          url.searchParams.set('aluno', aluno._id);
+          location.href = url.toString();
+        };
+        btnProcedimento.onclick = () => {
+          if (!aluno?._id) return alert('Aluno não identificado.');
+          window.abrirModalProcedimentoDisciplinar({
+            origem: 'ficha_aluno',
+            alunoId: aluno._id,
+            nomeAluno: aluno.nome || 'Aluno',
+            turma: aluno.turma || 'Turma não informada'
+          });
+        };
+      }
+
+      salvarRecente({ ...alunoCard, ...aluno });
+      abrirModal();
+    } catch (erro) {
+      console.error(erro);
+      alert('Erro ao abrir a ficha do aluno.');
+    }
+  }
+
+  renderRecentes();
+  carregarDadosIniciais()
+    .then(async () => {
+      if (turma && turmasDisponiveis.includes(turma)) {
+        selTurma.value = turma;
+        await carregarTurma();
+      } else {
+        turma = '';
+        atualizarURLTurma();
+        welcomePanel.hidden = false;
+      }
+      busca.focus();
     })
-    .catch(err => {
-      console.error(err);
-      alert('Erro ao carregar turmas.');
+    .catch((erro) => {
+      console.error(erro);
+      totalAlunos.textContent = 'Não foi possível carregar os alunos';
+      alert('Erro ao carregar os dados da Central de Alunos.');
     });
 })();
 </script>

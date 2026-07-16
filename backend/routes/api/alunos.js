@@ -482,6 +482,124 @@ router.get('/turmas', autenticar, requireTenant, apenasLeitura, async (req, res)
   }
 });
 
+// GET - Busca global de alunos (nome ou turma)
+router.get('/busca', autenticar, requireTenant, apenasLeitura, async (req, res) => {
+  try {
+    const termo = String(req.query.q || '').trim().slice(0, 80);
+    const turmaRaw = String(req.query.turma || '').trim().slice(0, 40);
+    const limite = Math.min(Math.max(parseInt(req.query.limit || '10', 10) || 10, 1), 30);
+
+    if (termo.length < 2) {
+      return res.status(400).json({
+        message: 'Digite pelo menos 2 caracteres para pesquisar.',
+        items: [],
+        total: 0
+      });
+    }
+
+    const escapeRegex = (valor) => String(valor).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const mapaAcentos = {
+      a: '[aáàãâä]',
+      e: '[eéèêë]',
+      i: '[iíìîï]',
+      o: '[oóòõôö]',
+      u: '[uúùûü]',
+      c: '[cç]',
+      n: '[nñ]'
+    };
+
+    const termoComoRegex = (valor) => {
+      const normalizado = String(valor)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+      return normalizado
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((parte) => Array.from(parte)
+          .map((caractere) => mapaAcentos[caractere] || escapeRegex(caractere))
+          .join(''))
+        .join('.*');
+    };
+
+    const regexNome = termoComoRegex(termo);
+    const regexLiteral = escapeRegex(termo);
+
+    const condicoesBusca = [
+      { nome: { $regex: regexNome, $options: 'i' } },
+      { turma: { $regex: regexLiteral, $options: 'i' } }
+    ];
+
+    const extra = { $or: condicoesBusca };
+
+    if (turmaRaw) {
+      extra.turma = {
+        $regex: `^${escapeRegex(turmaRaw)}$`,
+        $options: 'i'
+      };
+    }
+
+    const filtro = tenantFilter(req, extra);
+
+    const fotoEhBase64Grande = (valor) => {
+      if (!valor) return false;
+      const s = String(valor).trim();
+      return /^data:image\//i.test(s) && s.length > 300000;
+    };
+
+    const resumirAluno = (aluno) => {
+      let foto = aluno?.fotoOriginal || aluno?.foto || '';
+      let thumb = aluno?.fotoThumb || '';
+
+      if (fotoEhBase64Grande(foto)) foto = '';
+      if (fotoEhBase64Grande(thumb)) thumb = '';
+
+      const nota = typeof aluno?.comportamento === 'number'
+        ? aluno.comportamento
+        : (typeof aluno?.notaComportamento === 'number' ? aluno.notaComportamento : 8.0);
+
+      return {
+        _id: aluno._id,
+        nome: aluno.nome || '',
+        turma: aluno.turma || '',
+        foto: foto || '',
+        fotoOriginal: foto || '',
+        fotoThumb: thumb || '',
+        fotoUrl: montarFotoUrlPublica(foto) || '',
+        fotoThumbUrl: montarFotoUrlPublica(thumb) || (aluno?._id ? `/api/imagens/thumb/${aluno._id}` : ''),
+        comportamento: Number.isFinite(nota) ? nota : 8.0,
+        temAcesso: !!aluno?.usuarioId
+      };
+    };
+
+    const [alunos, total] = await Promise.all([
+      Aluno.find(filtro)
+        .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento usuarioId')
+        .sort({ nome: 1 })
+        .limit(limite)
+        .lean(),
+      Aluno.countDocuments(filtro)
+    ]);
+
+    res.set('Cache-Control', 'private, no-store');
+    return res.json({
+      items: alunos.map(resumirAluno),
+      total,
+      limit: limite,
+      query: termo
+    });
+  } catch (error) {
+    console.error('Erro GET /api/alunos/busca:', error);
+    return res.status(500).json({
+      message: 'Erro ao pesquisar alunos.',
+      items: [],
+      total: 0
+    });
+  }
+});
+
 // GET - Listar alunos por turma
 router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req, res) => {
   try {
