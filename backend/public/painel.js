@@ -128,29 +128,10 @@
     }
   }
 
-  async function atualizarBadgeMensagens() {
-    try {
-      const j = await getJSON('/api/metrics/overview', { timeoutMs: 8000 });
-      const n = Number(j?.msgs || 0);
-      const badge = document.getElementById('mensagensBadge');
-
-      if (badge) {
-        if (n > 0) {
-          badge.style.display = '';
-          badge.textContent = n.toLocaleString('pt-BR');
-        } else {
-          badge.style.display = 'none';
-        }
-      }
-    } catch {
-      // silencioso
-    }
-  }
 
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       await atualizarContadoresPainel();
-      await atualizarBadgeMensagens();
     } catch (e) {
       showError(e.message || 'Erro ao atualizar o painel');
     }

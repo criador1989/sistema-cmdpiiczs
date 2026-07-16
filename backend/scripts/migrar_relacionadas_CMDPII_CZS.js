@@ -22,7 +22,6 @@ function isHex24(str) {
   // coleções que costumam existir neste projeto
   const Notifs      = db.collection('notificacaos');   // nome padrão pluralizado pelo Mongoose
   const Observs     = db.collection('observacaos');
-  const Mensagens   = db.collection('mensagens');      // pode não existir
   const Logs        = db.collection('logs');           // já migrado antes, mas deixamos aqui
   const Alunos      = db.collection('alunos');
   const Usuarios    = db.collection('usuarios');
@@ -107,21 +106,7 @@ function isHex24(str) {
     obs_autor:        `${obsAutor.matchedCount}/${obsAutor.modifiedCount}`,
   });
 
-  // 5) Mensagens (opcional)
-  if (Mensagens) {
-    console.log('\n✉️  Migrando MENSAGENS...');
-    const msgInst = await setInstituicaoObjectId(Mensagens);
-    const msgDe   = await toObjectId(Mensagens, 'de');
-    const msgPara = await toObjectId(Mensagens, 'para');
-    console.table({
-      msg_inst_strings: `${msgInst.setString.matchedCount}/${msgInst.setString.modifiedCount}`,
-      msg_inst_nulls:   `${msgInst.setNulls.matchedCount}/${msgInst.setNulls.modifiedCount}`,
-      msg_de:           `${msgDe.matchedCount}/${msgDe.modifiedCount}`,
-      msg_para:         `${msgPara.matchedCount}/${msgPara.modifiedCount}`,
-    });
-  }
-
-  // 6) Logs (se sobrou algo)
+  // 5) Logs (se sobrou algo)
   if (Logs) {
     console.log('\n📜 Checando LOGS...');
     const lgInst = await setInstituicaoObjectId(Logs);
@@ -135,7 +120,7 @@ function isHex24(str) {
     });
   }
 
-  // 7) Validação rápida: Notificações por tipo atual de campo
+  // 6) Validação rápida: Notificações por tipo atual de campo
   const restNotifInstStrings = await Notifs.countDocuments({ instituicao: { $type: 'string' } });
   const restNotifAlunoStrings = await Notifs.countDocuments({ aluno: { $type: 'string' } });
 

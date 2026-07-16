@@ -298,7 +298,7 @@
         </select>
         <button class="btn btn-prim" id="btnBuscar">Buscar</button>
       </div>
-      <a class="btn-ghost" href="painel.html">⬅ Voltar ao Painel</a>
+      <a class="btn-ghost" href="gestao-sistema.html" id="voltarGestaoSistema">⬅ Gestão do Sistema</a>
     </div>
 
     <div class="status" id="status"></div>
@@ -343,6 +343,14 @@
     const AUTH = (p)=> `${BASE}${p.startsWith('/auth')? p : '/auth' + (p.startsWith('/')?p:'/'+p)}`;
 
     const $ = (id) => document.getElementById(id);
+
+    (function ajustarLinkGestaoSistema(){
+      const link = $('voltarGestaoSistema');
+      if (!link) return;
+      const qs = new URLSearchParams(location.search);
+      const tenant = qs.get('t') || qs.get('tenant') || localStorage.getItem('axoriin_tenant') || localStorage.getItem('smartclass_tenant') || '';
+      if (tenant) link.href = `gestao-sistema.html?t=${encodeURIComponent(tenant)}`;
+    })();
     let pagina = 1, paginas = 1, limite = 20, termo = '', tipo = '', portal = '';
 
     async function garantirAdmin(){

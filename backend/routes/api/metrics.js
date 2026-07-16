@@ -8,10 +8,6 @@ const { requireTenant } = require('../../middleware/tenantScope');
 const Aluno = require('../../models/Aluno');
 const Notificacao = require('../../models/Notificacao');
 
-// Mensagens é opcional; tratamos ausência com 0.
-let Mensagem = null;
-try { Mensagem = require('../../models/Mensagem'); } catch { /* ok sem mensagens */ }
-
 /** Match estrito por instituição (SEM misturar registros sem instituição) */
 function buildInstMatch(inst) {
   if (!inst) return { _id: null };
@@ -45,7 +41,7 @@ function buildAlunoMatch(inst) {
 }
 
 // GET /api/metrics/overview
-// -> usado em painel.html (mAlunos, mNotif, mMsgs)
+// -> usado no painel principal (alunos ativos e notificações pendentes)
 router.get('/overview', autenticar, requireTenant, async (req, res) => {
   try {
     const inst = req.usuario.instituicao;
@@ -65,33 +61,19 @@ router.get('/overview', autenticar, requireTenant, async (req, res) => {
     const filtroNotifPend = {
       $and: [
         buildInstMatch(inst),
-        {
-          status: { $in: ['pendente', 'revisao_solicitada'] }
-        }
+        { status: { $in: ['pendente', 'revisao_solicitada'] } }
       ]
     };
 
-    const filtroMsgs = {
-      $and: [
-        buildInstMatch(inst),
-        { lida: false }
-      ]
-    };
-
-    const [alunosCount, notifPend, msgs] = await Promise.all([
+    const [alunosCount, notifPend] = await Promise.all([
       Aluno.countDocuments(filtroAlunos),
-
-      Notificacao.countDocuments(filtroNotifPend),
-
-      Mensagem && Mensagem.countDocuments
-        ? Mensagem.countDocuments(filtroMsgs)
-        : 0
+      Notificacao.countDocuments(filtroNotifPend)
     ]);
 
-    res.json({ alunosCount, notifPend, msgs });
+    res.json({ alunosCount, notifPend });
   } catch (e) {
     console.error('metrics/overview:', e);
-    res.status(500).json({ alunosCount: 0, notifPend: 0, msgs: 0 });
+    res.status(500).json({ alunosCount: 0, notifPend: 0 });
   }
 });
 
