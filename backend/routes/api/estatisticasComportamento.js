@@ -46,6 +46,10 @@ function toObjectId(id) {
   return new mongoose.Types.ObjectId(String(id));
 }
 
+function escapeRegex(texto) {
+  return String(texto || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function arredondar(n, casas = 2) {
   const valor = Number(n || 0);
   return Number(valor.toFixed(casas));
@@ -75,8 +79,13 @@ function montarFiltroBase(req) {
     },
   };
 
-  const turma = toObjectId(req.query.turma);
-  if (turma) filtro.turma = turma;
+  const turmaRaw = String(req.query.turma || '').trim();
+  const turma = toObjectId(turmaRaw);
+  if (turma) {
+    filtro.turma = turma;
+  } else if (turmaRaw && turmaRaw.toLowerCase() !== 'todas') {
+    filtro.turmaNome = new RegExp(`^${escapeRegex(turmaRaw)}$`, 'i');
+  }
 
   return { filtro, inicio, fim, instituicaoId };
 }
@@ -777,6 +786,13 @@ Recomenda-se manter ações pedagógicas e disciplinares alinhadas ao perfil ide
         mediaGeral: Number(mediaGeral.toFixed(2)),
         tendencia,
         variacao: Number(variacao.toFixed(2)),
+      },
+      indicadores: {
+        totalAlunosMonitorados: idsAlunos.length,
+        totalAlunosEmRisco: alunosEmRisco.length,
+        totalEvolucoes,
+        totalQuedas,
+        totalEstaveis,
       },
       pontosFortes,
       pontosAtencao,

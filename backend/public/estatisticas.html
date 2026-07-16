@@ -610,6 +610,351 @@ body.pdf-mode .doc-footer-print{
   display:block;
 }
 
+
+
+    .summary-grid{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:14px;
+      margin:12px 0 18px;
+    }
+
+    .summary-card{
+      grid-column:span 12;
+      min-height:130px;
+      padding:18px 18px 16px;
+      border-radius:22px;
+      border:1px solid rgba(126,180,255,.22);
+      background:
+        radial-gradient(220px 140px at 100% 0%, rgba(85,194,255,.12), transparent 65%),
+        linear-gradient(180deg, rgba(5,13,24,.92), rgba(4,10,18,.82));
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02), 0 14px 28px rgba(0,0,0,.24);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .summary-card::after{
+      content:"";
+      position:absolute;
+      inset:auto 16px 12px 16px;
+      height:2px;
+      background:linear-gradient(90deg, rgba(126,249,255,.0), rgba(126,249,255,.72), rgba(126,249,255,.0));
+      opacity:.45;
+    }
+
+    .summary-card strong{
+      font-size:clamp(26px,3vw,34px);
+      line-height:1;
+      color:#ffffff;
+      letter-spacing:-.02em;
+    }
+
+    .summary-eyebrow{
+      font-size:.77rem;
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      color:#8fdcff;
+      font-weight:900;
+    }
+
+    .summary-meta{
+      color:var(--text-soft);
+      font-size:.9rem;
+      line-height:1.45;
+    }
+
+    .summary-card.tone-alert{
+      border-color:rgba(248,113,113,.28);
+      background:
+        radial-gradient(220px 140px at 100% 0%, rgba(248,113,113,.12), transparent 65%),
+        linear-gradient(180deg, rgba(18,8,10,.94), rgba(14,8,12,.82));
+    }
+
+    .summary-card.tone-success{
+      border-color:rgba(52,211,153,.24);
+      background:
+        radial-gradient(220px 140px at 100% 0%, rgba(52,211,153,.1), transparent 65%),
+        linear-gradient(180deg, rgba(4,14,15,.94), rgba(5,12,18,.82));
+    }
+
+    .strategic-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.55fr) minmax(320px, .95fr);
+      gap:18px;
+      margin-bottom:18px;
+      align-items:start;
+    }
+
+    .strategic-stack{
+      display:grid;
+      gap:18px;
+    }
+
+    .compact-card{
+      min-height:200px;
+    }
+
+    .compact-card .chart-title,
+    .strategic-main .chart-title{
+      font-size:1.02rem;
+      font-weight:800;
+      color:#eef7ff;
+    }
+
+    .compact-card .chart-note,
+    .strategic-main .chart-note{
+      color:var(--text-faint);
+      line-height:1.45;
+    }
+
+    .strategic-main{
+      min-height:520px;
+      padding:18px;
+    }
+
+    .hero-badges,
+    .inline-badges{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:10px 0 14px;
+    }
+
+    .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:.82rem;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(255,255,255,.04);
+      color:#e6f2ff;
+      font-weight:700;
+    }
+
+    .strategic-hero{
+      padding:16px 18px;
+      border-radius:18px;
+      border:1px solid rgba(126,180,255,.18);
+      background:linear-gradient(180deg, rgba(8,18,32,.92), rgba(5,12,22,.72));
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+
+    .strategic-hero h3{
+      margin:0 0 8px;
+      font-size:1.08rem;
+      color:#ffffff;
+    }
+
+    .strategic-hero p{
+      margin:0;
+      color:#d7e5f5;
+      line-height:1.55;
+    }
+
+    .insight-columns{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:12px;
+      margin-top:16px;
+    }
+
+    .insight-card{
+      grid-column:span 12;
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.16);
+      background:rgba(255,255,255,.03);
+      padding:14px 14px 12px;
+    }
+
+    .insight-card h4{
+      margin:0 0 10px;
+      font-size:.95rem;
+      color:#f8fbff;
+      letter-spacing:.02em;
+    }
+
+    .insight-list,
+    .priority-list,
+    .action-list{
+      margin:0;
+      padding-left:18px;
+      color:#d6e3f3;
+      line-height:1.5;
+      font-size:.92rem;
+    }
+
+    .insight-list li,
+    .priority-list li,
+    .action-list li{ margin-bottom:8px; }
+
+    .priority-board,
+    .highlight-board{
+      display:grid;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .priority-item,
+    .highlight-item{
+      border-radius:16px;
+      padding:12px 13px;
+      border:1px solid rgba(148,163,184,.16);
+      background:rgba(255,255,255,.03);
+    }
+
+    .priority-item{
+      border-left:3px solid rgba(248,113,113,.8);
+    }
+
+    .highlight-item{
+      border-left:3px solid rgba(52,211,153,.84);
+    }
+
+    .item-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:6px;
+    }
+
+    .item-top strong{ font-size:.98rem; color:#fff; }
+
+    .item-score{
+      min-width:max-content;
+      font-size:.78rem;
+      padding:4px 9px;
+      border-radius:999px;
+      font-weight:800;
+      background:rgba(255,255,255,.06);
+      color:#eef7ff;
+      border:1px solid rgba(148,163,184,.18);
+    }
+
+    .item-metrics{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .metric-pill{
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      color:#dbeafe;
+      background:rgba(59,130,246,.12);
+      border:1px solid rgba(147,197,253,.18);
+    }
+
+    .metric-pill.warn{
+      color:#fecaca;
+      background:rgba(239,68,68,.16);
+      border-color:rgba(252,165,165,.24);
+    }
+
+    .metric-pill.success{
+      color:#bbf7d0;
+      background:rgba(34,197,94,.12);
+      border-color:rgba(134,239,172,.24);
+    }
+
+    .empty-helper{
+      border:1px dashed rgba(148,163,184,.24);
+      border-radius:16px;
+      padding:14px;
+      color:#b9c7db;
+      font-size:.92rem;
+      background:rgba(255,255,255,.02);
+    }
+
+    .focus-strip{
+      display:grid;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .focus-card{
+      border-radius:16px;
+      padding:12px 13px;
+      background:linear-gradient(180deg, rgba(5,14,25,.9), rgba(6,15,28,.68));
+      border:1px solid rgba(126,180,255,.16);
+    }
+
+    .focus-card h5{
+      margin:0 0 6px;
+      font-size:.9rem;
+      color:#f8fbff;
+    }
+
+    .focus-card p{
+      margin:0;
+      color:#d8e5f3;
+      font-size:.9rem;
+      line-height:1.45;
+    }
+
+    .risk-panel{
+      margin-top:16px;
+      padding-top:14px;
+      border-top:1px dashed rgba(148,163,184,.18);
+    }
+
+    .risk-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .risk-card{
+      padding:12px;
+      border-radius:18px;
+      background:linear-gradient(135deg, rgba(127,29,29,.22), rgba(15,23,42,.72));
+      border:1px solid rgba(252,165,165,.22);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.02), 0 10px 22px rgba(0,0,0,.18);
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .risk-avatar{
+      width:48px;
+      height:48px;
+      border-radius:16px;
+      flex:0 0 auto;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,#7f1d1d,#ef4444);
+      color:#fff;
+      font-weight:900;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.16);
+    }
+
+    .risk-avatar img{ width:100%; height:100%; object-fit:cover; }
+
+    .risk-name{ font-weight:800; color:#fff; }
+    .risk-sub{ color:#cbd5e1; font-size:.83rem; margin-top:3px; }
+
+    @media (min-width:760px){
+      .summary-card{ grid-column:span 6; }
+      .insight-card{ grid-column:span 4; }
+    }
+
+    @media (min-width:1120px){
+      .summary-card{ grid-column:span 2; }
+    }
+
+    @media (max-width:1024px){
+      .strategic-grid{ grid-template-columns:1fr; }
+    }
+
     @media print{
   .title-area{
   margin-bottom:6px !important;
@@ -833,32 +1178,78 @@ body.pdf-mode .doc-footer-print{
           </div>
 
         <h2 class="section-title">
-          📈 Evolução Comportamental
-          <span class="chip">snapshots históricos</span>
+          🧭 Painel Estratégico de Comportamento
+          <span class="chip">gestão + cruzamento de dados</span>
         </h2>
 
-        <div class="chart-card" id="cardParecerIA" style="grid-column:span 2">
-  <div class="chart-title">🧠 Análise Inteligente do Comportamento</div>
-  <div class="chart-note">
-  Interpretação automática baseada nos dados do período selecionado
-  <br>
-  <span style="
-    font-size:.8rem;
-    color:#94a3b8;
-  ">
-    O sistema identifica evolução, queda e situação atual para orientar intervenções pedagógicas e disciplinares.
-  </span>
-</div>
+        <div class="summary-grid" id="summaryKpis">
+          <div class="summary-card">
+            <span class="summary-eyebrow">Média geral</span>
+            <strong id="kpiMediaGeral">--</strong>
+            <div class="summary-meta" id="kpiMediaMeta">Leitura consolidada do período selecionado.</div>
+          </div>
+          <div class="summary-card">
+            <span class="summary-eyebrow">Tendência</span>
+            <strong id="kpiTendencia">--</strong>
+            <div class="summary-meta" id="kpiTendenciaMeta">Direção mais recente da evolução comportamental.</div>
+          </div>
+          <div class="summary-card">
+            <span class="summary-eyebrow">Estudantes monitorados</span>
+            <strong id="kpiMonitorados">--</strong>
+            <div class="summary-meta" id="kpiMonitoradosMeta">Total de estudantes com dados no período.</div>
+          </div>
+          <div class="summary-card tone-alert">
+            <span class="summary-eyebrow">Em atenção agora</span>
+            <strong id="kpiRisco">--</strong>
+            <div class="summary-meta" id="kpiRiscoMeta">Alunos com queda ativa e nota atual abaixo do ideal.</div>
+          </div>
+          <div class="summary-card tone-success">
+            <span class="summary-eyebrow">Turmas prioritárias</span>
+            <strong id="kpiTurmas">--</strong>
+            <div class="summary-meta" id="kpiTurmasMeta">Turmas que concentram sinais de oscilação e risco.</div>
+          </div>
+          <div class="summary-card">
+            <span class="summary-eyebrow">Faixa predominante</span>
+            <strong id="kpiFaixa">--</strong>
+            <div class="summary-meta" id="kpiFaixaMeta">Classificação dominante no retrato mais recente.</div>
+          </div>
+        </div>
 
-  <div id="parecerIA" style="
-    margin-top:10px;
-    font-size:.95rem;
-    line-height:1.5;
-    color:#dbe8f7;
-  ">
-    Carregando análise...
-  </div>
-</div>
+        <div class="strategic-grid">
+          <div class="chart-card strategic-main" id="cardParecerIA">
+            <div class="chart-title">🧠 Leitura inteligente e devolutiva institucional</div>
+            <div class="chart-note">
+              Síntese executiva com foco em evolução, risco atual, turmas prioritárias e ações concretas para orientar a escola.
+            </div>
+            <div id="parecerIA" style="margin-top:12px;color:#dbe8f7;">Carregando análise...</div>
+          </div>
+
+          <div class="strategic-stack">
+            <div class="chart-card compact-card">
+              <div class="chart-title">🎯 Turmas que pedem intervenção</div>
+              <div class="chart-note">Cruza média atual, variação no período e concentração de alunos em atenção.</div>
+              <div id="turmasPrioritarias" class="priority-board">
+                <div class="empty-helper">Aguarde o carregamento dos dados.</div>
+              </div>
+            </div>
+
+            <div class="chart-card compact-card">
+              <div class="chart-title">🌟 Turmas destaque</div>
+              <div class="chart-note">Turmas com melhor estabilidade, avanço recente e potencial para inspirar boas práticas.</div>
+              <div id="turmasDestaque" class="highlight-board">
+                <div class="empty-helper">Aguarde o carregamento dos dados.</div>
+              </div>
+            </div>
+
+            <div class="chart-card compact-card">
+              <div class="chart-title">🛠️ Plano de ação prioritário</div>
+              <div class="chart-note">Devolutivas objetivas para coordenação, sala de aula, família e acompanhamento protetivo.</div>
+              <div id="planoAcaoPrioritario" class="focus-strip">
+                <div class="empty-helper">Aguarde o carregamento dos dados.</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div class="grid">
           <div class="chart-card" style="grid-column:span 2">
@@ -1042,8 +1433,11 @@ body.pdf-mode .doc-footer-print{
       },
       comportamentoHistorico: {
         evolucaoGeral: [],
+        evolucaoTurmas: [],
+        distribuicaoFaixas: [],
         rankingMelhores: [],
-        rankingQuedas: []
+        rankingQuedas: [],
+        parecer: null
       }
     };
 
@@ -2166,67 +2560,403 @@ function roundRectPath(ctx, x, y, w, h, r){
       return p;
     }
 
+
+    function formatarNumeroBR(valor, casas = 2){
+      const n = Number(valor ?? 0);
+      return n.toLocaleString('pt-BR', {
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas
+      });
+    }
+
+    function ultimaPosicao(arr){
+      return Array.isArray(arr) && arr.length ? arr[arr.length - 1] : null;
+    }
+
+    function classificarTendencia(variacao){
+      if(variacao > 0.15) return 'melhora';
+      if(variacao < -0.15) return 'queda';
+      return 'estável';
+    }
+
+    function buildTurmaPanorama(rows = []){
+      const mapa = new Map();
+      (rows || []).forEach(item => {
+        const turmaNome = item?.turmaNome || 'Sem turma';
+        const lista = mapa.get(turmaNome) || [];
+        lista.push({
+          turma: item?.turma || null,
+          turmaNome,
+          periodo: item?.periodo || '',
+          mediaNota: Number(item?.mediaNota || 0),
+          totalAlunos: Number(item?.totalAlunos || 0),
+          positivas: Number(item?.positivas || 0),
+          negativas: Number(item?.negativas || 0),
+          saldo: Number(item?.saldo || 0)
+        });
+        mapa.set(turmaNome, lista);
+      });
+
+      return Array.from(mapa.entries()).map(([turmaNome, pontos]) => {
+        pontos.sort((a,b) => String(a.periodo).localeCompare(String(b.periodo)));
+        const primeiro = pontos[0] || {};
+        const ultimo = pontos[pontos.length - 1] || {};
+        const mediaAtual = Number(ultimo.mediaNota || 0);
+        const mediaInicial = Number(primeiro.mediaNota || 0);
+        const variacao = mediaAtual - mediaInicial;
+        const mediaPeriodo = pontos.reduce((acc, p) => acc + Number(p.mediaNota || 0), 0) / Math.max(1, pontos.length);
+
+        return {
+          turma: ultimo.turma || primeiro.turma || null,
+          turmaNome,
+          pontos: pontos.length,
+          mediaAtual: Number(mediaAtual.toFixed(2)),
+          mediaInicial: Number(mediaInicial.toFixed(2)),
+          mediaPeriodo: Number(mediaPeriodo.toFixed(2)),
+          variacao: Number(variacao.toFixed(2)),
+          tendencia: classificarTendencia(variacao),
+          totalAlunos: Number(ultimo.totalAlunos || primeiro.totalAlunos || 0),
+          positivas: Number(ultimo.positivas || 0),
+          negativas: Number(ultimo.negativas || 0),
+          saldo: Number(ultimo.saldo || 0)
+        };
+      });
+    }
+
+    function mapearRiscoPorTurma(alunos = []){
+      return (alunos || []).reduce((acc, aluno) => {
+        const turma = aluno?.turmaNome || 'Sem turma';
+        acc[turma] = (acc[turma] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function montarPrioridadesIntervencao(panorama = [], alunosEmRisco = []){
+      const riscoPorTurma = mapearRiscoPorTurma(alunosEmRisco);
+      return (panorama || [])
+        .map(item => {
+          const risco = Number(riscoPorTurma[item.turmaNome] || 0);
+          const score =
+            (item.mediaAtual < 8 ? (8 - item.mediaAtual) * 2.6 : 0) +
+            (item.variacao < 0 ? Math.abs(item.variacao) * 3.8 : 0) +
+            (risco * 1.7) +
+            (item.negativas > item.positivas ? 0.8 : 0);
+
+          return {
+            ...item,
+            riscoCount: risco,
+            prioridadeScore: Number(score.toFixed(2))
+          };
+        })
+        .filter(item => item.riscoCount > 0 || item.mediaAtual < 8 || item.variacao < -0.15)
+        .sort((a,b) => b.prioridadeScore - a.prioridadeScore)
+        .slice(0, 6);
+    }
+
+    function montarTurmasDestaque(panorama = []){
+      return (panorama || [])
+        .filter(item => item.mediaAtual >= 8 || item.variacao > 0)
+        .map(item => ({
+          ...item,
+          destaqueScore: Number(((item.mediaAtual * 1.4) + Math.max(item.variacao, 0) * 3 + (item.positivas > item.negativas ? 0.6 : 0)).toFixed(2))
+        }))
+        .sort((a,b) => b.destaqueScore - a.destaqueScore)
+        .slice(0, 6);
+    }
+
+    function topFaixa(){
+      const dados = [...(ultimoSnapshot.comportamentoHistorico.distribuicaoFaixas || [])]
+        .sort((a,b) => Number(b.total || 0) - Number(a.total || 0));
+      return dados[0] || null;
+    }
+
+    function resumoAPH(){
+      const topTipo = [...(ultimoSnapshot.aph.porTipo || [])].sort((a,b) => Number(b.total || 0) - Number(a.total || 0))[0] || null;
+      const topLocal = [...(ultimoSnapshot.aph.porLocal || [])].sort((a,b) => Number(b.total || 0) - Number(a.total || 0))[0] || null;
+      return { topTipo, topLocal };
+    }
+
+    function preencherTexto(id, valor){
+      const el = document.getElementById(id);
+      if(el) el.textContent = valor;
+    }
+
+    function renderListaTurmas(containerId, items = [], tipo = 'prioridade'){
+      const el = document.getElementById(containerId);
+      if(!el) return;
+      if(!items.length){
+        el.innerHTML = '<div class="empty-helper">Nenhuma turma com destaque suficiente foi identificada para o período selecionado.</div>';
+        return;
+      }
+
+      el.innerHTML = items.map(item => `
+        <div class="${tipo === 'prioridade' ? 'priority-item' : 'highlight-item'}">
+          <div class="item-top">
+            <strong>${item.turmaNome}</strong>
+            <span class="item-score">${tipo === 'prioridade' ? 'Prioridade' : 'Destaque'} ${tipo === 'prioridade' ? item.prioridadeScore.toFixed(1) : item.destaqueScore.toFixed(1)}</span>
+          </div>
+          <div style="color:#c6d6ea;font-size:.88rem;line-height:1.45;">
+            ${tipo === 'prioridade'
+              ? `Média atual ${formatarNumeroBR(item.mediaAtual)} • variação ${formatarNumeroBR(item.variacao)} • ${item.riscoCount || 0} aluno(s) em atenção.`
+              : `Média atual ${formatarNumeroBR(item.mediaAtual)} • variação ${formatarNumeroBR(item.variacao)} • saldo recente ${item.saldo >= 0 ? '+' : ''}${item.saldo}.`
+            }
+          </div>
+          <div class="item-metrics">
+            <span class="metric-pill ${item.variacao < 0 ? 'warn' : 'success'}">Tendência: ${item.tendencia}</span>
+            <span class="metric-pill">Alunos no retrato: ${item.totalAlunos}</span>
+            <span class="metric-pill ${tipo === 'prioridade' && item.riscoCount ? 'warn' : ''}">${tipo === 'prioridade' ? 'Em atenção: ' + (item.riscoCount || 0) : 'Positivas: ' + item.positivas}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPlanoAcao(prioridades = [], destaques = []){
+      const el = document.getElementById('planoAcaoPrioritario');
+      if(!el) return;
+      const parecer = ultimoSnapshot.comportamentoHistorico.parecer || {};
+      const apH = resumoAPH();
+      const topPrioridade = prioridades[0] || null;
+      const topDestaque = destaques[0] || null;
+      const recomendacoes = Array.isArray(parecer.recomendacoes) ? parecer.recomendacoes.slice(0, 4) : [];
+
+      const cards = [
+        {
+          titulo: 'Acompanhamento imediato',
+          texto: topPrioridade
+            ? `Iniciar acompanhamento mais próximo da turma ${topPrioridade.turmaNome}, que reúne média ${formatarNumeroBR(topPrioridade.mediaAtual)}, tendência de ${topPrioridade.tendencia} e ${topPrioridade.riscoCount || 0} aluno(s) em atenção ativa.`
+            : 'Não foram detectadas turmas com urgência de intervenção acima do padrão esperado no período.'
+        },
+        {
+          titulo: 'Intervenção pedagógica por turma',
+          texto: prioridades.length > 1
+            ? `Articular coordenação e docentes nas turmas ${prioridades.slice(0,3).map(t => t.turmaNome).join(', ')} para revisão de rotina, combinados e estratégias de reforço positivo.`
+            : 'Manter acompanhamento pedagógico regular, com observação focalizada nas turmas que apresentarem novas oscilações.'
+        },
+        {
+          titulo: 'Boas práticas que podem ser multiplicadas',
+          texto: topDestaque
+            ? `Registrar e compartilhar práticas observadas em ${topDestaque.turmaNome}, que combina média ${formatarNumeroBR(topDestaque.mediaAtual)} com ${topDestaque.tendencia} recente.`
+            : 'Identificar experiências bem-sucedidas nas turmas estáveis e reforçar mecanismos de reconhecimento institucional.'
+        },
+        {
+          titulo: 'Proteção e cuidado',
+          texto: apH.topTipo || apH.topLocal
+            ? `No APH, observar especialmente ${apH.topTipo ? 'o tipo mais recorrente "' + apH.topTipo._id + '"' : 'as ocorrências registradas'}${apH.topLocal ? ' e o local com maior incidência "' + apH.topLocal._id + '"' : ''}, integrando prevenção e monitoramento escolar.`
+            : 'Integrar a leitura comportamental com os registros de cuidado e proteção para identificar fatores de contexto e prevenção.'
+        }
+      ];
+
+      el.innerHTML = cards.map(card => `
+        <div class="focus-card">
+          <h5>${card.titulo}</h5>
+          <p>${card.texto}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderParecerIA(){
+      const el = document.getElementById('parecerIA');
+      if(!el) return;
+
+      const parecer = ultimoSnapshot.comportamentoHistorico.parecer || null;
+      const panorama = buildTurmaPanorama(ultimoSnapshot.comportamentoHistorico.evolucaoTurmas || []);
+      const prioridades = montarPrioridadesIntervencao(panorama, parecer?.alunosEmRisco || []);
+      const destaques = montarTurmasDestaque(panorama);
+
+      if(!parecer || parecer.semDados){
+        el.innerHTML = '<div class="empty-helper">Não há dados suficientes para gerar a leitura estratégica do período selecionado.</div>';
+        renderListaTurmas('turmasPrioritarias', [], 'prioridade');
+        renderListaTurmas('turmasDestaque', [], 'destaque');
+        renderPlanoAcao([], []);
+        return;
+      }
+
+      renderListaTurmas('turmasPrioritarias', prioridades, 'prioridade');
+      renderListaTurmas('turmasDestaque', destaques, 'destaque');
+      renderPlanoAcao(prioridades, destaques);
+
+      const indicadores = parecer.indicadores || {};
+      const apH = resumoAPH();
+      const diagnosticos = [];
+      if(prioridades.length){
+        diagnosticos.push(`As turmas ${prioridades.slice(0,3).map(t => t.turmaNome).join(', ')} concentram hoje o maior potencial de intervenção, considerando média atual, oscilação e alunos em atenção.`);
+      }
+      if(destaques.length){
+        diagnosticos.push(`As turmas ${destaques.slice(0,2).map(t => t.turmaNome).join(' e ')} podem servir como referência de boas práticas por apresentarem avanço e/ou estabilidade favorável.`);
+      }
+      if(apH.topTipo || apH.topLocal){
+        diagnosticos.push(`No campo de proteção, ${apH.topTipo ? 'o registro mais recorrente foi "' + apH.topTipo._id + '"' : 'as ocorrências de APH merecem monitoramento'}${apH.topLocal ? ', com maior incidência em "' + apH.topLocal._id + '"' : ''}.`);
+      }
+
+      const pontosFortes = (parecer.pontosFortes || []).slice(0,4);
+      const pontosAtencao = (parecer.pontosAtencao || []).slice(0,4);
+      const recomendacoes = (parecer.recomendacoes || []).slice(0,4);
+
+      el.innerHTML = `
+        <div class="hero-badges">
+          <span class="badge-soft">Nível geral: <strong>${parecer.resumo?.nivel || '—'}</strong></span>
+          <span class="badge-soft">Média: <strong>${formatarNumeroBR(parecer.resumo?.mediaGeral ?? 0)}</strong></span>
+          <span class="badge-soft">Tendência: <strong>${parecer.resumo?.tendencia || '—'}</strong></span>
+          <span class="badge-soft">Alunos em atenção: <strong>${indicadores.totalAlunosEmRisco ?? (parecer.alunosEmRisco || []).length}</strong></span>
+        </div>
+
+        <div class="strategic-hero">
+          <h3>Leitura executiva do período</h3>
+          <p>${parecer.parecer || 'Não foi possível consolidar o diagnóstico textual do período.'}</p>
+          ${diagnosticos.length ? `<div class="inline-badges">${diagnosticos.map(item => `<span class="badge-soft">${item}</span>`).join('')}</div>` : ''}
+        </div>
+
+        <div class="insight-columns">
+          <div class="insight-card">
+            <h4>Pontos fortes observados</h4>
+            ${pontosFortes.length ? `<ul class="insight-list">${pontosFortes.map(item => `<li>${item}</li>`).join('')}</ul>` : '<div class="empty-helper">Sem destaques positivos adicionais para este recorte.</div>'}
+          </div>
+          <div class="insight-card">
+            <h4>Pontos de atenção</h4>
+            ${pontosAtencao.length ? `<ul class="insight-list">${pontosAtencao.map(item => `<li>${item}</li>`).join('')}</ul>` : '<div class="empty-helper">Não foram sinalizados pontos críticos relevantes no período.</div>'}
+          </div>
+          <div class="insight-card">
+            <h4>Recomendações prioritárias</h4>
+            ${recomendacoes.length ? `<ul class="action-list">${recomendacoes.map(item => `<li>${item}</li>`).join('')}</ul>` : '<div class="empty-helper">Sem recomendações adicionais no momento.</div>'}
+          </div>
+        </div>
+
+        ${(parecer.alunosEmRisco || []).length ? `
+          <div class="risk-panel">
+            <button onclick="toggleAlunosRisco()" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(127,29,29,.95),rgba(239,68,68,.88));color:#fff;border:1px solid rgba(252,165,165,.38);padding:11px 15px;border-radius:14px;cursor:pointer;font-weight:900;box-shadow:0 10px 24px rgba(239,68,68,.16);">
+              🔴 Ver estudantes em atenção (${parecer.alunosEmRisco.length})
+            </button>
+            <div id="boxAlunosRisco" style="display:none;">
+              <div class="risk-grid">
+                ${parecer.alunosEmRisco.map(a => {
+                  const nome = a.alunoNome || 'Aluno';
+                  const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase() || 'A';
+                  const foto = a.fotoUrl || a.foto || a.fotoAluno || a.imagem || '';
+                  return `
+                    <div class="risk-card">
+                      <div class="risk-avatar">
+                        ${foto ? `<img src="${foto}" alt="${nome}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='${iniciais}'">` : iniciais}
+                      </div>
+                      <div style="min-width:0;flex:1;">
+                        <div class="risk-name">${nome}</div>
+                        <div class="risk-sub">${a.turmaNome || 'Turma não informada'}</div>
+                        <div class="item-metrics">
+                          <span class="metric-pill">Nota atual: ${formatarNumeroBR(a.notaAtual ?? a.ultimaNota ?? 0)}</span>
+                          <span class="metric-pill warn">Variação: ${formatarNumeroBR(a.variacao || 0)}</span>
+                        </div>
+                        <button onclick="abrirAluno('${a.aluno || ''}')" style="margin-top:8px;font-size:.75rem;background:rgba(59,130,246,.15);border:1px solid rgba(147,197,253,.3);color:#93c5fd;padding:4px 8px;border-radius:8px;cursor:pointer;font-weight:800;">Ver ficha</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function renderResumoExecutivo(){
+      const parecer = ultimoSnapshot.comportamentoHistorico.parecer || {};
+      const panorama = buildTurmaPanorama(ultimoSnapshot.comportamentoHistorico.evolucaoTurmas || []);
+      const prioridades = montarPrioridadesIntervencao(panorama, parecer?.alunosEmRisco || []);
+      const faixa = topFaixa();
+      const indicadores = parecer.indicadores || {};
+
+      preencherTexto('kpiMediaGeral', parecer?.resumo?.mediaGeral != null ? formatarNumeroBR(parecer.resumo.mediaGeral) : '--');
+      preencherTexto('kpiMediaMeta', parecer?.resumo?.nivel ? `Classificação atual: ${parecer.resumo.nivel}. Variação do período: ${formatarNumeroBR(parecer.resumo.variacao ?? 0)}.` : 'Leitura consolidada do período selecionado.');
+      preencherTexto('kpiTendencia', (parecer?.resumo?.tendencia || '--').toUpperCase());
+      preencherTexto('kpiTendenciaMeta', prioridades[0] ? `A principal atenção institucional está na turma ${prioridades[0].turmaNome}.` : 'Direção mais recente da evolução comportamental.');
+      preencherTexto('kpiMonitorados', String(indicadores.totalAlunosMonitorados ?? ultimaPosicao(ultimoSnapshot.comportamentoHistorico.evolucaoGeral || [])?.totalAlunos ?? '--'));
+      preencherTexto('kpiMonitoradosMeta', `${indicadores.totalEvolucoes ?? 0} com avanço relevante • ${indicadores.totalEstaveis ?? 0} estáveis no período.`);
+      preencherTexto('kpiRisco', String(indicadores.totalAlunosEmRisco ?? (parecer.alunosEmRisco || []).length ?? '--'));
+      preencherTexto('kpiRiscoMeta', `${indicadores.totalQuedas ?? 0} estudante(s) apresentaram queda relevante ao longo do período.`);
+      preencherTexto('kpiTurmas', String(prioridades.length));
+      preencherTexto('kpiTurmasMeta', prioridades.length ? prioridades.slice(0,2).map(t => t.turmaNome).join(' • ') : 'Sem turmas críticas acima do limiar definido.');
+      preencherTexto('kpiFaixa', faixa?.faixa || '--');
+      preencherTexto('kpiFaixaMeta', faixa ? `${faixa.total} estudante(s) no retrato mais recente • média ${formatarNumeroBR(faixa.mediaNota || 0)}.` : 'Classificação dominante no retrato mais recente.');
+    }
+
+    function renderPainelEstrategico(){
+      renderResumoExecutivo();
+      renderParecerIA();
+    }
+
     async function carregarDadosEvolucaoComportamental(){
   const p = montarQueryComportamentoHistorico();
   const qs = p.toString() ? `?${p.toString()}` : '';
   const join = qs ? '&' : '?';
 
-  // Bloco 1: evolução geral (isolado — falha aqui não afeta os rankings)
   try{
     const evolucao = await fetchJsonSeguro('/api/estatisticas-comportamento/evolucao-geral' + qs);
     ultimoSnapshot.comportamentoHistorico.evolucaoGeral = Array.isArray(evolucao?.dados)
       ? evolucao.dados.map(item => ({
           periodo: item.periodo || '—',
-          mediaNota: Number(item.mediaNota || 0)
+          mediaNota: Number(item.mediaNota || 0),
+          totalAlunos: Number(item.totalAlunos || 0),
+          positivas: Number(item.positivas || 0),
+          negativas: Number(item.negativas || 0),
+          saldo: Number(item.saldo || 0)
         }))
       : [];
-    drawLine(
-      'chartEvolucaoComportamental',
-      ultimoSnapshot.comportamentoHistorico.evolucaoGeral,
-      'periodo',
-      'mediaNota'
-    );
+    drawLine('chartEvolucaoComportamental', ultimoSnapshot.comportamentoHistorico.evolucaoGeral, 'periodo', 'mediaNota');
   }catch(errEvolucao){
     console.error('[estatisticas-comportamento] Falha na evolução geral:', errEvolucao);
     ultimoSnapshot.comportamentoHistorico.evolucaoGeral = [];
     drawLine('chartEvolucaoComportamental', [], 'periodo', 'mediaNota');
   }
 
-  // Blocos 2+3: maiores avanços e quedas em uma única chamada
+  try{
+    const evolucaoTurmas = await fetchJsonSeguro('/api/estatisticas-comportamento/evolucao-turmas' + qs);
+    ultimoSnapshot.comportamentoHistorico.evolucaoTurmas = Array.isArray(evolucaoTurmas?.dados)
+      ? evolucaoTurmas.dados.map(item => ({
+          turma: item.turma || null,
+          turmaNome: item.turmaNome || 'Sem turma',
+          periodo: item.periodo || '—',
+          mediaNota: Number(item.mediaNota || 0),
+          totalAlunos: Number(item.totalAlunos || 0),
+          positivas: Number(item.positivas || 0),
+          negativas: Number(item.negativas || 0),
+          saldo: Number(item.saldo || 0)
+        }))
+      : [];
+  }catch(errTurmas){
+    console.error('[estatisticas-comportamento] Falha na evolução por turmas:', errTurmas);
+    ultimoSnapshot.comportamentoHistorico.evolucaoTurmas = [];
+  }
+
+  try{
+    const distribuicao = await fetchJsonSeguro('/api/estatisticas-comportamento/distribuicao-faixas' + qs);
+    ultimoSnapshot.comportamentoHistorico.distribuicaoFaixas = Array.isArray(distribuicao?.dados)
+      ? distribuicao.dados.map(item => ({
+          faixa: item.faixa || 'Não classificado',
+          total: Number(item.total || 0),
+          mediaNota: Number(item.mediaNota || 0)
+        }))
+      : [];
+  }catch(errDistribuicao){
+    console.error('[estatisticas-comportamento] Falha na distribuição por faixas:', errDistribuicao);
+    ultimoSnapshot.comportamentoHistorico.distribuicaoFaixas = [];
+  }
+
   try{
     const ranking = await fetchJsonSeguro('/api/estatisticas-comportamento/ranking-evolucao-resumo' + qs + join + 'limite=10');
 
     ultimoSnapshot.comportamentoHistorico.rankingMelhores = Array.isArray(ranking?.melhores)
-      ? ranking.melhores
-          .map(item => ({
-            alunoNome: item.alunoNome || 'Aluno',
-            variacao: Number(item.variacao || 0)
-          }))
-          .filter(item => item.variacao > 0)
+      ? ranking.melhores.map(item => ({
+          alunoNome: item.alunoNome || 'Aluno',
+          variacao: Number(item.variacao || 0)
+        })).filter(item => item.variacao > 0)
       : [];
-    drawBars(
-      'chartRankingMelhores',
-      ultimoSnapshot.comportamentoHistorico.rankingMelhores,
-      'alunoNome',
-      'variacao',
-      10
-    );
+    drawBars('chartRankingMelhores', ultimoSnapshot.comportamentoHistorico.rankingMelhores, 'alunoNome', 'variacao', 10);
 
     ultimoSnapshot.comportamentoHistorico.rankingQuedas = Array.isArray(ranking?.piores)
-      ? ranking.piores
-          .map(item => ({
-            alunoNome: item.alunoNome || 'Aluno',
-            variacao: Math.abs(Number(item.variacao || 0))
-          }))
-          .filter(item => item.variacao > 0)
+      ? ranking.piores.map(item => ({
+          alunoNome: item.alunoNome || 'Aluno',
+          variacao: Math.abs(Number(item.variacao || 0))
+        })).filter(item => item.variacao > 0)
       : [];
-    drawBars(
-      'chartRankingQuedas',
-      ultimoSnapshot.comportamentoHistorico.rankingQuedas,
-      'alunoNome',
-      'variacao',
-      10
-    );
+    drawBars('chartRankingQuedas', ultimoSnapshot.comportamentoHistorico.rankingQuedas, 'alunoNome', 'variacao', 10);
   }catch(errRanking){
     console.error('[estatisticas-comportamento] Falha no ranking de evolução:', errRanking);
     ultimoSnapshot.comportamentoHistorico.rankingMelhores = [];
@@ -2235,250 +2965,22 @@ function roundRectPath(ctx, x, y, w, h, r){
     drawBars('chartRankingQuedas', [], 'alunoNome', 'variacao', 10);
   }
 
-  // Análise inteligente isolada: falha aqui não derruba os gráficos
   try{
     const parecer = await fetchJsonSeguro('/api/estatisticas-comportamento/parecer' + qs);
-    const el = document.getElementById('parecerIA');
-    if(!el) return;
-
-    if(parecer?.semDados){
-      el.innerHTML = `
-        <div style="
-          padding:14px;
-          border-radius:16px;
-          background:rgba(15,23,42,.72);
-          border:1px solid rgba(148,163,184,.22);
-          color:#dbe8f7;
-        ">
-          Não há dados suficientes para gerar análise no período selecionado.
-        </div>
-      `;
-      return;
-    }
-
-    el.innerHTML = `
-      <div style="margin-bottom:10px">
-        <strong>Nível:</strong> ${parecer.resumo?.nivel || '—'} |
-        <strong>Média:</strong> ${parecer.resumo?.mediaGeral ?? 0} |
-        <strong>Tendência:</strong> ${parecer.resumo?.tendencia || '—'}
-      </div>
-
-      <div style="margin-bottom:12px">
-        ${parecer.parecer || ''}
-      </div>
-
-      ${parecer.pontosFortes?.length ? `
-        <div style="margin-bottom:12px">
-          <strong>Pontos Fortes</strong>
-          <ul>
-            ${parecer.pontosFortes.map(p => `<li>${p}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-
-      ${parecer.pontosAtencao?.length ? `
-        <div style="margin-bottom:12px">
-          <strong>Pontos de Atenção</strong>
-          <ul>
-            ${parecer.pontosAtencao.map(p => `<li>${p}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-
-      ${parecer.recomendacoes?.length ? `
-        <div style="margin-bottom:12px">
-          <strong>Recomendações</strong>
-          <ul>
-            ${parecer.recomendacoes.map(p => `<li>${p}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-
-      ${(parecer.alunosEmRisco || []).length ? `
-        <div style="margin-top:18px">
-          <button onclick="toggleAlunosRisco()" style="
-            display:inline-flex;
-            align-items:center;
-            gap:8px;
-            background:linear-gradient(135deg,rgba(127,29,29,.95),rgba(239,68,68,.88));
-            color:#fff;
-            border:1px solid rgba(252,165,165,.38);
-            padding:11px 15px;
-            border-radius:14px;
-            cursor:pointer;
-            font-weight:900;
-            box-shadow:0 10px 24px rgba(239,68,68,.16);
-          ">
-            🔴 Ver alunos em atenção (${parecer.alunosEmRisco.length})
-          </button>
-
-          <div id="boxAlunosRisco" style="display:none;margin-top:14px">
-            <div style="
-              display:grid;
-              grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-              gap:12px;
-            ">
-              ${parecer.alunosEmRisco.map(a => {
-                const nome = a.alunoNome || 'Aluno';
-                const variacao = Number(a.variacao || 0);
-                const riscoAlto = variacao <= -1;
-                const iniciais = nome
-                  .split(' ')
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map(p => p[0])
-                  .join('')
-                  .toUpperCase();
-
-                const foto = a.fotoUrl || a.foto || a.fotoAluno || a.imagem || '';
-
-                return `
-                  <div style="
-                    display:flex;
-                    gap:12px;
-                    align-items:center;
-                    padding:12px;
-                    border-radius:18px;
-                    background:${riscoAlto
-                      ? 'linear-gradient(135deg,rgba(127,29,29,.6),rgba(239,68,68,.35))'
-                      : 'linear-gradient(135deg,rgba(127,29,29,.22),rgba(15,23,42,.72))'
-                    };
-                    border:1px solid rgba(252,165,165,.22);
-                    box-shadow:${riscoAlto
-                      ? '0 0 20px rgba(239,68,68,.25)'
-                      : 'inset 0 0 0 1px rgba(255,255,255,.03),0 10px 22px rgba(0,0,0,.20)'
-                    };
-                  ">
-                    <div style="
-                      width:50px;
-                      height:50px;
-                      border-radius:16px;
-                      overflow:hidden;
-                      flex:0 0 auto;
-                      display:grid;
-                      place-items:center;
-                      background:linear-gradient(135deg,#7f1d1d,#ef4444);
-                      color:#fff;
-                      font-weight:900;
-                      border:1px solid rgba(255,255,255,.18);
-                      box-shadow:0 0 18px rgba(239,68,68,.18);
-                    ">
-                      ${foto ? `
-                        <img
-                          src="${foto}"
-                          alt="${nome}"
-                          loading="lazy"
-                          style="width:100%;height:100%;object-fit:cover;display:block"
-                          onerror="this.style.display='none';this.parentElement.innerHTML='${iniciais || 'A'}'"
-                        >
-                      ` : `
-                        ${iniciais || 'A'}
-                      `}
-                    </div>
-
-                    <div style="min-width:0;flex:1">
-                      <div style="
-                        font-weight:900;
-                        color:#fff;
-                        white-space:nowrap;
-                        overflow:hidden;
-                        text-overflow:ellipsis;
-                      ">
-                        ${nome}
-                      </div>
-
-                      ${riscoAlto ? `
-                        <div style="
-                          margin-top:2px;
-                          font-size:.7rem;
-                          color:#fecaca;
-                          font-weight:900;
-                        ">
-                          ⚠️ Risco alto
-                        </div>
-                      ` : ''}
-
-                      <div style="
-                        margin-top:2px;
-                        font-size:.82rem;
-                        color:#cbd5e1;
-                      ">
-                        ${a.turmaNome || 'Turma não informada'}
-                      </div>
-
-                      <div style="
-                        margin-top:8px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:space-between;
-                        gap:8px;
-                        flex-wrap:wrap;
-                      ">
-                        <span style="
-                          font-size:.82rem;
-                          color:#dbeafe;
-                          background:rgba(59,130,246,.12);
-                          border:1px solid rgba(147,197,253,.18);
-                          padding:4px 8px;
-                          border-radius:999px;
-                        ">
-                          Nota: ${a.primeiraNota} → ${a.ultimaNota}
-                        </span>
-
-                        <span style="
-                          font-size:.82rem;
-                          font-weight:900;
-                          color:#fecaca;
-                          background:rgba(239,68,68,.16);
-                          border:1px solid rgba(252,165,165,.26);
-                          padding:4px 8px;
-                          border-radius:999px;
-                        ">
-                          ${variacao}
-                        </span>
-                      </div>
-
-                      <button onclick="abrirAluno('${a.aluno || ''}')" style="
-                        margin-top:8px;
-                        font-size:.75rem;
-                        background:rgba(59,130,246,.15);
-                        border:1px solid rgba(147,197,253,.3);
-                        color:#93c5fd;
-                        padding:4px 8px;
-                        border-radius:8px;
-                        cursor:pointer;
-                        font-weight:800;
-                      ">
-                        Ver ficha
-                      </button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      ` : ''}
-    `;
-
+    ultimoSnapshot.comportamentoHistorico.parecer = parecer || null;
   }catch(err){
     console.error('[estatisticas-comportamento] Falha ao carregar análise:', err);
-    const el = document.getElementById('parecerIA');
-    if(el){
-      el.innerHTML = `
-        <div style="
-          padding:14px;
-          border-radius:16px;
-          background:rgba(127,29,29,.24);
-          border:1px solid rgba(252,165,165,.24);
-          color:#fecaca;
-        ">
-          Não foi possível carregar a análise inteligente do comportamento.
-        </div>
-      `;
-    }
+    ultimoSnapshot.comportamentoHistorico.parecer = {
+      ok:false,
+      pontosFortes:[],
+      pontosAtencao:[],
+      recomendacoes:[],
+      alunosEmRisco:[],
+      semDados:true
+    };
   }
 }
+
     async function carregarDadosNotificacoes(){
       const p = montarQueryNotificacoes();
       const qs = p.toString() ? `?${p.toString()}` : '';
@@ -2624,6 +3126,7 @@ function roundRectPath(ctx, x, y, w, h, r){
         await carregarDadosEvolucaoComportamental();
         await carregarDadosNotificacoes();
         await carregarDadosAPH();
+        renderPainelEstrategico();
       } finally {
         setLoading(false);
       }
@@ -2818,6 +3321,7 @@ if (rodapeTexto) {
       drawBars('aphTurma', ultimoSnapshot.aph.porTurma, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porTurma || []).map(x => x.total || 0)), 5));
       drawBars('aphTurno', ultimoSnapshot.aph.porTurno, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porTurno || []).map(x => x.total || 0)), 5));
       drawBars('aphResp', ultimoSnapshot.aph.porResponsavel, '_id', 'total', Math.max(5, ...((ultimoSnapshot.aph.porResponsavel || []).map(x => x.total || 0)), 5));
+      renderPainelEstrategico();
     }
 
     let resizeTimer = null;
