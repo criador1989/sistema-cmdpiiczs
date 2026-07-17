@@ -307,9 +307,17 @@ function sincronizarPortalETipo(doc) {
     doc.portal = 'aluno';
     doc.turmas = [];
     doc.tokenAcesso = undefined;
-  } else {
-    doc.portal = 'institucional';
+    return;
   }
+
+  if (tipo === 'responsavel') {
+    doc.portal = 'responsavel';
+    doc.turmas = [];
+    doc.tokenAcesso = undefined;
+    return;
+  }
+
+  doc.portal = 'institucional';
 }
 
 function sincronizarPortalETipoNoUpdate(update) {
@@ -324,9 +332,17 @@ function sincronizarPortalETipoNoUpdate(update) {
     alvo.portal = 'aluno';
     alvo.turmas = [];
     alvo.tokenAcesso = undefined;
-  } else {
-    alvo.portal = 'institucional';
+    return;
   }
+
+  if (tipo === 'responsavel') {
+    alvo.portal = 'responsavel';
+    alvo.turmas = [];
+    alvo.tokenAcesso = undefined;
+    return;
+  }
+
+  alvo.portal = 'institucional';
 }
 
 /* =========================
