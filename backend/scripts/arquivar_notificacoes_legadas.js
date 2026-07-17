@@ -38,7 +38,6 @@ async function main() {
   const slug = getArg('slug');
   const instituicaoId = getArg('instituicao');
   const corte = getArg('corte');
-  const somenteAtrasadas = toBool(getArg('somenteAtrasadas'));
   const executar = toBool(getArg('executar'));
 
   if (!slug && !instituicaoId) {
@@ -63,16 +62,11 @@ async function main() {
     instituicao: instituicao._id,
     data: { $lte: dataCorte },
     arquivada: { $ne: true },
-    entregue: true
+    ativo: { $ne: false }
   };
 
-  if (somenteAtrasadas) {
-    filtro.devolvidoPeloAluno = { $ne: true };
-    filtro.prazoDevolucao = { $ne: null, $lt: new Date() };
-  }
-
   const lista = await Notificacao.find(filtro)
-    .select('_id numeroSequencial data prazoDevolucao status arquivada entregue devolvidoPeloAluno')
+    .select('_id numeroSequencial data status arquivada natureza tipo tipoMedida')
     .sort({ data: 1 })
     .lean();
 
@@ -80,7 +74,6 @@ async function main() {
   console.log('ARQUIVAMENTO DE NOTIFICAÇÕES LEGADAS');
   console.log('Instituição:', instituicao.nome || instituicao.slug || String(instituicao._id));
   console.log('Data de corte:', dataCorte.toISOString());
-  console.log('Somente atrasadas:', somenteAtrasadas ? 'SIM' : 'NÃO');
   console.log('Quantidade encontrada:', lista.length);
   console.log('Execução real:', executar ? 'SIM' : 'NÃO (simulação)');
   console.log('====================================================');
@@ -89,16 +82,14 @@ async function main() {
     console.log(
       `- ${n.numeroSequencial || String(n._id)} | data: ${
         n.data ? new Date(n.data).toISOString().slice(0, 10) : 'sem data'
-      } | prazo: ${
-        n.prazoDevolucao ? new Date(n.prazoDevolucao).toISOString().slice(0, 10) : 'sem prazo'
-      } | entregue: ${!!n.entregue} | devolvida: ${!!n.devolvidoPeloAluno} | arquivada: ${!!n.arquivada}`
+      } | status: ${n.status || 'sem status'} | tipo: ${n.tipoMedida || n.tipo || n.natureza || 'não informado'}`
     );
   }
 
   if (!executar) {
     console.log('\nSimulação concluída. Nada foi alterado.');
     console.log(
-      `Para executar:\nnode scripts/arquivar_notificacoes_legadas.js --slug=${instituicao.slug || slug} --corte=${corte}${somenteAtrasadas ? ' --somenteAtrasadas=true' : ''} --executar=true`
+      `Para executar:\nnode scripts/arquivar_notificacoes_legadas.js --slug=${instituicao.slug || slug} --corte=${corte} --executar=true`
     );
     await mongoose.disconnect();
     return;
@@ -109,7 +100,7 @@ async function main() {
     {
       $set: {
         arquivada: true,
-        alertaAtivo: false
+        status: 'arquivado'
       }
     }
   );

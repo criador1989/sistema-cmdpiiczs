@@ -109,23 +109,6 @@
       setText('mNotif', '—');
     }
 
-    try {
-      // Usa a própria listagem para manter a mesma lógica visual da seção do painel.
-      // Assim evitamos divergência com contador bruto caso existam registros sem aluno populável.
-      const pend = await getJSON('/api/notificacoes/pendencias/devolucao?limit=200', { timeoutMs: 10000 });
-      const total = Number(
-        typeof pend?.total === 'number'
-          ? pend.total
-          : Array.isArray(pend?.itens)
-            ? pend.itens.length
-            : 0
-      );
-
-      setText('mPendDevol', total.toLocaleString('pt-BR'));
-    } catch (e) {
-      console.warn('Falha ao obter pendencias/devolucao:', e.message);
-      setText('mPendDevol', '—');
-    }
   }
 
 
