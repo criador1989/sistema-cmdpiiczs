@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#06172f" />
   <title>Axoriin Associações</title>
   <link rel="stylesheet" href="/associacao/associacao.css?v=20260712-v33" />
+  <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 </head>
 <body>
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -316,5 +317,7 @@
   <template id="userModalTemplate"><div class="modal-overlay" data-modal="userModal"><form id="userForm" class="modal-card compact"><div class="modal-head"><div><small>USUÁRIO</small><h3>Conceder acesso</h3></div><button type="button" data-close>×</button></div><div class="identity-note">Se o e-mail já existir no Axoriin, o sistema apenas criará o vínculo com a associação e preservará a senha atual.</div><div class="form-grid"><label class="full"><span>E-mail</span><input name="email" type="email" required /></label><label class="full"><span>Nome (obrigatório apenas para novo usuário)</span><input name="nome" /></label><label class="full"><span>Perfil na associação</span><select name="perfil"><option value="presidente">Presidente</option><option value="vice_presidente">Vice-presidente</option><option value="tesoureiro">Tesoureiro</option><option value="secretario">Secretário</option><option value="conselho_fiscal">Conselho Fiscal</option><option value="operador">Operador</option><option value="consulta">Consulta</option></select></label><label class="full"><span>Senha temporária (somente para novo usuário)</span><input name="senha" /></label></div><div class="modal-actions"><button type="button" class="button secondary" data-close>Cancelar</button><button class="button primary">Conceder acesso</button></div></form></div></template>
 
   <script src="/associacao/associacao.js?v=20260712-v33" defer></script>
+  <script src="/axoriin-ajuda/conteudos-ajuda.js"></script>
+  <script src="/axoriin-ajuda/ajuda-contextual.js"></script>
 </body>
 </html>
