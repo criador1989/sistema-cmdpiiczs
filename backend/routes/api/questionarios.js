@@ -290,6 +290,27 @@ function limparQuestaoParaAluno(q) {
   };
 }
 
+function limparTentativaParaAluno(tentativa) {
+  const objeto = tentativa && typeof tentativa.toObject === 'function'
+    ? tentativa.toObject()
+    : { ...(tentativa || {}) };
+
+  if (objeto.status === 'finalizado') return objeto;
+
+  return {
+    ...objeto,
+    questoes: (objeto.questoes || []).map((questao) => {
+      const {
+        gabarito,
+        explicacaoSnapshot,
+        correta,
+        ...questaoSegura
+      } = questao || {};
+      return questaoSegura;
+    })
+  };
+}
+
 function snapshotQuestao(q, ordem) {
   return {
     questaoId: q._id,
@@ -682,6 +703,10 @@ router.post('/:id/finalizar', async (req, res) => {
       return respostaErro(res, 404, 'Questionário não encontrado.');
     }
 
+    if (tentativa.origemExperiencia === 'arena_diaria') {
+      return respostaErro(res, 409, 'As missões da Arena devem ser respondidas pela rota protegida da Arena.');
+    }
+
     if (tentativa.status === 'finalizado') {
       return respostaErro(res, 400, 'Este questionário já foi finalizado.');
     }
@@ -830,7 +855,7 @@ router.get('/:id', async (req, res) => {
 
     return res.json({
       ok: true,
-      tentativa
+      tentativa: limparTentativaParaAluno(tentativa)
     });
   } catch (error) {
     console.error('GET /api/questionarios/:id:', error);

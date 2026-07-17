@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Colégio Virtual Axoriin | Arena do Conhecimento</title>
+  <link rel="stylesheet" href="./jogo/arena.css?v=20260717-v5-47-0-questoes-reais" />
+</head>
+<body>
+  <noscript>Ative o JavaScript para acessar a Arena do Conhecimento.</noscript>
+
+  <div class="arena-shell">
+    <header class="arena-topbar">
+      <div class="arena-brand">
+        <div class="arena-mark">A</div>
+        <div>
+          <strong>Colégio Virtual Axoriin</strong>
+          <span>Arena do Conhecimento • 6º ano do Ensino Fundamental</span>
+        </div>
+      </div>
+
+      <nav class="arena-actions" aria-label="Ações da Arena">
+        <button id="btn-fullscreen" type="button">Tela cheia</button>
+        <a href="./painel-aluno.html" id="btn-voltar-portal">Voltar ao Portal</a>
+      </nav>
+    </header>
+
+    <main class="arena-main arena-main--game-only">
+      <section class="arena-stage" aria-label="Jogo Arena do Conhecimento">
+        <div id="game-container"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.AXORIIN_ARENA = {
+      apiBase: '/api',
+      portalUrl: './painel-aluno.html',
+      debug: true,
+      dailyLimit: 10
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script type="module" src="./jogo/main-v5465.js?v=20260717-v5-46-5-menu-sem-avatar-duplicado"></script>
+</body>
+</html>

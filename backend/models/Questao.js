@@ -57,6 +57,45 @@ const QuestaoSchema = new mongoose.Schema(
       index: true
     },
 
+    anoEscolar: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 12,
+      index: true
+    },
+
+    bimestres: {
+      type: [Number],
+      default: [1, 2, 3, 4],
+      validate: {
+        validator(arr) {
+          return Array.isArray(arr) && arr.every((n) => [1, 2, 3, 4].includes(Number(n)));
+        },
+        message: 'Os bimestres devem estar entre 1 e 4.'
+      }
+    },
+
+    localId: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true
+    },
+
+    fonteCurricular: {
+      type: String,
+      default: '',
+      trim: true
+    },
+
+    tempoEstimadoSegundos: {
+      type: Number,
+      default: 75,
+      min: 10,
+      max: 900
+    },
+
     competencia: {
       type: String,
       default: '',
@@ -220,6 +259,8 @@ const QuestaoSchema = new mongoose.Schema(
 
 QuestaoSchema.index({ escopo: 1, instituicao: 1, ativa: 1, publicada: 1 });
 QuestaoSchema.index({ area: 1, disciplina: 1, dificuldade: 1 });
+QuestaoSchema.index({ anoEscolar: 1, localId: 1, ativa: 1, publicada: 1 });
+QuestaoSchema.index({ anoEscolar: 1, disciplina: 1, bimestres: 1 });
 QuestaoSchema.index({ competencia: 1, habilidade: 1 });
 QuestaoSchema.index({ tema: 1, subtema: 1 });
 QuestaoSchema.index({ origem: 1, estilo: 1 });
