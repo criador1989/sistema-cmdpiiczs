@@ -3,303 +3,529 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Transferência de Turma</title>
-  <meta name="theme-color" content="#0A1322" />
+  <title>Transferência de Alunos • Sistema Escolar</title>
+  <meta name="theme-color" content="#06101e" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
   <style>
     :root{
-      --navy:#0b0f19;
-      --panel:#12151d;
-      --line:#262a31;
-
-      --txt:#eaecef;
-      --muted:#9aa3ad;
-
-      --accent1:#1d4ed8;
-      --accent2:#38bdf8;
-
-      --rubi1:#8B0000;
-      --rubi2:#B22222;
-
-      --radius:18px;
+      --bg:#020814;
+      --bg-2:#06101e;
+      --panel:rgba(5,14,27,.90);
+      --panel-2:rgba(8,19,35,.88);
+      --line:rgba(105,179,255,.22);
+      --line-strong:rgba(76,196,255,.58);
+      --text:#f3f8ff;
+      --soft:#b9c8da;
+      --muted:#7f96b1;
+      --cyan:#31c7ff;
+      --cyan-2:#1888ff;
+      --green:#2bd89f;
+      --green-2:#168b66;
+      --purple:#9d72ff;
+      --amber:#f6b94a;
+      --red:#ff6170;
+      --radius:20px;
+      --shadow:0 22px 55px rgba(0,0,0,.42);
     }
 
-    *{ box-sizing:border-box; }
-
-    html,body{
-      height:100%;
-    }
-
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      color: var(--txt);
+    *{box-sizing:border-box}
+    html{min-height:100%;background:var(--bg)}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      color:var(--text);
       background:
-        url("img/bg-painel-smart.png") center/cover fixed no-repeat,
-        radial-gradient(circle at top, #111827 0, #020617 55%, #020617 100%);
-      color-scheme: dark;
-      -webkit-font-smoothing: antialiased;
+        linear-gradient(180deg,rgba(1,7,15,.78),rgba(2,8,18,.92)),
+        url("img/bg-painel-smart.png") center/cover fixed no-repeat;
+      color-scheme:dark;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    button,input,select{font:inherit}
+    button{color:inherit}
+
+    .app-shell{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:224px minmax(0,1fr);
+    }
+
+    .side-nav{
+      position:sticky;
+      top:0;
+      height:100vh;
+      padding:22px 14px;
+      background:rgba(2,9,18,.92);
+      border-right:1px solid rgba(119,178,239,.15);
+      backdrop-filter:blur(18px);
+      display:flex;
+      flex-direction:column;
+      gap:22px;
+      z-index:30;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:0 8px 16px;
+      border-bottom:1px solid rgba(119,178,239,.12);
+    }
+
+    .brand-mark{
+      width:48px;
+      height:48px;
+      display:grid;
+      place-items:center;
+      border-radius:15px;
+      background:linear-gradient(145deg,rgba(24,136,255,.34),rgba(49,199,255,.08));
+      border:1px solid rgba(49,199,255,.48);
+      box-shadow:0 0 24px rgba(49,199,255,.12),inset 0 0 18px rgba(49,199,255,.08);
+      font-size:1.45rem;
+    }
+
+    .brand strong{display:block;font-size:1rem}
+    .brand small{display:block;margin-top:3px;color:var(--muted)}
+
+    .nav-links{display:grid;gap:7px}
+    .nav-links a{
+      display:flex;
+      align-items:center;
+      gap:11px;
+      padding:11px 12px;
+      border-radius:13px;
+      color:var(--soft);
+      text-decoration:none;
+      border:1px solid transparent;
+      transition:.18s ease;
+    }
+    .nav-links a:hover{background:rgba(255,255,255,.035);color:#fff}
+    .nav-links a.active{
+      color:#eaf8ff;
+      background:linear-gradient(90deg,rgba(24,136,255,.23),rgba(49,199,255,.08));
+      border-color:rgba(49,199,255,.48);
+      box-shadow:0 0 22px rgba(49,199,255,.08);
+    }
+
+    .side-footer{margin-top:auto;display:grid;gap:8px}
+    .side-footer a{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:11px 12px;
+      border-radius:13px;
+      text-decoration:none;
+      color:var(--soft);
+      border:1px solid rgba(119,178,239,.14);
+      background:rgba(255,255,255,.025);
+    }
+
+    .main{
+      min-width:0;
+      padding:22px clamp(16px,2vw,30px) 34px;
+    }
+
+    .page-wrap{max-width:1500px;margin:0 auto}
+
+    .topbar{
       display:flex;
       align-items:flex-start;
-      justify-content:center;
-      padding:32px 16px;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom:18px;
     }
+    .topbar h1{margin:0;font-size:clamp(1.7rem,3vw,2.35rem);letter-spacing:-.025em}
+    .topbar p{margin:7px 0 0;color:var(--soft);max-width:760px;line-height:1.5}
 
-    .container {
-      width:100%;
-      max-width: 900px;
-      margin:0 auto;
-      background: radial-gradient(circle at top left, rgba(255,255,255,0.12), rgba(15,18,25,0.98));
-      border-radius: var(--radius);
-      border:1px solid rgba(255,255,255,0.15);
-      box-shadow:
-        0 18px 40px rgba(0,0,0,0.85),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-      padding: 26px 22px 26px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      animation: fadeInUp 0.7s ease-out both;
-    }
-
-    h2 {
-      text-align: center;
-      color: #ffffff;
-      margin: 0 0 22px;
-      font-size: 1.5rem;
-      letter-spacing: .02em;
-      text-shadow: 0 3px 10px rgba(0,0,0,.8);
-    }
-
-    h2::after{
-      content:'';
-      display:block;
-      width:72px;
-      height:3px;
-      margin:10px auto 0;
-      border-radius:999px;
-      background:linear-gradient(90deg, var(--rubi1), var(--rubi2));
-      box-shadow:0 0 12px rgba(248,113,113,.7);
-    }
-
-    label {
-      display: block;
-      margin-top: 18px;
-      font-weight: 600;
-      color: var(--txt);
-      font-size: .95rem;
-    }
-
-    select,
-    input[type=text] {
-      width: 100%;
-      padding: 11px 12px;
-      margin-top: 8px;
-      border-radius: 10px;
-      border: 1px solid rgba(148,163,184,0.55);
-      background: rgba(15,23,42,0.95);
-      color: var(--txt);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-    }
-
-    select:focus,
-    input[type=text]:focus {
-      border-color: var(--accent2);
-      box-shadow: 0 0 0 3px rgba(56,189,248,0.35);
-      background: rgba(15,23,42,1);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 22px;
-      border-radius: 14px;
-      overflow:hidden;
-      border:1px solid rgba(15,23,42,0.9);
-      background:rgba(15,23,42,0.95);
-    }
-
-    th, td {
-      padding: 10px 12px;
-      text-align: left;
-      font-size: 0.93rem;
-      border-bottom:1px solid rgba(30,41,59,0.9);
-    }
-
-    th {
-      background: linear-gradient(90deg, var(--rubi2), var(--rubi1));
-      color: #ffffff;
-      font-weight: 600;
-      border-bottom:1px solid rgba(15,15,15,0.8);
-    }
-
-    tr:nth-child(even) td {
-      background-color: rgba(15,23,42,0.96);
-    }
-
-    tr:nth-child(odd) td {
-      background-color: rgba(15,23,42,0.88);
-    }
-
-    tr:hover td {
-      background-color: rgba(30,64,175,0.45);
-    }
-
-    td:first-child{
-      width:70px;
-      text-align:center;
-    }
-
-    td input[type="checkbox"]{
-      width:18px;
-      height:18px;
-      accent-color: var(--accent2);
+    .ghost-btn,.primary-btn,.secondary-btn,.danger-btn{
+      min-height:44px;
+      padding:0 17px;
+      border-radius:13px;
+      border:1px solid rgba(126,183,242,.22);
+      background:rgba(6,16,30,.76);
       cursor:pointer;
-    }
-
-    .actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top: 26px;
-      justify-content:flex-end;
-    }
-
-    button {
-      padding: 11px 22px;
-      font-size: 0.95rem;
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      font-weight:750;
       display:inline-flex;
       align-items:center;
-      gap:6px;
-      font-weight:600;
-      letter-spacing:.01em;
+      justify-content:center;
+      gap:8px;
+      transition:.18s ease;
+    }
+    .ghost-btn:hover,.secondary-btn:hover{border-color:rgba(49,199,255,.48);background:rgba(49,199,255,.08)}
+    .primary-btn{
+      border:none;
+      background:linear-gradient(100deg,#2459ff,#18b9f2);
+      box-shadow:0 14px 32px rgba(24,136,255,.25);
+    }
+    .primary-btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.05)}
+    .primary-btn:disabled,.secondary-btn:disabled{opacity:.46;cursor:not-allowed;box-shadow:none}
+    .secondary-btn{background:rgba(7,18,34,.86)}
+
+    .panel{
+      background:linear-gradient(180deg,rgba(7,17,32,.94),rgba(3,11,23,.91));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.025);
+      backdrop-filter:blur(15px);
     }
 
-    #transferirBtn {
-      background: linear-gradient(180deg, #22c55e, #15803d);
-      color: white;
-      box-shadow:0 10px 24px rgba(22,163,74,0.70);
+    .mode-panel{padding:7px;display:grid;grid-template-columns:auto 1fr 1fr;gap:7px;align-items:center;margin-bottom:12px}
+    .mode-label{padding:0 14px;color:#dce8f6;font-weight:800;white-space:nowrap}
+    .mode-btn{
+      min-height:49px;
+      border:1px solid transparent;
+      border-radius:13px;
+      background:transparent;
+      color:var(--soft);
+      cursor:pointer;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:9px;
+      transition:.2s ease;
+    }
+    .mode-btn.active{
+      color:#fff;
+      border-color:rgba(49,199,255,.66);
+      background:linear-gradient(180deg,rgba(24,136,255,.26),rgba(49,199,255,.10));
+      box-shadow:inset 0 0 22px rgba(49,199,255,.09),0 0 18px rgba(49,199,255,.08);
     }
 
-    #transferirBtn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-      box-shadow:0 14px 32px rgba(34,197,94,0.85);
+    .workspace-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+    .work-column{min-width:0;display:grid;gap:13px}
+
+    .selectors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .selector-card{
+      padding:17px;
+      display:grid;
+      grid-template-columns:66px minmax(0,1fr);
+      gap:15px;
+      align-items:center;
+      min-height:150px;
+    }
+    .selector-card.origin{border-color:rgba(49,199,255,.42)}
+    .selector-card.destination{border-color:rgba(43,216,159,.34)}
+    .selector-icon{
+      width:62px;height:62px;border-radius:20px;display:grid;place-items:center;font-size:1.65rem;
+      border:1px solid rgba(49,199,255,.3);background:rgba(24,136,255,.08);color:var(--cyan);
+    }
+    .destination .selector-icon{border-color:rgba(43,216,159,.3);background:rgba(43,216,159,.07);color:var(--green)}
+    .selector-card h2{margin:0;font-size:1.08rem}
+    .selector-card p{margin:4px 0 11px;color:var(--muted);font-size:.88rem;line-height:1.35}
+    .select-wrap{position:relative}
+    .select-wrap select{
+      width:100%;height:44px;border-radius:12px;border:1px solid rgba(126,183,242,.24);
+      padding:0 42px 0 13px;background:rgba(5,14,28,.93);color:#f4f8ff;outline:none;appearance:none;
+    }
+    .select-wrap::after{content:"⌄";position:absolute;right:14px;top:50%;transform:translateY(-54%);color:#a8bed6;pointer-events:none}
+    .select-wrap select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(49,199,255,.12)}
+    .selector-meta{margin-top:8px;display:flex;gap:7px;flex-wrap:wrap}
+    .mini-badge{font-size:.78rem;padding:4px 9px;border-radius:999px;color:#cde8f8;background:rgba(49,199,255,.08);border:1px solid rgba(49,199,255,.16)}
+    .destination .mini-badge{color:#c7f7e8;background:rgba(43,216,159,.08);border-color:rgba(43,216,159,.16)}
+
+    .metrics{padding:12px 15px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+    .metric{min-height:78px;padding:12px;display:flex;align-items:center;gap:12px;border-right:1px solid rgba(126,183,242,.12)}
+    .metric:last-child{border-right:none}
+    .metric-icon{width:43px;height:43px;border-radius:15px;display:grid;place-items:center;background:rgba(24,136,255,.12);color:var(--cyan);font-size:1.15rem}
+    .metric:nth-child(2) .metric-icon{background:rgba(49,199,255,.1)}
+    .metric:nth-child(3) .metric-icon{background:rgba(157,114,255,.12);color:#c4a8ff}
+    .metric:nth-child(4) .metric-icon{background:rgba(43,216,159,.1);color:var(--green)}
+    .metric small{display:block;color:var(--muted);font-size:.78rem;margin-bottom:3px}
+    .metric strong{font-size:1.28rem;letter-spacing:-.02em}
+
+    .list-panel{overflow:hidden}
+    .list-toolbar{padding:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(126,183,242,.13)}
+    .search{position:relative;flex:1;min-width:220px}
+    .search span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
+    .search input{width:100%;height:43px;padding:0 13px 0 40px;border-radius:12px;border:1px solid rgba(126,183,242,.22);background:rgba(4,13,26,.88);color:#fff;outline:none}
+    .search input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(49,199,255,.1)}
+    .filter-chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid rgba(126,183,242,.2);background:rgba(255,255,255,.025);color:var(--soft);cursor:pointer;font-weight:700}
+    .filter-chip.active{color:#fff;border-color:rgba(49,199,255,.6);background:rgba(24,136,255,.16)}
+    .filter-chip b{margin-left:5px;color:#78d8ff}
+
+    .table-head,.student-row{
+      display:grid;
+      grid-template-columns:42px minmax(230px,1.6fr) minmax(100px,.55fr) minmax(128px,.7fr) 34px;
+      align-items:center;
+      column-gap:10px;
+    }
+    .table-head{min-height:48px;padding:0 14px;color:#93a9c1;font-size:.77rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase;background:rgba(5,15,29,.96);border-bottom:1px solid rgba(126,183,242,.13);position:sticky;top:0;z-index:4}
+    .table-scroll{max-height:490px;overflow:auto;scrollbar-color:#198fca rgba(255,255,255,.04);scrollbar-width:thin}
+    .student-row{min-height:61px;padding:8px 14px;border-bottom:1px solid rgba(126,183,242,.10);transition:.15s ease}
+    .student-row:hover{background:rgba(24,136,255,.07)}
+    .student-row.selected{background:linear-gradient(90deg,rgba(24,72,177,.32),rgba(24,136,255,.08))}
+    .check{width:18px;height:18px;accent-color:var(--cyan);cursor:pointer}
+    .student-main{display:flex;align-items:center;gap:11px;min-width:0}
+    .avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(135deg,#2258de,#21bde2);font-weight:900;font-size:.78rem;border:1px solid rgba(255,255,255,.16);overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .student-name{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .student-sub{font-size:.78rem;color:var(--muted);margin-top:3px}
+    .status{display:inline-flex;width:max-content;max-width:100%;align-items:center;gap:6px;border-radius:999px;padding:5px 9px;font-size:.76rem;color:#afbdd0;border:1px solid rgba(126,183,242,.14);background:rgba(255,255,255,.025)}
+    .student-row.selected .status{color:#b9f4e2;border-color:rgba(43,216,159,.22);background:rgba(43,216,159,.09)}
+    .more{border:none;background:transparent;color:#758aa4;font-size:1.2rem;cursor:default}
+    .empty-state{padding:52px 20px;text-align:center;color:var(--muted)}
+    .empty-state strong{display:block;color:#dce9f6;margin-bottom:6px;font-size:1rem}
+
+    .bulk-row{padding:11px 14px;border-bottom:1px solid rgba(126,183,242,.12);display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(4,13,26,.84)}
+    .bulk-row label{display:flex;align-items:center;gap:10px;font-size:.88rem;font-weight:750;cursor:pointer}
+    .bulk-hint{color:var(--muted);font-size:.8rem}
+
+    .warning{padding:12px 14px;color:#cbd9e8;font-size:.84rem;display:flex;align-items:flex-start;gap:9px;line-height:1.45}
+    .warning strong{color:#ffc85b}
+
+    .summary-panel{padding:16px;position:sticky;top:18px;display:grid;gap:13px}
+    .summary-title{display:flex;align-items:center;gap:11px;padding-bottom:13px;border-bottom:1px solid rgba(126,183,242,.13)}
+    .summary-symbol{width:48px;height:48px;border-radius:17px;display:grid;place-items:center;font-size:1.35rem;color:var(--cyan);border:1px solid rgba(49,199,255,.25);background:rgba(49,199,255,.07)}
+    .summary-title h2{margin:0;font-size:1.05rem}
+    .summary-title p{margin:4px 0 0;color:var(--muted);font-size:.8rem}
+    .summary-card{padding:13px;border-radius:15px;border:1px solid rgba(126,183,242,.15);background:rgba(255,255,255,.025)}
+    .summary-card small{color:var(--muted)}
+    .summary-card strong{display:block;margin-top:5px;font-size:1rem}
+    .flow-class{margin-top:10px;padding:11px;border-radius:12px;background:rgba(3,12,24,.75);border:1px solid rgba(126,183,242,.14);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .flow-class b{font-size:1.15rem}
+    .flow-class span{color:var(--muted);font-size:.78rem;text-align:right}
+    .flow-arrow{height:36px;display:grid;place-items:center;color:#8eadc8;font-size:1.25rem}
+    .selected-count{font-size:2rem;line-height:1;margin-top:7px;font-weight:900}
+    .selected-count span{font-size:.9rem;color:var(--muted);font-weight:500}
+    .progress{height:7px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:12px}
+    .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2459ff,#27c8ed);border-radius:99px;transition:width .25s ease}
+    .progress-meta{display:flex;justify-content:flex-end;color:#4ecfff;font-size:.78rem;font-weight:800;margin-top:5px}
+    .summary-actions{display:grid;gap:9px}
+    .summary-actions button{width:100%}
+    .audit-note{font-size:.79rem;line-height:1.45;color:#aebfd1;padding:11px;border-radius:13px;background:rgba(246,185,74,.05);border:1px solid rgba(246,185,74,.15)}
+
+    .mobile-topbar{display:none}
+
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,4,10,.78);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(560px,100%);padding:20px;border-radius:22px;background:linear-gradient(180deg,#0a1729,#050d19);border:1px solid rgba(49,199,255,.32);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+    .modal h2{margin:0;font-size:1.3rem}
+    .modal p{color:var(--soft);line-height:1.5}
+    .preview-box{margin:15px 0;padding:14px;border-radius:15px;background:rgba(255,255,255,.025);border:1px solid rgba(126,183,242,.15);display:grid;gap:9px}
+    .preview-row{display:flex;justify-content:space-between;gap:14px;color:#dbe8f5}
+    .preview-row span{color:var(--muted)}
+    .confirmation-check{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:13px;background:rgba(246,185,74,.055);border:1px solid rgba(246,185,74,.15);font-size:.86rem;color:#d5e1ec;line-height:1.45}
+    .confirmation-check input{margin-top:3px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:17px;flex-wrap:wrap}
+
+    .toast{position:fixed;right:18px;bottom:18px;z-index:150;max-width:380px;padding:13px 15px;border-radius:14px;border:1px solid rgba(49,199,255,.32);background:rgba(5,15,29,.96);box-shadow:0 18px 44px rgba(0,0,0,.42);display:none;color:#e8f4ff;line-height:1.4}
+    .toast.show{display:block;animation:toastIn .2s ease}
+    .toast.error{border-color:rgba(255,97,112,.38);background:rgba(38,8,15,.96)}
+    .toast.success{border-color:rgba(43,216,159,.36);background:rgba(4,31,26,.96)}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+    @media(max-width:1180px){
+      .app-shell{grid-template-columns:86px minmax(0,1fr)}
+      .brand{justify-content:center;padding-inline:0}.brand>div:last-child,.nav-links a span,.side-footer a span{display:none}
+      .nav-links a,.side-footer a{justify-content:center;font-size:1.15rem}
+      .workspace-grid{grid-template-columns:minmax(0,1fr) 300px}
+      .metric{padding:9px}.metric-icon{display:none}
     }
 
-    #transferirBtn:disabled{
-      cursor:not-allowed;
-      opacity:.6;
-      box-shadow:none;
+    @media(max-width:940px){
+      .app-shell{display:block}
+      .side-nav{display:none}
+      .main{padding:14px 12px 26px}
+      .mobile-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+      .workspace-grid{grid-template-columns:1fr}
+      .summary-panel{position:relative;top:auto}
+      .summary-actions{grid-template-columns:1fr 1fr}
     }
 
-    .voltar-btn {
-      background: #111827;
-      color: #e5e7eb;
-      border:1px solid rgba(148,163,184,0.65);
-      box-shadow:0 8px 22px rgba(15,23,42,0.9);
+    @media(max-width:720px){
+      .topbar{align-items:center}.topbar p{font-size:.88rem}.topbar .ghost-btn{display:none}
+      .mode-panel{grid-template-columns:1fr 1fr}.mode-label{grid-column:1/-1;padding:8px 10px 2px}
+      .selectors{grid-template-columns:1fr}.selector-card{min-height:auto}
+      .metrics{grid-template-columns:1fr 1fr}.metric:nth-child(2){border-right:none}.metric:nth-child(-n+2){border-bottom:1px solid rgba(126,183,242,.12)}
+      .table-head,.student-row{grid-template-columns:36px minmax(0,1fr) 84px}.col-status,.col-more{display:none}
+      .bulk-hint{display:none}
+      .summary-actions{grid-template-columns:1fr}
     }
 
-    .voltar-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-      box-shadow:0 12px 28px rgba(15,23,42,1);
+    @media(max-width:480px){
+      .selector-card{grid-template-columns:1fr}.selector-icon{width:48px;height:48px;border-radius:15px}
+      .metrics{grid-template-columns:1fr}.metric{border-right:none;border-bottom:1px solid rgba(126,183,242,.12)}.metric:last-child{border-bottom:none}
+      .filter-chip{padding:0 10px;font-size:.78rem}.search{min-width:100%}
+      .modal-actions{display:grid}.modal-actions button{width:100%}
     }
-
-    .hint{
-      margin-top:10px;
-      font-size:.85rem;
-      color:var(--muted);
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(26px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 768px) {
-      body{
-        padding:18px 10px;
-        align-items:stretch;
-      }
-      .container{
-        padding: 20px 14px 20px;
-        border-radius:16px;
-      }
-      h2{
-        font-size:1.25rem;
-      }
-      table, th, td { font-size: 0.8rem; }
-      .actions{
-        flex-direction:column-reverse;
-        align-items:stretch;
-      }
-      .actions button{
-        width:100%;
-        justify-content:center;
-      }
-    }
-
-    @media (max-width:480px){
-      td:first-child{ width:58px; }
-    }
-
   </style>
+  <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 </head>
 <body>
-  <div class="container">
-    <h2>Transferência de Alunos em Lote</h2>
+  <div class="app-shell">
+    <aside class="side-nav" aria-label="Navegação">
+      <div class="brand">
+        <div class="brand-mark">⇄</div>
+        <div><strong>CMDPII-CZS</strong><small>Gestão Escolar</small></div>
+      </div>
+      <nav class="nav-links">
+        <a href="painel.html"><b>⌂</b><span>Painel</span></a>
+        <a href="lista-alunos.html"><b>♙</b><span>Alunos</span></a>
+        <a class="active" href="transferir-turma.html"><b>⇄</b><span>Transferências</span></a>
+        <a href="estatisticas.html"><b>▥</b><span>Relatórios</span></a>
+        <a href="gestao-sistema.html"><b>⚙</b><span>Gestão do Sistema</span></a>
+      </nav>
+      <div class="side-footer">
+        <a href="painel.html"><b>←</b><span>Voltar ao painel</span></a>
+      </div>
+    </aside>
 
-    <label for="turmaAtual">Turma Atual:</label>
-    <select id="turmaAtual"></select>
+    <main class="main">
+      <div class="page-wrap">
+        <div class="mobile-topbar">
+          <a class="ghost-btn" href="painel.html">← Painel</a>
+          <span style="color:var(--muted);font-size:.85rem">CMDPII-CZS</span>
+        </div>
 
-    <label for="novaTurma">Nova Turma:</label>
-    <!-- AGORA É UM SELECT, preenchido pelo JS com as turmas existentes -->
-    <select id="novaTurma"></select>
+        <header class="topbar">
+          <div>
+            <h1>Transferência de Alunos</h1>
+            <p>Transfira uma turma inteira ou selecione estudantes específicos, com pré-visualização da operação antes da confirmação.</p>
+          </div>
+          <button class="ghost-btn" id="btnAjuda" type="button">? Ajuda</button>
+        </header>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Selecionar</th>
-          <th>Nome</th>
-          <th>Turma</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaAlunos"></tbody>
-    </table>
+        <section class="panel mode-panel" aria-label="Modo de transferência">
+          <div class="mode-label">Modo de transferência</div>
+          <button class="mode-btn active" type="button" data-mode="all">♟ Transferir turma inteira</button>
+          <button class="mode-btn" type="button" data-mode="selected">♙ Transferir alunos específicos</button>
+        </section>
 
-    <div class="hint">
-      Selecione a turma atual, marque os alunos desejados e escolha a nova turma para concluir a transferência.
-    </div>
+        <div class="workspace-grid">
+          <div class="work-column">
+            <section class="selectors">
+              <article class="panel selector-card origin">
+                <div class="selector-icon">⇥</div>
+                <div>
+                  <h2>Turma de origem</h2>
+                  <p>Selecione a turma de onde os estudantes serão transferidos.</p>
+                  <div class="select-wrap"><select id="turmaAtual" aria-label="Turma de origem"></select></div>
+                  <div class="selector-meta"><span class="mini-badge" id="badgeOrigem">0 alunos</span></div>
+                </div>
+              </article>
 
-    <div class="actions">
-      <button class="voltar-btn" onclick="window.location.href='painel.html'">← Voltar ao Painel</button>
-      <button id="transferirBtn" disabled>⇄ Transferir Selecionados</button>
+              <article class="panel selector-card destination">
+                <div class="selector-icon">⊕</div>
+                <div>
+                  <h2>Turma de destino</h2>
+                  <p>Escolha a turma que receberá os estudantes selecionados.</p>
+                  <div class="select-wrap"><select id="novaTurma" aria-label="Turma de destino"></select></div>
+                  <div class="selector-meta"><span class="mini-badge" id="badgeDestino">0 alunos atualmente</span></div>
+                </div>
+              </article>
+            </section>
+
+            <section class="panel metrics" aria-label="Resumo rápido">
+              <div class="metric"><div class="metric-icon">♙</div><div><small>Total na origem</small><strong id="metricTotal">0</strong></div></div>
+              <div class="metric"><div class="metric-icon">▦</div><div><small>Selecionados</small><strong id="metricSelected">0</strong></div></div>
+              <div class="metric"><div class="metric-icon">▣</div><div><small>Turma de origem</small><strong id="metricOrigin">—</strong></div></div>
+              <div class="metric"><div class="metric-icon">▦</div><div><small>Turma de destino</small><strong id="metricDestination">—</strong></div></div>
+            </section>
+
+            <section class="panel list-panel">
+              <div class="list-toolbar">
+                <div class="search"><span>⌕</span><input id="buscaAluno" type="search" placeholder="Buscar aluno por nome..." autocomplete="off" /></div>
+                <button class="filter-chip active" type="button" data-filter="all">Todos <b id="countAll">0</b></button>
+                <button class="filter-chip" type="button" data-filter="selected">Selecionados <b id="countSelected">0</b></button>
+                <button class="filter-chip" type="button" data-filter="unselected">Não selecionados <b id="countUnselected">0</b></button>
+              </div>
+
+              <div class="bulk-row">
+                <label><input class="check" id="selecionarTodos" type="checkbox" /> <span id="selectAllLabel">Selecionar todos</span></label>
+                <span class="bulk-hint" id="modeHint">No modo turma inteira, todos os estudantes são incluídos automaticamente.</span>
+              </div>
+
+              <div class="table-head">
+                <span></span><span>Aluno</span><span>Turma atual</span><span class="col-status">Status</span><span class="col-more"></span>
+              </div>
+              <div class="table-scroll" id="tabelaAlunos" aria-live="polite"></div>
+
+              <div class="warning"><span>ⓘ</span><span><strong>Atenção:</strong> revise a turma de origem, o destino e a quantidade de estudantes antes de confirmar. A operação será registrada na auditoria do sistema.</span></div>
+            </section>
+          </div>
+
+          <aside class="panel summary-panel" aria-label="Resumo da transferência">
+            <div class="summary-title"><div class="summary-symbol">⇄</div><div><h2>Resumo da transferência</h2><p>Acompanhe a operação antes de concluir.</p></div></div>
+
+            <div class="summary-card"><small>Modo selecionado</small><strong id="summaryMode">Transferir turma inteira</strong></div>
+
+            <div class="summary-card">
+              <small>De</small>
+              <div class="flow-class"><b id="summaryOrigin">—</b><span id="summaryOriginCount">0 alunos</span></div>
+              <div class="flow-arrow">↓</div>
+              <small>Para</small>
+              <div class="flow-class"><b id="summaryDestination">—</b><span id="summaryDestinationCount">0 alunos atualmente</span></div>
+            </div>
+
+            <div class="summary-card">
+              <small>Alunos que serão transferidos</small>
+              <div class="selected-count"><b id="summarySelected">0</b> <span id="summaryOf">de 0</span></div>
+              <div class="progress"><i id="summaryProgress"></i></div>
+              <div class="progress-meta"><span id="summaryPercent">0%</span></div>
+            </div>
+
+            <div class="summary-actions">
+              <button class="primary-btn" id="transferirBtn" type="button" disabled>Transferir agora ➤</button>
+              <button class="secondary-btn" id="previewBtn" type="button" disabled>Pré-visualizar alterações ◉</button>
+            </div>
+
+            <div class="audit-note">🛡 A transferência modifica a turma atual dos estudantes e pode impactar relatórios, frequência e rotinas administrativas.</div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+    <div class="modal">
+      <h2 id="previewTitle">Revisar transferência</h2>
+      <p>Confira os dados abaixo antes de confirmar a movimentação.</p>
+      <div class="preview-box">
+        <div class="preview-row"><span>Modo</span><strong id="modalMode">—</strong></div>
+        <div class="preview-row"><span>Turma de origem</span><strong id="modalOrigin">—</strong></div>
+        <div class="preview-row"><span>Turma de destino</span><strong id="modalDestination">—</strong></div>
+        <div class="preview-row"><span>Quantidade</span><strong id="modalCount">0 alunos</strong></div>
+      </div>
+      <div id="modalNames" style="max-height:180px;overflow:auto;color:var(--soft);font-size:.86rem;line-height:1.55"></div>
+      <label class="confirmation-check" id="confirmLabel"><input type="checkbox" id="confirmReview" /> <span>Revisei as informações e confirmo que a turma de destino está correta.</span></label>
+      <div class="modal-actions">
+        <button class="secondary-btn" id="closeModal" type="button">Cancelar</button>
+        <button class="primary-btn" id="confirmTransfer" type="button" disabled>Confirmar transferência</button>
+      </div>
     </div>
   </div>
 
-  <!-- Script externo (com cache-buster + defer) -->
-  <script src="/transferir-turma.js?v=3" defer></script>
+  <div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal">
+      <h2 id="helpTitle">Como usar esta página</h2>
+      <div class="preview-box" style="line-height:1.6;color:var(--soft)">
+        <div><strong>1.</strong> Escolha se deseja mover a turma inteira ou somente alguns estudantes.</div>
+        <div><strong>2.</strong> Selecione a turma de origem e a turma de destino.</div>
+        <div><strong>3.</strong> No modo específico, marque os estudantes desejados.</div>
+        <div><strong>4.</strong> Use a pré-visualização e confirme a operação.</div>
+      </div>
+      <div class="modal-actions"><button class="primary-btn" id="closeHelp" type="button">Entendi</button></div>
+    </div>
+  </div>
 
-  <!-- Registro do Service Worker para PWA -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/transferir-turma.js?v=4" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
-          .catch(err => console.error('❌ Erro ao registrar Service Worker:', err));
+        navigator.serviceWorker.register('/service-worker.js').catch(err => console.warn('Service Worker:', err));
       });
     }
   </script>
   <script src="notify.js"></script>
   <script src="/update-client.js"></script>
+  <script src="/axoriin-ajuda/conteudos-ajuda.js"></script>
+  <script src="/axoriin-ajuda/ajuda-contextual.js"></script>
 </body>
 </html>

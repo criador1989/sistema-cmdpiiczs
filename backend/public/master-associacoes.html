@@ -13,6 +13,7 @@
     .modal{position:fixed;inset:0;padding:24px;z-index:20;display:grid;place-items:center;background:rgba(5,17,39,.68);backdrop-filter:blur(8px)}.modal-card{width:min(850px,100%);max-height:calc(100vh - 48px);overflow:auto;border-radius:22px;background:#fff;box-shadow:0 30px 80px rgba(5,17,39,.35)}.modal-head{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modal-head small{color:var(--blue);font-weight:900;letter-spacing:.13em}.modal-head h2{margin:5px 0 0}.close{width:38px;height:38px;border:0;border-radius:10px;background:#f1f5f9;font-size:1.25rem}.form-grid{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-grid label{display:grid;gap:7px}.full{grid-column:1/-1}.modal-actions{padding:0 22px 22px;display:flex;justify-content:flex-end;gap:9px}.toast{position:fixed;right:22px;bottom:22px;z-index:40;max-width:420px;padding:14px 17px;border-radius:13px;color:#fff;background:var(--text);box-shadow:var(--shadow);opacity:0;transform:translateY(12px);transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:none}.toast.error{background:#a72f38}.empty{grid-column:1/-1;padding:50px;text-align:center;color:var(--muted)}
     @media(max-width:1050px){.cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){header,.toolbar{align-items:stretch;flex-direction:column}.cards,.form-grid{grid-template-columns:1fr}.full{grid-column:auto}main{padding:16px}.search{min-width:0}}
   </style>
+  <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 </head>
 <body>
   <header><div><span>AXORIIN MASTER</span><h1>Associações</h1><p>Crie e administre tenants independentes para associações.</p></div><a href="/master-instituicoes.html">← Instituições</a></header>
@@ -50,5 +51,7 @@
     document.getElementById('form').addEventListener('submit',async e=>{e.preventDefault();const body=Object.fromEntries(new FormData(e.currentTarget));try{const d=await api('/',{method:'POST',body:JSON.stringify(body)});document.getElementById('modal').classList.add('hidden');e.currentTarget.reset();await load();notify(d.senhaTemporaria ? `${d.mensagem} Senha temporária: ${d.senhaTemporaria}` : d.mensagem)}catch(err){notify(err.message,true)}});
     load().catch(err=>notify(err.message,true));
   </script>
+  <script src="/axoriin-ajuda/conteudos-ajuda.js"></script>
+  <script src="/axoriin-ajuda/ajuda-contextual.js"></script>
 </body>
 </html>
