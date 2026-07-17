@@ -1,6 +1,6 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { carregarContextoJogo } from '../api.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { GameState } from '../state.js?v=20260717-v5-46-4-praca-sem-indicador';
+import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { carregarContextoJogo } from '../api.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 const DIRECTIONS = [
   'south', 'south_east', 'east', 'north_east',
@@ -16,18 +16,18 @@ export class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
   preload() {
-    this.load.image('menu-axoriin-v5461', './jogo/assets/ui/menu/menu_axoriin_v5461.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('avatar-selection-v5461', './jogo/assets/ui/avatar/avatar_selection_v5461.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-profile-plate-boy-v5462', './jogo/assets/ui/hud_separado/profile_plate_boy.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-profile-plate-girl-v5462', './jogo/assets/ui/hud_separado/profile_plate_girl.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-status-bar-v5461', './jogo/assets/ui/hud_separado/status_bar.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-mission-banner-v5461', './jogo/assets/ui/hud_separado/mission_banner.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-mini-map-v5461', './jogo/assets/ui/hud_separado/mini_map_frame.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-guide-panel-v5461', './jogo/assets/ui/hud_separado/guide_panel.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-place-label-v5461', './jogo/assets/ui/hud_separado/place_label.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-interact-emblem-v5461', './jogo/assets/ui/hud_separado/interact_emblem.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('hud-frame-panel-v5461', './jogo/assets/ui/hud_separado/frame_panel.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('arena-ground-complete-v542', './jogo/assets/environment/base_map/arena_ground_complete_v542.png?v=20260717-v5-46-4-praca-sem-indicador');
+    this.load.image('menu-axoriin-v5461', './jogo/assets/ui/menu/menu_axoriin_v5461.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('avatar-selection-v5461', './jogo/assets/ui/avatar/avatar_selection_v5461.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-profile-plate-boy-v5462', './jogo/assets/ui/hud_separado/profile_plate_boy.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-profile-plate-girl-v5462', './jogo/assets/ui/hud_separado/profile_plate_girl.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-status-bar-v5461', './jogo/assets/ui/hud_separado/status_bar.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-mission-banner-v5461', './jogo/assets/ui/hud_separado/mission_banner.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-mini-map-v5461', './jogo/assets/ui/hud_separado/mini_map_frame.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-guide-panel-v5461', './jogo/assets/ui/hud_separado/guide_panel.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-place-label-v5461', './jogo/assets/ui/hud_separado/place_label.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-interact-emblem-v5461', './jogo/assets/ui/hud_separado/interact_emblem.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('hud-frame-panel-v5461', './jogo/assets/ui/hud_separado/frame_panel.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('arena-ground-complete-v542', './jogo/assets/environment/base_map/arena_ground_complete_v542.png?v=20260717-v5-46-6-mobile-touch-corrigido');
 
     const plazaBase = './jogo/assets/environment/plaza';
     [
@@ -41,7 +41,7 @@ export class BootScene extends Phaser.Scene {
       ['plaza-unified-lamp', 'plaza_lamp.png'],
       ['plaza-unified-gazebo', 'plaza_gazebo.png'],
       ['plaza-unified-planter', 'plaza_planter.png']
-    ].forEach(([key, file]) => this.load.image(key, `${plazaBase}/${file}?v=20260717-v5-46-4-praca-sem-indicador`));
+    ].forEach(([key, file]) => this.load.image(key, `${plazaBase}/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`));
 
 
     const centralV2Base = './jogo/assets/environment/central_v2';
@@ -58,7 +58,7 @@ export class BootScene extends Phaser.Scene {
       ['central-v2-bench', 'bench_v2.png'],
       ['central-v2-lamp', 'lamp_v2.png'],
       ['central-v2-planter', 'planter_v2.png']
-    ].forEach(([key, file]) => this.load.image(key, `${centralV2Base}/${file}?v=20260717-v5-46-4-praca-sem-indicador`));
+    ].forEach(([key, file]) => this.load.image(key, `${centralV2Base}/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`));
 
     const vegetationBase = './jogo/assets/environment/vegetation';
     [
@@ -69,14 +69,14 @@ export class BootScene extends Phaser.Scene {
       ['arena-groundcover-03', 'groundcover_03.png']
     ].forEach(([key, file]) => this.load.image(
       key,
-      `${vegetationBase}/${file}?v=20260717-v5-46-4-praca-sem-indicador`
+      `${vegetationBase}/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`
     ));
 
-    this.load.image('arena-river-water', './jogo/assets/environment/water/river_surface_01.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('arena-river-flow-overlay', './jogo/assets/environment/water/river_flow_overlay_tile_512.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('arena-river-highlights-overlay', './jogo/assets/environment/water/river_highlights_overlay_tile_512.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.image('arena-river-mask', './jogo/assets/environment/water/river_mask_v5446.png?v=20260717-v5-46-4-praca-sem-indicador');
-    this.load.spritesheet('arena-river-sparkle-sheet', './jogo/assets/environment/water/river_sparkle_sheet_4x128.png?v=20260717-v5-46-4-praca-sem-indicador', {
+    this.load.image('arena-river-water', './jogo/assets/environment/water/river_surface_01.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('arena-river-flow-overlay', './jogo/assets/environment/water/river_flow_overlay_tile_512.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('arena-river-highlights-overlay', './jogo/assets/environment/water/river_highlights_overlay_tile_512.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.image('arena-river-mask', './jogo/assets/environment/water/river_mask_v5446.png?v=20260717-v5-46-6-mobile-touch-corrigido');
+    this.load.spritesheet('arena-river-sparkle-sheet', './jogo/assets/environment/water/river_sparkle_sheet_4x128.png?v=20260717-v5-46-6-mobile-touch-corrigido', {
       frameWidth: 128,
       frameHeight: 128
     });
@@ -89,32 +89,32 @@ export class BootScene extends Phaser.Scene {
       ['arena-cloud-03', 'cloud_soft_03.png'],
       ['arena-cloud-04', 'cloud_soft_04.png'],
       ['arena-cloud-05', 'cloud_soft_05.png']
-    ].forEach(([key, file]) => this.load.image(key, `${cloudsBase}/${file}?v=20260717-v5-46-4-praca-sem-indicador`));
+    ].forEach(([key, file]) => this.load.image(key, `${cloudsBase}/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`));
 
     const birdsBase = './jogo/assets/environment/birds';
-    this.load.spritesheet('bird-swallow-sheet', `${birdsBase}/bird_swallow_sheet.png?v=20260717-v5-46-4-praca-sem-indicador`, {
+    this.load.spritesheet('bird-swallow-sheet', `${birdsBase}/bird_swallow_sheet.png?v=20260717-v5-46-6-mobile-touch-corrigido`, {
       frameWidth: 384,
       frameHeight: 384
     });
-    this.load.spritesheet('bird-sparrow-sheet', `${birdsBase}/bird_sparrow_sheet.png?v=20260717-v5-46-4-praca-sem-indicador`, {
+    this.load.spritesheet('bird-sparrow-sheet', `${birdsBase}/bird_sparrow_sheet.png?v=20260717-v5-46-6-mobile-touch-corrigido`, {
       frameWidth: 384,
       frameHeight: 384
     });
 
     const fishBase = './jogo/assets/environment/fish';
-    this.load.spritesheet('fish-swim-blue-sheet', `${fishBase}/fish_swim_blue_sheet.png?v=20260717-v5-46-4-praca-sem-indicador`, {
+    this.load.spritesheet('fish-swim-blue-sheet', `${fishBase}/fish_swim_blue_sheet.png?v=20260717-v5-46-6-mobile-touch-corrigido`, {
       frameWidth: 128,
       frameHeight: 128
     });
-    this.load.spritesheet('fish-swim-orange-sheet', `${fishBase}/fish_swim_orange_sheet.png?v=20260717-v5-46-4-praca-sem-indicador`, {
+    this.load.spritesheet('fish-swim-orange-sheet', `${fishBase}/fish_swim_orange_sheet.png?v=20260717-v5-46-6-mobile-touch-corrigido`, {
       frameWidth: 128,
       frameHeight: 128
     });
-    this.load.spritesheet('fish-swim-teal-sheet', `${fishBase}/fish_swim_teal_sheet.png?v=20260717-v5-46-4-praca-sem-indicador`, {
+    this.load.spritesheet('fish-swim-teal-sheet', `${fishBase}/fish_swim_teal_sheet.png?v=20260717-v5-46-6-mobile-touch-corrigido`, {
       frameWidth: 128,
       frameHeight: 128
     });
-    this.load.spritesheet('fish-jump-trout-sheet', `${fishBase}/fish_jump_trout_sheet.png?v=20260717-v5-46-4-praca-sem-indicador`, {
+    this.load.spritesheet('fish-jump-trout-sheet', `${fishBase}/fish_jump_trout_sheet.png?v=20260717-v5-46-6-mobile-touch-corrigido`, {
       frameWidth: 192,
       frameHeight: 192
     });
@@ -127,16 +127,16 @@ export class BootScene extends Phaser.Scene {
       ['tree-v537-columnar', 'tree_columnar_v537.png'],
       ['tree-v537-blossom', 'tree_blossom_v537.png'],
       ['tree-v537-pine', 'tree_pine_v537.png']
-    ].forEach(([key, file]) => this.load.image(key, `${treesV537Base}/${file}?v=20260717-v5-46-4-praca-sem-indicador`));
+    ].forEach(([key, file]) => this.load.image(key, `${treesV537Base}/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`));
 
-    this.load.image('military-school-final', './jogo/assets/environment/landmarks/military_school_final.png?v=20260717-v5-46-4-praca-sem-indicador');
+    this.load.image('military-school-final', './jogo/assets/environment/landmarks/military_school_final.png?v=20260717-v5-46-6-mobile-touch-corrigido');
     [
       ['landmark-library', 'library_refined.png'],
       ['landmark-laboratory', 'laboratory_refined.png'],
       ['landmark-cityhall', 'cityhall_refined.png'],
       ['landmark-museum', 'museum_refined.png'],
       ['landmark-zoo', 'zoo_refined.png']
-    ].forEach(([key, file]) => this.load.image(key, `./jogo/assets/environment/landmarks/${file}?v=20260717-v5-46-4-praca-sem-indicador`));
+    ].forEach(([key, file]) => this.load.image(key, `./jogo/assets/environment/landmarks/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`));
 
     const animalsBase = './jogo/assets/environment/animals';
     [
@@ -145,19 +145,19 @@ export class BootScene extends Phaser.Scene {
       ['zoo-giraffe-sheet', 'giraffe_sheet.png'],
       ['zoo-monkey-sheet', 'monkey_sheet.png'],
       ['zoo-zebra-sheet', 'zebra_sheet.png']
-    ].forEach(([key, file]) => this.load.spritesheet(key, `${animalsBase}/${file}?v=20260717-v5-46-4-praca-sem-indicador`, { frameWidth: 512, frameHeight: 512 }));
+    ].forEach(([key, file]) => this.load.spritesheet(key, `${animalsBase}/${file}?v=20260717-v5-46-6-mobile-touch-corrigido`, { frameWidth: 512, frameHeight: 512 }));
 
     OFFICIAL_AVATARS.forEach((avatar) => {
       DIRECTIONS.forEach((direction) => {
         this.load.image(
           `avatar-${avatar.key}-${direction}`,
-          `${avatar.base}/idle_${direction}.png?v=20260717-v5-46-4-praca-sem-indicador`
+          `${avatar.base}/idle_${direction}.png?v=20260717-v5-46-6-mobile-touch-corrigido`
         );
 
         for (let i = 0; i < WALK_FRAME_COUNT; i++) {
           this.load.image(
             `avatar-${avatar.key}-walk-${direction}-${i}`,
-            `${avatar.base}/walk/${direction}_${i}.png?v=20260717-v5-46-4-praca-sem-indicador`
+            `${avatar.base}/walk/${direction}_${i}.png?v=20260717-v5-46-6-mobile-touch-corrigido`
           );
         }
       });

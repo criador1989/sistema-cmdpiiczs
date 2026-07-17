@@ -1,5 +1,5 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-5-menu-sem-avatar-duplicado';
-import { GameState } from '../state.js?v=20260717-v5-46-5-menu-sem-avatar-duplicado';
+import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }

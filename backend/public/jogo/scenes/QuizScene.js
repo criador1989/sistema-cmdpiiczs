@@ -1,7 +1,7 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { GameState } from '../state.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { enviarResultadoMissao } from '../api.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { createStudentPortrait } from '../ui/PortraitFactory.js?v=20260717-v5-46-4-praca-sem-indicador';
+import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { enviarResultadoMissao } from '../api.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { createStudentPortrait } from '../ui/PortraitFactory.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export class QuizScene extends Phaser.Scene {
   constructor() { super('QuizScene'); }

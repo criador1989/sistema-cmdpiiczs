@@ -1,4 +1,4 @@
-import { GAME_CONFIG, LOCATIONS, AVATARS } from './config.js?v=20260717-v5-46-4-praca-sem-indicador';
+import { GAME_CONFIG, LOCATIONS, AVATARS } from './config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export const GameState = {
   contexto: null,

@@ -112,8 +112,23 @@ body { overflow-x: hidden; }
   overflow: hidden;
 }
 
-#game-container { width: 100%; min-height: 720px; }
-#game-container canvas { display: block; width: 100% !important; height: auto !important; }
+#game-container {
+  width: 100%;
+  min-height: 720px;
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#game-container canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
 @media (max-width: 720px) {
   .arena-shell { padding: 10px; }

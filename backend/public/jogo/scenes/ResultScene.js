@@ -1,5 +1,5 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { GameState } from '../state.js?v=20260717-v5-46-4-praca-sem-indicador';
+import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export class ResultScene extends Phaser.Scene {
   constructor() { super('ResultScene'); }

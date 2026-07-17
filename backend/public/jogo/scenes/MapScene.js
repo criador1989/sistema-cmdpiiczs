@@ -1,6 +1,6 @@
-import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { GameState } from '../state.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { Player } from '../entities/Player.js?v=20260717-v5-46-4-praca-sem-indicador';
+import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { Player } from '../entities/Player.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export class MapScene extends Phaser.Scene {
   constructor() { super('MapScene'); }
@@ -2687,24 +2687,112 @@ export class MapScene extends Phaser.Scene {
   }
 
   createMobileControls() {
-    const isSmall = this.scale.width < 920 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const controls = this.add.container(0, 0).setScrollFactor(0).setDepth(17000).setVisible(isSmall);
-    const makePad = (x, y, label, key) => {
-      const btn = this.add.circle(x, y, 25, 0x10355f, 0.88).setStrokeStyle(2, 0xf3d58a, 0.48).setInteractive();
-      const txt = this.add.text(x, y, label, { fontFamily: 'system-ui, sans-serif', fontSize: '18px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5);
-      btn.on('pointerdown', () => { this.virtualDirection[key] = true; });
-      btn.on('pointerup', () => { this.virtualDirection[key] = false; });
-      btn.on('pointerout', () => { this.virtualDirection[key] = false; });
-      controls.add([btn, txt]);
+    const isTouchDevice = Boolean(
+      window.matchMedia?.('(pointer: coarse)').matches ||
+      navigator.maxTouchPoints > 0 ||
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+    );
+    const isSmall = this.scale.width < 920 || isTouchDevice;
+
+    const controls = this.add.container(0, 0)
+      .setScrollFactor(0)
+      .setDepth(19000)
+      .setVisible(isSmall);
+
+    this.mobileControls = controls;
+    this.mobilePointerDirections = new Map();
+
+    const resetDirection = (key) => {
+      this.virtualDirection[key] = false;
+      for (const [pointerId, direction] of this.mobilePointerDirections.entries()) {
+        if (direction === key) this.mobilePointerDirections.delete(pointerId);
+      }
     };
-    makePad(92, 610, '↑', 'up');
-    makePad(92, 674, '↓', 'down');
-    makePad(34, 674, '←', 'left');
-    makePad(150, 674, '→', 'right');
-    const interact = this.add.rectangle(1090, 655, 170, 52, 0xd6a84f, 0.95).setStrokeStyle(2, 0xf3d58a, 1).setInteractive({ useHandCursor: true });
-    const label = this.add.text(1090, 655, 'Interagir', { fontFamily: 'system-ui, sans-serif', fontSize: '17px', fontStyle: 'bold', color: '#071529' }).setOrigin(0.5);
-    interact.on('pointerdown', () => this.tryInteract());
-    controls.add([interact, label]);
+
+    const resetAllDirections = () => {
+      this.virtualDirection = { up: false, down: false, left: false, right: false };
+      this.mobilePointerDirections.clear();
+    };
+
+    const makePad = (x, y, label, key) => {
+      const glow = this.add.circle(x, y, 35, 0x071529, 0.82)
+        .setStrokeStyle(3, 0xf3d58a, 0.70);
+      const btn = this.add.circle(x, y, 32, 0x10355f, 0.96)
+        .setStrokeStyle(2, 0xffe6ab, 0.72)
+        .setInteractive(new Phaser.Geom.Circle(0, 0, 42), Phaser.Geom.Circle.Contains);
+      const txt = this.add.text(x, y - 1, label, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '25px',
+        fontStyle: 'bold',
+        color: '#ffffff'
+      }).setOrigin(0.5);
+
+      const activate = (pointer) => {
+        pointer.event?.preventDefault?.();
+        this.mobilePointerDirections.set(pointer.id, key);
+        this.virtualDirection[key] = true;
+        btn.setFillStyle(0x1f6fb5, 1);
+        glow.setStrokeStyle(4, 0xf3d58a, 1);
+      };
+      const deactivate = () => {
+        resetDirection(key);
+        btn.setFillStyle(0x10355f, 0.96);
+        glow.setStrokeStyle(3, 0xf3d58a, 0.70);
+      };
+
+      btn.on('pointerdown', activate);
+      btn.on('pointerup', deactivate);
+      btn.on('pointerupoutside', deactivate);
+      btn.on('pointerout', (pointer) => {
+        if (!pointer.isDown) deactivate();
+      });
+      controls.add([glow, btn, txt]);
+    };
+
+    makePad(96, 590, '↑', 'up');
+    makePad(96, 674, '↓', 'down');
+    makePad(38, 674, '←', 'left');
+    makePad(154, 674, '→', 'right');
+
+    const interactShadow = this.add.rectangle(1112, 658, 194, 66, 0x071529, 0.84)
+      .setStrokeStyle(3, 0xf3d58a, 0.45);
+    const interact = this.add.rectangle(1112, 656, 184, 58, 0xd6a84f, 1)
+      .setStrokeStyle(3, 0xffe6ab, 1)
+      .setInteractive({ useHandCursor: true });
+    const label = this.add.text(1112, 656, 'INTERAGIR', {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: '18px',
+      fontStyle: '900',
+      color: '#071529'
+    }).setOrigin(0.5);
+
+    const interactNow = (pointer) => {
+      pointer.event?.preventDefault?.();
+      interact.setFillStyle(0xf3d58a, 1);
+      this.nearestLocation = this.findNearestLocation();
+      this.tryInteract();
+      this.time.delayedCall(100, () => {
+        if (interact.active) interact.setFillStyle(0xd6a84f, 1);
+      });
+    };
+    interact.on('pointerdown', interactNow);
+    label.setInteractive({ useHandCursor: true }).on('pointerdown', interactNow);
+    controls.add([interactShadow, interact, label]);
+
+    this.input.on('pointerup', (pointer) => {
+      const direction = this.mobilePointerDirections.get(pointer.id);
+      if (direction) resetDirection(direction);
+    });
+    this.input.on('gameout', resetAllDirections);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      resetAllDirections();
+      this.input.off('gameout', resetAllDirections);
+    });
+
+    window.addEventListener('blur', resetAllDirections, { once: true });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) resetAllDirections();
+    }, { once: true });
   }
 
   createMapOverlay() {

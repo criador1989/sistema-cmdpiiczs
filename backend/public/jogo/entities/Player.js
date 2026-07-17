@@ -1,5 +1,5 @@
-import { AVATARS } from '../config.js?v=20260717-v5-46-4-praca-sem-indicador';
-import { GameState } from '../state.js?v=20260717-v5-46-4-praca-sem-indicador';
+import { AVATARS } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 const DIRECTIONS = {
   N: 'north', NE: 'north-east', E: 'east', SE: 'south-east',
