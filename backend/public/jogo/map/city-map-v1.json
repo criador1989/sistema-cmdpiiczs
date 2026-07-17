@@ -1,0 +1,103 @@
+{
+  "id": "cidade-conhecimento-mapa-tecnico-v1",
+  "version": "0.5.20",
+  "world": {
+    "width": 3600,
+    "height": 2600,
+    "grid": 64
+  },
+  "playerStart": {
+    "x": 780,
+    "y": 2020
+  },
+  "river": {
+    "region": "east-divider",
+    "centerX": 2570,
+    "approximateWidth": 250,
+    "bridges": [
+      {
+        "id": "ponte-norte",
+        "x": 2365,
+        "y": 1030,
+        "width": 445,
+        "height": 78
+      },
+      {
+        "id": "ponte-sul",
+        "x": 2370,
+        "y": 1710,
+        "width": 440,
+        "height": 78
+      }
+    ]
+  },
+  "locations": [
+    {
+      "id": "escola-militar",
+      "x": 780,
+      "y": 1760,
+      "entryX": 780,
+      "entryY": 1910,
+      "region": "Campus Sul"
+    },
+    {
+      "id": "laboratorio",
+      "x": 1380,
+      "y": 1790,
+      "entryX": 1380,
+      "entryY": 1930,
+      "region": "Campus Sul"
+    },
+    {
+      "id": "biblioteca",
+      "x": 1100,
+      "y": 1135,
+      "entryX": 1100,
+      "entryY": 1290,
+      "region": "Bairro Cultural"
+    },
+    {
+      "id": "praca",
+      "x": 1630,
+      "y": 1370,
+      "entryX": 1630,
+      "entryY": 1370,
+      "region": "Centro"
+    },
+    {
+      "id": "prefeitura",
+      "x": 1650,
+      "y": 815,
+      "entryX": 1650,
+      "entryY": 980,
+      "region": "Centro Cívico"
+    },
+    {
+      "id": "museu",
+      "x": 2150,
+      "y": 1230,
+      "entryX": 2150,
+      "entryY": 1390,
+      "region": "Centro Histórico"
+    },
+    {
+      "id": "zoologico",
+      "x": 3070,
+      "y": 770,
+      "entryX": 2810,
+      "entryY": 1080,
+      "region": "Parque Leste"
+    },
+    {
+      "id": "floresta",
+      "x": 3140,
+      "y": 1900,
+      "entryX": 2800,
+      "entryY": 1745,
+      "region": "Reserva Leste"
+    }
+  ],
+  "artRule": "A arte definitiva deve respeitar exatamente as posições, entradas, rio, pontes, vias e áreas livres deste arquivo.",
+  "status": "Mapa técnico aprovado; mapa vivo, HUD V2 e primeira camada de arte urbana implementados",
+  "visualStage": "arte-urbana-v1"
+}

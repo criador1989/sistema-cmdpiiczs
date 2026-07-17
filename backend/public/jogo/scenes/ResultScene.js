@@ -1,5 +1,5 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-47-0-questoes-reais';
-import { GameState } from '../state.js?v=20260717-v5-47-0-questoes-reais';
+import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export class ResultScene extends Phaser.Scene {
   constructor() { super('ResultScene'); }
@@ -113,25 +113,19 @@ export class ResultScene extends Phaser.Scene {
 
   drawRanking(ranking) {
     this.add.rectangle(955, 415, 355, 140, 0x10233f, 0.95).setStrokeStyle(2, 0xd6a84f, 0.35);
-    this.add.text(955, 376, ranking.length ? 'Ranking da Arena' : 'Progresso registrado', {
+    this.add.text(955, 376, 'Ranking demonstrativo', {
       fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: '900', color: '#a9bdd4'
     }).setOrigin(0.5);
-    if (ranking.length) {
-      ranking.slice(0, 3).forEach((item, index) => {
-        const y = 407 + index * 32;
-        this.add.text(805, y, `${item.posicao || index + 1}º ${item.nome}`, {
-          fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: index === 0 ? 'bold' : 'normal', color: index === 0 ? '#f3d58a' : '#ffffff'
-        });
-        this.add.text(1060, y, `${item.xp} XP`, {
-          fontFamily: 'system-ui, sans-serif', fontSize: '15px', color: '#a9bdd4'
-        });
+    ranking.slice(0, 3).forEach((item, index) => {
+      const y = 407 + index * 32;
+      this.add.text(805, y, `${item.posicao || index + 1}º ${item.nome}`, {
+        fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: index === 0 ? 'bold' : 'normal', color: index === 0 ? '#f3d58a' : '#ffffff'
       });
-    } else {
-      this.add.text(955, 432, 'Suas respostas e recompensas foram salvas com segurança.', {
-        fontFamily: 'system-ui, sans-serif', fontSize: '15px', color: '#ffffff', align: 'center', wordWrap: { width: 290 }
-      }).setOrigin(0.5);
-    }
-    this.add.text(955, 505, ranking.length ? 'Continue estudando para avançar na classificação.' : 'O ranking poderá ser integrado em uma próxima etapa.', {
+      this.add.text(1060, y, `${item.xp} XP`, {
+        fontFamily: 'system-ui, sans-serif', fontSize: '15px', color: '#a9bdd4'
+      });
+    });
+    this.add.text(955, 505, 'Painel real: carrinhos/foguetes + filtros por turma e mês.', {
       fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: '#a9bdd4', align: 'center', wordWrap: { width: 280 }
     }).setOrigin(0.5);
   }

@@ -1,11 +1,11 @@
-import { GAME_CONFIG } from './config.js?v=20260717-v5-47-0-questoes-reais';
-import { BootScene } from './scenes/BootScene.js?v=20260717-v5-47-0-questoes-reais';
-import { MenuScene } from './scenes/MenuScene.js?v=20260717-v5-47-0-questoes-reais';
-import { AvatarScene } from './scenes/AvatarScene.js?v=20260717-v5-47-0-questoes-reais';
-import { MapScene } from './scenes/MapScene.js?v=20260717-v5-47-0-questoes-reais';
-import { DialogueScene } from './scenes/DialogueScene.js?v=20260717-v5-47-0-questoes-reais';
-import { QuizScene } from './scenes/QuizScene.js?v=20260717-v5-47-0-questoes-reais';
-import { ResultScene } from './scenes/ResultScene.js?v=20260717-v5-47-0-questoes-reais';
+import { GAME_CONFIG } from './config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { BootScene } from './scenes/BootScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { MenuScene } from './scenes/MenuScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { AvatarScene } from './scenes/AvatarScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { MapScene } from './scenes/MapScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { DialogueScene } from './scenes/DialogueScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { QuizScene } from './scenes/QuizScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { ResultScene } from './scenes/ResultScene.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 function showFatalError(error) {
   const container = document.getElementById('game-container');

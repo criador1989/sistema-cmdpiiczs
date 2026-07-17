@@ -1,6 +1,6 @@
-import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260717-v5-47-0-questoes-reais';
-import { GameState } from '../state.js?v=20260717-v5-47-0-questoes-reais';
-import { Player } from '../entities/Player.js?v=20260717-v5-47-0-questoes-reais';
+import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { Player } from '../entities/Player.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 export class MapScene extends Phaser.Scene {
   constructor() { super('MapScene'); }

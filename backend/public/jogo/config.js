@@ -1,9 +1,9 @@
 export const GAME_CONFIG = {
   title: 'Colégio Virtual Axoriin',
   subtitle: 'Arena do Conhecimento',
-  version: '0.5.47.0_questoes_reais_6ano',
+  version: '0.5.46.3_local_contextual',
   portalUrl: window.AXORIIN_ARENA?.portalUrl || './painel-aluno.html',
-  apiBase: window.AXORIIN_ARENA?.apiBase || '/api',
+  apiBase: window.AXORIIN_ARENA?.apiBase || '/api/aluno/jogo',
   dailyLimit: Number(window.AXORIIN_ARENA?.dailyLimit || 10),
   colors: {
     navy: 0x071529,

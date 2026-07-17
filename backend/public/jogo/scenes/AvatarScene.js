@@ -1,6 +1,6 @@
-import { AVATARS, GAME_CONFIG } from '../config.js?v=20260717-v5-47-0-questoes-reais';
-import { GameState } from '../state.js?v=20260717-v5-47-0-questoes-reais';
-import { salvarAvatar } from '../api.js?v=20260717-v5-47-0-questoes-reais';
+import { AVATARS, GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { salvarAvatar } from '../api.js?v=20260717-v5-46-6-mobile-touch-corrigido';
 
 const AVAILABLE_AVATARS = ['cadete-azul', 'exploradora'];
 
