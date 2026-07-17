@@ -2,773 +2,834 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Controle de Notificações - CMDPII</title>
-  <meta name="theme-color" content="#0A1322"/>
-  <link rel="manifest" href="/manifest.json"/>
-  <link rel="icon" href="/icons/icon-192x192.png"/>
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png"/>
-
-  <!-- Bootstrap apenas para o modal -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axoriin • Validação de Notificações</title>
+  <meta name="theme-color" content="#07111f" />
+  <link rel="icon" href="/icons/axoriin-192x192.png" />
   <style>
+    /* AXORIIN VALIDAÇÃO DE NOTIFICAÇÕES v2.1 — correção da lista */
     :root{
-      --glass-bg: rgba(255,255,255,0.04);
-      --glass-border: rgba(255,255,255,0.32);
-      --glass-inner: rgba(255,255,255,0.50);
-      --glass-radius: 20px;
-      --glass-shadow:
-        0 10px 30px rgba(0,0,0,0.60),
-        0 20px 55px rgba(0,0,0,0.85);
-
-      --text-main:#ffffff;
-      --text-soft:rgba(233,240,255,0.80);
+      --bg:#030914;
+      --bg-2:#071426;
+      --surface:rgba(7,17,32,.88);
+      --surface-strong:rgba(8,20,38,.96);
+      --surface-soft:rgba(12,27,48,.72);
+      --border:rgba(116,177,255,.20);
+      --border-strong:rgba(77,181,255,.50);
+      --text:#f3f8ff;
+      --soft:#aebfd4;
+      --faint:#7188a5;
+      --cyan:#38bdf8;
+      --cyan-2:#22d3ee;
+      --blue:#2563eb;
+      --green:#22c55e;
+      --green-soft:rgba(34,197,94,.15);
+      --amber:#f59e0b;
+      --amber-soft:rgba(245,158,11,.14);
+      --red:#ef4444;
+      --red-soft:rgba(239,68,68,.14);
+      --radius:20px;
+      --shadow:0 22px 55px rgba(0,0,0,.42);
     }
 
-    *{ box-sizing:border-box; }
-
-    html,body{
-      margin:0;
-      padding:0;
-      min-height:100vh;
-    }
-
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    html,body{min-height:100%}
     body{
-      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      color:var(--text-main);
-      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      margin:0;
+      color:var(--text);
+      font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      background:
+        radial-gradient(900px 520px at 12% -10%,rgba(34,211,238,.10),transparent 60%),
+        radial-gradient(800px 600px at 100% 0%,rgba(37,99,235,.10),transparent 62%),
+        linear-gradient(rgba(2,8,18,.93),rgba(2,8,18,.96)),
+        url("img/bg-painel-smart.png") center/cover fixed no-repeat;
       color-scheme:dark;
+      overflow-x:hidden;
     }
 
-    /* overlay neutro (sem cor forte) */
     body::before{
       content:"";
       position:fixed;
       inset:0;
-      z-index:0;
       pointer-events:none;
-      background:radial-gradient(circle at 15% 0, rgba(255,255,255,0.12), transparent 55%),
-                 radial-gradient(circle at 85% 100%, rgba(0,0,0,0.72), transparent 55%);
+      background-image:
+        linear-gradient(rgba(56,189,248,.025) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(56,189,248,.025) 1px,transparent 1px);
+      background-size:44px 44px;
+      mask-image:linear-gradient(to bottom,black,transparent 72%);
     }
 
-    .page{
-      position:relative;
-      z-index:1;
-      width:100%;
-      padding:18px 18px 80px;
-      display:flex;
-      flex-direction:column;
-      gap:16px;
-    }
+    button,input,select,textarea{font:inherit}
+    button{color:inherit}
 
-    @media(max-width:768px){
-      .page{ padding:12px 10px 80px; }
-    }
+    .app-shell{position:relative;z-index:1;min-height:100vh}
 
-    /* ===========================
-       TOPBAR – GLASS AZUL
-    ============================ */
-    .topbar{
-      width:100%;
+    .global-header{
+      height:58px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:12px;
-      border-radius:22px;
-      padding:10px 14px;
-      background:rgba(5,12,25,0.86);
-      border:1px solid rgba(255,255,255,0.20);
+      gap:18px;
+      padding:0 26px;
+      border-bottom:1px solid rgba(148,163,184,.13);
+      background:rgba(2,8,18,.88);
       backdrop-filter:blur(18px);
-      -webkit-backdrop-filter:blur(18px);
-      box-shadow:0 12px 40px rgba(0,0,0,0.85);
+      position:sticky;
+      top:0;
+      z-index:50;
     }
 
-    .top-left{
+    .brand{display:flex;align-items:center;gap:12px;font-weight:850;letter-spacing:.02em}
+    .brand img{width:29px;height:29px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(56,189,248,.36))}
+    .brand-name{font-size:1.02rem}
+    .brand-divider{width:1px;height:23px;background:rgba(148,163,184,.24)}
+    .brand-tenant{font-weight:850;color:var(--cyan);font-size:1rem}
+
+    .header-user{display:flex;align-items:center;gap:12px;color:var(--soft)}
+    .user-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#20334d,#48617d);border:1px solid rgba(255,255,255,.12)}
+    .user-copy{line-height:1.15;text-align:right}
+    .user-copy strong{display:block;color:var(--text);font-size:.86rem}
+    .user-copy span{font-size:.74rem}
+
+    .page{padding:22px 30px 34px;max-width:1800px;margin:0 auto}
+
+    .hero{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:24px;
+      margin-bottom:17px;
+    }
+
+    .hero-title{display:flex;align-items:center;gap:14px}
+    .hero-icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(37,99,235,.22),rgba(56,189,248,.08));border:1px solid rgba(96,165,250,.25);font-size:1.4rem;box-shadow:inset 0 0 24px rgba(56,189,248,.04)}
+    .hero h1{margin:0;font-size:clamp(1.45rem,2.2vw,2rem);letter-spacing:-.02em}
+    .hero p{margin:5px 0 0;color:var(--soft);font-size:.93rem}
+
+    .summary-cards{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .summary-card{
+      min-width:168px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:linear-gradient(160deg,rgba(10,24,44,.90),rgba(5,14,27,.82));
+      padding:12px 14px;
       display:flex;
       align-items:center;
+      gap:11px;
+      cursor:pointer;
+      transition:.18s ease;
+      box-shadow:0 14px 28px rgba(0,0,0,.16);
+    }
+    .summary-card:hover{transform:translateY(-2px);border-color:var(--border-strong)}
+    .summary-card .sum-icon{width:35px;height:35px;border-radius:12px;display:grid;place-items:center;border:1px solid currentColor;background:rgba(255,255,255,.03)}
+    .summary-card strong{display:block;font-size:1.25rem;line-height:1}
+    .summary-card span{font-size:.76rem;color:var(--soft)}
+    .summary-card.pending{color:var(--amber)}
+    .summary-card.approved{color:var(--green)}
+    .summary-card.returned{color:var(--cyan)}
+
+    .filter-bar{
+      display:grid;
+      grid-template-columns:minmax(260px,1.6fr) repeat(3,minmax(130px,.7fr)) minmax(250px,1.05fr) minmax(150px,.65fr) auto;
       gap:10px;
-      min-width:0;
+      align-items:end;
+      padding:13px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:rgba(6,16,30,.84);
+      backdrop-filter:blur(14px);
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
     }
 
-    .brand-pill{
-      width:36px;
-      height:36px;
-      border-radius:999px;
-      background:radial-gradient(circle at 30% 20%, #ffffff80, #111827);
-      box-shadow:0 6px 16px rgba(0,0,0,0.85);
-      flex-shrink:0;
-    }
-
-    .top-title{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .top-title span:first-child{
-      font-weight:700;
-      font-size:.9rem;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      color:var(--text-soft);
-    }
-    .top-title span:last-child{
-      font-weight:800;
-      font-size:clamp(1rem, 2.2vw, 1.3rem);
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      overflow:hidden;
-    }
-
-    .top-right{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .input, .btn{
-      font-family:inherit;
-      font-size:.9rem;
-    }
-
-    .input{
-      background:rgba(15,23,42,0.92);
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.75);
-      color:#e5edff;
-      padding:8px 12px 8px 10px;
-      min-width:200px;
+    .field{min-width:0}
+    .field label{display:block;font-size:.72rem;color:var(--soft);font-weight:750;margin:0 0 6px 3px;letter-spacing:.04em}
+    .control{
+      width:100%;
+      min-height:42px;
+      border-radius:12px;
+      border:1px solid rgba(116,154,202,.28);
+      color:var(--text);
+      background:rgba(6,15,28,.92);
+      padding:0 12px;
       outline:none;
-      box-shadow:0 10px 30px rgba(15,23,42,0.9);
+      transition:.16s ease;
     }
-    .input::placeholder{ color:rgba(148,163,184,0.85); }
-    .input:focus{
-      border-color:#38bdf8;
-      box-shadow:
-        0 0 0 1px rgba(56,189,248,0.75),
-        0 12px 34px rgba(15,23,42,1);
-    }
+    .control:focus{border-color:rgba(56,189,248,.8);box-shadow:0 0 0 3px rgba(56,189,248,.10)}
+    .search-wrap{position:relative}
+    .search-wrap .control{padding-left:42px}
+    .search-icon{position:absolute;left:14px;bottom:11px;color:var(--soft);pointer-events:none}
+    .period-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 
     .btn{
-      appearance:none;
-      border-radius:999px;
-      border:1px solid transparent;
-      padding:8px 13px;
+      min-height:42px;
+      border-radius:12px;
+      border:1px solid rgba(116,154,202,.28);
+      background:rgba(9,21,39,.88);
+      color:var(--text);
+      padding:0 14px;
+      font-weight:760;
+      cursor:pointer;
       display:inline-flex;
       align-items:center;
-      gap:6px;
-      cursor:pointer;
-      font-weight:600;
-      letter-spacing:.02em;
-      transition:
-        background .18s ease,
-        border-color .18s ease,
-        box-shadow .18s ease,
-        transform .18s ease;
-      white-space:nowrap;
+      justify-content:center;
+      gap:8px;
+      transition:.16s ease;
     }
+    .btn:hover{transform:translateY(-1px);border-color:rgba(56,189,248,.55);background:rgba(13,32,58,.94)}
+    .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .btn-primary{background:linear-gradient(135deg,#0e7490,#2563eb);border-color:rgba(103,232,249,.34);box-shadow:0 12px 24px rgba(37,99,235,.16)}
+    .btn-success{background:linear-gradient(135deg,#08783c,#15a34a);border-color:rgba(134,239,172,.32)}
+    .btn-warning{background:linear-gradient(135deg,#174c91,#167ac7);border-color:rgba(125,211,252,.30)}
+    .btn-archive{background:linear-gradient(135deg,#6d4b0d,#a16207);border-color:rgba(253,230,138,.26)}
+    .btn-danger{background:linear-gradient(135deg,#7f1d1d,#b91c1c);border-color:rgba(254,202,202,.24)}
+    .btn-ghost{background:rgba(6,15,28,.75)}
 
-    .btn.primary{
-      background:linear-gradient(135deg, #0ea5e9, #22c55e);
-      border-color:rgba(191,219,254,0.75);
-      color:#0b1120;
-      box-shadow:
-        0 10px 28px rgba(59,130,246,0.7),
-        0 0 0 1px rgba(15,23,42,0.8);
-    }
-    .btn.primary:hover{
-      transform:translateY(-1px);
-      box-shadow:
-        0 14px 34px rgba(59,130,246,0.9),
-        0 0 0 1px rgba(15,23,42,0.9);
-      filter:saturate(1.05);
-    }
-
-    .btn.ghost{
-      background:rgba(15,23,42,0.8);
-      border-color:rgba(148,163,184,0.7);
-      color:var(--text-soft);
-      box-shadow:0 10px 26px rgba(15,23,42,0.9);
-    }
-    .btn.ghost:hover{
-      background:rgba(30,64,175,0.9);
-      color:#e5edff;
-      transform:translateY(-1px);
-      box-shadow:
-        0 14px 32px rgba(15,23,42,1),
-        0 0 0 1px rgba(30,64,175,0.9);
-    }
-
-    .btn.small{
-      padding:6px 10px;
-      border-radius:14px;
-      font-size:.8rem;
-    }
-
-    .btn:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-      transform:none;
-      box-shadow:none;
-    }
-
-    @media(max-width:720px){
-      .topbar{
-        flex-direction:column;
-        align-items:stretch;
-        gap:10px;
-      }
-      .top-right{
-        justify-content:flex-start;
-      }
-      .input{
-        min-width:0;
-        flex:1;
-      }
-    }
-
-    /* ===========================
-       CONTEÚDO / GRID DE CARDS
-    ============================ */
-    .wrap{
-      width:min(1180px, 100%);
-      margin:0 auto;
-      margin-top:14px;
-    }
-
-    #info{
-      color:var(--text-soft);
-      font-size:.84rem;
-      margin:6px 2px 10px;
-      text-shadow:0 2px 8px rgba(0,0,0,0.9);
-    }
-
-    .grid{
-      margin-top:8px;
+    .workspace{
       display:grid;
-      grid-template-columns:repeat(12,1fr);
-      gap:16px;
+      grid-template-columns:minmax(330px,430px) minmax(0,1fr);
+      gap:14px;
+      min-height:670px;
     }
 
-    @media (max-width:1100px){ .grid{ grid-template-columns:repeat(8,1fr); } }
-    @media (max-width:820px){ .grid{ grid-template-columns:repeat(6,1fr); } }
-    @media (max-width:560px){ .grid{ grid-template-columns:repeat(4,1fr); } }
+    .panel{
+      border:1px solid var(--border);
+      border-radius:20px;
+      background:linear-gradient(160deg,rgba(7,18,34,.92),rgba(4,12,24,.92));
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
 
-    .card{
-      grid-column:span 6;
-      border-radius:var(--glass-radius);
-      background:rgba(15,23,42,0.84);
-      border:1px solid var(--glass-border);
-      backdrop-filter:blur(18px);
-      -webkit-backdrop-filter:blur(18px);
-      box-shadow:var(--glass-shadow);
-      padding:12px 12px 14px;
+    .inbox{display:flex;flex-direction:column;min-height:670px}
+    .inbox-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid rgba(148,163,184,.12);color:var(--soft);font-size:.82rem}
+    .inbox-list{padding:8px;display:grid;gap:8px;overflow-y:auto;overflow-x:hidden;max-height:690px;flex:1 1 auto;min-height:0;grid-auto-rows:max-content;align-content:start;scrollbar-color:rgba(56,189,248,.48) transparent;scrollbar-width:thin}
+
+    .notification-item{
+      border:1px solid rgba(116,154,202,.16);
+      border-radius:15px;
+      background:rgba(8,19,35,.72);
+      padding:12px;
+      cursor:pointer;
+      transition:.16s ease;
       position:relative;
       overflow:hidden;
-      transition:
-        transform .20s ease,
-        box-shadow .20s ease,
-        border-color .20s ease,
-        background .20s ease;
+      min-height:86px;
+      height:auto;
+      flex:0 0 auto;
     }
+    .notification-item::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:2px;border-radius:4px;background:transparent}
+    .notification-item:hover{background:rgba(12,29,52,.90);border-color:rgba(56,189,248,.30)}
+    .notification-item.selected{border-color:rgba(56,189,248,.82);background:linear-gradient(135deg,rgba(13,56,91,.66),rgba(8,24,45,.94));box-shadow:0 0 0 1px rgba(56,189,248,.18),0 0 24px rgba(37,99,235,.11)}
+    .notification-item.selected::before{background:var(--cyan)}
+    .item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .student-line{display:flex;align-items:center;gap:9px;min-width:0}
+    .avatar{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(145deg,#162a44,#294b6d);border:1px solid rgba(148,163,184,.18);color:#c7d7ea;font-size:.8rem;font-weight:800}
+    .student-name{font-size:.91rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .item-date{font-size:.7rem;color:var(--soft);text-align:right;white-space:nowrap}
+    .item-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 0 43px}
+    .tag-row{display:flex;gap:6px;flex-wrap:wrap;min-width:0}
+    .tag,.status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:.68rem;font-weight:760;border:1px solid rgba(148,163,184,.18);background:rgba(255,255,255,.035);color:var(--soft)}
+    .tag.turma{color:#8ed8ff;border-color:rgba(56,189,248,.32);background:rgba(14,116,144,.10)}
+    .status-pendente{color:#fbbf24;border-color:rgba(245,158,11,.35);background:var(--amber-soft)}
+    .status-deferido{color:#4ade80;border-color:rgba(34,197,94,.34);background:var(--green-soft)}
+    .status-revisao_solicitada{color:#60a5fa;border-color:rgba(59,130,246,.34);background:rgba(59,130,246,.13)}
+    .status-arquivado{color:#cbd5e1;border-color:rgba(148,163,184,.25);background:rgba(148,163,184,.08)}
 
-    .card::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      border-radius:inherit;
-      background:linear-gradient(
-        to bottom,
-        rgba(255,255,255,0.20) 0%,
-        rgba(255,255,255,0.06) 14%,
-        transparent 35%
-      );
-      pointer-events:none;
-    }
+    .pager{margin-top:auto;padding:12px;border-top:1px solid rgba(148,163,184,.12);display:flex;align-items:center;justify-content:center;gap:8px}
+    .pager .btn{min-height:36px;padding:0 11px;border-radius:10px;font-size:.78rem}
+    .page-indicator{font-size:.78rem;color:var(--soft);padding:0 7px}
 
-    .card > *{ position:relative; z-index:1; }
+    .details-panel{min-width:0}
+    .detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 18px 13px;border-bottom:1px solid rgba(148,163,184,.12)}
+    .detail-head h2{margin:0;font-size:1rem}
+    .detail-head p{margin:5px 0 0;color:var(--soft);font-size:.78rem}
 
-    @media (max-width:820px){ .card{ grid-column:span 12; } }
+    .timeline{display:flex;align-items:flex-start;justify-content:flex-end;min-width:460px;max-width:600px;flex:1}
+    .step{flex:1;position:relative;text-align:center;color:var(--faint);font-size:.68rem;padding-top:31px}
+    .step::before{content:"";position:absolute;top:10px;left:50%;right:-50%;height:2px;background:rgba(148,163,184,.18)}
+    .step:last-child::before{display:none}
+    .step-dot{position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(148,163,184,.25);background:#081426;color:var(--faint);z-index:2;font-size:.66rem}
+    .step.done{color:#b9f4d0}.step.done .step-dot{background:#075b34;border-color:#22c55e;color:#dcfce7}.step.done::before{background:linear-gradient(90deg,#22c55e,#38bdf8)}
+    .step.active{color:#7dd3fc}.step.active .step-dot{background:#0d63a5;border-color:#38bdf8;color:#fff;box-shadow:0 0 14px rgba(56,189,248,.28)}
+    .step small{display:block;color:inherit;opacity:.72;margin-top:3px}
 
-    .card:hover{
-      transform:translateY(-2px) scale(1.008);
-      box-shadow:
-        0 14px 40px rgba(15,23,42,1),
-        0 0 0 1px rgba(148,163,184,0.9);
-      background:rgba(15,23,42,0.97);
-    }
+    .detail-body{padding:13px;display:grid;gap:11px}
+    .student-summary{display:grid;grid-template-columns:minmax(0,1fr) 180px 180px;gap:10px}
+    .section-card{border:1px solid rgba(116,154,202,.17);border-radius:16px;background:rgba(8,19,35,.62);padding:13px;min-width:0}
+    .section-label{font-size:.72rem;font-weight:800;color:#80d8ff;letter-spacing:.04em;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+    .student-card{display:flex;align-items:center;gap:13px}
+    .student-card .avatar{width:48px;height:48px;border-radius:16px;font-size:.96rem}
+    .student-card h3{margin:0;font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .student-card p{margin:6px 0 0;color:var(--soft);font-size:.78rem}
+    .metric-card{display:flex;flex-direction:column;justify-content:center}
+    .metric-card span{font-size:.72rem;color:var(--soft)}
+    .metric-card strong{font-size:1.3rem;margin-top:7px}
+    .value-negative{color:#fb7185}.value-positive{color:#4ade80}.value-neutral{color:#fff}
 
-    .row-top{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:6px;
-    }
+    .content-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(380px,.95fr);gap:10px}
+    .incident-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(150px,.65fr);gap:14px}
+    .info-block{margin-bottom:12px}
+    .info-block:last-child{margin-bottom:0}
+    .info-block b{display:block;color:var(--soft);font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
+    .info-block div{font-size:.86rem;line-height:1.48;color:#e1ebf7;white-space:pre-wrap}
+    .legal-list{display:grid;gap:9px}
+    .legal-row{border-bottom:1px solid rgba(148,163,184,.10);padding-bottom:7px}
+    .legal-row:last-child{border-bottom:0;padding-bottom:0}
+    .legal-row span{display:block;color:var(--soft);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}
+    .legal-row strong{display:block;margin-top:3px;font-size:.82rem}
 
-    .aluno{
-      font-weight:700;
-      font-size:.98rem;
-      color:#f9fbff;
-      text-shadow:0 3px 10px rgba(0,0,0,0.9);
-    }
+    .email-subject{border:1px solid rgba(116,154,202,.20);border-radius:11px;background:rgba(4,12,23,.72);padding:9px 10px;font-size:.8rem;margin-bottom:8px;color:#dbeafe}
+    .email-preview{border:1px solid rgba(116,154,202,.18);border-radius:12px;background:rgba(3,10,20,.72);padding:12px;font-size:.78rem;line-height:1.55;color:#cbd9e8;min-height:182px;white-space:pre-wrap}
+    .email-recipient{margin-top:8px;font-size:.72rem;color:var(--soft)}
+    .email-recipient strong{color:#e5f3ff}
 
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:4px 9px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.85);
-      background:rgba(15,23,42,0.8);
-      font-size:.78rem;
-      color:var(--text-soft);
-    }
+    .bottom-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(260px,.8fr) minmax(420px,1.4fr);gap:10px}
+    .checklist{display:grid;gap:7px}
+    .check-item{display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:#d6e2ef}
+    .check-icon{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-size:.6rem;margin-top:1px}
+    .check-ok{background:rgba(34,197,94,.18);color:#4ade80;border:1px solid rgba(34,197,94,.30)}
+    .check-bad{background:rgba(239,68,68,.14);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+    .guidance{margin:0;padding-left:17px;color:#c8d5e4;font-size:.75rem;line-height:1.5}
+    .guidance li{margin-bottom:7px}
 
-    .muted{
-      color:var(--text-soft);
-      font-size:.86rem;
-    }
+    .decision-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+    .decision-actions .btn{min-height:58px;align-items:flex-start;flex-direction:column;gap:2px;text-align:left;padding:10px 11px}
+    .decision-actions .btn strong{font-size:.82rem}.decision-actions .btn span{font-size:.65rem;font-weight:550;opacity:.82}
+    .document-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
 
-    .kv{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-top:8px;
-    }
+    .empty-detail{min-height:650px;display:grid;place-items:center;text-align:center;color:var(--soft);padding:30px}
+    .empty-detail .empty-icon{font-size:3rem;opacity:.45;margin-bottom:12px}
+    .empty-detail h3{color:var(--text);margin:0 0 7px}
+    .empty-detail p{margin:0;max-width:380px;line-height:1.5}
 
-    .box{
-      border-radius:12px;
-      border:1px solid rgba(148,163,184,0.55);
-      background:rgba(15,23,42,0.85);
-      padding:8px 9px;
-      font-size:.88rem;
-      color:#e5edff;
-      box-shadow:0 8px 18px rgba(15,23,42,0.9);
-    }
+    .skeleton{background:linear-gradient(90deg,rgba(148,163,184,.05),rgba(148,163,184,.13),rgba(148,163,184,.05));background-size:200% 100%;animation:shimmer 1.3s infinite;height:84px;border-radius:15px}
+    @keyframes shimmer{to{background-position:-200% 0}}
 
-    .box b{
-      display:block;
-      font-size:.76rem;
-      text-transform:uppercase;
-      letter-spacing:.16em;
-      color:rgba(148,163,184,0.95);
-      margin-bottom:3px;
-    }
+    .toast-stack{position:fixed;right:18px;bottom:18px;z-index:110;display:grid;gap:8px;max-width:min(420px,calc(100vw - 36px))}
+    .toast{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:rgba(6,17,31,.96);box-shadow:var(--shadow);color:#e7f2ff;font-size:.82rem;animation:toastIn .18s ease}
+    .toast.success{border-color:rgba(34,197,94,.38)}.toast.error{border-color:rgba(239,68,68,.40)}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}}
 
-    .actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
+    .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.70);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-backdrop.open{display:flex}
+    .modal{width:min(560px,100%);border:1px solid rgba(116,177,255,.28);border-radius:20px;background:linear-gradient(160deg,#0a1b31,#050f1e);box-shadow:0 30px 80px rgba(0,0,0,.62);overflow:hidden}
+    .modal-head{padding:16px 18px;border-bottom:1px solid rgba(148,163,184,.13);display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .modal-head h3{margin:0;font-size:1rem}.modal-close{background:none;border:0;color:var(--soft);font-size:1.2rem;cursor:pointer}
+    .modal-body{padding:17px 18px;color:#d7e5f3;font-size:.86rem;line-height:1.55}
+    .modal-body textarea{width:100%;min-height:120px;margin-top:10px;resize:vertical}
+    .modal-foot{padding:13px 18px;border-top:1px solid rgba(148,163,184,.13);display:flex;justify-content:flex-end;gap:8px}
 
-    .btn.toggle{
-      width:fit-content;
-      background:rgba(15,23,42,0.9);
-      border-color:rgba(148,163,184,0.7);
-      color:var(--text-soft);
+    @media(max-width:1350px){
+      .filter-bar{grid-template-columns:1.5fr repeat(3,.7fr) 1fr auto}.order-field{display:none}
+      .bottom-grid{grid-template-columns:1fr 1fr}.decision-section{grid-column:1/-1}
+      .summary-card{min-width:150px}
     }
-
-    .btn.toggle:hover{
-      background:rgba(30,64,175,0.96);
-      color:#e5edff;
+    @media(max-width:1060px){
+      .hero{align-items:flex-start;flex-direction:column}.summary-cards{justify-content:flex-start}
+      .filter-bar{grid-template-columns:1fr 1fr 1fr}.search-field{grid-column:1/-1}.period-field{grid-column:1/3}.filter-actions{grid-column:3}
+      .workspace{grid-template-columns:1fr}.inbox{min-height:430px}.inbox-list{max-height:430px;grid-auto-rows:max-content;align-content:start}.notification-item{min-height:86px}.timeline{min-width:400px}
     }
-
-    .details{
-      display:none;
-      margin-top:10px;
+    @media(max-width:760px){
+      .global-header{padding:0 14px}.brand-divider,.brand-tenant,.user-copy{display:none}.page{padding:14px 10px 26px}
+      .summary-cards{display:grid;grid-template-columns:1fr 1fr;width:100%}.summary-card{min-width:0}.summary-card:first-child{grid-column:1/-1}
+      .filter-bar{grid-template-columns:1fr 1fr}.search-field,.period-field{grid-column:1/-1}.filter-actions{grid-column:auto}.order-field{display:block}
+      .detail-head{flex-direction:column}.timeline{width:100%;min-width:0}.step{font-size:.59rem}
+      .student-summary{grid-template-columns:1fr 1fr}.student-summary .student-main{grid-column:1/-1}
+      .content-grid,.bottom-grid{grid-template-columns:1fr}.incident-grid{grid-template-columns:1fr}.decision-actions{grid-template-columns:1fr 1fr}
     }
-    .details.open{
-      display:block;
+    @media(max-width:480px){
+      .summary-cards{grid-template-columns:1fr}.summary-card:first-child{grid-column:auto}.filter-bar{grid-template-columns:1fr}.period-grid{grid-template-columns:1fr}.filter-actions{grid-column:auto}
+      .timeline{display:grid;grid-template-columns:1fr 1fr;gap:8px}.step{padding-top:26px}.step::before{display:none}
+      .student-summary{grid-template-columns:1fr}.student-summary .student-main{grid-column:auto}.decision-actions,.document-actions{grid-template-columns:1fr}
     }
-
-    /* Skeleton */
-    .skeleton{
-      animation:pulse 1.3s ease-in-out infinite;
-      background:linear-gradient(
-        90deg,
-        rgba(148,163,184,0.12),
-        rgba(248,250,252,0.18),
-        rgba(148,163,184,0.10)
-      );
-      background-size:200% 100%;
-      color:transparent;
-    }
-    .sk-card{
-      height:120px;
-      border-radius:var(--glass-radius);
-      border:1px solid rgba(148,163,184,0.55);
-      box-shadow:var(--glass-shadow);
-    }
-    @keyframes pulse{
-      0%{ background-position:200% 0; }
-      100%{ background-position:-200% 0; }
-    }
-
-    /* Footer / Paginação */
-    .footer-ctrl{
-      margin:18px 0 0;
-      display:flex;
-      gap:10px;
-      justify-content:center;
-      flex-wrap:wrap;
-    }
-
-    /* Modal: fundo escuro + texto claro */
-    .modal-content{
-      background:#020617;
-      color:#e5edff;
-      border-radius:18px;
-      border:1px solid rgba(148,163,184,0.5);
-      box-shadow:0 18px 48px rgba(15,23,42,1);
-    }
-    .modal-title,
-    .modal-body,
-    .modal-footer .btn{
-      color:#e5edff;
-    }
-    .btn-close{ filter:invert(1); }
-
   </style>
 </head>
 <body>
-  <div class="page">
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <div class="top-left">
-        <div class="brand-pill"></div>
-        <div class="top-title">
-          <span>CMDPII • SISTEMA ESCOLAR</span>
-          <span>Controle de Notificações</span>
-        </div>
-      </div>
-      <div class="top-right">
-        <input id="q" class="input" placeholder="🔎 Buscar por aluno, motivo, turma…" />
-        <button class="btn ghost" id="btnRefresh">🔄 Atualizar</button>
-        <a class="btn primary" href="/painel.html">⬅ Painel</a>
-      </div>
-    </header>
-
-    <main class="wrap">
-      <!-- Contador/estado -->
-      <div id="info"></div>
-
-      <!-- GRID de cards -->
-      <div id="grid" class="grid" aria-live="polite" aria-busy="false"></div>
-
-      <!-- Paginação / carregar mais -->
-      <div class="footer-ctrl">
-        <button id="btnPrev" class="btn small ghost" disabled>⟵ Anterior</button>
-        <button id="btnNext" class="btn small ghost">Próxima ⟶</button>
-        <button id="btnLoadMore" class="btn small ghost">Carregar mais</button>
-        <button id="btnTopo" class="btn small ghost">↑ Topo</button>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modal Detalhes -->
-  <div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">📄 Detalhes da Notificação</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" id="conteudoDetalhes"></div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        </div>
-      </div>
+<div class="app-shell">
+  <header class="global-header">
+    <div class="brand">
+      <img src="/icons/axoriin-192x192.png" alt="Axoriin" />
+      <span class="brand-name">Axoriin</span>
+      <span class="brand-divider"></span>
+      <span class="brand-tenant">CMDPII</span>
     </div>
+    <div class="header-user">
+      <div class="user-copy"><strong>Coordenador(a)</strong><span>Corpo Discente</span></div>
+      <div class="user-avatar">👤</div>
+      <a class="btn btn-ghost" href="/painel.html" style="min-height:36px;padding:0 11px">← Painel</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-title">
+        <div class="hero-icon">🛡️</div>
+        <div>
+          <h1>Validação de Notificações</h1>
+          <p>Fluxo de análise, aprovação e envio aos responsáveis.</p>
+        </div>
+      </div>
+      <div class="summary-cards">
+        <button class="summary-card pending" data-summary-status="fila">
+          <span class="sum-icon">⏳</span><span><strong id="sumPending">--</strong><span>Pendentes de análise</span></span>
+        </button>
+        <button class="summary-card approved" data-summary-status="deferido">
+          <span class="sum-icon">✓</span><span><strong id="sumApproved">--</strong><span>Deferidas hoje</span></span>
+        </button>
+        <button class="summary-card returned" data-summary-status="revisao_solicitada">
+          <span class="sum-icon">↻</span><span><strong id="sumReturned">--</strong><span>Devolvidas para correção</span></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="filter-bar" aria-label="Filtros de notificações">
+      <div class="field search-field search-wrap">
+        <label for="q">Pesquisa</label>
+        <span class="search-icon">⌕</span>
+        <input id="q" class="control" placeholder="Aluno, motivo ou nº sequencial..." autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="statusFilter">Status</label>
+        <select id="statusFilter" class="control">
+          <option value="fila">Fila de análise</option>
+          <option value="pendente">Pendentes</option>
+          <option value="revisao_solicitada">Devolvidas</option>
+          <option value="deferido">Deferidas</option>
+          <option value="arquivado">Arquivadas</option>
+          <option value="todos">Todos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="typeFilter">Tipo</label>
+        <select id="typeFilter" class="control"><option value="todos">Todos</option></select>
+      </div>
+      <div class="field">
+        <label for="classFilter">Turma</label>
+        <select id="classFilter" class="control"><option value="todas">Todas</option></select>
+      </div>
+      <div class="field period-field">
+        <label>Período de emissão</label>
+        <div class="period-grid">
+          <input id="startDate" class="control" type="date" aria-label="Data inicial" />
+          <input id="endDate" class="control" type="date" aria-label="Data final" />
+        </div>
+      </div>
+      <div class="field order-field">
+        <label for="orderFilter">Ordenar por</label>
+        <select id="orderFilter" class="control"><option value="desc">Mais recentes</option><option value="asc">Mais antigas</option></select>
+      </div>
+      <div class="field filter-actions">
+        <label>&nbsp;</label>
+        <button id="clearFilters" class="btn btn-ghost" style="width:100%">Limpar filtros</button>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel inbox">
+        <div class="inbox-head"><span id="listInfo">Carregando notificações...</span><button id="refreshBtn" class="btn btn-ghost" style="min-height:32px;padding:0 9px">↻</button></div>
+        <div id="notificationList" class="inbox-list" aria-live="polite"></div>
+        <div class="pager">
+          <button id="prevBtn" class="btn btn-ghost">←</button>
+          <span id="pageIndicator" class="page-indicator">Página 1 de 1</span>
+          <button id="nextBtn" class="btn btn-ghost">→</button>
+        </div>
+      </aside>
+
+      <section class="panel details-panel">
+        <div id="detailContent" class="empty-detail">
+          <div><div class="empty-icon">📑</div><h3>Selecione uma notificação</h3><p>Escolha um registro na lista para conferir os dados, visualizar a comunicação e tomar uma decisão.</p></div>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modalTitle">Confirmar ação</h3><button id="modalClose" class="modal-close" aria-label="Fechar">×</button></div>
+    <div id="modalBody" class="modal-body"></div>
+    <div class="modal-foot"><button id="modalCancel" class="btn btn-ghost">Cancelar</button><button id="modalConfirm" class="btn btn-primary">Confirmar</button></div>
   </div>
+</div>
+<div id="toastStack" class="toast-stack" aria-live="polite"></div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const API = (path) => path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
 
-  <script>
-    // ================= Helpers / API =================
-    const API = (p)=> p.startsWith('http') ? p : (p.startsWith('/api') ? p : `/api${p.startsWith('/')?p:'/'+p}`);
-    const grid = document.getElementById('grid');
-    const info = document.getElementById('info');
-    const qInput = document.getElementById('q');
-    const btnPrev = document.getElementById('btnPrev');
-    const btnNext = document.getElementById('btnNext');
-    const btnMore = document.getElementById('btnLoadMore');
-    const btnTopo = document.getElementById('btnTopo');
-    const btnRefresh = document.getElementById('btnRefresh');
+  const state = {
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 1,
+    items: [],
+    selectedId: null,
+    loading: false,
+    modalAction: null
+  };
 
-    let page = 1, limit = 10, totalPages = 1, total=0;
-    let serverPaging = true;
-    let cacheLocal = [];
-    let loading = false;
+  const BASES = { 'Advertência Escrita': -0.30, 'Repreensão': -0.50, 'A.E.C.D.E': -0.70, 'A.I.A': -1.20 };
+  const REQUER_DIAS = new Set(['A.E.C.D.E','A.I.A']);
 
-    // === NOVO: cálculo de valor exibido, blindando contra dupla multiplicação no backend dessa rota
-    const BASES = {
-      'Advertência Escrita': -0.30,
-      'Repreensão': -0.50,
-      'A.E.C.D.E': -0.70,
-      'A.I.A': -1.20
-    };
-    const REQUER_DIAS = new Set(['A.E.C.D.E', 'A.I.A']);
+  function escapeHtml(value){
+    return String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  }
 
-    function calcValorExibicao(n) {
-      // 1) Se o backend já mandar valorTotal, usa ele
-      if (typeof n.valorTotal === 'number') return Number(n.valorTotal);
+  function safe(value, fallback='—'){
+    const text = String(value ?? '').trim();
+    return text || fallback;
+  }
 
-      // 2) Elogio ou medidas que não dependem de dias → usa o que veio
-      const titulo = String(n.tipoMedida || n.tipo || '').trim();
-      const precisaDias = REQUER_DIAS.has(titulo);
+  function initials(name){
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    return (parts.slice(0,2).map(p => p[0]).join('') || 'A').toUpperCase();
+  }
 
-      if (!precisaDias) {
-        return Number(n.valorNumerico ?? 0);
-      }
+  function fmtDate(value){
+    if(!value) return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
 
-      // 3) Para A.E.C.D.E / A.I.A: recomputa como base × dias
-      const dias = Math.max(1, parseInt(n.quantidadeDias || 1, 10) || 1);
-      const base = BASES[titulo];
-      if (typeof base === 'number') {
-        return Number((base * dias).toFixed(2));
-      }
+  function fmtShortDate(value){
+    if(!value) return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }
 
-      // fallback
-      return Number(n.valorNumerico ?? 0);
+  function calcValue(n){
+    if(typeof n?.valorTotal === 'number') return Number(n.valorTotal);
+    const title = String(n?.tipoMedida || n?.tipo || '').trim();
+    if(!REQUER_DIAS.has(title)) return Number(n?.valorNumerico ?? 0);
+    const days = Math.max(1,parseInt(n?.quantidadeDias || 1,10) || 1);
+    return typeof BASES[title] === 'number' ? Number((BASES[title] * days).toFixed(2)) : Number(n?.valorNumerico ?? 0);
+  }
+
+  function fmtValue(n){
+    const v = calcValue(n);
+    return Number.isFinite(v) ? v.toFixed(2) : '—';
+  }
+
+  function statusLabel(status){
+    return ({pendente:'Pendente',deferido:'Deferida',revisao_solicitada:'Devolvida',arquivado:'Arquivada'})[status] || safe(status);
+  }
+
+  function isSpecialMeasure(n){
+    return ['A.I.A','A.E.C.D.E'].includes(String(n?.tipoMedida || n?.tipo || '').toUpperCase());
+  }
+
+  function debounce(fn,delay=320){
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args),delay); };
+  }
+
+  async function fetchJson(url,options={}){
+    const response = await fetch(url,{credentials:'include',cache:'no-store',...options});
+    const text = await response.text();
+    let data = {};
+    try{ data = text ? JSON.parse(text) : {}; }catch{ data = {message:text}; }
+    if(!response.ok) throw new Error(data.erro || data.message || `Erro HTTP ${response.status}`);
+    return data;
+  }
+
+  function toast(message,type='success'){
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = message;
+    $('toastStack').appendChild(el);
+    setTimeout(() => el.remove(),5200);
+  }
+
+  function filtersQuery(){
+    const params = new URLSearchParams({page:String(state.page),limit:String(state.limit),status:$('statusFilter').value,order:$('orderFilter').value});
+    const values = {q:$('q').value.trim(),tipo:$('typeFilter').value,turma:$('classFilter').value,inicio:$('startDate').value,fim:$('endDate').value};
+    Object.entries(values).forEach(([key,value]) => {
+      if(value && !['todos','todas'].includes(String(value).toLowerCase())) params.set(key,value);
+    });
+    return params;
+  }
+
+  function renderSkeleton(){
+    $('notificationList').innerHTML = Array.from({length:7},() => '<div class="skeleton"></div>').join('');
+  }
+
+  async function loadSummary(){
+    try{
+      const data = await fetchJson(API('/controle-notificacoes/resumo-validacao'));
+      $('sumPending').textContent = Number(data.aguardandoAnalise || 0).toLocaleString('pt-BR');
+      $('sumApproved').textContent = Number(data.deferidasHoje || 0).toLocaleString('pt-BR');
+      $('sumReturned').textContent = Number(data.devolvidas || 0).toLocaleString('pt-BR');
+    }catch(err){ console.warn(err); }
+  }
+
+  async function loadFilterOptions(){
+    try{
+      const data = await fetchJson(API('/controle-notificacoes/filtros-validacao'));
+      $('typeFilter').innerHTML = '<option value="todos">Todos</option>' + (data.tipos || []).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      $('classFilter').innerHTML = '<option value="todas">Todas</option>' + (data.turmas || []).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    }catch(err){ console.warn(err); }
+  }
+
+  async function loadNotifications({preserveSelection=true}={}){
+    if(state.loading) return;
+    state.loading = true;
+    renderSkeleton();
+    try{
+      const data = await fetchJson(`${API('/controle-notificacoes')}?${filtersQuery().toString()}`);
+      state.items = Array.isArray(data.data) ? data.data : [];
+      state.total = Number(data.total || 0);
+      state.totalPages = Number(data.totalPages || 1);
+      if(state.page > state.totalPages){ state.page = state.totalPages; return loadNotifications({preserveSelection}); }
+      if(!preserveSelection || !state.items.some(item => String(item._id) === String(state.selectedId))){ state.selectedId = state.items[0]?._id || null; }
+      renderList();
+      renderSelected();
+    }catch(err){
+      $('notificationList').innerHTML = `<div style="padding:18px;color:#fca5a5;font-size:.84rem">${escapeHtml(err.message || 'Erro ao carregar notificações.')}</div>`;
+      toast(err.message || 'Erro ao carregar notificações.','error');
+    }finally{ state.loading = false; }
+  }
+
+  function renderList(){
+    $('listInfo').textContent = `${state.total.toLocaleString('pt-BR')} notificação(ões) encontrada(s)`;
+    $('pageIndicator').textContent = `Página ${state.page} de ${state.totalPages}`;
+    $('prevBtn').disabled = state.page <= 1;
+    $('nextBtn').disabled = state.page >= state.totalPages;
+
+    if(!state.items.length){
+      $('notificationList').innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--soft)"><div style="font-size:2rem;margin-bottom:8px">📭</div>Nenhuma notificação encontrada para os filtros atuais.</div>';
+      return;
     }
 
-    function fmtValor(n) {
-      const v = calcValorExibicao(n);
-      return (isFinite(v) ? v.toFixed(2) : '—');
-    }
-
-    function setBusy(state){
-      grid.setAttribute('aria-busy', state ? 'true' : 'false');
-    }
-
-    function showSkeleton(n=6){
-      grid.innerHTML = '';
-      for(let i=0;i<n;i++){
-        const sk = document.createElement('div');
-        sk.className = 'card skeleton sk-card';
-        grid.appendChild(sk);
-      }
-    }
-
-    function fmtData(d){ try{ return new Date(d).toLocaleString('pt-BR'); }catch{ return '—'; } }
-    function safe(v){ return (v ?? '').toString(); }
-    const isMedidaComContraturno = (m)=> ['A.I.A','A.E.C.D.E'].includes((m||'').toUpperCase());
-
-    function debounce(fn, ms=350){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
-
-    async function getJSON(url, {timeoutMs=10000}={}){
-      const ctrl = new AbortController(); const id = setTimeout(()=>ctrl.abort('timeout'), timeoutMs);
-      try{
-        const r = await fetch(url, { credentials:'include', cache:'no-store', signal:ctrl.signal });
-        const ct = r.headers.get('content-type') || '';
-        if(!r.ok) throw new Error(`${r.status}`);
-        return ct.includes('application/json') ? r.json() : {};
-      }finally{ clearTimeout(id); }
-    }
-
-    function buildURL(){
-      const u = new URL(API('/controle-notificacoes'), location.origin);
-      u.searchParams.set('page', page);
-      u.searchParams.set('limit', limit);
-      const q = qInput.value.trim(); if(q) u.searchParams.set('q', q);
-      return u.toString();
-    }
-
-    function renderInfo(){
-      info.textContent = `Página ${page}/${totalPages} • ${total.toLocaleString('pt-BR')} itens${qInput.value ? ` • filtro: "${qInput.value}"` : ''}`;
-      btnPrev.disabled = page<=1;
-      btnNext.disabled = page>=totalPages;
-    }
-
-    function Card(notif){
-      const aluno = notif.aluno || {};
-      const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = `
-        <div class="row-top">
-          <div>
-            <div class="aluno">${safe(aluno.nome) || '—'} <span class="pill">${safe(aluno.turma) || '—'}</span></div>
-            <div class="muted">${safe(notif.tipoMedida) || '—'} • ${fmtData(notif.createdAt)}</div>
+    $('notificationList').innerHTML = state.items.map(n => {
+      const aluno = n.aluno || {};
+      const selected = String(n._id) === String(state.selectedId);
+      return `<article class="notification-item ${selected ? 'selected' : ''}" data-id="${escapeHtml(n._id)}">
+        <div class="item-top">
+          <div class="student-line">
+            <div class="avatar">${escapeHtml(initials(aluno.nome))}</div>
+            <div style="min-width:0"><div class="student-name">${escapeHtml(safe(aluno.nome))}</div><div class="tag-row" style="margin-top:5px"><span class="tag turma">${escapeHtml(safe(aluno.turma))}</span><span class="tag">${escapeHtml(safe(n.tipoMedida || n.tipo))}</span></div></div>
           </div>
-          <button class="btn small toggle">Mostrar opções</button>
+          <div class="item-date">${escapeHtml(fmtShortDate(n.createdAt))}</div>
         </div>
-        <div class="kv">
-          <div class="box"><b>Motivo</b><div>${safe(notif.motivo) || '—'}</div></div>
-          <div class="box"><b>Tipo</b><div>${safe(notif.tipo) || '—'}</div></div>
+        <div class="item-meta"><span style="font-size:.7rem;color:var(--faint)">Nº ${escapeHtml(safe(n.numeroSequencial))}</span><span class="status-chip status-${escapeHtml(n.status || 'pendente')}">${escapeHtml(statusLabel(n.status || 'pendente'))}</span></div>
+      </article>`;
+    }).join('');
+  }
+
+  function timelineHtml(n){
+    const approved = n.status === 'deferido';
+    const archived = n.status === 'arquivado';
+    const returned = n.status === 'revisao_solicitada';
+    const sent = Boolean(n.mensagemEnviada || n.responsavelCiencia?.notificado);
+    return `<div class="timeline">
+      <div class="step done"><span class="step-dot">✓</span>Emitida<small>${escapeHtml(fmtShortDate(n.createdAt))}</small></div>
+      <div class="step ${approved || archived ? 'done' : 'active'}"><span class="step-dot">${approved || archived ? '✓' : '•'}</span>${returned ? 'Correção solicitada' : 'Em análise'}<small>${returned ? 'Aguardando ajuste' : approved ? 'Concluída' : archived ? 'Encerrada' : 'Atual'}</small></div>
+      <div class="step ${approved ? 'done' : ''}"><span class="step-dot">${approved ? '✓' : '•'}</span>Deferida<small>${approved ? escapeHtml(fmtShortDate(n.deferidoEm || n.updatedAt)) : 'Aguardando'}</small></div>
+      <div class="step ${sent ? 'done' : ''}"><span class="step-dot">${sent ? '✓' : '•'}</span>Enviada à família<small>${sent ? escapeHtml(fmtShortDate(n.mensagemEnviadaEm || n.responsavelCiencia?.notificadoEm)) : 'Aguardando'}</small></div>
+    </div>`;
+  }
+
+  function checklist(n){
+    const aluno = n.aluno || {};
+    const items = [
+      ['Motivo e observação preenchidos',Boolean(String(n.motivo || '').trim() && String(n.observacao || '').trim())],
+      ['Tipo e medida disciplinar informados',Boolean(String(n.tipo || '').trim() && String(n.tipoMedida || '').trim())],
+      ['Artigo, parágrafo, inciso e classificação conferidos',Boolean(n.artigo && n.paragrafo && n.inciso && n.classificacaoRegulamento)],
+      ['Impacto na pontuação definido',Number.isFinite(calcValue(n))],
+      ['Aluno e turma identificados',Boolean(aluno.nome && aluno.turma)],
+      ['E-mail do responsável disponível',Boolean(aluno.contatos?.emailResponsavel)]
+    ];
+    return items.map(([label,ok]) => `<div class="check-item"><span class="check-icon ${ok ? 'check-ok' : 'check-bad'}">${ok ? '✓' : '!'}</span><span>${escapeHtml(label)}</span></div>`).join('');
+  }
+
+  function emailPreview(n){
+    const aluno = n.aluno || {};
+    return `Prezada família do(a) aluno(a) ${safe(aluno.nome)} (${safe(aluno.turma)}),\n\nInformamos que foi deferida uma notificação disciplinar referente ao(à) estudante.\n\nTipo/Medida: ${safe(n.tipoMedida || n.tipo)}\nMotivo: ${safe(n.motivo)}\nNº Sequencial: ${safe(n.numeroSequencial)}\n\nO e-mail enviado pelo sistema também disponibilizará o acesso individual para visualização e confirmação de ciência.\n\nAtenciosamente,\nCoordenação Escolar`;
+  }
+
+  function renderSelected(){
+    const n = state.items.find(item => String(item._id) === String(state.selectedId));
+    if(!n){
+      $('detailContent').className = 'empty-detail';
+      $('detailContent').innerHTML = '<div><div class="empty-icon">📑</div><h3>Selecione uma notificação</h3><p>Escolha um registro na lista para conferir os dados, visualizar a comunicação e tomar uma decisão.</p></div>';
+      return;
+    }
+
+    const aluno = n.aluno || {};
+    const value = calcValue(n);
+    const email = aluno.contatos?.emailResponsavel || '';
+    const status = n.status || 'pendente';
+    const disableDefer = ['deferido','arquivado'].includes(status);
+    const disableCorrection = status === 'arquivado';
+    const disableArchive = status === 'arquivado';
+    const showParents = status === 'deferido' && isSpecialMeasure(n);
+
+    $('detailContent').className = '';
+    $('detailContent').innerHTML = `
+      <div class="detail-head"><div><h2>Detalhes da notificação</h2><p>Confira os dados e valide a comunicação antes da decisão.</p></div>${timelineHtml(n)}</div>
+      <div class="detail-body">
+        <div class="student-summary">
+          <div class="section-card student-main"><div class="section-label">👤 Resumo do aluno</div><div class="student-card"><div class="avatar">${escapeHtml(initials(aluno.nome))}</div><div style="min-width:0"><h3>${escapeHtml(safe(aluno.nome))} <span class="tag turma" style="vertical-align:middle">${escapeHtml(safe(aluno.turma))}</span></h3><p>Nº Sequencial: ${escapeHtml(safe(n.numeroSequencial))} • Emitida em ${escapeHtml(fmtDate(n.createdAt))}</p></div></div></div>
+          <div class="section-card metric-card"><span>Impacto na pontuação</span><strong class="${value < 0 ? 'value-negative' : value > 0 ? 'value-positive' : 'value-neutral'}">${escapeHtml(fmtValue(n))}</strong></div>
+          <div class="section-card metric-card"><span>Status atual</span><strong style="font-size:1rem"><span class="status-chip status-${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></strong></div>
         </div>
-        <div class="details">
-          <div class="kv">
-            <div class="box"><b>Valor</b><div>${fmtValor(notif)}</div></div>
-            <div class="box"><b>Status</b><div>${safe(notif.status) || 'pendente'}</div></div>
-            <div class="box"><b>Nº Sequencial</b><div>${safe(notif.numeroSequencial) || '—'}</div></div>
-            <div class="box"><b>Observação</b><div>${safe(notif.observacao) || '—'}</div></div>
-          </div>
-          <div class="kv" style="margin-top:8px">
-            <div class="box"><b>Artigo</b><div>${safe(notif.artigo) || '—'}</div></div>
-            <div class="box"><b>Parágrafo</b><div>${safe(notif.paragrafo) || '—'}</div></div>
-            <div class="box"><b>Inciso</b><div>${safe(notif.inciso) || '—'}</div></div>
-            <div class="box"><b>Classificação</b><div>${safe(notif.classificacaoRegulamento) || '—'}</div></div>
-          </div>
-          <div class="actions">
-            <button class="btn small ghost" data-acao="ver">📄 Ver</button>
-            <button class="btn small primary" data-acao="deferir">✅ Deferir</button>
-            <button class="btn small ghost" data-acao="revisar">🔁 Revisar</button>
-            <button class="btn small ghost" data-acao="arquivar">📁 Arquivar</button>
-            <button class="btn small ghost" data-acao="excluir">🗑️ Excluir</button>
-            <span class="comPaisWrap" style="display:none">
-              <button class="btn small primary" data-acao="comPais">👪 Comunicação aos Pais</button>
-            </span>
+
+        <div class="content-grid">
+          <div class="section-card"><div class="section-label">📋 Detalhes do incidente</div><div class="incident-grid"><div>
+            <div class="info-block"><b>Motivo</b><div>${escapeHtml(safe(n.motivo))}</div></div>
+            <div class="info-block"><b>Observação</b><div>${escapeHtml(safe(n.observacao))}</div></div>
+            ${n.comentarioRevisao || n.comentarioMonitor ? `<div class="info-block"><b>Comentário da revisão</b><div>${escapeHtml(safe(n.comentarioRevisao || n.comentarioMonitor))}</div></div>` : ''}
+          </div><div class="legal-list">
+            <div class="legal-row"><span>Artigo</span><strong>${escapeHtml(safe(n.artigo))}</strong></div>
+            <div class="legal-row"><span>Parágrafo</span><strong>${escapeHtml(safe(n.paragrafo))}</strong></div>
+            <div class="legal-row"><span>Inciso</span><strong>${escapeHtml(safe(n.inciso))}</strong></div>
+            <div class="legal-row"><span>Classificação</span><strong>${escapeHtml(safe(n.classificacaoRegulamento))}</strong></div>
+            <div class="legal-row"><span>Tipo</span><strong>${escapeHtml(safe(n.tipoMedida || n.tipo))}</strong></div>
+            <div class="legal-row"><span>Valor</span><strong>${escapeHtml(fmtValue(n))}</strong></div>
+          </div></div></div>
+
+          <div class="section-card"><div class="section-label">✉️ Prévia da comunicação aos responsáveis</div>
+            <div style="font-size:.68rem;color:var(--soft);margin-bottom:5px">Assunto do e-mail</div>
+            <div class="email-subject">Notificação deferida | ${escapeHtml(safe(aluno.nome))} | CMDPII</div>
+            <div style="font-size:.68rem;color:var(--soft);margin-bottom:5px">Conteúdo previsto</div>
+            <div class="email-preview">${escapeHtml(emailPreview(n))}</div>
+            <div class="email-recipient">Destinatário: <strong>${escapeHtml(email || 'E-mail do responsável não cadastrado')}</strong></div>
           </div>
         </div>
-      `;
 
-      const details = el.querySelector('.details');
-      const toggle = el.querySelector('.toggle');
-      toggle.addEventListener('click', ()=> {
-        const open = details.classList.toggle('open');
-        toggle.textContent = open ? 'Ocultar opções' : 'Mostrar opções';
-        const wrap = el.querySelector('.comPaisWrap');
-        const pode = (notif.status==='deferido' || notif.status==='aprovada') && isMedidaComContraturno(notif.tipoMedida || notif.tipo);
-        wrap.style.display = pode ? '' : 'none';
-      });
+        <div class="bottom-grid">
+          <div class="section-card"><div class="section-label">✅ Checklist de validação</div><div class="checklist">${checklist(n)}</div></div>
+          <div class="section-card"><div class="section-label">ⓘ Orientações rápidas</div><ul class="guidance"><li>Verifique se o motivo está de acordo com o regimento e com o contexto relatado.</li><li>Confira a clareza da observação e os dispositivos regulamentares.</li><li>Ao deferir, o sistema tentará enviar a comunicação ao responsável.</li><li>Em caso de inconsistência, devolva para correção indicando objetivamente o ajuste.</li></ul></div>
+          <div class="section-card decision-section"><div class="section-label">⚖️ Decisão</div>
+            <div class="decision-actions">
+              <button class="btn btn-success" data-action="defer" ${disableDefer ? 'disabled' : ''}><strong>✓ Deferir</strong><span>Aprovar e enviar</span></button>
+              <button class="btn btn-warning" data-action="correct" ${disableCorrection ? 'disabled' : ''}><strong>↻ Solicitar correção</strong><span>Devolver para ajustes</span></button>
+              <button class="btn btn-archive" data-action="archive" ${disableArchive ? 'disabled' : ''}><strong>▣ Arquivar</strong><span>Encerrar sem excluir</span></button>
+              <button class="btn btn-danger" data-action="delete"><strong>⌫ Excluir</strong><span>Remover registro</span></button>
+            </div>
+            <div class="document-actions"><button class="btn btn-ghost" data-action="document">📄 Baixar documento</button>${showParents ? '<button class="btn btn-primary" data-action="parents">👪 Comunicação aos pais</button>' : '<button class="btn btn-ghost" disabled>Envio após deferimento</button>'}</div>
+          </div>
+        </div>
+      </div>`;
+  }
 
-      el.addEventListener('click', async (ev)=>{
-        const btn = ev.target.closest('button[data-acao]');
-        if(!btn) return;
-        const acao = btn.dataset.acao;
-        if(acao==='ver'){ return verDetalhes(notif); }
-        if(acao==='deferir'){ await deferir(notif._id); return; }
-        if(acao==='revisar'){
-          const comentario = prompt('Digite o motivo da devolução:');
-          if(!comentario) return;
-          await fetch(API(`/controle-notificacoes/${notif._id}/revisar`), {
-            method:'PUT',
-            headers:{'Content-Type':'application/json'},
-            credentials:'include',
-            body:JSON.stringify({ comentario })
-          });
-          return reload();
-        }
-        if(acao==='arquivar'){
-          await fetch(API(`/controle-notificacoes/${notif._id}/arquivar`), { method:'PUT', credentials:'include' });
-          return reload();
-        }
-        if(acao==='excluir'){
-          if(!confirm('Tem certeza que deseja excluir esta notificação?')) return;
-          await fetch(API(`/controle-notificacoes/${notif._id}`), { method:'DELETE', credentials:'include' });
-          return reload();
-        }
-        if(acao==='comPais'){
-          try{
-            const r = await fetch(API(`/comunicacao/${notif._id}`), { method:'POST', credentials:'include' });
-            if(!r.ok) throw new Error('Falha ao iniciar comunicação');
-            const j = await r.json();
-            location.href = `/comunicacao-pais.html?notificacao=${notif._id}`;
-          }catch(e){ alert('Erro ao abrir comunicação.'); }
-        }
-      });
+  function openModal({title,body,confirm='Confirmar',tone='primary',action}){
+    $('modalTitle').textContent = title;
+    $('modalBody').innerHTML = body;
+    $('modalConfirm').textContent = confirm;
+    $('modalConfirm').className = `btn btn-${tone}`;
+    state.modalAction = action;
+    $('modalBackdrop').classList.add('open');
+    $('modalBackdrop').setAttribute('aria-hidden','false');
+  }
 
-      return el;
+  function closeModal(){
+    $('modalBackdrop').classList.remove('open');
+    $('modalBackdrop').setAttribute('aria-hidden','true');
+    state.modalAction = null;
+  }
+
+  async function performAction(action,n){
+    if(action === 'defer'){
+      const email = n.aluno?.contatos?.emailResponsavel || '';
+      openModal({title:'Deferir notificação',confirm:'Deferir e enviar',tone:'success',body:`<p>Você está prestes a deferir a notificação de <strong>${escapeHtml(safe(n.aluno?.nome))}</strong>.</p><p>${email ? `O sistema tentará enviar o comunicado para <strong>${escapeHtml(email)}</strong>.` : '<strong style="color:#fbbf24">O aluno não possui e-mail do responsável cadastrado.</strong> A notificação será deferida, mas o envio por e-mail poderá não ocorrer.'}</p>`,action:async()=>{
+        const result = await fetchJson(API(`/controle-notificacoes/${n._id}/deferir`),{method:'PUT'});
+        const sent = result?.comunicacao?.resultados?.email?.ok;
+        toast(sent ? 'Notificação deferida e e-mail enviado ao responsável.' : 'Notificação deferida. Confira o resultado da comunicação nos registros.');
+      }});
     }
-
-    function renderList(list){
-      grid.innerHTML = '';
-      if(!Array.isArray(list) || list.length===0){
-        const empty = document.createElement('div');
-        empty.className = 'muted';
-        empty.style.margin = '16px 4px';
-        empty.textContent = 'Nenhuma notificação para os filtros atuais.';
-        grid.appendChild(empty);
-        return;
-      }
-      list.forEach(n => grid.appendChild(Card(n)));
+    if(action === 'correct'){
+      openModal({title:'Solicitar correção',confirm:'Devolver para correção',tone:'warning',body:'<p>Informe de forma objetiva o que precisa ser corrigido antes de uma nova análise.</p><textarea id="correctionText" class="control" placeholder="Ex.: detalhar melhor a observação, corrigir o artigo ou revisar o motivo..."></textarea>',action:async()=>{
+        const comment = $('correctionText')?.value.trim();
+        if(!comment) throw new Error('Digite o motivo da correção.');
+        await fetchJson(API(`/controle-notificacoes/${n._id}/revisar`),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({comentario:comment})});
+        toast('Notificação devolvida para correção.');
+      }});
     }
-
-    function appendList(list){ list.forEach(n => grid.appendChild(Card(n))); }
-
-    async function fetchPage(goTo=page){
-      if(loading) return; loading = true; setBusy(true);
-      if(goTo!==page){ page = goTo; }
-      try{
-        const url = buildURL();
-        let data = await getJSON(url).catch(()=>null);
-        if(data && Array.isArray(data.data)){
-          serverPaging = true;
-          totalPages = Number(data.totalPages || 1);
-          total = Number(data.total || data.data.length || 0);
-          if(page===1) renderList(data.data);
-          else appendList(data.data);
-        } else {
-          serverPaging = false;
-          const arr = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
-          if(page===1) cacheLocal = arr;
-          const start = (page-1)*limit, end = start + limit;
-          total = cacheLocal.length;
-          totalPages = Math.max(1, Math.ceil(total/limit));
-          const slice = cacheLocal.slice(start, end);
-          if(page===1) renderList(slice);
-          else appendList(slice);
-        }
-        renderInfo();
-      } catch(e){
-        grid.innerHTML = '<div class="muted" style="margin:16px 4px">Erro ao carregar notificações.</div>';
-      } finally {
-        loading = false; setBusy(false);
-      }
+    if(action === 'archive'){
+      openModal({title:'Arquivar notificação',confirm:'Arquivar',tone:'archive',body:`<p>A notificação de <strong>${escapeHtml(safe(n.aluno?.nome))}</strong> será retirada da fila e permanecerá registrada como arquivada.</p>`,action:async()=>{await fetchJson(API(`/controle-notificacoes/${n._id}/arquivar`),{method:'PUT'});toast('Notificação arquivada.');}});
     }
-
-    const reload = ()=>{ page = 1; showSkeleton(6); fetchPage(1); };
-
-    function verDetalhes(n){
-      const html = `
-        <p><strong>Aluno:</strong> ${n.aluno?.nome || ''}</p>
-        <p><strong>Turma:</strong> ${n.aluno?.turma || ''}</p>
-        <p><strong>Tipo:</strong> ${n.tipo || '—'}</p>
-        <p><strong>Motivo:</strong> ${n.motivo || '—'}</p>
-        <p><strong>Tipo de Medida:</strong> ${n.tipoMedida || '—'}</p>
-        <p><strong>Valor:</strong> ${fmtValor(n)}</p>
-        <p><strong>Data de Emissão:</strong> ${fmtData(n.createdAt)}</p>
-        <p><strong>Artigo:</strong> ${n.artigo || '-'}</p>
-        <p><strong>Parágrafo:</strong> ${n.paragrafo || '-'}</p>
-        <p><strong>Inciso:</strong> ${n.inciso || '-'}</p>
-        <p><strong>Classificação:</strong> ${n.classificacaoRegulamento || '-'}</p>
-        <p><strong>Observação:</strong> ${n.observacao || '-'}</p>
-        <p><strong>Comentário do Coordenador:</strong> ${n.comentarioMonitor || '-'}</p>
-      `;
-      document.getElementById('conteudoDetalhes').innerHTML = html;
-      new bootstrap.Modal(document.getElementById('modalDetalhes')).show();
+    if(action === 'delete'){
+      openModal({title:'Excluir notificação',confirm:'Excluir definitivamente',tone:'danger',body:`<p><strong style="color:#fca5a5">Esta ação remove o registro.</strong></p><p>Confirma a exclusão da notificação de <strong>${escapeHtml(safe(n.aluno?.nome))}</strong>?</p>`,action:async()=>{await fetchJson(API(`/controle-notificacoes/${n._id}`),{method:'DELETE'});toast('Notificação excluída.');}});
     }
+    if(action === 'document') return downloadDocument(n);
+    if(action === 'parents') return openParentsCommunication(n);
+  }
 
-    async function deferir(id){
-      await fetch(API(`/controle-notificacoes/${id}/deferir`), { method:'PUT', credentials:'include' });
-      reload();
-    }
+  async function downloadDocument(n){
+    try{
+      const response = await fetch(API(`/pdf/${n._id}`),{method:'POST',credentials:'include',cache:'no-store'});
+      if(!response.ok) throw new Error((await response.text().catch(()=>'')) || 'Erro ao gerar documento.');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const disposition = response.headers.get('content-disposition') || '';
+      const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i.exec(disposition);
+      link.href = url;
+      link.download = match ? match[1].replace(/['"]/g,'') : `notificacao_${Date.now()}.docx`;
+      document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+      toast('Documento gerado com sucesso.');
+    }catch(err){ toast(err.message || 'Erro ao gerar documento.','error'); }
+  }
 
-    // ===== Listeners =====
-    btnRefresh.addEventListener('click', reload);
-    btnPrev.addEventListener('click', ()=>{ if(page>1){ page--; showSkeleton(4); grid.innerHTML=''; fetchPage(page);} });
-    btnNext.addEventListener('click', ()=>{ if(page<totalPages){ page++; showSkeleton(4); fetchPage(page);} });
-    btnMore.addEventListener('click', ()=>{ if(page<totalPages){ page++; fetchPage(page);} });
-    btnTopo.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
-    qInput.addEventListener('input', debounce(reload, 350));
+  async function openParentsCommunication(n){
+    try{
+      await fetchJson(API(`/comunicacao/${n._id}`),{method:'POST'});
+      location.href = `/comunicacao-pais.html?notificacao=${encodeURIComponent(n._id)}`;
+    }catch(err){ toast(err.message || 'Erro ao abrir comunicação.','error'); }
+  }
 
-    window.addEventListener('scroll', ()=>{
-      if(loading) return;
-      const nearBottom = window.innerHeight + window.scrollY >= (document.body.offsetHeight - 600);
-      if(nearBottom && page < totalPages){ page++; fetchPage(page); }
-    }, { passive:true });
+  $('notificationList').addEventListener('click',(event)=>{
+    const item = event.target.closest('.notification-item');
+    if(!item) return;
+    state.selectedId = item.dataset.id;
+    renderList();
+    renderSelected();
+  });
 
-    (function boot(){
-      showSkeleton(8);
-      fetchPage(1);
-    })();
-  </script>
-  <script src="notify.js"></script>
+  $('detailContent').addEventListener('click',(event)=>{
+    const button = event.target.closest('[data-action]');
+    if(!button || button.disabled) return;
+    const n = state.items.find(item => String(item._id) === String(state.selectedId));
+    if(n) performAction(button.dataset.action,n);
+  });
+
+  $('modalClose').addEventListener('click',closeModal);
+  $('modalCancel').addEventListener('click',closeModal);
+  $('modalBackdrop').addEventListener('click',(event)=>{if(event.target === $('modalBackdrop')) closeModal();});
+  $('modalConfirm').addEventListener('click',async()=>{
+    if(!state.modalAction) return;
+    const button = $('modalConfirm');
+    const old = button.textContent;
+    button.disabled = true;button.textContent = 'Processando...';
+    try{
+      await state.modalAction();
+      closeModal();
+      state.selectedId = null;
+      await Promise.all([loadSummary(),loadNotifications({preserveSelection:false})]);
+    }catch(err){ toast(err.message || 'Não foi possível concluir a ação.','error'); }
+    finally{ button.disabled = false;button.textContent = old; }
+  });
+
+  const applyFilters = debounce(()=>{state.page=1;state.selectedId=null;loadNotifications({preserveSelection:false});},320);
+  $('q').addEventListener('input',applyFilters);
+  ['statusFilter','typeFilter','classFilter','startDate','endDate','orderFilter'].forEach(id => $(id).addEventListener('change',()=>{state.page=1;state.selectedId=null;loadNotifications({preserveSelection:false});}));
+  $('clearFilters').addEventListener('click',()=>{
+    $('q').value='';$('statusFilter').value='fila';$('typeFilter').value='todos';$('classFilter').value='todas';$('startDate').value='';$('endDate').value='';$('orderFilter').value='desc';state.page=1;state.selectedId=null;loadNotifications({preserveSelection:false});
+  });
+  $('refreshBtn').addEventListener('click',()=>Promise.all([loadSummary(),loadNotifications()]));
+  $('prevBtn').addEventListener('click',()=>{if(state.page>1){state.page--;loadNotifications();}});
+  $('nextBtn').addEventListener('click',()=>{if(state.page<state.totalPages){state.page++;loadNotifications();}});
+  document.querySelectorAll('[data-summary-status]').forEach(btn => btn.addEventListener('click',()=>{$('statusFilter').value=btn.dataset.summaryStatus;state.page=1;state.selectedId=null;loadNotifications({preserveSelection:false});}));
+  document.addEventListener('keydown',(event)=>{if(event.key==='Escape') closeModal();});
+
+  (async function boot(){
+    await Promise.all([loadSummary(),loadFilterOptions()]);
+    await loadNotifications({preserveSelection:false});
+  })();
+</script>
+<script src="/notify.js"></script>
+<script src="/update-client.js"></script>
 </body>
 </html>
