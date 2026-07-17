@@ -1,4 +1,5 @@
 :root {
+  --azul-950: #050f1f;
   --azul-900: #071529;
   --azul-800: #0b1f3a;
   --azul-700: #10355f;
@@ -19,20 +20,19 @@ html, body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at 20% 20%, rgba(31, 111, 181, 0.25), transparent 28%),
-    radial-gradient(circle at 78% 12%, rgba(214, 168, 79, 0.16), transparent 25%),
-    linear-gradient(135deg, var(--azul-900), var(--azul-800) 48%, #08121f);
+    radial-gradient(circle at 18% 14%, rgba(31, 111, 181, 0.28), transparent 30%),
+    radial-gradient(circle at 82% 10%, rgba(214, 168, 79, 0.16), transparent 24%),
+    radial-gradient(circle at 50% 90%, rgba(72, 199, 142, 0.10), transparent 32%),
+    linear-gradient(135deg, var(--azul-950), var(--azul-800) 52%, #08121f);
   color: var(--texto);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, Nunito, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-body {
-  overflow-x: hidden;
-}
+body { overflow-x: hidden; }
 
 .arena-shell {
   min-height: 100vh;
-  padding: 18px;
+  padding: 16px;
 }
 
 .arena-topbar {
@@ -40,8 +40,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 1280px;
-  margin: 0 auto 16px auto;
+  max-width: 1320px;
+  margin: 0 auto 14px auto;
   padding: 14px 16px;
   border: 1px solid var(--borda);
   border-radius: 22px;
@@ -50,43 +50,34 @@ body {
   backdrop-filter: blur(12px);
 }
 
-.arena-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.arena-brand { display: flex; align-items: center; gap: 12px; }
 
 .arena-mark {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   border-radius: 16px;
   display: grid;
   place-items: center;
   color: #08121f;
-  font-weight: 900;
-  font-size: 26px;
+  font-weight: 950;
+  font-size: 28px;
   background: linear-gradient(135deg, var(--dourado-2), var(--dourado));
   box-shadow: 0 12px 30px rgba(214, 168, 79, 0.24);
 }
 
 .arena-brand strong {
   display: block;
-  font-size: clamp(1.05rem, 1.4vw, 1.45rem);
+  font-size: clamp(1.06rem, 1.5vw, 1.55rem);
   letter-spacing: 0.02em;
 }
 
 .arena-brand span {
   display: block;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.94rem;
 }
 
-.arena-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+.arena-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 .arena-actions a,
 .arena-actions button {
@@ -97,20 +88,18 @@ body {
   padding: 10px 14px;
   border-radius: 14px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 800;
+  font-size: 0.92rem;
 }
 
 .arena-actions a:hover,
-.arena-actions button:hover {
-  background: rgba(214, 168, 79, 0.22);
-}
+.arena-actions button:hover { background: rgba(214, 168, 79, 0.22); }
 
 .arena-main {
-  max-width: 1280px;
+  max-width: 1320px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -125,89 +114,26 @@ body {
 
 #game-container {
   width: 100%;
-  min-height: 640px;
+  min-height: 720px;
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
 }
-
 #game-container canvas {
   display: block;
   width: 100% !important;
   height: auto !important;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.arena-helper {
-  border: 1px solid var(--borda);
-  border-radius: 24px;
-  background: var(--card);
-  padding: 18px;
-  box-shadow: var(--shadow);
-  align-self: start;
-}
-
-.arena-helper h2 {
-  margin: 0 0 12px 0;
-  font-size: 1.1rem;
-  color: var(--dourado-2);
-}
-
-.arena-helper p {
-  color: var(--texto);
-  line-height: 1.45;
-  margin: 0 0 12px 0;
-}
-
-.arena-helper .muted {
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-kbd {
-  display: inline-block;
-  padding: 2px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-bottom-width: 2px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--dourado-2);
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid var(--borda);
-  margin: 14px 0;
-}
-
-@media (max-width: 980px) {
-  .arena-main {
-    grid-template-columns: 1fr;
-  }
-
-  .arena-helper {
-    order: -1;
-  }
-}
-
-@media (max-width: 640px) {
-  .arena-shell {
-    padding: 10px;
-  }
-
-  .arena-topbar {
-    align-items: flex-start;
-    flex-direction: column;
-    border-radius: 18px;
-  }
-
-  .arena-actions {
-    width: 100%;
-  }
-
-  .arena-actions a,
-  .arena-actions button {
-    flex: 1;
-    text-align: center;
-  }
-
-  #game-container {
-    min-height: 560px;
-  }
+@media (max-width: 720px) {
+  .arena-shell { padding: 10px; }
+  .arena-topbar { align-items: flex-start; flex-direction: column; border-radius: 18px; }
+  .arena-actions { width: 100%; }
+  .arena-actions a, .arena-actions button { flex: 1; text-align: center; }
+  #game-container { min-height: 560px; }
 }
