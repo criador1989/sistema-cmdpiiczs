@@ -3,425 +3,528 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cadastrar Aluno - Colégio Militar Dom Pedro II</title>
+  <title>Cadastrar Novo Aluno • Axoriin</title>
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#941a1d" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#071221" />
+  <link rel="apple-touch-icon" href="/icons/axoriin-192x192.png" />
+  <link rel="icon" href="/icons/axoriin-192x192.png" />
 
   <style>
     :root{
-      --glass-bg: rgba(255,255,255,0.03);
-      --glass-border: rgba(255,255,255,0.40);
-      --glass-highlight: rgba(255,255,255,0.7);
-      --glass-radius: 22px;
-      --glass-blur: 18px;
-      --glass-shadow:
-        0 2px 6px rgba(0,0,0,0.15),
-        0 8px 22px rgba(0,0,0,0.20);
-
-      --text-main: #ffffff;
-      --text-soft: rgba(255,255,255,0.78);
-
-      --rubi-1:#941a1d;
-      --rubi-2:#d82327;
-
-      --ok:#22c55e;
-      --warn:#fbbf24;
-      --bad:#fb7185;
-
-      --card:#0a0a0cd9;
-      --card2:#0a0a0cae;
-      --line:rgba(255,255,255,0.18);
+      --bg:#030a14;
+      --panel:rgba(5,14,26,.92);
+      --panel-soft:rgba(9,21,39,.78);
+      --line:rgba(126,180,255,.22);
+      --line-strong:rgba(53,176,255,.58);
+      --text:#f5f9ff;
+      --muted:#9fb2ca;
+      --muted-2:#748aa6;
+      --cyan:#28b8ff;
+      --cyan-2:#5ce5ff;
+      --cyan-soft:rgba(40,184,255,.15);
+      --red:#e52028;
+      --red-2:#a90f18;
+      --ok:#37d996;
+      --warn:#ffd166;
+      --danger:#fb7185;
+      --radius:26px;
+      --shadow:0 34px 80px rgba(0,0,0,.52), 0 0 34px rgba(20,134,255,.10);
     }
 
-    *{ box-sizing:border-box; }
-
-    html,body{
-      margin:0;
-      padding:0;
-      min-height:100vh;
-    }
-
+    *{box-sizing:border-box}
+    html{min-height:100%}
     body{
-      font-family:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      color:var(--text-main);
-      background:url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      margin:0;
+      min-height:100vh;
+      padding:34px 18px;
       display:flex;
-      align-items:center;
       justify-content:center;
-      padding:20px;
+      align-items:flex-start;
+      font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      color:var(--text);
       color-scheme:dark;
+      background:
+        radial-gradient(850px 560px at 50% -10%, rgba(41,139,255,.16), transparent 64%),
+        linear-gradient(180deg, rgba(2,8,16,.78), rgba(2,9,18,.92)),
+        url("img/bg-painel-smart.png") center/cover no-repeat fixed;
+      overflow-x:hidden;
     }
 
-    .container{
-      width:100%;
-      max-width:460px;
-      padding:28px 24px 22px;
-      border-radius:var(--glass-radius);
-      background:rgba(10,10,12,0.88);
-      border:1px solid rgba(255,255,255,0.25);
-      box-shadow:var(--glass-shadow);
-      backdrop-filter:blur(var(--glass-blur));
-      -webkit-backdrop-filter:blur(var(--glass-blur));
-      text-align:center;
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg, transparent, rgba(45,167,255,.025), transparent),
+        radial-gradient(700px 700px at 0% 100%, rgba(0,122,255,.08), transparent 65%);
+    }
+
+    .shell{
       position:relative;
+      z-index:1;
+      width:min(760px,100%);
+      border-radius:32px;
+      border:1px solid rgba(67,174,255,.62);
+      background:
+        radial-gradient(480px 190px at 50% 0%, rgba(49,145,255,.12), transparent 70%),
+        linear-gradient(180deg, rgba(7,18,34,.96), rgba(4,11,21,.94));
+      box-shadow:var(--shadow);
       overflow:hidden;
-      animation:fade .6s ease-out;
+      animation:enter .42s ease-out both;
     }
 
-    .container::before{
+    .shell::before{
       content:"";
       position:absolute;
       inset:0;
-      border-radius:inherit;
-      background:linear-gradient(
-        to bottom,
-        rgba(255,255,255,0.22) 0%,
-        rgba(255,255,255,0.06) 18%,
-        transparent 45%
-      );
       pointer-events:none;
+      border-radius:inherit;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08), inset 0 0 34px rgba(30,132,255,.04);
     }
 
-    .container > *{ position:relative; z-index:1; }
-
-    @keyframes fade{
-      from{opacity:0; transform:translateY(40px);}
-      to{opacity:1; transform:translateY(0);}
+    @keyframes enter{
+      from{opacity:0;transform:translateY(18px)}
+      to{opacity:1;transform:translateY(0)}
     }
 
-    .logo{
-      width:80px;
-      margin-bottom:10px;
-      filter:drop-shadow(0 8px 20px rgba(0,0,0,.7));
-      animation:float 3s ease-in-out infinite;
+    .hero{
+      padding:36px 34px 24px;
+      text-align:center;
+      position:relative;
     }
 
-    @keyframes float{
-      0%,100%{transform:translateY(0)}
-      50%{transform:translateY(-6px)}
+    .brand{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      margin-bottom:18px;
     }
 
-    h2{
-      margin:10px 0 18px;
-      font-size:1.35rem;
-      font-weight:800;
-      text-shadow:0 10px 22px rgba(0,0,0,.8);
+    .brand img{
+      width:76px;
+      height:76px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 18px rgba(54,188,255,.38));
     }
 
-    form{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      text-align:left;
+    .brand-name{
+      font-size:clamp(1.5rem,4vw,2.15rem);
+      letter-spacing:.28em;
+      margin-right:-.28em;
+      font-weight:500;
+      color:#f8fbff;
+      text-transform:uppercase;
+      text-shadow:0 0 22px rgba(61,182,255,.18);
     }
 
-    label.campo-label{
-      font-size:.86rem;
-      color:var(--text-soft);
-      margin-bottom:4px;
+    h1{
+      margin:0;
+      font-size:clamp(2rem,5vw,3rem);
+      line-height:1.05;
+      letter-spacing:-.035em;
+      font-weight:900;
     }
 
-    label.campo-label small{
-      color:rgba(255,255,255,0.55);
-      font-size:.75rem;
-      display:block;
-      margin-top:2px;
-    }
-
-    input, select{
-      width:100%;
-      padding:12px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.28);
-      background:rgba(0,0,0,0.45);
-      color:#ffffff;
-      font-size:0.95rem;
-      outline:none;
-      backdrop-filter:blur(6px);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
-    }
-
-    input::placeholder{
-      color:rgba(255,255,255,0.55);
-    }
-
-    input:focus, select:focus{
-      border-color:rgba(255,255,255,0.8);
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.35),
-        0 10px 26px rgba(0,0,0,0.85);
-    }
-
-    input[type="file"]{
-      padding:6px;
-      background:rgba(0,0,0,0.35);
-      border-radius:10px;
-    }
-
-    button{
-      width:100%;
-      padding:12px;
-      margin-top:6px;
-      border:0;
-      border-radius:999px;
-      cursor:pointer;
+    .hero p{
+      margin:12px auto 0;
+      max-width:540px;
+      color:var(--muted);
       font-size:1rem;
-      font-weight:700;
-      color:#fff;
-      background:linear-gradient(135deg,var(--rubi-1),var(--rubi-2));
-      box-shadow:0 10px 26px rgba(0,0,0,0.85);
-      transition:transform .2s ease, box-shadow .2s ease, filter .2s ease;
+      line-height:1.55;
     }
 
-    button:hover{
-      transform:translateY(-2px);
-      filter:brightness(1.06);
-      box-shadow:0 14px 32px rgba(0,0,0,0.95);
+    form{padding:0 34px 34px}
+
+    .form-card{
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:linear-gradient(180deg, rgba(7,17,31,.88), rgba(4,12,22,.78));
+      overflow:hidden;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03), 0 16px 35px rgba(0,0,0,.20);
     }
 
-    button:active{
-      transform:translateY(0);
-      box-shadow:0 8px 20px rgba(0,0,0,0.85);
+    .field-row{
+      display:grid;
+      grid-template-columns:58px minmax(0,1fr);
+      gap:16px;
+      padding:22px;
+      align-items:start;
+      border-bottom:1px solid rgba(126,180,255,.13);
     }
 
-    #mensagem{
-      margin-top:12px;
-      text-align:center;
-      font-weight:700;
-      min-height:1.3em;
+    .field-row:last-child{border-bottom:0}
+
+    .field-icon{
+      width:56px;
+      height:56px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(145deg, rgba(25,91,166,.36), rgba(9,35,72,.62));
+      border:1px solid rgba(54,173,255,.42);
+      color:#42bbff;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 0 18px rgba(36,154,255,.08);
     }
 
-    .voltar{
+    .field-icon svg{width:27px;height:27px;stroke:currentColor}
+
+    .field-content{min-width:0}
+
+    .field-label{
       display:block;
-      margin-top:18px;
-      color:#ffffff;
-      opacity:.85;
-      font-size:.9rem;
-      text-decoration:none;
-      text-align:center;
+      margin:2px 0 10px;
+      font-weight:850;
+      font-size:1.03rem;
+      color:#f7faff;
     }
 
-    .voltar:hover{
-      text-decoration:underline;
-      opacity:1;
+    .field-help{
+      display:block;
+      margin-top:8px;
+      color:var(--muted-2);
+      font-size:.84rem;
+      line-height:1.45;
     }
+
+    input,select{
+      width:100%;
+      height:56px;
+      padding:0 16px;
+      border-radius:14px;
+      border:1px solid rgba(151,180,218,.30);
+      background:rgba(2,9,18,.72);
+      color:#fff;
+      font:inherit;
+      font-size:1rem;
+      outline:none;
+      transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+    }
+
+    input::placeholder{color:#7287a2}
+    input:focus,select:focus{
+      border-color:var(--cyan);
+      background:rgba(4,14,27,.92);
+      box-shadow:0 0 0 3px rgba(40,184,255,.15), 0 0 24px rgba(40,184,255,.10);
+    }
+
+    select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#d9efff 50%),linear-gradient(135deg,#d9efff 50%,transparent 50%);background-position:calc(100% - 20px) 24px,calc(100% - 14px) 24px;background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:42px}
 
     details.manager{
-      margin-top:14px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:linear-gradient(180deg, var(--card2), rgba(0,0,0,0.35));
-      overflow:hidden;
-      box-shadow:0 10px 26px rgba(0,0,0,0.55);
+      margin:0;
+      border:0;
+      border-bottom:1px solid rgba(126,180,255,.13);
+      background:transparent;
     }
+
     details.manager summary{
       list-style:none;
       cursor:pointer;
-      padding:12px 14px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      color:#fff;
-      font-weight:800;
+      padding:16px 22px 22px 96px;
+      position:relative;
       user-select:none;
     }
-    details.manager summary::-webkit-details-marker{ display:none; }
-    .sum-left{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      min-width:0;
-    }
-    .chip{
-      font-size:.72rem;
-      padding:.18rem .55rem;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.30);
-      color:rgba(255,255,255,.85);
-      background:rgba(255,255,255,.06);
-      white-space:nowrap;
-    }
-    .sum-sub{
-      font-size:.82rem;
-      color:rgba(255,255,255,.72);
-      font-weight:600;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:220px;
-    }
-    .mgr-body{
-      padding:12px 14px 14px;
-      border-top:1px solid rgba(255,255,255,.10);
-      text-align:left;
-    }
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-      margin-top:10px;
-    }
-    .row.one{ grid-template-columns: 1fr; }
-    .row .mini{
-      padding:10px 10px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.20);
-      background:rgba(0,0,0,0.38);
-      color:#fff;
-      outline:none;
-    }
-    .mgr-actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:12px;
-    }
-    .btn2{
-      border:1px solid rgba(255,255,255,0.22);
-      background:rgba(255,255,255,0.06);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:999px;
-      cursor:pointer;
-      font-weight:800;
-      transition:.15s;
-      width:auto;
-      box-shadow:0 10px 22px rgba(0,0,0,.45);
-    }
-    .btn2:hover{ filter:brightness(1.06); transform:translateY(-1px); }
-    .btn2:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
-    .btn-add{ border-color: rgba(34,197,94,.45); }
-    .btn-undo{ border-color: rgba(251,191,36,.45); }
-    .btn-reset{ border-color: rgba(251,113,133,.40); }
+    details.manager summary::-webkit-details-marker{display:none}
 
-    .turmas-list{
-      margin-top:12px;
-      display:grid;
-      gap:8px;
+    details.manager summary::before{
+      content:"";
+      position:absolute;
+      left:22px;
+      top:16px;
+      width:56px;
+      height:56px;
+      border-radius:18px;
+      background:radial-gradient(circle at 35% 25%, rgba(44,180,255,.30), rgba(6,46,93,.58));
+      border:1px solid rgba(47,174,255,.42);
+      box-shadow:0 0 22px rgba(26,151,255,.12);
     }
-    .turma-item{
+
+    details.manager summary::after{
+      content:"⚙";
+      position:absolute;
+      left:39px;
+      top:29px;
+      color:#4fc4ff;
+      font-size:1.45rem;
+      transition:transform .18s ease;
+    }
+
+    details.manager[open] summary::after{transform:rotate(45deg)}
+
+    .manager-card{
+      min-height:84px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
-      padding:10px 10px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(0,0,0,0.34);
+      gap:16px;
+      padding:14px 18px;
+      border-radius:18px;
+      border:1px solid rgba(36,170,255,.68);
+      background:
+        radial-gradient(220px 100px at 0% 50%, rgba(32,148,255,.16), transparent 75%),
+        linear-gradient(180deg, rgba(6,23,43,.92), rgba(4,15,29,.90));
+      box-shadow:0 0 22px rgba(28,150,255,.08), inset 0 1px 0 rgba(255,255,255,.04);
     }
-    .turma-item strong{
-      font-size:.95rem;
-      letter-spacing:.2px;
-    }
-    .turma-item small{
-      display:block;
-      margin-top:2px;
-      color:rgba(255,255,255,.65);
-      font-weight:600;
-      font-size:.78rem;
-    }
-    .del{
-      width:auto;
-      padding:8px 10px;
-      border-radius:12px;
-      border:1px solid rgba(251,113,133,.45);
-      background:rgba(251,113,133,.10);
-      color:#fff;
-      cursor:pointer;
-      font-weight:900;
-    }
-    .del:hover{ filter:brightness(1.08); transform:translateY(-1px); }
 
-    .note{
-      margin-top:10px;
+    .manager-title{font-size:1.1rem;font-weight:900;color:#fff}
+    .sum-sub{display:block;margin-top:4px;color:var(--muted);font-size:.9rem;font-weight:500;white-space:normal;max-width:none}
+    .manager-side{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+    .chip{
       font-size:.82rem;
-      color:rgba(255,255,255,.68);
-      line-height:1.35;
+      padding:7px 12px;
+      border-radius:999px;
+      border:1px solid rgba(44,174,255,.42);
+      color:#62d1ff;
+      background:rgba(10,94,174,.22);
+      white-space:nowrap;
+      font-weight:800;
+    }
+    .manager-arrow{color:#38b9ff;font-size:1.8rem;line-height:1;transition:transform .18s ease}
+    details.manager[open] .manager-arrow{transform:rotate(90deg)}
+
+    .mgr-body{
+      padding:0 22px 22px 96px;
+      text-align:left;
+    }
+
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .row.one{grid-template-columns:1fr}
+    .row .mini{height:48px;padding:0 12px;border-radius:12px}
+    .mgr-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+
+    .btn2,.del{
+      width:auto;
+      min-height:42px;
+      border-radius:12px;
+      border:1px solid rgba(126,180,255,.22);
+      background:rgba(255,255,255,.045);
+      color:#eef7ff;
+      padding:9px 12px;
+      cursor:pointer;
+      font-weight:800;
+      transition:.16s ease;
+    }
+    .btn2:hover,.del:hover{transform:translateY(-1px);filter:brightness(1.08)}
+    .btn2:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .btn-add{border-color:rgba(55,217,150,.42);background:rgba(55,217,150,.08)}
+    .btn-undo{border-color:rgba(255,209,102,.38)}
+    .btn-reset,.del{border-color:rgba(251,113,133,.36);background:rgba(251,113,133,.07)}
+
+    .note{margin-top:12px;color:var(--muted-2);font-size:.82rem;line-height:1.55}
+    .turmas-list{margin-top:14px;display:grid;gap:8px;max-height:300px;overflow:auto;padding-right:4px}
+    .turma-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 12px;border-radius:13px;border:1px solid rgba(126,180,255,.14);background:rgba(255,255,255,.025)}
+    .turma-item strong{font-size:.95rem}
+    .turma-item small{display:block;margin-top:3px;color:var(--muted-2);font-size:.78rem}
+
+    .upload-zone{
+      position:relative;
+      min-height:170px;
+      border:1px dashed rgba(94,167,243,.46);
+      border-radius:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:22px;
+      background:rgba(2,10,20,.44);
+      transition:.18s ease;
+      overflow:hidden;
+    }
+    .upload-zone:hover,.upload-zone.dragover{border-color:var(--cyan);background:rgba(16,91,154,.10);box-shadow:0 0 0 3px rgba(40,184,255,.08)}
+    .upload-zone input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+    .upload-cloud{font-size:2.8rem;line-height:1;color:#39baff;filter:drop-shadow(0 0 14px rgba(57,186,255,.25))}
+    .upload-title{margin-top:10px;font-weight:850;color:#fff;font-size:1rem}
+    .upload-link{color:#3bbcff;margin-top:4px;font-size:.9rem}
+    .upload-meta{margin-top:8px;color:var(--muted-2);font-size:.8rem}
+    .upload-file{margin-top:10px;color:#bcecff;font-size:.84rem;font-weight:700;word-break:break-word}
+
+    .form-actions{padding:24px 34px 34px;display:grid;gap:12px}
+    .submit-btn,.back-btn{
+      min-height:58px;
+      width:100%;
+      border-radius:16px;
+      font:inherit;
+      font-size:1.05rem;
+      font-weight:900;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      text-decoration:none;
+      transition:.18s ease;
+    }
+    .submit-btn{
+      border:1px solid rgba(255,101,108,.60);
+      color:#fff;
+      background:linear-gradient(135deg,#f02028,#ae0d18);
+      box-shadow:0 12px 30px rgba(224,32,40,.22), 0 0 24px rgba(224,32,40,.12);
+    }
+    .submit-btn:hover{transform:translateY(-1px);filter:brightness(1.06);box-shadow:0 16px 34px rgba(224,32,40,.29),0 0 30px rgba(224,32,40,.16)}
+    .back-btn{border:1px solid rgba(45,160,255,.42);background:rgba(5,23,43,.65);color:#42baff}
+    .back-btn:hover{background:rgba(15,67,113,.34);border-color:#3bbcff}
+
+    #mensagem{min-height:22px;text-align:center;font-weight:800;line-height:1.4;margin:2px 0 0}
+    .hidden-inst{display:none}
+
+    @media(max-width:620px){
+      body{padding:12px}
+      .shell{border-radius:24px}
+      .hero{padding:28px 18px 20px}
+      .brand img{width:62px;height:62px}
+      .brand-name{font-size:1.35rem}
+      form{padding:0 14px 22px}
+      .field-row{grid-template-columns:46px minmax(0,1fr);gap:12px;padding:18px 14px}
+      .field-icon{width:46px;height:46px;border-radius:14px}
+      .field-icon svg{width:23px;height:23px}
+      details.manager summary{padding:14px 14px 18px 72px}
+      details.manager summary::before{left:14px;top:14px;width:46px;height:46px;border-radius:14px}
+      details.manager summary::after{left:27px;top:24px;font-size:1.2rem}
+      .manager-card{padding:12px;min-height:74px}
+      .manager-side{gap:7px}
+      .chip{padding:6px 9px;font-size:.75rem}
+      .manager-title{font-size:1rem}
+      .mgr-body{padding:0 14px 18px}
+      .row{grid-template-columns:1fr}
+      .form-actions{padding:20px 14px 24px}
     }
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <img src="img/logo.png" class="logo" />
-    <h2>Cadastrar Novo Aluno</h2>
+  <main class="shell">
+    <header class="hero">
+      <div class="brand" aria-label="Axoriin">
+        <img src="/icons/axoriin-192x192.png" alt="Logo Axoriin" />
+        <span class="brand-name">Axoriin</span>
+      </div>
+      <h1>Cadastrar Novo Aluno</h1>
+      <p>Preencha os dados essenciais para adicionar um novo estudante ao sistema.</p>
+    </header>
 
     <form id="form-aluno">
-
-      <input type="text" id="nome" name="nome" placeholder="Nome do aluno" required />
-
-      <label class="campo-label">Turma</label>
-      <select id="turma" name="turma" required></select>
-
-      <details class="manager" id="turmas-manager">
-        <summary>
-          <div class="sum-left">
-            <span>⚙️ Gerenciar turmas</span>
-            <span class="chip" id="chip-qtd">—</span>
+      <section class="form-card">
+        <div class="field-row">
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.7-4.1 3-6.2 6.5-6.2s5.8 2.1 6.5 6.2"/></svg>
           </div>
-          <span class="sum-sub" id="sum-sub">Adicionar / excluir / desfazer</span>
-        </summary>
-
-        <div class="mgr-body">
-          <div class="row">
-            <input class="mini" id="novaTurmaCodigo" placeholder="Ex: 6ºC, 8ºD, 2ºD" />
-            <select class="mini" id="novaTurmaSegmento">
-              <option value="Fundamental II">Fundamental II</option>
-              <option value="Ensino Médio">Ensino Médio</option>
-            </select>
+          <div class="field-content">
+            <label class="field-label" for="nome">Nome do aluno</label>
+            <input type="text" id="nome" name="nome" placeholder="Digite o nome completo do aluno" autocomplete="name" required />
           </div>
-
-          <div class="row">
-            <select class="mini" id="novaTurmaTurno">
-              <option value="Manhã">Manhã</option>
-              <option value="Tarde">Tarde</option>
-            </select>
-            <button type="button" class="btn2 btn-add" id="btnAddTurma">➕ Adicionar turma</button>
-          </div>
-
-          <div class="mgr-actions">
-            <button type="button" class="btn2 btn-undo" id="btnUndo" disabled>↩️ Desfazer última ação</button>
-            <button type="button" class="btn2 btn-reset" id="btnReset">🧹 Restaurar padrão</button>
-          </div>
-
-          <div class="note">
-            • As turmas aqui são salvas no <b>navegador (localStorage)</b> e passam a aparecer também em <b>Transferir Turmas</b> e <b>Lista de Alunos</b>.<br>
-            • Excluir turma aqui <b>não apaga alunos</b>; apenas remove a opção dos seletores.
-          </div>
-
-          <div class="turmas-list" id="listaTurmas"></div>
         </div>
-      </details>
 
-      <label class="campo-label">
-        Data de entrada no colégio
-        <small>(pergunte ao aluno a data em que ingressou)</small>
-      </label>
-      <input type="date" id="dataEntrada" name="dataEntrada" required />
+        <div class="field-row">
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="m3 9 9-5 9 5-9 5-9-5Z"/><path d="M7 12.2V17c2.8 2 7.2 2 10 0v-4.8"/><path d="M21 9v6"/></svg>
+          </div>
+          <div class="field-content">
+            <label class="field-label" for="turma">Turma</label>
+            <select id="turma" name="turma" required></select>
+          </div>
+        </div>
 
-      <label class="campo-label">
-        Telefone do responsável
-        <small>(com DDD, sem espaços ou traços)</small>
-      </label>
-      <input type="tel" id="telefone" name="telefone" placeholder="Ex: 5599999999999" required />
+        <details class="manager" id="turmas-manager">
+          <summary>
+            <div class="manager-card">
+              <div>
+                <div class="manager-title">Gerenciar turmas</div>
+                <span class="sum-sub" id="sum-sub">Crie, edite ou organize as turmas disponíveis.</span>
+              </div>
+              <div class="manager-side">
+                <span class="chip" id="chip-qtd">—</span>
+                <span class="manager-arrow">›</span>
+              </div>
+            </div>
+          </summary>
 
-      <label class="campo-label">Foto do aluno (opcional)</label>
-      <input type="file" id="foto" name="foto" accept="image/*" capture="environment" />
+          <div class="mgr-body">
+            <div class="row">
+              <input class="mini" id="novaTurmaCodigo" placeholder="Ex.: 6ºC, 8ºD, 2ºD" />
+              <select class="mini" id="novaTurmaSegmento">
+                <option value="Fundamental II">Fundamental II</option>
+                <option value="Ensino Médio">Ensino Médio</option>
+              </select>
+            </div>
 
-      <input type="hidden" id="instituicao" name="instituicao" />
+            <div class="row">
+              <select class="mini" id="novaTurmaTurno">
+                <option value="Manhã">Manhã</option>
+                <option value="Tarde">Tarde</option>
+              </select>
+              <button type="button" class="btn2 btn-add" id="btnAddTurma">＋ Adicionar turma</button>
+            </div>
 
-      <button type="submit">Cadastrar</button>
-      <div class="mensagem" id="mensagem"></div>
+            <div class="mgr-actions">
+              <button type="button" class="btn2 btn-undo" id="btnUndo" disabled>↩ Desfazer última ação</button>
+              <button type="button" class="btn2 btn-reset" id="btnReset">Restaurar padrão</button>
+            </div>
+
+            <div class="note">
+              As turmas são salvas neste navegador e passam a aparecer também em Transferir Turmas e Lista de Alunos. Excluir uma turma aqui não apaga estudantes; apenas remove a opção dos seletores.
+            </div>
+            <div class="turmas-list" id="listaTurmas"></div>
+          </div>
+        </details>
+
+        <div class="field-row">
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M7 3v4M17 3v4M3.5 9.5h17"/><path d="M8 13h2M12 13h2M16 13h1M8 16.5h2M12 16.5h2"/></svg>
+          </div>
+          <div class="field-content">
+            <label class="field-label" for="dataEntrada">Data de entrada no colégio</label>
+            <input type="date" id="dataEntrada" name="dataEntrada" required />
+            <span class="field-help">Informe a data em que o estudante ingressou na instituição.</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M6.6 3.7 9.2 6c.5.5.6 1.3.2 1.9L8 10c1.4 2.8 3.5 4.9 6.3 6.3l2.1-1.4c.6-.4 1.4-.3 1.9.2l2.3 2.6c.5.6.5 1.4 0 2-1 1.1-2.4 1.7-3.9 1.5C9 20.3 3.7 15 2.8 7.3 2.6 5.8 3.2 4.4 4.3 3.4c.6-.5 1.7-.3 2.3.3Z"/></svg>
+          </div>
+          <div class="field-content">
+            <label class="field-label" for="telefone">Telefone do responsável</label>
+            <input type="tel" id="telefone" name="telefone" placeholder="Ex.: 68999999999" inputmode="numeric" autocomplete="tel" required />
+            <span class="field-help">Informe o número com DDD, sem espaços ou traços.</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m5 18 5-5 3 3 2-2 4 4"/></svg>
+          </div>
+          <div class="field-content">
+            <label class="field-label" for="foto">Foto do aluno <span style="color:var(--muted-2);font-weight:600">(opcional)</span></label>
+            <label class="upload-zone" id="uploadZone" for="foto">
+              <input type="file" id="foto" name="foto" accept="image/*" capture="environment" />
+              <span>
+                <span class="upload-cloud">☁↑</span>
+                <span class="upload-title">Arraste e solte a foto aqui</span>
+                <span class="upload-link">ou clique para selecionar um arquivo</span>
+                <span class="upload-meta">Formatos aceitos: JPG, PNG e WEBP</span>
+                <span class="upload-file" id="uploadFileName">Nenhum arquivo selecionado</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <input class="hidden-inst" type="hidden" id="instituicao" name="instituicao" />
+
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">
+          <span aria-hidden="true">＋</span>
+          Cadastrar aluno
+        </button>
+        <div class="mensagem" id="mensagem" aria-live="polite"></div>
+        <a href="/painel.html" class="back-btn">← Voltar ao Painel</a>
+      </div>
     </form>
-
-    <a href="/painel.html" class="voltar">⬅ Voltar ao Painel</a>
-  </div>
+  </main>
 
   <script>
-    (async function () {
+(async function () {
       const form       = document.getElementById('form-aluno');
       const msgEl      = document.getElementById('mensagem');
       const instInput  = document.getElementById('instituicao');
@@ -853,6 +956,44 @@
     })();
   </script>
 
+  <script>
+    (function configurarUploadVisual(){
+      const input = document.getElementById('foto');
+      const zone = document.getElementById('uploadZone');
+      const fileName = document.getElementById('uploadFileName');
+      if(!input || !zone || !fileName) return;
+
+      const atualizarNome = () => {
+        const file = input.files && input.files[0];
+        fileName.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+      };
+
+      input.addEventListener('change', atualizarNome);
+      ['dragenter','dragover'].forEach(eventName => {
+        zone.addEventListener(eventName, event => {
+          event.preventDefault();
+          zone.classList.add('dragover');
+        });
+      });
+      ['dragleave','drop'].forEach(eventName => {
+        zone.addEventListener(eventName, event => {
+          event.preventDefault();
+          zone.classList.remove('dragover');
+        });
+      });
+      zone.addEventListener('drop', event => {
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if(!files || !files.length) return;
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        atualizarNome();
+      });
+
+      const form = document.getElementById('form-aluno');
+      if(form) form.addEventListener('reset', () => setTimeout(atualizarNome, 0));
+    })();
+  </script>
   <script src="notify.js"></script>
   <script src="/update-client.js"></script>
 </body>
