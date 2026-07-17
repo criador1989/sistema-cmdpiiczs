@@ -21,22 +21,13 @@ router.get('/summary', async (req, res) => {
     const inst = req.usuario?.instituicao || req.user?.instituicao || req.auth?.instituicao || null;
     const im = instMatch(inst);
 
-    const [alunosAtivos, notifTotal, mediaAgg, pendAgg] = await Promise.all([
+    const [alunosAtivos, notifTotal, mediaAgg] = await Promise.all([
       Aluno.countDocuments({ ativo: true, ...im }),
       Notificacao.countDocuments({ ...im }),
       Aluno.aggregate([
         { $match: { ativo: true, ...(inst ? instMatch(inst) : {}) } },
         { $group: { _id: null, m: { $avg: { $ifNull: ['$comportamento', 0] } } } }
-      ]),
-      Notificacao.countDocuments({
-  ...im,
-  status: 'deferido',
-  entregue: true,
-  devolvidoPeloAluno: { $ne: true },
-  arquivada: { $ne: true },
-  ativo: { $ne: false },
-  prazoDevolucao: { $ne: null, $lt: new Date() }
-})
+      ])
     ]);
 
     const comportamentoMedio = Number(((mediaAgg?.[0]?.m) || 0).toFixed(2));
@@ -44,8 +35,7 @@ router.get('/summary', async (req, res) => {
     res.json({
       alunosAtivos,
       notifTotal,
-      comportamentoMedio,
-      devolucoesAtrasadas: pendAgg
+      comportamentoMedio
     });
   } catch (e) {
     console.error('Erro /dashboard-fast/summary:', e);

@@ -24,7 +24,6 @@ try {
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
 const { obterDadosDoRegulamento } = require('../../utils/regulamento');
-const { addBusinessDays } = require('../../utils/businessDays');
 
 // Datas de calendário em notificações: preserva YYYY-MM-DD sem deslocamento de fuso.
 // Para compatibilidade com registros antigos salvos como 00:00Z,
@@ -1076,63 +1075,6 @@ router.get('/novas', autenticar, requireTenant, attachActor, async (_req, res) =
   res.json({ mensagem: 'Funcionalidade em desenvolvimento' });
 });
 
-router.get('/pendencias/devolucao/contador', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const agora = new Date();
-
-    const total = await Notificacao.countDocuments({
-      ...instMatch,
-      status: 'deferido',
-      entregue: true,
-      devolvidoPeloAluno: { $ne: true },
-      arquivada: { $ne: true },
-      ativo: { $ne: false },
-      prazoDevolucao: { $ne: null, $lt: agora }
-    });
-
-    res.json({ total });
-  } catch (err) {
-    console.error('Erro contador pendências:', err);
-    res.status(500).json({ error: 'Erro ao calcular contador de pendências.' });
-  }
-});
-
-async function handlerPendenciasDevolucao(req, res) {
-  try {
-    const tenantId = getTenantId(req);
-    const instMatch = buildInstMatch(tenantId);
-    const alunoMatch = buildAlunoMatch(tenantId);
-    const limit = Math.min(Math.max(parseInt(req.query.limit || '50', 10), 1), 200);
-    const agora = new Date();
-
-    const itens = await Notificacao.find({
-  ...instMatch,
-  status: 'deferido',
-  entregue: true,
-  devolvidoPeloAluno: { $ne: true },
-  arquivada: { $ne: true },
-  ativo: { $ne: false },
-  prazoDevolucao: { $ne: null, $lt: agora }
-})
-      .sort({ prazoDevolucao: 1 })
-      .limit(limit)
-      .select('aluno entregue entregueEm prazoDevolucao devolvidoPeloAluno numeroSequencial tipo tipoMedida data')
-      .populate({ path: 'aluno', select: 'nome turma instituicao tenantId', match: alunoMatch })
-      .lean();
-
-    const filtrados = (itens || []).filter((i) => i.aluno);
-    res.json({ total: filtrados.length, itens: filtrados });
-  } catch (err) {
-    console.error('Erro pendências:', err);
-    res.status(500).json({ error: 'Erro ao buscar pendências de devolução.' });
-  }
-}
-
-router.get('/pendencias/devolucao', autenticar, requireTenant, attachActor, handlerPendenciasDevolucao);
-router.get('/pendentes-devolucao', autenticar, requireTenant, attachActor, handlerPendenciasDevolucao);
-
 router.get('/pendentes', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const tenantId = getTenantId(req);
@@ -1143,7 +1085,7 @@ router.get('/pendentes', autenticar, requireTenant, attachActor, async (req, res
     const itens = await Notificacao.find({
       ...instMatch,
       status: 'pendente',
-      devolvidoPeloAluno: { $ne: true }
+      arquivada: { $ne: true }
     })
       .sort({ data: -1, createdAt: -1 })
       .limit(limit)
@@ -1183,15 +1125,16 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
       filtroBase.data = { $lt: limiteHistorico };
     } else if (modo === 'arquivadas') {
       filtroBase.data = { $gte: limiteHistorico };
-      filtroBase.devolvidoPeloAluno = true;
+      filtroBase.$or = [
+        { arquivada: true },
+        { status: 'arquivado' }
+      ];
     } else if (modo === 'pendentes') {
       filtroBase.data = { $gte: limiteHistorico };
       filtroBase.status = 'pendente';
-      filtroBase.devolvidoPeloAluno = { $ne: true };
       filtroBase.arquivada = { $ne: true };
     } else {
       filtroBase.data = { $gte: limiteHistorico };
-      filtroBase.devolvidoPeloAluno = { $ne: true };
       filtroBase.arquivada = { $ne: true };
       filtroBase.status = { $ne: 'arquivado' };
     }
@@ -1250,8 +1193,7 @@ router.get('/', autenticar, requireTenant, attachActor, async (req, res) => {
       .select(`
         aluno tipo tipoMedida data status valorNumerico quantidadeDias
         notaAnterior notaAtual classificacaoAnterior classificacaoAtual
-        comentarioMonitor numeroSequencial entregue prazoDevolucao
-        devolvidoPeloAluno devolvidaEm entregueEm natureza mensagemEnviada mensagemEnviadaEm
+        comentarioMonitor numeroSequencial natureza mensagemEnviada mensagemEnviadaEm
         responsavelCiencia deferidoEm arquivada ativo artigo paragrafo inciso classificacaoRegulamento motivo
       `)
       .populate({
@@ -1415,12 +1357,6 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
 
     const dataBase = data ? parseDateOnlyNoonUTC(data) : parseDateOnlyNoonUTC(dateOnlyFromAny(new Date()));
 
-    let prazoDevolucao = null;
-    if (!ehElogio) {
-      const diasUteis = config?.tsmd?.diasParaDevolucao ?? 2;
-      prazoDevolucao = addBusinessDays(new Date(), diasUteis);
-    }
-
     const seqInfo = await getNextNumeroSequencialAtomic(inst, dataBase);
 
     let dadosRegulamento = montarDadosRegulamentoBase({
@@ -1453,7 +1389,6 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
         valorNumerico: valor,
         observacao,
         data: dataBase,
-        prazoDevolucao,
         status: 'pendente',
         numeroSequencial: seqInfo.numeroSequencial,
         artigo: dadosRegulamento.artigo,
@@ -1571,112 +1506,6 @@ const alunoAtualizado = recalculoHistorico.aluno;
   }
 });
 
-router.post('/:id/entregar', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const { id } = req.params;
-
-    if (!isObjectId(id)) {
-      return res.status(400).json({ error: 'ID inválido.' });
-    }
-
-    const n = await Notificacao.findOne({
-      _id: id,
-      ...buildInstMatch(inst)
-    });
-
-    if (!n) {
-      return res.status(404).json({ error: 'Notificação não encontrada.' });
-    }
-
-    if (n.status !== 'deferido') {
-      return res.status(400).json({ error: 'Somente notificações deferidas podem ser entregues.' });
-    }
-
-    if (n.entregue) {
-      return res.json({ ok: true, message: 'Já estava entregue.' });
-    }
-
-    n.entregue = true;
-    n.entregueEm = new Date();
-
-    const config = await getConfigDisciplinar(inst);
-    const diasUteis = config?.tsmd?.diasParaDevolucao ?? 2;
-    n.prazoDevolucao = addBusinessDays(new Date(), diasUteis);
-
-    await n.save();
-
-    await safeLogAction({
-  req,
-  event: 'NOTIFICACAO_ENTREGUE',
-  targetType: 'Notificacao',
-  targetId: id,
-  entidadeNome: alunoInfo.alunoNome,
-  alunoNome: alunoInfo.alunoNome,
-  meta: {
-    prazoDevolucao: n.prazoDevolucao,
-    turma: alunoInfo.alunoTurma
-  }
-});
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Erro ao marcar entregue:', err);
-    res.status(500).json({ error: 'Erro ao marcar ENTREGUE.' });
-  }
-});
-
-router.post('/:id/devolver', autenticar, requireTenant, attachActor, async (req, res) => {
-  try {
-    const inst = getTenantId(req);
-    const { id } = req.params;
-
-    if (!isObjectId(id)) {
-      return res.status(400).json({ error: 'ID inválido.' });
-    }
-
-    const n = await Notificacao.findOne({
-      _id: id,
-      ...buildInstMatch(inst)
-    });
-
-    if (!n) {
-      return res.status(404).json({ error: 'Notificação não encontrada.' });
-    }
-
-    if (!n.entregue) {
-      return res.status(400).json({ error: 'Marque como ENTREGUE antes de DEVOLVIDA.' });
-    }
-
-    if (n.devolvidoPeloAluno) {
-      return res.json({ ok: true, message: 'Já estava devolvida.' });
-    }
-
-    n.devolvidoPeloAluno = true;
-    n.devolvidaEm = new Date();
-    n.arquivada = true;
-    n.status = 'arquivado';
-
-    await n.save();
-
-    await safeLogAction({
-  req,
-  event: 'NOTIFICACAO_DEVOLVIDA',
-  targetType: 'Notificacao',
-  targetId: id,
-  entidadeNome: alunoInfo.alunoNome,
-  alunoNome: alunoInfo.alunoNome,
-  meta: {
-    turma: alunoInfo.alunoTurma
-  }
-});
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Erro ao marcar devolvida:', err);
-    res.status(500).json({ error: 'Erro ao marcar DEVOLVIDA.' });
-  }
-});
 // ✏️ Atualizar notificação
 router.put('/:id',
   autenticar,
@@ -1728,7 +1557,6 @@ router.put('/:id',
       // 🔥 Regra importante: se foi corrigido, limpa revisão
       if (notif.status === 'revisao_solicitada') {
         notif.status = 'pendente';
-        notif.alertaAtivo = false;
       }
 
       await notif.save();

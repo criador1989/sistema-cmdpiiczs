@@ -527,7 +527,7 @@ h1, h2, h3, h4, h5, h6,
 /* ===== MÉTRICAS HUD ===== */
 .metrics{
   display:grid;
-  grid-template-columns:1.25fr 1fr 1fr 1fr;
+  grid-template-columns:1.25fr 1fr 1fr;
   gap:10px;
   margin-bottom:26px;
   align-items:start;
@@ -970,7 +970,7 @@ h1, h2, h3, h4, h5, h6,
 
 @media(max-width:1400px){
   .metrics{
-    grid-template-columns:repeat(4, minmax(160px, 1fr));
+    grid-template-columns:repeat(3, minmax(160px, 1fr));
   }
 }
 
@@ -2243,7 +2243,7 @@ canvas{
 
 /* ===== MÉTRICAS FUTURISTAS V3 — ESTADO FINAL ESTÁVEL ===== */
 .metrics{
-  grid-template-columns:repeat(4, minmax(0, 1fr));
+  grid-template-columns:repeat(3, minmax(0, 1fr));
   gap:18px;
   align-items:stretch;
   margin-bottom:30px;
@@ -2855,44 +2855,6 @@ canvas{
     </div>
   </div>
 
-
-  <div class="metric metric--hud" id="metricPendDev">
-    <div class="metric-hud-frame"></div>
-    <div class="metric-hud-corners"></div>
-
-    <div class="k">Devoluções em atraso</div>
-
-    <div class="metric-hud-wrap">
-      <div
-        class="metric-hud"
-        data-hud
-        data-target="0"
-        data-progress="0"
-        data-decimals="0"
-      >
-        <div class="metric-hud-outer"></div>
-        <div class="metric-hud-sweep"></div>
-        <div class="metric-hud-segments"></div>
-        <div class="metric-hud-mid"></div>
-        <div class="metric-hud-core">
-          <div class="v" id="mPendDevol">0</div>
-        </div>
-        <div class="metric-hud-decor-left"></div>
-        <div class="metric-hud-decor-right"></div>
-      </div>
-
-      <div class="metric-hud-meta">
-        <div class="metric-hud-status">Processando...</div>
-        <div class="metric-hud-percent" id="mPendDevolPct">0%</div>
-      </div>
-
-      <div class="metric-hud-line" id="mPendDevolLine">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
-    </div>
-  </div>
 </div>
 
           <div class="menu-windows" id="menuWindows">
@@ -2985,43 +2947,6 @@ canvas{
               </div>
             </div>
           </div>
-
-          <section class="pend-card" id="pendDevolucaoSection" aria-live="polite">
-            <header>
-              <h3 style="margin-right:auto">🔔 Notificações não devolvidas no prazo (2 dias úteis)</h3>
-              <span id="pendResumo" class="pend-chip">Carregando…</span>
-
-              <button id="pend-show-hidden"
-                      class="btn"
-                      type="button"
-                      title="Mostra novamente os itens marcados como OK neste navegador">
-                Reexibir ocultos
-              </button>
-
-              <button onclick="location.href=withTenant('/notificacoes')"
-                      style="border:0;padding:8px 12px;border-radius:10px;background:#B22222;color:#fff;cursor:pointer">
-                Ir para Notificações
-              </button>
-            </header>
-
-            <div style="overflow:auto">
-              <table class="pend-table" aria-describedby="pendResumo">
-                <thead>
-                  <tr><th>Aluno</th><th>Turma</th><th>Entregue em</th><th>Prazo</th><th>Atraso / OK</th></tr>
-                </thead>
-                <tbody id="pendTableBody">
-                  <tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="pager" aria-label="Paginação pendências devolução">
-              <button class="btn" id="pend-prev">◀</button>
-              <span class="info">Página <span id="pend-page">1</span> de <span id="pend-pages">1</span></span>
-              <button class="btn" id="pend-next">▶</button>
-              <span class="info">10 por página</span>
-            </div>
-          </section>
 
           <section class="alertas-comportamento" id="acSection">
   <header class="ac-head">
@@ -3452,8 +3377,6 @@ canvas{
     const SECOES = {
       metricNotif:'metricNotif',
       metricMedia:'metricMedia',
-      metricPendDev:'metricPendDev',
-      pendDevolucaoSection:'pendDevolucaoSection',
       acSection:'acSection',
     };
 
@@ -3507,8 +3430,6 @@ canvas{
         hide(
           SECOES.metricNotif,
           SECOES.metricMedia,
-          SECOES.metricPendDev,
-          SECOES.pendDevolucaoSection,
           SECOES.acSection
         );
 
@@ -3586,11 +3507,6 @@ function hudEaseOutCubic(t){
 
     if (type === 'notif') {
       return Math.max(6, Math.min(100, n >= 100 ? 100 : (n / 100) * 100));
-    }
-
-
-    if (type === 'pend') {
-      return Math.max(4, Math.min(100, n >= 20 ? 100 : (n / 20) * 100));
     }
 
     return Math.max(0, Math.min(100, n));
@@ -3750,26 +3666,12 @@ function hudEaseOutCubic(t){
       });
     }, 220);
 
-
-    setTimeout(() => {
-      hudAnimateMetric({
-        metricId: 'metricPendDev',
-        valueId: 'mPendDevol',
-        percentId: 'mPendDevolPct',
-        lineId: 'mPendDevolLine',
-        finalValue: values.pend || 0,
-        decimals: 0,
-        duration: 1600,
-        type: 'pend'
-      });
-    }, 420);
   }
 
   function hudResetAllMetrics(){
     hudResetMetric('metricAlunos', 'mAlunos', 'mAlunosPct', 'mAlunosLine', 0);
     hudResetMetric('metricNotif', 'mNotif', 'mNotifPct', 'mNotifLine', 0);
     hudResetMetric('metricMedia', 'mMedia', 'mMediaPct', 'mMediaLine', 1);
-    hudResetMetric('metricPendDev', 'mPendDevol', 'mPendDevolPct', 'mPendDevolLine', 0);
   }
   
   async function carregarMetricas(){
@@ -3778,7 +3680,6 @@ function hudEaseOutCubic(t){
     let alunosCount = 0;
     let notifPend = 0;
     let mediaGeral = 0;
-    let pendTotal = 0;
 
     try{
       const overview = await getJSON(API('/metrics/overview'), { timeoutMs: 8000 });
@@ -3824,173 +3725,12 @@ function hudEaseOutCubic(t){
       drawDonutChart(window.__lastDonutChartData);
     }
 
-    try{
-      const k = await getJSON(API('/notificacoes/pendencias/devolucao/contador'), { timeoutMs: 7000 });
-      pendTotal = Number(k?.total || 0);
-    }catch(e){
-      console.log('contador pendencias falhou:', e?.message);
-      pendTotal = 0;
-    }
-
     hudAnimateAllMetrics({
       alunos: alunosCount,
       notif: notifPend,
-      media: mediaGeral,
-      pend: pendTotal
+      media: mediaGeral
     });
   }
-
-  const PEND_STATE = { page: 1, size: 10 };
-let PEND_DATA = [];
-const PEND_OK_KEY = 'painelPendDevolOkIds';
-
-function pendGetOkSet(){
-  try{
-    const raw = localStorage.getItem(PEND_OK_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(arr) ? arr : []);
-  }catch{
-    return new Set();
-  }
-}
-
-function pendSaveOkSet(set){
-  try{
-    localStorage.setItem(PEND_OK_KEY, JSON.stringify(Array.from(set)));
-  }catch{}
-}
-
-function renderPendenciasPaged(){
-  const resumo = document.getElementById('pendResumo');
-  const tbody  = document.getElementById('pendTableBody');
-
-  const pageEl  = document.getElementById('pend-page');
-  const pagesEl = document.getElementById('pend-pages');
-  const prevBtn = document.getElementById('pend-prev');
-  const nextBtn = document.getElementById('pend-next');
-
-  const okSet = pendGetOkSet();
-
-  const visibleData = (Array.isArray(PEND_DATA) ? PEND_DATA : []).filter(n => {
-    const id = String(n?.id || n?._id || '');
-    return id && !okSet.has(id);
-  });
-
-  const total = visibleData.length;
-  const pages = Math.max(1, Math.ceil(total / PEND_STATE.size));
-  PEND_STATE.page = Math.min(Math.max(1, PEND_STATE.page), pages);
-
-  if (pageEl) pageEl.textContent = String(PEND_STATE.page);
-  if (pagesEl) pagesEl.textContent = String(pages);
-
-  if (prevBtn) prevBtn.disabled = PEND_STATE.page <= 1;
-  if (nextBtn) nextBtn.disabled = PEND_STATE.page >= pages;
-
-  if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Nenhuma pendência de devolução.</td></tr>`;
-    if (resumo) resumo.textContent = `Total pendente: 0`;
-    return;
-  }
-
-  const start = (PEND_STATE.page - 1) * PEND_STATE.size;
-  const slice = visibleData.slice(start, start + PEND_STATE.size);
-
-  const rows = slice.map(n => {
-    const nome  = n.aluno?.nome || '—';
-    const turma = n.aluno?.turma || '—';
-    const entr  = n.entregueEm ? new Date(n.entregueEm) : null;
-    const prazo = n.prazoDevolucao ? new Date(n.prazoDevolucao) : null;
-
-    let atraso = 0;
-    if (prazo) {
-      const ms = Date.now() - prazo.getTime();
-      atraso = Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-    }
-
-    const atrasoChip = atraso > 0
-      ? `<span class="pend-chip pend-atraso" title="Dias corridos">${atraso} dia(s)</span>`
-      : `<span class="pend-chip">no prazo</span>`;
-
-    const stableId = String(n?.id || n?._id || '');
-
-    const okBtn = stableId
-      ? `<button class="btn btn-primary pend-ok-btn" data-pend-ok="${stableId}" type="button" title="Oculta este item no Painel (não altera o servidor)">✅ OK</button>`
-      : `<span class="pend-chip">—</span>`;
-
-    return `<tr>
-      <td>${nome}</td>
-      <td><span class="pend-chip">${turma}</span></td>
-      <td>${entr ? entr.toLocaleString('pt-BR') : '—'}</td>
-      <td>${prazo ? prazo.toLocaleString('pt-BR') : '—'}</td>
-      <td style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${atrasoChip}${okBtn}</td>
-    </tr>`;
-  }).join('');
-
-  tbody.innerHTML = rows;
-  if (resumo) resumo.textContent = `Total pendente: ${total}`;
-}
-
-  async function carregarPendenciasDevolucao(){
-    const resumo = document.getElementById('pendResumo');
-    const tbody  = document.getElementById('pendTableBody');
-
-    if (resumo) resumo.textContent = 'Carregando…';
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Carregando…</td></tr>`;
-
-    PEND_STATE.page = 1;
-    PEND_DATA = [];
-
-    try{
-      const j = await getJSON(API('/notificacoes/pendencias/devolucao'), { timeoutMs: 12000 });
-      const arr = Array.isArray(j?.itens) ? j.itens : [];
-      arr.sort((a,b)=> new Date(a.prazoDevolucao) - new Date(b.prazoDevolucao));
-      PEND_DATA = arr;
-      renderPendenciasPaged();
-    }catch(e){
-      console.error(e);
-      if (resumo) resumo.textContent = 'Erro ao carregar';
-      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="opacity:.7">Falha ao carregar pendências.</td></tr>`;
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const prevBtn = document.getElementById('pend-prev');
-    const nextBtn = document.getElementById('pend-next');
-
-    if (prevBtn) prevBtn.addEventListener('click', ()=>{
-      PEND_STATE.page--;
-      renderPendenciasPaged();
-    });
-
-    if (nextBtn) nextBtn.addEventListener('click', ()=>{
-      PEND_STATE.page++;
-      renderPendenciasPaged();
-    });
-
-    const tbody = document.getElementById('pendTableBody');
-    tbody?.addEventListener('click', (ev)=>{
-      const btn = ev.target.closest('button[data-pend-ok]');
-      if(!btn) return;
-
-      const id = String(btn.dataset.pendOk || '');
-      if(!id) return;
-
-      const okSet = pendGetOkSet();
-      okSet.add(id);
-      pendSaveOkSet(okSet);
-
-      showOK('OK registrado no Painel. Item removido da lista.');
-      renderPendenciasPaged();
-    });
-
-    const showHiddenBtn = document.getElementById('pend-show-hidden');
-    showHiddenBtn?.addEventListener('click', ()=>{
-      if(!confirm('Deseja reexibir TODOS os itens ocultados por "OK" neste navegador?')) return;
-      try{ localStorage.removeItem(PEND_OK_KEY); }catch{}
-      showOK('Itens ocultos reexibidos.');
-      renderPendenciasPaged();
-    });
-  });
 
   (function(){
     const $ = (sel, ctx=document)=>ctx.querySelector(sel);
@@ -4508,7 +4248,6 @@ async function carregarAlertaRevisoes() {
   await verificarUsuario();
   await verificarAdmin();
   await carregarMetricas();
-  await carregarPendenciasDevolucao();
   await carregarAlertaRevisoes();
 
   if (window._carregarAlertasComportamento) {

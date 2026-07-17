@@ -314,40 +314,6 @@ const notificacaoSchema = new mongoose.Schema({
     default: null
   },
 
-  entregue: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-
-  entregueEm: {
-    type: Date,
-    default: null
-  },
-
-  prazoDevolucao: {
-    type: Date,
-    default: null,
-    index: true
-  },
-
-  devolvidoPeloAluno: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-
-  devolvidaEm: {
-    type: Date,
-    default: null
-  },
-
-  alertaAtivo: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-
   tipoElogio: {
     type: String,
     enum: ['elogioVerbal', 'boletimInternoIndividual', 'boletimInternoColetivo', 'mediaAlta', null],
@@ -497,25 +463,6 @@ notificacaoSchema.index(
   { name: 'idx_notificacao_tenant_status' }
 );
 
-notificacaoSchema.index(
-  { instituicao: 1, arquivada: 1, devolvidoPeloAluno: 1, status: 1, data: -1 },
-  { name: 'idx_notificacao_instituicao_arquivada_devolucao_status_data' }
-);
-
-notificacaoSchema.index(
-  { tenantId: 1, arquivada: 1, devolvidoPeloAluno: 1, status: 1, data: -1 },
-  { name: 'idx_notificacao_tenant_arquivada_devolucao_status_data' }
-);
-
-notificacaoSchema.index(
-  { instituicao: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 },
-  { name: 'idx_notificacao_instituicao_status_devolucao_arquivada_createdAt' }
-);
-
-notificacaoSchema.index(
-  { tenantId: 1, status: 1, devolvidoPeloAluno: 1, arquivada: 1, createdAt: -1 },
-  { name: 'idx_notificacao_tenant_status_devolucao_arquivada_createdAt' }
-);
 
 notificacaoSchema.index(
   { tokenResponsavel: 1, tokenResponsavelExpiraEm: 1 },
@@ -560,13 +507,6 @@ notificacaoSchema.pre('validate', function () {
   this.comentarioMonitor = trimStr(this.comentarioMonitor);
   this.comentarioRevisao = trimStr(this.comentarioRevisao);
   this.numeroSequencial = trimStr(this.numeroSequencial);
-
-  // 🔥 coerência automática de arquivamento
-  if (this.devolvidoPeloAluno === true) {
-    this.arquivada = true;
-    this.status = 'arquivado';
-    if (!this.devolvidaEm) this.devolvidaEm = new Date();
-  }
 
   if (this.arquivada === true && lowerTrim(this.status) !== 'arquivado') {
     this.status = 'arquivado';
@@ -621,25 +561,8 @@ notificacaoSchema.pre('findOneAndUpdate', function (next) {
     sincronizarTenantNoUpdate(update);
 
     const $set = update.$set || {};
-    const devolvidoPeloAluno = $set.devolvidoPeloAluno ?? update.devolvidoPeloAluno;
     const arquivada = $set.arquivada ?? update.arquivada;
     const status = ($set.status ?? update.status);
-
-    if (devolvidoPeloAluno === true) {
-      if (update.$set) {
-        update.$set.arquivada = true;
-        update.$set.status = 'arquivado';
-        if (!update.$set.devolvidaEm && !update.devolvidaEm) {
-          update.$set.devolvidaEm = new Date();
-        }
-      } else {
-        update.arquivada = true;
-        update.status = 'arquivado';
-        if (!update.devolvidaEm) {
-          update.devolvidaEm = new Date();
-        }
-      }
-    }
 
     if (arquivada === true) {
       if (update.$set) update.$set.status = 'arquivado';
@@ -665,12 +588,6 @@ notificacaoSchema.pre('findOneAndUpdate', function (next) {
 notificacaoSchema.pre('save', function (next) {
   try {
     sincronizarTenant(this);
-
-    if (this.devolvidoPeloAluno === true) {
-      this.arquivada = true;
-      this.status = 'arquivado';
-      if (!this.devolvidaEm) this.devolvidaEm = new Date();
-    }
 
     if (this.arquivada === true && lowerTrim(this.status) !== 'arquivado') {
       this.status = 'arquivado';
