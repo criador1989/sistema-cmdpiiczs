@@ -420,77 +420,171 @@ router.post('/publico/:token/confirmar-ciencia', async (req, res) => {
 /* ============================================================
    🔹 LISTAR notificações para controle
    ============================================================ */
+router.get('/resumo-validacao', autenticar, async (req, res) => {
+  try {
+    const instituicao = filtroInstituicaoDoUsuario(req.usuario);
+    const inicioHoje = new Date();
+    inicioHoje.setHours(0, 0, 0, 0);
+    const fimHoje = new Date();
+    fimHoje.setHours(23, 59, 59, 999);
+
+    const [pendentes, devolvidas, deferidasHoje, arquivadas, total] = await Promise.all([
+      Notificacao.countDocuments({ ...instituicao, status: 'pendente' }),
+      Notificacao.countDocuments({ ...instituicao, status: 'revisao_solicitada' }),
+      Notificacao.countDocuments({
+        ...instituicao,
+        status: 'deferido',
+        $or: [
+          { deferidoEm: { $gte: inicioHoje, $lte: fimHoje } },
+          { deferidoEm: null, updatedAt: { $gte: inicioHoje, $lte: fimHoje } }
+        ]
+      }),
+      Notificacao.countDocuments({ ...instituicao, status: 'arquivado' }),
+      Notificacao.countDocuments(instituicao)
+    ]);
+
+    return res.json({
+      ok: true,
+      pendentes,
+      devolvidas,
+      deferidasHoje,
+      arquivadas,
+      total,
+      aguardandoAnalise: pendentes + devolvidas
+    });
+  } catch (err) {
+    console.error('[CTRL-NOTIF][RESUMO]', err);
+    return res.status(500).json({ erro: 'Erro ao carregar o resumo de validação.' });
+  }
+});
+
+router.get('/filtros-validacao', autenticar, async (req, res) => {
+  try {
+    const instituicao = filtroInstituicaoDoUsuario(req.usuario);
+
+    const [tipos, medidas, turmas] = await Promise.all([
+      Notificacao.distinct('tipo', instituicao),
+      Notificacao.distinct('tipoMedida', instituicao),
+      Aluno.distinct('turma', instituicao)
+    ]);
+
+    const opcoesTipo = Array.from(new Set([
+      ...(tipos || []),
+      ...(medidas || [])
+    ].map(normalizarTexto).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    const opcoesTurma = Array.from(new Set((turmas || []).map(normalizarTexto).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+
+    return res.json({ ok: true, tipos: opcoesTipo, turmas: opcoesTurma });
+  } catch (err) {
+    console.error('[CTRL-NOTIF][FILTROS]', err);
+    return res.status(500).json({ erro: 'Erro ao carregar filtros.' });
+  }
+});
+
 router.get('/', autenticar, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 50);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '12', 10), 1), 50);
     const skip = (page - 1) * limit;
 
-    const { q, data } = req.query;
-    const rawStatus = (req.query.status || '').trim();
-    const statuses = rawStatus
-      ? rawStatus.split(',').map((s) => s.trim()).filter(Boolean)
-      : ['pendente', 'revisao_solicitada'];
+    const q = normalizarTexto(req.query.q);
+    const tipo = normalizarTexto(req.query.tipo);
+    const turma = normalizarTexto(req.query.turma);
+    const order = String(req.query.order || 'desc').toLowerCase() === 'asc' ? 1 : -1;
+    const rawStatus = normalizarTexto(req.query.status);
 
-    const filtro = {
-      ...filtroInstituicaoDoUsuario(req.usuario),
-      status: { $in: statuses },
-    };
-
-    if (data) {
-      const inicio = new Date(data);
-      const fim = new Date(data);
-      if (!isNaN(inicio.getTime())) {
-        fim.setHours(23, 59, 59, 999);
-        filtro.createdAt = { $gte: inicio, $lte: fim };
-      }
+    let statuses;
+    if (!rawStatus || rawStatus === 'fila') {
+      statuses = ['pendente', 'revisao_solicitada'];
+    } else if (['todos', 'all', '*'].includes(rawStatus.toLowerCase())) {
+      statuses = ['pendente', 'deferido', 'revisao_solicitada', 'arquivado'];
+    } else {
+      statuses = rawStatus.split(',').map(normalizarTexto).filter(Boolean);
     }
 
-    const textRegex = q ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+    const instituicao = filtroInstituicaoDoUsuario(req.usuario);
+    const clausulas = [instituicao, { status: { $in: statuses } }];
 
-    const baseQuery = Notificacao.find(filtro)
-      .populate('aluno', 'nome turma instituicao contatos')
-      .sort({ createdAt: -1, _id: -1 });
+    const inicioRaw = req.query.inicio || req.query.data;
+    const fimRaw = req.query.fim || req.query.data;
+    const inicio = inicioRaw ? new Date(inicioRaw) : null;
+    const fim = fimRaw ? new Date(fimRaw) : null;
 
-    const countQuery = Notificacao.countDocuments(filtro);
+    if (inicio && !Number.isNaN(inicio.getTime())) {
+      inicio.setHours(0, 0, 0, 0);
+    }
+    if (fim && !Number.isNaN(fim.getTime())) {
+      fim.setHours(23, 59, 59, 999);
+    }
+    if (inicio && !Number.isNaN(inicio.getTime()) || fim && !Number.isNaN(fim.getTime())) {
+      const faixa = {};
+      if (inicio && !Number.isNaN(inicio.getTime())) faixa.$gte = inicio;
+      if (fim && !Number.isNaN(fim.getTime())) faixa.$lte = fim;
+      clausulas.push({ createdAt: faixa });
+    }
 
-    let [total, docs] = await Promise.all([countQuery, baseQuery.skip(skip).limit(limit)]);
-
-    if (textRegex) {
-      docs = docs.filter((n) => {
-        const aluno = n.aluno || {};
-        return (
-          textRegex.test(n.motivo || '') ||
-          textRegex.test(n.tipo || '') ||
-          textRegex.test(n.tipoMedida || '') ||
-          textRegex.test(n.numeroSequencial || '') ||
-          textRegex.test(aluno.nome || '') ||
-          textRegex.test(aluno.turma || '')
-        );
+    if (tipo && tipo.toLowerCase() !== 'todos') {
+      const tipoRegex = new RegExp(tipo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      clausulas.push({
+        $or: [
+          { tipo: tipoRegex },
+          { tipoMedida: tipoRegex },
+          { natureza: tipoRegex }
+        ]
       });
-
-      const todosParaCount = await Notificacao.find(filtro)
-        .populate('aluno', 'nome turma instituicao')
-        .select('motivo tipo tipoMedida numeroSequencial aluno');
-
-      total = todosParaCount.filter((n) => {
-        const aluno = n.aluno || {};
-        return (
-          textRegex.test(n.motivo || '') ||
-          textRegex.test(n.tipo || '') ||
-          textRegex.test(n.tipoMedida || '') ||
-          textRegex.test(n.numeroSequencial || '') ||
-          textRegex.test(aluno.nome || '') ||
-          textRegex.test(aluno.turma || '')
-        );
-      }).length;
     }
+
+    let idsAlunosPorTurma = null;
+    if (turma && turma.toLowerCase() !== 'todas') {
+      const turmaRegex = new RegExp(`^${turma.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      idsAlunosPorTurma = await Aluno.find({
+        ...instituicao,
+        turma: turmaRegex
+      }).distinct('_id');
+      clausulas.push({ aluno: { $in: idsAlunosPorTurma } });
+    }
+
+    if (q) {
+      const textRegex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const idsAlunosBusca = await Aluno.find({
+        ...instituicao,
+        $or: [
+          { nome: textRegex },
+          { turma: textRegex }
+        ]
+      }).distinct('_id');
+
+      clausulas.push({
+        $or: [
+          { motivo: textRegex },
+          { tipo: textRegex },
+          { tipoMedida: textRegex },
+          { numeroSequencial: textRegex },
+          { observacao: textRegex },
+          { aluno: { $in: idsAlunosBusca } }
+        ]
+      });
+    }
+
+    const filtro = clausulas.length === 1 ? clausulas[0] : { $and: clausulas };
+
+    const [total, docs] = await Promise.all([
+      Notificacao.countDocuments(filtro),
+      Notificacao.find(filtro)
+        .populate('aluno', 'nome turma instituicao contatos comportamento')
+        .sort({ createdAt: order, _id: order })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+    ]);
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
-    res.json({ data: docs, page, limit, total, totalPages });
+    return res.json({ data: docs, page, limit, total, totalPages });
   } catch (err) {
     console.error('Erro ao buscar notificações para controle:', err);
-    res.status(500).json({ erro: 'Erro interno do servidor' });
+    return res.status(500).json({ erro: 'Erro interno do servidor' });
   }
 });
 
