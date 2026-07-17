@@ -1,6 +1,6 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { carregarContextoJogo } from '../api.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG } from '../config.js?v=20260717-v5-47-0-questoes-reais';
+import { carregarContextoJogo } from '../api.js?v=20260717-v5-47-0-questoes-reais';
+import { GameState } from '../state.js?v=20260717-v5-47-0-questoes-reais';
 
 const DIRECTIONS = [
   'south', 'south_east', 'east', 'north_east',

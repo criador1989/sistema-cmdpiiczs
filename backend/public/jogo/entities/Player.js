@@ -1,5 +1,5 @@
-import { AVATARS } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { AVATARS } from '../config.js?v=20260717-v5-47-0-questoes-reais';
+import { GameState } from '../state.js?v=20260717-v5-47-0-questoes-reais';
 
 const DIRECTIONS = {
   N: 'north', NE: 'north-east', E: 'east', SE: 'south-east',

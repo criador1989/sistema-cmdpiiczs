@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 require('dotenv').config({ path: __dirname + '/.env' });
 
@@ -253,6 +253,7 @@ const fixRecalculoComportamento = require('./routes/api/fixRecalculoComportament
 const redacaoRoutes = require('./routes/api/redacao');
 const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
+const arenaQuestionariosRoutes = require('./routes/api/arenaQuestionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
@@ -812,6 +813,7 @@ mountIf('/api/redacao', redacaoRoutes);
 /* =========================
    âœ… NOVA ROTA: QUESTIONÃRIOS
    ========================= */
+mountIf('/api/questionarios/arena', arenaQuestionariosRoutes);
 mountIf('/api/questionarios', questionariosRoutes);
 
 /* Portal do Aluno segmentado */

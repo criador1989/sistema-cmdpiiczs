@@ -1,4 +1,4 @@
-import { GAME_CONFIG, LOCATIONS, AVATARS } from './config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG, LOCATIONS, AVATARS } from './config.js?v=20260717-v5-47-0-questoes-reais';
 
 export const GameState = {
   contexto: null,
@@ -7,6 +7,7 @@ export const GameState = {
   perguntasAtuais: [],
   respostas: [],
   resultado: null,
+  tentativaAtual: null,
   player: { ...GAME_CONFIG.playerStart },
   avatarSelecionado: 'cadete-azul',
 
@@ -38,6 +39,8 @@ export const GameState = {
   },
 
   getRestantesHoje() {
+    const informado = this.contexto?.progressoDiario?.restantesHoje;
+    if (Number.isFinite(Number(informado))) return Math.max(0, Number(informado));
     return Math.max(0, this.getDailyLimit() - this.getRespondidasHoje());
   },
 
@@ -60,10 +63,33 @@ export const GameState = {
     return this.perguntasAtuais;
   },
 
+  definirTentativaArena(tentativa, perguntas = []) {
+    this.tentativaAtual = tentativa || null;
+    this.perguntasAtuais = Array.isArray(perguntas) ? perguntas : [];
+    this.respostas = [];
+    this.resultado = null;
+  },
+
+  sincronizarProgresso(progresso) {
+    if (!this.contexto || !progresso) return;
+    this.contexto.progressoDiario = {
+      ...(this.contexto.progressoDiario || {}),
+      ...progresso
+    };
+    if (progresso.jogador) {
+      this.contexto.jogador = {
+        ...(this.contexto.jogador || {}),
+        ...progresso.jogador,
+        avatar: this.avatarSelecionado
+      };
+    }
+  },
+
   resetQuiz() {
     this.respostas = [];
     this.resultado = null;
     this.perguntasAtuais = [];
+    this.tentativaAtual = null;
   },
 
   atualizarAvatar(avatarId) {
@@ -76,21 +102,29 @@ export const GameState = {
 
   aplicarResultadoLocal(resultado) {
     if (!this.contexto) return;
+    if (resultado?.progressoDiario) {
+      this.sincronizarProgresso(resultado.progressoDiario);
+      return;
+    }
+
     const jogador = this.contexto.jogador || {};
     jogador.xp = Number(jogador.xp || 0) + Number(resultado.xpGanho || 0);
     jogador.moedas = Number(jogador.moedas || 0) + Number(resultado.moedasGanhas || 0);
-    jogador.xpProximoNivel = jogador.xpProximoNivel || 2000;
-    while (jogador.xp >= jogador.xpProximoNivel) {
-      jogador.xp -= jogador.xpProximoNivel;
-      jogador.nivel = Number(jogador.nivel || 1) + 1;
-      jogador.xpProximoNivel = Math.round(jogador.xpProximoNivel * 1.25);
-      resultado.subiuNivel = true;
-    }
+    jogador.nivel = 1 + Math.floor(Number(jogador.xp || 0) / 1000);
+    jogador.xpProximoNivel = jogador.nivel * 1000;
     this.contexto.jogador = jogador;
+
     if (!this.contexto.progressoDiario) {
       this.contexto.progressoDiario = { respondidasHoje: 0, limite: GAME_CONFIG.dailyLimit };
     }
-    this.contexto.progressoDiario.respondidasHoje += Number(resultado.total || 0);
+    this.contexto.progressoDiario.respondidasHoje = Math.min(
+      this.getDailyLimit(),
+      Number(this.contexto.progressoDiario.respondidasHoje || 0) + Number(resultado.total || 0)
+    );
+    this.contexto.progressoDiario.restantesHoje = Math.max(
+      0,
+      this.getDailyLimit() - this.contexto.progressoDiario.respondidasHoje
+    );
   },
 
   getLocationById(id) {

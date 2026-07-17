@@ -51,6 +51,18 @@ const QuestaoRespondidaSchema = new mongoose.Schema(
       trim: true
     },
 
+    apoioTextoSnapshot: {
+      type: String,
+      default: '',
+      trim: true
+    },
+
+    imagemUrlSnapshot: {
+      type: String,
+      default: '',
+      trim: true
+    },
+
     alternativasSnapshot: {
       type: [
         {
@@ -102,6 +114,11 @@ const QuestaoRespondidaSchema = new mongoose.Schema(
     reforcoAplicado: {
       type: Boolean,
       default: false
+    },
+
+    respondidaEm: {
+      type: Date,
+      default: null
     }
   },
   { _id: false }
@@ -215,6 +232,41 @@ const QuestionarioTentativaSchema = new mongoose.Schema(
       index: true
     },
 
+    origemExperiencia: {
+      type: String,
+      enum: ['portal', 'arena_diaria'],
+      default: 'portal',
+      index: true
+    },
+
+    diaReferencia: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true
+    },
+
+    localId: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true
+    },
+
+    anoEscolar: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 12,
+      index: true
+    },
+
+    medalha: {
+      type: String,
+      default: '',
+      trim: true
+    },
+
     titulo: {
       type: String,
       default: '',
@@ -302,6 +354,24 @@ const QuestionarioTentativaSchema = new mongoose.Schema(
       min: 0
     },
 
+    pontosGanhos: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    xpGanho: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    moedasGanhas: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
     status: {
       type: String,
       enum: ['em_andamento', 'finalizado', 'cancelado'],
@@ -342,5 +412,7 @@ QuestionarioTentativaSchema.index({ instituicao: 1, aluno: 1, tipo: 1, createdAt
 QuestionarioTentativaSchema.index({ instituicao: 1, area: 1, status: 1, createdAt: -1 });
 QuestionarioTentativaSchema.index({ instituicao: 1, aluno: 1, habilidadeFoco: 1, createdAt: -1 });
 QuestionarioTentativaSchema.index({ status: 1, createdAt: -1 });
+QuestionarioTentativaSchema.index({ instituicao: 1, aluno: 1, origemExperiencia: 1, diaReferencia: 1 });
+QuestionarioTentativaSchema.index({ instituicao: 1, aluno: 1, origemExperiencia: 1, diaReferencia: 1, localId: 1 });
 
-module.exports = mongoose.model('QuestionarioTentativa', QuestionarioTentativaSchema);
+module.exports = mongoose.models.QuestionarioTentativa || mongoose.model('QuestionarioTentativa', QuestionarioTentativaSchema);

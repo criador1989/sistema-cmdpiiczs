@@ -10,7 +10,9 @@
     "check:associacao": "node --check routes/api/associacao.js && node --check routes/api/masterAssociacoes.js && node --check middleware/autenticacao.js && node --check middleware/associacaoAuth.js && node --check services/usuarioVinculos.js && node --check models/UsuarioVinculoInstituicao.js && node --check routes/authRoutes.js && node --check public/associacao/associacao.js && node --check public/js/axoriin-ambientes.js && node --check scripts/migrar-vinculos-institucionais.js && node --check scripts/migrar-associacao-sqlite-para-mongo.js && node --check models/AssociacaoLembreteConfig.js && node --check models/AssociacaoLembreteEnvio.js && node --check services/associacaoLembretes.js && node --check jobs/agendadorLembretesAssociacao.js && node --check scripts/testar-regras-lembretes.js && node --check utils/associacaoReminderRules.js && node --check services/associacaoIndicadores.js && node --check utils/associacaoFinancialInsights.js && node --check scripts/testar-indicadores-financeiros.js",
     "migrar:vinculos": "node scripts/migrar-vinculos-institucionais.js",
     "test:lembretes": "node scripts/testar-regras-lembretes.js",
-    "test:indicadores": "node scripts/testar-indicadores-financeiros.js"
+    "test:indicadores": "node scripts/testar-indicadores-financeiros.js",
+    "arena:importar-6ano": "node scripts/importar-questoes-arena-6ano.js",
+    "arena:validar": "node scripts/validar-arena-questoes.js"
   },
   "keywords": [
     "CMDPII",
