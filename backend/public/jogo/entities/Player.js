@@ -1,5 +1,5 @@
-import { AVATARS } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { AVATARS } from '../config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { GameState } from '../state.js?v=20260718-v5-46-7-joystick-mobile-landscape';
 
 const DIRECTIONS = {
   N: 'north', NE: 'north-east', E: 'east', SE: 'south-east',
@@ -134,21 +134,30 @@ export class Player {
 
   update(delta, direction, bounds, obstacles = [], waterZones = []) {
     const seconds = delta / 1000;
-    let rawX = 0;
-    let rawY = 0;
-    if (direction.left) rawX -= 1;
-    if (direction.right) rawX += 1;
-    if (direction.up) rawY -= 1;
-    if (direction.down) rawY += 1;
+    const hasAnalogVector = Number.isFinite(direction?.x) && Number.isFinite(direction?.y);
+    let rawX = hasAnalogVector ? direction.x : 0;
+    let rawY = hasAnalogVector ? direction.y : 0;
+
+    if (!hasAnalogVector) {
+      if (direction.left) rawX -= 1;
+      if (direction.right) rawX += 1;
+      if (direction.up) rawY -= 1;
+      if (direction.down) rawY += 1;
+    }
 
     this.mode = 'walk';
 
-    if (rawX || rawY) {
+    const vectorLength = Math.hypot(rawX, rawY);
+    if (vectorLength > 0.001) {
       this.pose = 'walk';
       this.direction = this.directionFromVector(rawX, rawY);
 
-      const speed = this.mode === 'swim' ? this.swimSpeed : this.walkSpeed;
-      const length = Math.hypot(rawX, rawY) || 1;
+      const baseSpeed = this.mode === 'swim' ? this.swimSpeed : this.walkSpeed;
+      const force = hasAnalogVector
+        ? Phaser.Math.Clamp(Number(direction.magnitude) || vectorLength, 0, 1)
+        : 1;
+      const speed = baseSpeed * force;
+      const length = vectorLength || 1;
       const dx = (rawX / length) * speed * seconds;
       const dy = (rawY / length) * speed * seconds;
       const nextX = Phaser.Math.Clamp(this.x + dx, bounds.x, bounds.x + bounds.width);
@@ -175,14 +184,12 @@ export class Player {
   }
 
   directionFromVector(dx, dy) {
-    if (dx === 0 && dy < 0) return DIRECTIONS.N;
-    if (dx > 0 && dy < 0) return DIRECTIONS.NE;
-    if (dx > 0 && dy === 0) return DIRECTIONS.E;
-    if (dx > 0 && dy > 0) return DIRECTIONS.SE;
-    if (dx === 0 && dy > 0) return DIRECTIONS.S;
-    if (dx < 0 && dy > 0) return DIRECTIONS.SW;
-    if (dx < 0 && dy === 0) return DIRECTIONS.W;
-    return DIRECTIONS.NW;
+    const angle = Math.atan2(dy, dx);
+    const octant = Math.round(8 * angle / (Math.PI * 2) + 8) % 8;
+    return [
+      DIRECTIONS.E, DIRECTIONS.SE, DIRECTIONS.S, DIRECTIONS.SW,
+      DIRECTIONS.W, DIRECTIONS.NW, DIRECTIONS.N, DIRECTIONS.NE
+    ][octant];
   }
 
   applyDirectionVisual() {
