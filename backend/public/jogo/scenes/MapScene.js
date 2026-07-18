@@ -1,6 +1,6 @@
-import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
-import { GameState } from '../state.js?v=20260718-v5-46-7-joystick-mobile-landscape';
-import { Player } from '../entities/Player.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260718-v5-46-8-joystick-touch-fix';
+import { GameState } from '../state.js?v=20260718-v5-46-8-joystick-touch-fix';
+import { Player } from '../entities/Player.js?v=20260718-v5-46-8-joystick-touch-fix';
 
 export class MapScene extends Phaser.Scene {
   constructor() { super('MapScene'); }
@@ -2719,11 +2719,15 @@ export class MapScene extends Phaser.Scene {
     this.mobileControls = controls;
     if (!isTouchDevice) return;
 
+    // Garante ponteiros suficientes para usar analógico e interação ao mesmo tempo.
+    try { this.input.addPointer(5); } catch (_) { /* já configurado pelo Phaser */ }
+
     const centerX = 118;
     const centerY = 604;
     const outerRadius = 90;
+    const touchRadius = 118;
     const travelRadius = 52;
-    const deadZone = 0.13;
+    const deadZone = 0.11;
 
     const shadow = this.add.ellipse(centerX, centerY + 64, 176, 44, 0x020811, 0.42);
     const outer = this.add.circle(centerX, centerY, outerRadius, 0x071529, 0.58)
@@ -2744,10 +2748,17 @@ export class MapScene extends Phaser.Scene {
       backgroundColor: 'rgba(5, 17, 36, 0.72)',
       padding: { x: 8, y: 3 }
     }).setOrigin(0.5);
-    const hit = this.add.circle(centerX, centerY, 108, 0xffffff, 0.001)
-      .setInteractive(new Phaser.Geom.Circle(0, 0, 108), Phaser.Geom.Circle.Contains);
 
-    controls.add([shadow, outer, middle, guide, knobShadow, knob, knobHighlight, caption, hit]);
+    // Phaser Shape + hit-area circular personalizada não responde de forma
+    // consistente em alguns navegadores móveis. A Zone retangular abaixo e o
+    // fallback global de distância garantem o toque em Android e iOS.
+    const joystickZone = this.add.zone(centerX, centerY, touchRadius * 2, touchRadius * 2)
+      .setInteractive({ useHandCursor: false });
+
+    controls.add([
+      shadow, outer, middle, guide,
+      knobShadow, knob, knobHighlight, caption, joystickZone
+    ]);
 
     const setKnobPosition = (x, y) => {
       knob.setPosition(x, y);
@@ -2755,11 +2766,21 @@ export class MapScene extends Phaser.Scene {
       knobShadow.setPosition(x, y + 14);
     };
 
+    const setPressedAppearance = (pressed, moving = false) => {
+      knob.setFillStyle(pressed ? 0x235b93 : 0x17243a, 0.98);
+      knob.setStrokeStyle(3, pressed ? 0xffe6ab : 0xf3d58a, pressed ? 1 : 0.86);
+      outer.setStrokeStyle(
+        4,
+        pressed ? 0x76b9ff : 0xd6a84f,
+        pressed ? (moving ? 1 : 0.9) : 0.72
+      );
+      middle.setFillStyle(pressed ? 0x12355f : 0x0b2442, pressed ? 0.86 : 0.72);
+    };
+
     const resetStick = () => {
       this.virtualStick = { active: false, pointerId: null, x: 0, y: 0, magnitude: 0 };
       setKnobPosition(centerX, centerY);
-      knob.setFillStyle(0x17243a, 0.98).setStrokeStyle(3, 0xf3d58a, 0.86);
-      outer.setStrokeStyle(4, 0xd6a84f, 0.72);
+      setPressedAppearance(false, false);
     };
 
     const updateStick = (pointer) => {
@@ -2781,25 +2802,31 @@ export class MapScene extends Phaser.Scene {
         centerY + unitY * clampedDistance
       );
 
-      this.virtualStick.active = magnitude > 0;
+      // O estado permanece ativo enquanto o dedo estiver pressionado. Isso
+      // evita o bloqueio observado quando o toque começa próximo ao centro.
+      this.virtualStick.active = true;
       this.virtualStick.x = unitX;
       this.virtualStick.y = unitY;
       this.virtualStick.magnitude = magnitude;
-
-      knob.setFillStyle(magnitude > 0 ? 0x235b93 : 0x17243a, 0.98);
-      knob.setStrokeStyle(3, magnitude > 0 ? 0xffe6ab : 0xf3d58a, 1);
-      outer.setStrokeStyle(4, magnitude > 0 ? 0x76b9ff : 0xd6a84f, magnitude > 0 ? 0.95 : 0.72);
+      setPressedAppearance(true, magnitude > 0);
     };
 
+    const isInsideJoystick = (pointer) => (
+      Math.hypot(pointer.x - centerX, pointer.y - centerY) <= touchRadius
+    );
+
     const startStick = (pointer) => {
+      if (!isInsideJoystick(pointer)) return false;
       pointer.event?.preventDefault?.();
-      if (this.virtualStick.pointerId !== null) return;
+      pointer.event?.stopPropagation?.();
+      if (this.virtualStick.pointerId !== null) return false;
       this.virtualStick.pointerId = pointer.id;
       updateStick(pointer);
+      return true;
     };
 
     const moveStick = (pointer) => {
-      if (pointer.id !== this.virtualStick.pointerId || !pointer.isDown) return;
+      if (pointer.id !== this.virtualStick.pointerId) return;
       pointer.event?.preventDefault?.();
       updateStick(pointer);
     };
@@ -2810,23 +2837,21 @@ export class MapScene extends Phaser.Scene {
       resetStick();
     };
 
-    hit.on('pointerdown', startStick);
-    this.input.on('pointermove', moveStick);
-    this.input.on('pointerup', endStick);
-    this.input.on('pointerupoutside', endStick);
+    const interactX = 1122;
+    const interactY = 634;
+    const interactTouchRadius = 78;
 
-    const interactShadow = this.add.circle(1122, 638, 57, 0x071529, 0.82)
+    const interactShadow = this.add.circle(interactX, interactY + 4, 57, 0x071529, 0.82)
       .setStrokeStyle(3, 0xf3d58a, 0.42);
-    const interact = this.add.circle(1122, 634, 50, 0xd6a84f, 1)
-      .setStrokeStyle(4, 0xffe6ab, 1)
-      .setInteractive(new Phaser.Geom.Circle(0, 0, 62), Phaser.Geom.Circle.Contains);
-    const label = this.add.text(1122, 630, 'E', {
+    const interact = this.add.circle(interactX, interactY, 50, 0xd6a84f, 1)
+      .setStrokeStyle(4, 0xffe6ab, 1);
+    const label = this.add.text(interactX, interactY - 4, 'E', {
       fontFamily: 'Georgia, Times New Roman, serif',
       fontSize: '34px',
       fontStyle: '900',
       color: '#071529'
     }).setOrigin(0.5);
-    const interactCaption = this.add.text(1122, 686, 'INTERAGIR', {
+    const interactCaption = this.add.text(interactX, interactY + 52, 'INTERAGIR', {
       fontFamily: 'system-ui, sans-serif',
       fontSize: '12px',
       fontStyle: '900',
@@ -2834,20 +2859,55 @@ export class MapScene extends Phaser.Scene {
       backgroundColor: 'rgba(5, 17, 36, 0.76)',
       padding: { x: 8, y: 3 }
     }).setOrigin(0.5);
+    const interactZone = this.add.zone(interactX, interactY, 156, 156)
+      .setInteractive({ useHandCursor: false });
+
+    controls.add([interactShadow, interact, label, interactCaption, interactZone]);
+
+    let lastInteractPointer = null;
+    let lastInteractAt = 0;
+
+    const isInsideInteract = (pointer) => (
+      Math.hypot(pointer.x - interactX, pointer.y - interactY) <= interactTouchRadius
+    );
 
     const interactNow = (pointer) => {
+      if (!isInsideInteract(pointer)) return false;
+
+      const now = performance.now();
+      if (lastInteractPointer === pointer.id && now - lastInteractAt < 180) return true;
+      lastInteractPointer = pointer.id;
+      lastInteractAt = now;
+
       pointer.event?.preventDefault?.();
-      interact.setFillStyle(0xf3d58a, 1).setScale(0.94);
+      pointer.event?.stopPropagation?.();
+      interact.setFillStyle(0xf3d58a, 1).setScale(0.92);
+      interactShadow.setScale(0.96);
       this.nearestLocation = this.findNearestLocation();
       this.tryInteract();
-      this.time.delayedCall(110, () => {
-        if (interact.active) interact.setFillStyle(0xd6a84f, 1).setScale(1);
+      this.time.delayedCall(130, () => {
+        if (!interact.active) return;
+        interact.setFillStyle(0xd6a84f, 1).setScale(1);
+        interactShadow.setScale(1);
       });
+      return true;
     };
 
-    interact.on('pointerdown', interactNow);
-    label.setInteractive({ useHandCursor: true }).on('pointerdown', interactNow);
-    controls.add([interactShadow, interact, label, interactCaption]);
+    // Os eventos nas Zones cobrem o caminho normal do Phaser.
+    joystickZone.on('pointerdown', startStick);
+    interactZone.on('pointerdown', interactNow);
+
+    // O fallback global resolve aparelhos em que eventos de GameObject não são
+    // disparados, embora o canvas esteja recebendo o toque.
+    const handlePointerDown = (pointer) => {
+      if (startStick(pointer)) return;
+      interactNow(pointer);
+    };
+
+    this.input.on('pointerdown', handlePointerDown);
+    this.input.on('pointermove', moveStick);
+    this.input.on('pointerup', endStick);
+    this.input.on('pointerupoutside', endStick);
 
     const resetOnBlur = () => resetStick();
     const resetOnVisibility = () => { if (document.hidden) resetStick(); };
@@ -2856,6 +2916,7 @@ export class MapScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       resetStick();
+      this.input.off('pointerdown', handlePointerDown);
       this.input.off('pointermove', moveStick);
       this.input.off('pointerup', endStick);
       this.input.off('pointerupoutside', endStick);

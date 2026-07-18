@@ -124,7 +124,10 @@ body { overflow-x: hidden; }
   display: block;
   width: 100% !important;
   height: auto !important;
-  touch-action: none;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  -ms-touch-action: none;
+  -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -139,7 +142,7 @@ body { overflow-x: hidden; }
 }
 
 
-/* Arena V5.46.7 — experiência mobile com joystick e modo paisagem */
+/* Arena V5.46.8 — joystick touch corrigido e modo paisagem */
 html.arena-mobile-game-mode,
 body.arena-mobile-game-mode {
   overflow: hidden !important;
