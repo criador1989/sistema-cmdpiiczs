@@ -1,4 +1,4 @@
-import { GAME_CONFIG, LOCATIONS } from './config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG, LOCATIONS } from './config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
 
 const STORAGE_KEYS_TOKEN = ['token', 'authToken', 'alunoToken', 'portalAlunoToken', 'axoriinToken', 'jwt', 'accessToken'];
 const STORAGE_KEYS_TENANT = ['tenant', 'tenantSlug', 'instituicao', 'instituicaoSlug', 'axoriinTenant'];

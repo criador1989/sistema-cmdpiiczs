@@ -1,6 +1,6 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { createStudentPortrait, createNpcPortrait } from '../ui/PortraitFactory.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG } from '../config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { GameState } from '../state.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { createStudentPortrait, createNpcPortrait } from '../ui/PortraitFactory.js?v=20260718-v5-46-7-joystick-mobile-landscape';
 
 const DIALOGUES = {
   'escola-militar': {

@@ -137,3 +137,109 @@ body { overflow-x: hidden; }
   .arena-actions a, .arena-actions button { flex: 1; text-align: center; }
   #game-container { min-height: 560px; }
 }
+
+
+/* Arena V5.46.7 — experiência mobile com joystick e modo paisagem */
+html.arena-mobile-game-mode,
+body.arena-mobile-game-mode {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.arena-stage:fullscreen,
+.arena-stage:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  min-width: 100vw;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: #061426;
+}
+
+.arena-stage:fullscreen #game-container,
+.arena-stage:-webkit-full-screen #game-container {
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.arena-stage:fullscreen #game-container canvas,
+.arena-stage:-webkit-full-screen #game-container canvas {
+  width: min(100vw, 177.7778vh) !important;
+  height: min(100vh, 56.25vw) !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+}
+
+.arena-rotate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(4, 13, 29, 0.96);
+  color: #ffffff;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  touch-action: none;
+}
+
+.arena-rotate-overlay.is-visible {
+  display: flex;
+}
+
+.arena-rotate-card {
+  width: min(320px, 88vw);
+  padding: 24px 20px;
+  border: 2px solid rgba(214, 168, 79, 0.72);
+  border-radius: 22px;
+  background: #081a36;
+}
+
+.arena-rotate-phone {
+  width: 76px;
+  height: 120px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #f3d58a;
+  border-radius: 16px;
+  color: #f3d58a;
+  font-size: 40px;
+  animation: arena-rotate-phone 1.5s ease-in-out infinite;
+}
+
+.arena-rotate-card strong,
+.arena-rotate-card span {
+  display: block;
+}
+
+.arena-rotate-card strong {
+  margin-bottom: 8px;
+  color: #f3d58a;
+  font-size: 1.25rem;
+}
+
+.arena-rotate-card span {
+  color: #dce8f8;
+  line-height: 1.45;
+}
+
+@keyframes arena-rotate-phone {
+  0%, 20% { transform: rotate(0deg); }
+  70%, 100% { transform: rotate(90deg); }
+}
+
+@media (orientation: landscape) and (pointer: coarse) {
+  html.arena-mobile-playing body {
+    background: #061426;
+  }
+}

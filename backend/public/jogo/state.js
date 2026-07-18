@@ -1,4 +1,4 @@
-import { GAME_CONFIG, LOCATIONS, AVATARS } from './config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG, LOCATIONS, AVATARS } from './config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
 
 export const GameState = {
   contexto: null,

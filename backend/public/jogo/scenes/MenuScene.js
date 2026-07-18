@@ -1,10 +1,11 @@
-import { GAME_CONFIG } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG } from '../config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { GameState } from '../state.js?v=20260718-v5-46-7-joystick-mobile-landscape';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
 
   create() {
+    window.AxoriinMobile?.setPlaying?.(false);
     this.cameras.main.setBackgroundColor('#061426');
 
     this.add.image(640, 360, 'menu-axoriin-v5461')
@@ -13,7 +14,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.drawSelectedAvatarPreview();
 
-    this.createIllustratedButton(307, 670, 342, 62, () => this.scene.start('MapScene'), false);
+    this.createIllustratedButton(307, 670, 342, 62, () => this.enterCity(), false);
     this.createIllustratedButton(660, 670, 318, 62, () => this.scene.start('AvatarScene'), true);
     this.createIllustratedButton(1003, 670, 326, 62, () => {
       window.location.href = GAME_CONFIG.portalUrl;
@@ -23,6 +24,16 @@ export class MenuScene extends Phaser.Scene {
     keys.ENTER.on('down', () => this.scene.start('MapScene'));
     keys.A.on('down', () => this.scene.start('AvatarScene'));
     keys.P.on('down', () => { window.location.href = GAME_CONFIG.portalUrl; });
+  }
+
+  async enterCity() {
+    try {
+      await window.AxoriinMobile?.requestGameMode?.();
+    } catch (error) {
+      console.warn('[Arena Axoriin] O modo mobile seguirá sem tela cheia automática.', error);
+    }
+    window.AxoriinMobile?.setPlaying?.(true);
+    this.scene.start('MapScene');
   }
 
   drawSelectedAvatarPreview() {

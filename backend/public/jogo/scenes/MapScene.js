@@ -1,6 +1,6 @@
-import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { GameState } from '../state.js?v=20260717-v5-46-6-mobile-touch-corrigido';
-import { Player } from '../entities/Player.js?v=20260717-v5-46-6-mobile-touch-corrigido';
+import { GAME_CONFIG, LOCATIONS, DISTRICTS, AVATARS } from '../config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { GameState } from '../state.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { Player } from '../entities/Player.js?v=20260718-v5-46-7-joystick-mobile-landscape';
 
 export class MapScene extends Phaser.Scene {
   constructor() { super('MapScene'); }
@@ -11,6 +11,7 @@ export class MapScene extends Phaser.Scene {
       this.cameras.main.setBackgroundColor('#071529');
       this.bounds = new Phaser.Geom.Rectangle(70, 70, world.width - 140, world.height - 140);
       this.virtualDirection = { up: false, down: false, left: false, right: false };
+      this.virtualStick = { active: false, pointerId: null, x: 0, y: 0, magnitude: 0 };
       this.nearestLocation = null;
       this.lockedNotice = null;
       this.approachNotice = null;
@@ -162,11 +163,27 @@ export class MapScene extends Phaser.Scene {
       });
     }
 
+    const keyboardX =
+      (this.cursors.right.isDown || this.keys.D.isDown ? 1 : 0) -
+      (this.cursors.left.isDown || this.keys.A.isDown ? 1 : 0);
+    const keyboardY =
+      (this.cursors.down.isDown || this.keys.S.isDown ? 1 : 0) -
+      (this.cursors.up.isDown || this.keys.W.isDown ? 1 : 0);
+
+    const stick = this.virtualStick || { active: false, x: 0, y: 0, magnitude: 0 };
+    const useAnalog = stick.active && stick.magnitude > 0.001;
+    const inputX = useAnalog ? stick.x : keyboardX;
+    const inputY = useAnalog ? stick.y : keyboardY;
+    const magnitude = useAnalog ? stick.magnitude : (keyboardX || keyboardY ? 1 : 0);
+
     const direction = {
-      left: this.cursors.left.isDown || this.keys.A.isDown || this.virtualDirection.left,
-      right: this.cursors.right.isDown || this.keys.D.isDown || this.virtualDirection.right,
-      up: this.cursors.up.isDown || this.keys.W.isDown || this.virtualDirection.up,
-      down: this.cursors.down.isDown || this.keys.S.isDown || this.virtualDirection.down
+      x: inputX,
+      y: inputY,
+      magnitude,
+      left: inputX < -0.18,
+      right: inputX > 0.18,
+      up: inputY < -0.18,
+      down: inputY > 0.18
     };
 
     this.player.update(delta, direction, this.bounds, this.obstacles, this.waterZones);
@@ -2688,111 +2705,163 @@ export class MapScene extends Phaser.Scene {
 
   createMobileControls() {
     const isTouchDevice = Boolean(
+      window.AxoriinMobile?.isTouchDevice?.() ||
       window.matchMedia?.('(pointer: coarse)').matches ||
       navigator.maxTouchPoints > 0 ||
       /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
     );
-    const isSmall = this.scale.width < 920 || isTouchDevice;
 
     const controls = this.add.container(0, 0)
       .setScrollFactor(0)
       .setDepth(19000)
-      .setVisible(isSmall);
+      .setVisible(isTouchDevice);
 
     this.mobileControls = controls;
-    this.mobilePointerDirections = new Map();
+    if (!isTouchDevice) return;
 
-    const resetDirection = (key) => {
-      this.virtualDirection[key] = false;
-      for (const [pointerId, direction] of this.mobilePointerDirections.entries()) {
-        if (direction === key) this.mobilePointerDirections.delete(pointerId);
-      }
-    };
+    const centerX = 118;
+    const centerY = 604;
+    const outerRadius = 90;
+    const travelRadius = 52;
+    const deadZone = 0.13;
 
-    const resetAllDirections = () => {
-      this.virtualDirection = { up: false, down: false, left: false, right: false };
-      this.mobilePointerDirections.clear();
-    };
-
-    const makePad = (x, y, label, key) => {
-      const glow = this.add.circle(x, y, 35, 0x071529, 0.82)
-        .setStrokeStyle(3, 0xf3d58a, 0.70);
-      const btn = this.add.circle(x, y, 32, 0x10355f, 0.96)
-        .setStrokeStyle(2, 0xffe6ab, 0.72)
-        .setInteractive(new Phaser.Geom.Circle(0, 0, 42), Phaser.Geom.Circle.Contains);
-      const txt = this.add.text(x, y - 1, label, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '25px',
-        fontStyle: 'bold',
-        color: '#ffffff'
-      }).setOrigin(0.5);
-
-      const activate = (pointer) => {
-        pointer.event?.preventDefault?.();
-        this.mobilePointerDirections.set(pointer.id, key);
-        this.virtualDirection[key] = true;
-        btn.setFillStyle(0x1f6fb5, 1);
-        glow.setStrokeStyle(4, 0xf3d58a, 1);
-      };
-      const deactivate = () => {
-        resetDirection(key);
-        btn.setFillStyle(0x10355f, 0.96);
-        glow.setStrokeStyle(3, 0xf3d58a, 0.70);
-      };
-
-      btn.on('pointerdown', activate);
-      btn.on('pointerup', deactivate);
-      btn.on('pointerupoutside', deactivate);
-      btn.on('pointerout', (pointer) => {
-        if (!pointer.isDown) deactivate();
-      });
-      controls.add([glow, btn, txt]);
-    };
-
-    makePad(96, 590, '↑', 'up');
-    makePad(96, 674, '↓', 'down');
-    makePad(38, 674, '←', 'left');
-    makePad(154, 674, '→', 'right');
-
-    const interactShadow = this.add.rectangle(1112, 658, 194, 66, 0x071529, 0.84)
-      .setStrokeStyle(3, 0xf3d58a, 0.45);
-    const interact = this.add.rectangle(1112, 656, 184, 58, 0xd6a84f, 1)
-      .setStrokeStyle(3, 0xffe6ab, 1)
-      .setInteractive({ useHandCursor: true });
-    const label = this.add.text(1112, 656, 'INTERAGIR', {
+    const shadow = this.add.ellipse(centerX, centerY + 64, 176, 44, 0x020811, 0.42);
+    const outer = this.add.circle(centerX, centerY, outerRadius, 0x071529, 0.58)
+      .setStrokeStyle(4, 0xd6a84f, 0.72);
+    const middle = this.add.circle(centerX, centerY, 72, 0x0b2442, 0.72)
+      .setStrokeStyle(2, 0xffe6ab, 0.32);
+    const guide = this.add.circle(centerX, centerY, travelRadius, 0x12355f, 0.26)
+      .setStrokeStyle(2, 0x76b9ff, 0.28);
+    const knobShadow = this.add.ellipse(centerX, centerY + 14, 78, 42, 0x000000, 0.36);
+    const knob = this.add.circle(centerX, centerY, 38, 0x17243a, 0.98)
+      .setStrokeStyle(3, 0xf3d58a, 0.86);
+    const knobHighlight = this.add.circle(centerX - 9, centerY - 11, 16, 0x5d6f8a, 0.34);
+    const caption = this.add.text(centerX, centerY + 108, 'ANALÓGICO', {
       fontFamily: 'system-ui, sans-serif',
-      fontSize: '18px',
+      fontSize: '12px',
+      fontStyle: '900',
+      color: '#f3d58a',
+      backgroundColor: 'rgba(5, 17, 36, 0.72)',
+      padding: { x: 8, y: 3 }
+    }).setOrigin(0.5);
+    const hit = this.add.circle(centerX, centerY, 108, 0xffffff, 0.001)
+      .setInteractive(new Phaser.Geom.Circle(0, 0, 108), Phaser.Geom.Circle.Contains);
+
+    controls.add([shadow, outer, middle, guide, knobShadow, knob, knobHighlight, caption, hit]);
+
+    const setKnobPosition = (x, y) => {
+      knob.setPosition(x, y);
+      knobHighlight.setPosition(x - 9, y - 11);
+      knobShadow.setPosition(x, y + 14);
+    };
+
+    const resetStick = () => {
+      this.virtualStick = { active: false, pointerId: null, x: 0, y: 0, magnitude: 0 };
+      setKnobPosition(centerX, centerY);
+      knob.setFillStyle(0x17243a, 0.98).setStrokeStyle(3, 0xf3d58a, 0.86);
+      outer.setStrokeStyle(4, 0xd6a84f, 0.72);
+    };
+
+    const updateStick = (pointer) => {
+      if (this.virtualStick.pointerId !== null && pointer.id !== this.virtualStick.pointerId) return;
+
+      const dx = pointer.x - centerX;
+      const dy = pointer.y - centerY;
+      const distance = Math.hypot(dx, dy);
+      const clampedDistance = Math.min(distance, travelRadius);
+      const unitX = distance > 0 ? dx / distance : 0;
+      const unitY = distance > 0 ? dy / distance : 0;
+      const rawMagnitude = Phaser.Math.Clamp(distance / travelRadius, 0, 1);
+      const magnitude = rawMagnitude <= deadZone
+        ? 0
+        : Phaser.Math.Clamp((rawMagnitude - deadZone) / (1 - deadZone), 0, 1);
+
+      setKnobPosition(
+        centerX + unitX * clampedDistance,
+        centerY + unitY * clampedDistance
+      );
+
+      this.virtualStick.active = magnitude > 0;
+      this.virtualStick.x = unitX;
+      this.virtualStick.y = unitY;
+      this.virtualStick.magnitude = magnitude;
+
+      knob.setFillStyle(magnitude > 0 ? 0x235b93 : 0x17243a, 0.98);
+      knob.setStrokeStyle(3, magnitude > 0 ? 0xffe6ab : 0xf3d58a, 1);
+      outer.setStrokeStyle(4, magnitude > 0 ? 0x76b9ff : 0xd6a84f, magnitude > 0 ? 0.95 : 0.72);
+    };
+
+    const startStick = (pointer) => {
+      pointer.event?.preventDefault?.();
+      if (this.virtualStick.pointerId !== null) return;
+      this.virtualStick.pointerId = pointer.id;
+      updateStick(pointer);
+    };
+
+    const moveStick = (pointer) => {
+      if (pointer.id !== this.virtualStick.pointerId || !pointer.isDown) return;
+      pointer.event?.preventDefault?.();
+      updateStick(pointer);
+    };
+
+    const endStick = (pointer) => {
+      if (pointer.id !== this.virtualStick.pointerId) return;
+      pointer.event?.preventDefault?.();
+      resetStick();
+    };
+
+    hit.on('pointerdown', startStick);
+    this.input.on('pointermove', moveStick);
+    this.input.on('pointerup', endStick);
+    this.input.on('pointerupoutside', endStick);
+
+    const interactShadow = this.add.circle(1122, 638, 57, 0x071529, 0.82)
+      .setStrokeStyle(3, 0xf3d58a, 0.42);
+    const interact = this.add.circle(1122, 634, 50, 0xd6a84f, 1)
+      .setStrokeStyle(4, 0xffe6ab, 1)
+      .setInteractive(new Phaser.Geom.Circle(0, 0, 62), Phaser.Geom.Circle.Contains);
+    const label = this.add.text(1122, 630, 'E', {
+      fontFamily: 'Georgia, Times New Roman, serif',
+      fontSize: '34px',
       fontStyle: '900',
       color: '#071529'
+    }).setOrigin(0.5);
+    const interactCaption = this.add.text(1122, 686, 'INTERAGIR', {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: '12px',
+      fontStyle: '900',
+      color: '#f3d58a',
+      backgroundColor: 'rgba(5, 17, 36, 0.76)',
+      padding: { x: 8, y: 3 }
     }).setOrigin(0.5);
 
     const interactNow = (pointer) => {
       pointer.event?.preventDefault?.();
-      interact.setFillStyle(0xf3d58a, 1);
+      interact.setFillStyle(0xf3d58a, 1).setScale(0.94);
       this.nearestLocation = this.findNearestLocation();
       this.tryInteract();
-      this.time.delayedCall(100, () => {
-        if (interact.active) interact.setFillStyle(0xd6a84f, 1);
+      this.time.delayedCall(110, () => {
+        if (interact.active) interact.setFillStyle(0xd6a84f, 1).setScale(1);
       });
     };
+
     interact.on('pointerdown', interactNow);
     label.setInteractive({ useHandCursor: true }).on('pointerdown', interactNow);
-    controls.add([interactShadow, interact, label]);
+    controls.add([interactShadow, interact, label, interactCaption]);
 
-    this.input.on('pointerup', (pointer) => {
-      const direction = this.mobilePointerDirections.get(pointer.id);
-      if (direction) resetDirection(direction);
-    });
-    this.input.on('gameout', resetAllDirections);
+    const resetOnBlur = () => resetStick();
+    const resetOnVisibility = () => { if (document.hidden) resetStick(); };
+    window.addEventListener('blur', resetOnBlur);
+    document.addEventListener('visibilitychange', resetOnVisibility);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      resetAllDirections();
-      this.input.off('gameout', resetAllDirections);
+      resetStick();
+      this.input.off('pointermove', moveStick);
+      this.input.off('pointerup', endStick);
+      this.input.off('pointerupoutside', endStick);
+      window.removeEventListener('blur', resetOnBlur);
+      document.removeEventListener('visibilitychange', resetOnVisibility);
     });
-
-    window.addEventListener('blur', resetAllDirections, { once: true });
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) resetAllDirections();
-    }, { once: true });
   }
 
   createMapOverlay() {
