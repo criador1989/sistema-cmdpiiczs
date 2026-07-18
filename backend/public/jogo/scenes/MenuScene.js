@@ -1,5 +1,5 @@
-import { GAME_CONFIG } from '../config.js?v=20260718-v5-46-7-joystick-mobile-landscape';
-import { GameState } from '../state.js?v=20260718-v5-46-7-joystick-mobile-landscape';
+import { GAME_CONFIG } from '../config.js?v=20260718-v5-46-8-joystick-touch-fix';
+import { GameState } from '../state.js?v=20260718-v5-46-8-joystick-touch-fix';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
