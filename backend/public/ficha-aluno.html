@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- AXORIIN FICHA DO ALUNO PREMIUM v4.0 -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -6,8 +7,8 @@
   <title>Ficha do Aluno - CMDPII</title>
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#0A1322" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <link rel="icon" href="/icons/axoriin-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/axoriin-192x192.png" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -40,7 +41,6 @@
     color:var(--ink);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:
-      url("img/bg-painel-smart.png") center/cover fixed no-repeat,
       var(--glow-1),
       var(--glow-2),
       var(--glow-3),
@@ -403,7 +403,6 @@
     body{
       margin:0 !important;
       background:
-        url("img/bg-painel-smart.png") center/cover no-repeat fixed,
         var(--glow-1),
         var(--glow-2),
         var(--glow-3),
@@ -450,60 +449,259 @@
     }
   </script>
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
+
+  <style id="axoriin-ficha-premium-v4">
+    :root{
+      --fx-bg:#020914;
+      --fx-panel:#071426;
+      --fx-panel-2:#0a1b31;
+      --fx-line:rgba(91,155,225,.23);
+      --fx-text:#f4f8ff;
+      --fx-muted:#91a8c7;
+      --fx-blue:#1787ff;
+      --fx-cyan:#06d6d9;
+      --fx-purple:#a84cff;
+      --fx-orange:#ff9f2e;
+      --fx-red:#ff574f;
+      --fx-green:#36d987;
+      --fx-radius:18px;
+      --fx-shadow:0 22px 60px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.035);
+    }
+
+    body{
+      background:
+        radial-gradient(circle at 14% 2%, rgba(23,135,255,.14), transparent 27%),
+        radial-gradient(circle at 88% 16%, rgba(168,76,255,.09), transparent 25%),
+        linear-gradient(180deg,#020914 0%,#03101e 48%,#020914 100%) !important;
+      min-height:100%;
+      color:var(--fx-text);
+    }
+
+    body::before{
+      content:"";
+      position:fixed; inset:0; pointer-events:none; z-index:-1;
+      opacity:.15;
+      background-image:
+        linear-gradient(rgba(73,133,198,.08) 1px, transparent 1px),
+        linear-gradient(90deg,rgba(73,133,198,.08) 1px, transparent 1px);
+      background-size:46px 46px;
+      mask-image:linear-gradient(to bottom,rgba(0,0,0,.75),transparent 86%);
+    }
+
+    .topbar{
+      position:sticky; top:0; z-index:60;
+      background:rgba(2,9,20,.88) !important;
+      border-bottom:1px solid rgba(91,155,225,.2) !important;
+      backdrop-filter:blur(18px) saturate(135%);
+    }
+    .topbar .inner{max-width:1500px!important;padding:14px 24px!important;gap:12px!important}
+    .brand{font-size:1.2rem!important;gap:12px!important}
+    .brand-mark{
+      width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+      background:linear-gradient(145deg,rgba(23,135,255,.23),rgba(6,214,217,.09));
+      border:1px solid rgba(68,165,255,.38); color:#85d9ff;
+      box-shadow:0 0 26px rgba(23,135,255,.17);
+    }
+    .brand-copy small{display:block;margin-top:2px;color:var(--fx-muted);font-size:.67rem;letter-spacing:.16em;text-transform:uppercase}
+    .top-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+
+    .btn,.iconbtn{
+      min-height:40px;border-radius:11px!important;
+      background:linear-gradient(180deg,rgba(11,29,53,.96),rgba(6,18,35,.96))!important;
+      border:1px solid rgba(103,166,235,.3)!important;
+      color:#eef6ff!important;box-shadow:none!important;
+    }
+    .btn:hover,.iconbtn:hover{border-color:rgba(105,187,255,.62)!important;box-shadow:0 0 22px rgba(23,135,255,.12)!important}
+    .btn.primary{background:linear-gradient(135deg,#0877ef,#1458e8)!important;border-color:rgba(106,190,255,.62)!important;box-shadow:0 10px 30px rgba(16,103,239,.24)!important}
+    .btn.warn{background:linear-gradient(135deg,rgba(255,159,46,.18),rgba(100,57,16,.32))!important;border-color:rgba(255,159,46,.42)!important;color:#ffd59c!important}
+    .btn.danger{background:linear-gradient(135deg,rgba(168,76,255,.25),rgba(87,32,139,.34))!important;border-color:rgba(192,111,255,.5)!important}
+
+    .page{max-width:1500px!important;margin:22px auto 36px!important;padding:0 24px!important}
+
+    .student-hero{
+      position:relative;overflow:hidden;
+      border:1px solid rgba(77,149,225,.28);border-radius:22px;
+      background:linear-gradient(145deg,rgba(7,20,38,.98),rgba(5,15,30,.96));
+      box-shadow:var(--fx-shadow);padding:24px;
+    }
+    .student-hero::after{
+      content:"";position:absolute;right:-80px;top:-130px;width:460px;height:460px;border-radius:50%;
+      background:radial-gradient(circle,rgba(23,135,255,.12),transparent 68%);pointer-events:none;
+    }
+    .student-main{display:grid;grid-template-columns:auto minmax(0,1fr) 250px;gap:22px;align-items:center;position:relative;z-index:1}
+    .avatar-shell{position:relative;width:132px;height:132px}
+    .avatar{
+      width:132px!important;height:132px!important;flex-basis:132px!important;
+      border:1px solid rgba(76,173,255,.72)!important;background:#061427!important;
+      box-shadow:0 0 0 8px rgba(23,135,255,.07),0 0 36px rgba(23,135,255,.28),inset 0 0 28px rgba(23,135,255,.1)!important;
+    }
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .avatar-camera{
+      position:absolute;right:-3px;bottom:5px;width:38px;height:38px;border-radius:50%;
+      display:grid;place-items:center;background:#0b2341;border:1px solid rgba(94,184,255,.58);color:#dff5ff;
+      box-shadow:0 8px 20px rgba(0,0,0,.36);
+    }
+    .identity h1{margin:0 0 10px;font-size:clamp(1.8rem,3vw,2.55rem);letter-spacing:.015em}
+    .identity-sub{color:var(--fx-muted);font-size:.88rem;margin-bottom:13px}
+    .badges{gap:8px!important}.badge{background:rgba(8,25,47,.82)!important;border-color:rgba(86,156,224,.32)!important;padding:6px 11px!important;color:#dcecff!important}
+    .hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
+    .score-card{
+      min-height:190px;border-radius:18px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:linear-gradient(160deg,rgba(8,34,65,.92),rgba(4,18,35,.96));
+      border:1px solid rgba(49,143,238,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 30px rgba(23,135,255,.08);
+      position:relative;z-index:1;
+    }
+    .score-label{color:#c6d9f2;font-weight:700;font-size:.9rem}.score-value{font-size:3.5rem;line-height:1;font-weight:850;margin:15px 0 10px}
+    .score-card .pill{padding:5px 15px!important}
+    .last-update{margin-top:10px;color:var(--fx-muted);font-size:.74rem}
+
+    .profile-utility{
+      margin-top:20px;padding-top:18px;border-top:1px solid rgba(84,148,215,.18);
+      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;
+    }
+    .metric-tile{
+      min-height:78px;border:1px solid rgba(83,151,221,.24);border-radius:14px;padding:13px 15px;
+      background:linear-gradient(145deg,rgba(9,27,50,.92),rgba(5,17,32,.92));
+      display:flex;gap:11px;align-items:center;
+    }
+    .metric-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:rgba(23,135,255,.12);color:#61baff;font-weight:900}
+    .metric-tile b{display:block;font-size:.75rem;color:var(--fx-muted);margin-bottom:4px}.metric-tile span{font-weight:800}
+
+    .edit-card{margin-top:18px!important;border-radius:18px!important;background:rgba(5,18,35,.98)!important;border:1px solid rgba(73,149,225,.3)!important}
+    .edit-card .card{background:rgba(6,21,40,.9)!important}
+
+    .dashboard-grid{display:grid;grid-template-columns:minmax(280px,.92fr) minmax(320px,1.08fr) minmax(360px,1.25fr);gap:16px;margin-top:18px;align-items:start}
+    .module-card{
+      border-radius:19px;background:linear-gradient(180deg,rgba(7,20,38,.98),rgba(4,15,29,.98));
+      border:1px solid var(--module-border);box-shadow:var(--fx-shadow);overflow:hidden;min-width:0;
+    }
+    .module-header{
+      min-height:64px;padding:16px 18px;display:flex;align-items:center;gap:12px;
+      background:linear-gradient(90deg,var(--module-soft),rgba(7,20,38,.15));border-bottom:1px solid var(--module-border);
+    }
+    .module-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--module-soft);border:1px solid var(--module-border);color:var(--module-accent);font-weight:900}
+    .module-title{margin:0;font-size:1.04rem}.module-subtitle{margin:3px 0 0;color:var(--fx-muted);font-size:.73rem}
+    .module-body{padding:16px}
+
+    .module-personal{--module-accent:var(--fx-blue);--module-soft:rgba(23,135,255,.13);--module-border:rgba(23,135,255,.42)}
+    .module-aph{--module-accent:var(--fx-cyan);--module-soft:rgba(6,214,217,.12);--module-border:rgba(6,214,217,.38)}
+    .module-discipline{--module-accent:var(--fx-purple);--module-soft:rgba(168,76,255,.14);--module-border:rgba(168,76,255,.4)}
+    .module-history{--module-accent:var(--fx-orange);--module-soft:rgba(255,159,46,.13);--module-border:rgba(255,159,46,.35)}
+
+    .info-stack{border:1px solid rgba(88,151,216,.2);border-radius:14px;padding:4px 14px;background:rgba(5,17,33,.65)}
+    .info-line{padding:12px 0;border-bottom:1px solid rgba(88,151,216,.14)}.info-line:last-child{border-bottom:0}
+    .info-line b{display:block;color:var(--fx-muted);font-size:.72rem;margin-bottom:4px}.info-line span{font-weight:780;word-break:break-word}
+    .section-label{margin:18px 0 10px;color:#cfe5ff;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+    .action-stack{display:grid;gap:8px}.action-stack .btn{justify-content:flex-start;width:100%}
+    .qr-wrap{margin-top:8px!important;display:grid!important;gap:8px!important}.qr-wrap .btn{width:100%;justify-content:flex-start}.qr-wrap .muted{font-size:.76rem}
+    .qr-preview{background:rgba(4,15,29,.9)!important}
+
+    .quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .quick-stat{min-height:92px;padding:12px;border:1px solid rgba(84,148,215,.2);border-radius:13px;background:rgba(6,20,38,.72)}
+    .quick-stat b{display:block;color:var(--fx-muted);font-size:.7rem;line-height:1.35}.quick-stat strong{display:block;font-size:1.55rem;margin-top:9px}.quick-stat small{color:var(--fx-muted)}
+
+    .aph-summary-grid,.discipline-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+    .summary-box{min-height:90px;padding:12px 8px;text-align:center;border-radius:13px;background:rgba(5,18,34,.75);border:1px solid var(--module-border)}
+    .summary-box b{display:block;color:var(--fx-muted);font-size:.68rem;line-height:1.3}.summary-box strong{display:block;font-size:1.4rem;margin-top:10px}
+    .module-primary-actions{display:grid;gap:9px;margin:14px 0}.module-primary-actions .btn{justify-content:center;width:100%}
+    .module-aph .btn.primary{background:linear-gradient(135deg,#038d99,#08b7b9)!important;border-color:rgba(77,247,239,.48)!important}
+    .module-discipline .btn.primary{background:linear-gradient(135deg,#7e2bd1,#a23ee8)!important;border-color:rgba(206,126,255,.5)!important}
+
+    .recent-list,.list{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow:auto;padding-right:5px}
+    .recent-item,.obs,.notif{
+      border-radius:13px!important;background:linear-gradient(145deg,rgba(9,27,50,.9),rgba(5,17,32,.94))!important;
+      border:1px solid rgba(89,152,218,.22)!important;box-shadow:none!important;padding:13px!important;
+    }
+    .recent-item{border-left:4px solid var(--fx-cyan)!important}
+    .obs{border-left:4px solid var(--fx-blue)!important}.notif{border-left:4px solid var(--fx-red)!important}
+    .recent-item-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:7px}.recent-item-head strong{color:#e6fbff}.recent-item p{margin:5px 0;color:#a9bfd9;font-size:.82rem}
+    .chip{background:rgba(22,53,86,.82)!important;border-color:rgba(112,176,243,.25)!important}
+    .empty{min-height:104px;display:grid;place-items:center;background:rgba(5,18,34,.6)!important;border-color:rgba(100,164,229,.22)!important}
+
+    .observations-card{margin-top:16px;padding-top:15px;border-top:1px solid rgba(64,145,224,.18)}
+    .observations-card .list{max-height:310px}.attach-row{margin-top:11px}.editor{display:grid!important;grid-template-columns:1fr!important}.editor textarea{min-height:120px!important;background:#061426!important;color:#edf7ff!important}.editor .btn{justify-self:end}
+
+    .discipline-list{max-height:650px}.notif .row{align-items:flex-start}.notif .actions{margin-top:11px!important}
+    .notif-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px;font-size:.8rem}
+
+    .history-card{margin-top:16px;border:1px solid rgba(255,159,46,.28);border-radius:15px;background:rgba(18,15,15,.36);padding:13px}
+    .history-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.history-head h4{margin:0;color:#ffd092}.history-head small{color:var(--fx-muted)}
+    .chart-wrap{height:240px!important;background:linear-gradient(180deg,rgba(29,21,13,.35),rgba(4,15,29,.72))!important;border-color:rgba(255,159,46,.22)!important}
+    .chart-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--fx-muted);padding:20px}
+
+    .modal-overlay{z-index:100!important}.modal-card{background:#061427!important;border-color:rgba(85,160,235,.36)!important}
+    .toast{z-index:130!important;background:#061427!important}
+
+    @media (max-width:1180px){
+      .dashboard-grid{grid-template-columns:1fr 1fr}.module-discipline{grid-column:1/-1}.discipline-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.8fr);gap:14px}.discipline-list{max-height:520px}.history-card{margin-top:0}
+    }
+    @media (max-width:900px){
+      .student-main{grid-template-columns:auto minmax(0,1fr)}.score-card{grid-column:1/-1;min-height:140px;display:grid;grid-template-columns:1fr auto auto;gap:15px}.score-value{font-size:2.4rem;margin:0}.profile-utility{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr}.module-discipline{grid-column:auto}.discipline-layout{display:block}.history-card{margin-top:16px}
+    }
+    @media (max-width:620px){
+      .topbar .inner{padding:12px!important}.brand-copy small{display:none}.top-actions{width:100%;display:grid;grid-template-columns:repeat(2,1fr)}.topbar .inner{flex-wrap:wrap}.top-actions .btn{justify-content:center;padding:9px!important}.page{padding:0 12px!important;margin-top:12px!important}.student-hero{padding:17px}.student-main{display:flex;flex-direction:column;align-items:stretch}.avatar-shell{margin:auto}.identity{text-align:center}.badges,.hero-actions{justify-content:center}.score-card{display:flex;min-height:150px}.profile-utility{grid-template-columns:1fr}.aph-summary-grid,.discipline-summary-grid{grid-template-columns:1fr 1fr}.summary-box:last-child{grid-column:1/-1}.quick-grid{grid-template-columns:1fr 1fr}.notif-grid{grid-template-columns:1fr}.module-body{padding:13px}.module-header{padding:14px}.dashboard-grid{gap:12px}
+    }
+
+    @media print{
+      body{background:#fff!important;color:#111!important}.topbar,.hero-actions,.action-stack,.qr-wrap,.module-primary-actions,.attach-row,.editor,.toast,.modal-overlay{display:none!important}.page{max-width:100%!important;margin:0!important;padding:0!important}.student-hero,.module-card,.history-card{box-shadow:none!important;break-inside:avoid;border-color:#bbb!important;background:#fff!important;color:#111!important}.dashboard-grid{grid-template-columns:1fr 1fr!important}.module-discipline{grid-column:1/-1}.list,.recent-list,.discipline-list{max-height:none!important;overflow:visible!important}.module-header{background:#eee!important}.module-title,.module-subtitle,.info-line span,.summary-box strong{color:#111!important}.module-body,.info-stack,.summary-box,.quick-stat,.recent-item,.obs,.notif,.history-card{background:#fff!important;color:#111!important}}
+  </style>
 </head>
 <body>
+
   <div class="topbar">
     <div class="inner">
-      <div class="brand"><span class="dot"></span> Ficha do Aluno</div>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span class="brand-copy">Ficha do Aluno<small>Axoriin · Sistema Escolar</small></span>
+      </div>
       <div class="spacer"></div>
-      <button class="btn ghost" id="btnVoltarLista">← Voltar</button>
-      <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
-      <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
-      <a id="btnPDFTop" class="btn primary" href="#" target="_blank" rel="noopener">Exportar PDF</a>
+      <div class="top-actions">
+        <button class="btn ghost" id="btnVoltarLista">&#8592; Voltar</button>
+        <button class="btn ghost" id="btnVoltarPainel">Voltar ao Painel</button>
+        <button class="btn ghost" id="btnImprimirTop">Imprimir</button>
+        <a id="btnPDFTop" class="btn primary" href="#" target="_blank" rel="noopener">Exportar PDF</a>
+      </div>
     </div>
   </div>
 
   <main class="page">
-    <section class="hero">
-      <div class="head">
-        <div class="avatar" id="fotoBox">Sem foto</div>
-        <div style="flex:1">
-          <h2 style="margin:0 0 4px" id="alunoNome">—</h2>
+    <section class="student-hero">
+      <div class="student-main">
+        <div class="avatar-shell">
+          <div class="avatar" id="fotoBox">Sem foto</div>
+          <span class="avatar-camera" aria-hidden="true">&#9673;</span>
+        </div>
+
+        <div class="identity">
+          <h1 id="alunoNome">—</h1>
+          <div class="identity-sub">Perfil institucional, acompanhamento e registros do estudante.</div>
           <div class="badges">
             <span class="badge" id="badgeTurma">Turma —</span>
             <span class="badge" id="badgeCodigo">Código —</span>
             <span class="badge" id="badgeId">ID —</span>
           </div>
-
-          <div class="qr-wrap" id="qrWrap">
-            <button class="btn primary" id="btnEnableQR">🔗 Habilitar link público</button>
-            <button class="btn btn-ghost-light" id="btnShowQR">🧾 Ver/Atualizar QR</button>
-            <button class="btn warn" id="btnDisableQR">Desabilitar</button>
-            <span id="qrStatus" class="muted"></span>
-
-            <div class="qr-preview" id="qrPreview">
-              <div class="qr-row">
-                <img id="qrImg" alt="QR Code" width="140" height="140"/>
-                <div style="min-width:260px">
-                  <div style="word-break:break-all"><b>Link:</b> <a id="qrLink" href="#" target="_blank" rel="noopener">—</a></div>
-                  <div id="qrExpira" class="muted">—</div>
-                  <button class="iconbtn" onclick="window.print()">Imprimir</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:8px; flex-direction:column; align-items:flex-end">
-          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
+          <div class="hero-actions">
             <button class="btn primary" id="btnTrocarFoto">Trocar foto</button>
             <button class="btn ghost" id="btnVerDados">Visualizar dados pessoais</button>
             <button class="btn ghost" id="btnEditar">Editar</button>
-            <button class="btn ghost" id="btnAbrirProcedimento">⚖️ Abrir procedimento</button>
           </div>
-          <small class="muted" style="margin-top:8px">Última atualização: <span id="ultimaAtualizacao">—</span></small>
+          <div class="last-update">Última atualização: <span id="ultimaAtualizacao">—</span></div>
         </div>
-        <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
+
+        <div class="score-card">
+          <span class="score-label">Nota de Comportamento</span>
+          <strong class="score-value" id="kvNota">—</strong>
+          <span class="pill" id="kvClassificacao" title="Classificação da nota">—</span>
+        </div>
+      </div>
+
+      <input type="file" id="inputFoto" accept="image/*" capture="environment" style="display:none;">
+
+      <div class="profile-utility">
+        <div class="metric-tile"><span class="metric-icon">T</span><div><b>Turma</b><span id="kvTurma">—</span></div></div>
+        <div class="metric-tile"><span class="metric-icon">D</span><div><b>Data de Entrada</b><span id="kvEntrada">—</span></div></div>
+        <div class="metric-tile" id="kvCodigoCard"><span class="metric-icon">C</span><div><b>Código de Acesso</b><span id="kvCodigo">—</span></div></div>
+        <div class="metric-tile"><span class="metric-icon">R</span><div><b>Resumo de Registros</b><span><span id="heroRegisterCount">0</span> registro(s)</span></div></div>
       </div>
 
       <form class="edit-card" id="editorAluno">
@@ -519,99 +717,138 @@
           <div><label>Código de Acesso</label><input id="edCodigo" type="text" /></div>
           <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: /uploads/alunos/123.jpg ou https://..." /></div>
         </div>
-
         <div class="card" style="margin-top:12px;">
           <h4 style="margin:0 0 10px;">Contatos do Responsável</h4>
           <div class="grid-2">
-            <div>
-              <label>E-mail do responsável</label>
-              <input id="edEmailResp" type="email" placeholder="ex: mae@exemplo.com" />
-            </div>
-            <div>
-              <label>WhatsApp (só dígitos, DDI 55...)</label>
-              <input id="edWhats" type="tel" inputmode="numeric" placeholder="5599999999999" />
-            </div>
-            <div>
-              <label>Telegram Chat ID (preenchido via /start)</label>
-              <input id="edTelegramId" type="text" readonly placeholder="Será preenchido quando o responsável usar o link do bot" />
-            </div>
+            <div><label>E-mail do responsável</label><input id="edEmailResp" type="email" placeholder="ex: mae@exemplo.com" /></div>
+            <div><label>WhatsApp (só dígitos, DDI 55...)</label><input id="edWhats" type="tel" inputmode="numeric" placeholder="5599999999999" /></div>
+            <div><label>Telegram Chat ID (preenchido via /start)</label><input id="edTelegramId" type="text" readonly placeholder="Será preenchido quando o responsável usar o link do bot" /></div>
             <div>
               <label>Vincular no Telegram</label>
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <button type="button" class="iconbtn" id="btnGerarLinkTg">Gerar link do Telegram (t.me)</button>
-                <a href="#" id="tgLink" target="_blank" rel="noopener" class="muted" style="max-width:100%; word-break:break-all;">—</a>
+                <a href="#" id="tgLink" target="_blank" rel="noopener" class="muted" style="max-width:100%;word-break:break-all;">—</a>
                 <button type="button" class="iconbtn" id="btnCopiarTg" style="display:none;">Copiar link</button>
               </div>
             </div>
           </div>
         </div>
-
         <div class="edit-actions">
           <button class="btn ghost" type="button" id="btnCancelarEd">Cancelar</button>
           <button class="btn primary" type="submit" id="btnSalvarEd">Salvar alterações</button>
         </div>
       </form>
+    </section>
 
-      <div class="kvs">
-        <div class="kv"><b>Turma</b><span id="kvTurma">—</span></div>
-        <div class="kv"><b>Data de Entrada</b><span id="kvEntrada">—</span></div>
-        <div class="kv" id="kvCodigoCard"><b>Código de Acesso</b><span id="kvCodigo">—</span></div>
-        <div class="kv">
-          <b>Nota de Comportamento</b>
-          <span class="big" id="kvNota">—</span>
-          <span class="pill" id="kvClassificacao" title="Classificação da nota">—</span>
-        </div>
-      </div>
+    <section class="dashboard-grid">
+      <article class="module-card module-personal">
+        <header class="module-header">
+          <span class="module-icon">01</span>
+          <div><h2 class="module-title">Dados do Aluno</h2><p class="module-subtitle">Informações pessoais e ações de cadastro</p></div>
+        </header>
+        <div class="module-body">
+          <div class="info-stack">
+            <div class="info-line"><b>Turma</b><span id="personalTurma">—</span></div>
+            <div class="info-line"><b>Data de Entrada</b><span id="personalEntrada">—</span></div>
+            <div class="info-line"><b>Código de Acesso</b><span id="personalCodigo">—</span></div>
+            <div class="info-line"><b>ID do Aluno</b><span id="personalId">—</span></div>
+          </div>
 
-      <div class="aph-card" id="aphCard" style="margin-top:14px">
-        <div class="row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <h3>Atendimentos APH</h3>
-            <div class="aph-meta">
-              <span class="aph-pill">Total deste aluno: <strong id="aphCount" style="margin-left:6px">0</strong></span>
-              <span class="aph-pill" style="font-weight:600;opacity:.9">Registros de ocorrências e primeiros socorros.</span>
+          <h3 class="section-label">Ações de acesso</h3>
+          <div class="action-stack">
+            <div class="qr-wrap" id="qrWrap">
+              <button class="btn primary" id="btnEnableQR">Habilitar link público</button>
+              <button class="btn btn-ghost-light" id="btnShowQR">Ver/Atualizar QR</button>
+              <button class="btn warn" id="btnDisableQR">Desabilitar link</button>
+              <span id="qrStatus" class="muted"></span>
+              <div class="qr-preview" id="qrPreview">
+                <div class="qr-row">
+                  <img id="qrImg" alt="QR Code" width="140" height="140"/>
+                  <div style="min-width:0">
+                    <div style="word-break:break-all"><b>Link:</b> <a id="qrLink" href="#" target="_blank" rel="noopener">—</a></div>
+                    <div id="qrExpira" class="muted">—</div>
+                    <button class="iconbtn" type="button" onclick="window.print()">Imprimir QR</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="aph-actions">
-            <a class="btn btn-ghost-light" id="btnVerAtendimentos">Ver atendimentos salvos</a>
-            <a class="btn btn-primary-rubi" id="btnNovoAtendimento">Gerar novo atendimento</a>
+
+          <h3 class="section-label">Resumo rápido</h3>
+          <div class="quick-grid">
+            <div class="quick-stat"><b>Nota de comportamento</b><strong id="summaryBehaviorScore">—</strong><small id="summaryBehaviorClass">—</small></div>
+            <div class="quick-stat"><b>Atendimentos APH</b><strong id="summaryAphCount">0</strong><small>registros</small></div>
+            <div class="quick-stat"><b>Medidas disciplinares</b><strong id="summaryWarningCount">0</strong><small>registros</small></div>
+            <div class="quick-stat"><b>Elogios registrados</b><strong id="summaryPraiseCount">0</strong><small>registros</small></div>
           </div>
+
+          <section class="observations-card">
+            <h3 class="section-label" style="margin-top:0">Observações institucionais</h3>
+            <div id="observacoes" class="list"></div>
+            <div class="attach-row" id="attachRow">
+              <button class="btn ghost" id="btnAnexarObs" type="button">Anexar arquivo</button>
+              <input id="inputObsFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" style="display:none;">
+              <span class="attach-help" id="attachHelp">Nenhum anexo selecionado</span>
+            </div>
+            <div class="editor" id="obsEditor">
+              <textarea id="textoObservacao" maxlength="1000" placeholder="Digite uma nova observação..."></textarea>
+              <button class="btn primary" id="btnSalvar">Salvar observação</button>
+            </div>
+          </section>
         </div>
-      </div>
-    </section>
+      </article>
 
-    <section class="columns">
-      <div class="card">
-        <h3 class="title">Observações</h3>
-        <div id="observacoes" class="list"></div>
-
-        <div class="attach-row" id="attachRow">
-          <button class="btn ghost" id="btnAnexarObs" type="button">📎 Anexar arquivo</button>
-          <input id="inputObsFiles" type="file" multiple
-                 accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
-                 style="display:none;">
-          <span class="attach-help" id="attachHelp">Nenhum anexo selecionado</span>
+      <article class="module-card module-aph" id="aphCard">
+        <header class="module-header">
+          <span class="module-icon">02</span>
+          <div><h2 class="module-title">Atendimentos APH</h2><p class="module-subtitle">Ocorrências e primeiros socorros</p></div>
+        </header>
+        <div class="module-body">
+          <div class="aph-summary-grid">
+            <div class="summary-box"><b>Total de atendimentos</b><strong id="aphCount">0</strong></div>
+            <div class="summary-box"><b>Último atendimento</b><strong id="aphLastDate" style="font-size:1rem">—</strong></div>
+            <div class="summary-box"><b>Registros recentes</b><strong id="aphRecentCount">0</strong></div>
+          </div>
+          <div class="module-primary-actions">
+            <a class="btn primary" id="btnNovoAtendimento">Gerar novo atendimento</a>
+            <a class="btn btn-ghost-light" id="btnVerAtendimentos">Ver atendimentos salvos</a>
+          </div>
+          <h3 class="section-label">Atendimentos recentes</h3>
+          <div class="recent-list" id="aphRecentList"><div class="empty">Carregando atendimentos...</div></div>
         </div>
+      </article>
 
-        <div class="editor" id="obsEditor">
-          <textarea id="textoObservacao" placeholder="Digite uma nova observação..."></textarea>
-          <button class="btn primary" id="btnSalvar">Salvar</button>
+      <article class="module-card module-discipline">
+        <header class="module-header">
+          <span class="module-icon">03</span>
+          <div><h2 class="module-title">Notificações Disciplinares</h2><p class="module-subtitle">Medidas, elogios e evolução comportamental</p></div>
+        </header>
+        <div class="module-body discipline-layout">
+          <div>
+            <div class="discipline-summary-grid">
+              <div class="summary-box"><b>Medidas registradas</b><strong id="disciplineWarningCount">0</strong></div>
+              <div class="summary-box"><b>Elogios registrados</b><strong id="disciplinePraiseCount">0</strong></div>
+              <div class="summary-box"><b>Total de registros</b><strong id="disciplineTotal">0</strong></div>
+            </div>
+            <div class="module-primary-actions">
+              <button class="btn primary" id="btnAbrirProcedimento">Abrir procedimento disciplinar</button>
+            </div>
+            <h3 class="section-label">Linha do tempo disciplinar</h3>
+            <div id="notificacoes" class="list discipline-list"></div>
+          </div>
+
+          <section class="history-card module-history">
+            <div class="history-head"><h4>Histórico de Comportamento</h4><small>Evolução da nota</small></div>
+            <div class="chart-wrap">
+              <canvas id="comportChart" height="180" style="width:100%;max-width:100%"></canvas>
+              <div id="behaviorEmpty" class="chart-empty hidden">Ainda não há histórico suficiente para gerar o gráfico.</div>
+            </div>
+          </section>
         </div>
-      </div>
-
-      <div class="card">
-        <h3 class="title">Notificações Disciplinares</h3>
-        <div id="notificacoes" class="list"></div>
-      </div>
-    </section>
-
-    <section style="margin-top:18px" class="card">
-      <h3 class="title">Histórico de Comportamento</h3>
-      <div class="chart-wrap">
-        <canvas id="comportChart" height="140" style="width:100%;max-width:100%"></canvas>
-      </div>
+      </article>
     </section>
   </main>
+
 
   <div class="modal-overlay" id="dadosModal">
     <div class="modal-card">
@@ -1034,13 +1271,60 @@ function enriquecerNotasPorLancamento(notificacoes = []) {
       throw lastErr || new Error('Nenhum endpoint JSON retornou ficha.');
     }
 
-    async function fetchAphCount(){
+    async function fetchAphOverview(){
       if(!alunoId || isReadonlyView) return;
+
+      const countEl = byId('aphCount');
+      const summaryEl = byId('summaryAphCount');
+      const recentCountEl = byId('aphRecentCount');
+      const lastDateEl = byId('aphLastDate');
+      const listEl = byId('aphRecentList');
+
       try{
-        const { total = 0 } = await api(`/aph/atendimentos/count/${alunoId}`);
-        byId('aphCount').textContent = String(total ?? 0);
-      }catch{
-        byId('aphCount').textContent = '0';
+        const payload = await api(`/aph/atendimentos?alunoId=${encodeURIComponent(alunoId)}&page=1&limit=3`);
+        const items = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload?.itens) ? payload.itens : []);
+        const total = Number(payload?.total ?? items.length ?? 0);
+
+        if (countEl) countEl.textContent = String(total);
+        if (summaryEl) summaryEl.textContent = String(total);
+        if (recentCountEl) recentCountEl.textContent = String(items.length);
+
+        const lastDate = items.length ? getDateFrom(items[0], 'data', 'createdAt', 'updatedAt') : null;
+        if (lastDateEl) lastDateEl.textContent = lastDate ? lastDate.toLocaleDateString('pt-BR') : '—';
+
+        if (!listEl) return;
+        if (!items.length) {
+          listEl.innerHTML = '<div class="empty">Nenhum atendimento pré-hospitalar registrado para este aluno.</div>';
+          return;
+        }
+
+        listEl.innerHTML = items.map(item => {
+          const data = getDateFrom(item, 'data', 'createdAt', 'updatedAt');
+          const dataStr = data ? data.toLocaleDateString('pt-BR') : '—';
+          const classificacoes = Array.isArray(item.classificacoes) && item.classificacoes.length
+            ? item.classificacoes.join(', ')
+            : (Array.isArray(item.tipos) && item.tipos.length ? item.tipos.join(', ') : 'Atendimento APH');
+          const local = item.localOutro || item.local || 'Local não informado';
+          const desfecho = item.desfecho || item.descricaoDesfecho || item.evolucaoQuadro || 'Registro concluído';
+          const id = item._id || '';
+          const link = id ? `/aph-atendimento-view.html?id=${encodeURIComponent(id)}` : '#';
+
+          return (
+            '<article class="recent-item">' +
+              '<div class="recent-item-head"><strong>' + escapeHtml(classificacoes) + '</strong><span class="muted">' + escapeHtml(dataStr) + '</span></div>' +
+              '<p><b>Local:</b> ' + escapeHtml(local) + '</p>' +
+              '<p><b>Desfecho:</b> ' + escapeHtml(desfecho) + '</p>' +
+              (id ? '<a class="iconbtn" href="' + link + '">Abrir atendimento</a>' : '') +
+            '</article>'
+          );
+        }).join('');
+      }catch(e){
+        if (countEl) countEl.textContent = '0';
+        if (summaryEl) summaryEl.textContent = '0';
+        if (recentCountEl) recentCountEl.textContent = '0';
+        if (lastDateEl) lastDateEl.textContent = '—';
+        if (listEl) listEl.innerHTML = '<div class="empty">Não foi possível carregar os atendimentos APH.</div>';
+        derr('Falha ao carregar resumo APH', e);
       }
     }
 
@@ -1057,30 +1341,68 @@ function enriquecerNotasPorLancamento(notificacoes = []) {
       });
     }
 
+    function atualizarResumoNotificacoes(notificacoes = []){
+      const lista = Array.isArray(notificacoes) ? notificacoes : [];
+      const isElogio = (n) => {
+        const tipo = String(n?.tipo || n?.tipoMedida || '').toLowerCase();
+        const valor = Number(calcValorExibicao(n));
+        return tipo.includes('elogio') || (Number.isFinite(valor) && valor > 0);
+      };
+
+      const elogios = lista.filter(isElogio).length;
+      const medidas = Math.max(0, lista.length - elogios);
+      const total = lista.length;
+
+      const valores = {
+        summaryWarningCount: medidas,
+        summaryPraiseCount: elogios,
+        disciplineWarningCount: medidas,
+        disciplinePraiseCount: elogios,
+        disciplineTotal: total,
+        heroRegisterCount: total
+      };
+
+      Object.entries(valores).forEach(([id, valor]) => {
+        const el = byId(id);
+        if (el) el.textContent = String(valor);
+      });
+    }
+
     function renderComportChart(points){
-      const canvas = document.getElementById('comportChart');
+      const canvas = byId('comportChart');
+      const emptyEl = byId('behaviorEmpty');
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      let labels = [], data = [];
-      if (Array.isArray(points) && points.length){
-        const sorted = points.slice().sort((a,b)=> new Date(a.data) - new Date(b.data));
-        labels = sorted.map(r => {
-          try { return new Date(r.data).toLocaleDateString('pt-BR'); } catch { return String(r.data); }
-        });
-        data = sorted.map(r => Number(r.nota ?? r.valor ?? 0));
-      } else {
-        const m = new Date();
-        const example = [
-          { data: new Date(m.getFullYear(), m.getMonth()-5, 1).toISOString(), nota:7.2 },
-          { data: new Date(m.getFullYear(), m.getMonth()-4, 1).toISOString(), nota:7.4 },
-          { data: new Date(m.getFullYear(), m.getMonth()-3, 1).toISOString(), nota:7.6 },
-          { data: new Date(m.getFullYear(), m.getMonth()-2, 1).toISOString(), nota:7.8 },
-          { data: new Date(m.getFullYear(), m.getMonth()-1, 1).toISOString(), nota:7.5 },
-          { data: new Date().toISOString(), nota:7.7 },
-        ];
-        labels = example.map(r=> new Date(r.data).toLocaleDateString('pt-BR'));
-        data = example.map(r=> r.nota);
+
+      const rows = Array.isArray(points) ? points.filter(Boolean) : [];
+      const validRows = rows
+        .map(r => ({
+          date: getDateFrom(r, 'data', 'createdAt', 'updatedAt'),
+          value: Number(r?.nota ?? r?.valor)
+        }))
+        .filter(r => r.date && Number.isFinite(r.value))
+        .sort((a,b) => a.date - b.date);
+
+      if (!validRows.length || typeof Chart === 'undefined') {
+        if (chartInstance) {
+          chartInstance.destroy();
+          chartInstance = null;
+        }
+        canvas.style.display = 'none';
+        if (emptyEl) {
+          emptyEl.classList.remove('hidden');
+          emptyEl.textContent = typeof Chart === 'undefined'
+            ? 'O gráfico não pôde ser carregado neste momento.'
+            : 'Ainda não há histórico suficiente para gerar o gráfico.';
+        }
+        return;
       }
+
+      canvas.style.display = 'block';
+      if (emptyEl) emptyEl.classList.add('hidden');
+
+      const labels = validRows.map(r => r.date.toLocaleDateString('pt-BR'));
+      const data = validRows.map(r => r.value);
+      const ctx = canvas.getContext('2d');
 
       if (chartInstance) {
         chartInstance.data.labels = labels;
@@ -1089,6 +1411,10 @@ function enriquecerNotasPorLancamento(notificacoes = []) {
         return;
       }
 
+      const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+      gradient.addColorStop(0, 'rgba(255,159,46,.28)');
+      gradient.addColorStop(1, 'rgba(255,159,46,0)');
+
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1096,28 +1422,38 @@ function enriquecerNotasPorLancamento(notificacoes = []) {
           datasets: [{
             label: 'Nota de comportamento',
             data,
-            tension: 0.28,
-            pointRadius: 5,
+            tension: .32,
+            pointRadius: 4,
             pointHoverRadius: 7,
             fill: true,
-            backgroundColor: 'rgba(120,200,255,0.12)',
-            borderColor: 'rgba(120,200,255,0.92)',
+            backgroundColor: gradient,
+            borderColor: 'rgba(255,159,46,.96)',
             borderWidth: 2,
-            pointBackgroundColor: 'rgba(180,230,255,0.95)',
-            pointBorderColor: 'rgba(20,40,60,0.4)'
+            pointBackgroundColor: '#fff2d9',
+            pointBorderColor: '#ff9f2e',
+            pointBorderWidth: 2
           }]
         },
         options: {
           maintainAspectRatio: false,
+          responsive: true,
           scales: {
-            y: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 1 } },
-            x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+            y: {
+              suggestedMin: 0,
+              suggestedMax: 10,
+              ticks: { stepSize: 2, color: '#8fa6c4' },
+              grid: { color: 'rgba(108,145,189,.12)' }
+            },
+            x: {
+              ticks: { autoSkip: true, maxTicksLimit: 7, color: '#8fa6c4' },
+              grid: { display: false }
+            }
           },
           plugins: {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: ctx => 'Nota: ' + (ctx.raw != null ? Number(ctx.raw).toFixed(2) : ctx.raw)
+                label: ctx => 'Nota: ' + Number(ctx.raw).toFixed(2)
               }
             }
           }
@@ -1200,6 +1536,11 @@ function enriquecerNotasPorLancamento(notificacoes = []) {
       byId('kvEntrada').textContent = fmtData(aluno?.dataEntrada);
       byId('kvCodigo').textContent = aluno?.codigoAcesso ?? '—';
 
+      byId('personalTurma').textContent = aluno?.turma ?? '—';
+      byId('personalEntrada').textContent = fmtData(aluno?.dataEntrada);
+      byId('personalCodigo').textContent = aluno?.codigoAcesso ?? '—';
+      byId('personalId').textContent = aluno?._id ?? '—';
+
       const nota =
         (typeof aluno?.notaComportamental === 'number')
           ? aluno.notaComportamental
@@ -1212,6 +1553,11 @@ function enriquecerNotasPorLancamento(notificacoes = []) {
       pill.style.color = '#000';
       pill.style.background = cls.cor;
       pill.style.borderColor = '#0000';
+
+      const summaryScore = byId('summaryBehaviorScore');
+      const summaryClass = byId('summaryBehaviorClass');
+      if (summaryScore) summaryScore.textContent = (nota !== null) ? nota.toFixed(2) : 'N/A';
+      if (summaryClass) summaryClass.textContent = cls.texto;
 
       const fotoBox = byId('fotoBox');
       const raw = isProfessorView ? '' : (aluno?.fotoUrl || aluno?.foto || '');
@@ -1328,7 +1674,7 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
                 '<div class="muted">' + escapeHtml(dataNStr) + '</div>' +
               '</div>' +
               '<div style="margin-top:6px"><b>Motivo:</b> ' + escapeHtml(motivo) + '</div>' +
-              '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px">' +
+              '<div class="notif-grid">' +
                 '<div><b>Valor aplicado</b>: ' + escapeHtml(valor) + '</div>' +
               '<div><b>Nota</b>: ' + escapeHtml(notaAnterior + ' → ' + notaAtual) + '</div>' +
               '<div><b>Classificação</b>: ' + escapeHtml(classAnterior + ' → ' + classAtual) + '</div>' +
@@ -1343,9 +1689,11 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
         }).join('');
       }
 
+      atualizarResumoNotificacoes(notificacoes);
+
       if (!isReadonlyView) {
         try { await mostrarQRCode(true); } catch {}
-        try { await fetchAphCount(); } catch {}
+        try { await fetchAphOverview(); } catch {}
       }
 
       try {
@@ -1692,12 +2040,12 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
         }
       } catch(_) {}
       if (alunoAtual?.turma) {
-        location.href = `/turma.html?turma=${encodeURIComponent(alunoAtual.turma)}`;
+        location.href = `/lista-alunos.html?turma=${encodeURIComponent(alunoAtual.turma)}`;
         return;
       }
       const turmaParam = params.get('turma');
       if (turmaParam) {
-        location.href = `/turma.html?turma=${encodeURIComponent(turmaParam)}`;
+        location.href = `/lista-alunos.html?turma=${encodeURIComponent(turmaParam)}`;
         return;
       }
       location.href = '/lista-alunos.html';
