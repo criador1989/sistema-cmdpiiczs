@@ -84,7 +84,7 @@ function montarModulos(segmento) {
   const redacaoAtiva = flagAmbiente('PORTAL_ALUNO_REDACAO_ATIVO', true);
   const simuladosAtivos = flagAmbiente('PORTAL_ALUNO_SIMULADOS_ATIVO', false);
   const jogosAtivos = flagAmbiente('PORTAL_ALUNO_JOGOS_ATIVO', false);
-  const rankingAtivo = flagAmbiente('PORTAL_ALUNO_RANKING_GAMES_ATIVO', false);
+  const rankingAtivo = flagAmbiente('PORTAL_ALUNO_RANKING_GAMES_ATIVO', true);
   const personagensAtivos = flagAmbiente('PORTAL_ALUNO_PERSONAGENS_ATIVO', false);
 
   if (segmento === SEGMENTOS.ENSINO_MEDIO) {
@@ -133,7 +133,7 @@ function montarModulos(segmento) {
         id: 'ranking',
         titulo: 'Ranking e ligas',
         descricao: 'Classificação saudável por turma, temporadas e conquistas.',
-        rota: '/aluno-jogos.html#ranking',
+        rota: '/aluno-ranking.html',
         icone: 'ranking',
         status: rankingAtivo ? 'ativo' : 'em_preparacao'
       }),

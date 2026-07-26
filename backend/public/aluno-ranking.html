@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06101f">
+  <title>Axoriin • Ranking da Arena</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest-aluno.json">
+  <link rel="stylesheet" href="/portal-aluno/ranking-arena.css?v=20260722-v5-53-0-ranking-real">
+</head>
+<body>
+  <section class="rank-boot" id="rankLoading" aria-live="polite">
+    <div class="rank-loader"></div>
+    <strong>Carregando classificação real da Arena</strong>
+    <span>Somando XP, moedas e missões registradas no banco.</span>
+  </section>
+
+  <section class="rank-boot hidden" id="rankError" aria-live="assertive">
+    <div class="rank-error-icon">!</div>
+    <strong>Não foi possível abrir o ranking</strong>
+    <span id="rankErrorMessage">Tente novamente.</span>
+    <button type="button" class="rank-button primary" id="rankRetry">Tentar novamente</button>
+  </section>
+
+  <div class="rank-shell hidden" id="rankApp">
+    <aside class="rank-sidebar">
+      <a class="rank-brand" href="/painel-aluno.html">
+        <span class="rank-brand-mark">A</span>
+        <span><b>AXORIIN</b><small>Portal do Aluno</small></span>
+      </a>
+
+      <div class="rank-person">
+        <div class="rank-avatar" id="sidebarAvatar">AL</div>
+        <div><strong id="sidebarName">Aluno</strong><span id="sidebarClass">Turma</span></div>
+      </div>
+
+      <nav class="rank-nav" aria-label="Navegação do Portal do Aluno">
+        <a href="/painel-aluno.html#inicio"><span>⌂</span>Visão geral</a>
+        <a href="/painel-aluno.html#modulos"><span>▦</span>Módulos</a>
+        <a href="/painel-aluno.html#atividades"><span>↗</span>Atividades</a>
+        <a class="active" href="/aluno-ranking.html"><span>♛</span>Rankings</a>
+        <a href="/painel-aluno.html#perfil"><span>◎</span>Meu acesso</a>
+      </nav>
+
+      <div class="rank-sidebar-spacer"></div>
+      <div class="rank-note">A classificação usa somente resultados reais da Arena do Conhecimento.</div>
+      <button type="button" class="rank-button ghost" id="rankBack">Voltar ao Portal</button>
+    </aside>
+
+    <main class="rank-main">
+      <header class="rank-header">
+        <div>
+          <h1>Rankings</h1>
+          <p>Acompanhe sua evolução e veja sua posição na turma ou no Fundamental II.</p>
+        </div>
+        <div class="rank-tabs" role="tablist" aria-label="Escopo do ranking">
+          <button type="button" class="active" data-scope="turma">♟ Ranking da Turma</button>
+          <button type="button" data-scope="geral">◎ Ranking Geral</button>
+        </div>
+        <span class="rank-season" id="rankSeason">Temporada</span>
+      </header>
+
+      <section class="race-panel" aria-labelledby="raceTitle">
+        <div class="panel-heading">
+          <div><h2 id="raceTitle">Top 5 da turma</h2><span id="updatedText">Dados reais</span></div>
+          <span class="live-dot">● Atualizado</span>
+        </div>
+        <div class="race-track" id="raceTrack"></div>
+        <div class="race-axis"><span>0 XP</span><span id="axisMiddle">—</span><span id="axisMax">—</span></div>
+      </section>
+
+      <section class="ranking-content">
+        <article class="ranking-table-panel">
+          <div class="panel-heading">
+            <div><h2 id="tableTitle">Classificação da turma</h2><span>Ordenada por XP real acumulado</span></div>
+          </div>
+          <div class="ranking-table-wrap">
+            <table class="ranking-table">
+              <thead>
+                <tr><th>Pos.</th><th>Aluno</th><th>XP</th><th>Moedas</th><th>Missões</th><th>Acertos</th></tr>
+              </thead>
+              <tbody id="rankingBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <aside class="ranking-side">
+          <div class="metrics-grid">
+            <article><span>⚡ XP</span><strong id="metricXp">0</strong><small>Total acumulado</small></article>
+            <article><span>◉ Moedas</span><strong id="metricCoins">0</strong><small>Total acumulado</small></article>
+            <article><span>◎ Missões</span><strong id="metricMissions">0</strong><small>Concluídas</small></article>
+            <article class="position"><span>♛ Posição atual</span><strong id="metricPosition">—</strong><small id="metricPositionHelp">—</small></article>
+          </div>
+
+          <article class="trajectory-panel">
+            <div class="panel-heading"><div><h2>Sua trajetória</h2><span>XP acumulado nos últimos 7 dias</span></div></div>
+            <svg id="trajectoryChart" viewBox="0 0 640 220" role="img" aria-label="Evolução real do XP nos últimos sete dias"></svg>
+            <div class="streak-card"><span>🔥 Sequência atual</span><strong id="metricStreak">0 dias</strong></div>
+          </article>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script src="/portal-aluno/portal-runtime.js?v=20260722-v5-53-0-ranking-real"></script>
+  <script src="/portal-aluno/ranking-arena.js?v=20260722-v5-53-0-ranking-real"></script>
+</body>
+</html>
