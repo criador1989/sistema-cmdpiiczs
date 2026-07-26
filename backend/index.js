@@ -255,6 +255,7 @@ const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
 const arenaQuestionariosRoutes = require('./routes/api/arenaQuestionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
+const arenaRankingPortalRoutes = require('./routes/api/arenaRankingPortal');
 const rifasRoutes = require('./routes/api/rifas');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
@@ -818,6 +819,7 @@ mountIf('/api/questionarios', questionariosRoutes);
 
 /* Portal do Aluno segmentado */
 mountIf('/api/portal-aluno', portalAlunoRoutes);
+mountIf('/api/portal-aluno/ranking-arena', arenaRankingPortalRoutes);
 
 /* =========================
    ðŸš€ RIFAS (NOVO MÃ“DULO)
