@@ -162,9 +162,8 @@ async function getDefaultInstituicao() {
   return null;
 }
 
-function getTenantFromReq(req) {
+function getExplicitTenantFromReq(req) {
   return (
-    req.tenantSlug ||
     req.query?.t ||
     req.query?.tenant ||
     req.body?.tenantSlug ||
@@ -172,6 +171,14 @@ function getTenantFromReq(req) {
     req.body?.t ||
     req.headers['x-tenant'] ||
     req.headers['x-tenant-slug'] ||
+    ''
+  );
+}
+
+function getTenantFromReq(req) {
+  return (
+    getExplicitTenantFromReq(req) ||
+    req.tenantSlug ||
     req.cookies?.tenant ||
     ''
   );
@@ -186,6 +193,95 @@ async function resolveInstituicaoOnlyIfTenantProvided(req) {
   const t = String(getTenantFromReq(req) || '').trim();
   if (!t) return null;
   return await findInstituicaoByTenant(t);
+}
+
+async function inferirInstituicoesDoLoginPortal(login) {
+  const loginNormalizado = normalizeLoginIdentifier(login);
+  const email = isValidEmail(loginNormalizado) ? normalizeEmail(loginNormalizado) : null;
+  const codigoAcesso = email ? null : normalizeCodigoAcesso(loginNormalizado);
+  const ids = new Set();
+
+  if (email) {
+    const usuarios = await Usuario.find({
+      email,
+      tipo: { $in: ['aluno', 'responsavel'] },
+      $or: [{ ativo: true }, { ativo: { $exists: false } }]
+    })
+      .select('instituicao tenantId')
+      .lean();
+
+    for (const usuario of usuarios) {
+      const id = String(usuario.instituicao || usuario.tenantId || '').trim();
+      if (id) ids.add(id);
+    }
+  } else if (Aluno && typeof Aluno.find === 'function' && codigoAcesso) {
+    const alunos = await Aluno.find({ codigoAcesso })
+      .select('instituicao tenantId')
+      .lean();
+
+    for (const aluno of alunos) {
+      const id = String(aluno.instituicao || aluno.tenantId || '').trim();
+      if (id) ids.add(id);
+    }
+  }
+
+  if (!ids.size || !Instituicao) return [];
+
+  return Instituicao.find({
+    _id: { $in: [...ids] },
+    ativo: { $ne: false },
+    ativa: { $ne: false }
+  })
+    .select('_id nome sigla slug ativo ativa categoriaInstituicao modulosAtivos associacaoConfig logoUrl')
+    .lean();
+}
+
+async function resolverInstituicaoLoginPortal(req, login) {
+  const tenantExplicito = String(getExplicitTenantFromReq(req) || '').trim();
+
+  if (tenantExplicito) {
+    return {
+      inst: await findInstituicaoByTenant(tenantExplicito),
+      explicito: true,
+      ambiguo: false,
+      instituicoes: []
+    };
+  }
+
+  const candidatas = await inferirInstituicoesDoLoginPortal(login);
+
+  if (candidatas.length === 1) {
+    return {
+      inst: candidatas[0],
+      explicito: false,
+      ambiguo: false,
+      instituicoes: candidatas
+    };
+  }
+
+  if (candidatas.length > 1) {
+    return {
+      inst: null,
+      explicito: false,
+      ambiguo: true,
+      instituicoes: candidatas
+    };
+  }
+
+  const tenantContexto = String(req.tenantSlug || req.cookies?.tenant || '').trim();
+  const instContexto = tenantContexto
+    ? await findInstituicaoByTenant(tenantContexto)
+    : null;
+
+  return {
+    inst:
+      instContexto ||
+      await findInstituicaoByTenant(DEFAULT_TENANT_SLUG) ||
+      await getDefaultInstituicao(),
+    explicito: false,
+    ambiguo: false,
+    instituicoes: []
+  };
 }
 
 function buildJwtPayload(usuario) {
@@ -635,10 +731,23 @@ router.post('/login-aluno', async (req, res) => {
   }
 
   try {
-    const inst =
-      await resolveInstituicaoOnlyIfTenantProvided(req) ||
-      await findInstituicaoByTenant(DEFAULT_TENANT_SLUG) ||
-      await getDefaultInstituicao();
+    const resolucao = await resolverInstituicaoLoginPortal(req, login);
+
+    if (resolucao.ambiguo) {
+      return res.status(409).json({
+        code: 'AMBIGUOUS_TENANT',
+        mensagem: 'Este acesso foi encontrado em mais de uma instituição. Abra o link específico enviado pela escola.',
+        instituicoes: resolucao.instituicoes.map(inst => ({
+          id: String(inst._id),
+          nome: inst.nome,
+          sigla: inst.sigla || null,
+          slug: inst.slug || null,
+          tenant: inst.slug || String(inst._id)
+        }))
+      });
+    }
+
+    const inst = resolucao.inst;
 
     if (!inst?._id) {
       return res.status(400).json({ mensagem: 'Instituição não encontrada para o portal do aluno.' });

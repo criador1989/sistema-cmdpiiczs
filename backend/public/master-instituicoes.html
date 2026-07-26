@@ -2010,8 +2010,17 @@ window.__gerenciarAcessosAluno = async function(alunoId) {
       ? 'Acesso criado'
       : 'Sem acesso criado';
 
-    document.getElementById('ga-email-responsavel').value =
+    const emailResponsavelAtual =
       aluno.emailResponsavel || acessoResponsavel.email || '';
+
+    document.getElementById('ga-email-responsavel').value = emailResponsavelAtual;
+
+    const alunoNaLista = alunosTurmaAtual.find(item => obterIdAluno(item) === alunoGerenciadoAtual);
+    if (alunoNaLista) {
+      alunoNaLista.contatos = alunoNaLista.contatos || {};
+      alunoNaLista.contatos.emailResponsavel = emailResponsavelAtual;
+      renderListaAlunosAcesso();
+    }
 
     document.getElementById('ga-status-responsavel').value = acessoResponsavel.existe
       ? 'Acesso criado'
@@ -2020,14 +2029,6 @@ window.__gerenciarAcessosAluno = async function(alunoId) {
     document.getElementById('btn-redefinir-senha-aluno-modal').onclick = () => {
       window.__redefinirSenhaAluno(alunoGerenciadoAtual, document.getElementById('btn-redefinir-senha-aluno-modal'));
     };
-
-    document.getElementById('btn-gerar-acesso-responsavel').onclick = () => {
-  showMsg(
-    msgAcessoLote,
-    'warn',
-    'A função de gerar acesso individual do responsável ainda precisa ser criada no backend.'
-  );
-};
 
     document.getElementById('btn-copiar-acesso-aluno').onclick = () => {
       const texto = [
@@ -2075,6 +2076,13 @@ document.getElementById('btn-salvar-email-responsavel').onclick = async () => {
 
     document.getElementById('ga-email-responsavel').value = emailResponsavel;
 
+    const alunoNaLista = alunosTurmaAtual.find(item => obterIdAluno(item) === alunoGerenciadoAtual);
+    if (alunoNaLista) {
+      alunoNaLista.contatos = alunoNaLista.contatos || {};
+      alunoNaLista.contatos.emailResponsavel = emailResponsavel;
+      renderListaAlunosAcesso();
+    }
+
   } catch (err) {
     document.getElementById('ga-feedback').innerHTML =
       `<span style="color:#ffb3b8;font-weight:800;">${escapeHtml(err.message || 'Erro ao salvar e-mail.')}</span>`;
@@ -2115,6 +2123,13 @@ document.getElementById('btn-gerar-acesso-responsavel').onclick = async () => {
     if (!r.ok) throw new Error(data?.mensagem || 'Erro ao gerar acesso do responsável.');
 
     document.getElementById('ga-status-responsavel').value = 'Acesso criado';
+
+    const alunoNaLista = alunosTurmaAtual.find(item => obterIdAluno(item) === alunoGerenciadoAtual);
+    if (alunoNaLista) {
+      alunoNaLista.contatos = alunoNaLista.contatos || {};
+      alunoNaLista.contatos.emailResponsavel = emailResponsavel;
+      renderListaAlunosAcesso();
+    }
 
     document.getElementById('ga-feedback').innerHTML =
       `<span style="color:#d6ffe9;font-weight:800;">${escapeHtml(data?.mensagem || 'Acesso criado com sucesso.')}</span>

@@ -45,37 +45,49 @@ async function resolveTenant(req, res, next) {
     req.tenantSlug = null;
 
     const host = getHostWithoutPort(req.hostname || req.headers.host || '');
-    const fromSubdomain = extractSubdomain(host);
-    const fromQuery = normalizeSlug(req.query?.t);
-    const fromCookie = normalizeSlug(req.cookies?.[TENANT_COOKIE_NAME]);
+    const candidates = [
+      req.query?.t,
+      req.query?.tenant,
+      req.body?.tenantSlug,
+      req.body?.tenant,
+      req.body?.t,
+      req.headers['x-tenant'],
+      req.headers['x-tenant-slug'],
+      extractSubdomain(host),
+      req.cookies?.[TENANT_COOKIE_NAME],
+    ]
+      .map(normalizeSlug)
+      .filter(Boolean);
 
-    const slugCandidate = fromSubdomain || fromQuery || fromCookie;
+    const uniqueCandidates = [...new Set(candidates)];
+    if (!uniqueCandidates.length) return next();
 
-    if (!slugCandidate) {
-      return next();
+    let instituicao = null;
+
+    for (const slugCandidate of uniqueCandidates) {
+      instituicao = await Instituicao.findOne({
+        slug: slugCandidate,
+        ativa: { $ne: false }
+      }).lean();
+
+      if (instituicao) break;
     }
 
-    const instituicao = await Instituicao.findOne({
-      slug: slugCandidate,
-      ativa: { $ne: false }
-    }).lean();
-
-    if (!instituicao) {
-      return next();
-    }
+    if (!instituicao) return next();
 
     req.tenant = instituicao;
     req.tenantId = String(instituicao._id);
     req.tenantSlug = instituicao.slug;
 
     const isProd = process.env.NODE_ENV === 'production';
-
     const currentCookie = normalizeSlug(req.cookies?.[TENANT_COOKIE_NAME]);
+
     if (currentCookie !== instituicao.slug) {
       res.cookie(TENANT_COOKIE_NAME, instituicao.slug, {
         httpOnly: false,
         sameSite: 'lax',
         secure: isProd,
+        path: '/',
         maxAge: 1000 * 60 * 60 * 24 * 60
       });
     }

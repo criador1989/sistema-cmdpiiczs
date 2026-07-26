@@ -773,22 +773,36 @@ async function listarAlunosTurmaMaster(req, res) {
 
     const alunoIds = alunos.map(a => a._id);
 
-    const usuariosAlunos = await Usuario.find({
-      instituicao: instituicaoId,
-      tipo: 'aluno',
-      alunoId: { $in: alunoIds }
-    })
-      .select('_id email alunoId')
-      .lean();
+    const [usuariosAlunos, usuariosResponsaveis] = await Promise.all([
+      Usuario.find({
+        instituicao: instituicaoId,
+        tipo: 'aluno',
+        alunoId: { $in: alunoIds }
+      })
+        .select('_id email alunoId')
+        .lean(),
+      Usuario.find({
+        instituicao: instituicaoId,
+        tipo: 'responsavel',
+        alunoId: { $in: alunoIds }
+      })
+        .select('_id email alunoId')
+        .lean()
+    ]);
 
     const usuarioPorAluno = new Map(
       usuariosAlunos.map(u => [String(u.alunoId), u])
+    );
+
+    const responsavelPorAluno = new Map(
+      usuariosResponsaveis.map(u => [String(u.alunoId), u])
     );
 
     const alunosNormalizados = [];
 
     for (const a of alunos) {
       const usuarioEncontrado = usuarioPorAluno.get(String(a._id));
+      const responsavelEncontrado = responsavelPorAluno.get(String(a._id));
       const usuarioIdFinal = a.usuarioId || usuarioEncontrado?._id || null;
 
       if (!a.usuarioId && usuarioEncontrado?._id) {
@@ -810,7 +824,7 @@ async function listarAlunosTurmaMaster(req, res) {
         contatos: {
           emailResponsavel: normalizeEmail(
             a?.contatos?.emailResponsavel ||
-            usuarioEncontrado?.email ||
+            responsavelEncontrado?.email ||
             ''
           )
         }
@@ -1625,22 +1639,17 @@ router.get('/instituicoes/:id/alunos/:alunoId/acessos', requireSuperAdmin, async
       ''
     );
 
-    const usuarioResponsavel = emailResponsavel
-      ? await Usuario.findOne({
-          instituicao: instituicaoId,
-          alunoId: aluno._id,
-          tipo: 'responsavel',
-          email: emailResponsavel
-        })
-          .select('_id nome email tipo portal alunoId ativo createdAt updatedAt')
-          .lean()
-      : await Usuario.findOne({
-          instituicao: instituicaoId,
-          alunoId: aluno._id,
-          tipo: 'responsavel'
-        })
-          .select('_id nome email tipo portal alunoId ativo createdAt updatedAt')
-          .lean();
+    const usuarioResponsavel = await Usuario.findOne({
+      instituicao: instituicaoId,
+      alunoId: aluno._id,
+      tipo: 'responsavel'
+    })
+      .select('_id nome email tipo portal alunoId ativo createdAt updatedAt')
+      .lean();
+
+    const emailResponsavelEfetivo = normalizeEmail(
+      usuarioResponsavel?.email || emailResponsavel || ''
+    );
 
     return res.json({
       ok: true,
@@ -1649,7 +1658,13 @@ router.get('/instituicoes/:id/alunos/:alunoId/acessos', requireSuperAdmin, async
         nome: aluno.nome || '',
         turma: aluno.turma || '',
         codigoAcesso: aluno.codigoAcesso || '',
-        emailResponsavel
+        emailResponsavel: emailResponsavelEfetivo,
+        emailCadastroAluno: emailResponsavel || '',
+        emailDivergente: Boolean(
+          usuarioResponsavel?.email &&
+          emailResponsavel &&
+          normalizeEmail(usuarioResponsavel.email) !== emailResponsavel
+        )
       },
       acessoAluno: usuarioAluno
         ? {
@@ -1679,7 +1694,7 @@ router.get('/instituicoes/:id/alunos/:alunoId/acessos', requireSuperAdmin, async
           }
         : {
             existe: false,
-            email: emailResponsavel || '',
+            email: emailResponsavelEfetivo || '',
             senhaDisponivel: false
           }
     });
@@ -1706,31 +1721,78 @@ router.patch('/instituicoes/:id/alunos/:alunoId/email-responsavel', requireSuper
       return res.status(400).json({ mensagem: 'Informe um e-mail válido para o responsável.' });
     }
 
-    const aluno = await Aluno.findOneAndUpdate(
-      { _id: alunoId, instituicao: instituicaoId },
-      { $set: { 'contatos.emailResponsavel': emailResponsavel } },
-      { new: true }
-    )
-      .select('_id nome turma codigoAcesso contatos instituicao')
-      .lean();
+    const aluno = await Aluno.findOne({
+      _id: alunoId,
+      instituicao: instituicaoId
+    }).select('_id nome turma codigoAcesso contatos instituicao');
 
     if (!aluno) {
       return res.status(404).json({ mensagem: 'Aluno não encontrado nesta instituição.' });
     }
 
+    const usuarioResponsavel = await Usuario.findOne({
+      instituicao: instituicaoId,
+      alunoId: aluno._id,
+      tipo: 'responsavel'
+    });
+
+    if (usuarioResponsavel && normalizeEmail(usuarioResponsavel.email) !== emailResponsavel) {
+      const conflito = await Usuario.findOne({
+        instituicao: instituicaoId,
+        email: emailResponsavel,
+        _id: { $ne: usuarioResponsavel._id }
+      }).select('_id tipo alunoId').lean();
+
+      if (conflito) {
+        return res.status(409).json({
+          mensagem: 'Este e-mail já está sendo usado por outro acesso nesta instituição.'
+        });
+      }
+
+      usuarioResponsavel.email = emailResponsavel;
+      usuarioResponsavel.tipo = 'responsavel';
+      usuarioResponsavel.portal = 'responsavel';
+      usuarioResponsavel.ativo = true;
+      usuarioResponsavel.emailVerificado = true;
+      usuarioResponsavel.emailVerificadoEm = usuarioResponsavel.emailVerificadoEm || new Date();
+      await usuarioResponsavel.save();
+    }
+
+    aluno.contatos = aluno.contatos || {};
+    aluno.contatos.emailResponsavel = emailResponsavel;
+    await aluno.save();
+
     return res.json({
       ok: true,
-      mensagem: 'E-mail do responsável atualizado com sucesso.',
+      mensagem: usuarioResponsavel
+        ? 'E-mail do responsável e acesso sincronizados com sucesso.'
+        : 'E-mail do responsável atualizado com sucesso.',
       aluno: {
         id: String(aluno._id),
         nome: aluno.nome,
         turma: aluno.turma,
         codigoAcesso: aluno.codigoAcesso || '',
         emailResponsavel
-      }
+      },
+      acessoResponsavel: usuarioResponsavel
+        ? {
+            existe: true,
+            usuarioId: String(usuarioResponsavel._id),
+            email: emailResponsavel,
+            ativo: usuarioResponsavel.ativo !== false,
+            portal: 'responsavel'
+          }
+        : { existe: false, email: emailResponsavel }
     });
   } catch (e) {
     console.error('[masterInstituicoes][email-responsavel]', e);
+
+    if (e?.code === 11000) {
+      return res.status(409).json({
+        mensagem: 'Este e-mail já está sendo usado por outro acesso nesta instituição.'
+      });
+    }
+
     return res.status(500).json({
       mensagem: 'Erro ao atualizar e-mail do responsável.',
       erro: String(e.message || e)
@@ -2015,8 +2077,7 @@ async function redefinirSenhaAlunoMaster(req, res) {
       {
         $set: {
           usuarioId: usuario._id,
-          codigoAcesso,
-          'contatos.emailResponsavel': normalizeEmail(usuario.email || aluno?.contatos?.emailResponsavel || '')
+          codigoAcesso
         }
       }
     );

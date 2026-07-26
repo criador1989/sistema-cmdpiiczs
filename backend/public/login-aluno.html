@@ -789,7 +789,7 @@
             payload.t = tenant;
           }
 
-          const response = await fetch('/auth/login-aluno', {
+          const response = await fetch(buildUrl('/auth/login-aluno'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
