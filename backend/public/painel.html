@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
@@ -2869,6 +2869,16 @@ canvas{
               </div>
             </div>
 
+            <div id="cardObservacoesProfessor" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('observacoes-professores.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">REGISTRO RÁPIDO</div>
+                  <h3>Observações dos Professores</h3>
+                </div>
+                <div class="card-watermark" aria-hidden="true">🎙️</div>
+              </div>
+            </div>
+
             <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('/notificacoes')">
               <div class="window-content">
                 <div class="card-copy">
@@ -2938,7 +2948,7 @@ canvas{
                 <div class="card-watermark card-watermark--transferencia" aria-hidden="true">🔄</div>
               </div>
             </div>
-            <div id="cardGestaoRedacao" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
+            <div id="cardGestaoRedacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">PEDAGÓGICO</div>
@@ -3372,7 +3382,9 @@ canvas{
       cardRankingAlunos:'cardRankingAlunos',
       cardEstatisticas:'cardEstatisticas',
       cardFinanceiro:'cardFinanceiro',
-      cardTransferirTurma:'cardTransferirTurma'
+      cardTransferirTurma:'cardTransferirTurma',
+      cardGestaoRedacao:'cardGestaoRedacao',
+      cardObservacoesProfessor:'cardObservacoesProfessor'
     };
 
     const SECOES = {
@@ -3396,7 +3408,11 @@ canvas{
       const u = await r.json();
       const tipo = String(u?.tipo || '').toLowerCase();
 
-      if (tipo === 'admin') return;
+      if (tipo === 'admin') {
+        const cardRedacao = document.getElementById(CARDS.cardGestaoRedacao);
+        if (cardRedacao) cardRedacao.style.display = '';
+        return;
+      }
 
       if (tipo === 'monitor') {
         hide(
@@ -3409,7 +3425,12 @@ canvas{
       }
 
       if (tipo === 'professor') {
+        const cardObservacoes = document.getElementById(CARDS.cardObservacoesProfessor);
+        if (cardObservacoes) cardObservacoes.style.display = '';
+
         hide(
+          CARDS.cardGestaoRedacao,
+
           SB.sbRanking,
           SB.sbNotificacoes,
           SB.sbEstatisticas,
@@ -4678,6 +4699,7 @@ async function carregarAlertaRevisoes() {
 
 
 
+  <script src="/js/observacoes-professores-admin.js?v=1.7.0"></script>
   <script src="/js/axoriin-ambientes.js"></script>
   <script src="notify.js"></script>
   <script src="/painel.js"></script>
