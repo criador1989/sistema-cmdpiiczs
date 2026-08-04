@@ -1,234 +1,111 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Painel do Professor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icons/icon-192x192.png" />
-  <meta name="theme-color" content="#941a1d" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>Painel do Professor | Axoriin</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192x192.png">
   <style>
     :root{
-      --bg:#0b1220;
-      --card:rgba(255,255,255,0.08);
-      --border:rgba(255,255,255,0.18);
-      --text:#ffffff;
-      --muted:rgba(255,255,255,0.75);
-      --brand:#941a1d;
-      --shadow:0 16px 40px rgba(0,0,0,0.55);
-      --radius:18px;
+      --bg:#07111f;--panel:#0e1e32;--border:rgba(173,211,255,.18);--text:#f7fbff;
+      --muted:#a8b9cf;--brand:#a51f24;--brand2:#d2383e;--blue:#38bdf8;--green:#34d399;
     }
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box}
     body{
-      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
-      margin:0;
-      min-height:100vh;
-      color:var(--text);
-      background:
-        radial-gradient(circle at 20% 0%, rgba(148,26,29,0.35), transparent 55%),
-        radial-gradient(circle at 80% 100%, rgba(56,189,248,0.18), transparent 60%),
-        linear-gradient(145deg, #020617, #0b1220);
-      color-scheme:dark;
-      display:grid;
-      place-items:center;
-      padding:18px;
+      margin:0;min-height:100vh;color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;
+      background:radial-gradient(circle at 15% 0%,rgba(165,31,36,.3),transparent 33rem),radial-gradient(circle at 100% 90%,rgba(56,189,248,.15),transparent 36rem),linear-gradient(145deg,#030813,var(--bg));
+      display:grid;place-items:center;padding:18px;color-scheme:dark;
     }
-    .card{
-      width:min(720px, 94vw);
-      background:linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:18px;
-    }
-    header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:12px;
-    }
-    .title{
-      font-weight:900;
-      letter-spacing:.04em;
-      font-size:1.15rem;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .badge{
-      font-size:.78rem;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(0,0,0,0.25);
-      color:var(--muted);
-      white-space:nowrap;
-    }
-    .msg{
-      margin:10px 0 0;
-      color:var(--muted);
-      line-height:1.5;
-    }
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:14px;
-    }
-    .btn{
-      appearance:none;
-      border:1px solid rgba(255,255,255,0.22);
-      background:rgba(0,0,0,0.35);
-      color:#fff;
-      padding:11px 14px;
-      border-radius:12px;
-      font-weight:800;
-      cursor:pointer;
-      box-shadow:0 10px 26px rgba(0,0,0,0.45);
-      transition:transform .15s ease, border-color .15s ease, filter .15s ease;
-    }
-    .btn:hover{
-      transform:translateY(-1px);
-      border-color:rgba(56,189,248,0.70);
-      filter:brightness(1.06);
-    }
-    .btn.primary{
-      background:linear-gradient(90deg, #941a1d, #b22222);
-      border-color:rgba(255,255,255,0.18);
-    }
-    .hint{
-      margin-top:12px;
-      font-size:.92rem;
-      color:rgba(255,255,255,0.78);
-      border-top:1px dashed rgba(255,255,255,0.18);
-      padding-top:12px;
-    }
-    .owl{
-      display:inline-block;
-      width:40px;height:40px;
-      border-radius:12px;
-      background:rgba(0,0,0,0.35);
-      border:1px solid rgba(255,255,255,0.18);
-      display:grid;
-      place-items:center;
-      box-shadow:0 10px 22px rgba(0,0,0,0.45);
-    }
+    .shell{width:min(760px,100%)}
+    .card{background:linear-gradient(180deg,rgba(18,39,64,.97),rgba(8,23,39,.97));border:1px solid var(--border);border-radius:24px;box-shadow:0 25px 65px rgba(0,0,0,.48);overflow:hidden}
+    .head{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:12px;min-width:0}.logo{width:48px;height:48px;display:grid;place-items:center;border:1px solid var(--border);border-radius:15px;background:rgba(255,255,255,.06);font-size:1.45rem}.brand h1{margin:0;font-size:1.2rem}.brand p{margin:4px 0 0;color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:.75rem;font-weight:850;white-space:nowrap}.pill.ok{color:#baf7de;border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.08)}.pill.err{color:#ffd1d8;border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.08)}
+    .body{padding:20px}.intro{margin:0 0 17px;color:var(--muted);line-height:1.52}.actions{display:grid;grid-template-columns:1.25fr .75fr;gap:11px}.action{min-height:112px;border:1px solid var(--border);border-radius:17px;padding:16px;text-decoration:none;color:var(--text);background:rgba(255,255,255,.045);display:flex;flex-direction:column;justify-content:space-between;transition:.16s transform,.16s border-color,.16s filter}.action:hover{transform:translateY(-2px);border-color:rgba(56,189,248,.6);filter:brightness(1.06)}.action.primary{background:linear-gradient(145deg,rgba(165,31,36,.94),rgba(120,20,25,.96));border-color:rgba(255,255,255,.2);box-shadow:0 18px 34px rgba(165,31,36,.23)}.action-icon{font-size:1.6rem}.action strong{font-size:1rem}.action small{display:block;margin-top:4px;color:rgba(255,255,255,.72);line-height:1.35}.secondary-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:11px}.secondary-grid .action{min-height:88px}.session-msg{display:none;margin-bottom:14px;padding:12px 13px;border:1px solid var(--border);border-radius:12px;background:rgba(56,189,248,.08);color:var(--muted);line-height:1.4}.session-msg.show{display:block}.login-btn{display:none;width:100%;border:0;border-radius:13px;padding:13px;background:linear-gradient(90deg,var(--brand),var(--brand2));color:#fff;font-weight:900;cursor:pointer}.foot{margin-top:15px;padding-top:14px;border-top:1px dashed var(--border);color:var(--muted);font-size:.82rem;line-height:1.4}
+    @media(max-width:580px){body{padding:10px}.card{border-radius:18px}.head{padding:15px}.body{padding:15px}.actions,.secondary-grid{grid-template-columns:1fr}.action{min-height:96px}.pill{display:none}}
   </style>
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 </head>
-
 <body>
-  <div class="card">
-    <header>
-      <div class="title">
-        <span class="owl">🦉</span>
-        Painel do Professor
+  <main class="shell">
+    <section class="card">
+      <header class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">🦉</div>
+          <div><h1>Painel do Professor</h1><p id="nomeProfessor">Verificando sua sessão...</p></div>
+        </div>
+        <span class="pill" id="statusPill">Verificando</span>
+      </header>
+
+      <div class="body">
+        <div class="session-msg" id="sessionMsg" role="status"></div>
+
+        <div id="conteudoProfessor" hidden>
+          <p class="intro">Registre rapidamente situações observadas em sala. O relato será enviado para a ficha do aluno e para o quadro de alertas da coordenação.</p>
+
+          <div class="actions">
+            <a class="action primary" href="/observacoes-professores.html">
+              <span class="action-icon">🎙️</span>
+              <span><strong>Registrar observação</strong><small>Digite ou grave por voz direto do celular.</small></span>
+            </a>
+            <a class="action" href="/observacoes-professores.html#historico">
+              <span class="action-icon">🗂️</span>
+              <span><strong>Minhas observações</strong><small>Acompanhe leitura e atendimento.</small></span>
+            </a>
+          </div>
+
+          <div class="secondary-grid">
+            <a class="action" href="/lista-alunos.html">
+              <span class="action-icon">👥</span>
+              <span><strong>Consultar alunos</strong><small>Acesse as fichas permitidas.</small></span>
+            </a>
+            <a class="action" href="/painel.html">
+              <span class="action-icon">🏠</span>
+              <span><strong>Painel principal</strong><small>Abra os demais recursos disponíveis.</small></span>
+            </a>
+          </div>
+
+          <div class="foot"><b>Importante:</b> registre fatos objetivos e evite conclusões pessoais. Observação do professor não se transforma automaticamente em notificação disciplinar; a coordenação fará a análise.</div>
+        </div>
+
+        <button class="login-btn" id="btnLogin" type="button">Ir para o login</button>
       </div>
-      <span class="badge" id="statusPill">Verificando…</span>
-    </header>
-
-    <p class="msg" id="statusTxt">Aguarde, estou checando sua sessão…</p>
-
-    <!-- ✅ Agora este painel "permanece" e só segue se clicar -->
-    <div class="actions" id="actions" style="display:none;">
-      <button class="btn primary" id="btnProsseguir" style="display:none;">Prosseguir</button>
-      <button class="btn" id="btnRedacaoEnem" style="display:none;">Painel ENEM — Redação</button>
-      <button class="btn" id="btnIrLogin" style="display:none;">Ir para o login</button>
-    </div>
-
-    <div class="hint">
-      <b>Dica:</b> Use o <b>Painel ENEM — Redação</b> para selecionar temas, acompanhar turmas e consultar as devolutivas dos alunos.
-      Tudo fica registrado nos <b>logs</b>.
-    </div>
-  </div>
+    </section>
+  </main>
 
   <script>
+    const nomeProfessor = document.getElementById('nomeProfessor');
     const statusPill = document.getElementById('statusPill');
-    const statusTxt  = document.getElementById('statusTxt');
-    const actions    = document.getElementById('actions');
-    const btnProsseguir = document.getElementById('btnProsseguir');
-    const btnIrLogin    = document.getElementById('btnIrLogin');
-    const btnRedacaoEnem = document.getElementById('btnRedacaoEnem');
+    const sessionMsg = document.getElementById('sessionMsg');
+    const conteudoProfessor = document.getElementById('conteudoProfessor');
+    const btnLogin = document.getElementById('btnLogin');
 
-    function setStatus(pill, text){
-      statusPill.textContent = pill;
-      statusTxt.textContent = text;
-    }
-
-    function showActions(){
-      actions.style.display = 'flex';
-    }
-
-    function showProsseguir(){
-      btnProsseguir.style.display = 'inline-flex';
-      btnIrLogin.style.display = 'none';
-    }
-
-    function showLoginButtons(){
-      btnProsseguir.style.display = 'none';
-      btnIrLogin.style.display = 'inline-flex';
-    }
-
-    async function checkSession(){
+    async function iniciar(){
       try{
-        const r = await fetch('/api/alunos/contagem', {
-          method: 'GET',
-          credentials: 'include',
-          cache: 'no-store',
-          headers: { 'Accept':'application/json' }
-        });
-
-        if (r.ok) return true;
-        if (r.status === 401 || r.status === 403) return false;
-
-        // 404/500 etc -> indefinido (não expulsa)
-        return null;
-      }catch(e){
-        return null;
-      }
-    }
-
-    async function init(){
-      setStatus('Verificando…', 'Aguarde, estou checando sua sessão…');
-
-      const ok = await checkSession();
-      showActions();
-
-      // ✅ Logado: permanece aqui e libera "Prosseguir" (não redireciona automático)
-      if (ok === true){
-        setStatus('Sessão OK', 'Sessão confirmada. Clique em “Prosseguir” para ir ao painel principal.');
-        showProsseguir();
-        btnProsseguir.textContent = 'Prosseguir';
-        btnProsseguir.onclick = () => window.location.href = '/painel.html';
-        if (btnRedacaoEnem) {
-          btnRedacaoEnem.style.display = 'inline-flex';
-          btnRedacaoEnem.onclick = () => window.location.href = '/admin-redacao.html';
+        const r = await fetch('/api/usuario-logado', { credentials:'include', cache:'no-store', headers:{Accept:'application/json'} });
+        if(!r.ok) throw new Error('Sessão ausente');
+        const usuario = await r.json();
+        if(String(usuario.tipo || '').toLowerCase() !== 'professor'){
+          location.href = '/painel.html';
+          return;
         }
-        return;
+        nomeProfessor.textContent = usuario.nome || 'Professor';
+        statusPill.textContent = 'Sessão ativa';
+        statusPill.classList.add('ok');
+        conteudoProfessor.hidden = false;
+      }catch(_erro){
+        nomeProfessor.textContent = 'Sessão não encontrada';
+        statusPill.textContent = 'Login necessário';
+        statusPill.classList.add('err');
+        sessionMsg.textContent = 'Faça login novamente para registrar observações.';
+        sessionMsg.classList.add('show');
+        btnLogin.style.display = 'block';
+        btnLogin.onclick = () => location.href = '/login.html?next=%2Fpainel-professor.html';
       }
-
-      // ❌ Não logado: permanece aqui e mostra "Ir para o login"
-      if (ok === false){
-        setStatus('Sessão ausente', 'Você não está logado. Clique em “Ir para o login”.');
-        showLoginButtons();
-        btnIrLogin.onclick = () => window.location.href = '/login.html?next=%2Fpainel-professor.html';
-        return;
-      }
-
-      // ⚠️ Indefinido: permanece aqui e libera os dois (prosseguir + login)
-      setStatus('Aviso', 'Não consegui confirmar sua sessão agora. Você pode prosseguir ou fazer login novamente.');
-      btnProsseguir.style.display = 'inline-flex';
-      btnIrLogin.style.display = 'inline-flex';
-      btnProsseguir.textContent = 'Prosseguir';
-      btnProsseguir.onclick = () => window.location.href = '/painel.html';
-      btnIrLogin.onclick = () => window.location.href = '/login.html?next=%2Fpainel-professor.html';
     }
-
-    init();
+    iniciar();
   </script>
   <script src="/axoriin-ajuda/conteudos-ajuda.js"></script>
   <script src="/axoriin-ajuda/ajuda-contextual.js"></script>
