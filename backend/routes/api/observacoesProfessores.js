@@ -194,6 +194,20 @@ function loteIdValido(valor) {
   return /^[a-f0-9]{24}$/i.test(String(valor || '').trim());
 }
 
+function dadosExclusaoPermanente(req) {
+  const confirmacao = String(req.body?.confirmacao || '').trim().toUpperCase();
+  const motivo = textoLimpo(req.body?.motivo, 500);
+
+  if (confirmacao !== 'EXCLUIR') {
+    return { erro: 'Digite EXCLUIR para confirmar a exclusão permanente.' };
+  }
+  if (motivo.length < 5) {
+    return { erro: 'Informe o motivo da exclusão com pelo menos 5 caracteres.' };
+  }
+
+  return { motivo };
+}
+
 const audioUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -938,16 +952,18 @@ router.delete('/:id', autenticar, requireTenant, apenasProfessor, attachActor, a
 router.get('/admin/feed', autenticar, requireTenant, apenasAdmin, async (req, res) => {
   try {
     const adminId = usuarioId(req);
-    const limite = Math.min(Math.max(Number(req.query.limit) || 20, 5), 60);
+    const limite = Math.min(Math.max(Number(req.query.limit) || 20, 5), 100);
+    const incluirConcluidas = String(req.query.incluirConcluidas || '') === '1';
 
     const filtroAtivo = tenantFilter(req, {
       status: { $in: ['nova', 'lida', 'em_atendimento'] },
     });
+    const filtroLista = incluirConcluidas ? tenantFilter(req, {}) : filtroAtivo;
 
-    const [itens, totalNaoLidas, totalAtivas] = await Promise.all([
-      ObservacaoProfessor.find(filtroAtivo)
+    const [itens, totalNaoLidas, totalAtivas, totalRegistros] = await Promise.all([
+      ObservacaoProfessor.find(filtroLista)
         .sort({ createdAt: -1 })
-        .limit(Math.max(limite * 3, 60))
+        .limit(Math.max(limite * 3, 100))
         .lean(),
       ObservacaoProfessor.countDocuments(
         tenantFilter(req, {
@@ -956,6 +972,7 @@ router.get('/admin/feed', autenticar, requireTenant, apenasAdmin, async (req, re
         })
       ),
       ObservacaoProfessor.countDocuments(filtroAtivo),
+      ObservacaoProfessor.countDocuments(tenantFilter(req, {})),
     ]);
 
     const ordenados = itens
@@ -971,6 +988,8 @@ router.get('/admin/feed', autenticar, requireTenant, apenasAdmin, async (req, re
     return res.json({
       totalNaoLidas,
       totalAtivas,
+      totalRegistros,
+      incluindoConcluidas: incluirConcluidas,
       observacoes: ordenados,
     });
   } catch (erro) {
@@ -1093,6 +1112,99 @@ router.get('/admin/:id', autenticar, requireTenant, apenasAdmin, attachActor, as
   } catch (erro) {
     console.error('[observacoes-professores] erro ao abrir observação:', erro);
     return res.status(500).json({ mensagem: 'Erro ao abrir a observação.' });
+  }
+});
+
+router.delete('/admin/lote/:loteId/permanente', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+  try {
+    const loteId = String(req.params.loteId || '').trim();
+    if (!loteIdValido(loteId)) {
+      return res.status(400).json({ mensagem: 'Identificador do lote inválido.' });
+    }
+
+    const confirmacao = dadosExclusaoPermanente(req);
+    if (confirmacao.erro) {
+      return res.status(400).json({ mensagem: confirmacao.erro });
+    }
+
+    const observacoes = await ObservacaoProfessor.find(
+      tenantFilter(req, { loteId })
+    ).lean();
+
+    if (!observacoes.length) {
+      return res.status(404).json({ mensagem: 'Lote de observações não encontrado.' });
+    }
+
+    await auditoriaSegura({
+      req,
+      event: 'OBSERVACOES_PROFESSOR_LOTE_EXCLUIDO_PERMANENTEMENTE',
+      targetType: 'ObservacaoProfessor',
+      targetId: observacoes[0]._id,
+      entidadeNome: `${observacoes.length} alunos`,
+      meta: {
+        loteId,
+        total: observacoes.length,
+        motivo: confirmacao.motivo,
+        professorNome: observacoes[0].professorNome,
+        turma: observacoes[0].turma,
+        alunos: observacoes.map((item) => ({ id: item.aluno, nome: item.alunoNome })),
+      },
+    });
+
+    const resultado = await ObservacaoProfessor.deleteMany(
+      tenantFilter(req, { loteId })
+    );
+
+    return res.json({
+      mensagem: `Lote excluído permanentemente (${resultado.deletedCount || observacoes.length} registros).`,
+      excluidos: resultado.deletedCount || observacoes.length,
+    });
+  } catch (erro) {
+    console.error('[observacoes-professores] erro ao excluir lote permanentemente:', erro);
+    return res.status(500).json({ mensagem: 'Erro ao excluir permanentemente o lote.' });
+  }
+});
+
+router.delete('/admin/:id/permanente', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+  try {
+    const confirmacao = dadosExclusaoPermanente(req);
+    if (confirmacao.erro) {
+      return res.status(400).json({ mensagem: confirmacao.erro });
+    }
+
+    const observacao = await ObservacaoProfessor.findOne(
+      tenantFilter(req, { _id: req.params.id })
+    );
+
+    if (!observacao) {
+      return res.status(404).json({ mensagem: 'Observação não encontrada.' });
+    }
+
+    await auditoriaSegura({
+      req,
+      event: 'OBSERVACAO_PROFESSOR_EXCLUIDA_PERMANENTEMENTE',
+      targetType: 'ObservacaoProfessor',
+      targetId: observacao._id,
+      entidadeNome: observacao.alunoNome,
+      alunoNome: observacao.alunoNome,
+      meta: {
+        motivo: confirmacao.motivo,
+        professorNome: observacao.professorNome,
+        turma: observacao.turma,
+        status: observacao.status,
+        loteId: observacao.loteId || '',
+        texto: observacao.texto,
+      },
+    });
+
+    await ObservacaoProfessor.deleteOne(
+      tenantFilter(req, { _id: observacao._id })
+    );
+
+    return res.json({ mensagem: 'Observação excluída permanentemente.' });
+  } catch (erro) {
+    console.error('[observacoes-professores] erro ao excluir permanentemente:', erro);
+    return res.status(500).json({ mensagem: 'Erro ao excluir permanentemente a observação.' });
   }
 });
 

@@ -90,3 +90,14 @@
 .op-admin-batch-student strong{font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .op-admin-batch-student small{font-size:.7rem;color:#a9bad0}
 .op-admin-batch-student em{font-style:normal;color:#bcecff;font-size:.72rem;font-weight:900;white-space:nowrap}
+
+/* Exclusão administrativa de registros indevidos — v1.8 */
+.op-admin-btn.danger{border-color:rgba(251,113,133,.58);background:linear-gradient(135deg,rgba(190,18,60,.92),rgba(127,29,29,.94));color:#fff}
+.op-admin-danger-zone{display:grid;gap:8px;border:1px solid rgba(251,113,133,.34);border-radius:13px;padding:12px;background:rgba(127,29,29,.14)}
+.op-admin-danger-zone strong{font-size:.8rem;color:#ffd4db}
+.op-admin-danger-zone p{margin:0;color:#d8b8be;font-size:.74rem;line-height:1.45}
+.op-admin-danger-zone .op-admin-btn{justify-self:start}
+@media(max-width:620px){.op-admin-danger-zone .op-admin-btn{width:100%}}
+.op-admin-history{border:0;background:transparent;color:#dbe9f7;cursor:pointer;width:30px;height:30px;border-radius:9px;font-size:.9rem;display:grid;place-items:center;padding:0}
+.op-admin-history:hover,.op-admin-history.active{background:rgba(56,189,248,.16);color:#c9f1ff}
+.op-admin-chip.status{color:#d6e2ef;border-color:rgba(148,163,184,.34);background:rgba(100,116,139,.13)}
