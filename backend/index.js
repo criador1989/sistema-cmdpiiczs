@@ -114,6 +114,7 @@ console.log('ðŸ·ï¸  ResolveTenant ligado (subdomÃ­nio/query/cookie).'
   'AphAtendimento',
   'Counter',
   'Observacao',
+  'ObservacaoProfessor',
   'SuperAdmin',
   'Questao',
   'QuestionarioTentativa',
@@ -229,6 +230,7 @@ const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes')
 const estatisticasRoutes = require('./routes/api/estatisticas');
 const estatisticasComportamentoRoutes = require('./routes/api/estatisticasComportamento');
 const observacoesRoutes = require('./routes/api/observacoes');
+const observacoesProfessoresRoutes = require('./routes/api/observacoesProfessores');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
@@ -788,6 +790,7 @@ mountIf('/api', relatorioNotificacoesRoute);
 mountIf('/api/estatisticas', estatisticasRoutes);
 mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, autenticar);
 mountIf('/api/observacoes', observacoesRoutes);
+mountIf('/api/observacoes-professores', observacoesProfessoresRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
 mountIf('/api/metrics', metricsRoutes);
 mountIf('/api/instituicoes', instituicoesRoutes);
@@ -943,15 +946,14 @@ app.get('/master-associacoes.html', requireSuperAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'master-associacoes.html'));
 });
 
-function exigirProfessorOuAdminRedacao(req, res, next) {
+function exigirGestorRedacao(req, res, next) {
   const role = getRole(req);
   const permitido =
     role.includes('admin') ||
     role.includes('master') ||
     role.includes('superadmin') ||
     role.includes('coorden') ||
-    role.includes('dire') ||
-    role.includes('professor');
+    role.includes('dire');
 
   if (!permitido) {
     return send403(res, publicRoot);
@@ -963,7 +965,7 @@ function exigirProfessorOuAdminRedacao(req, res, next) {
 app.get(
   '/admin-redacao.html',
   autenticar,
-  exigirProfessorOuAdminRedacao,
+  exigirGestorRedacao,
   (_req, res) => {
     return res.sendFile(
       path.join(publicRoot, 'admin-redacao.html')

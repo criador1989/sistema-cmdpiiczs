@@ -448,6 +448,7 @@
       }
     }
   </script>
+  <link rel="stylesheet" href="/css/observacoes-professores-ficha.css">
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 
   <style id="axoriin-ficha-premium-v4">
@@ -793,6 +794,17 @@
             <div class="editor" id="obsEditor">
               <textarea id="textoObservacao" maxlength="1000" placeholder="Digite uma nova observação..."></textarea>
               <button class="btn primary" id="btnSalvar">Salvar observação</button>
+            </div>
+          </section>
+
+          <section class="observations-card professor-observations-card" id="professorObservationsCard" hidden>
+            <div class="professor-observations-head">
+              <h3 class="section-label">Observações dos professores</h3>
+              <span class="professor-observations-count" id="profObsFichaCount">0 registros</span>
+            </div>
+            <p class="professor-observations-help" id="profObsFichaHelp">Carregando registros...</p>
+            <div class="professor-observations-list" id="observacoesProfessoresFicha">
+              <div class="professor-observations-empty">Carregando observações...</div>
             </div>
           </section>
         </div>
@@ -2155,6 +2167,7 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
     })();
   </script>
 
+  <script src="/js/observacoes-professores-ficha.js"></script>
   <script src="/assets/js/procedimento-modal.js"></script>
   <script src="notify.js"></script>
   <script src="/update-client.js"></script>

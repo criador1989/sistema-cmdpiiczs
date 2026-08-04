@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>Observações dos Professores | Axoriin</title>
+  <link rel="stylesheet" href="/css/observacoes-professores.css?v=1.7.0">
+</head>
+<body>
+  <main class="op-shell">
+    <header class="op-topbar">
+      <div class="op-brand">
+        <div class="op-logo" aria-hidden="true">🦉</div>
+        <div>
+          <h1>Observações dos Professores</h1>
+          <p id="opUsuario">Carregando sua sessão...</p>
+        </div>
+      </div>
+      <a class="op-back" href="/painel-professor.html">← Voltar</a>
+    </header>
+
+    <div class="op-layout">
+      <section class="op-card" id="opFormCard">
+        <header class="op-card-head">
+          <h2>Registrar observação</h2>
+          <p>Envie um relato objetivo para a coordenação. O registro entrará na ficha do aluno e no painel administrativo.</p>
+        </header>
+
+        <div class="op-card-body">
+          <div class="op-status" id="opStatus" role="status" aria-live="polite"></div>
+
+          <form id="opForm" novalidate>
+            <section class="op-section">
+              <div class="op-label"><span>Forma de registro</span><small>Escolha um ou vários alunos</small></div>
+              <div class="op-mode-grid" id="opModoRegistro">
+                <button type="button" class="op-mode active" data-mode="individual">
+                  <strong>Um aluno</strong><span>Registro individual</span>
+                </button>
+                <button type="button" class="op-mode" data-mode="lote">
+                  <strong>Vários alunos</strong><span>Mesmo fato para a turma</span>
+                </button>
+              </div>
+              <p class="op-mode-help" id="opModoAjuda">Selecione um estudante para registrar a observação.</p>
+            </section>
+
+            <section class="op-section">
+              <div class="op-label">
+                <label for="opTurma" id="opAlunoLabel">Aluno <span class="op-required">*</span></label>
+                <small id="opTotalAlunos">0 alunos</small>
+              </div>
+              <div class="op-student-tools">
+                <select class="op-select" id="opTurma" aria-label="Filtrar por turma">
+                  <option value="">Todas as turmas</option>
+                </select>
+                <input class="op-field" id="opBuscaAluno" type="search" placeholder="Buscar aluno pelo nome" autocomplete="off">
+              </div>
+
+              <div id="opIndividualBox">
+                <select class="op-select" id="opAluno">
+                  <option value="">Selecione o aluno</option>
+                </select>
+              </div>
+
+              <div class="op-batch-box" id="opLoteBox" hidden>
+                <div class="op-batch-toolbar">
+                  <strong><span id="opSelecionados">0</span> selecionados</strong>
+                  <div>
+                    <button class="op-link-btn" id="opSelecionarTodos" type="button">Selecionar exibidos</button>
+                    <button class="op-link-btn danger" id="opLimparSelecao" type="button">Limpar</button>
+                  </div>
+                </div>
+                <div class="op-student-list" id="opListaAlunosLote">
+                  <div class="op-empty small">Escolha uma turma para selecionar vários alunos.</div>
+                </div>
+                <p class="op-batch-note">Cada estudante receberá um registro individual na própria ficha. No painel administrativo, o envio aparecerá agrupado.</p>
+              </div>
+            </section>
+
+            <section class="op-section">
+              <div class="op-label"><span>Categoria <span class="op-required">*</span></span></div>
+              <div class="op-chip-grid" id="opCategorias">
+                <button type="button" class="op-chip active" data-category="comportamento">Comportamento</button>
+                <button type="button" class="op-chip" data-category="participacao_pedagogica">Participação</button>
+                <button type="button" class="op-chip" data-category="convivencia">Convivência</button>
+                <button type="button" class="op-chip" data-category="seguranca">Segurança</button>
+                <button type="button" class="op-chip" data-category="atividade">Atividade</button>
+                <button type="button" class="op-chip" data-category="elogio">Elogio</button>
+                <button type="button" class="op-chip" data-category="outro">Outro</button>
+              </div>
+            </section>
+
+            <section class="op-section">
+              <div class="op-label"><span>Nível de atenção</span><small>Urgente fica no topo do painel</small></div>
+              <div class="op-chip-grid" id="opPrioridades">
+                <button type="button" class="op-chip active" data-priority="normal">Normal</button>
+                <button type="button" class="op-chip" data-priority="atencao">Atenção</button>
+                <button type="button" class="op-chip" data-priority="urgente">Urgente</button>
+              </div>
+            </section>
+
+            <section class="op-section">
+              <div class="op-label"><label for="opComponente">Componente curricular</label><small>Opcional</small></div>
+              <input class="op-field" id="opComponente" maxlength="120" placeholder="Ex.: Matemática, Língua Portuguesa">
+            </section>
+
+            <section class="op-section">
+              <div class="op-label"><span>Atalhos rápidos</span><small>Toque para adicionar ao relato</small></div>
+              <div class="op-quick-grid" id="opAtalhos">
+                <button type="button" class="op-quick" data-text="Conversa excessiva durante a aula.">Conversa excessiva</button>
+                <button type="button" class="op-quick" data-text="Arremessou papel ou outro objeto em direção a um colega.">Arremessou objeto/papel</button>
+                <button type="button" class="op-quick" data-text="Utilizou o celular de forma inadequada durante a aula.">Uso inadequado do celular</button>
+                <button type="button" class="op-quick" data-text="Não realizou a atividade proposta.">Não realizou a atividade</button>
+                <button type="button" class="op-quick" data-text="Apresentou atitude desrespeitosa na convivência com colegas.">Convivência inadequada</button>
+                <button type="button" class="op-quick" data-text="Participou de forma positiva e demonstrou interesse na atividade.">Participação positiva</button>
+                <button type="button" class="op-quick" data-text="Ajudou um colega durante a realização da atividade.">Ajudou um colega</button>
+                <button type="button" class="op-quick" data-text="Demonstrou evolução em relação às aulas anteriores.">Demonstrou evolução</button>
+              </div>
+            </section>
+
+            <section class="op-section">
+              <div class="op-label">
+                <label for="opTexto">Relato <span class="op-required">*</span></label>
+                <small><span id="opContador">0</span>/2500</small>
+              </div>
+              <div class="op-textarea-wrap">
+                <textarea class="op-textarea" id="opTexto" maxlength="2500" required placeholder="Descreva o que ocorreu de forma clara, objetiva e respeitosa."></textarea>
+                <button type="button" class="op-mic" id="opMic" title="Gravar observação" aria-label="Gravar observação por voz">🎙️</button>
+              </div>
+              <div class="op-audio-state">
+                <span id="opAudioTexto">Toque no microfone para ditar.</span>
+                <strong id="opAudioTempo">00:00</strong>
+              </div>
+            </section>
+
+            <button class="op-submit" id="opEnviar" type="submit"><span id="opEnviarTexto">Enviar observação à coordenação</span></button>
+            <p class="op-disclaimer">O áudio é usado apenas para gerar o texto e não é salvo na ficha. Revise a transcrição antes do envio.</p>
+          </form>
+        </div>
+      </section>
+
+      <aside class="op-card" id="historico">
+        <header class="op-card-head">
+          <h2>Minhas observações recentes</h2>
+          <p>Acompanhe se o registro foi lido, assumido ou resolvido pela coordenação.</p>
+        </header>
+        <div class="op-card-body">
+          <div class="op-history" id="opHistorico">
+            <div class="op-empty">Carregando observações...</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/js/observacoes-professores.js?v=1.7.0"></script>
+</body>
+</html>
