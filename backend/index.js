@@ -494,19 +494,52 @@ app.use((req, res, next) => {
     return next();
   }
 
+  const host = String(
+    req.hostname ||
+    req.headers.host ||
+    ''
+  )
+    .split(':')[0]
+    .trim()
+    .toLowerCase();
+
   const p = req.path;
 
-  const rotaDoSiteInstitucional =
-    p === '/' ||
-    p === '/index.html' ||
+  const isDominioColegio =
+    host === 'colegiodompedro2czs.com.br' ||
+    host === 'www.colegiodompedro2czs.com.br';
+
+  /*
+   * O conteúdo público do site do colégio permanece indisponível,
+   * mesmo quando alguém tenta acessá-lo pelo domínio do Axoriin
+   * ou diretamente pelo endereço do Render.
+   */
+  const rotaExclusivaDoSiteDoColegio =
     p === '/site-cmdpii' ||
     p.startsWith('/site-cmdpii/') ||
     p === '/api/site-publico' ||
-    p.startsWith('/api/site-publico/') ||
-    p === '/api/site-analytics' ||
-    p.startsWith('/api/site-analytics/');
+    p.startsWith('/api/site-publico/');
 
-  if (rotaDoSiteInstitucional) {
+  /*
+   * No domínio do colégio, a página inicial e o analytics público
+   * também permanecem bloqueados.
+   *
+   * No domínio Axoriin, "/" e "/api/site-analytics" continuam
+   * disponíveis para a página institucional da plataforma.
+   */
+  const rotaBloqueadaNoDominioDoColegio =
+    isDominioColegio &&
+    (
+      p === '/' ||
+      p === '/index.html' ||
+      p === '/api/site-analytics' ||
+      p.startsWith('/api/site-analytics/')
+    );
+
+  if (
+    rotaExclusivaDoSiteDoColegio ||
+    rotaBloqueadaNoDominioDoColegio
+  ) {
     return enviarPaginaSiteBloqueado(res);
   }
 
