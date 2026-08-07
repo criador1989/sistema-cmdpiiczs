@@ -2,3 +2,4 @@ python-docx
 reportlab
 qrcode
 pillow
+pdfplumber>=0.11,<0.12
