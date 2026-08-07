@@ -20,6 +20,7 @@ try { Instituicao = require('../models/Instituicao'); } catch {}
 try { Aluno = require('../models/Aluno'); } catch {}
 
 const { autenticar } = require('../middleware/autenticacao');
+const { obterEstadoOnboardingProfessor } = require('../services/onboardingProfessor');
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -298,6 +299,7 @@ function buildJwtPayload(usuario) {
   if (usuario.alunoId) payload.alunoId = String(usuario.alunoId);
   if (usuario.escopoObservatorio) payload.escopoObservatorio = usuario.escopoObservatorio;
   if (usuario.acessosModulos) payload.acessosModulos = usuario.acessosModulos;
+  if (usuario.onboardingProfessor) payload.onboardingProfessor = usuario.onboardingProfessor;
 
   if (usuario.portal) {
     payload.portal = String(usuario.portal);
@@ -320,7 +322,7 @@ function buildAlunoPublicData(aluno) {
   };
 }
 
-function buildLoginResponse({ usuario, inst, token, aluno = null }) {
+function buildLoginResponse({ usuario, inst, token, aluno = null, onboarding = null }) {
   const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
 
   let redirecionar = '/painel.html';
@@ -348,6 +350,10 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
   const acessoAssociacao = usuario?.acessosModulos?.associacao;
   if (associacaoAtiva && (acessoAssociacao?.ativo === true || usuario.tipo === 'admin')) {
     redirecionar = '/associacao.html';
+  }
+
+  if (usuario.tipo === 'professor' && onboarding && onboarding.concluido === false) {
+    redirecionar = onboarding.redirecionar || '/primeiro-acesso-professor.html';
   }
 
   return {
@@ -382,6 +388,7 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
       associacaoAtiva
     } : undefined,
     tenant: tenantCookie,
+    onboarding,
     portal:
   usuario.portal ||
   (usuario.tipo === 'aluno'
@@ -450,7 +457,11 @@ async function doLoginForInstituicao(req, res, { email, senha, inst, portal = 'i
       .catch(() => null);
   }
 
-  return res.json(buildLoginResponse({ usuario, inst, token, aluno }));
+  const onboarding = usuario.tipo === 'professor'
+    ? await obterEstadoOnboardingProfessor(usuario, { instituicaoId, destinoPadrao: '/painel-professor.html' })
+    : null;
+
+  return res.json(buildLoginResponse({ usuario, inst, token, aluno, onboarding }));
 }
 
 async function doLoginAluno(req, res, { login, senha, inst }) {
@@ -814,7 +825,10 @@ router.post('/trocar-ambiente', autenticar, async (req, res) => {
     setAuthCookie(res, tokenNovo);
     setTenantCookie(res, inst.slug || String(inst._id));
 
-    const resposta = buildLoginResponse({ usuario, inst, token: tokenNovo });
+    const onboarding = usuario.tipo === 'professor'
+      ? await obterEstadoOnboardingProfessor(usuario, { instituicaoId: String(inst._id), destinoPadrao: '/painel-professor.html' })
+      : null;
+    const resposta = buildLoginResponse({ usuario, inst, token: tokenNovo, onboarding });
     return res.json({
       mensagem: 'Ambiente alterado com sucesso.',
       redirecionar: resposta.redirecionar,
@@ -1128,6 +1142,11 @@ router.post('/cadastrar', autenticar, async (req, res) => {
         emailVerificadoEm: new Date(),
         tokenVerificacaoHash: null,
         tokenVerificacaoExpiraEm: null,
+        onboardingProfessor: String(tipo || '').trim().toLowerCase() === 'professor' ? {
+          obrigarTrocaSenha: true,
+          senhaTemporariaDefinidaEm: new Date(),
+          senhaAlteradaEm: null,
+        } : undefined,
       });
 
     await novoUsuario.save();

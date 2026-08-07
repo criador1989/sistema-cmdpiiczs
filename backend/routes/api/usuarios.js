@@ -78,6 +78,7 @@ function usuarioToResponse(usuario) {
     alunoId: usuario.alunoId ? String(usuario.alunoId) : null,
     turmas: Array.isArray(usuario.turmas) ? usuario.turmas : [],
     ativo: typeof usuario.ativo === 'boolean' ? usuario.ativo : true,
+    onboardingProfessor: usuario.onboardingProfessor || null,
     createdAt: usuario.createdAt || null,
     updatedAt: usuario.updatedAt || null
   };
@@ -194,7 +195,12 @@ router.post('/', autenticar, requireTenant, verificarAdmin, async (req, res) => 
       ? 'responsavel'
       : 'institucional',
       instituicao: instId,
-      alunoId: alunoRef ? alunoRef._id : null
+      alunoId: alunoRef ? alunoRef._id : null,
+      onboardingProfessor: tipoNorm === 'professor' ? {
+        obrigarTrocaSenha: true,
+        senhaTemporariaDefinidaEm: new Date(),
+        senhaAlteradaEm: null,
+      } : undefined,
     });
 
     await novoUsuario.save();
@@ -434,6 +440,12 @@ router.put('/:id', autenticar, requireTenant, verificarAdmin, async (req, res) =
         return res.status(400).json({ mensagem: check.message || 'A senha não atende à política de segurança.' });
       }
       usuario.senha = senhaLimpa;
+      if (tipoNorm === 'professor') {
+        usuario.onboardingProfessor = usuario.onboardingProfessor || {};
+        usuario.onboardingProfessor.obrigarTrocaSenha = true;
+        usuario.onboardingProfessor.senhaTemporariaDefinidaEm = new Date();
+        usuario.onboardingProfessor.senhaAlteradaEm = null;
+      }
     }
 
     await usuario.save();
