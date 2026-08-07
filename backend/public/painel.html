@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
@@ -524,7 +524,7 @@ h1, h2, h3, h4, h5, h6,
   box-shadow:var(--glass-shadow) !important;
 }
 
-/* ===== MÉTRICAS HUD ===== */
+/* ===== MÃ‰TRICAS HUD ===== */
 .metrics{
   display:grid;
   grid-template-columns:1.25fr 1fr 1fr;
@@ -1066,6 +1066,7 @@ h1, h2, h3, h4, h5, h6,
 .card-watermark--notificacoes{ color:rgba(226,242,255,.16); }
 .card-watermark--controle{ color:rgba(226,242,255,.16); }
 .card-watermark--ranking{ color:rgba(226,242,255,.16); }
+.card-watermark--alamar{ color:rgba(240,200,107,.22); }
 .card-watermark--estatisticas{ color:rgba(226,242,255,.16); }
 .card-watermark--financeiro{ color:rgba(226,242,255,.15); font-size:6.0rem; letter-spacing:-0.09em; opacity:.14; filter:none; }
 .card-watermark--associacao{ color:rgba(226,242,255,.16); }
@@ -1778,7 +1779,7 @@ canvas{
 .mobile-sidebar-backdrop{
   pointer-events:none;
 }
-/* ===== CORREÇÃO DE CLIQUES NO MENU MOBILE ===== */
+/* ===== CORREÃ‡ÃƒO DE CLIQUES NO MENU MOBILE ===== */
 .sidebar,
 .sidebar *{
   pointer-events:auto !important;
@@ -2646,7 +2647,7 @@ canvas{
 <body>
   <div class="mobile-appbar">
   <button id="mobileMenuBtn" class="mobile-appbar-btn mobile-appbar-menu" type="button" aria-label="Abrir menu">
-    ☰
+    â˜°
   </button>
 
   <div class="mobile-appbar-center">
@@ -2679,7 +2680,7 @@ canvas{
   <div class="page">
     <aside class="sidebar" aria-label="Navegação lateral">
       <button id="mobileCloseSidebar" class="mobile-close-sidebar" type="button" aria-label="Fechar menu">
-  ✕
+  âœ•
 </button>
       <div class="sb-head">
   <div class="sb-head-top">
@@ -2708,6 +2709,7 @@ canvas{
   <a class="active" href="painel.html?t=cmdpii" id="sbPainel">🏠 Painel</a>
   <a href="lista-alunos.html?t=cmdpii" id="sbAlunos">👥 Alunos</a>
   <a href="ranking-alunos.html?t=cmdpii" id="sbRanking">🏆 Ranking de Alunos</a>
+  <a href="alamar.html?t=cmdpii" id="sbAlamar">🎖️ Aluno Alamar</a>
   <a href="/notificacoes?t=cmdpii" id="sbNotificacoes">🔔 Notificações</a>
   <a href="livro-ocorrencias.html?t=cmdpii" id="sbLivroOcorrencias">📘 Livro Digital</a>
   <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
@@ -2732,7 +2734,7 @@ canvas{
   <section id="reviewAlertBox" style="display:none;" class="review-alert-box">
     <div class="review-alert-head">
       <div>
-        <div class="review-alert-kicker">REVISÃO PENDENTE</div>
+        <div class="review-alert-kicker">REVISÃƒO PENDENTE</div>
         <h3 class="review-alert-title">Existem notificações aguardando correção</h3>
         <p class="review-alert-text">Abra as notificações e ajuste os documentos devolvidos pelo controle.</p>
       </div>
@@ -2862,7 +2864,7 @@ canvas{
             <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('cadastro-aluno.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">MÓDULO</div>
+                  <div class="kicker">MÃ“DULO</div>
                   <h3>Cadastrar Aluno</h3>
                 </div>
                 <div class="card-watermark card-watermark--cadastro" aria-hidden="true">🎓</div>
@@ -2892,7 +2894,7 @@ canvas{
             <div id="cardControleNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('controle-notificacoes.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">GESTÃO</div>
+                  <div class="kicker">GESTÃƒO</div>
                   <h3>Controle de Notificações</h3>
                 </div>
                 <div class="card-watermark card-watermark--controle" aria-hidden="true">🛡️</div>
@@ -2902,13 +2904,22 @@ canvas{
             <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('ranking-alunos.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">CLASSIFICAÇÃO</div>
+                  <div class="kicker">CLASSIFICAÃ‡ÃƒO</div>
                   <h3>Ranking de Alunos</h3>
                 </div>
                 <div class="card-watermark card-watermark--ranking" aria-hidden="true">🏆</div>
               </div>
             </div>
 
+            <div id="cardAlamar" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('alamar.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">APURAÇÃO SEMESTRAL</div>
+                  <h3>Aluno Alamar</h3>
+                </div>
+                <div class="card-watermark card-watermark--alamar" aria-hidden="true">🎖️</div>
+              </div>
+            </div>
             <div id="cardEstatisticas" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('estatisticas.html')">
               <div class="window-content">
                 <div class="card-copy">
@@ -2922,7 +2933,7 @@ canvas{
             <div id="cardFinanceiro" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('financeiro.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">GESTÃO FINANCEIRA</div>
+                  <div class="kicker">GESTÃƒO FINANCEIRA</div>
                   <h3>Módulo Financeiro</h3>
                 </div>
                 <div class="card-watermark card-watermark--financeiro" aria-hidden="true">R$</div>
@@ -2932,7 +2943,7 @@ canvas{
             <div id="cardAssociacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="window.AxoriinAmbientes?.abrirPrimeiraAssociacao()">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">MÓDULO VINCULADO</div>
+                  <div class="kicker">MÃ“DULO VINCULADO</div>
                   <h3>Axoriin Associações</h3>
                 </div>
                 <div class="card-watermark card-watermark--associacao" aria-hidden="true">🤝</div>
@@ -2942,7 +2953,7 @@ canvas{
             <div id="cardTransferirTurma" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('transferir-turma.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">AÇÃO</div>
+                  <div class="kicker">AÃ‡ÃƒO</div>
                   <h3>Transferir Turma</h3>
                 </div>
                 <div class="card-watermark card-watermark--transferencia" aria-hidden="true">🔄</div>
@@ -2951,7 +2962,7 @@ canvas{
             <div id="cardGestaoRedacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">PEDAGÓGICO</div>
+                  <div class="kicker">PEDAGÃ“GICO</div>
                   <h3>Painel ENEM — Redação</h3>
                 </div>
                 <div class="card-watermark card-watermark--redacao" aria-hidden="true">✍️</div>
@@ -3007,9 +3018,9 @@ canvas{
     </div>
 
     <div class="pager">
-      <button class="btn" id="reg-prev">◀</button>
+      <button class="btn" id="reg-prev">â—€</button>
       <span class="info">Página <span id="reg-page">1</span> de <span id="reg-pages">1</span></span>
-      <button class="btn" id="reg-next">▶</button>
+      <button class="btn" id="reg-next">â–¶</button>
       <span class="info">10 por página</span>
     </div>
   </div>
@@ -3037,9 +3048,9 @@ canvas{
     </div>
 
     <div class="pager">
-      <button class="btn" id="ins-prev">◀</button>
+      <button class="btn" id="ins-prev">â—€</button>
       <span class="info">Página <span id="ins-page">1</span> de <span id="ins-pages">1</span></span>
-      <button class="btn" id="ins-next">▶</button>
+      <button class="btn" id="ins-next">â–¶</button>
       <span class="info">10 por página</span>
     </div>
   </div>
@@ -3067,9 +3078,9 @@ canvas{
     </div>
 
     <div class="pager">
-      <button class="btn" id="inc-prev">◀</button>
+      <button class="btn" id="inc-prev">â—€</button>
       <span class="info">Página <span id="inc-page">1</span> de <span id="inc-pages">1</span></span>
-      <button class="btn" id="inc-next">▶</button>
+      <button class="btn" id="inc-next">â–¶</button>
       <span class="info">10 por página</span>
     </div>
   </div>
@@ -3118,9 +3129,9 @@ canvas{
   </div>
 
   <div class="pager">
-    <button class="btn" id="inc-prev">◀</button>
+    <button class="btn" id="inc-prev">â—€</button>
     <span class="info">Página <span id="inc-page">1</span> de <span id="inc-pages">1</span></span>
-    <button class="btn" id="inc-next">▶</button>
+    <button class="btn" id="inc-next">â–¶</button>
     <span class="info">10 por página</span>
     <input type="number" id="inc-size" min="10" max="10" step="10" value="10" disabled />
   </div>
@@ -3147,7 +3158,7 @@ canvas{
         💰<span>Financeiro</span>
       </button>
       <button type="button" id="bnMais">
-  ☰<span>Mais</span>
+  â˜°<span>Mais</span>
 </button>
     </div>
   </nav>  <script>
@@ -3208,7 +3219,7 @@ canvas{
     history.replaceState({}, '', u.toString());
   }
 
-  /* ===== PAPEL DE PAREDE DINÂMICO ===== */
+  /* ===== PAPEL DE PAREDE DINÃ‚MICO ===== */
   (function(){
     const wallpapers = [
       'url("img/bg-painel-smart.png")',
@@ -3317,6 +3328,7 @@ canvas{
   const map = {
     sbAlunos: 'lista-alunos.html',
     sbRanking: 'ranking-alunos.html',
+    sbAlamar: 'alamar.html',
     sbNotificacoes: '/notificacoes',
     sbEstatisticas: 'estatisticas.html',
     sbFinanceiro: 'financeiro.html',
@@ -4099,7 +4111,7 @@ document.addEventListener('click', (ev) => {
 
     const items = [
       {name:'Excepcional', value:dist.exc||0, color:'#7CFFEA'},
-      {name:'Ótimo',       value:dist.oti||0, color:'#3DD9FF'},
+      {name:'Ã“timo',       value:dist.oti||0, color:'#3DD9FF'},
       {name:'Bom',         value:dist.bom||0, color:'#FFD166'},
       {name:'Regular',     value:dist.reg||0, color:'#FF7A59'},
       {name:'Insuficiente',value:dist.ins||0, color:'#FF5C8A'},
@@ -4699,7 +4711,7 @@ async function carregarAlertaRevisoes() {
 
 
 
-  <script src="/js/observacoes-professores-admin.js?v=1.7.0"></script>
+  <script src="/js/observacoes-professores-admin.js?v=1.8.0"></script>
   <script src="/js/axoriin-ambientes.js"></script>
   <script src="notify.js"></script>
   <script src="/painel.js"></script>

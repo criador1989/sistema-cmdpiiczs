@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1728" />
+  <title>Gestão de Alamares | Axoriin</title>
+  <link rel="stylesheet" href="/alamar/alamar.css?v=1.2.0" />
+</head>
+<body>
+  <header class="topbar no-print">
+    <a class="brand" href="/painel.html" id="backLink" aria-label="Voltar ao painel">
+      <span class="brand-mark">A</span>
+      <span><strong>Axoriin</strong><small>Gestão de Alamares</small></span>
+    </a>
+    <div class="top-actions">
+      <span id="userInfo" class="user-pill">Carregando usuário…</span>
+      <button id="btnHelp" class="btn ghost" type="button">Critérios</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">APURAÇÃO SEMESTRAL</p>
+        <h1>Aluno Alamar</h1>
+        <p class="hero-copy">Importe as notas do SIMAED, valide a habilitação disciplinar no Axoriin e obtenha a relação auditável dos estudantes aptos.</p>
+      </div>
+      <div class="hero-badge" aria-label="Critérios principais">
+        <strong>8,5</strong>
+        <span>média global mínima</span>
+      </div>
+    </section>
+
+    <section class="criteria-grid" id="criteriaGrid">
+      <article><span>01</span><strong>Média global ≥ 8,5</strong><small>Média das médias semestrais.</small></article>
+      <article><span>02</span><strong>Componentes selecionados ≥ 8,0</strong><small>Disciplinas e áreas marcadas entram na apuração.</small></article>
+      <article><span>03</span><strong>Sem recuperação</strong><small>Nota bimestral abaixo de 7,0 também impede.</small></article>
+      <article><span>04</span><strong>Nota disciplinar ≥ 7,0</strong><small>Requisito de habilitação; não entra no cálculo.</small></article>
+    </section>
+
+    <section class="workspace-grid no-print">
+      <article class="panel import-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">NOVA APURAÇÃO</p>
+            <h2>Importar notas</h2>
+          </div>
+          <a id="downloadTemplate" class="btn ghost" href="/api/alamar/modelo.xlsx?semestre=1">Baixar modelo</a>
+        </div>
+
+        <form id="importForm" class="import-form">
+          <label>Ano letivo
+            <input id="anoLetivo" name="anoLetivo" type="number" min="2020" max="2100" required />
+          </label>
+          <label>Semestre
+            <select id="semestre" name="semestre" required>
+              <option value="1">1º semestre</option>
+              <option value="2">2º semestre</option>
+            </select>
+          </label>
+          <label>Data de referência da habilitação disciplinar
+            <input id="dataReferencia" name="dataReferencia" type="date" required />
+          </label>
+          <label class="file-field">Arquivo do SIMAED
+            <input id="arquivo" name="arquivos" type="file" accept=".csv,.xlsx,.txt,.pdf,application/pdf" multiple required />
+            <span id="fileLabel">Escolher CSV, XLSX ou PDFs</span>
+          </label>
+          <button id="btnImport" class="btn primary wide" type="submit">Importar e calcular</button>
+        </form>
+        <p class="hint">Para PDF, selecione juntos os relatórios dos dois bimestres do semestre. Também permanecem aceitos CSV e XLSX.</p>
+      </article>
+
+      <article class="panel history-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">HISTÓRICO</p>
+            <h2>Apurações</h2>
+          </div>
+          <button id="btnReload" class="icon-btn" type="button" title="Atualizar">↻</button>
+        </div>
+        <div id="processList" class="process-list">
+          <div class="empty">Nenhuma apuração carregada.</div>
+        </div>
+      </article>
+    </section>
+
+    <section id="resultSection" class="results-section hidden">
+      <div class="result-title-row">
+        <div>
+          <p class="eyebrow">RESULTADO DA APURAÇÃO</p>
+          <h2 id="resultTitle">—</h2>
+          <p id="resultMeta" class="muted">—</p>
+        </div>
+        <div class="result-actions no-print">
+          <button id="btnReprocess" class="btn ghost" type="button">Reprocessar</button>
+          <button id="btnHomologate" class="btn success" type="button">Homologar</button>
+          <button id="btnPrint" class="btn ghost" type="button">Imprimir / PDF</button>
+          <a id="btnCsv" class="btn ghost" href="#">CSV</a>
+          <a id="btnXlsx" class="btn ghost" href="#">Excel</a>
+        </div>
+      </div>
+
+      <section class="component-config no-print" id="componentConfig">
+        <div class="component-config-head">
+          <div>
+            <p class="eyebrow">COMPONENTES DO CÁLCULO</p>
+            <h3>Escolha o que entra na apuração</h3>
+            <p class="muted">Desmarcar um componente faz com que ele deixe de interferir na média global, na média mínima e na recuperação. As notas continuam preservadas no histórico.</p>
+          </div>
+          <div class="component-actions">
+            <button id="btnSelectAllComponents" class="btn ghost" type="button">Marcar todos</button>
+            <button id="btnClearAllComponents" class="btn ghost" type="button">Desmarcar todos</button>
+            <button id="btnSaveComponents" class="btn primary" type="button">Aplicar seleção e recalcular</button>
+          </div>
+        </div>
+        <div id="componentList" class="component-list"></div>
+      </section>
+
+      <div class="summary-grid">
+        <article><span>Total importado</span><strong id="sumTotal">0</strong></article>
+        <article class="ok"><span>Aptos</span><strong id="sumAptos">0</strong></article>
+        <article class="bad"><span>Não aptos</span><strong id="sumNaoAptos">0</strong></article>
+        <article class="warn"><span>Pendentes</span><strong id="sumPendentes">0</strong></article>
+      </div>
+
+      <div id="importWarnings" class="warning-box hidden"></div>
+
+      <div class="filters no-print">
+        <input id="filterSearch" type="search" placeholder="Buscar aluno ou matrícula" />
+        <select id="filterStatus">
+          <option value="">Todos os resultados</option>
+          <option value="APTO">Aptos</option>
+          <option value="NAO_APTO">Não aptos</option>
+          <option value="PENDENTE">Pendentes</option>
+        </select>
+        <select id="filterTurma"><option value="">Todas as turmas</option></select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos.</th>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Média global</th>
+              <th>Menor média</th>
+              <th>Recuperação</th>
+              <th>Nota disciplinar</th>
+              <th>Situação</th>
+              <th class="no-print">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+      <div id="tableEmpty" class="empty hidden">Nenhum resultado corresponde aos filtros.</div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="detailDialog" class="dialog">
+    <div class="dialog-head">
+      <div><p class="eyebrow">MEMÓRIA DE CÁLCULO</p><h3 id="detailTitle">Aluno</h3></div>
+      <button class="icon-btn" data-close-dialog="detailDialog" type="button">×</button>
+    </div>
+    <div id="detailContent"></div>
+  </dialog>
+
+  <dialog id="linkDialog" class="dialog small">
+    <div class="dialog-head">
+      <div><p class="eyebrow">VÍNCULO MANUAL</p><h3 id="linkTitle">Localizar aluno</h3></div>
+      <button class="icon-btn" data-close-dialog="linkDialog" type="button">×</button>
+    </div>
+    <div class="link-search">
+      <input id="linkSearch" type="search" placeholder="Digite o nome do aluno" />
+      <button id="btnLinkSearch" class="btn primary" type="button">Buscar</button>
+    </div>
+    <div id="linkCandidates" class="candidate-list"></div>
+  </dialog>
+
+  <dialog id="criteriaDialog" class="dialog small">
+    <div class="dialog-head">
+      <div><p class="eyebrow">REGRA IMPLEMENTADA</p><h3>Critérios do Alamar</h3></div>
+      <button class="icon-btn" data-close-dialog="criteriaDialog" type="button">×</button>
+    </div>
+    <div class="prose">
+      <p>O aluno precisa cumprir simultaneamente: média global igual ou superior a 8,5; média semestral igual ou superior a 8,0 em todos os componentes selecionados; e nenhuma recuperação no semestre.</p>
+      <p>Uma nota bimestral inferior a 7,0 é tratada como ocorrência de recuperação. A nota obtida depois da recuperação não substitui a nota original.</p>
+      <p>A nota disciplinar precisa ser igual ou superior a 7,0. Ela é somente requisito de habilitação e não é somada, não gera média e não funciona como desempate.</p>
+      <p>A posição dos estudantes aptos é definida exclusivamente pela média global dos componentes selecionados.</p>
+    </div>
+  </dialog>
+
+  <script src="/alamar/alamar.js?v=1.2.0" defer></script>
+</body>
+</html>

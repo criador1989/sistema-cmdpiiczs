@@ -51,6 +51,7 @@ function obterNotaComportamento(aluno) {
   return numeroSeguro(
     aluno?.comportamento?.notaAtual ??
       aluno?.comportamento?.nota ??
+      (typeof aluno?.comportamento === 'number' ? aluno.comportamento : undefined) ??
       aluno?.notaComportamento ??
       aluno?.comportamentoNota,
     8
