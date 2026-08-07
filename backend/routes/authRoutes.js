@@ -20,6 +20,7 @@ try { Instituicao = require('../models/Instituicao'); } catch {}
 try { Aluno = require('../models/Aluno'); } catch {}
 
 const { autenticar } = require('../middleware/autenticacao');
+const { obterEstadoOnboardingProfessor } = require('../services/onboardingProfessor');
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -162,9 +163,8 @@ async function getDefaultInstituicao() {
   return null;
 }
 
-function getTenantFromReq(req) {
+function getExplicitTenantFromReq(req) {
   return (
-    req.tenantSlug ||
     req.query?.t ||
     req.query?.tenant ||
     req.body?.tenantSlug ||
@@ -172,6 +172,14 @@ function getTenantFromReq(req) {
     req.body?.t ||
     req.headers['x-tenant'] ||
     req.headers['x-tenant-slug'] ||
+    ''
+  );
+}
+
+function getTenantFromReq(req) {
+  return (
+    getExplicitTenantFromReq(req) ||
+    req.tenantSlug ||
     req.cookies?.tenant ||
     ''
   );
@@ -188,6 +196,95 @@ async function resolveInstituicaoOnlyIfTenantProvided(req) {
   return await findInstituicaoByTenant(t);
 }
 
+async function inferirInstituicoesDoLoginPortal(login) {
+  const loginNormalizado = normalizeLoginIdentifier(login);
+  const email = isValidEmail(loginNormalizado) ? normalizeEmail(loginNormalizado) : null;
+  const codigoAcesso = email ? null : normalizeCodigoAcesso(loginNormalizado);
+  const ids = new Set();
+
+  if (email) {
+    const usuarios = await Usuario.find({
+      email,
+      tipo: { $in: ['aluno', 'responsavel'] },
+      $or: [{ ativo: true }, { ativo: { $exists: false } }]
+    })
+      .select('instituicao tenantId')
+      .lean();
+
+    for (const usuario of usuarios) {
+      const id = String(usuario.instituicao || usuario.tenantId || '').trim();
+      if (id) ids.add(id);
+    }
+  } else if (Aluno && typeof Aluno.find === 'function' && codigoAcesso) {
+    const alunos = await Aluno.find({ codigoAcesso })
+      .select('instituicao tenantId')
+      .lean();
+
+    for (const aluno of alunos) {
+      const id = String(aluno.instituicao || aluno.tenantId || '').trim();
+      if (id) ids.add(id);
+    }
+  }
+
+  if (!ids.size || !Instituicao) return [];
+
+  return Instituicao.find({
+    _id: { $in: [...ids] },
+    ativo: { $ne: false },
+    ativa: { $ne: false }
+  })
+    .select('_id nome sigla slug ativo ativa categoriaInstituicao modulosAtivos associacaoConfig logoUrl')
+    .lean();
+}
+
+async function resolverInstituicaoLoginPortal(req, login) {
+  const tenantExplicito = String(getExplicitTenantFromReq(req) || '').trim();
+
+  if (tenantExplicito) {
+    return {
+      inst: await findInstituicaoByTenant(tenantExplicito),
+      explicito: true,
+      ambiguo: false,
+      instituicoes: []
+    };
+  }
+
+  const candidatas = await inferirInstituicoesDoLoginPortal(login);
+
+  if (candidatas.length === 1) {
+    return {
+      inst: candidatas[0],
+      explicito: false,
+      ambiguo: false,
+      instituicoes: candidatas
+    };
+  }
+
+  if (candidatas.length > 1) {
+    return {
+      inst: null,
+      explicito: false,
+      ambiguo: true,
+      instituicoes: candidatas
+    };
+  }
+
+  const tenantContexto = String(req.tenantSlug || req.cookies?.tenant || '').trim();
+  const instContexto = tenantContexto
+    ? await findInstituicaoByTenant(tenantContexto)
+    : null;
+
+  return {
+    inst:
+      instContexto ||
+      await findInstituicaoByTenant(DEFAULT_TENANT_SLUG) ||
+      await getDefaultInstituicao(),
+    explicito: false,
+    ambiguo: false,
+    instituicoes: []
+  };
+}
+
 function buildJwtPayload(usuario) {
   const payload = {
     id: String(usuario._id || usuario.id),
@@ -202,6 +299,7 @@ function buildJwtPayload(usuario) {
   if (usuario.alunoId) payload.alunoId = String(usuario.alunoId);
   if (usuario.escopoObservatorio) payload.escopoObservatorio = usuario.escopoObservatorio;
   if (usuario.acessosModulos) payload.acessosModulos = usuario.acessosModulos;
+  if (usuario.onboardingProfessor) payload.onboardingProfessor = usuario.onboardingProfessor;
 
   if (usuario.portal) {
     payload.portal = String(usuario.portal);
@@ -224,7 +322,7 @@ function buildAlunoPublicData(aluno) {
   };
 }
 
-function buildLoginResponse({ usuario, inst, token, aluno = null }) {
+function buildLoginResponse({ usuario, inst, token, aluno = null, onboarding = null }) {
   const tenantCookie = inst?.slug || DEFAULT_TENANT_SLUG;
 
   let redirecionar = '/painel.html';
@@ -252,6 +350,10 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
   const acessoAssociacao = usuario?.acessosModulos?.associacao;
   if (associacaoAtiva && (acessoAssociacao?.ativo === true || usuario.tipo === 'admin')) {
     redirecionar = '/associacao.html';
+  }
+
+  if (usuario.tipo === 'professor' && onboarding && onboarding.concluido === false) {
+    redirecionar = onboarding.redirecionar || '/primeiro-acesso-professor.html';
   }
 
   return {
@@ -286,6 +388,7 @@ function buildLoginResponse({ usuario, inst, token, aluno = null }) {
       associacaoAtiva
     } : undefined,
     tenant: tenantCookie,
+    onboarding,
     portal:
   usuario.portal ||
   (usuario.tipo === 'aluno'
@@ -354,7 +457,11 @@ async function doLoginForInstituicao(req, res, { email, senha, inst, portal = 'i
       .catch(() => null);
   }
 
-  return res.json(buildLoginResponse({ usuario, inst, token, aluno }));
+  const onboarding = usuario.tipo === 'professor'
+    ? await obterEstadoOnboardingProfessor(usuario, { instituicaoId, destinoPadrao: '/painel-professor.html' })
+    : null;
+
+  return res.json(buildLoginResponse({ usuario, inst, token, aluno, onboarding }));
 }
 
 async function doLoginAluno(req, res, { login, senha, inst }) {
@@ -635,10 +742,23 @@ router.post('/login-aluno', async (req, res) => {
   }
 
   try {
-    const inst =
-      await resolveInstituicaoOnlyIfTenantProvided(req) ||
-      await findInstituicaoByTenant(DEFAULT_TENANT_SLUG) ||
-      await getDefaultInstituicao();
+    const resolucao = await resolverInstituicaoLoginPortal(req, login);
+
+    if (resolucao.ambiguo) {
+      return res.status(409).json({
+        code: 'AMBIGUOUS_TENANT',
+        mensagem: 'Este acesso foi encontrado em mais de uma instituição. Abra o link específico enviado pela escola.',
+        instituicoes: resolucao.instituicoes.map(inst => ({
+          id: String(inst._id),
+          nome: inst.nome,
+          sigla: inst.sigla || null,
+          slug: inst.slug || null,
+          tenant: inst.slug || String(inst._id)
+        }))
+      });
+    }
+
+    const inst = resolucao.inst;
 
     if (!inst?._id) {
       return res.status(400).json({ mensagem: 'Instituição não encontrada para o portal do aluno.' });
@@ -705,7 +825,10 @@ router.post('/trocar-ambiente', autenticar, async (req, res) => {
     setAuthCookie(res, tokenNovo);
     setTenantCookie(res, inst.slug || String(inst._id));
 
-    const resposta = buildLoginResponse({ usuario, inst, token: tokenNovo });
+    const onboarding = usuario.tipo === 'professor'
+      ? await obterEstadoOnboardingProfessor(usuario, { instituicaoId: String(inst._id), destinoPadrao: '/painel-professor.html' })
+      : null;
+    const resposta = buildLoginResponse({ usuario, inst, token: tokenNovo, onboarding });
     return res.json({
       mensagem: 'Ambiente alterado com sucesso.',
       redirecionar: resposta.redirecionar,
@@ -1019,6 +1142,11 @@ router.post('/cadastrar', autenticar, async (req, res) => {
         emailVerificadoEm: new Date(),
         tokenVerificacaoHash: null,
         tokenVerificacaoExpiraEm: null,
+        onboardingProfessor: String(tipo || '').trim().toLowerCase() === 'professor' ? {
+          obrigarTrocaSenha: true,
+          senhaTemporariaDefinidaEm: new Date(),
+          senhaAlteradaEm: null,
+        } : undefined,
       });
 
     await novoUsuario.save();

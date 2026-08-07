@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Termos dos Professores | Axoriin</title>
+  <style>
+    :root{--bg:#06101d;--panel:#0d1e31;--line:rgba(160,200,240,.22);--text:#f6fbff;--muted:#a9bbcf;--blue:#38bdf8;--green:#34d399;--amber:#fbbf24;--red:#fb7185}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#020711,var(--bg));color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;padding:20px;color-scheme:dark}.shell{width:min(1180px,100%);margin:auto}.top{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}.top h1{margin:0}.muted{color:var(--muted)}a{color:inherit}.btn{display:inline-flex;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);text-decoration:none;font-weight:800;cursor:pointer;color:#fff}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.3)}.card{padding:16px}.card strong{font-size:1.8rem;display:block}.panel{margin-top:15px;padding:18px}.term{white-space:pre-wrap;max-height:280px;overflow:auto;padding:14px;background:rgba(0,0,0,.18);border-radius:12px;line-height:1.5}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.toolbar input{flex:1;min-width:220px;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:.82rem}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:.75rem;font-weight:900}.ok{background:rgba(52,211,153,.12);color:#baf7de}.wait{background:rgba(251,191,36,.12);color:#ffe29b}.danger{background:rgba(251,113,133,.12);color:#ffd1da}.msg{padding:13px;border:1px solid var(--line);border-radius:12px;color:var(--muted)}.hash{font-family:ui-monospace,Consolas,monospace;font-size:.75rem;max-width:240px;word-break:break-all}@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){body{padding:10px}.top{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div><h1>Termos de Compromisso</h1><div class="muted">Acompanhamento dos professores e comprovantes de aceite.</div></div>
+    <a class="btn" href="/gestao-sistema.html">← Gestão do sistema</a>
+  </header>
+
+  <section class="cards">
+    <div class="card"><span class="muted">Professores</span><strong id="total">—</strong></div>
+    <div class="card"><span class="muted">Concluídos</span><strong id="concluidos">—</strong></div>
+    <div class="card"><span class="muted">Aguardando senha</span><strong id="senha">—</strong></div>
+    <div class="card"><span class="muted">Aguardando termo</span><strong id="termoPendente">—</strong></div>
+    <div class="card"><span class="muted">Aceites armazenados</span><strong id="aceitesArmazenados">—</strong></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="tituloTermo">Termo vigente</h2>
+    <p class="muted" id="metaTermo"></p>
+    <div class="term" id="conteudoTermo">Carregando...</div>
+    <div class="toolbar"><a class="btn" target="_blank" href="/api/termos-professor/admin/termo-atual.pdf">Abrir modelo em PDF</a></div>
+  </section>
+
+  <section class="panel">
+    <h2>Situação atual dos professores</h2>
+    <div class="toolbar"><input id="busca" placeholder="Buscar professor ou e-mail"><button class="btn" id="atualizar">Atualizar</button></div>
+    <div id="mensagem" class="msg">Carregando...</div>
+    <div class="table-wrap"><table id="tabela" hidden><thead><tr><th>Professor</th><th>E-mail</th><th>Situação</th><th>Aceite vigente</th><th>Comprovante</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Histórico permanente de aceites</h2>
+    <p class="muted">Inclui versões anteriores do termo e permanece disponível mesmo após a publicação de uma nova versão.</p>
+    <div class="toolbar"><input id="buscaHistorico" placeholder="Buscar professor, versão ou código"><span class="muted" id="avisoLimite"></span></div>
+    <div id="mensagemHistorico" class="msg">Carregando...</div>
+    <div class="table-wrap"><table id="tabelaHistorico" hidden><thead><tr><th>Professor</th><th>Versão</th><th>Data do aceite</th><th>Código</th><th>Hash do termo</th><th>Comprovante</th></tr></thead><tbody></tbody></table></div>
+  </section>
+</main>
+<script>
+  let items = [];
+  let historico = [];
+  const el = (id) => document.getElementById(id);
+
+  function statusLabel(s) {
+    if (s === 'CONCLUIDO') return ['Concluído', 'ok'];
+    if (s === 'AGUARDANDO_TROCA_SENHA') return ['Aguardando troca de senha', 'danger'];
+    if (s === 'AGUARDANDO_TERMO') return ['Aguardando termo', 'wait'];
+    return ['Sem termo vigente', 'wait'];
+  }
+
+  function escapeHtml(v) {
+    return String(v || '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+    }[c]));
+  }
+
+  function renderAtual() {
+    const q = el('busca').value.trim().toLowerCase();
+    const list = items.filter((x) => !q || `${x.nome} ${x.email}`.toLowerCase().includes(q));
+    const tbody = el('tabela').querySelector('tbody');
+    tbody.innerHTML = '';
+
+    for (const x of list) {
+      const [label, cls] = statusLabel(x.situacao);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><strong>${escapeHtml(x.nome)}</strong></td>
+        <td>${escapeHtml(x.email || '')}</td>
+        <td><span class="badge ${cls}">${label}</span></td>
+        <td>${x.aceitoEm ? new Date(x.aceitoEm).toLocaleString('pt-BR') : '—'}</td>
+        <td>${x.aceiteId ? `<a class="btn" target="_blank" href="/api/termos-professor/admin/aceites/${encodeURIComponent(x.aceiteId)}/comprovante.pdf">PDF</a>` : '—'}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    el('mensagem').hidden = list.length > 0;
+    el('mensagem').textContent = list.length ? '' : (q ? 'Nenhum resultado.' : 'Nenhum professor encontrado.');
+    el('tabela').hidden = list.length === 0;
+  }
+
+  function renderHistorico() {
+    const q = el('buscaHistorico').value.trim().toLowerCase();
+    const list = historico.filter((x) => !q || `${x.nome} ${x.email} ${x.versao} ${x.comprovanteCodigo}`.toLowerCase().includes(q));
+    const tbody = el('tabelaHistorico').querySelector('tbody');
+    tbody.innerHTML = '';
+
+    for (const x of list) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><strong>${escapeHtml(x.nome)}</strong><br><span class="muted">${escapeHtml(x.email || '')}</span></td>
+        <td>${escapeHtml(x.versao || '—')}</td>
+        <td>${x.aceitoEm ? new Date(x.aceitoEm).toLocaleString('pt-BR') : '—'}</td>
+        <td>${escapeHtml(x.comprovanteCodigo || '—')}</td>
+        <td class="hash">${escapeHtml(x.conteudoHash || '—')}</td>
+        <td><a class="btn" target="_blank" href="/api/termos-professor/admin/aceites/${encodeURIComponent(x.id)}/comprovante.pdf">PDF</a></td>`;
+      tbody.appendChild(tr);
+    }
+
+    el('mensagemHistorico').hidden = list.length > 0;
+    el('mensagemHistorico').textContent = list.length ? '' : (q ? 'Nenhum aceite corresponde à busca.' : 'Ainda não há aceites armazenados.');
+    el('tabelaHistorico').hidden = list.length === 0;
+  }
+
+  async function carregar() {
+    el('mensagem').hidden = false;
+    el('mensagem').textContent = 'Carregando...';
+    el('mensagemHistorico').hidden = false;
+    el('mensagemHistorico').textContent = 'Carregando...';
+
+    try {
+      const response = await fetch('/api/termos-professor/admin/resumo', { credentials: 'include', cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.mensagem || 'Falha ao carregar.');
+
+      items = data.items || [];
+      historico = data.historico || [];
+      el('total').textContent = data.totais?.professores ?? 0;
+      el('concluidos').textContent = data.totais?.concluidos ?? 0;
+      el('senha').textContent = data.totais?.aguardandoSenha ?? 0;
+      el('termoPendente').textContent = data.totais?.aguardandoTermo ?? 0;
+      el('aceitesArmazenados').textContent = data.totais?.aceitesArmazenados ?? historico.length;
+      el('avisoLimite').textContent = data.historicoLimitado ? 'Exibindo os 1.000 aceites mais recentes.' : '';
+
+      if (data.termo) {
+        el('tituloTermo').textContent = data.termo.titulo;
+        el('metaTermo').textContent = `Versão ${data.termo.versao} • Publicado em ${new Date(data.termo.publicadoEm).toLocaleString('pt-BR')} • SHA-256 ${data.termo.conteudoHash}`;
+        el('conteudoTermo').textContent = data.termo.conteudo;
+      } else {
+        el('metaTermo').textContent = '';
+        el('conteudoTermo').textContent = 'Nenhum termo vigente foi configurado.';
+      }
+
+      renderAtual();
+      renderHistorico();
+    } catch (error) {
+      el('mensagem').hidden = false;
+      el('mensagem').textContent = error.message;
+      el('mensagemHistorico').hidden = false;
+      el('mensagemHistorico').textContent = error.message;
+      el('tabela').hidden = true;
+      el('tabelaHistorico').hidden = true;
+    }
+  }
+
+  el('busca').addEventListener('input', renderAtual);
+  el('buscaHistorico').addEventListener('input', renderHistorico);
+  el('atualizar').addEventListener('click', carregar);
+  carregar();
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ function usuarioAtivoFilter() {
 function selecionarUsuario(query, comSenha = false) {
   const campos = [
     'nome', 'email', 'tipo', 'instituicao', 'tenantId', 'ativo', 'emailVerificado',
-    'alunoId', 'portal', 'turmas', 'escopoObservatorio', 'acessosModulos',
+    'alunoId', 'portal', 'turmas', 'escopoObservatorio', 'acessosModulos', 'onboardingProfessor',
   ];
   if (comSenha) campos.push('+senha');
   return query.select(campos.join(' '));
@@ -139,7 +139,7 @@ async function listarAmbientesDoUsuario(usuarioId) {
   if (!mongoose.isValidObjectId(String(usuarioId || ''))) return [];
 
   const usuario = await Usuario.findById(usuarioId)
-    .select('nome email tipo instituicao tenantId ativo portal acessosModulos')
+    .select('nome email tipo instituicao tenantId ativo portal acessosModulos onboardingProfessor')
     .lean();
   if (!usuario || usuario.ativo === false) return [];
 
