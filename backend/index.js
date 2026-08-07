@@ -229,6 +229,7 @@ const logsRoutes = require('./routes/api/logs');
 const relatorioNotificacoesRoute = require('./routes/api/relatorioNotificacoes');
 const estatisticasRoutes = require('./routes/api/estatisticas');
 const estatisticasComportamentoRoutes = require('./routes/api/estatisticasComportamento');
+const alamarRoutes = require('./routes/api/alamar');
 const observacoesRoutes = require('./routes/api/observacoes');
 const observacoesProfessoresRoutes = require('./routes/api/observacoesProfessores');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
@@ -268,6 +269,8 @@ const livroOcorrenciasRoutes = require('./routes/api/livroOcorrencias');
 const siteAdminRoutes = require('./routes/api/siteAdmin');
 const sitePublicoRoutes = require('./routes/api/sitePublico');
 const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
+const termosProfessorRoutes = require('./routes/api/termosProfessor');
+const professorOnboardingGuard = require('./middleware/professorOnboardingGuard');
 
 // Axoriin AssociaÃ§Ãµes â€” mÃ³dulo multi-tenant
 const associacaoRoutes = require('./routes/api/associacao');
@@ -282,6 +285,8 @@ try { masterInstituicoesRoutes = require('./routes/api/masterInstituicoes'); } c
    ========================= */
 const authRoutes = require('./routes/authRoutes');
 app.use('/auth', authRoutes);
+app.use('/api/termos-professor', termosProfessorRoutes);
+app.use(professorOnboardingGuard);
 
 app.use('/api', pdfRoutes);
 
@@ -585,7 +590,8 @@ function buildProfessorGuard(publicRoot) {
     '/gestao-sistema.html',
     '/baile-formatura.html',
     '/livro-ocorrencias.html',
-    '/configuracao-documentos.html'
+    '/configuracao-documentos.html',
+    '/termos-professores.html'
   ]);
 
   const blockedPrefixes = [
@@ -616,6 +622,7 @@ function buildProfessorGuard(publicRoot) {
     '/api/baile-controle',
     '/configuracao-documentos',
     '/api/configuracao-documentos',
+    '/api/termos-professor/admin',
   ];
 
   const alwaysPublic = new Set([
@@ -822,6 +829,7 @@ mountIf('/api/controle-notificacoes', controleNotificacoesRoutes);
 mountIf('/api', relatorioNotificacoesRoute);
 mountIf('/api/estatisticas', estatisticasRoutes);
 mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, autenticar);
+mountIf('/api/alamar', alamarRoutes, autenticar);
 mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/observacoes-professores', observacoesProfessoresRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);

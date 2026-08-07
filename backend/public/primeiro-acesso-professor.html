@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <title>Primeiro acesso do professor | Axoriin</title>
+  <style>
+    :root{--bg:#06101d;--card:#0d1e31;--line:rgba(160,200,240,.22);--text:#f6fbff;--muted:#a9bbcf;--red:#a51f24;--red2:#d2383e;--blue:#38bdf8;--green:#34d399;--danger:#fb7185}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 10% 0%,rgba(165,31,36,.28),transparent 32rem),radial-gradient(circle at 100% 100%,rgba(56,189,248,.15),transparent 36rem),linear-gradient(145deg,#020711,var(--bg));color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;padding:22px;color-scheme:dark}
+    .shell{width:min(920px,100%);margin:auto}.top{display:flex;align-items:center;gap:14px;margin-bottom:16px}.logo{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,var(--red),var(--red2));font-size:1.55rem;box-shadow:0 16px 34px rgba(165,31,36,.25)}h1{margin:0;font-size:clamp(1.35rem,3vw,2rem)}.sub{margin:4px 0 0;color:var(--muted)}
+    .card{background:linear-gradient(180deg,rgba(17,38,61,.98),rgba(7,21,36,.98));border:1px solid var(--line);border-radius:24px;box-shadow:0 28px 70px rgba(0,0,0,.46);overflow:hidden}.steps{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}.step{padding:16px 18px;color:var(--muted);font-weight:800}.step.active{color:#fff;background:rgba(56,189,248,.08)}.step.done{color:#baf7de;background:rgba(52,211,153,.08)}.body{padding:22px}.panel{display:none}.panel.active{display:block}.intro{color:var(--muted);line-height:1.55;margin:0 0 18px}.grid{display:grid;gap:13px}.field label{display:block;margin-bottom:6px;font-weight:800;font-size:.9rem}.field input{width:100%;padding:13px 14px;border-radius:13px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;font:inherit;outline:none}.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(56,189,248,.13)}.policy{padding:13px;border-radius:13px;background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.2);color:var(--muted);font-size:.9rem;line-height:1.5}.term{max-height:440px;overflow:auto;padding:18px;border:1px solid var(--line);border-radius:15px;background:rgba(0,0,0,.2);white-space:pre-wrap;line-height:1.58;font-family:Georgia,serif;color:#edf5fb}.checks{display:grid;gap:11px;margin-top:15px}.check{display:flex;gap:10px;align-items:flex-start;color:#dce8f2;line-height:1.45}.check input{margin-top:4px;transform:scale(1.2)}button,.btn{border:0;border-radius:13px;padding:13px 16px;font:inherit;font-weight:900;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:linear-gradient(90deg,var(--red),var(--red2));color:#fff}.secondary{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.28);color:#dff6ff}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.msg{display:none;margin-bottom:15px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);line-height:1.45}.msg.show{display:block}.msg.error{color:#ffd4db;background:rgba(251,113,133,.09);border-color:rgba(251,113,133,.35)}.msg.ok{color:#c9fae6;background:rgba(52,211,153,.09);border-color:rgba(52,211,153,.35)}.loading{opacity:.65;pointer-events:none}.success{text-align:center;padding:32px 10px}.success .icon{font-size:3rem}.success h2{margin:10px 0}.meta{color:var(--muted)}
+    @media(max-width:620px){body{padding:10px}.steps{grid-template-columns:1fr}.body{padding:16px}.term{max-height:360px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><div class="logo">🦉</div><div><h1>Primeiro acesso do professor</h1><p class="sub" id="identificacao">Verificando sua conta...</p></div></header>
+    <section class="card" id="card">
+      <div class="steps"><div class="step" id="stepSenha">1. Alterar senha</div><div class="step" id="stepTermo">2. Aceitar termo</div></div>
+      <div class="body">
+        <div class="msg" id="msg"></div>
+        <section class="panel" id="painelSenha">
+          <p class="intro">Por segurança, sua senha atual deve ser substituída por uma senha pessoal antes de acessar o Axoriin.</p>
+          <form id="formSenha" class="grid">
+            <div class="field"><label for="senhaAtual">Senha atual</label><input id="senhaAtual" type="password" autocomplete="current-password" required></div>
+            <div class="field"><label for="novaSenha">Nova senha</label><input id="novaSenha" type="password" autocomplete="new-password" required></div>
+            <div class="field"><label for="confirmarSenha">Confirme a nova senha</label><input id="confirmarSenha" type="password" autocomplete="new-password" required></div>
+            <div class="policy">Use pelo menos 8 caracteres, com letra maiúscula, letra minúscula e número. Não reutilize a senha atual e não compartilhe sua senha.</div>
+            <div class="actions"><button class="primary" type="submit">Salvar nova senha</button></div>
+          </form>
+        </section>
+        <section class="panel" id="painelTermo">
+          <p class="intro">Leia integralmente o documento. O aceite ficará registrado com a versão, data, horário, conta, instituição e dados técnicos da sessão.</p>
+          <h2 id="termoTitulo">Termo de Compromisso</h2><p class="meta" id="termoMeta"></p>
+          <div class="term" id="termoConteudo"></div>
+          <form id="formTermo">
+            <div class="checks">
+              <label class="check"><input id="declaracaoLeitura" type="checkbox"><span>Declaro que li integralmente o Termo de Compromisso apresentado.</span></label>
+              <label class="check"><input id="declaracaoCompromisso" type="checkbox"><span>Declaro que compreendi e assumo o compromisso de cumprir suas disposições.</span></label>
+            </div>
+            <div class="actions"><button class="primary" type="submit">Aceitar e concluir</button></div>
+          </form>
+        </section>
+        <section class="panel success" id="painelSucesso"><div class="icon">✅</div><h2>Primeiro acesso concluído</h2><p class="meta">Sua senha foi alterada e o aceite do termo ficou armazenado no Axoriin.</p><div class="actions" style="justify-content:center"><a class="btn secondary" id="comprovante" target="_blank" rel="noopener">Abrir comprovante</a><a class="btn primary" href="/painel-professor.html">Entrar no painel</a></div></section>
+      </div>
+    </section>
+  </main>
+  <script>
+    const el=id=>document.getElementById(id);let estado=null;
+    function mensagem(texto,tipo='error'){const m=el('msg');m.textContent=texto;m.className=`msg show ${tipo}`}
+    function limparMensagem(){el('msg').className='msg';el('msg').textContent=''}
+    function loading(on){el('card').classList.toggle('loading',on)}
+    function mostrar(id){['painelSenha','painelTermo','painelSucesso'].forEach(x=>el(x).classList.toggle('active',x===id))}
+    function pintarEtapas(){el('stepSenha').className='step '+(estado?.precisaTrocarSenha?'active':'done');el('stepTermo').className='step '+(!estado?.precisaTrocarSenha&&estado?.precisaAceitarTermo?'active':(!estado?.precisaAceitarTermo?'done':''))}
+    async function carregar(){limparMensagem();loading(true);try{const r=await fetch('/api/termos-professor/status',{credentials:'include',cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.mensagem||'Sessão inválida.');estado=data;el('identificacao').textContent=`${data.professor?.nome||'Professor'} • ${data.professor?.email||''}`;pintarEtapas();if(data.concluido){mostrar('painelSucesso');if(data.aceite?.id)el('comprovante').href=`/api/termos-professor/me/comprovante.pdf?aceite=${encodeURIComponent(data.aceite.id)}`;return}if(data.precisaTrocarSenha){mostrar('painelSenha');return}if(data.precisaAceitarTermo&&data.termo){el('termoTitulo').textContent=data.termo.titulo;el('termoMeta').textContent=`Versão ${data.termo.versao} • SHA-256 ${data.termo.conteudoHash}`;el('termoConteudo').textContent=data.termo.conteudo||'';mostrar('painelTermo');return}location.href='/painel-professor.html'}catch(e){mensagem(e.message);setTimeout(()=>location.href='/login.html',2500)}finally{loading(false)}}
+    el('formSenha').addEventListener('submit',async e=>{e.preventDefault();limparMensagem();loading(true);try{const body={senhaAtual:el('senhaAtual').value,novaSenha:el('novaSenha').value,confirmarSenha:el('confirmarSenha').value};const r=await fetch('/api/termos-professor/alterar-senha',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.mensagem||'Não foi possível alterar a senha.');mensagem(data.mensagem,'ok');await carregar()}catch(e){mensagem(e.message)}finally{loading(false)}});
+    el('formTermo').addEventListener('submit',async e=>{e.preventDefault();limparMensagem();loading(true);try{const body={declaracaoLeitura:el('declaracaoLeitura').checked,declaracaoCompromisso:el('declaracaoCompromisso').checked};const r=await fetch('/api/termos-professor/aceitar',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.mensagem||'Não foi possível registrar o aceite.');estado=data.onboarding;mostrar('painelSucesso');pintarEtapas();el('comprovante').href=data.aceite?.comprovanteUrl||'/api/termos-professor/me/comprovante.pdf';mensagem(data.mensagem,'ok')}catch(e){mensagem(e.message)}finally{loading(false)}});
+    carregar();
+  </script>
+</body>
+</html>

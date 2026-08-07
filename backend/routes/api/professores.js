@@ -5,7 +5,6 @@ const Usuario = require('../../models/Usuario');
 const { autenticar } = require('../../middleware/autenticacao');
 const qrcode = require('qrcode');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const { validatePasswordStrength } = require('../../utils/passwordPolicy');
 
 const SECRET = process.env.JWT_SECRET || 'segredo_padrao';
@@ -70,10 +69,21 @@ router.post('/', autenticar, async (req, res) => {
       return res.status(400).json({ mensagem: check.message || 'Senha inválida.' });
     }
 
-    const hashed = await bcrypt.hash(senha, 10);
     const tokenAcesso = require('crypto').randomBytes(16).toString('hex');
 
-    const novo = new Usuario({ nome, email, senha: hashed, instituicao, tipo: 'professor', tokenAcesso });
+    const novo = new Usuario({
+      nome,
+      email: String(email).trim().toLowerCase(),
+      senha,
+      instituicao,
+      tipo: 'professor',
+      tokenAcesso,
+      onboardingProfessor: {
+        obrigarTrocaSenha: true,
+        senhaTemporariaDefinidaEm: new Date(),
+        senhaAlteradaEm: null,
+      },
+    });
     await novo.save();
 
     res.status(201).json({ mensagem: 'Professor cadastrado com sucesso.' });

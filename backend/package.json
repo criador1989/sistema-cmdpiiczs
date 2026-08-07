@@ -12,7 +12,12 @@
     "test:lembretes": "node scripts/testar-regras-lembretes.js",
     "test:indicadores": "node scripts/testar-indicadores-financeiros.js",
     "arena:importar-6ano": "node scripts/importar-questoes-arena-6ano.js",
-    "arena:validar": "node scripts/validar-arena-questoes.js"
+    "arena:validar": "node scripts/validar-arena-questoes.js",
+    "test:whatsapp-normalizacao": "node scripts/testar-normalizacao-whatsapp.js",
+    "test:whatsapp": "node teste-whatsapp.js",
+    "migrar:whatsapp": "node scripts/migrar-whatsapp-alunos.js",
+    "termos:configurar": "node scripts/configurar-termo-professores.js",
+    "termos:verificar": "node scripts/verificar-termo-professores.js"
   },
   "keywords": [
     "CMDPII",

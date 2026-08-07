@@ -58,6 +58,15 @@ const usuarioSchema = new Schema(
       },
     },
 
+    whatsapp: {
+      type: String,
+      trim: true,
+      default: null,
+      validate: {
+        validator: (v) => !v || /^\+55\d{10,11}$/.test(String(v)),
+        message: 'WhatsApp deve estar no formato internacional brasileiro, por exemplo +5568999999999.',
+      },
+    },
     senha: {
       type: String,
       required: [true, 'Senha é obrigatória.'],
@@ -89,6 +98,15 @@ const usuarioSchema = new Schema(
       enum: ['institucional', 'aluno', 'responsavel'],
       default: 'institucional',
       index: true,
+    },
+
+
+    arena: {
+      avatar: {
+        type: String,
+        enum: ['cadete-azul', 'exploradora'],
+        default: 'cadete-azul',
+      },
     },
 
     /**
@@ -223,6 +241,12 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
+    onboardingProfessor: {
+      obrigarTrocaSenha: { type: Boolean, default: false, index: true },
+      senhaTemporariaDefinidaEm: { type: Date, default: null },
+      senhaAlteradaEm: { type: Date, default: null },
+    },
+
     ativo: {
       type: Boolean,
       default: true,
@@ -247,6 +271,7 @@ usuarioSchema.index({ tenantId: 1, portal: 1, tipo: 1 });
 usuarioSchema.index({ instituicao: 1, alunoId: 1 }, { sparse: true });
 usuarioSchema.index({ tenantId: 1, alunoId: 1 }, { sparse: true });
 usuarioSchema.index({ tenantId: 1, 'acessosModulos.associacao.ativo': 1, 'acessosModulos.associacao.perfil': 1 });
+usuarioSchema.index({ instituicao: 1, tipo: 1, 'onboardingProfessor.obrigarTrocaSenha': 1 });
 usuarioSchema.index({
   tipo: 1,
   'escopoObservatorio.nivel': 1,

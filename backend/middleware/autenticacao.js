@@ -67,12 +67,13 @@ async function autenticar(req, res, next) {
       portal: payload.portal || null,
       escopoObservatorio: payload.escopoObservatorio || null,
       acessosModulos: payload.acessosModulos || null,
+      onboardingProfessor: payload.onboardingProfessor || null,
       vinculoId: payload.vinculoId || null,
     };
 
     if (Usuario?.findById) {
       const usuarioDb = await Usuario.findById(id)
-        .select('email tipo instituicao tenantId nome turmas alunoId portal escopoObservatorio acessosModulos ativo')
+        .select('email tipo instituicao tenantId nome turmas alunoId portal escopoObservatorio acessosModulos onboardingProfessor ativo')
         .lean()
         .catch(() => null);
 
@@ -122,6 +123,7 @@ async function autenticar(req, res, next) {
       escopoObservatorio: efetivo.escopoObservatorio || null,
       acessosModulos: efetivo.acessosModulos || null,
       associacaoAcesso: efetivo.acessosModulos?.associacao || null,
+      onboardingProfessor: efetivo.onboardingProfessor || null,
       vinculoId: efetivo.vinculoId || payload.vinculoId || null,
       identidadePrimariaInstituicao: efetivo.identidadePrimariaInstituicao || null,
     };
