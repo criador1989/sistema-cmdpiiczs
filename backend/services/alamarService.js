@@ -7,12 +7,14 @@ const Aluno = require('../models/Aluno');
 const Notificacao = require('../models/Notificacao');
 const ConfiguracaoDisciplinar = require('../models/ConfiguracaoDisciplinar');
 const AlamarProcesso = require('../models/AlamarProcesso');
+const AlamarLote = require('../models/AlamarLote');
 const AlamarResultado = require('../models/AlamarResultado');
 const AlamarVinculoSimaed = require('../models/AlamarVinculoSimaed');
 const calcularNotaTSMD = require('../utils/calculoNota');
 const { normalizarValorPorNatureza } = require('../utils/recalculoComportamento');
-const { normalizarNome, normalizarTurma, normalizarTexto } = require('../utils/alamarImport');
+const { normalizarNome, normalizarTurma, normalizarTexto, processarRelatoriosPdf, classificarGrupoTurmaAlamar } = require('../utils/alamarImport');
 const { avaliarAlunoAlamar, normalizarRegras, normalizarChaveComponente, arredondar } = require('../utils/alamarRules');
+const { normalizarListaComponentesExcluidos, normalizarConfiguracaoComponentesLote, resolverConfiguracaoComponentesTurma } = require('../utils/alamarBatchConfig');
 
 function fimDoDia(value) {
   const date = new Date(value);
@@ -260,8 +262,11 @@ async function atualizarPosicoesEProcesso(processoId) {
   return totais;
 }
 
-async function criarProcessoImportacao({ instituicaoId, usuarioId, arquivo, arquivos, importacao, anoLetivo, semestre, dataReferencia, regras }) {
+
+
+async function criarProcessoImportacao({ instituicaoId, usuarioId, arquivo, arquivos, importacao, anoLetivo, semestre, dataReferencia, regras, loteId = null, modoImportacao = 'individual', turmaApuracao = '', componentesExcluidos = [] }) {
   const cfg = normalizarRegras(regras);
+  const componentesExcluidosNormalizados = normalizarListaComponentesExcluidos(componentesExcluidos);
   const listaArquivos = (Array.isArray(arquivos) && arquivos.length ? arquivos : [arquivo]).filter(Boolean);
   if (!listaArquivos.length) throw new Error('Nenhum arquivo foi recebido para registrar a apuração.');
 
@@ -273,6 +278,9 @@ async function criarProcessoImportacao({ instituicaoId, usuarioId, arquivo, arqu
     anoLetivo,
     semestre,
     dataReferencia,
+    lote: loteId || null,
+    modoImportacao: loteId ? 'lote' : modoImportacao,
+    turmaApuracao: String(turmaApuracao || '').trim(),
     regras: cfg,
     arquivo: {
       nomeOriginal: nomesOriginais.join(' + '),
@@ -288,7 +296,7 @@ async function criarProcessoImportacao({ instituicaoId, usuarioId, arquivo, arqu
       bimestresDetectados: importacao.bimestresDetectados || [],
     },
     avisosImportacao: importacao.avisos || [],
-    componentesExcluidos: [],
+    componentesExcluidos: componentesExcluidosNormalizados,
     criadoPor: usuarioId,
     atualizadoPor: usuarioId,
   });
@@ -305,13 +313,176 @@ async function criarProcessoImportacao({ instituicaoId, usuarioId, arquivo, arqu
     vinculo,
     notaDisc: vinculo.aluno ? notasDisciplinares.get(String(vinculo.aluno._id)) : null,
     regras: cfg,
-    componentesExcluidos: processo.componentesExcluidos || [],
+    componentesExcluidos: componentesExcluidosNormalizados,
   }));
 
   if (documentos.length) await AlamarResultado.insertMany(documentos, { ordered: false });
   const totais = await atualizarPosicoesEProcesso(processo._id);
   processo.totais = totais;
   return processo;
+}
+
+
+async function atualizarTotaisLote(loteId) {
+  if (!loteId) return null;
+  const lote = await AlamarLote.findById(loteId);
+  if (!lote) return null;
+
+  const processos = await AlamarProcesso.find({ lote: lote._id })
+    .select('_id turmaApuracao totais status')
+    .lean();
+
+  const totais = {
+    arquivos: Array.isArray(lote.arquivos) ? lote.arquivos.length : 0,
+    turmas: processos.length,
+    importados: 0,
+    aptos: 0,
+    naoAptos: 0,
+    pendentes: 0,
+    vinculadosAutomaticamente: 0,
+    vinculadosManualmente: 0,
+    naoLocalizados: 0,
+  };
+
+  for (const processo of processos) {
+    const p = processo.totais || {};
+    totais.importados += Number(p.importados || 0);
+    totais.aptos += Number(p.aptos || 0);
+    totais.naoAptos += Number(p.naoAptos || 0);
+    totais.pendentes += Number(p.pendentes || 0);
+    totais.vinculadosAutomaticamente += Number(p.vinculadosAutomaticamente || 0);
+    totais.vinculadosManualmente += Number(p.vinculadosManualmente || 0);
+    totais.naoLocalizados += Number(p.naoLocalizados || 0);
+  }
+
+  lote.turmas = (lote.turmas || []).map(item => {
+    const processo = processos.find(p => String(p._id) === String(item.processo || ''));
+    if (!processo) return item;
+    item.status = 'PROCESSADO';
+    item.mensagem = processo.status === 'homologado' ? 'Turma homologada.' : 'Turma processada.';
+    return item;
+  });
+  lote.totais = totais;
+  await lote.save();
+  return totais;
+}
+
+function mapearArquivosPorNome(arquivos = []) {
+  const map = new Map();
+  for (const arquivo of arquivos) {
+    const nome = String(arquivo?.originalname || '');
+    const lista = map.get(nome) || [];
+    lista.push(arquivo);
+    map.set(nome, lista);
+  }
+  return map;
+}
+
+async function criarLoteImportacao({ instituicaoId, usuarioId, arquivos, analise, anoLetivo, semestre, dataReferencia, regras, configuracaoComponentes = {} }) {
+  if (!analise?.valido) {
+    const detalhe = (analise?.erros || []).join(' | ');
+    throw new Error(`O lote possui inconsistências e não pode ser processado.${detalhe ? ` ${detalhe}` : ''}`);
+  }
+
+  const cfg = normalizarRegras(regras);
+  const configComponentes = normalizarConfiguracaoComponentesLote(configuracaoComponentes);
+  const arquivosPorNome = mapearArquivosPorNome(arquivos);
+  const relatorios = Array.isArray(analise.relatorios) ? analise.relatorios : [];
+  const metadadosArquivos = arquivos.map((arquivo, index) => {
+    const relatorio = relatorios[index] || relatorios.find(item => item.nomeArquivo === arquivo.originalname) || {};
+    return {
+      nomeOriginal: arquivo.originalname || '',
+      mimeType: arquivo.mimetype || '',
+      tamanhoBytes: Number(arquivo.size || arquivo.buffer?.length || 0),
+      sha256: hashArquivo(arquivo.buffer || Buffer.alloc(0)),
+      turma: relatorio.turma || '',
+      turmaNormalizada: normalizarTurma(relatorio.turma || ''),
+      bimestre: Number(relatorio.bimestre) || null,
+    };
+  });
+
+  const lote = await AlamarLote.create({
+    instituicao: instituicaoId,
+    tenantId: instituicaoId,
+    anoLetivo,
+    semestre,
+    dataReferencia,
+    status: 'processado',
+    versao: 1,
+    arquivos: metadadosArquivos,
+    turmas: analise.turmas.map(grupo => ({
+      turma: grupo.turma,
+      turmaNormalizada: grupo.turmaNormalizada,
+      bimestres: grupo.bimestres,
+      arquivos: grupo.arquivos,
+      status: grupo.status,
+      mensagem: grupo.mensagem,
+      grupoConfiguracao: classificarGrupoTurmaAlamar(grupo.turma),
+      componentesExcluidos: [],
+    })),
+    configuracaoComponentes: configComponentes,
+    avisos: analise.avisos || [],
+    criadoPor: usuarioId,
+    atualizadoPor: usuarioId,
+  });
+
+  const processosCriados = [];
+  try {
+    for (const grupo of analise.turmas) {
+      if (grupo.status !== 'PRONTO') continue;
+      const importacao = processarRelatoriosPdf({ relatorios: grupo.relatorios, semestre: Number(semestre) });
+      const configuracaoTurma = resolverConfiguracaoComponentesTurma({
+        configuracaoComponentes: configComponentes,
+        turma: grupo.turma,
+        importacao,
+      });
+      const arquivosGrupo = [];
+      for (const nome of grupo.arquivos) {
+        const candidatos = arquivosPorNome.get(nome) || [];
+        if (candidatos.length) arquivosGrupo.push(candidatos.shift());
+      }
+      if (arquivosGrupo.length !== grupo.arquivos.length) {
+        throw new Error(`Não foi possível relacionar todos os arquivos da turma ${grupo.turma} ao lote recebido.`);
+      }
+
+      const processo = await criarProcessoImportacao({
+        instituicaoId,
+        usuarioId,
+        arquivos: arquivosGrupo,
+        importacao,
+        anoLetivo,
+        semestre,
+        dataReferencia,
+        regras: cfg,
+        loteId: lote._id,
+        modoImportacao: 'lote',
+        turmaApuracao: grupo.turma,
+        componentesExcluidos: configuracaoTurma.componentesExcluidos,
+      });
+      processosCriados.push(processo._id);
+
+      const item = lote.turmas.find(t => t.turmaNormalizada === grupo.turmaNormalizada);
+      if (item) {
+        item.processo = processo._id;
+        item.status = 'PROCESSADO';
+        item.mensagem = 'Turma processada com sucesso.';
+        item.grupoConfiguracao = configuracaoTurma.grupoConfiguracao;
+        item.componentesExcluidos = configuracaoTurma.componentesExcluidos;
+      }
+    }
+
+    await lote.save();
+    const totais = await atualizarTotaisLote(lote._id);
+    lote.totais = totais;
+    return { lote, processos: processosCriados };
+  } catch (error) {
+    if (processosCriados.length) {
+      await AlamarResultado.deleteMany({ processo: { $in: processosCriados } }).catch(() => {});
+      await AlamarProcesso.deleteMany({ _id: { $in: processosCriados } }).catch(() => {});
+    }
+    await AlamarLote.deleteOne({ _id: lote._id }).catch(() => {});
+    throw error;
+  }
 }
 
 async function reprocessarProcesso({ processo, usuarioId }) {
@@ -457,8 +628,12 @@ module.exports = {
   vincularAlunoImportado,
   calcularNotasDisciplinaresEmLote,
   criarProcessoImportacao,
+  criarLoteImportacao,
   atualizarPosicoesEProcesso,
+  atualizarTotaisLote,
   reprocessarProcesso,
   vincularResultado,
   configurarComponentesProcesso,
+  normalizarConfiguracaoComponentesLote,
+  resolverConfiguracaoComponentesTurma,
 };

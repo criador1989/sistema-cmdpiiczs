@@ -14,6 +14,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+from concurrent.futures import ProcessPoolExecutor
 
 try:
     import pdfplumber
@@ -320,7 +321,13 @@ def main() -> int:
     if not args.arquivos:
         raise ValueError("Nenhum PDF foi informado.")
 
-    relatorios = [extrair_pdf(Path(arquivo)) for arquivo in args.arquivos]
+    caminhos = [Path(arquivo) for arquivo in args.arquivos]
+    if len(caminhos) >= 4:
+        trabalhadores = min(4, len(caminhos))
+        with ProcessPoolExecutor(max_workers=trabalhadores) as executor:
+            relatorios = list(executor.map(extrair_pdf, caminhos))
+    else:
+        relatorios = [extrair_pdf(caminho) for caminho in caminhos]
     print(
         json.dumps(
             {
