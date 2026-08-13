@@ -4,6 +4,10 @@ const state = {
   tenant: new URLSearchParams(location.search).get('t') || localStorage.getItem('tenantSlug') || 'cmdpii',
   processos: [],
   processo: null,
+  lotes: [],
+  lote: null,
+  batchAnalysis: null,
+  batchComponentConfig: null,
   resultados: [],
   resultadoVinculo: null,
 };
@@ -113,7 +117,7 @@ function renderProcessList() {
   container.innerHTML = state.processos.map(item => `
     <article class="process-item ${state.processo?._id === item._id ? 'active' : ''}" data-process-id="${item._id}">
       <div class="process-item-top">
-        <strong>${item.anoLetivo} · ${item.semestre}º semestre</strong>
+        <strong>${item.turmaApuracao ? `${escapeHtml(item.turmaApuracao)} · ` : ''}${item.anoLetivo} · ${item.semestre}º semestre</strong>
         <span class="status-mini">${item.status}</span>
       </div>
       <small>${item.arquivo?.nomeOriginal || 'Arquivo sem nome'} · ${formatDate(item.createdAt)}</small>
@@ -130,6 +134,428 @@ async function loadProcesses(selectLatest = false) {
   state.processos = payload.processos || [];
   renderProcessList();
   if (selectLatest && state.processos[0]) await selectProcess(state.processos[0]._id);
+}
+
+
+function renderBatchList() {
+  const container = byId('batchList');
+  if (!container) return;
+  if (!state.lotes.length) {
+    container.innerHTML = '<div class="empty">Nenhum lote encontrado.</div>';
+    return;
+  }
+  container.innerHTML = state.lotes.map(item => `
+    <article class="process-item batch-item ${state.lote?._id === item._id ? 'active' : ''}" data-batch-id="${item._id}">
+      <div class="process-item-top">
+        <strong>${item.anoLetivo} · ${item.semestre}º semestre</strong>
+        <span class="status-mini">${escapeHtml(item.status)}</span>
+      </div>
+      <small>${item.totais?.turmas || item.turmas?.length || 0} turmas · ${item.totais?.importados || 0} alunos</small>
+      <small>${item.totais?.aptos || 0} aptos · ${item.totais?.pendentes || 0} pendentes · ${formatDate(item.createdAt)}</small>
+    </article>
+  `).join('');
+  container.querySelectorAll('[data-batch-id]').forEach(el => {
+    el.addEventListener('click', () => selectLote(el.dataset.batchId).catch(error => toast(error.message, 'error')));
+  });
+}
+
+async function loadLotes(selectLatest = false) {
+  const payload = await fetchJson('/api/alamar/lotes');
+  state.lotes = payload.lotes || [];
+  renderBatchList();
+  if (selectLatest && state.lotes[0]) await selectLote(state.lotes[0]._id);
+}
+
+function batchStatusLabel(status) {
+  return ({ PRONTO: 'Pronto', INCOMPLETO: 'Incompleto', DUPLICADO: 'Duplicado', PROCESSADO: 'Processado', ERRO: 'Erro' })[status] || status || '—';
+}
+
+
+function batchGroupTitle(group) {
+  return ({
+    fundamental: 'Ensino Fundamental · 6º ao 9º ano',
+    medio: 'Ensino Médio · 1ª a 3ª série',
+    outros: 'Outras turmas',
+  })[group] || group;
+}
+
+function batchGroupDescription(group) {
+  return ({
+    fundamental: 'A seleção abaixo será aplicada às turmas do 6º ao 9º ano.',
+    medio: 'A seleção abaixo será aplicada às turmas da 1ª à 3ª série.',
+    outros: 'A seleção abaixo será aplicada às turmas que não se enquadram nos grupos anteriores.',
+  })[group] || '';
+}
+
+function initializeBatchComponentConfig() {
+  state.batchComponentConfig = {
+    grupos: { fundamental: [], medio: [], outros: [] },
+    porTurma: {},
+  };
+}
+
+function batchTurmasReady() {
+  return (state.batchAnalysis?.turmas || []).filter(item => item.status === 'PRONTO');
+}
+
+function batchComponentsForGroup(group) {
+  const map = new Map();
+  batchTurmasReady()
+    .filter(item => (item.grupoConfiguracao || 'outros') === group)
+    .forEach(item => {
+      (item.componentes || []).forEach(component => {
+        if (component?.chave && !map.has(component.chave)) map.set(component.chave, component.nome || component.chave);
+      });
+    });
+  return [...map.entries()].map(([chave, nome]) => ({ chave, nome }));
+}
+
+function batchEffectiveExcluded(item) {
+  const config = state.batchComponentConfig || { grupos: {}, porTurma: {} };
+  const turmaKey = item?.turmaNormalizada || '';
+  if (turmaKey && Object.prototype.hasOwnProperty.call(config.porTurma || {}, turmaKey)) {
+    return [...(config.porTurma[turmaKey] || [])];
+  }
+  return [...(config.grupos?.[item?.grupoConfiguracao || 'outros'] || [])];
+}
+
+function setBatchGroupExcluded(group, excluded) {
+  if (!state.batchComponentConfig) initializeBatchComponentConfig();
+  state.batchComponentConfig.grupos[group] = [...new Set(excluded || [])];
+}
+
+function setBatchOverride(turmaKey, excluded) {
+  if (!state.batchComponentConfig) initializeBatchComponentConfig();
+  state.batchComponentConfig.porTurma[turmaKey] = [...new Set(excluded || [])];
+}
+
+function validateBatchComponentConfig(showToast = true) {
+  const turmas = batchTurmasReady();
+  for (const item of turmas) {
+    const componentes = (item.componentes || []).map(component => component.chave).filter(Boolean);
+    const excluidos = new Set(batchEffectiveExcluded(item));
+    const considerados = componentes.filter(chave => !excluidos.has(chave));
+    if (componentes.length && !considerados.length) {
+      if (showToast) toast(`A turma ${item.turma} ficou sem nenhum componente selecionado.`, 'error');
+      return false;
+    }
+  }
+  return true;
+}
+
+function batchConfigPayload() {
+  return state.batchComponentConfig || {
+    grupos: { fundamental: [], medio: [], outros: [] },
+    porTurma: {},
+  };
+}
+
+function updateBatchComponentSummary() {
+  const el = byId('batchComponentSummary');
+  if (!el || !state.batchAnalysis?.valido) return;
+  const turmas = batchTurmasReady();
+  const fundamental = turmas.filter(item => item.grupoConfiguracao === 'fundamental').length;
+  const medio = turmas.filter(item => item.grupoConfiguracao === 'medio').length;
+  const excecoes = Object.keys(state.batchComponentConfig?.porTurma || {}).length;
+  const geoFund = (state.batchComponentConfig?.grupos?.fundamental || []).includes('geografia');
+  const partes = [];
+  if (fundamental) partes.push(`${fundamental} Fundamental${geoFund ? ' · Geografia ignorada' : ''}`);
+  if (medio) partes.push(`${medio} Médio`);
+  if (excecoes) partes.push(`${excecoes} exceção(ões)`);
+  el.textContent = partes.join(' · ') || `${turmas.length} turmas configuradas`;
+}
+
+function renderBatchExceptionComponents() {
+  const select = byId('batchExceptionTurma');
+  const wrapper = byId('batchExceptionConfig');
+  const list = byId('batchExceptionComponents');
+  const stateLabel = byId('batchExceptionState');
+  if (!select || !wrapper || !list) return;
+
+  const turmaKey = select.value;
+  const item = batchTurmasReady().find(t => t.turmaNormalizada === turmaKey);
+  if (!item) {
+    wrapper.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  wrapper.classList.remove('hidden');
+  const hasOverride = Object.prototype.hasOwnProperty.call(state.batchComponentConfig?.porTurma || {}, turmaKey);
+  const excluded = new Set(batchEffectiveExcluded(item));
+  stateLabel.textContent = hasOverride
+    ? 'Esta turma possui uma configuração própria.'
+    : `Herdando: ${batchGroupTitle(item.grupoConfiguracao || 'outros')}.`;
+
+  list.innerHTML = (item.componentes || []).map(component => {
+    const checked = !excluded.has(component.chave);
+    return `
+      <label class="component-option ${checked ? '' : 'ignored'}">
+        <input type="checkbox" data-batch-exception-component="${escapeAttr(component.chave)}" ${checked ? 'checked' : ''} />
+        <span><strong>${escapeHtml(component.nome)}</strong><small>${checked ? 'considerado' : 'ignorado'}</small></span>
+      </label>`;
+  }).join('') || '<div class="empty">Nenhum componente detectado nesta turma.</div>';
+
+  list.querySelectorAll('[data-batch-exception-component]').forEach(input => {
+    input.addEventListener('change', () => {
+      const current = new Set(batchEffectiveExcluded(item));
+      if (input.checked) current.delete(input.dataset.batchExceptionComponent);
+      else current.add(input.dataset.batchExceptionComponent);
+      setBatchOverride(turmaKey, [...current]);
+      renderBatchExceptionComponents();
+      updateBatchComponentSummary();
+      byId('btnProcessBatch').disabled = !validateBatchComponentConfig(false);
+    });
+  });
+}
+
+function renderBatchComponentConfig() {
+  const section = byId('batchComponentConfig');
+  const groupsBox = byId('batchComponentGroups');
+  const exceptionSelect = byId('batchExceptionTurma');
+  if (!section || !groupsBox || !exceptionSelect) return;
+
+  if (!state.batchAnalysis?.valido) {
+    section.classList.add('hidden');
+    groupsBox.innerHTML = '';
+    exceptionSelect.innerHTML = '<option value="">Selecionar turma...</option>';
+    byId('batchExceptionConfig')?.classList.add('hidden');
+    return;
+  }
+
+  if (!state.batchComponentConfig) initializeBatchComponentConfig();
+  section.classList.remove('hidden');
+
+  const groups = ['fundamental', 'medio', 'outros'].filter(group =>
+    batchTurmasReady().some(item => (item.grupoConfiguracao || 'outros') === group)
+  );
+
+  groupsBox.innerHTML = groups.map(group => {
+    const componentes = batchComponentsForGroup(group);
+    const excluded = new Set(state.batchComponentConfig.grupos[group] || []);
+    const totalTurmas = batchTurmasReady().filter(item => (item.grupoConfiguracao || 'outros') === group).length;
+    return `
+      <article class="batch-component-group" data-batch-component-group="${group}">
+        <div class="batch-component-group-head">
+          <div>
+            <strong>${batchGroupTitle(group)}</strong>
+            <small>${totalTurmas} turma(s) · ${batchGroupDescription(group)}</small>
+          </div>
+          <div class="batch-group-actions">
+            ${componentes.some(c => c.chave === 'geografia') ? `<button type="button" class="btn ghost" data-ignore-geography="${group}">Ignorar Geografia</button>` : ''}
+            <button type="button" class="btn ghost" data-select-all-group="${group}">Marcar todos</button>
+          </div>
+        </div>
+        <div class="component-list batch-group-components">
+          ${componentes.map(component => {
+            const checked = !excluded.has(component.chave);
+            return `
+              <label class="component-option ${checked ? '' : 'ignored'}">
+                <input type="checkbox" data-batch-group="${group}" data-batch-group-component="${escapeAttr(component.chave)}" ${checked ? 'checked' : ''} />
+                <span><strong>${escapeHtml(component.nome)}</strong><small>${checked ? 'considerado' : 'ignorado'}</small></span>
+              </label>`;
+          }).join('')}
+        </div>
+      </article>`;
+  }).join('');
+
+  groupsBox.querySelectorAll('[data-batch-group-component]').forEach(input => {
+    input.addEventListener('change', () => {
+      const group = input.dataset.batchGroup;
+      const current = new Set(state.batchComponentConfig.grupos[group] || []);
+      const chave = input.dataset.batchGroupComponent;
+      if (input.checked) current.delete(chave);
+      else current.add(chave);
+      setBatchGroupExcluded(group, [...current]);
+      renderBatchComponentConfig();
+      byId('btnProcessBatch').disabled = !validateBatchComponentConfig(false);
+    });
+  });
+
+  groupsBox.querySelectorAll('[data-ignore-geography]').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = button.dataset.ignoreGeography;
+      const current = new Set(state.batchComponentConfig.grupos[group] || []);
+      current.add('geografia');
+      setBatchGroupExcluded(group, [...current]);
+      renderBatchComponentConfig();
+      toast(`Geografia foi desmarcada para ${batchGroupTitle(group)}.`);
+    });
+  });
+
+  groupsBox.querySelectorAll('[data-select-all-group]').forEach(button => {
+    button.addEventListener('click', () => {
+      setBatchGroupExcluded(button.dataset.selectAllGroup, []);
+      renderBatchComponentConfig();
+    });
+  });
+
+  const selectedBefore = exceptionSelect.value;
+  exceptionSelect.innerHTML = '<option value="">Selecionar turma...</option>' + batchTurmasReady()
+    .map(item => `<option value="${escapeAttr(item.turmaNormalizada)}">${escapeHtml(item.turma)}</option>`)
+    .join('');
+  if (batchTurmasReady().some(item => item.turmaNormalizada === selectedBefore)) exceptionSelect.value = selectedBefore;
+
+  renderBatchExceptionComponents();
+  updateBatchComponentSummary();
+}
+
+
+function renderBatchAnalysis() {
+  const box = byId('batchAnalysis');
+  const analise = state.batchAnalysis;
+  if (!box) return;
+  if (!analise) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    byId('btnProcessBatch').disabled = true;
+    byId('batchComponentConfig')?.classList.add('hidden');
+    return;
+  }
+
+  const erros = analise.erros || [];
+  const turmas = analise.turmas || [];
+  box.innerHTML = `
+    <div class="batch-analysis-head">
+      <div><strong>${analise.totalArquivos || 0} arquivos</strong><small>${analise.totalTurmas || 0} turmas identificadas · bimestres esperados: ${(analise.bimestresEsperados || []).map(b => `${b}º`).join(' + ')}</small></div>
+      <span class="batch-validation ${analise.valido ? 'ok' : 'bad'}">${analise.valido ? 'LOTE PRONTO' : 'REVISAR ARQUIVOS'}</span>
+    </div>
+    ${erros.length ? `<div class="batch-errors"><strong>Inconsistências:</strong><ul>${erros.map(erro => `<li>${escapeHtml(erro)}</li>`).join('')}</ul></div>` : ''}
+    <div class="batch-pair-grid">
+      ${turmas.map(item => `
+        <article class="batch-pair ${item.status === 'PRONTO' ? 'ready' : 'problem'}">
+          <div><strong>${escapeHtml(item.turma)}</strong><small>${escapeHtml((item.arquivos || []).join(' + '))}</small></div>
+          <div class="batch-pair-right"><span>${(item.bimestres || []).map(b => `${b}º BIM`).join(' · ') || '—'}</span><b>${batchStatusLabel(item.status)}</b></div>
+        </article>
+      `).join('')}
+    </div>`;
+  box.classList.remove('hidden');
+  renderBatchComponentConfig();
+  byId('btnProcessBatch').disabled = !analise.valido || !validateBatchComponentConfig(false);
+}
+
+async function analyzeBatch() {
+  const files = [...byId('loteArquivos').files];
+  if (!files.length) return toast('Selecione os PDFs de todas as turmas.', 'error');
+  if (files.some(file => !file.name.toLowerCase().endsWith('.pdf'))) return toast('A apuração em lote aceita somente PDFs do SIMAED.', 'error');
+  const button = byId('btnAnalyzeBatch');
+  const form = new FormData();
+  files.forEach(file => form.append('arquivos', file));
+  form.append('semestre', byId('loteSemestre').value);
+  setBusy(button, true, 'Conferindo PDFs…');
+  try {
+    const payload = await fetchJson('/api/alamar/lotes/analisar', { method: 'POST', body: form });
+    state.batchAnalysis = payload.analise;
+    initializeBatchComponentConfig();
+    renderBatchAnalysis();
+    toast(payload.mensagem || 'Arquivos conferidos.', payload.analise?.valido ? 'ok' : 'error');
+  } catch (error) {
+    state.batchAnalysis = null;
+    state.batchComponentConfig = null;
+    renderBatchAnalysis();
+    toast(error.message, 'error');
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function processBatch(event) {
+  event.preventDefault();
+  if (!state.batchAnalysis?.valido) return toast('Conferir o lote antes de processar.', 'error');
+  if (!validateBatchComponentConfig(true)) return;
+  const files = [...byId('loteArquivos').files];
+  if (!files.length) return toast('Os PDFs não estão mais selecionados.', 'error');
+  const button = byId('btnProcessBatch');
+  const form = new FormData();
+  files.forEach(file => form.append('arquivos', file));
+  form.append('anoLetivo', byId('loteAnoLetivo').value);
+  form.append('semestre', byId('loteSemestre').value);
+  form.append('dataReferencia', byId('loteDataReferencia').value);
+  form.append('configuracaoComponentes', JSON.stringify(batchConfigPayload()));
+  setBusy(button, true, 'Processando todas as turmas…');
+  try {
+    const payload = await fetchJson('/api/alamar/lotes/importar', { method: 'POST', body: form });
+    toast(payload.mensagem || 'Apuração em lote concluída.');
+    await Promise.all([loadLotes(false), loadProcesses(false)]);
+    await selectLote(payload.lote._id);
+    byId('batchResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    toast(error.message, 'error');
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+function renderBatchResult() {
+  const lote = state.lote;
+  const section = byId('batchResult');
+  if (!lote) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  byId('batchResultTitle').textContent = `${lote.anoLetivo} · ${lote.semestre}º semestre`;
+  byId('batchResultMeta').textContent = `Referência disciplinar: ${formatDate(lote.dataReferencia)} · ${lote.totais?.arquivos || lote.arquivos?.length || 0} PDFs · status: ${lote.status}`;
+  byId('batchSumTurmas').textContent = lote.totais?.turmas || lote.turmas?.length || 0;
+  byId('batchSumTotal').textContent = lote.totais?.importados || 0;
+  byId('batchSumAptos').textContent = lote.totais?.aptos || 0;
+  byId('batchSumPendentes').textContent = lote.totais?.pendentes || 0;
+  byId('btnBatchHomologate').disabled = lote.status === 'homologado';
+
+  const container = byId('batchTurmas');
+  container.innerHTML = (lote.turmas || []).map(item => `
+    <article class="batch-turma-card">
+      <div>
+        <strong>${escapeHtml(item.turma)}</strong>
+        <small>${(item.bimestres || []).map(b => `${b}º BIM`).join(' + ')} · ${escapeHtml(item.mensagem || batchStatusLabel(item.status))}</small>
+        ${(item.componentesExcluidos || []).length ? `<small class="batch-ignored-note">Ignorados: ${escapeHtml(item.componentesExcluidos.join(', '))}</small>` : ''}
+      </div>
+      ${item.processo ? `<button class="btn ghost" type="button" data-open-process="${item.processo}">Abrir apuração</button>` : '<span class="badge PENDENTE">Sem processo</span>'}
+    </article>
+  `).join('');
+  container.querySelectorAll('[data-open-process]').forEach(button => {
+    button.addEventListener('click', async () => {
+      await selectProcess(button.dataset.openProcess);
+      byId('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+async function selectLote(id) {
+  const payload = await fetchJson(`/api/alamar/lotes/${id}`);
+  state.lote = payload.lote;
+  renderBatchList();
+  renderBatchResult();
+}
+
+function openBatchReport(kind) {
+  if (!state.lote) return toast('Selecione uma apuração em lote.', 'error');
+  const path = kind === 'detalhado'
+    ? `/api/alamar/lotes/${state.lote._id}/relatorio-detalhado`
+    : `/api/alamar/lotes/${state.lote._id}/relacao-aptos`;
+  window.open(api(path), '_blank', 'noopener');
+}
+
+function downloadBatchXlsx() {
+  if (!state.lote) return toast('Selecione uma apuração em lote.', 'error');
+  location.href = api(`/api/alamar/lotes/${state.lote._id}/exportar-aptos.xlsx`);
+}
+
+async function homologateBatch() {
+  if (!state.lote) return;
+  if (!confirm('Homologar todas as turmas deste lote? Após a homologação, as apurações serão bloqueadas para alteração.')) return;
+  const button = byId('btnBatchHomologate');
+  setBusy(button, true, 'Homologando lote…');
+  try {
+    await fetchJson(`/api/alamar/lotes/${state.lote._id}/homologar`, { method: 'POST', body: '{}' });
+    toast('Lote homologado com sucesso.');
+    await Promise.all([loadLotes(false), loadProcesses(false)]);
+    await selectLote(state.lote._id);
+  } catch (error) {
+    toast(error.message, 'error');
+  } finally {
+    setBusy(button, false);
+  }
 }
 
 function renderSummary() {
@@ -462,6 +888,9 @@ function initializeDates() {
   byId('anoLetivo').value = year;
   byId('semestre').value = new Date().getMonth() < 6 ? '1' : '2';
   byId('dataReferencia').value = defaultDate(Number(byId('semestre').value), year);
+  byId('loteAnoLetivo').value = year;
+  byId('loteSemestre').value = byId('semestre').value;
+  byId('loteDataReferencia').value = defaultDate(Number(byId('loteSemestre').value), year);
   updateTemplateLink();
 }
 
@@ -473,7 +902,18 @@ function updateTemplateLink() {
 function bindEvents() {
   byId('backLink').href = withTenant('/painel.html');
   byId('importForm').addEventListener('submit', importFile);
-  byId('btnReload').addEventListener('click', () => loadProcesses(false).catch(e => toast(e.message, 'error')));
+  byId('batchForm').addEventListener('submit', processBatch);
+  byId('btnAnalyzeBatch').addEventListener('click', () => analyzeBatch().catch(e => toast(e.message, 'error')));
+  byId('batchExceptionTurma').addEventListener('change', renderBatchExceptionComponents);
+  byId('btnResetBatchException').addEventListener('click', () => {
+    const turmaKey = byId('batchExceptionTurma').value;
+    if (!turmaKey || !state.batchComponentConfig) return;
+    delete state.batchComponentConfig.porTurma[turmaKey];
+    renderBatchExceptionComponents();
+    updateBatchComponentSummary();
+    byId('btnProcessBatch').disabled = !validateBatchComponentConfig(false);
+  });
+  byId('btnReload').addEventListener('click', () => Promise.all([loadProcesses(false), loadLotes(false)]).catch(e => toast(e.message, 'error')));
   byId('semestre').addEventListener('change', () => {
     byId('dataReferencia').value = defaultDate(Number(byId('semestre').value), byId('anoLetivo').value);
     updateTemplateLink();
@@ -491,6 +931,28 @@ function bindEvents() {
       byId('fileLabel').textContent = `${files.length} arquivos selecionados: ${files.map(file => file.name).join(' + ')}`;
     }
   });
+  byId('loteSemestre').addEventListener('change', () => {
+    byId('loteDataReferencia').value = defaultDate(Number(byId('loteSemestre').value), byId('loteAnoLetivo').value);
+    state.batchAnalysis = null;
+    state.batchComponentConfig = null;
+    renderBatchAnalysis();
+  });
+  byId('loteAnoLetivo').addEventListener('change', () => {
+    byId('loteDataReferencia').value = defaultDate(Number(byId('loteSemestre').value), byId('loteAnoLetivo').value);
+  });
+  byId('loteArquivos').addEventListener('change', () => {
+    const files = [...byId('loteArquivos').files];
+    byId('loteFileLabel').textContent = files.length
+      ? `${files.length} PDFs selecionados`
+      : 'Selecionar todos os PDFs do SIMAED';
+    state.batchAnalysis = null;
+    state.batchComponentConfig = null;
+    renderBatchAnalysis();
+  });
+  byId('btnBatchDetailed').addEventListener('click', () => openBatchReport('detalhado'));
+  byId('btnBatchAptos').addEventListener('click', () => openBatchReport('aptos'));
+  byId('btnBatchXlsx').addEventListener('click', downloadBatchXlsx);
+  byId('btnBatchHomologate').addEventListener('click', homologateBatch);
   ['filterSearch', 'filterStatus', 'filterTurma'].forEach(id => byId(id).addEventListener(id === 'filterSearch' ? 'input' : 'change', renderResults));
   byId('btnReprocess').addEventListener('click', reprocess);
   byId('btnSaveComponents').addEventListener('click', saveComponents);
@@ -519,10 +981,14 @@ function bindEvents() {
   initializeDates();
   try {
     await loadUser();
-    await loadProcesses(false);
-    const requested = new URLSearchParams(location.search).get('processo');
+    await Promise.all([loadProcesses(false), loadLotes(false)]);
+    const params = new URLSearchParams(location.search);
+    const requestedBatch = params.get('lote');
+    const requested = params.get('processo');
+    if (requestedBatch) await selectLote(requestedBatch);
+    else if (state.lotes[0]) await selectLote(state.lotes[0]._id);
     if (requested) await selectProcess(requested);
-    else if (state.processos[0]) await selectProcess(state.processos[0]._id);
+    else if (!state.lotes.length && state.processos[0]) await selectProcess(state.processos[0]._id);
   } catch (error) {
     toast(error.message, 'error');
   }

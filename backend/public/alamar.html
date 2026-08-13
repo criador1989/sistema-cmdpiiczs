@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b1728" />
   <title>Gestão de Alamares | Axoriin</title>
-  <link rel="stylesheet" href="/alamar/alamar.css?v=1.2.0" />
+  <link rel="stylesheet" href="/alamar/alamar.css?v=1.4.0" />
 </head>
 <body>
   <header class="topbar no-print">
@@ -39,12 +39,101 @@
       <article><span>04</span><strong>Nota disciplinar ≥ 7,0</strong><small>Requisito de habilitação; não entra no cálculo.</small></article>
     </section>
 
+    <section class="panel batch-panel no-print">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">APURAÇÃO EM LOTE · RECOMENDADO</p>
+          <h2>Processar todas as turmas de uma vez</h2>
+          <p class="muted">Selecione todos os PDFs do semestre. O Axoriin identifica a turma e o bimestre pelo conteúdo de cada relatório, confere os pares e cria uma apuração por turma dentro de um único lote.</p>
+        </div>
+        <span class="batch-badge">NOVO</span>
+      </div>
+
+      <form id="batchForm" class="import-form batch-form">
+        <label>Ano letivo
+          <input id="loteAnoLetivo" type="number" min="2020" max="2100" required />
+        </label>
+        <label>Semestre
+          <select id="loteSemestre" required>
+            <option value="1">1º semestre</option>
+            <option value="2">2º semestre</option>
+          </select>
+        </label>
+        <label>Data de referência disciplinar
+          <input id="loteDataReferencia" type="date" required />
+        </label>
+        <label class="file-field">PDFs de todas as turmas
+          <input id="loteArquivos" type="file" accept=".pdf,application/pdf" multiple required />
+          <span id="loteFileLabel">Selecionar todos os PDFs do SIMAED</span>
+        </label>
+        <div class="batch-form-actions wide">
+          <button id="btnAnalyzeBatch" class="btn ghost" type="button">1. Conferir arquivos</button>
+          <button id="btnProcessBatch" class="btn primary" type="submit" disabled>3. Processar todas as turmas</button>
+        </div>
+      </form>
+
+      <div id="batchAnalysis" class="batch-analysis hidden"></div>
+
+      <section id="batchComponentConfig" class="batch-component-config hidden">
+        <div class="batch-component-head">
+          <div>
+            <p class="eyebrow">2. CONFIGURAR COMPONENTES DO LOTE</p>
+            <h3>Defina o que entra no cálculo antes de processar</h3>
+            <p class="muted">A configuração pode ser aplicada em massa por grupo de turmas. Se necessário, personalize uma turma específica. Componentes desmarcados não entram na média global, na média mínima, na recuperação nem na completude.</p>
+          </div>
+          <span id="batchComponentSummary" class="batch-component-summary">Aguardando conferência</span>
+        </div>
+        <div id="batchComponentGroups" class="batch-component-groups"></div>
+        <div class="batch-exception-box">
+          <div class="batch-exception-head">
+            <div>
+              <strong>Exceção por turma</strong>
+              <small>Opcional. Escolha uma turma somente se ela precisar usar uma seleção diferente do grupo.</small>
+            </div>
+            <select id="batchExceptionTurma">
+              <option value="">Selecionar turma...</option>
+            </select>
+          </div>
+          <div id="batchExceptionConfig" class="hidden">
+            <div class="batch-exception-actions">
+              <span id="batchExceptionState" class="muted">Herdando configuração do grupo.</span>
+              <button id="btnResetBatchException" class="btn ghost" type="button">Usar configuração do grupo</button>
+            </div>
+            <div id="batchExceptionComponents" class="component-list batch-exception-components"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="batchResult" class="panel batch-result hidden no-print">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">RESULTADO CONSOLIDADO</p>
+          <h2 id="batchResultTitle">Apuração em lote</h2>
+          <p id="batchResultMeta" class="muted">—</p>
+        </div>
+        <div class="result-actions">
+          <button id="btnBatchDetailed" class="btn ghost" type="button">Relatório detalhado</button>
+          <button id="btnBatchAptos" class="btn success" type="button">Relação de aptos</button>
+          <button id="btnBatchXlsx" class="btn ghost" type="button">Excel dos aptos</button>
+          <button id="btnBatchHomologate" class="btn ghost" type="button">Homologar lote</button>
+        </div>
+      </div>
+      <div class="summary-grid batch-summary">
+        <article><span>Turmas</span><strong id="batchSumTurmas">0</strong></article>
+        <article><span>Alunos analisados</span><strong id="batchSumTotal">0</strong></article>
+        <article class="ok"><span>Aptos</span><strong id="batchSumAptos">0</strong></article>
+        <article class="warn"><span>Pendentes</span><strong id="batchSumPendentes">0</strong></article>
+      </div>
+      <div id="batchTurmas" class="batch-turmas"></div>
+    </section>
+
     <section class="workspace-grid no-print">
       <article class="panel import-panel">
         <div class="panel-head">
           <div>
-            <p class="eyebrow">NOVA APURAÇÃO</p>
-            <h2>Importar notas</h2>
+            <p class="eyebrow">APURAÇÃO INDIVIDUAL</p>
+            <h2>Importar uma turma</h2>
           </div>
           <a id="downloadTemplate" class="btn ghost" href="/api/alamar/modelo.xlsx?semestre=1">Baixar modelo</a>
         </div>
@@ -68,7 +157,7 @@
           </label>
           <button id="btnImport" class="btn primary wide" type="submit">Importar e calcular</button>
         </form>
-        <p class="hint">Para PDF, selecione juntos os relatórios dos dois bimestres do semestre. Também permanecem aceitos CSV e XLSX.</p>
+        <p class="hint">Use esta opção para uma turma específica, correções pontuais ou CSV/XLSX. Para várias turmas, prefira a apuração em lote acima.</p>
       </article>
 
       <article class="panel history-panel">
@@ -79,6 +168,11 @@
           </div>
           <button id="btnReload" class="icon-btn" type="button" title="Atualizar">↻</button>
         </div>
+        <h3 class="history-subtitle">Lotes</h3>
+        <div id="batchList" class="process-list batch-history">
+          <div class="empty">Nenhum lote carregado.</div>
+        </div>
+        <h3 class="history-subtitle">Apurações por turma</h3>
         <div id="processList" class="process-list">
           <div class="empty">Nenhuma apuração carregada.</div>
         </div>
@@ -194,6 +288,6 @@
     </div>
   </dialog>
 
-  <script src="/alamar/alamar.js?v=1.2.0" defer></script>
+  <script src="/alamar/alamar.js?v=1.4.0" defer></script>
 </body>
 </html>
