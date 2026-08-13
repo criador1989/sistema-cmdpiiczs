@@ -57,6 +57,9 @@ const alamarProcessoSchema = new Schema({
   anoLetivo: { type: Number, required: true, index: true },
   semestre: { type: Number, enum: [1, 2], required: true, index: true },
   dataReferencia: { type: Date, required: true, index: true },
+  lote: { type: Schema.Types.ObjectId, ref: 'AlamarLote', default: null, index: true },
+  modoImportacao: { type: String, enum: ['individual', 'lote'], default: 'individual', index: true },
+  turmaApuracao: { type: String, trim: true, default: '', index: true },
   status: {
     type: String,
     enum: ['processado', 'homologado', 'cancelado'],

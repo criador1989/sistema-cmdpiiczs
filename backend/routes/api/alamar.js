@@ -6,13 +6,16 @@ const ExcelJS = require('exceljs');
 const mongoose = require('mongoose');
 
 const AlamarProcesso = require('../../models/AlamarProcesso');
+const AlamarLote = require('../../models/AlamarLote');
 const AlamarResultado = require('../../models/AlamarResultado');
 const Aluno = require('../../models/Aluno');
 const { requireTenant } = require('../../middleware/tenantScope');
-const { lerArquivosNotas, normalizarNome, normalizarTurma } = require('../../utils/alamarImport');
+const { lerArquivosNotas, analisarLotePdfNotas, processarRelatoriosPdf, normalizarNome, normalizarTurma, classificarGrupoTurmaAlamar } = require('../../utils/alamarImport');
 const { REGRAS_PADRAO, normalizarChaveComponente } = require('../../utils/alamarRules');
 const {
   criarProcessoImportacao,
+  criarLoteImportacao,
+  atualizarTotaisLote,
   reprocessarProcesso,
   vincularResultado,
   configurarComponentesProcesso,
@@ -23,7 +26,7 @@ const router = express.Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024, files: 20 },
+  limits: { fileSize: 15 * 1024 * 1024, files: 80 },
   fileFilter: (_req, file, cb) => {
     const nome = String(file.originalname || '').toLowerCase();
     const aceito = nome.endsWith('.csv') || nome.endsWith('.xlsx') || nome.endsWith('.txt') || nome.endsWith('.pdf');
@@ -72,6 +75,94 @@ function nomeMotivo(codigo) {
     NENHUM_COMPONENTE_SELECIONADO: 'Nenhum componente foi selecionado para o cálculo',
   };
   return labels[codigo] || codigo;
+}
+
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatarNumero(value) {
+  const numero = Number(value);
+  return Number.isFinite(numero) ? numero.toFixed(2).replace('.', ',') : '—';
+}
+
+function formatarData(value) {
+  if (!value) return '—';
+  const data = new Date(value);
+  return Number.isNaN(data.getTime()) ? '—' : data.toLocaleDateString('pt-BR');
+}
+
+function documentoHtml({ titulo, corpo, autoPrint = false }) {
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${escapeHtml(titulo)}</title>
+<style>
+  @page{size:A4;margin:12mm 14mm 13mm}
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;color:#1f2937;margin:0;background:#fff}
+  .toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:flex-end;gap:8px;padding:10px 14px;background:#fff;border-bottom:1px solid #ddd}
+  .toolbar button{border:0;border-radius:8px;padding:9px 13px;background:#19324d;color:#fff;font-weight:700;cursor:pointer}
+  .turma-page{break-after:page;page-break-after:always}
+  .turma-page:last-child{break-after:auto;page-break-after:auto}
+  h1{text-align:center;font-size:17px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}
+  .periodo{text-align:center;color:#6b7280;font-size:10px;margin-bottom:8px}
+  h2{text-align:center;font-size:14px;color:#8a6a24;margin:0 0 10px;text-transform:uppercase}
+  .meta{font-size:9px;color:#6b7280;margin:0 0 9px;text-align:center}
+  .summary{display:flex;justify-content:center;gap:18px;font-size:9px;margin-bottom:9px}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th,td{border:1px solid #cfd5dc;padding:5px 6px;font-size:8.6px;vertical-align:middle}
+  th{background:#8a6a24;color:#fff;text-transform:uppercase;font-size:7.6px;letter-spacing:.03em}
+  tbody tr:nth-child(even){background:#f8f6f1}
+  .c{text-align:center}.left{text-align:left}.nowrap{white-space:nowrap}
+  .detalhado th,.detalhado td{font-size:7px;padding:3.5px 4px}
+  .detalhado th{font-size:6.4px}
+  .status-APTO{font-weight:700;color:#146c43}.status-NAO_APTO{font-weight:700;color:#a12b32}.status-PENDENTE{font-weight:700;color:#936316}
+  .footer-note{font-size:7px;color:#6b7280;margin-top:6px;text-align:center}
+  @media print{.toolbar{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="toolbar"><button onclick="window.print()">Imprimir / Salvar em PDF</button></div>
+${corpo}
+${autoPrint ? '<script>addEventListener("load",()=>setTimeout(()=>window.print(),250));</script>' : ''}
+</body></html>`;
+}
+
+async function carregarLoteTenant(req, res, next) {
+  try {
+    if (!idValido(req.params.loteId)) return res.status(400).json({ mensagem: 'Lote inválido.' });
+    const lote = await AlamarLote.findOne({ _id: req.params.loteId, instituicao: req.instituicaoId });
+    if (!lote) return res.status(404).json({ mensagem: 'Lote do Alamar não encontrado.' });
+    req.loteAlamar = lote;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function dadosRelatorioLote(lote) {
+  const turmas = [...(lote.turmas || [])]
+    .filter(item => item.processo)
+    .sort((a, b) => String(a.turma).localeCompare(String(b.turma), 'pt-BR', { numeric: true }));
+  const processoIds = turmas.map(item => item.processo);
+  const resultados = await AlamarResultado.find({ processo: { $in: processoIds } }).lean();
+  const porProcesso = new Map();
+  resultados.forEach(item => {
+    const key = String(item.processo);
+    const lista = porProcesso.get(key) || [];
+    lista.push(item);
+    porProcesso.set(key, lista);
+  });
+  return { turmas, porProcesso };
 }
 
 async function carregarProcessoTenant(req, res, next) {
@@ -208,6 +299,292 @@ router.post('/importar', upload.fields([
   }
 });
 
+
+function parseConfiguracaoComponentesLote(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  const texto = String(value);
+  if (texto.length > 100000) throw new Error('A configuração de componentes do lote é muito grande.');
+  try {
+    const parsed = JSON.parse(texto);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('formato inválido');
+    }
+    return parsed;
+  } catch (_error) {
+    throw new Error('A configuração de componentes do lote é inválida.');
+  }
+}
+
+function componentesDetectadosGrupo(grupo, semestre) {
+  if (!grupo || grupo.status !== 'PRONTO') return [];
+  const importacao = processarRelatoriosPdf({
+    relatorios: grupo.relatorios || [],
+    semestre: Number(semestre),
+  });
+  const vistos = new Set();
+  return (importacao.cabecalhos || []).map(nome => {
+    const chave = normalizarChaveComponente(nome);
+    if (!chave || vistos.has(chave)) return null;
+    vistos.add(chave);
+    return { nome: String(nome).trim(), chave };
+  }).filter(Boolean);
+}
+
+
+router.post('/lotes/analisar', upload.array('arquivos', 80), async (req, res) => {
+  try {
+    const arquivos = req.files || [];
+    if (!arquivos.length) return res.status(400).json({ mensagem: 'Selecione os PDFs do SIMAED.' });
+    const semestre = Number(req.body.semestre);
+    if (![1, 2].includes(semestre)) return res.status(400).json({ mensagem: 'Semestre inválido.' });
+    const totalBytes = arquivos.reduce((total, item) => total + Number(item.size || item.buffer?.length || 0), 0);
+    if (totalBytes > 200 * 1024 * 1024) return res.status(413).json({ mensagem: 'O lote excede 200 MB. Divida o envio em dois lotes.' });
+
+    const analise = await analisarLotePdfNotas({ arquivos, semestre });
+    return res.json({
+      mensagem: analise.valido ? 'Arquivos conferidos. O lote está pronto para processamento.' : 'Foram encontradas inconsistências no lote.',
+      analise: {
+        semestre: analise.semestre,
+        bimestresEsperados: analise.bimestresEsperados,
+        totalArquivos: analise.totalArquivos,
+        totalTurmas: analise.totalTurmas,
+        totalTurmasProntas: analise.totalTurmasProntas,
+        turmas: analise.turmas.map(item => ({
+          turma: item.turma,
+          turmaNormalizada: item.turmaNormalizada,
+          bimestres: item.bimestres,
+          arquivos: item.arquivos,
+          status: item.status,
+          mensagem: item.mensagem,
+          grupoConfiguracao: classificarGrupoTurmaAlamar(item.turma),
+          componentes: componentesDetectadosGrupo(item, semestre),
+        })),
+        erros: analise.erros,
+        avisos: analise.avisos,
+        valido: analise.valido,
+      },
+    });
+  } catch (error) {
+    console.error('[alamar/lotes/analisar] erro:', error);
+    return res.status(400).json({ mensagem: error.message || 'Falha ao analisar o lote.' });
+  }
+});
+
+router.post('/lotes/importar', upload.array('arquivos', 80), async (req, res) => {
+  try {
+    const arquivos = req.files || [];
+    if (!arquivos.length) return res.status(400).json({ mensagem: 'Selecione os PDFs do SIMAED.' });
+    const anoLetivo = Number(req.body.anoLetivo);
+    const semestre = Number(req.body.semestre);
+    if (!Number.isInteger(anoLetivo) || anoLetivo < 2020 || anoLetivo > 2100) {
+      return res.status(400).json({ mensagem: 'Ano letivo inválido.' });
+    }
+    if (![1, 2].includes(semestre)) return res.status(400).json({ mensagem: 'Semestre inválido.' });
+    const totalBytes = arquivos.reduce((total, item) => total + Number(item.size || item.buffer?.length || 0), 0);
+    if (totalBytes > 200 * 1024 * 1024) return res.status(413).json({ mensagem: 'O lote excede 200 MB. Divida o envio em dois lotes.' });
+
+    const dataReferencia = parseDate(req.body.dataReferencia) || dataReferenciaPadrao(anoLetivo, semestre);
+    const configuracaoComponentes = parseConfiguracaoComponentesLote(req.body.configuracaoComponentes);
+    const analise = await analisarLotePdfNotas({ arquivos, semestre });
+    if (!analise.valido) {
+      return res.status(400).json({ mensagem: 'O lote possui inconsistências. Corrija os arquivos antes de processar.', analise });
+    }
+
+    const { lote } = await criarLoteImportacao({
+      instituicaoId: req.instituicaoId,
+      usuarioId: req.usuario.id || req.usuario._id,
+      arquivos,
+      analise,
+      anoLetivo,
+      semestre,
+      dataReferencia,
+      regras: REGRAS_PADRAO,
+      configuracaoComponentes,
+    });
+
+    await registrarAuditoriaAlamar(req, {
+      acao: 'IMPORTAR_LOTE',
+      entidade: 'AlamarLote',
+      entidadeId: lote._id,
+      entidadeNome: `${anoLetivo}/${semestre}º semestre - lote`,
+      detalhes: {
+        arquivos: arquivos.map(item => item.originalname),
+        turmas: analise.turmas.map(item => item.turma),
+        configuracaoComponentes: lote.configuracaoComponentes || configuracaoComponentes,
+        totais: lote.totais,
+      },
+    });
+
+    return res.status(201).json({
+      mensagem: `${analise.totalTurmas} turmas processadas em uma única apuração.`,
+      lote,
+      analise: {
+        totalArquivos: analise.totalArquivos,
+        totalTurmas: analise.totalTurmas,
+        turmas: analise.turmas.map(item => ({ turma: item.turma, bimestres: item.bimestres, status: item.status })),
+      },
+    });
+  } catch (error) {
+    console.error('[alamar/lotes/importar] erro:', error);
+    return res.status(400).json({ mensagem: error.message || 'Falha ao processar a apuração em lote.' });
+  }
+});
+
+router.get('/lotes', async (req, res, next) => {
+  try {
+    const filtro = { instituicao: req.instituicaoId };
+    if (req.query.anoLetivo) filtro.anoLetivo = Number(req.query.anoLetivo);
+    if ([1, 2].includes(Number(req.query.semestre))) filtro.semestre = Number(req.query.semestre);
+    const lotes = await AlamarLote.find(filtro)
+      .sort({ anoLetivo: -1, semestre: -1, createdAt: -1 })
+      .limit(30)
+      .populate('criadoPor', 'nome tipo')
+      .populate('homologadoPor', 'nome tipo')
+      .lean();
+    return res.json({ lotes });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/lotes/:loteId', carregarLoteTenant, async (req, res) => {
+  return res.json({ lote: req.loteAlamar });
+});
+
+router.post('/lotes/:loteId/homologar', carregarLoteTenant, async (req, res, next) => {
+  try {
+    await atualizarTotaisLote(req.loteAlamar._id);
+    const loteAtual = await AlamarLote.findById(req.loteAlamar._id);
+    if (Number(loteAtual.totais?.pendentes || 0) > 0) {
+      return res.status(409).json({ mensagem: 'Existem pendências no lote. Resolva os vínculos e dados incompletos antes de homologar.' });
+    }
+    const usuarioId = req.usuario.id || req.usuario._id;
+    const agora = new Date();
+    await AlamarProcesso.updateMany(
+      { lote: loteAtual._id, status: { $ne: 'cancelado' } },
+      { $set: { status: 'homologado', homologadoPor: usuarioId, homologadoEm: agora, atualizadoPor: usuarioId } },
+    );
+    loteAtual.status = 'homologado';
+    loteAtual.homologadoPor = usuarioId;
+    loteAtual.homologadoEm = agora;
+    loteAtual.atualizadoPor = usuarioId;
+    await loteAtual.save();
+
+    await registrarAuditoriaAlamar(req, {
+      acao: 'HOMOLOGAR_LOTE',
+      entidade: 'AlamarLote',
+      entidadeId: loteAtual._id,
+      entidadeNome: `${loteAtual.anoLetivo}/${loteAtual.semestre}º semestre - lote`,
+      depois: { status: 'homologado', homologadoEm: agora },
+      severidade: 'aviso',
+    });
+    return res.json({ mensagem: 'Lote homologado com sucesso.', lote: loteAtual });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/lotes/:loteId/relatorio-detalhado', carregarLoteTenant, async (req, res, next) => {
+  try {
+    const { turmas, porProcesso } = await dadosRelatorioLote(req.loteAlamar);
+    const ordemStatus = { APTO: 0, NAO_APTO: 1, PENDENTE: 2 };
+    const secoes = turmas.map(item => {
+      const resultados = [...(porProcesso.get(String(item.processo)) || [])].sort((a, b) => {
+        return (ordemStatus[a.status] ?? 9) - (ordemStatus[b.status] ?? 9)
+          || Number(a.posicaoTurma || 9999) - Number(b.posicaoTurma || 9999)
+          || Number(b.mediaGlobal ?? -Infinity) - Number(a.mediaGlobal ?? -Infinity)
+          || String(a.nomeImportado).localeCompare(String(b.nomeImportado), 'pt-BR');
+      });
+      const aptos = resultados.filter(r => r.status === 'APTO').length;
+      const naoAptos = resultados.filter(r => r.status === 'NAO_APTO').length;
+      const pendentes = resultados.filter(r => r.status === 'PENDENTE').length;
+      const linhas = resultados.map(r => `<tr>
+        <td class="c">${r.posicaoTurma || '—'}</td>
+        <td>${escapeHtml(r.nomeImportado)}</td>
+        <td class="c">${escapeHtml(r.turmaImportada || item.turma)}</td>
+        <td class="c">${formatarNumero(r.mediaGlobal)}</td>
+        <td class="c">${formatarNumero(r.menorMediaSemestral)}</td>
+        <td class="c">${r.teveRecuperacao ? 'SIM' : 'NÃO'}</td>
+        <td class="c">${formatarNumero(r.notaDisciplinar)}</td>
+        <td class="c status-${escapeHtml(r.status)}">${escapeHtml(r.status)}</td>
+        <td>${escapeHtml((r.motivos || []).map(nomeMotivo).join(' | ') || 'Todos os critérios atendidos')}</td>
+      </tr>`).join('');
+      return `<section class="turma-page">
+        <h1>Relatório detalhado — Aluno Alamar</h1>
+        <div class="periodo">${req.loteAlamar.semestre}º semestre de ${req.loteAlamar.anoLetivo}</div>
+        <h2>${escapeHtml(item.turma)}</h2>
+        <p class="meta">Referência disciplinar: ${formatarData(req.loteAlamar.dataReferencia)}${(item.componentesExcluidos || []).length ? ` · Componentes ignorados: ${escapeHtml(item.componentesExcluidos.join(', '))}` : ''}</p>
+        <div class="summary"><span>Total: <strong>${resultados.length}</strong></span><span>Aptos: <strong>${aptos}</strong></span><span>Não aptos: <strong>${naoAptos}</strong></span><span>Pendentes: <strong>${pendentes}</strong></span></div>
+        <table class="detalhado"><thead><tr><th style="width:5%">Pos.</th><th style="width:22%">Aluno</th><th style="width:8%">Turma</th><th style="width:8%">Média global</th><th style="width:8%">Menor média</th><th style="width:9%">Recup.</th><th style="width:9%">Nota disciplinar</th><th style="width:9%">Situação</th><th>Motivos</th></tr></thead><tbody>${linhas}</tbody></table>
+        <div class="footer-note">Axoriin · Apuração Alamar · documento de conferência e auditoria</div>
+      </section>`;
+    }).join('');
+    res.type('html').send(documentoHtml({ titulo: `Alamar detalhado - ${req.loteAlamar.anoLetivo}`, corpo: secoes, autoPrint: req.query.autoprint === '1' }));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/lotes/:loteId/relacao-aptos', carregarLoteTenant, async (req, res, next) => {
+  try {
+    const { turmas, porProcesso } = await dadosRelatorioLote(req.loteAlamar);
+    const secoes = turmas.map(item => {
+      const aptos = (porProcesso.get(String(item.processo)) || [])
+        .filter(r => r.status === 'APTO')
+        .sort((a, b) => Number(a.posicaoTurma || 9999) - Number(b.posicaoTurma || 9999)
+          || Number(b.mediaGlobal ?? -Infinity) - Number(a.mediaGlobal ?? -Infinity)
+          || String(a.nomeImportado).localeCompare(String(b.nomeImportado), 'pt-BR'));
+      const linhas = aptos.map(r => `<tr>
+        <td class="c">${r.posicaoTurma}º</td>
+        <td>${escapeHtml(r.nomeImportado)}</td>
+        <td class="c">${escapeHtml(r.turmaImportada || item.turma)}</td>
+        <td class="c"><strong>${formatarNumero(r.mediaGlobal)}</strong></td>
+      </tr>`).join('');
+      return `<section class="turma-page">
+        <h1>Alunos aptos ao Alamar</h1>
+        <div class="periodo">${req.loteAlamar.semestre}º semestre de ${req.loteAlamar.anoLetivo}</div>
+        <h2>${escapeHtml(item.turma)}</h2>
+        <table><thead><tr><th style="width:18%">Classificação</th><th>Nome do aluno</th><th style="width:18%">Turma</th><th style="width:20%">Pontuação final</th></tr></thead><tbody>${linhas || '<tr><td colspan="4" class="c">Nenhum aluno apto nesta turma.</td></tr>'}</tbody></table>
+        <div class="footer-note">Colégio Militar Estadual Dom Pedro II - CZS · Axoriin</div>
+      </section>`;
+    }).join('');
+    res.type('html').send(documentoHtml({ titulo: `Alunos aptos ao Alamar - ${req.loteAlamar.anoLetivo}`, corpo: secoes, autoPrint: req.query.autoprint === '1' }));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/lotes/:loteId/exportar-aptos.xlsx', carregarLoteTenant, async (req, res, next) => {
+  try {
+    const { turmas, porProcesso } = await dadosRelatorioLote(req.loteAlamar);
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Axoriin';
+    const sheet = workbook.addWorksheet('Alunos aptos');
+    sheet.columns = [
+      { header: 'CLASSIFICAÇÃO', key: 'posicao', width: 16 },
+      { header: 'NOME DO ALUNO', key: 'nome', width: 40 },
+      { header: 'TURMA', key: 'turma', width: 16 },
+      { header: 'PONTUAÇÃO FINAL', key: 'pontuacao', width: 20 },
+    ];
+    turmas.forEach(item => {
+      const aptos = (porProcesso.get(String(item.processo)) || [])
+        .filter(r => r.status === 'APTO')
+        .sort((a, b) => Number(a.posicaoTurma || 9999) - Number(b.posicaoTurma || 9999));
+      aptos.forEach(r => sheet.addRow({ posicao: r.posicaoTurma, nome: r.nomeImportado, turma: r.turmaImportada || item.turma, pontuacao: r.mediaGlobal }));
+    });
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8A6A24' } };
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="alamar-aptos-${req.loteAlamar.anoLetivo}-${req.loteAlamar.semestre}-semestre.xlsx"`);
+    return res.send(Buffer.from(buffer));
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.get('/processos', async (req, res, next) => {
   try {
     const filtro = { instituicao: req.instituicaoId };
@@ -314,6 +691,8 @@ router.patch('/processos/:processoId/resultados/:resultadoId/vincular', carregar
       processo: req.processoAlamar,
     });
 
+    if (req.processoAlamar.lote) await atualizarTotaisLote(req.processoAlamar.lote);
+
     await registrarAuditoriaAlamar(req, {
       acao: 'VINCULAR_ALUNO',
       entidade: 'AlamarResultado',
@@ -366,6 +745,8 @@ router.patch('/processos/:processoId/componentes', carregarProcessoTenant, async
       usuarioId: req.usuario.id || req.usuario._id,
     });
 
+    if (req.processoAlamar.lote) await atualizarTotaisLote(req.processoAlamar.lote);
+
     await registrarAuditoriaAlamar(req, {
       acao: 'CONFIGURAR_COMPONENTES',
       entidadeId: req.processoAlamar._id,
@@ -398,6 +779,7 @@ router.post('/processos/:processoId/reprocessar', carregarProcessoTenant, async 
       processo: req.processoAlamar,
       usuarioId: req.usuario.id || req.usuario._id,
     });
+    if (req.processoAlamar.lote) await atualizarTotaisLote(req.processoAlamar.lote);
     await registrarAuditoriaAlamar(req, {
       acao: 'REPROCESSAR',
       entidadeId: req.processoAlamar._id,
@@ -421,6 +803,7 @@ router.post('/processos/:processoId/homologar', carregarProcessoTenant, async (r
     req.processoAlamar.homologadoEm = new Date();
     req.processoAlamar.atualizadoPor = req.usuario.id || req.usuario._id;
     await req.processoAlamar.save();
+    if (req.processoAlamar.lote) await atualizarTotaisLote(req.processoAlamar.lote);
 
     await registrarAuditoriaAlamar(req, {
       acao: 'HOMOLOGAR',

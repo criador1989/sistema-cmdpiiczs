@@ -32,6 +32,15 @@ function normalizarTurma(value) {
   return normalizarTexto(value).replace(/[^a-z0-9]/g, '');
 }
 
+function classificarGrupoTurmaAlamar(turma) {
+  const texto = normalizarTexto(turma);
+  const match = texto.match(/\d+/);
+  const numero = match ? Number(match[0]) : null;
+  if ([6, 7, 8, 9].includes(numero)) return 'fundamental';
+  if ([1, 2, 3].includes(numero)) return 'medio';
+  return 'outros';
+}
+
 function valorCelula(cell) {
   if (cell === null || cell === undefined) return '';
   if (typeof cell !== 'object' || cell instanceof Date) return cell;
@@ -564,6 +573,115 @@ function processarRelatoriosPdf({ relatorios, semestre }) {
   };
 }
 
+
+function ordenarTurmas(a, b) {
+  const extrair = value => {
+    const texto = String(value || '');
+    const match = texto.match(/(\d+)/);
+    const numero = match ? Number(match[1]) : 999;
+    const letra = (texto.match(/([a-z])\s*$/i) || [])[1] || '';
+    return { numero, letra: letra.toUpperCase(), texto };
+  };
+  const aa = extrair(a);
+  const bb = extrair(b);
+  return aa.numero - bb.numero || aa.letra.localeCompare(bb.letra, 'pt-BR') || aa.texto.localeCompare(bb.texto, 'pt-BR');
+}
+
+function organizarRelatoriosPorTurma({ relatorios, semestre }) {
+  const lista = Array.isArray(relatorios) ? relatorios.filter(Boolean) : [];
+  const bimestresEsperados = Number(semestre) === 2 ? [3, 4] : [1, 2];
+  const grupos = new Map();
+  const erros = [];
+  const avisos = [];
+
+  lista.forEach((relatorio, index) => {
+    const turma = String(relatorio?.turma || '').trim();
+    const turmaNormalizada = normalizarTurma(turma);
+    const bimestre = Number(relatorio?.bimestre);
+    const nomeArquivo = String(relatorio?.nomeArquivo || `arquivo-${index + 1}.pdf`);
+
+    if (!turma || !turmaNormalizada) {
+      erros.push(`${nomeArquivo}: não foi possível identificar a turma.`);
+      return;
+    }
+    if (!bimestresEsperados.includes(bimestre)) {
+      erros.push(`${nomeArquivo}: o ${bimestre || '?'}º bimestre não pertence ao semestre selecionado.`);
+      return;
+    }
+
+    if (!grupos.has(turmaNormalizada)) {
+      grupos.set(turmaNormalizada, {
+        turma,
+        turmaNormalizada,
+        relatorios: [],
+        porBimestre: new Map(),
+        arquivos: [],
+        bimestres: [],
+        status: 'PRONTO',
+        mensagem: '',
+      });
+    }
+
+    const grupo = grupos.get(turmaNormalizada);
+    grupo.relatorios.push(relatorio);
+    grupo.arquivos.push(nomeArquivo);
+
+    if (grupo.porBimestre.has(bimestre)) {
+      const anterior = grupo.porBimestre.get(bimestre);
+      grupo.status = 'DUPLICADO';
+      grupo.mensagem = `Há mais de um arquivo para o ${bimestre}º bimestre: ${anterior.nomeArquivo} e ${nomeArquivo}.`;
+      erros.push(`${grupo.turma}: ${grupo.mensagem}`);
+    } else {
+      grupo.porBimestre.set(bimestre, relatorio);
+    }
+  });
+
+  const turmas = [...grupos.values()].map(grupo => {
+    grupo.bimestres = [...grupo.porBimestre.keys()].sort((a, b) => a - b);
+    const faltantes = bimestresEsperados.filter(bimestre => !grupo.porBimestre.has(bimestre));
+    if (grupo.status !== 'DUPLICADO' && faltantes.length) {
+      grupo.status = 'INCOMPLETO';
+      grupo.mensagem = `Falta ${faltantes.map(item => `${item}º bimestre`).join(' e ')}.`;
+      erros.push(`${grupo.turma}: ${grupo.mensagem}`);
+    }
+    if (grupo.status === 'PRONTO') {
+      grupo.relatorios = bimestresEsperados.map(bimestre => grupo.porBimestre.get(bimestre));
+      grupo.arquivos = grupo.relatorios.map(item => item.nomeArquivo);
+      grupo.mensagem = `${bimestresEsperados.length} bimestres identificados corretamente.`;
+    }
+    delete grupo.porBimestre;
+    return grupo;
+  }).sort((a, b) => ordenarTurmas(a.turma, b.turma));
+
+  const turmasProntas = turmas.filter(item => item.status === 'PRONTO');
+  const totalRelatorios = lista.length;
+  if (!totalRelatorios) erros.push('Nenhum relatório PDF foi reconhecido.');
+  if (!turmasProntas.length && !erros.length) erros.push('Nenhuma turma possui os dois bimestres necessários para o semestre.');
+
+  return {
+    semestre: Number(semestre),
+    bimestresEsperados,
+    totalArquivos: totalRelatorios,
+    totalTurmas: turmas.length,
+    totalTurmasProntas: turmasProntas.length,
+    turmas,
+    erros: [...new Set(erros)],
+    avisos: [...new Set(avisos)],
+    valido: erros.length === 0 && turmas.length > 0,
+  };
+}
+
+async function analisarLotePdfNotas({ arquivos, semestre }) {
+  const lista = Array.isArray(arquivos) ? arquivos.filter(Boolean) : [];
+  if (!lista.length) throw new Error('Nenhum PDF foi enviado para a apuração em lote.');
+  if (lista.some(arquivo => !arquivoEhPdf(arquivo))) {
+    throw new Error('A apuração em lote aceita somente PDFs digitais do SIMAED.');
+  }
+  const extraido = await extrairRelatoriosPdf(lista);
+  const analise = organizarRelatoriosPorTurma({ relatorios: extraido.relatorios, semestre: Number(semestre) });
+  return { ...analise, relatorios: extraido.relatorios };
+}
+
 async function lerArquivosNotas({ arquivos, semestre }) {
   const lista = Array.isArray(arquivos) ? arquivos.filter(Boolean) : [];
   if (!lista.length) throw new Error('Nenhum arquivo foi enviado.');
@@ -574,6 +692,10 @@ async function lerArquivosNotas({ arquivos, semestre }) {
       throw new Error('Não misture PDF com CSV ou XLSX na mesma importação. Envie apenas PDFs ou uma única planilha.');
     }
     const extraido = await extrairRelatoriosPdf(pdfs);
+    const turmas = [...new Set(extraido.relatorios.map(item => normalizarTurma(item?.turma)).filter(Boolean))];
+    if (turmas.length > 1) {
+      throw new Error('Foram detectadas várias turmas nos PDFs. Use a opção "Apuração em lote" para enviar todas as turmas de uma vez.');
+    }
     return processarRelatoriosPdf({ relatorios: extraido.relatorios, semestre: Number(semestre) });
   }
 
@@ -640,9 +762,13 @@ module.exports = {
   normalizarCabecalho,
   normalizarNome,
   normalizarTurma,
+  classificarGrupoTurmaAlamar,
   parseCsv,
   extrairBimestreDoCabecalho,
   lerArquivoNotas,
   lerArquivosNotas,
   processarRelatoriosPdf,
+  extrairRelatoriosPdf,
+  organizarRelatoriosPorTurma,
+  analisarLotePdfNotas,
 };
