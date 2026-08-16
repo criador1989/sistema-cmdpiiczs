@@ -81,7 +81,7 @@ app.use(
       origin: isAllowedOrigin(req.headers.origin),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'x-tenant', 'x-tenant-slug'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'x-tenant', 'x-tenant-slug', 'x-axoriin-device-key', 'x-axoriin-device-code'],
       optionsSuccessStatus: 200,
     });
   })
@@ -115,6 +115,12 @@ console.log('ðŸ·ï¸  ResolveTenant ligado (subdomÃ­nio/query/cookie).'
   'Counter',
   'Observacao',
   'ObservacaoProfessor',
+  'AccessDevice',
+  'AccessIdentity',
+  'AccessEvent',
+  'DailyStudentAccess',
+  'AttendanceSession',
+  'AttendanceRecord',
   'SuperAdmin',
   'Questao',
   'QuestionarioTentativa',
@@ -232,6 +238,8 @@ const estatisticasComportamentoRoutes = require('./routes/api/estatisticasCompor
 const alamarRoutes = require('./routes/api/alamar');
 const observacoesRoutes = require('./routes/api/observacoes');
 const observacoesProfessoresRoutes = require('./routes/api/observacoesProfessores');
+const controleAcessoRoutes = require('./routes/api/controleAcesso');
+const chamadaRoutes = require('./routes/api/chamada');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
@@ -832,6 +840,8 @@ mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, aute
 mountIf('/api/alamar', alamarRoutes, autenticar);
 mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/observacoes-professores', observacoesProfessoresRoutes);
+mountIf('/api/controle-acesso', controleAcessoRoutes);
+mountIf('/api/chamada', chamadaRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
 mountIf('/api/metrics', metricsRoutes);
 mountIf('/api/instituicoes', instituicoesRoutes);
