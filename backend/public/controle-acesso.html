@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Controle de Acesso | Axoriin</title>
+  <style>
+    :root{--bg:#f4f7fb;--card:#fff;--text:#122033;--muted:#64748b;--line:#dbe4ef;--brand:#143d66;--brand2:#1d5a92;--ok:#137a45;--warn:#9a6700;--danger:#b42318;--soft:#eef4fa;--shadow:0 10px 30px rgba(15,23,42,.08)}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}button,input,select{font:inherit}
+    .top{background:linear-gradient(135deg,var(--brand),#0d2b49);color:#fff;padding:18px 22px;box-shadow:0 4px 18px rgba(0,0,0,.18)}.topin{max-width:1360px;margin:auto;display:flex;gap:16px;align-items:center;justify-content:space-between}.title h1{font-size:1.22rem;margin:0}.title small{display:block;opacity:.82;margin-top:3px}.back{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:9px 13px;border-radius:10px}
+    .wrap{max-width:1360px;margin:22px auto;padding:0 18px 42px}.notice{background:#eaf6ff;border:1px solid #b6ddf6;border-left:5px solid var(--brand2);border-radius:12px;padding:14px 16px;margin-bottom:18px}.notice strong{display:block;margin-bottom:4px}
+    .metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:18px}.metric{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}.metric b{display:block;font-size:1.65rem}.metric span{color:var(--muted);font-size:.82rem}
+    .grid{display:grid;grid-template-columns:1.12fr .88fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}.card h2{font-size:1.05rem;margin:0 0 4px}.sub{color:var(--muted);font-size:.88rem;margin:0 0 15px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.fields.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:.84rem;font-weight:650;color:#334155}.field input,.field select{border:1px solid #cbd5e1;border-radius:10px;padding:10px 11px;background:#fff;color:var(--text);outline:none}.field input:focus,.field select:focus{border-color:#4f87bd;box-shadow:0 0 0 3px rgba(79,135,189,.15)}
+    .btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700}.btn.primary{background:var(--brand);color:#fff}.btn.secondary{background:#e8eef5;color:#17314d}.btn.danger{background:#feecec;color:var(--danger)}.btn:disabled{opacity:.55;cursor:not-allowed}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+    .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:left;padding:10px 11px;border-bottom:1px solid #edf1f5;font-size:.86rem;vertical-align:top}th{background:#f8fafc;color:#475569;font-size:.76rem;text-transform:uppercase;letter-spacing:.03em}tr:last-child td{border-bottom:0}
+    .badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:.73rem;font-weight:700;background:#edf2f7;color:#445;margin:1px 2px 1px 0}.badge.ok{background:#e8f7ef;color:var(--ok)}.badge.warn{background:#fff5d9;color:var(--warn)}.badge.err{background:#feecec;color:var(--danger)}.badge.info{background:#e8f1fb;color:#1d5a92}
+    .searchbox{position:relative}.results{position:absolute;z-index:10;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;margin-top:4px;box-shadow:0 14px 30px rgba(15,23,42,.14);max-height:260px;overflow:auto}.result{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #eef2f6;padding:10px 11px;cursor:pointer}.result:hover{background:#f2f7fc}.result b{display:block}.result small{color:var(--muted)}.selected{margin-top:7px;padding:9px 10px;background:#f0f7ff;border:1px solid #cde2f7;border-radius:9px;font-size:.87rem}
+    .check{display:flex;gap:9px;align-items:flex-start;background:#fff8e6;border:1px solid #f4d58d;border-radius:10px;padding:10px}.check input{margin-top:3px}.check strong{display:block;font-size:.88rem}.check small{color:#7c5a13}.empty{padding:18px;text-align:center;color:var(--muted)}.keybox{background:#10263d;color:#fff;border-radius:12px;padding:14px;margin-top:12px}.keybox code{display:block;word-break:break-all;background:rgba(255,255,255,.08);padding:10px;border-radius:8px;margin:8px 0}
+    .windows{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.window{border:1px solid var(--line);border-radius:11px;padding:11px;background:#fbfdff}.window b{display:block;margin-bottom:7px}.window .times{display:grid;grid-template-columns:1fr 1fr;gap:8px}.class-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:340px;overflow:auto;padding-right:3px}.class-row{display:grid;grid-template-columns:1fr 130px;gap:8px;align-items:center;border:1px solid #e7edf4;border-radius:9px;padding:8px}.class-row small{color:var(--muted);display:block}.class-row select{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:7px}
+    .sim-result{margin-top:12px;border:1px solid var(--line);border-radius:11px;padding:12px;background:#fbfdff}.channel{display:flex;gap:6px;align-items:center;margin-top:5px}.enroll-targets{display:grid;gap:7px;margin-top:8px}.enroll-target{display:flex;gap:8px;align-items:flex-start;border:1px solid #e7edf4;border-radius:9px;padding:9px;background:#fff}.enroll-target input{margin-top:3px}.enroll-target small{display:block;color:var(--muted)}.enroll-status{margin-top:12px;border:1px solid var(--line);border-radius:11px;padding:12px;background:#fbfdff}.enroll-devices{display:grid;gap:7px;margin-top:10px}.enroll-device{border:1px solid #e7edf4;border-radius:9px;padding:8px}.enroll-device small{display:block;color:var(--muted);margin-top:2px}.job-history{display:grid;gap:7px;margin-top:10px}.job-item{border:1px solid #e7edf4;border-radius:9px;padding:9px;background:#fff}.privacy{font-size:.82rem;color:#536579;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:9px;padding:9px;margin-top:10px}.toast{position:fixed;right:20px;bottom:20px;z-index:50;background:#10263d;color:#fff;padding:12px 16px;border-radius:11px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:none;max-width:420px}.toast.show{display:block}.toast.err{background:#7f1d1d}
+    @media(max-width:1050px){.metrics{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:680px){.metrics{grid-template-columns:repeat(2,1fr)}.fields,.fields.three,.windows,.class-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.topin{align-items:flex-start}.class-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header class="top"><div class="topin"><div class="title"><h1>Controle de Acesso</h1><small>4+ iDFace Max, turnos, contraturno, deduplicação e pré-chamada</small></div><a id="backLink" class="back" href="/painel.html">← Painel</a></div></header>
+<main class="wrap" id="app" hidden>
+  <div class="notice"><strong>Privacidade por projeto</strong>O Axoriin não armazena a foto capturada em cada passagem e não envia imagem facial aos responsáveis. O fluxo diário usa somente identificação, dispositivo, data/hora e estado do evento.</div>
+
+  <section class="metrics">
+    <div class="metric"><b id="mDevices">0</b><span>dispositivos ativos</span></div>
+    <div class="metric"><b id="mEntries">0</b><span>entradas consolidadas hoje</span></div>
+    <div class="metric"><b id="mRegular">0</b><span>turno regular</span></div>
+    <div class="metric"><b id="mCounter">0</b><span>contraturno</span></div>
+    <div class="metric"><b id="mOutside">0</b><span>fora de turno</span></div>
+    <div class="metric"><b id="mFailed">0</b><span>entradas com falha em canal</span></div>
+  </section>
+
+  <div class="grid">
+    <div>
+      <section class="card">
+        <h2>Entradas consolidadas</h2><p class="sub">Uma passagem válida por aluno e janela de horário. Reconhecimentos posteriores nos outros iDFace contam como detecções, não como nova presença.</p>
+        <div class="tablewrap"><table><thead><tr><th>Aluno</th><th>Entrada</th><th>Classificação</th><th>Detecções</th><th>Notificação</th></tr></thead><tbody id="dailyRows"><tr><td colspan="5" class="empty">Carregando…</td></tr></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <h2>Eventos recentes</h2><p class="sub">Eventos individuais recebidos dos equipamentos. A presença continua consolidada por aluno/janela.</p>
+        <div class="tablewrap"><table><thead><tr><th>Data/hora</th><th>Aluno</th><th>Dispositivo</th><th>Status</th></tr></thead><tbody id="eventRows"><tr><td colspan="4" class="empty">Carregando…</td></tr></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <h2>Dispositivos iDFace Max</h2><p class="sub">Cada aparelho tem IP e <code>device_id</code> próprios. Os quatro podem apontar para o mesmo Axoriin Face Bridge.</p>
+        <form id="deviceForm"><input id="deviceEditId" type="hidden">
+          <div class="fields three">
+            <div class="field"><label>Nome</label><input id="deviceName" required placeholder="IDFACE 01"></div>
+            <div class="field"><label>Código</label><input id="deviceCode" placeholder="IDFACE-01"></div>
+            <div class="field"><label>Local</label><input id="deviceLocal" value="Portão principal"></div>
+            <div class="field"><label>IP local</label><input id="deviceIp" placeholder="192.168.20.16"></div>
+            <div class="field"><label>Porta Web</label><input id="devicePort" type="number" min="1" max="65535" value="80"></div>
+            <div class="field"><label>device_id Control iD</label><input id="deviceExternalId" placeholder="6613..."></div>
+            <div class="field"><label>Serial</label><input id="deviceSerial" placeholder="0X0600/..."></div>
+            <div class="field"><label>Firmware</label><input id="deviceFirmware" placeholder="8.4.3"></div>
+            <div class="field"><label>Tipo</label><select id="deviceProvider"><option value="controlid_idface_max">Control iD iDFace Max</option><option value="outro">Outro</option></select></div>
+          </div>
+          <div class="actions"><button id="deviceSubmit" class="btn primary" type="submit">Cadastrar dispositivo</button><button id="deviceCancel" class="btn secondary" type="button" hidden>Cancelar edição</button></div>
+        </form>
+        <div id="newKey"></div>
+        <div class="tablewrap" style="margin-top:15px"><table><thead><tr><th>Dispositivo</th><th>Rede</th><th>Control iD</th><th>Firmware</th><th>Bridge</th><th></th></tr></thead><tbody id="deviceRows"></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <h2>Vínculos Control iD → aluno</h2><p class="sub">Se o mesmo <code>user_id</code> for usado nos quatro aparelhos, deixe “Qualquer iDFace”: um único vínculo servirá para todos.</p>
+        <form id="identityForm"><div class="fields">
+          <div class="field full searchbox"><label>Aluno</label><input id="identityStudentSearch" autocomplete="off" placeholder="Digite ao menos 2 letras"><div id="identityResults" class="results" hidden></div><div id="identitySelected" class="selected" hidden></div></div>
+          <div class="field"><label>Dispositivo</label><select id="identityDevice"><option value="">Qualquer iDFace</option></select></div>
+          <div class="field"><label>Control iD user_id</label><input id="externalUserId" required></div>
+          <div class="field full"><label>Matrícula / registration (opcional)</label><input id="registration"></div>
+        </div><div class="actions"><button class="btn primary" type="submit">Salvar vínculo</button></div></form>
+        <div class="tablewrap" style="margin-top:15px"><table><thead><tr><th>Aluno</th><th>user_id</th><th>Escopo</th><th>Matrícula</th><th></th></tr></thead><tbody id="identityRows"></tbody></table></div>
+      </section>
+    </div>
+
+    <div>
+      <section class="card">
+        <h2>Regras de turno</h2><p class="sub">Essas janelas controlam notificação, contraturno e elegibilidade para a pré-chamada.</p>
+        <div class="windows">
+          <div class="window"><b>Matutino</b><div class="times"><div class="field"><label>Início</label><input id="morningStart" type="time" value="06:00"></div><div class="field"><label>Fim</label><input id="morningEnd" type="time" value="11:30"></div></div></div>
+          <div class="window"><b>Vespertino</b><div class="times"><div class="field"><label>Início</label><input id="afternoonStart" type="time" value="12:00"></div><div class="field"><label>Fim</label><input id="afternoonEnd" type="time" value="17:30"></div></div></div>
+        </div>
+        <div style="margin-top:13px"><b style="font-size:.9rem">Turno regular das turmas</b><p class="sub" style="margin-top:3px">Somente entrada na janela correspondente à turma alimenta a pré-chamada. Contraturno continua notificando a família, mas não vira presença em sala.</p><div id="classRows" class="class-grid"><div class="empty">Carregando turmas…</div></div></div>
+        <div class="check" style="margin-top:12px"><input id="notifyCounter" type="checkbox" checked><div><strong>Notificar entrada no contraturno</strong><small>Não cria presença nem pré-chamada.</small></div></div>
+        <div class="check" style="margin-top:8px"><input id="notifyOutside" type="checkbox" checked><div><strong>Notificar entrada fora das janelas</strong><small>Registra entrada física, sem presença em sala.</small></div></div>
+        <div class="actions"><button id="savePolicy" class="btn primary" type="button">Salvar regras</button></div>
+      </section>
+
+      <section class="card">
+        <h2>Simulador avançado</h2><p class="sub">Teste turno regular, contraturno, fora de turno e o retorno real de cada canal de notificação.</p>
+        <div class="field searchbox"><label>Aluno</label><input id="simStudentSearch" autocomplete="off" placeholder="Pesquise pelo nome"><div id="simResults" class="results" hidden></div><div id="simSelected" class="selected" hidden></div></div>
+        <div class="field" style="margin-top:10px"><label>Data/hora simulada</label><input id="simDateTime" type="datetime-local"></div>
+        <div class="check" style="margin-top:10px"><input id="simNotify" type="checkbox"><div><strong>Enviar notificação real</strong><small>Desmarcado por padrão.</small></div></div>
+        <div class="check" style="margin-top:8px"><input id="simForce" type="checkbox"><div><strong>Forçar reenvio neste teste</strong><small>Ignora a proteção de uma notificação por janela. Use somente em teste administrativo.</small></div></div>
+        <div class="actions"><button id="simulateBtn" class="btn primary" type="button">Simular entrada</button></div>
+        <div id="simResult"></div>
+      </section>
+
+      <section class="card">
+        <h2>Cadastro facial central</h2><p class="sub">Selecione o aluno, escolha o aparelho de captura e replique a credencial facial automaticamente para os demais iDFace.</p>
+        <div class="privacy"><b>Privacidade:</b> o Axoriin não recebe nem persiste foto ou template facial. O Face Bridge mantém o template apenas em memória durante a operação e devolve ao Axoriin somente <code>device_id</code>, <code>user_id</code> e status.</div>
+        <div id="templateStatus" style="margin-top:10px"></div>
+
+        <div class="field searchbox" style="margin-top:14px"><label>Aluno</label><input id="enrollStudentSearch" autocomplete="off" placeholder="Pesquise pelo nome"><div id="enrollResults" class="results" hidden></div><div id="enrollSelected" class="selected" hidden></div></div>
+        <div class="field" style="margin-top:10px"><label>Aparelho de captura</label><select id="enrollSource"></select></div>
+        <div style="margin-top:12px"><b style="font-size:.9rem">Replicar para</b><div id="enrollTargets" class="enroll-targets"></div></div>
+        <div class="actions"><button id="startEnrollment" class="btn primary" type="button">Iniciar cadastro facial único</button></div>
+        <div id="enrollStatus"></div>
+
+        <div style="margin-top:16px"><b style="font-size:.9rem">Cadastros recentes</b><div id="enrollHistory" class="job-history"><div class="empty">Nenhum cadastro facial executado.</div></div></div>
+      </section>
+    </div>
+  </div>
+</main>
+<div id="toast" class="toast"></div>
+<script src="/js/controle-acesso.js"></script>
+</body>
+</html>
