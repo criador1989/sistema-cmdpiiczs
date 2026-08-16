@@ -7,6 +7,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const Aluno = require('../models/Aluno');
 const mailer = require('../utils/mailer');
+const enviarWhatsappProvider = require('../utils/twilio');
 const { montarEmailNP } = require('../utils/mensagens/npEncaminhamento');
 
 let Instituicao = null;
@@ -306,6 +307,69 @@ async function enviarTelegramDireto({ chatIds = [], text }) {
 /* =========================
    API legada (mantida)
    ========================= */
+async function enviarWhatsAppDireto({
+  to,
+  text,
+  body,
+  contentSid,
+  contentVariables,
+  templateKey,
+  meta = {}
+} = {}) {
+  const destinos = (Array.isArray(to) ? to : [to])
+    .map((numero) => String(numero || '').trim())
+    .filter(Boolean);
+
+  const unicos = [...new Set(destinos)];
+
+  if (!unicos.length) {
+    return {
+      ok: false,
+      provider: 'twilio',
+      erro: 'Destinatario do WhatsApp ausente.',
+      messageId: null,
+      results: []
+    };
+  }
+
+  const results = [];
+
+  for (const numero of unicos) {
+    try {
+      const resultado = await enviarWhatsappProvider({
+        to: numero,
+        text: text || body,
+        contentSid,
+        contentVariables,
+        templateKey,
+        meta
+      });
+
+      results.push({
+        ...resultado,
+        telefone: resultado?.to || numero
+      });
+    } catch (error) {
+      results.push({
+        ok: false,
+        provider: 'twilio',
+        messageId: null,
+        telefone: numero,
+        erro: error?.message || String(error)
+      });
+    }
+  }
+
+  const sucesso = results.find((item) => item?.ok);
+
+  return {
+    ok: Boolean(sucesso),
+    provider: 'twilio',
+    messageId: sucesso?.messageId || sucesso?.id || null,
+    results
+  };
+}
+
 async function enviarEmail(aluno, categoria, html, destinoEmail, assunto) {
   const contexto = await carregarContextoInstitucional(aluno?.instituicao);
   const textoFallback = fallbackTexto(aluno, categoria, contexto);
@@ -470,6 +534,8 @@ module.exports = {
   // legado / alto nível
   enviarEmail,
   enviarTelegram,
+  enviarWhatsApp: enviarWhatsAppDireto,
+  enviarWhatsAppDireto,
   linkWhatsApp,
   enfileirarParaResponsaveis,
 

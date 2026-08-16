@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const crypto = require('crypto');
 
@@ -322,11 +322,10 @@ async function sendEntryNotification({ aluno, instituicao, device, daily, contex
           text: texto,
           contentSid: process.env.TWILIO_WHATSAPP_ACESSO_CONTENT_SID || undefined,
           contentVariables: {
-            1: institutionName,
-            2: studentName,
+            1: studentName,
+            2: trim(aluno?.turma, 80) || '-',
             3: context.dateLabel,
             4: context.timeLabel,
-            5: gateName,
           },
           templateKey: 'ACESSO_ESCOLAR',
           meta: {
