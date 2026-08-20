@@ -1,6 +1,7 @@
 ﻿'use strict';
 
 const crypto = require('crypto');
+const { DateTime } = require('luxon');
 
 const Aluno = require('../models/Aluno');
 const Instituicao = require('../models/Instituicao');
@@ -38,18 +39,48 @@ function toNumberOrNull(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function normalizeOccurredAt(value) {
+function normalizeOccurredAt(
+  value,
+  { timezone = 'America/Rio_Branco', localWallClock = false } = {}
+) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
 
   const n = Number(value);
+
   if (Number.isFinite(n)) {
     const ms = n < 1e12 ? n * 1000 : n;
+
+    if (localWallClock) {
+      /*
+       * O Control iD representa o horario local do equipamento
+       * em um valor numerico semelhante a epoch.
+       * Reconstituimos esse relogio no timezone da instituicao
+       * antes de gerar o instante UTC real.
+       */
+      const raw = DateTime.fromMillis(ms, { zone: 'utc' });
+
+      if (raw.isValid) {
+        const local = DateTime.fromObject({
+          year: raw.year,
+          month: raw.month,
+          day: raw.day,
+          hour: raw.hour,
+          minute: raw.minute,
+          second: raw.second,
+          millisecond: raw.millisecond,
+        }, { zone: timezone });
+
+        if (local.isValid) return local.toJSDate();
+      }
+    }
+
     const dt = new Date(ms);
     if (!Number.isNaN(dt.getTime())) return dt;
   }
 
   const dt = new Date(value || Date.now());
   if (!Number.isNaN(dt.getTime())) return dt;
+
   return new Date();
 }
 
@@ -402,8 +433,11 @@ async function processSingleEvent({
 
   if (!instituicao) throw new Error('Instituição do dispositivo não encontrada.');
 
-  const occurredAt = normalizeOccurredAt(event.occurredAt);
   const timezone = resolveTimezone(device, instituicao);
+  const occurredAt = normalizeOccurredAt(event.occurredAt, {
+    timezone,
+    localWallClock: Boolean(event.occurredAtIsLocalWallClock),
+  });
   const policy = await getPolicy(instituicaoId);
   const direction = device.tipoUso === 'saida' ? 'saida' : 'entrada';
 
@@ -550,6 +584,8 @@ function extractControlIdEvents(body = {}) {
     result.push({
       externalEventId: values.id,
       occurredAt: values.time,
+
+      occurredAtIsLocalWallClock: true,
       eventCode: values.event,
       externalDeviceId: values.device_id || body.device_id,
       externalUserId: values.user_id,
@@ -564,6 +600,8 @@ function extractControlIdEvents(body = {}) {
     result.push({
       externalEventId: values.id || values.externalEventId,
       occurredAt: values.time || values.occurredAt,
+
+      occurredAtIsLocalWallClock: true,
       eventCode: values.event || values.eventCode,
       externalDeviceId: values.device_id || values.externalDeviceId || body.device_id,
       externalUserId: values.user_id || values.externalUserId,
