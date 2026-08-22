@@ -3412,6 +3412,11 @@ canvas{
       if (el) el.style.display = 'none';
     });
 
+    const show = (...ids) => ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = '';
+    });
+
     const SB = {
       sbRanking:'sbRanking',
       sbNotificacoes:'sbNotificacoes',
