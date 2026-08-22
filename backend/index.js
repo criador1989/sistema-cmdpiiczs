@@ -81,7 +81,7 @@ app.use(
       origin: isAllowedOrigin(req.headers.origin),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'x-tenant', 'x-tenant-slug'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'x-tenant', 'x-tenant-slug', 'x-axoriin-device-key', 'x-axoriin-device-code'],
       optionsSuccessStatus: 200,
     });
   })
@@ -115,6 +115,12 @@ console.log('ðŸ·ï¸  ResolveTenant ligado (subdomÃ­nio/query/cookie).'
   'Counter',
   'Observacao',
   'ObservacaoProfessor',
+  'AccessDevice',
+  'AccessIdentity',
+  'AccessEvent',
+  'DailyStudentAccess',
+  'AttendanceSession',
+  'AttendanceRecord',
   'SuperAdmin',
   'Questao',
   'QuestionarioTentativa',
@@ -232,6 +238,8 @@ const estatisticasComportamentoRoutes = require('./routes/api/estatisticasCompor
 const alamarRoutes = require('./routes/api/alamar');
 const observacoesRoutes = require('./routes/api/observacoes');
 const observacoesProfessoresRoutes = require('./routes/api/observacoesProfessores');
+const controleAcessoRoutes = require('./routes/api/controleAcesso');
+const chamadaRoutes = require('./routes/api/chamada');
 const diagnosticoNotaRoutes = require('./routes/api/diagnosticoNota');
 const metricsRoutes = require('./routes/api/metrics');
 const publicAlunoRoutes = require('./routes/api/publicAluno');
@@ -258,8 +266,10 @@ const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
 const arenaQuestionariosRoutes = require('./routes/api/arenaQuestionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
+const enemPortalRoutes = require('./routes/api/enemPortal');
 const arenaRankingPortalRoutes = require('./routes/api/arenaRankingPortal');
 const rifasRoutes = require('./routes/api/rifas');
+const uniformesRoutes = require('./routes/api/uniformes');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
 const baileFinanceiroRoutes = require('./routes/api/baileFinanceiro');
@@ -270,6 +280,9 @@ const siteAdminRoutes = require('./routes/api/siteAdmin');
 const sitePublicoRoutes = require('./routes/api/sitePublico');
 const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
 const termosProfessorRoutes = require('./routes/api/termosProfessor');
+const pedagogicoRoutes = require('./routes/api/pedagogico');
+const pedagogicoBibliotecaGestaoRoutes = require('./routes/api/pedagogicoBibliotecaGestao');
+const { acessoPedagogico } = require('./middleware/pedagogicoAccess');
 const professorOnboardingGuard = require('./middleware/professorOnboardingGuard');
 
 // Axoriin AssociaÃ§Ãµes â€” mÃ³dulo multi-tenant
@@ -382,7 +395,7 @@ app.get('/auth/confirmar-email', async (req, res, next) => {
   }
 });
 
-const { autenticar } = require('./middleware/autenticacao');
+const { autenticar, apenasMonitorOuAdmin } = require('./middleware/autenticacao');
 
 /* =========================
    APH
@@ -604,6 +617,8 @@ function buildProfessorGuard(publicRoot) {
     '/login-aluno.html',
     '/painel-aluno.html',
     '/painel-aluno.js',
+    '/aluno-enem.html',
+    '/aluno-enem.js',
     '/aluno-jogos.html',
     '/aluno-simulados.html',
     '/ficha-responsavel.html',
@@ -799,6 +814,10 @@ mountIf('/api/estatisticas-comportamento', estatisticasComportamentoRoutes, aute
 mountIf('/api/alamar', alamarRoutes, autenticar);
 mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/observacoes-professores', observacoesProfessoresRoutes);
+mountIf('/api/pedagogico/biblioteca-gestao', pedagogicoBibliotecaGestaoRoutes);
+mountIf('/api/pedagogico', pedagogicoRoutes);
+mountIf('/api/controle-acesso', controleAcessoRoutes);
+mountIf('/api/chamada', chamadaRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
 mountIf('/api/metrics', metricsRoutes);
 mountIf('/api/instituicoes', instituicoesRoutes);
@@ -830,12 +849,18 @@ mountIf('/api/questionarios', questionariosRoutes);
 
 /* Portal do Aluno segmentado */
 mountIf('/api/portal-aluno', portalAlunoRoutes);
+mountIf('/api/enem', enemPortalRoutes);
 mountIf('/api/portal-aluno/ranking-arena', arenaRankingPortalRoutes);
 
 /* =========================
    ðŸš€ RIFAS (NOVO MÃ“DULO)
    ========================= */
 mountIf('/api/rifas', rifasRoutes, autenticar);
+
+/* =========================
+   UNIFORMES E VOUCHERS
+   ========================= */
+mountIf('/api/uniformes', uniformesRoutes, autenticar, apenasMonitorOuAdmin);
 
 /* =========================
    ðŸš€ BAILE FORMATURA (NOVO MÃ“DULO)
@@ -895,6 +920,15 @@ mountIf('/api/fix-instituicao', fixInstituicaoLegacy, requireSuperAdmin);
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 const imgRoot = path.join(__dirname, 'img');
+// Axoriin Pedagógico: rota protegida antes do express.static.
+// O perfil monitor não recebe nem a página, além de também ser bloqueado na API.
+app.get('/pedagogico.html', autenticar, acessoPedagogico, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'pedagogico.html'));
+});
+app.get('/pedagogico', autenticar, acessoPedagogico, (_req, res) => {
+  return res.redirect('/pedagogico.html');
+});
+
 const assetsRoot = path.join(publicRoot, 'assets');
 
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
@@ -980,6 +1014,19 @@ app.get(
     );
   }
 );
+
+function exigirUniformesHtml(req, res, next) {
+  const role = getRole(req);
+  if (!['admin', 'monitor'].includes(role)) return send403(res, publicRoot);
+  return next();
+}
+
+app.get('/uniformes.html', autenticar, exigirUniformesHtml, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'uniformes.html'));
+});
+app.get('/uniformes', autenticar, exigirUniformesHtml, (_req, res) => {
+  return res.redirect('/uniformes.html');
+});
 
 app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'admin-site', 'site-analytics.html'));
