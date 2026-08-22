@@ -268,6 +268,7 @@ const arenaQuestionariosRoutes = require('./routes/api/arenaQuestionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
 const arenaRankingPortalRoutes = require('./routes/api/arenaRankingPortal');
 const rifasRoutes = require('./routes/api/rifas');
+const uniformesRoutes = require('./routes/api/uniformes');
 const baileContratosRoutes = require('./routes/api/baileContratos');
 const baileMesasRoutes = require('./routes/api/baileMesas');
 const baileFinanceiroRoutes = require('./routes/api/baileFinanceiro');
@@ -878,7 +879,35 @@ mountIf('/api/portal-aluno/ranking-arena', arenaRankingPortalRoutes);
 /* =========================
    ðŸš€ RIFAS (NOVO MÃ“DULO)
    ========================= */
+function exigirUniformesApi(req, res, next) {
+  const role = getRole(req);
+
+  const permitido =
+    role.includes('admin') ||
+    role.includes('monitor');
+
+  if (!permitido) {
+    return res.status(403).json({
+      ok: false,
+      mensagem: 'Modulo restrito a administradores e monitores.'
+    });
+  }
+
+  return next();
+}
+
+
 mountIf('/api/rifas', rifasRoutes, autenticar);
+
+  /* =========================
+     UNIFORMES E VOUCHERS
+     ========================= */
+  mountIf(
+    '/api/uniformes',
+    uniformesRoutes,
+    autenticar,
+    exigirUniformesApi
+  );
 
 /* =========================
    ðŸš€ BAILE FORMATURA (NOVO MÃ“DULO)
@@ -1023,6 +1052,41 @@ app.get(
     );
   }
 );
+
+function exigirUniformesHtml(req, res, next) {
+  const role = getRole(req);
+
+  const permitido =
+    role.includes('admin') ||
+    role.includes('monitor');
+
+  if (!permitido) {
+    return send403(res, publicRoot);
+  }
+
+  return next();
+}
+
+app.get(
+  '/uniformes.html',
+  autenticar,
+  exigirUniformesHtml,
+  (_req, res) => {
+    return res.sendFile(
+      path.join(publicRoot, 'uniformes.html')
+    );
+  }
+);
+
+app.get(
+  '/uniformes',
+  autenticar,
+  exigirUniformesHtml,
+  (_req, res) => {
+    return res.redirect('/uniformes.html');
+  }
+);
+
 
 app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'admin-site', 'site-analytics.html'));

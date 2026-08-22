@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Axoriin • Uniformes e Vouchers</title>
+  <link rel="stylesheet" href="/uniformes/uniformes.css?v=1.1.0" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-block">
+        <a class="brand" id="backPanel" href="/painel.html">Axoriin</a>
+        <span class="brand-module">Uniformes e Vouchers</span>
+      </div>
+
+      <nav class="side-nav" aria-label="Navegação do módulo">
+        <button class="nav-item active" data-view="visao-geral"><span>⌂</span><b>Visão Geral</b></button>
+        <button class="nav-item" data-view="campanhas"><span>◫</span><b>Campanhas</b></button>
+        <button class="nav-item" data-view="fornecedores"><span>◇</span><b>Fornecedores</b></button>
+        <button class="nav-item" data-view="itens"><span>▦</span><b>Itens e Kits</b></button>
+        <button class="nav-item" data-view="vouchers"><span>⌁</span><b>Vouchers</b></button>
+        <button class="nav-item" data-view="importar"><span>⇧</span><b>Importar PDF</b></button>
+        <button class="nav-item" data-view="entregas"><span>✓</span><b>Entregas</b></button>
+        <button class="nav-item" data-view="agenda"><span>□</span><b>Agenda de Entrega</b></button>
+        <button class="nav-item" data-view="pendencias"><span>!</span><b>Pendências</b><em id="pendingBadge" class="nav-badge" hidden>0</em></button>
+        <button class="nav-item" data-view="relatorios"><span>↗</span><b>Relatórios</b></button>
+      </nav>
+
+      <div class="access-card">
+        <span class="access-icon">◆</span>
+        <div><small>Acesso restrito a</small><strong>Administradores e Monitores</strong></div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-only" id="menuBtn" aria-label="Abrir menu">☰</button>
+          <div>
+            <p class="eyebrow" id="viewEyebrow">GESTÃO OPERACIONAL</p>
+            <h1 id="viewTitle">Visão Geral</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="campaign-picker compact-field">
+            <span>Campanha</span>
+            <select id="globalCampaign"><option value="">Todas</option></select>
+          </label>
+          <button class="icon-btn" id="themeToggle" aria-label="Alternar tema" title="Alternar modo claro/noturno">◐</button>
+          <div class="user-chip">
+            <span class="avatar" id="userAvatar">AD</span>
+            <span><strong id="userName">Usuário</strong><small id="userRole">Administrador</small></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <section class="view active" id="view-visao-geral">
+          <div class="hero-row">
+            <div>
+              <p class="eyebrow">CONTROLE EM TEMPO REAL</p>
+              <h2>Entrega simples, rastreável e sem confusão.</h2>
+              <p>Vouchers, fornecedores, agenda, conferência e relatórios em um único fluxo.</p>
+            </div>
+            <div class="hero-actions">
+              <button class="btn secondary" data-open-view="vouchers">Ver vouchers</button>
+              <button class="btn primary" id="quickDeliveryBtn">+ Registrar entrega</button>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card"><div class="metric-icon blue">A</div><span>Alunos contemplados</span><strong id="mStudents">0</strong><small>na seleção atual</small></article>
+            <article class="metric-card"><div class="metric-icon violet">V</div><span>Vouchers</span><strong id="mVouchers">0</strong><small>registrados</small></article>
+            <article class="metric-card"><div class="metric-icon green">✓</div><span>Entregues</span><strong id="mDelivered">0</strong><small id="mPercent">0% concluído</small></article>
+            <article class="metric-card"><div class="metric-icon amber">◷</div><span>Pendentes</span><strong id="mPending">0</strong><small>aguardando conclusão</small></article>
+            <article class="metric-card"><div class="metric-icon red">!</div><span>Divergências</span><strong id="mDivergence">0</strong><small>exigem atenção</small></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel span-2">
+              <div class="panel-head"><div><p class="eyebrow">CRONOGRAMA</p><h3>Próximas Entregas</h3></div><button class="link-btn" data-open-view="agenda">Ver agenda completa →</button></div>
+              <div class="schedule-grid" id="nextSchedules"><div class="empty-state">Nenhuma entrega futura cadastrada.</div></div>
+            </section>
+            <section class="panel quick-panel">
+              <div class="panel-head"><div><p class="eyebrow">ATALHOS</p><h3>Ações rápidas</h3></div></div>
+              <button class="quick-action" id="qaSupplier"><span>◇</span><div><b>Novo fornecedor</b><small>Cadastre qualquer malharia/empresa</small></div><i>→</i></button>
+              <button class="quick-action" id="qaVoucher"><span>⌁</span><div><b>Novo voucher</b><small>Vincule aluno, item e fornecedor</small></div><i>→</i></button>
+              <button class="quick-action" id="qaImport"><span>⇧</span><div><b>Importar PDF</b><small>Leia todos os vouchers automaticamente</small></div><i>→</i></button>
+              <button class="quick-action" id="qaSchedule"><span>□</span><div><b>Agendar entrega</b><small>Defina período, turmas e horário</small></div><i>→</i></button>
+              <button class="quick-action" data-open-view="relatorios"><span>↗</span><div><b>Gerar relatório</b><small>PDF ou DOCX com filtros</small></div><i>→</i></button>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-head"><div><p class="eyebrow">OPERAÇÃO</p><h3>Vouchers recentes</h3></div><button class="link-btn" data-open-view="vouchers">Abrir lista completa →</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Fornecedor</th><th>Item/Kit</th><th>Status</th></tr></thead><tbody id="recentVoucherRows"><tr><td colspan="5" class="empty-cell">Carregando...</td></tr></tbody></table></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-campanhas">
+          <div class="section-toolbar"><div><p class="eyebrow">CICLOS</p><h2>Campanhas de Uniformes</h2><p>Organize cada ano, lote ou período sem misturar históricos.</p></div><button class="btn primary" id="newCampaignBtn">+ Nova campanha</button></div>
+          <div class="card-list" id="campaignList"></div>
+        </section>
+
+        <section class="view" id="view-fornecedores">
+          <div class="section-toolbar"><div><p class="eyebrow">CADASTRO DINÂMICO</p><h2>Fornecedores e Malharias</h2><p>Sem limite de empresas: cadastre, edite e mantenha o histórico.</p></div><button class="btn primary" id="newSupplierBtn">+ Novo fornecedor</button></div>
+          <section class="panel"><div class="table-tools"><input id="supplierSearch" class="search-input" placeholder="Buscar fornecedor..." /></div><div class="table-wrap"><table><thead><tr><th>Fornecedor</th><th>Documento</th><th>Contato</th><th>Responsável</th><th>Situação</th><th></th></tr></thead><tbody id="supplierRows"></tbody></table></div></section>
+        </section>
+
+        <section class="view" id="view-itens">
+          <div class="section-toolbar"><div><p class="eyebrow">CATÁLOGO</p><h2>Itens e Kits</h2><p>Cadastre peças, kits e composições por campanha e fornecedor.</p></div><button class="btn primary" id="newItemBtn">+ Novo item/kit</button></div>
+          <section class="panel"><div class="filter-row"><select id="itemCampaignFilter"><option value="">Todas as campanhas</option></select><select id="itemSupplierFilter"><option value="">Todos os fornecedores</option></select></div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Item/Kit</th><th>Campanha</th><th>Fornecedor</th><th>Peças</th><th>Situação</th><th></th></tr></thead><tbody id="itemRows"></tbody></table></div></section>
+        </section>
+
+        <section class="view" id="view-vouchers">
+          <div class="section-toolbar"><div><p class="eyebrow">DIREITOS DO ALUNO</p><h2>Vouchers</h2><p>Cada voucher é individual, mesmo quando um aluno possui vários itens.</p></div><button class="btn primary" id="newVoucherBtn">+ Novo voucher</button></div>
+          <section class="panel">
+            <div class="filter-grid voucher-filters">
+              <input id="voucherSearch" placeholder="Aluno, turma, código ou item..." />
+              <select id="voucherCampaignFilter"><option value="">Todas as campanhas</option></select>
+              <select id="voucherSupplierFilter"><option value="">Todos os fornecedores</option></select>
+              <select id="voucherStatusFilter"><option value="">Todos os status</option><option value="cadastrado">Cadastrado</option><option value="validado">Validado</option><option value="aguardando_fornecedor">Aguardando fornecedor</option><option value="disponivel_entrega">Disponível</option><option value="agendado">Agendado</option><option value="entregue">Entregue</option><option value="divergencia">Divergência</option><option value="cancelado">Cancelado</option></select>
+              <select id="voucherClassFilter"><option value="">Todas as turmas</option></select>
+              <button class="btn secondary" id="refreshVouchersBtn">Aplicar filtros</button>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Voucher</th><th>Fornecedor</th><th>Item/Kit</th><th>Status</th><th>Entrega</th></tr></thead><tbody id="voucherRows"></tbody></table></div>
+            <div class="pager"><span id="voucherPagerInfo">0 registros</span><div><button class="icon-btn mini" id="voucherPrev">‹</button><span id="voucherPage">1</span><button class="icon-btn mini" id="voucherNext">›</button></div></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-importar">
+          <div class="section-toolbar"><div><p class="eyebrow">IMPORTAÇÃO INTELIGENTE</p><h2>Importar Vouchers por PDF</h2><p>Envie o PDF completo. O Axoriin extrai aluno, turma, voucher, fornecedor, item, lote e validade antes de gravar qualquer dado.</p></div></div>
+
+          <div class="import-layout">
+            <section class="panel import-upload-panel">
+              <div class="panel-head"><div><p class="eyebrow">ETAPA 1</p><h3>Selecionar arquivo</h3></div><span class="secure-pill">PDF digital • até 120 MB</span></div>
+              <div class="import-form-grid">
+                <label><span>Campanha de destino *</span><select id="importCampaign"><option value="">Selecione a campanha</option></select></label>
+                <div class="import-help"><b>Nada é gravado nesta etapa.</b><small>Primeiro o sistema analisa e cruza os dados com alunos, fornecedores, itens e vouchers já existentes.</small></div>
+              </div>
+              <div class="drop-zone" id="voucherDropZone" tabindex="0" role="button" aria-label="Selecionar PDF de vouchers">
+                <input id="voucherPdfFile" type="file" accept="application/pdf,.pdf" hidden />
+                <div class="drop-icon">PDF</div>
+                <div><h3>Arraste o PDF para cá</h3><p>ou clique para selecionar o arquivo completo da turma/série.</p><strong id="voucherPdfName">Nenhum arquivo selecionado</strong></div>
+              </div>
+              <div class="import-actions"><button class="btn secondary" id="clearImportBtn" type="button">Limpar</button><button class="btn primary" id="analyzePdfBtn" type="button">Analisar PDF</button></div>
+            </section>
+
+            <section class="panel import-side-panel">
+              <div class="panel-head"><div><p class="eyebrow">COMO FUNCIONA</p><h3>Conferência antes da importação</h3></div></div>
+              <ol class="flow-list">
+                <li><span>1</span><div><b>Leitura do PDF</b><small>O arquivo inteiro é interpretado automaticamente.</small></div></li>
+                <li><span>2</span><div><b>Cruzamento</b><small>Aluno, turma, fornecedor, item e duplicidades são verificados.</small></div></li>
+                <li><span>3</span><div><b>Prévia</b><small>Somente exceções precisam de atenção humana.</small></div></li>
+                <li><span>4</span><div><b>Confirmação</b><small>Os vouchers aprovados são gravados e ficam rastreáveis.</small></div></li>
+              </ol>
+            </section>
+          </div>
+
+          <section class="panel import-analysis" id="importAnalysisPanel" hidden>
+            <div class="panel-head import-analysis-head"><div><p class="eyebrow">ETAPA 2</p><h3>Conferência da análise</h3><p id="importAnalysisFile">-</p></div><div class="analysis-head-actions"><button class="btn secondary" id="reloadImportBtn">Recarregar</button><button class="btn primary" id="confirmImportBtn">Confirmar importação</button></div></div>
+            <div class="import-metrics">
+              <article><span>Vouchers</span><strong id="imDetected">0</strong><small>detectados</small></article>
+              <article><span>Alunos</span><strong id="imStudents">0</strong><small>identificados no PDF</small></article>
+              <article class="ok"><span>Prontos</span><strong id="imReady">0</strong><small>sem revisão</small></article>
+              <article class="warn"><span>Pendências</span><strong id="imPending">0</strong><small>precisam de ação</small></article>
+              <article class="danger"><span>Duplicados</span><strong id="imDuplicates">0</strong><small>não serão recriados</small></article>
+            </div>
+            <div class="import-options">
+              <label class="switch-line"><input id="autoCreateSuppliers" type="checkbox" checked /><span><b>Cadastrar fornecedores novos automaticamente</b><small>Usa o nome e o endereço identificados no voucher.</small></span></label>
+              <label class="switch-line"><input id="autoCreateItems" type="checkbox" checked /><span><b>Cadastrar itens novos automaticamente</b><small>Cria o item dentro da campanha e do fornecedor correto.</small></span></label>
+              <select id="importStatusFilter"><option value="todos">Todos os registros</option><option value="pronto">Prontos</option><option value="novo_fornecedor">Fornecedor novo</option><option value="novo_item">Item novo</option><option value="revisar_aluno">Revisar aluno</option><option value="duplicado">Duplicados</option><option value="incompleto">Incompletos</option><option value="importado">Importados</option></select>
+            </div>
+            <div class="table-wrap import-table-wrap"><table><thead><tr><th>Pág.</th><th>Aluno</th><th>Turma</th><th>Voucher</th><th>Fornecedor</th><th>Item</th><th>Situação</th><th></th></tr></thead><tbody id="importRows"><tr><td colspan="8" class="empty-cell">Analise um PDF para visualizar os registros.</td></tr></tbody></table></div>
+          </section>
+
+          <section class="panel import-history-panel">
+            <div class="panel-head"><div><p class="eyebrow">HISTÓRICO</p><h3>Importações recentes</h3></div><button class="link-btn" id="refreshImportHistoryBtn">Atualizar →</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>Campanha</th><th>Data</th><th>Detectados</th><th>Importados</th><th>Pendências</th><th>Status</th><th></th></tr></thead><tbody id="importHistoryRows"><tr><td colspan="8" class="empty-cell">Carregando...</td></tr></tbody></table></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-entregas">
+          <div class="section-toolbar"><div><p class="eyebrow">LISTA OPERACIONAL</p><h2>Entrega de Uniformes</h2><p>Veja aluno, malharia e todos os itens em uma única linha. Confirme item por item e acompanhe quem ainda falta.</p></div><button class="btn primary" id="newDeliveryBtn">+ Registrar entrega</button></div>
+
+          <section class="delivery-summary-grid">
+            <article class="delivery-summary-card"><span>Alunos</span><strong id="deliveryStudents">0</strong><small>no recorte atual</small></article>
+            <article class="delivery-summary-card success"><span>Completos</span><strong id="deliveryCompleteStudents">0</strong><small>receberam tudo</small></article>
+            <article class="delivery-summary-card warning"><span>Ainda faltam</span><strong id="deliveryMissingStudents">0</strong><small>com item pendente</small></article>
+            <article class="delivery-summary-card"><span>Itens recebidos</span><strong id="deliveryItemsDone">0</strong><small id="deliveryItemsProgress">0% concluído</small></article>
+          </section>
+
+          <section class="panel delivery-quick-reports">
+            <div class="panel-head"><div><p class="eyebrow">RELATÓRIOS RÁPIDOS</p><h3>Prestação de contas em um clique</h3><p>Os relatórios respeitam campanha, fornecedor, turma e busca da lista. Escolha PDF ou DOCX.</p></div></div>
+            <div class="quick-report-grid">
+              <article class="quick-report-card"><div><span>⏳</span><b>Pendentes de retirada</b><small>Alunos pendentes ou com entrega parcial.</small></div><div><button class="tiny-btn" data-delivery-quick-report="pendentes" data-format="pdf">PDF</button><button class="tiny-btn" data-delivery-quick-report="pendentes" data-format="docx">DOCX</button></div></article>
+              <article class="quick-report-card"><div><span>✓</span><b>Entregas concluídas</b><small>Alunos que receberam todos os itens daquele fornecedor.</small></div><div><button class="tiny-btn" data-delivery-quick-report="entregues" data-format="pdf">PDF</button><button class="tiny-btn" data-delivery-quick-report="entregues" data-format="docx">DOCX</button></div></article>
+              <article class="quick-report-card"><div><span>◐</span><b>Entregas parciais</b><small>Quem recebeu apenas parte dos itens previstos.</small></div><div><button class="tiny-btn" data-delivery-quick-report="parciais" data-format="pdf">PDF</button><button class="tiny-btn" data-delivery-quick-report="parciais" data-format="docx">DOCX</button></div></article>
+              <article class="quick-report-card"><div><span>🏭</span><b>Resumo por fornecedor</b><small>Totais, recebidos, faltantes e percentual por malharia.</small></div><div><button class="tiny-btn" data-delivery-quick-report="resumo_fornecedor" data-format="pdf">PDF</button><button class="tiny-btn" data-delivery-quick-report="resumo_fornecedor" data-format="docx">DOCX</button></div></article>
+              <article class="quick-report-card"><div><span>🏫</span><b>Resumo por turma</b><small>Consolidação de alunos e itens por turma.</small></div><div><button class="tiny-btn" data-delivery-quick-report="resumo_turma" data-format="pdf">PDF</button><button class="tiny-btn" data-delivery-quick-report="resumo_turma" data-format="docx">DOCX</button></div></article>
+            </div>
+          </section>
+
+          <section class="panel operational-list-panel">
+            <div class="panel-head delivery-list-head"><div><p class="eyebrow">CONTROLE EM TEMPO REAL</p><h3>Lista de entrega</h3><p>Uma linha por aluno e fornecedor. Se o aluno tiver itens de outra malharia, aparecerá em outra linha.</p></div><div class="delivery-export-actions"><button class="btn pdf" id="deliveryExportPdfBtn">Exportar PDF</button><button class="btn docx" id="deliveryExportDocxBtn">Exportar DOCX</button></div></div>
+            <div class="filter-row delivery-filter-row">
+              <input id="deliveryListSearch" placeholder="Aluno, voucher ou item..." />
+              <select id="deliveryCampaignFilter"><option value="">Todas as campanhas</option></select>
+              <select id="deliverySupplierFilter"><option value="">Todos os fornecedores</option></select>
+              <select id="deliveryClassFilter"><option value="">Todas as turmas</option></select>
+              <select id="deliverySituationFilter"><option value="todos">Todas as situações</option><option value="pendente">Pendentes</option><option value="parcial">Parciais</option><option value="completo">Completos</option><option value="divergencia">Divergências</option></select>
+              <button class="btn secondary" id="refreshDeliveryListBtn">Filtrar</button>
+            </div>
+            <div class="table-wrap"><table class="delivery-list-table"><thead><tr><th>Aluno</th><th>Turma</th><th>Malharia / Fornecedor</th><th>Itens previstos</th><th>Situação</th><th>Último atendimento</th><th></th></tr></thead><tbody id="deliveryListRows"><tr><td colspan="7" class="empty-cell">Carregando lista...</td></tr></tbody></table></div>
+            <div class="pager"><span id="deliveryListPagerInfo">0 registros</span><div><button class="tiny-btn" id="deliveryListPrev">←</button><span id="deliveryListPage">1 / 1</span><button class="tiny-btn" id="deliveryListNext">→</button></div></div>
+          </section>
+
+          <section class="panel delivery-history-panel">
+            <div class="panel-head"><div><p class="eyebrow">AUDITORIA</p><h3>Histórico de entregas confirmadas</h3><p>Protocolos já concluídos, responsável e horário do atendimento.</p></div><button class="link-btn" id="refreshDeliveriesBtn">Atualizar →</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Protocolo</th><th>Aluno</th><th>Turma</th><th>Fornecedor</th><th>Itens</th><th>Responsável</th><th>Documento</th><th>Conferido por</th><th>Data</th></tr></thead><tbody id="deliveryRows"></tbody></table></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-agenda">
+          <div class="section-toolbar"><div><p class="eyebrow">PLANEJAMENTO</p><h2>Agenda de Entrega</h2><p>Distribua fornecedores, períodos, turmas e horários para reduzir filas.</p></div><button class="btn primary" id="newScheduleBtn">+ Novo agendamento</button></div>
+          <div class="agenda-list" id="agendaList"></div>
+        </section>
+
+        <section class="view" id="view-pendencias">
+          <div class="section-toolbar"><div><p class="eyebrow">TRATAMENTO DE EXCEÇÕES</p><h2>Pendências e Divergências</h2><p>Nada fica em papel solto: registre, acompanhe e resolva.</p></div><button class="btn primary" id="newDivergenceBtn">+ Registrar divergência</button></div>
+          <section class="panel"><div class="filter-row"><select id="divStatusFilter"><option value="todas">Todas</option><option value="aberta">Abertas</option><option value="em_tratamento">Em tratamento</option><option value="resolvida">Resolvidas</option><option value="cancelada">Canceladas</option></select><select id="divSupplierFilter"><option value="">Todos os fornecedores</option></select><button class="btn secondary" id="refreshDivergencesBtn">Filtrar</button></div><div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Fornecedor</th><th>Tipo</th><th>Descrição</th><th>Status</th><th></th></tr></thead><tbody id="divergenceRows"></tbody></table></div></section>
+        </section>
+
+        <section class="view" id="view-relatorios">
+          <div class="section-toolbar"><div><p class="eyebrow">DOCUMENTOS</p><h2>Relatórios</h2><p>Filtre por campanha, turma, fornecedor, item, status e período.</p></div></div>
+          <div class="reports-layout">
+            <section class="panel report-filters">
+              <div class="panel-head"><div><p class="eyebrow">FILTROS</p><h3>Defina o recorte</h3></div></div>
+              <div class="form-grid">
+                <label><span>Campanha</span><select id="reportCampaign"><option value="">Todas</option></select></label>
+                <label><span>Turma</span><select id="reportClass"><option value="">Todas</option></select></label>
+                <label><span>Fornecedor</span><select id="reportSupplier"><option value="">Todos</option></select></label>
+                <label><span>Item/Kit</span><select id="reportItem"><option value="">Todos</option></select></label>
+                <label><span>Status</span><select id="reportStatus"><option value="todos">Todos</option><option value="cadastrado">Cadastrado</option><option value="validado">Validado</option><option value="aguardando_fornecedor">Aguardando fornecedor</option><option value="disponivel_entrega">Disponível</option><option value="agendado">Agendado</option><option value="entregue">Entregue</option><option value="divergencia">Divergência</option><option value="cancelado">Cancelado</option></select></label>
+                <label><span>Período considera</span><select id="reportPeriodField"><option value="entrega">Data da entrega</option><option value="emissao">Data de emissão do voucher</option><option value="cadastro">Data do cadastro</option></select></label>
+                <label><span>Data inicial</span><input id="reportStart" type="date" /></label>
+                <label><span>Data final</span><input id="reportEnd" type="date" /></label>
+                <label class="wide"><span>Aluno / voucher</span><input id="reportSearch" placeholder="Busca livre..." /></label>
+              </div>
+              <div class="report-actions"><button class="btn secondary" id="previewReportBtn">Atualizar prévia</button><button class="btn pdf" id="exportPdfBtn">PDF</button><button class="btn docx" id="exportDocxBtn">DOCX</button></div>
+            </section>
+            <section class="panel report-preview">
+              <div class="panel-head"><div><p class="eyebrow">PRÉVIA</p><h3>Resumo do relatório</h3></div></div>
+              <div class="report-total"><span>Total geral</span><strong id="reportTotal">0</strong><small>registros encontrados</small></div>
+              <div class="mini-metrics"><div><span>Alunos</span><b id="reportStudents">0</b></div><div><span>Entregues</span><b id="reportDelivered">0</b></div><div><span>Pendentes</span><b id="reportPending">0</b></div><div><span>Divergências</span><b id="reportDivergences">0</b></div></div>
+              <div class="summary-bars" id="reportByClass"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="modal-head"><div><p class="eyebrow" id="modalEyebrow">CADASTRO</p><h2 id="modalTitle">Novo registro</h2></div><button class="icon-btn" id="modalClose">×</button></header>
+      <div class="modal-body" id="modalBody"></div>
+      <footer class="modal-foot" id="modalFoot"><button class="btn secondary" id="modalCancel">Cancelar</button><button class="btn primary" id="modalSave">Salvar</button></footer>
+    </section>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+  <script src="/uniformes/uniformes.js?v=1.1.0" defer></script>
+</body>
+</html>
