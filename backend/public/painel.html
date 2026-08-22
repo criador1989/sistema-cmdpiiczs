@@ -2714,6 +2714,7 @@ canvas{
   <a href="livro-ocorrencias.html?t=cmdpii" id="sbLivroOcorrencias">📘 Livro Digital</a>
   <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
   <a href="financeiro.html?t=cmdpii" id="sbFinanceiro">💰 Financeiro</a>
+  <a href="uniformes.html?t=cmdpii" id="sbUniformes" style="display:none">👕 Uniformes e Vouchers</a>
   <a href="transferir-turma.html?t=cmdpii" id="sbTransferir">🔁 Transferir Turmas</a>
   <a href="gestao-sistema.html?t=cmdpii" id="sbGestaoSistema">⚙️ Gestão do Sistema</a>
 </nav>
@@ -2948,6 +2949,29 @@ canvas{
                 <div class="card-watermark card-watermark--financeiro" aria-hidden="true">R$</div>
               </div>
             </div>
+
+            <div
+              id="cardUniformes"
+              class="window-card"
+              style="display:none"
+              role="link"
+              tabindex="0"
+              onclick="location.href=withTenant('uniformes.html')"
+            >
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">GESTÃO DE ENTREGA</div>
+                  <h3>Uniformes e Vouchers</h3>
+                  <p>Importação PDF, fornecedores, conferência e relatórios.</p>
+                </div>
+
+                <div
+                  class="card-watermark"
+                  aria-hidden="true"
+                >👕</div>
+              </div>
+            </div>
+
 
             <div id="cardAssociacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="window.AxoriinAmbientes?.abrirPrimeiraAssociacao()">
               <div class="window-content">
@@ -3341,6 +3365,7 @@ canvas{
     sbNotificacoes: '/notificacoes',
     sbEstatisticas: 'estatisticas.html',
     sbFinanceiro: 'financeiro.html',
+      sbUniformes: 'uniformes.html',
     sbTransferir: 'transferir-turma.html',
     sbGestaoSistema: 'gestao-sistema.html'
   };
@@ -3392,6 +3417,7 @@ canvas{
       sbNotificacoes:'sbNotificacoes',
       sbEstatisticas:'sbEstatisticas',
       sbFinanceiro:'sbFinanceiro',
+        sbUniformes:'sbUniformes',
       sbTransferir:'sbTransferir',
       sbGestaoSistema:'sbGestaoSistema',
     };
@@ -3403,6 +3429,7 @@ canvas{
       cardRankingAlunos:'cardRankingAlunos',
       cardEstatisticas:'cardEstatisticas',
       cardFinanceiro:'cardFinanceiro',
+        cardUniformes:'cardUniformes',
       cardTransferirTurma:'cardTransferirTurma',
       cardGestaoRedacao:'cardGestaoRedacao',
       cardObservacoesProfessor:'cardObservacoesProfessor'
@@ -3430,12 +3457,14 @@ canvas{
       const tipo = String(u?.tipo || '').toLowerCase();
 
       if (tipo === 'admin') {
+          show(SB.sbUniformes, CARDS.cardUniformes);
         const cardRedacao = document.getElementById(CARDS.cardGestaoRedacao);
         if (cardRedacao) cardRedacao.style.display = '';
         return;
       }
 
       if (tipo === 'monitor') {
+          show(SB.sbUniformes, CARDS.cardUniformes);
         hide(
           SB.sbFinanceiro,
           SB.sbGestaoSistema,
