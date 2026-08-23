@@ -1,0 +1,327 @@
+/* ==========================================================
+   AXORIIN - CARD ART v1.0.2 FULL FIX
+   Artes neon nos cards do painel.
+   Ativo: Escuro e Verde Tatico.
+   Inativo: Claro.
+   ========================================================== */
+
+:root{
+  --ax-card-art-opacity-dark:.34;
+    --ax-card-art-opacity-tactical:.46;
+  --ax-metric-art-opacity-dark:.64;
+    --ax-metric-art-opacity-tactical:.68;
+}
+
+/* Hosts */
+.metric.ax-card-art-host,
+.window-card.ax-card-art-host{
+  position:relative !important;
+  overflow:hidden !important;
+  isolation:isolate;
+}
+
+/* A arte e sempre decorativa e nunca captura clique. */
+.ax-card-art{
+  position:absolute;
+  display:block;
+  pointer-events:none !important;
+  user-select:none;
+  -webkit-user-drag:none;
+  z-index:1;
+  object-fit:contain;
+  object-position:center;
+  transition:opacity .24s ease, transform .28s ease, filter .24s ease;
+}
+
+/* Mantem conteudo real do Axoriin acima da arte. */
+.window-card.ax-card-art-host > :not(.ax-card-art),
+.metric.ax-card-art-host > :not(.ax-card-art){
+  position:relative;
+  z-index:3;
+}
+
+.window-card.ax-card-art-host .window-content,
+.window-card.ax-card-art-host .card-copy,
+.window-card.ax-card-art-host h3,
+.window-card.ax-card-art-host p,
+.window-card.ax-card-art-host .kicker,
+.metric.ax-card-art-host .k,
+.metric.ax-card-art-host .metric-hud-wrap,
+.metric.ax-card-art-host .metric-hud-core,
+.metric.ax-card-art-host .metric-hud-meta,
+.metric.ax-card-art-host .metric-hud-line{
+  position:relative;
+  z-index:4;
+}
+
+/* ==========================================================
+   TEMA CLARO: permanece exatamente com a iconografia anterior.
+   ========================================================== */
+html[data-ax-theme="light"] .ax-card-art{
+  display:none !important;
+}
+
+html[data-ax-theme="light"] .window-card.ax-card-art-host .card-watermark{
+  display:flex !important;
+}
+
+/* ==========================================================
+   CARDS DE MODULO
+   ========================================================== */
+html[data-ax-theme="dark"] .window-card.ax-card-art-host .ax-card-art--module,
+html[data-ax-theme="tactical"] .window-card.ax-card-art-host .ax-card-art--module{
+  width:47%;
+  height:92%;
+  right:1.5%;
+  top:50%;
+  transform:translateY(-50%) scale(.98);
+}
+
+html[data-ax-theme="dark"] .window-card.ax-card-art-host .ax-card-art--module{
+  opacity:var(--ax-card-art-opacity-dark);
+  filter:brightness(.92) saturate(.88) contrast(1.03);
+}
+
+html[data-ax-theme="tactical"] .window-card.ax-card-art-host .ax-card-art--module{
+  opacity:var(--ax-card-art-opacity-tactical);
+  filter:brightness(.98) saturate(.96) contrast(1.05)
+    drop-shadow(0 0 10px rgba(42,214,161,.10));
+}
+
+/* Remove apenas a marca d'agua antiga nos temas que usam a nova arte. */
+html[data-ax-theme="dark"] .window-card.ax-card-art-host .card-watermark,
+html[data-ax-theme="tactical"] .window-card.ax-card-art-host .card-watermark{
+  display:none !important;
+}
+
+/* Sombra de leitura do lado do texto sem cobrir a imagem. */
+html[data-ax-theme="dark"] .window-card.ax-card-art-host::before,
+html[data-ax-theme="tactical"] .window-card.ax-card-art-host::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:linear-gradient(90deg,
+    rgba(2,8,13,.42) 0%,
+    rgba(2,8,13,.22) 44%,
+    rgba(2,8,13,0) 70%);
+}
+
+html[data-ax-theme="tactical"] .window-card.ax-card-art-host::before{
+  background:linear-gradient(90deg,
+    rgba(3,10,8,.46) 0%,
+    rgba(3,10,8,.20) 45%,
+    rgba(3,10,8,0) 72%);
+}
+
+/* Hover: reforco discreto da ilustracao. */
+html[data-ax-theme="dark"] .window-card.ax-card-art-host:hover .ax-card-art--module,
+html[data-ax-theme="tactical"] .window-card.ax-card-art-host:hover .ax-card-art--module{
+  transform:translateY(-50%) scale(1.015);
+  opacity:.56;
+}
+
+/* Ajustes individuais para melhor enquadramento. */
+#cardCadastrarAluno .ax-card-art--module,
+#cardControleAcesso .ax-card-art--module,
+#cardVerNotificacoes .ax-card-art--module,
+#cardControleNotificacoes .ax-card-art--module,
+#cardRankingAlunos .ax-card-art--module,
+#cardAlamar .ax-card-art--module{
+  width:43%;
+  right:2.5%;
+}
+
+#cardFinanceiro .ax-card-art--module,
+#cardUniformes .ax-card-art--module,
+#cardAssociacao .ax-card-art--module,
+#cardTransferirTurma .ax-card-art--module,
+#cardPedagogico .ax-card-art--module,
+#cardGestaoRedacao .ax-card-art--module,
+#cardEstatisticas .ax-card-art--module{
+  width:45%;
+  right:1.5%;
+}
+
+/* ==========================================================
+   3 CARDS EM DESTAQUE / METRICAS - v1.0.3
+
+   REGRA PRINCIPAL:
+   a arte vive DENTRO do .metric-hud e usa exatamente o mesmo
+   centro do numero dinamico. Assim ela nao muda de posicao no
+   hover. O efeito hover continua sendo o efeito nativo do card.
+   ========================================================== */
+html[data-ax-theme="dark"] .metric.ax-card-art-host .metric-hud,
+html[data-ax-theme="tactical"] .metric.ax-card-art-host .metric-hud{
+  position:relative !important;
+  overflow:visible !important;
+  isolation:isolate;
+}
+
+/* A arte passa a ser ancorada diretamente no centro do HUD. */
+html[data-ax-theme="dark"] .metric.ax-card-art-host .metric-hud > .ax-card-art--metric,
+html[data-ax-theme="tactical"] .metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  width:214px !important;
+  height:auto !important;
+  max-width:none !important;
+  max-height:none !important;
+  transform:translate(-50%,-50%) !important;
+  transform-origin:50% 50% !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  z-index:2 !important;
+  pointer-events:none !important;
+  transition:opacity .22s ease, filter .22s ease !important;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,
+    transparent 0 11%,
+    rgba(0,0,0,.34) 19%,
+    #000 36%);
+  mask-image:radial-gradient(circle at 50% 50%,
+    transparent 0 11%,
+    rgba(0,0,0,.34) 19%,
+    #000 36%);
+}
+
+/* Ajuste optico individual das 3 artes. */
+#metricAlunos.metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+  width:224px !important;
+  transform:translate(-50%,-49%) !important;
+}
+
+/* A arte central tem mais conteudo na parte superior (sino), por isso
+   precisa subir um pouco em relacao ao centro geometrico da imagem. */
+#metricNotif.metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+  width:214px !important;
+  transform:translate(-50%,-54%) !important;
+}
+
+#metricMedia.metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+  width:224px !important;
+  transform:translate(-50%,-50%) !important;
+}
+
+html[data-ax-theme="dark"] .metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+  opacity:.68 !important;
+  filter:brightness(1.06) saturate(.96) contrast(1.08)
+    drop-shadow(0 0 12px rgba(57,199,255,.10));
+}
+
+html[data-ax-theme="tactical"] .metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+  opacity:.74 !important;
+  filter:brightness(1.10) saturate(1.02) contrast(1.10)
+    drop-shadow(0 0 14px rgba(42,214,161,.14));
+}
+
+/* Remove a estrutura circular antiga. A contagem real continua por cima. */
+.metric.ax-card-art-host .metric-hud{
+  filter:none !important;
+}
+
+.metric.ax-card-art-host .metric-hud::before,
+.metric.ax-card-art-host .metric-hud::after,
+.metric.ax-card-art-host .metric-hud-outer,
+.metric.ax-card-art-host .metric-hud-segments,
+.metric.ax-card-art-host .metric-hud-mid,
+.metric.ax-card-art-host .metric-hud-mid::before,
+.metric.ax-card-art-host .metric-hud-decor-left,
+.metric.ax-card-art-host .metric-hud-decor-right,
+.metric.ax-card-art-host .metric-hud-sweep{
+  display:none !important;
+}
+
+/* O circulo/valor dinamico usa o mesmo centro do HUD e fica acima da arte. */
+.metric.ax-card-art-host .metric-hud-core{
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  transform:translate(-50%,-50%) !important;
+  width:74px !important;
+  height:74px !important;
+  z-index:8 !important;
+  background:radial-gradient(circle at 50% 38%, rgba(22,78,98,.34), rgba(4,12,18,.98));
+  border:1px solid rgba(89,231,255,.16);
+  box-shadow:
+    0 0 20px rgba(0,0,0,.42),
+    inset 0 0 16px rgba(89,231,255,.10);
+}
+
+#metricAlunos.metric.ax-card-art-host .metric-hud-core{
+  width:82px !important;
+  height:82px !important;
+}
+
+.metric.ax-card-art-host .metric-hud-core .v{
+  position:relative;
+  z-index:9 !important;
+  text-shadow:
+    0 2px 12px rgba(0,0,0,.82),
+    0 0 12px rgba(var(--ax-accent-rgb,89,231,255),.10) !important;
+}
+
+/* NUNCA altera transform/top/left da arte no hover.
+   O hover do card inteiro continua vindo do painel.html (.metric:hover). */
+html[data-ax-theme="dark"] .metric.ax-card-art-host:hover .metric-hud > .ax-card-art--metric,
+html[data-ax-theme="dark"] .metric.ax-card-art-host:focus-within .metric-hud > .ax-card-art--metric,
+html[data-ax-theme="tactical"] .metric.ax-card-art-host:hover .metric-hud > .ax-card-art--metric,
+html[data-ax-theme="tactical"] .metric.ax-card-art-host:focus-within .metric-hud > .ax-card-art--metric{
+  opacity:inherit;
+}
+
+#metricAlunos.metric.ax-card-art-host:hover .metric-hud > .ax-card-art--metric,
+#metricAlunos.metric.ax-card-art-host:focus-within .metric-hud > .ax-card-art--metric{
+  transform:translate(-50%,-49%) !important;
+}
+#metricNotif.metric.ax-card-art-host:hover .metric-hud > .ax-card-art--metric,
+#metricNotif.metric.ax-card-art-host:focus-within .metric-hud > .ax-card-art--metric{
+  transform:translate(-50%,-54%) !important;
+}
+#metricMedia.metric.ax-card-art-host:hover .metric-hud > .ax-card-art--metric,
+#metricMedia.metric.ax-card-art-host:focus-within .metric-hud > .ax-card-art--metric{
+  transform:translate(-50%,-50%) !important;
+}
+
+/* Mantem titulo, rodape e barras acima da arte. */
+.metric.ax-card-art-host .k,
+.metric.ax-card-art-host .metric-hud-meta,
+.metric.ax-card-art-host .metric-hud-line{
+  position:relative;
+  z-index:10 !important;
+}
+
+/* ==========================================================
+   RESPONSIVO
+   ========================================================== */
+@media (max-width:980px){
+  html[data-ax-theme="dark"] .window-card.ax-card-art-host .ax-card-art--module,
+  html[data-ax-theme="tactical"] .window-card.ax-card-art-host .ax-card-art--module{
+    width:42%;
+    opacity:.30;
+  }
+}
+
+@media (max-width:680px){
+  html[data-ax-theme="dark"] .window-card.ax-card-art-host .ax-card-art--module,
+  html[data-ax-theme="tactical"] .window-card.ax-card-art-host .ax-card-art--module{
+    width:38%;
+    height:78%;
+    right:0;
+    opacity:.22;
+  }
+
+  html[data-ax-theme="dark"] .metric.ax-card-art-host .metric-hud > .ax-card-art--metric,
+  html[data-ax-theme="tactical"] .metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+    width:190px !important;
+  }
+  #metricAlunos.metric.ax-card-art-host .metric-hud > .ax-card-art--metric,
+  #metricMedia.metric.ax-card-art-host .metric-hud > .ax-card-art--metric{
+    width:198px !important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .ax-card-art{ transition:none !important; }
+}

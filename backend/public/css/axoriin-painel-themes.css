@@ -1,0 +1,937 @@
+/* ==========================================================
+   AXORIIN - SISTEMA DE TEMAS DO PAINEL v1.0.3.1
+   Escuro | Claro | Azul Neon | Verde Tatico
+   ========================================================== */
+
+:root{
+  --ax-accent:#59e7ff;
+  --ax-accent-rgb:89,231,255;
+  --ax-accent-2:#25d7ff;
+  --ax-accent-2-rgb:37,215,255;
+  --ax-panel-bg:rgba(7,17,29,.70);
+  --ax-panel-bg-strong:rgba(7,15,26,.88);
+  --ax-panel-border:rgba(90,220,255,.16);
+  --ax-panel-border-strong:rgba(110,235,255,.30);
+  --ax-shadow:0 18px 42px rgba(0,0,0,.34);
+  --ax-icon-filter:grayscale(1) saturate(0) brightness(1.05) contrast(1.05);
+}
+
+html[data-ax-theme="dark"]{
+  --ax-accent:#59e7ff;
+  --ax-accent-rgb:89,231,255;
+  --ax-accent-2:#25d7ff;
+  --ax-accent-2-rgb:37,215,255;
+}
+
+html[data-ax-theme="light"]{
+  --bg-deep:#e9eef4;
+  --bg-mid:#f4f7fa;
+  --bg-soft:#ffffff;
+  --glass-bg:rgba(255,255,255,.80);
+  --glass-bg-2:rgba(248,250,252,.94);
+  --glass-border:rgba(58,72,91,.14);
+  --glass-border-strong:rgba(30,107,170,.28);
+  --glass-highlight:rgba(255,255,255,.96);
+  --glass-shadow:
+    0 1px 0 rgba(255,255,255,.96),
+    0 14px 34px rgba(20,34,52,.09),
+    inset 0 1px 0 rgba(255,255,255,.86);
+  --hud-cyan:#2f8bd3;
+  --hud-cyan-2:#187cc8;
+  --hud-cyan-soft:rgba(47,139,211,.10);
+  --hud-cyan-line:rgba(47,139,211,.20);
+  --hud-cyan-dim:rgba(47,139,211,.06);
+  --text-main:#202833;
+  --text-soft:#536174;
+  --text-dim:#738093;
+  --danger:#b84d5c;
+  --warn:#a16922;
+  --ok:#177b5a;
+  --ax-accent:#2f8bd3;
+  --ax-accent-rgb:47,139,211;
+  --ax-accent-2:#187cc8;
+  --ax-accent-2-rgb:24,124,200;
+  --ax-panel-bg:rgba(255,255,255,.83);
+  --ax-panel-bg-strong:rgba(250,252,254,.96);
+  --ax-panel-border:rgba(54,69,88,.13);
+  --ax-panel-border-strong:rgba(47,139,211,.25);
+  --ax-shadow:0 16px 38px rgba(25,39,58,.10);
+  --ax-icon-filter:grayscale(1) saturate(0) brightness(.54) contrast(1.18);
+}
+
+html[data-ax-theme="neon"]{
+  --bg-deep:#010713;
+  --bg-mid:#031027;
+  --bg-soft:#071833;
+  --glass-bg:rgba(3,13,31,.70);
+  --glass-bg-2:rgba(2,10,25,.90);
+  --glass-border:rgba(58,174,255,.20);
+  --glass-border-strong:rgba(57,199,255,.44);
+  --hud-cyan:#39c7ff;
+  --hud-cyan-2:#1a84ff;
+  --hud-cyan-soft:rgba(57,199,255,.14);
+  --hud-cyan-line:rgba(57,199,255,.26);
+  --hud-cyan-dim:rgba(57,199,255,.09);
+  --text-main:#f3f8ff;
+  --text-soft:rgba(218,235,255,.78);
+  --text-dim:rgba(178,207,241,.60);
+  --ax-accent:#39c7ff;
+  --ax-accent-rgb:57,199,255;
+  --ax-accent-2:#6b7cff;
+  --ax-accent-2-rgb:107,124,255;
+  --ax-panel-bg:rgba(2,13,31,.76);
+  --ax-panel-bg-strong:rgba(2,9,24,.93);
+  --ax-panel-border:rgba(57,199,255,.22);
+  --ax-panel-border-strong:rgba(90,211,255,.46);
+}
+
+html[data-ax-theme="tactical"]{
+  --bg-deep:#030807;
+  --bg-mid:#07110f;
+  --bg-soft:#0c1916;
+  --glass-bg:rgba(5,18,15,.74);
+  --glass-bg-2:rgba(4,13,12,.92);
+  --glass-border:rgba(42,214,161,.18);
+  --glass-border-strong:rgba(42,214,161,.38);
+  --hud-cyan:#2ad6a1;
+  --hud-cyan-2:#10b98b;
+  --hud-cyan-soft:rgba(42,214,161,.12);
+  --hud-cyan-line:rgba(42,214,161,.24);
+  --hud-cyan-dim:rgba(42,214,161,.08);
+  --text-main:#eef5f0;
+  --text-soft:rgba(218,232,222,.76);
+  --text-dim:rgba(181,203,188,.58);
+  --warn:#d6a15f;
+  --ok:#68e0b6;
+  --ax-accent:#2ad6a1;
+  --ax-accent-rgb:42,214,161;
+  --ax-accent-2:#c68b4d;
+  --ax-accent-2-rgb:198,139,77;
+  --ax-panel-bg:rgba(4,16,14,.78);
+  --ax-panel-bg-strong:rgba(3,12,10,.94);
+  --ax-panel-border:rgba(42,214,161,.18);
+  --ax-panel-border-strong:rgba(198,139,77,.38);
+  --ax-shadow:0 18px 44px rgba(0,0,0,.44);
+}
+
+/* Transicoes discretas: muda o tema sem recarregar o painel */
+html.ax-theme-ready body,
+html.ax-theme-ready .sidebar,
+html.ax-theme-ready .metric.metric--hud,
+html.ax-theme-ready .window-card,
+html.ax-theme-ready .pend-card,
+html.ax-theme-ready .chart-card,
+html.ax-theme-ready .qrcode-box,
+html.ax-theme-ready .alertas-comportamento,
+html.ax-theme-ready .mobile-appbar,
+html.ax-theme-ready .bottom-nav{
+  transition:
+    background-color .22s ease,
+    background .22s ease,
+    color .22s ease,
+    border-color .22s ease,
+    box-shadow .22s ease,
+    filter .22s ease !important;
+}
+
+html[data-ax-theme="light"] body{
+  color-scheme:light;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(58,123,180,.09), transparent 25%),
+    radial-gradient(circle at 84% 18%, rgba(124,144,166,.07), transparent 24%),
+    linear-gradient(135deg,#edf1f5 0%,#f8fafc 48%,#e9eef3 100%) !important;
+}
+
+html[data-ax-theme="neon"] body{
+  color-scheme:dark;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(21,96,255,.20), transparent 27%),
+    radial-gradient(circle at 82% 18%, rgba(57,199,255,.13), transparent 23%),
+    radial-gradient(circle at 76% 78%, rgba(104,77,255,.10), transparent 26%),
+    linear-gradient(135deg,#010510,#031127 58%,#03091a 100%) !important;
+}
+
+html[data-ax-theme="tactical"] body{
+  color-scheme:dark;
+  background:
+    radial-gradient(circle at 17% 12%, rgba(20,116,85,.13), transparent 25%),
+    radial-gradient(circle at 83% 22%, rgba(198,139,77,.07), transparent 20%),
+    linear-gradient(135deg,#020706,#07110f 56%,#030907 100%) !important;
+}
+
+html[data-ax-theme="light"] #bg-wallpaper{
+  opacity:.065 !important;
+  filter:grayscale(.72) brightness(1.16) contrast(.86) saturate(.34) !important;
+  mix-blend-mode:multiply;
+}
+
+html[data-ax-theme="dark"] #bg-wallpaper{
+  opacity:.42 !important;
+  filter:brightness(.34) saturate(.86) !important;
+}
+
+html[data-ax-theme="neon"] #bg-wallpaper{
+  opacity:.22 !important;
+  filter:brightness(.25) saturate(.92) hue-rotate(4deg) !important;
+}
+
+html[data-ax-theme="tactical"] #bg-wallpaper{
+  background-image:url('/assets/painel/theme-tactical-wallpaper-v104.png') !important;
+  background-position:center top !important;
+  background-size:cover !important;
+  opacity:.62 !important;
+  filter:brightness(.76) saturate(1.08) contrast(1.10) hue-rotate(6deg) !important;
+}
+
+html[data-ax-theme="light"] body::before{
+  background:
+    linear-gradient(rgba(54,76,100,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(54,76,100,.03) 1px, transparent 1px) !important;
+  opacity:.42 !important;
+}
+
+html[data-ax-theme="tactical"] body::before{
+  background:
+    linear-gradient(rgba(42,214,161,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42,214,161,.02) 1px, transparent 1px) !important;
+}
+
+/* Sidebar */
+html[data-ax-theme="light"] .sidebar{
+  background:linear-gradient(180deg,rgba(252,253,254,.95),rgba(241,245,248,.92)) !important;
+  border-color:rgba(55,70,88,.13) !important;
+  box-shadow:0 20px 48px rgba(25,38,54,.11), inset 0 1px 0 rgba(255,255,255,.96) !important;
+}
+
+html[data-ax-theme="neon"] .sidebar{
+  background:linear-gradient(180deg,rgba(2,10,25,.94),rgba(2,7,18,.91)) !important;
+  border-color:rgba(57,199,255,.16) !important;
+  box-shadow:0 22px 52px rgba(0,0,0,.48),0 0 26px rgba(26,132,255,.05) !important;
+}
+
+html[data-ax-theme="tactical"] .sidebar{
+  background:linear-gradient(180deg,rgba(4,14,12,.95),rgba(2,9,8,.92)) !important;
+  border-color:rgba(42,214,161,.13) !important;
+  box-shadow:0 22px 52px rgba(0,0,0,.50),0 0 26px rgba(42,214,161,.025) !important;
+}
+
+html[data-ax-theme="light"] .brand{
+  background:radial-gradient(circle at 35% 25%,#fff,#aab7c4 36%,#4a5663 100%) !important;
+  box-shadow:0 7px 18px rgba(27,41,56,.14) !important;
+}
+
+html[data-ax-theme="light"] .sb-logout-top{
+  background:rgba(255,255,255,.72) !important;
+  border-color:rgba(56,72,90,.14) !important;
+  box-shadow:0 8px 20px rgba(29,42,56,.07) !important;
+}
+
+html[data-ax-theme="light"] .sb-logout-top:hover{
+  background:#fff !important;
+  border-color:rgba(47,139,211,.24) !important;
+  box-shadow:0 10px 24px rgba(24,47,68,.09) !important;
+}
+
+/* Navegacao e icones */
+.ax-nav-icon{
+  width:1.35em;
+  min-width:1.35em;
+  text-align:center;
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  line-height:1;
+  transform:translateZ(0);
+}
+
+.ax-nav-label{ min-width:0; }
+
+html[data-ax-theme="light"] .ax-nav-icon{
+  filter:var(--ax-icon-filter) !important;
+  opacity:.90;
+}
+
+html[data-ax-theme="light"] .nav a{
+  background:linear-gradient(180deg,rgba(255,255,255,.70),rgba(245,248,250,.62)) !important;
+  border-color:rgba(60,77,96,.075) !important;
+  box-shadow:none !important;
+}
+
+html[data-ax-theme="light"] .nav a:hover{
+  background:#fff !important;
+  border-color:rgba(56,85,114,.14) !important;
+  box-shadow:0 9px 20px rgba(26,42,58,.07) !important;
+}
+
+html[data-ax-theme="light"] .nav a.active{
+  background:linear-gradient(135deg,rgba(230,237,244,.97),rgba(244,248,251,.98)) !important;
+  border-color:rgba(67,86,108,.22) !important;
+  box-shadow:inset 3px 0 0 #526477,0 9px 22px rgba(25,40,55,.08) !important;
+}
+
+html[data-ax-theme="light"] .nav a.active::before{
+  background:linear-gradient(90deg,transparent,rgba(58,128,184,.09),transparent) !important;
+}
+
+html[data-ax-theme="neon"] .nav a.active{
+  background:linear-gradient(180deg,rgba(26,132,255,.17),rgba(57,199,255,.07)) !important;
+  border-color:rgba(57,199,255,.34) !important;
+  box-shadow:0 10px 28px rgba(0,0,0,.43),inset 3px 0 0 #39c7ff !important;
+}
+
+html[data-ax-theme="tactical"] .nav a.active{
+  background:linear-gradient(180deg,rgba(42,214,161,.14),rgba(42,214,161,.045)) !important;
+  border-color:rgba(42,214,161,.28) !important;
+  box-shadow:0 10px 28px rgba(0,0,0,.44),inset 3px 0 0 #2ad6a1 !important;
+}
+
+/* Cabecalho */
+html[data-ax-theme="light"] .titulo{
+  text-shadow:0 8px 24px rgba(22,36,51,.08) !important;
+  color:#17202b !important;
+}
+
+html[data-ax-theme="light"] .sub,
+html[data-ax-theme="light"] .sub *{
+  color:#566578 !important;
+}
+
+html[data-ax-theme="light"] .btn-wallpaper{
+  background:rgba(255,255,255,.80) !important;
+  color:#2b3542 !important;
+  border-color:rgba(56,73,92,.14) !important;
+  box-shadow:0 9px 22px rgba(24,40,56,.08) !important;
+}
+
+html[data-ax-theme="light"] .btn-wallpaper:hover{
+  background:#fff !important;
+  border-color:rgba(47,139,211,.24) !important;
+  box-shadow:0 12px 26px rgba(24,40,56,.10) !important;
+}
+
+/* Cards principais */
+html[data-ax-theme="light"] .window-card,
+html[data-ax-theme="light"] .pend-card,
+html[data-ax-theme="light"] .chart-card,
+html[data-ax-theme="light"] .qrcode-box,
+html[data-ax-theme="light"] .alertas-comportamento{
+  background:
+    radial-gradient(circle at 100% 0%,rgba(102,129,154,.035),transparent 33%),
+    linear-gradient(180deg,rgba(255,255,255,.92),rgba(245,248,250,.88)) !important;
+  border-color:rgba(63,78,96,.13) !important;
+  box-shadow:var(--glass-shadow) !important;
+}
+
+html[data-ax-theme="light"] .window-card:hover,
+html[data-ax-theme="light"] .chart-card:hover,
+html[data-ax-theme="light"] .qrcode-box:hover{
+  border-color:rgba(47,139,211,.24) !important;
+  box-shadow:0 18px 38px rgba(24,38,54,.12),0 0 0 1px rgba(255,255,255,.70) !important;
+}
+
+html[data-ax-theme="neon"] .window-card,
+html[data-ax-theme="neon"] .pend-card,
+html[data-ax-theme="neon"] .chart-card,
+html[data-ax-theme="neon"] .qrcode-box,
+html[data-ax-theme="neon"] .alertas-comportamento{
+  background:linear-gradient(180deg,rgba(4,17,39,.84),rgba(2,10,27,.77)) !important;
+  border-color:rgba(57,199,255,.20) !important;
+}
+
+html[data-ax-theme="tactical"] .window-card,
+html[data-ax-theme="tactical"] .pend-card,
+html[data-ax-theme="tactical"] .chart-card,
+html[data-ax-theme="tactical"] .qrcode-box,
+html[data-ax-theme="tactical"] .alertas-comportamento{
+  background:
+    radial-gradient(circle at 100% 0%,rgba(198,139,77,.045),transparent 30%),
+    linear-gradient(180deg,rgba(5,18,15,.86),rgba(3,12,10,.80)) !important;
+  border-color:rgba(42,214,161,.17) !important;
+}
+
+html[data-ax-theme="tactical"] .window-card:hover{
+  border-color:rgba(198,139,77,.35) !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.46),0 0 18px rgba(42,214,161,.035) !important;
+}
+
+/* Icones dos cards: no claro ficam grafite, como solicitado */
+html[data-ax-theme="light"] .card-watermark{
+  color:rgba(58,68,80,.50) !important;
+  opacity:.48 !important;
+  filter:grayscale(1) saturate(0) brightness(.72) contrast(1.08) !important;
+  text-shadow:none !important;
+}
+
+html[data-ax-theme="light"] .card-watermark--financeiro{
+  color:rgba(45,55,66,.40) !important;
+  opacity:.42 !important;
+  filter:none !important;
+}
+
+html[data-ax-theme="light"] .card-watermark--alamar{
+  color:rgba(72,74,76,.40) !important;
+}
+
+html[data-ax-theme="neon"] .card-watermark{
+  color:rgba(116,219,255,.40) !important;
+  opacity:.40 !important;
+  filter:grayscale(.05) saturate(.82) brightness(1.08) !important;
+  text-shadow:0 0 16px rgba(57,199,255,.12) !important;
+}
+
+html[data-ax-theme="tactical"] .card-watermark{
+  color:rgba(112,225,186,.46) !important;
+  opacity:.54 !important;
+  filter:none !important;
+  text-shadow:0 0 20px rgba(42,214,161,.16),0 0 34px rgba(42,214,161,.06) !important;
+}
+
+html[data-ax-theme="tactical"] .card-watermark--alamar,
+html[data-ax-theme="tactical"] .card-watermark--financeiro{
+  color:rgba(214,163,102,.52) !important;
+  filter:none !important;
+  text-shadow:0 0 18px rgba(198,139,77,.16) !important;
+}
+
+/* Metricas */
+html[data-ax-theme="light"] .metric.metric--hud{
+  background:
+    radial-gradient(circle at 50% -18%,rgba(47,139,211,.08),transparent 44%),
+    linear-gradient(180deg,rgba(255,255,255,.96),rgba(242,246,249,.94)) !important;
+  border:1px solid rgba(60,77,96,.16) !important;
+  box-shadow:0 18px 38px rgba(22,38,55,.10),inset 0 1px 0 rgba(255,255,255,.96) !important;
+}
+
+html[data-ax-theme="light"] .metric.metric--hud:hover{
+  border-color:rgba(47,139,211,.27) !important;
+  box-shadow:0 20px 42px rgba(22,38,55,.12),0 0 0 1px rgba(255,255,255,.72) !important;
+}
+
+html[data-ax-theme="light"] .metric .k{
+  color:#354153 !important;
+  background:linear-gradient(90deg,transparent,rgba(48,91,128,.055) 18%,rgba(48,91,128,.055) 82%,transparent) !important;
+  border-color:rgba(62,80,98,.13) !important;
+  text-shadow:none !important;
+}
+
+html[data-ax-theme="light"] .metric .k::before,
+html[data-ax-theme="light"] .metric .k::after{
+  background:#617489 !important;
+  box-shadow:none !important;
+}
+
+html[data-ax-theme="light"] .metric-hud{
+  filter:drop-shadow(0 0 6px rgba(47,139,211,.12)) !important;
+}
+
+html[data-ax-theme="light"] .metric-hud::before{
+  border-color:rgba(47,139,211,.14) !important;
+}
+
+html[data-ax-theme="light"] .metric-hud::after,
+html[data-ax-theme="light"] .metric-hud-mid{
+  border-color:rgba(47,139,211,.19) !important;
+  box-shadow:inset 0 0 16px rgba(47,139,211,.035),0 0 8px rgba(47,139,211,.035) !important;
+}
+
+html[data-ax-theme="light"] .metric-hud-core,
+html[data-ax-theme="light"] .metric:first-child .metric-hud-core{
+  background:radial-gradient(circle at 42% 30%,rgba(255,255,255,.94),rgba(229,236,242,.98) 70%) !important;
+  border-color:rgba(62,83,103,.18) !important;
+  box-shadow:inset 0 0 20px rgba(47,139,211,.035),0 7px 18px rgba(34,50,67,.08) !important;
+}
+
+html[data-ax-theme="light"] .metric .v,
+html[data-ax-theme="light"] .metric:first-child .v{
+  color:#1e2834 !important;
+  text-shadow:none !important;
+}
+
+html[data-ax-theme="light"] .metric-hud-status,
+html[data-ax-theme="light"] .metric-hud-percent{
+  color:#4c5b6e !important;
+  text-shadow:none !important;
+}
+
+html[data-ax-theme="light"] .metric-hud-line span{
+  background:rgba(82,100,119,.12) !important;
+  border-color:rgba(82,100,119,.07) !important;
+}
+
+html[data-ax-theme="light"] .metric-hud-line span.on{
+  background:linear-gradient(180deg,#62778c,#40576e) !important;
+  border-color:rgba(59,78,98,.14) !important;
+}
+
+html[data-ax-theme="light"] .metric-hud-segments.is-active{
+  background:conic-gradient(from -90deg,#7f92a6 0deg,#43586e var(--seg-fill),rgba(75,91,108,.14) var(--seg-fill),rgba(75,91,108,.14) 360deg) !important;
+  filter:drop-shadow(0 0 4px rgba(53,73,92,.13)) !important;
+}
+
+html[data-ax-theme="neon"] .metric.metric--hud{
+  border-color:rgba(57,199,255,.32) !important;
+  background:radial-gradient(circle at 50% -18%,rgba(26,132,255,.16),transparent 44%),linear-gradient(180deg,rgba(3,17,40,.94),rgba(1,8,23,.97)) !important;
+}
+
+html[data-ax-theme="neon"] .metric-hud-segments.is-active{
+  background:conic-gradient(from -90deg,#a2f2ff 0deg,#39c7ff var(--seg-fill),rgba(34,78,126,.20) var(--seg-fill),rgba(34,78,126,.20) 360deg) !important;
+}
+
+html[data-ax-theme="tactical"] .metric.metric--hud{
+  border-color:rgba(42,214,161,.25) !important;
+  background:radial-gradient(circle at 50% -18%,rgba(42,214,161,.09),transparent 44%),linear-gradient(180deg,rgba(5,18,15,.94),rgba(2,10,9,.97)) !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.025) !important;
+}
+
+html[data-ax-theme="tactical"] .metric-hud-segments.is-active{
+  background:conic-gradient(from -90deg,#9af3d4 0deg,#2ad6a1 var(--seg-fill),rgba(37,86,69,.20) var(--seg-fill),rgba(37,86,69,.20) 360deg) !important;
+  filter:drop-shadow(0 0 5px rgba(42,214,161,.42)) !important;
+}
+
+html[data-ax-theme="tactical"] .metric-hud-line span.on{
+  background:linear-gradient(180deg,rgba(42,214,161,.76),rgba(25,119,91,.78)) !important;
+  border-color:rgba(42,214,161,.14) !important;
+}
+
+html[data-ax-theme="tactical"] .metric .k::before,
+html[data-ax-theme="tactical"] .metric .k::after{
+  background:#c68b4d !important;
+  box-shadow:0 0 7px rgba(198,139,77,.28) !important;
+}
+
+/* Inputs, tabelas e controles inferiores */
+html[data-ax-theme="light"] input,
+html[data-ax-theme="light"] select,
+html[data-ax-theme="light"] textarea,
+html[data-ax-theme="light"] .table-wrap,
+html[data-ax-theme="light"] .tabela,
+html[data-ax-theme="light"] .tab-btn,
+html[data-ax-theme="light"] .btn{
+  color:#27313d !important;
+}
+
+html[data-ax-theme="light"] .table-wrap,
+html[data-ax-theme="light"] .tabela,
+html[data-ax-theme="light"] input,
+html[data-ax-theme="light"] select,
+html[data-ax-theme="light"] textarea{
+  background:rgba(255,255,255,.80) !important;
+  border-color:rgba(62,79,98,.14) !important;
+}
+
+html[data-ax-theme="light"] .tabela th{
+  background:rgba(225,232,238,.72) !important;
+}
+
+html[data-ax-theme="light"] .tabela td{
+  border-color:rgba(62,79,98,.10) !important;
+}
+
+html[data-ax-theme="light"] .mobile-appbar,
+html[data-ax-theme="light"] .bottom-nav{
+  background:rgba(249,251,253,.94) !important;
+  border-color:rgba(55,72,91,.14) !important;
+  box-shadow:0 12px 28px rgba(23,38,54,.10) !important;
+}
+
+html[data-ax-theme="light"] .mobile-appbar-btn,
+html[data-ax-theme="light"] .bottom-nav button{
+  background:rgba(228,234,240,.62) !important;
+  color:#27313d !important;
+}
+
+/* Widget de observacoes carregado dinamicamente */
+html[data-ax-theme="light"] body #opAdminWidget,
+html[data-ax-theme="light"] body .op-admin-widget{
+  background:rgba(250,252,254,.96) !important;
+  color:#27313d !important;
+  border-color:rgba(62,79,98,.16) !important;
+  box-shadow:0 18px 42px rgba(24,38,54,.13) !important;
+}
+
+html[data-ax-theme="light"] body #opAdminWidget *,
+html[data-ax-theme="light"] body .op-admin-widget *{
+  color:#27313d !important;
+}
+
+/* ==========================================================
+   CONTROLES DE TEMA
+   ========================================================== */
+.ax-theme-controls{
+  margin-top:0;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  position:absolute;
+  top:2px;
+  right:4px;
+  z-index:360;
+}
+
+.ax-theme-menu-wrap{ position:relative; }
+
+html body .ax-theme-button,
+html body .ax-mode-toggle{
+  appearance:none;
+  border:1px solid var(--ax-panel-border) !important;
+  background:var(--ax-panel-bg-strong) !important;
+  color:var(--text-main) !important;
+  box-shadow:0 9px 24px rgba(0,0,0,.18) !important;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  cursor:pointer;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+
+html body .ax-theme-button{
+  min-height:38px;
+  border-radius:999px;
+  padding:7px 13px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font:600 .80rem/1 "Segoe UI",system-ui,sans-serif;
+}
+
+html body .ax-theme-button:hover,
+html body .ax-mode-toggle:hover{
+  transform:translateY(-1px);
+  border-color:var(--ax-panel-border-strong) !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.22),0 0 16px rgba(var(--ax-accent-rgb),.055) !important;
+}
+
+.ax-theme-button-icon{
+  color:var(--ax-accent) !important;
+  font-size:.94rem;
+}
+
+.ax-theme-button-title{
+  color:var(--text-main) !important;
+}
+
+html body .ax-theme-current{
+  color:var(--text-soft) !important;
+  font-weight:500;
+  padding-left:2px;
+}
+
+.ax-theme-caret{
+  color:var(--text-dim) !important;
+  font-size:.92rem;
+  margin-left:1px;
+}
+
+html body .ax-mode-toggle{
+  width:38px;
+  height:38px;
+  border-radius:999px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1rem;
+}
+
+html[data-ax-theme="light"] body .ax-theme-button,
+html[data-ax-theme="light"] body .ax-mode-toggle{
+  background:rgba(255,255,255,.88) !important;
+  box-shadow:0 8px 20px rgba(25,40,56,.09) !important;
+}
+
+.ax-theme-menu{
+  position:absolute;
+  top:calc(100% + 9px);
+  left:50%;
+  transform:translateX(-50%);
+  width:210px;
+  padding:7px;
+  border-radius:16px;
+  background:var(--ax-panel-bg-strong);
+  border:1px solid var(--ax-panel-border);
+  box-shadow:0 20px 48px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  z-index:380;
+}
+
+.ax-theme-menu[hidden]{ display:none !important; }
+
+html[data-ax-theme="light"] .ax-theme-menu{
+  background:rgba(252,253,254,.98) !important;
+  box-shadow:0 20px 44px rgba(24,38,54,.16),inset 0 1px 0 #fff !important;
+}
+
+html body .ax-theme-option{
+  width:100%;
+  min-height:42px;
+  display:grid;
+  grid-template-columns:18px 1fr 18px;
+  align-items:center;
+  gap:10px;
+  border:1px solid transparent !important;
+  border-radius:11px;
+  padding:8px 9px;
+  background:transparent !important;
+  color:var(--text-main) !important;
+  cursor:pointer;
+  text-align:left;
+  font:600 .82rem/1.1 "Segoe UI",system-ui,sans-serif;
+}
+
+html body .ax-theme-option:hover{
+  background:rgba(var(--ax-accent-rgb),.075) !important;
+  border-color:rgba(var(--ax-accent-rgb),.12) !important;
+}
+
+html body .ax-theme-option.is-active{
+  background:rgba(var(--ax-accent-rgb),.11) !important;
+  border-color:rgba(var(--ax-accent-rgb),.20) !important;
+}
+
+.ax-theme-swatch{
+  width:15px;
+  height:15px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.32);
+  box-shadow:0 0 0 1px rgba(0,0,0,.10),0 4px 9px rgba(0,0,0,.12);
+}
+
+.ax-theme-option-label{ color:var(--text-main) !important; }
+
+.ax-theme-check{
+  opacity:0;
+  color:var(--ax-accent) !important;
+  font-weight:800;
+  text-align:center;
+}
+
+.ax-theme-option.is-active .ax-theme-check{ opacity:1; }
+
+/* Em telas grandes mantemos o cabecalho limpo; no celular os controles reduzem */
+@media(max-width:900px){
+  .ax-theme-controls{
+    position:relative;
+    top:auto;
+    right:auto;
+    margin-top:2px;
+    gap:6px;
+  }
+  html body .ax-theme-button{ padding:7px 10px; min-height:36px; }
+  html body .ax-mode-toggle{ width:36px; height:36px; }
+  .ax-theme-current{ display:none; }
+  .ax-theme-menu{ left:auto; right:0; transform:none; width:198px; }
+}
+
+@media(max-width:420px){
+  .ax-theme-button-title{ font-size:.76rem; }
+}
+
+@media(prefers-reduced-motion:reduce){
+  html.ax-theme-ready body,
+  html.ax-theme-ready .sidebar,
+  html.ax-theme-ready .metric.metric--hud,
+  html.ax-theme-ready .window-card,
+  html.ax-theme-ready .ax-theme-button,
+  html.ax-theme-ready .ax-mode-toggle{
+    transition:none !important;
+  }
+}
+
+
+/* ==========================================================
+   AXORIIN - HOTFIX VISUAL v1.0.3.1
+   - dropdown acima do widget de notificacoes
+   - retorna a iconografia original do painel em todos os temas
+   - Verde Tatico mantem ambientacao de fundo mais evidente
+   ========================================================== */
+
+/* Iconografia ORIGINAL do painel em todos os temas.
+   A V1.0.2 nao substitui emojis/glifos por SVG.
+   O tema pode ajustar apenas contraste/visibilidade, sem trocar o desenho. */
+.ax-nav-icon{
+  filter:none !important;
+  opacity:1 !important;
+  color:inherit !important;
+  font-family:inherit;
+}
+.nav a.active .ax-nav-icon,
+.nav a:hover .ax-nav-icon{
+  filter:none !important;
+  color:inherit !important;
+}
+
+/* Watermarks dos cards: mantem exatamente os glifos originais do painel. */
+html[data-ax-theme="dark"] .card-watermark,
+html[data-ax-theme="neon"] .card-watermark,
+html[data-ax-theme="tactical"] .card-watermark{
+  filter:grayscale(1) saturate(0) brightness(1.15) contrast(.95) !important;
+  opacity:.18 !important;
+  color:rgba(226,242,255,.16) !important;
+}
+html[data-ax-theme="dark"] .card-watermark--alamar,
+html[data-ax-theme="neon"] .card-watermark--alamar,
+html[data-ax-theme="tactical"] .card-watermark--alamar{
+  color:rgba(240,200,107,.22) !important;
+}
+html[data-ax-theme="dark"] .card-watermark--financeiro,
+html[data-ax-theme="neon"] .card-watermark--financeiro,
+html[data-ax-theme="tactical"] .card-watermark--financeiro{
+  color:rgba(226,242,255,.15) !important;
+  opacity:.14 !important;
+  filter:none !important;
+}
+
+/* No claro, os MESMOS glifos ficam apenas mais escuros para leitura. */
+html[data-ax-theme="light"] .card-watermark{
+  filter:grayscale(1) saturate(0) brightness(.56) contrast(1.12) !important;
+  opacity:.22 !important;
+  color:rgba(49,58,69,.30) !important;
+}
+html[data-ax-theme="light"] .card-watermark--alamar{
+  color:rgba(72,74,76,.40) !important;
+}
+html[data-ax-theme="light"] .card-watermark--financeiro{
+  color:rgba(45,55,66,.40) !important;
+  opacity:.42 !important;
+  filter:none !important;
+}
+
+/* Tema tatico: mapa-mundi visivel no fundo verde */
+html[data-ax-theme="tactical"] #bg-wallpaper{
+  background-image:url('/assets/painel/theme-tactical-wallpaper-v104.png') !important;
+  background-position:center top !important;
+  background-size:cover !important;
+  opacity:.58 !important;
+  filter:brightness(.74) saturate(1.06) contrast(1.10) hue-rotate(6deg) !important;
+  mix-blend-mode:screen !important;
+}
+
+/* Camada HUD tatico independente do wallpaper escolhido */
+html[data-ax-theme="tactical"] body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  opacity:.62;
+  background-image:
+    radial-gradient(circle at 58% 21%, transparent 0 52px, rgba(42,214,161,.13) 53px 54px, transparent 55px 82px, rgba(42,214,161,.08) 83px 84px, transparent 85px),
+    radial-gradient(circle at 58% 21%, rgba(42,214,161,.16) 0 2px, transparent 3px),
+    linear-gradient(90deg, transparent 57.85%, rgba(42,214,161,.08) 57.9% 58%, transparent 58.05%),
+    linear-gradient(0deg, transparent 78.7%, rgba(42,214,161,.07) 78.8% 78.95%, transparent 79.05%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='420' viewBox='0 0 760 420'%3E%3Cg fill='none' stroke='%232ad6a1' stroke-opacity='.12' stroke-width='1'%3E%3Cpath d='M82 145l32-31 46-9 39 16 31-7 24 19 42-6 30 23-8 20-44 7-18 22-39 8-19-13-43 8-35-18-48 3-21-17 31-25z'/%3E%3Cpath d='M365 105l27-18 36 9 19-12 47 16 25 23 42 2 29 24-4 29 21 26-19 17-48-4-24 18-38-9-28 18-35-14-18-29-36-10-8-30 19-25 9-31z'/%3E%3Cpath d='M488 272l39-11 35 11 23 27-12 28-36 14-42-9-18-23z'/%3E%3C/g%3E%3Cg fill='%232ad6a1' fill-opacity='.13'%3E%3Ccircle cx='120' cy='122' r='2'/%3E%3Ccircle cx='182' cy='151' r='2'/%3E%3Ccircle cx='249' cy='136' r='2'/%3E%3Ccircle cx='399' cy='107' r='2'/%3E%3Ccircle cx='466' cy='125' r='2'/%3E%3Ccircle cx='535' cy='167' r='2'/%3E%3Ccircle cx='507' cy='291' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,no-repeat;
+  background-position:center,center,center,center,58% 21%;
+  background-size:auto,auto,auto,auto,min(760px,62vw) auto;
+  mix-blend-mode:screen;
+}
+
+html[data-ax-theme="tactical"] .titulo{
+  text-shadow:0 0 24px rgba(42,214,161,.10),0 8px 24px rgba(0,0,0,.68) !important;
+}
+html[data-ax-theme="tactical"] .metric.metric--hud{
+  border-color:rgba(198,139,77,.22) !important;
+  box-shadow:0 18px 44px rgba(0,0,0,.48),inset 0 1px 0 rgba(42,214,161,.06) !important;
+}
+html[data-ax-theme="tactical"] .metric-hud,
+html[data-ax-theme="tactical"] .metric-hud-core{
+  filter:drop-shadow(0 0 8px rgba(42,214,161,.18)) !important;
+}
+
+/* Menu de temas em portal no body: sai do stacking context do .wrap */
+.ax-theme-controls{
+  z-index:2147483000 !important;
+}
+.ax-theme-menu.ax-theme-portal{
+  position:fixed !important;
+  top:0;
+  left:0;
+  right:auto !important;
+  transform:none !important;
+  z-index:2147483646 !important;
+  isolation:isolate;
+}
+body.ax-theme-menu-open #opAdminWidget,
+body.ax-theme-menu-open .op-admin-widget{
+  z-index:100 !important;
+}
+
+/* O proprio botao permanece acima de widgets locais quando possivel */
+.ax-theme-button,
+.ax-mode-toggle{
+  position:relative;
+  z-index:2147483001 !important;
+}
+
+@media(max-width:900px){
+  .ax-theme-menu.ax-theme-portal{
+    width:min(210px,calc(100vw - 20px)) !important;
+  }
+}
+
+
+/* ==========================================================
+   AJUSTES VISUAIS EXTRAS v1.0.3.1
+   ========================================================== */
+html[data-ax-theme="dark"] .card-watermark{
+  opacity:.22 !important;
+}
+
+/* SVGs especiais somente no Verde Tático */
+.card-watermark.ax-card-watermark-svg{
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  width:98px;
+  height:98px;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  opacity:.60;
+}
+
+.card-watermark.ax-card-watermark-svg svg{
+  width:100%;
+  height:100%;
+  display:block;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  overflow:visible;
+  filter:drop-shadow(0 0 10px rgba(0,0,0,.18));
+}
+
+html[data-ax-theme="tactical"] .card-watermark.ax-card-watermark-svg{
+  opacity:.78 !important;
+  color:rgba(113,231,191,.78) !important;
+  text-shadow:none !important;
+  filter:none !important;
+}
+
+html[data-ax-theme="tactical"] .card-watermark.ax-card-watermark-svg svg{
+  filter:
+    drop-shadow(0 0 8px rgba(42,214,161,.22))
+    drop-shadow(0 0 24px rgba(42,214,161,.10));
+}
+
+html[data-ax-theme="tactical"] .card-watermark--alamar.ax-card-watermark-svg,
+html[data-ax-theme="tactical"] .card-watermark--financeiro.ax-card-watermark-svg{
+  color:rgba(214,163,102,.82) !important;
+}
+
+html[data-ax-theme="tactical"] .window-card{
+  background:
+    radial-gradient(circle at 100% 0%,rgba(198,139,77,.055),transparent 30%),
+    radial-gradient(circle at 0% 100%,rgba(42,214,161,.045),transparent 30%),
+    linear-gradient(180deg,rgba(5,18,15,.86),rgba(3,12,10,.80)) !important;
+}
+
+html[data-ax-theme="tactical"] .window-card::after{
+  box-shadow:0 0 0 1px rgba(198,139,77,.14), 0 0 18px rgba(42,214,161,.04) !important;
+}
+
+html[data-ax-theme="tactical"] .titulo{
+  text-shadow:0 0 18px rgba(42,214,161,.10), 0 8px 30px rgba(0,0,0,.28) !important;
+}
