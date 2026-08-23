@@ -1,0 +1,8 @@
+AXORIIN PAINEL CARD ART 1.0.3 METRIC CENTER FIX
+Instalado em: 2026-08-23T17:26:11.185Z
+Backup: E:\Projetos\PLATAFORMA_COLEGIO_MILITAR\backend\_backup_painel_card_art_v1_0_3_metriccenter_20260823172610
+Temas disponiveis: Escuro, Verde Tatico
+Temas removidos do seletor: Claro, Azul Neon
+Mapa-mundi aplicado ao fundo do tema Verde Tatico
+Cards grandes: arte ancorada no mesmo centro do numero + hover somente no card
+Modo: SAFE / NAO DESTRUTIVO
