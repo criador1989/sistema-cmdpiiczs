@@ -8,6 +8,11 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icons/icon-192x192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
+
+  <!-- AXORIIN_PAINEL_CARD_ART_V1_0_3_METRIC_CENTER_FIX -->
+  <script id="axoriin-theme-preload">
+  (()=>{try{const a=new Set(['dark','tactical']);const s=String(localStorage.getItem('axoriin_panel_theme_v1')||'dark').toLowerCase();document.documentElement.dataset.axTheme=a.has(s)?s:'dark';}catch{document.documentElement.dataset.axTheme='dark';}})();
+  </script>
 <style>
 :root{
   --bg-deep:#030a14;
@@ -2642,6 +2647,10 @@ canvas{
 
 </style>
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
+
+  <!-- AXORIIN_PAINEL_CARD_ART_V1_0_3_METRIC_CENTER_FIX -->
+  <link rel="stylesheet" href="/css/axoriin-painel-themes.css?v=1.0.4" />
+  <link rel="stylesheet" href="/css/axoriin-panel-card-art.css?v=1.0.3" />
 </head>
 
 <body>
@@ -4767,5 +4776,9 @@ async function carregarAlertaRevisoes() {
   <script src="/update-client.js"></script>
   <script src="/axoriin-ajuda/conteudos-ajuda.js"></script>
   <script src="/axoriin-ajuda/ajuda-contextual.js"></script>
+
+  <!-- AXORIIN_PAINEL_CARD_ART_V1_0_3_METRIC_CENTER_FIX -->
+  <script src="/js/axoriin-painel-themes.js?v=1.0.4"></script>
+  <script src="/js/axoriin-panel-card-art.js?v=1.0.3"></script>
 </body>
 </html>
