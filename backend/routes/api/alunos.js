@@ -179,7 +179,14 @@ function stripQueryHash(url) {
 function extrairAssetKey(url) {
   if (!url) return null;
 
-  const clean = stripQueryHash(String(url).trim());
+  const bruto = String(url).trim();
+  if (!bruto) return null;
+
+  // Base64 e caminhos locais nunca sao objetos gerenciados do nosso S3.
+  if (/^data:image\//i.test(bruto) || /;base64,/i.test(bruto)) return null;
+  if (/^\/?(?:backend[\\/])?uploads[\\/]/i.test(bruto)) return null;
+
+  const clean = stripQueryHash(bruto);
 
   const bases = [
     AWS_CDN_URL,
@@ -193,12 +200,8 @@ function extrairAssetKey(url) {
     }
   }
 
-  try {
-    const u = new URL(clean);
-    return decodeURIComponent(u.pathname.replace(/^\/+/, ''));
-  } catch {
-    return null;
-  }
+  // URL externa arbitraria nao pode virar uma key do nosso bucket.
+  return null;
 }
 
 function isManagedAssetUrl(url) {
@@ -246,12 +249,54 @@ function normalizarFotoParaPersistencia(valorFoto) {
   const fotoLimpa = String(valorFoto || '').trim();
   if (!fotoLimpa) return '';
 
+  // Fluxos comuns nunca devem persistir Base64 ou arquivo local.
+  if (/^data:image\//i.test(fotoLimpa) || /;base64,/i.test(fotoLimpa)) return '';
+  if (/^\/?(?:backend[\\/])?uploads[\\/]/i.test(fotoLimpa)) return '';
+
   const key = extrairAssetKey(fotoLimpa);
   if (key && AWS_STORAGE_BASE_URL) {
     return montarStorageUrlPorKey(key);
   }
 
-  return fotoLimpa;
+  return '';
+}
+
+function resumirReferenciaFotoAudit(valor) {
+  const s = String(valor || '').trim();
+
+  if (!s) {
+    return { tipo: 'vazia' };
+  }
+
+  if (/^data:image\//i.test(s) || /;base64,/i.test(s)) {
+    return {
+      tipo: /^data:image\//i.test(s)
+        ? 'base64'
+        : 'url_base64_corrompida',
+      tamanhoBytes: Buffer.byteLength(s, 'utf8')
+    };
+  }
+
+  if (/^\/?(?:backend[\\/])?uploads[\\/]/i.test(s)) {
+    return {
+      tipo: 'upload_local',
+      referencia: s.slice(0, 240)
+    };
+  }
+
+  const key = extrairAssetKey(s);
+
+  if (key) {
+    return {
+      tipo: 's3',
+      key
+    };
+  }
+
+  return {
+    tipo: 'outra',
+    referencia: s.slice(0, 240)
+  };
 }
 
 function anexarThumbNaPlain(a) {
@@ -914,6 +959,7 @@ router.put(
   '/:id/foto',
   autenticar,
   requireTenant,
+  attachActor,
 
   async (req, res, next) => {
 
@@ -1054,6 +1100,32 @@ router.put(
       detalhesCache.delete(cacheKey(getTenantId(req), String(aluno._id)));
     } catch {}
 
+    await safeAudit({
+      req,
+      event: 'ALUNO_FOTO_ATUALIZADA',
+      targetType: 'Aluno',
+      targetId: aluno._id,
+      entidadeNome: aluno.nome,
+      alunoNome: aluno.nome,
+      meta: {
+        turma: aluno.turma,
+        storage: 's3',
+
+        anteriores: {
+          foto: resumirReferenciaFotoAudit(fotosAntigas.foto),
+          original: resumirReferenciaFotoAudit(fotosAntigas.fotoOriginal),
+          medium: resumirReferenciaFotoAudit(fotosAntigas.fotoMedium),
+          thumb: resumirReferenciaFotoAudit(fotosAntigas.fotoThumb)
+        },
+
+        novas: {
+          original: resumirReferenciaFotoAudit(aluno.fotoOriginal),
+          medium: resumirReferenciaFotoAudit(aluno.fotoMedium),
+          thumb: resumirReferenciaFotoAudit(aluno.fotoThumb)
+        }
+      }
+    });
+
     return res.json({
       ok: true,
       message: 'Foto atualizada com sucesso.',
@@ -1150,28 +1222,41 @@ router.put('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdmin,
 
     const dadosAtualizados = sanitizeUpdate(req.body);
 
-    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'foto')) {
-      const fotoPersistente = normalizarFotoParaPersistencia(dadosAtualizados.foto);
-      if (!fotoPersistente) delete dadosAtualizados.foto;
-      else dadosAtualizados.foto = fotoPersistente;
+    // Todos os campos de imagem sao protegidos.
+    // Foto so pode ser alterada em PUT /api/alunos/:id/foto.
+    const camposFotoProtegidos = [
+      'foto',
+      'fotoOriginal',
+      'fotoMedium',
+      'fotoThumb',
+      'fotoMeta',
+      'fotoPublicId',
+      'fotoCaminho'
+    ];
+
+    const camposFotoRecebidos = camposFotoProtegidos.filter((campo) =>
+      Object.prototype.hasOwnProperty.call(dadosAtualizados, campo)
+    );
+
+    for (const campo of camposFotoProtegidos) {
+      delete dadosAtualizados[campo];
     }
 
-    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoOriginal')) {
-      const fotoOriginalPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoOriginal);
-      if (!fotoOriginalPersistente) delete dadosAtualizados.fotoOriginal;
-      else dadosAtualizados.fotoOriginal = fotoOriginalPersistente;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoThumb')) {
-      const fotoThumbPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoThumb);
-      if (!fotoThumbPersistente) delete dadosAtualizados.fotoThumb;
-      else dadosAtualizados.fotoThumb = fotoThumbPersistente;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(dadosAtualizados, 'fotoMedium')) {
-      const fotoMediumPersistente = normalizarFotoParaPersistencia(dadosAtualizados.fotoMedium);
-      if (!fotoMediumPersistente) delete dadosAtualizados.fotoMedium;
-      else dadosAtualizados.fotoMedium = fotoMediumPersistente;
+    // Se alguma tela, script antigo ou integracao ainda tentar
+    // modificar foto pelo PUT comum, registrar para investigacao.
+    if (camposFotoRecebidos.length) {
+      await safeAudit({
+        req,
+        event: 'ALUNO_FOTO_ALTERACAO_BLOQUEADA',
+        targetType: 'Aluno',
+        targetId: alunoAntes._id,
+        entidadeNome: alunoAntes.nome,
+        alunoNome: alunoAntes.nome,
+        meta: {
+          turma: alunoAntes.turma,
+          camposRecebidos: camposFotoRecebidos
+        }
+      });
     }
 
     if (dadosAtualizados.turma !== undefined) {

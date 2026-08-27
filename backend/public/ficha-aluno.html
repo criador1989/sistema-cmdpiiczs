@@ -716,7 +716,7 @@
           <div><label>Telefone</label><input id="edTel" type="text" /></div>
           <div><label>Endereço</label><input id="edEnd" type="text" /></div>
           <div><label>Código de Acesso</label><input id="edCodigo" type="text" /></div>
-          <div><label>Foto (URL, /uploads/..., ou base64)</label><input id="edFoto" type="text" placeholder="ex: /uploads/alunos/123.jpg ou https://..." /></div>
+          <div><label>Foto</label><div>Use o botão <strong>Trocar foto</strong> acima. A imagem é processada e armazenada no S3.</div></div>
         </div>
         <div class="card" style="margin-top:12px;">
           <h4 style="margin:0 0 10px;">Contatos do Responsável</h4>
@@ -1846,7 +1846,6 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
       byId('edTel').value    = alunoAtual.telefone || '';
       byId('edEnd').value    = alunoAtual.endereco || '';
       byId('edCodigo').value = alunoAtual.codigoAcesso || '';
-      byId('edFoto').value   = alunoAtual.fotoUrl || alunoAtual.foto || '';
 
       const ct = alunoAtual.contatos || {};
       byId('edEmailResp').value = ct.emailResponsavel || '';
@@ -1867,7 +1866,6 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
       if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
       const whatsDigits = byId('edWhats').value.replace(/\D+/g,'');
-      const fotoDigitada = byId('edFoto').value.trim();
 
       const payload = {
         nome:         byId('edNome').value.trim(),
@@ -1885,10 +1883,6 @@ const classAtual = n.classificacaoAtualExibicao || n.classificacaoAtual || '—'
           telegramChatId:   byId('edTelegramId').value.trim() || undefined,
         }
       };
-
-      if (fotoDigitada) {
-        payload.foto = fotoDigitada;
-      }
 
       try{
         const fullUrl = `/api/alunos/${alunoAtual._id}`;
