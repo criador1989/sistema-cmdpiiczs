@@ -14,7 +14,7 @@ const router = express.Router();
 
 const Aluno = require('../../models/Aluno');
 const ObservacaoProfessor = require('../../models/ObservacaoProfessor');
-const { autenticar, apenasProfessor, apenasAdmin } = require('../../middleware/autenticacao');
+const { autenticar, apenasProfessor, apenasMonitorOuAdmin, apenasAdmin } = require('../../middleware/autenticacao');
 const { requireTenant, tenantFilter } = require('../../middleware/tenantScope');
 const { attachActor, logAction } = require('../../utils/audit');
 
@@ -71,8 +71,8 @@ function ehProfessor(req) {
   return String(req.usuario?.tipo || '').toLowerCase() === 'professor';
 }
 
-function ehAdmin(req) {
-  return ['admin', 'master', 'superadmin'].includes(String(req.usuario?.tipo || '').toLowerCase());
+function ehGestao(req) {
+  return ['monitor', 'admin', 'master', 'superadmin'].includes(String(req.usuario?.tipo || '').toLowerCase());
 }
 
 function marcadoresValidos(valor) {
@@ -815,7 +815,7 @@ router.delete('/lote/:loteId', autenticar, requireTenant, apenasProfessor, attac
 
 router.get('/aluno/:alunoId', autenticar, requireTenant, async (req, res) => {
   try {
-    if (!ehProfessor(req) && !ehAdmin(req)) {
+    if (!ehProfessor(req) && !ehGestao(req)) {
       return res.status(403).json({ mensagem: 'Perfil sem permissão para consultar estas observações.' });
     }
 
@@ -949,7 +949,7 @@ router.delete('/:id', autenticar, requireTenant, apenasProfessor, attachActor, a
   }
 });
 
-router.get('/admin/feed', autenticar, requireTenant, apenasAdmin, async (req, res) => {
+router.get('/admin/feed', autenticar, requireTenant, apenasMonitorOuAdmin, async (req, res) => {
   try {
     const adminId = usuarioId(req);
     const limite = Math.min(Math.max(Number(req.query.limit) || 20, 5), 100);
@@ -999,7 +999,7 @@ router.get('/admin/feed', autenticar, requireTenant, apenasAdmin, async (req, re
 });
 
 
-router.get('/admin/lote/:loteId', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+router.get('/admin/lote/:loteId', autenticar, requireTenant, apenasMonitorOuAdmin, attachActor, async (req, res) => {
   try {
     const loteId = String(req.params.loteId || '').trim();
     if (!loteIdValido(loteId)) {
@@ -1068,7 +1068,7 @@ router.get('/admin/lote/:loteId', autenticar, requireTenant, apenasAdmin, attach
   }
 });
 
-router.get('/admin/:id', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+router.get('/admin/:id', autenticar, requireTenant, apenasMonitorOuAdmin, attachActor, async (req, res) => {
   try {
     const observacao = await ObservacaoProfessor.findOne(
       tenantFilter(req, { _id: req.params.id })
@@ -1208,7 +1208,7 @@ router.delete('/admin/:id/permanente', autenticar, requireTenant, apenasAdmin, a
   }
 });
 
-router.patch('/admin/:id/assumir', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+router.patch('/admin/:id/assumir', autenticar, requireTenant, apenasMonitorOuAdmin, attachActor, async (req, res) => {
   try {
     const observacao = await ObservacaoProfessor.findOne(
       tenantFilter(req, { _id: req.params.id })
@@ -1227,7 +1227,7 @@ router.patch('/admin/:id/assumir', autenticar, requireTenant, apenasAdmin, attac
 
     if (responsavelAtual && responsavelAtual !== adminId) {
       return res.status(409).json({
-        mensagem: `Atendimento já assumido por ${observacao.atendimento?.nome || 'outro administrador'}.`,
+        mensagem: `Atendimento já assumido por ${observacao.atendimento?.nome || 'outro responsavel'}.`,
       });
     }
 
@@ -1264,7 +1264,7 @@ router.patch('/admin/:id/assumir', autenticar, requireTenant, apenasAdmin, attac
   }
 });
 
-router.patch('/admin/:id/liberar', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+router.patch('/admin/:id/liberar', autenticar, requireTenant, apenasMonitorOuAdmin, attachActor, async (req, res) => {
   try {
     const observacao = await ObservacaoProfessor.findOne(
       tenantFilter(req, { _id: req.params.id })
@@ -1309,7 +1309,7 @@ router.patch('/admin/:id/liberar', autenticar, requireTenant, apenasAdmin, attac
   }
 });
 
-router.patch('/admin/:id/status', autenticar, requireTenant, apenasAdmin, attachActor, async (req, res) => {
+router.patch('/admin/:id/status', autenticar, requireTenant, apenasMonitorOuAdmin, attachActor, async (req, res) => {
   try {
     const novoStatus = String(req.body?.status || '').trim();
     const nota = textoLimpo(req.body?.nota, 1500);
@@ -1332,7 +1332,7 @@ router.patch('/admin/:id/status', autenticar, requireTenant, apenasAdmin, attach
 
     if (responsavelAtual && responsavelAtual !== adminId && novoStatus !== 'lida') {
       return res.status(409).json({
-        mensagem: `O acompanhamento está sob responsabilidade de ${observacao.atendimento?.nome || 'outro administrador'}.`,
+        mensagem: `O acompanhamento está sob responsabilidade de ${observacao.atendimento?.nome || 'outro responsavel'}.`,
       });
     }
 

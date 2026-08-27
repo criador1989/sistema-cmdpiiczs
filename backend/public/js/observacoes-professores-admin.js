@@ -45,6 +45,11 @@
     return new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(d);
   };
 
+  const podeExcluirPermanentemente = () =>
+    ['admin','master','superadmin'].includes(
+      String(estado.usuario?.tipo || '').toLowerCase()
+    );
+
   function lerPreferenciaSom() {
     try { return localStorage.getItem(CHAVE_SOM) !== '0'; }
     catch (_error) { return true; }
@@ -189,7 +194,7 @@
       : `${quantidade} novas observações de professores`;
     const corpo = quantidade === 1
       ? `${primeiro.alunoNome || 'Aluno'} • ${primeiro.turma || 'Turma não informada'} — ${String(primeiro.texto || '').slice(0, 150)}`
-      : 'Há novos registros aguardando leitura no painel administrativo.';
+      : 'Há novos registros aguardando leitura no painel de acompanhamento.';
 
     try {
       const notificacao = new Notification(titulo, {
@@ -615,17 +620,18 @@
           <em>Abrir →</em>
         </button>`).join('')}
       </div>
-      <div class="op-admin-danger-zone">
+      ${podeExcluirPermanentemente() ? `<div class="op-admin-danger-zone">
         <strong>Correção de registros indevidos</strong>
         <p>Use somente para testes ou lançamentos realizados por engano. A exclusão remove todas as observações deste lote das fichas e dos históricos.</p>
         <button class="op-admin-btn danger" type="button" id="opAdminExcluirLote">Excluir lote permanentemente</button>
-      </div>
+      </div>` : ''}
       <div class="op-admin-feedback" id="opAdminFeedback" role="status"></div>`;
 
     document.querySelectorAll('[data-op-open-id]').forEach((botao) => {
       botao.addEventListener('click', () => abrir(botao.dataset.opOpenId));
     });
-    document.getElementById('opAdminExcluirLote').onclick = () => excluirLotePermanentemente(lote.loteId);
+    const excluirLote = document.getElementById('opAdminExcluirLote');
+    if (excluirLote) excluirLote.onclick = () => excluirLotePermanentemente(lote.loteId);
   }
 
   async function abrirLote(loteId) {
@@ -650,7 +656,7 @@
     const bloqueadoPorOutro = Boolean(ownerId && !souResponsavel && !concluida);
     const ownerText = item.atendimento?.nome
       ? `<strong>${esc(item.atendimento.nome)}</strong> desde ${esc(dataHora(item.atendimento.assumidoEm))}`
-      : 'Ainda não assumida por um administrador.';
+      : 'Ainda não assumida pela equipe de acompanhamento.';
 
     document.getElementById('opAdminModalTitle').textContent = `${item.alunoNome} • ${item.turma}`;
     document.getElementById('opAdminModalSubtitle').textContent = `Registrada por ${item.professorNome} em ${dataHora(item.createdAt)}`;
@@ -678,11 +684,11 @@
         <div class="op-admin-field"><label for="opAdminNota">Encaminhamento/retorno</label><textarea id="opAdminNota" ${bloqueadoPorOutro ? 'disabled' : ''} maxlength="1500" placeholder="Registre a providência adotada ou o retorno ao professor.">${esc(item.resolucao?.nota || '')}</textarea></div>
         <button class="op-admin-btn success" type="button" id="opAdminSalvarStatus" ${bloqueadoPorOutro ? 'disabled' : ''}>Salvar</button>
       </div>
-      <div class="op-admin-danger-zone">
+      ${podeExcluirPermanentemente() ? `<div class="op-admin-danger-zone">
         <strong>Correção de registro indevido</strong>
         <p>Use somente para teste ou lançamento feito por engano. Esta ação remove o registro da ficha do aluno e do histórico do professor.</p>
         <button class="op-admin-btn danger" type="button" id="opAdminExcluirPermanente">Excluir permanentemente</button>
-      </div>
+      </div>` : ''}
       <div class="op-admin-feedback" id="opAdminFeedback" role="status">${bloqueadoPorOutro ? 'Somente o responsável atual pode alterar este acompanhamento.' : ''}</div>`;
 
     document.getElementById('opAdminFicha').onclick = () => {
@@ -693,7 +699,8 @@
     const liberar = document.getElementById('opAdminLiberar');
     if (liberar) liberar.onclick = () => acaoAdmin('liberar');
     document.getElementById('opAdminSalvarStatus').onclick = salvarStatus;
-    document.getElementById('opAdminExcluirPermanente').onclick = excluirPermanentemente;
+    const excluirPermanente = document.getElementById('opAdminExcluirPermanente');
+    if (excluirPermanente) excluirPermanente.onclick = excluirPermanentemente;
   }
 
   function solicitarDadosExclusao(escopo) {
@@ -804,7 +811,7 @@
   async function iniciar() {
     try {
       const usuario = await api('/api/usuario-logado');
-      if (!['admin','master','superadmin'].includes(String(usuario.tipo || '').toLowerCase())) return;
+      if (!['monitor','admin','master','superadmin'].includes(String(usuario.tipo || '').toLowerCase())) return;
       estado.usuario = usuario;
       garantirEstrutura();
       obterAudioElement()?.load();
