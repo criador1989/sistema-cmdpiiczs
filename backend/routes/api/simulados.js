@@ -3,6 +3,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const fsSync = require('fs');
+const os = require('os');
+const path = require('path');
 
 const Simulado = require('../../models/Simulado');
 const SimuladoResultado = require('../../models/SimuladoResultado');
@@ -55,7 +58,11 @@ const {
   MAX_PDF_BYTES,
   questoesDoDia,
   diaTemIdioma,
-  analisarPdfCartoes,
+  enfileirarProcessamentoOmr,
+  validarArquivoPdf,
+  sha256Arquivo,
+  limparPdfTemporario,
+  analisarPdfCartoesArquivo,
 } = require('../../services/simulados/simuladoOmrService');
 const {
   recuperarVinculos,
@@ -73,7 +80,17 @@ const upload = multer({
   },
 });
 const uploadCartoes = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      try {
+        const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'axoriin-upload-omr-'));
+        cb(null, dir);
+      } catch (error) {
+        cb(error);
+      }
+    },
+    filename: (_req, _file, cb) => cb(null, 'cartoes.pdf'),
+  }),
   limits: { fileSize: MAX_PDF_BYTES, files: 1 },
   fileFilter: (_req, file, cb) => {
     const nome = texto(file.originalname).toLowerCase();
@@ -366,6 +383,170 @@ async function aplicarVinculosAnteriores(req, importacao, anterior) {
   });
 }
 
+
+const OMR_STALE_MS = 15 * 60 * 1000;
+
+function progressoOmr(etapa, paginasProcessadas = 0, paginasTotal = 0, extra = {}) {
+  const total = Math.max(0, Number(paginasTotal) || 0);
+  const processadas = Math.max(0, Math.min(total || Number.MAX_SAFE_INTEGER, Number(paginasProcessadas) || 0));
+  const percentual = total ? Math.max(0, Math.min(100, Number(extra.percentual) || ((processadas / total) * 100))) : 0;
+  const agora = new Date();
+  return {
+    etapa,
+    paginasTotal: total,
+    paginasProcessadas: processadas,
+    percentual: Math.round(percentual * 10) / 10,
+    iniciadoEm: extra.iniciadoEm || agora,
+    atualizadoEm: agora,
+    concluidoEm: extra.concluidoEm || null,
+  };
+}
+
+async function atualizarProgressoOmr({ importacaoId, instituicaoId, simuladoId, payload, iniciadoEm }) {
+  const total = Number(payload?.total) || 0;
+  const pagina = Number(payload?.pagina) || 0;
+  const etapa = ['preparando', 'lendo', 'finalizando'].includes(texto(payload?.etapa))
+    ? texto(payload.etapa)
+    : 'lendo';
+  const valor = progressoOmr(etapa, pagina, total, {
+    percentual: Number(payload?.percentual) || 0,
+    iniciadoEm,
+  });
+  await SimuladoImportacao.updateOne({
+    _id: importacaoId,
+    instituicao: instituicaoId,
+    simulado: simuladoId,
+    status: 'analisando',
+  }, { $set: { progressoOmr: valor } });
+}
+
+async function normalizarOmrInterrompido(importacao) {
+  if (!importacao || importacao.status !== 'analisando') return importacao;
+  const atualizadoEm = importacao.progressoOmr?.atualizadoEm || importacao.updatedAt || importacao.createdAt;
+  const data = atualizadoEm ? new Date(atualizadoEm) : null;
+  if (!data || Number.isNaN(data.getTime()) || (Date.now() - data.getTime()) <= OMR_STALE_MS) return importacao;
+
+  const mensagem = 'A leitura óptica foi interrompida antes de concluir, possivelmente por reinício do servidor. Envie o PDF novamente; nenhuma resposta parcial foi gravada.';
+  importacao.status = 'erro';
+  importacao.erro = mensagem;
+  importacao.progressoOmr = {
+    ...(importacao.progressoOmr?.toObject?.() || importacao.progressoOmr || {}),
+    etapa: 'erro',
+    atualizadoEm: new Date(),
+    concluidoEm: new Date(),
+  };
+  await importacao.save();
+  return importacao;
+}
+
+async function executarProcessamentoOmrAssincrono({
+  importacaoId,
+  instituicaoId,
+  simulado,
+  turma,
+  dia,
+  tempDir,
+  pdfPath,
+  anteriorId,
+  iniciadoEm,
+}) {
+  try {
+    await SimuladoImportacao.updateOne({ _id: importacaoId, instituicao: instituicaoId, status: 'analisando' }, {
+      $set: { progressoOmr: progressoOmr('preparando', 0, 0, { iniciadoEm }) },
+    });
+
+    const analise = await analisarPdfCartoesArquivo({
+      pdfPath,
+      simulado,
+      turma,
+      dia,
+      onProgress: (payload) => {
+        atualizarProgressoOmr({
+          importacaoId,
+          instituicaoId,
+          simuladoId: simulado._id,
+          payload,
+          iniciadoEm,
+        }).catch(() => null);
+      },
+    });
+
+    analise.totais = totaisDaImportacao(analise.linhas, simulado);
+    const tamanhoEstruturado = Buffer.byteLength(JSON.stringify(analise.linhas), 'utf8');
+    if (tamanhoEstruturado > 13 * 1024 * 1024) {
+      throw new Error('A prévia dos cartões ultrapassou o limite seguro. Divida o PDF em duas partes.');
+    }
+
+    let anterior = null;
+    if (anteriorId && idValido(anteriorId)) {
+      anterior = await SimuladoImportacao.findOne({
+        _id: anteriorId,
+        instituicao: instituicaoId,
+        simulado: simulado._id,
+        status: 'processada',
+      }).lean();
+    }
+
+    let recuperacao = { recuperados: 0, indisponiveis: 0 };
+    if (anterior) {
+      recuperacao = await aplicarVinculosAnteriores({ instituicaoId }, {
+        arquivo: { formato: 'pdf', turma, dia },
+        linhas: analise.linhas,
+      }, anterior);
+      analise.totais = totaisDaImportacao(analise.linhas, simulado);
+      if (recuperacao.recuperados) {
+        analise.avisos.push(`${recuperacao.recuperados} vínculo(s) de aluno foram recuperados do diagnóstico anterior. As respostas e a língua desta nova leitura foram preservadas.`);
+      }
+      if (recuperacao.indisponiveis) {
+        analise.avisos.push(`${recuperacao.indisponiveis} vínculo(s) anterior(es) não puderam ser reutilizados e precisam de conferência.`);
+      }
+    }
+
+    const totalPaginas = analise.linhas.length;
+    await SimuladoImportacao.updateOne({
+      _id: importacaoId,
+      instituicao: instituicaoId,
+      simulado: simulado._id,
+      status: 'analisando',
+    }, {
+      $set: {
+        status: 'analisada',
+        linhas: analise.linhas,
+        totais: analise.totais,
+        avisos: analise.avisos,
+        erro: '',
+        'arquivo.motorLeitura': analise.motor,
+        substituiImportacao: anterior?._id || null,
+        vinculosRecuperados: recuperacao.recuperados,
+        vinculosRecuperadosEm: recuperacao.recuperados ? new Date() : null,
+        progressoOmr: progressoOmr('concluido', totalPaginas, totalPaginas, {
+          percentual: 100,
+          iniciadoEm,
+          concluidoEm: new Date(),
+        }),
+      },
+    });
+  } catch (error) {
+    const mensagem = texto(error?.message || error).slice(0, 2000) || 'Falha na leitura óptica.';
+    await SimuladoImportacao.updateOne({
+      _id: importacaoId,
+      instituicao: instituicaoId,
+      simulado: simulado._id,
+      status: 'analisando',
+    }, {
+      $set: {
+        status: 'erro',
+        erro: mensagem,
+        'progressoOmr.etapa': 'erro',
+        'progressoOmr.atualizadoEm': new Date(),
+        'progressoOmr.concluidoEm': new Date(),
+      },
+    }).catch(() => null);
+  } finally {
+    await limparPdfTemporario(tempDir);
+  }
+}
+
 router.get('/bootstrap', async (req, res, next) => {
   try {
     let turmas = await Aluno.distinct('turma', { instituicao: req.instituicaoId });
@@ -381,7 +562,7 @@ router.get('/bootstrap', async (req, res, next) => {
       .lean();
     return res.json({
       ok: true,
-      versao: '1.12.3',
+      versao: '1.12.4',
       usuario: { nome: req.usuario?.nome || '', tipo: req.usuario?.tipo || '', turmas: turmasProfessor(req) },
       permissoes: { gestao: ehGestaoPedagogica(req), somenteLeitura: !ehGestaoPedagogica(req) },
       turmas,
@@ -416,6 +597,8 @@ router.get('/bootstrap', async (req, res, next) => {
         idiomaConfirmadoPreservadoNaAusencia: true,
         participacaoParcialSeparadaDeBaseIncompleta: true,
         restauracaoDiaAusente: true,
+        processamentoOmrAssincrono: true,
+        progressoOmrPorPagina: true,
       },
     });
   } catch (error) {
@@ -456,7 +639,7 @@ router.get('/', async (req, res, next) => {
         { $group: { _id: '$simulado', resultados: { $sum: 1 } } },
       ]),
       SimuladoImportacao.aggregate([
-        { $match: { instituicao: new mongoose.Types.ObjectId(req.instituicaoId), simulado: { $in: ids }, status: 'analisada' } },
+        { $match: { instituicao: new mongoose.Types.ObjectId(req.instituicaoId), simulado: { $in: ids }, status: { $in: ['analisando', 'analisada'] } } },
         { $group: { _id: '$simulado', pendentes: { $sum: 1 }, ultimaAtualizacao: { $max: '$updatedAt' } } },
       ]),
     ]) : [[], []];
@@ -715,7 +898,8 @@ router.post('/:simuladoId/importacoes/analisar', apenasGestaoPedagogica, carrega
     if (Buffer.byteLength(JSON.stringify(analise.linhas), 'utf8') > 12 * 1024 * 1024) {
       return erro(res, 413, 'A importação estruturada ficou grande demais. Divida o arquivo por turma.');
     }
-    const hash = sha256(req.file.buffer);
+    await validarArquivoPdf(req.file.path, req.file.size);
+    const hash = await sha256Arquivo(req.file.path);
     const repetida = await SimuladoImportacao.findOne({
       instituicao: req.instituicaoId,
       simulado: req.simuladoDiagnostico._id,
@@ -767,6 +951,7 @@ router.post('/:simuladoId/importacoes/analisar', apenasGestaoPedagogica, carrega
 });
 
 router.post('/:simuladoId/cartoes/analisar', apenasGestaoPedagogica, carregarSimulado, uploadCartoes.single('cartoes'), async (req, res, next) => {
+  let uploadEntregueAoWorker = false;
   try {
     if (!req.file) return erro(res, 400, 'Selecione o PDF escaneado dos cartões-resposta.');
     if (!req.simuladoDiagnostico.questoes?.length) return erro(res, 409, 'Importe a matriz antes dos cartões-resposta.');
@@ -780,25 +965,29 @@ router.post('/:simuladoId/cartoes/analisar', apenasGestaoPedagogica, carregarSim
     }
     if (![1, 2].includes(dia)) return erro(res, 400, 'Selecione o dia 1 ou o dia 2.');
 
-    const analise = await analisarPdfCartoes({
-      arquivo: req.file,
-      simulado: req.simuladoDiagnostico.toObject(),
-      turma,
-      dia,
-    });
-    analise.totais = totaisDaImportacao(analise.linhas, req.simuladoDiagnostico);
-    const tamanhoEstruturado = Buffer.byteLength(JSON.stringify(analise.linhas), 'utf8');
-    if (tamanhoEstruturado > 13 * 1024 * 1024) {
-      return erro(res, 413, 'A prévia dos cartões ultrapassou o limite seguro. Divida o PDF em duas partes.');
-    }
-
-    const hash = sha256(req.file.buffer);
+    await validarArquivoPdf(req.file.path, req.file.size);
+    const hash = await sha256Arquivo(req.file.path);
     const repetida = await SimuladoImportacao.findOne({
       instituicao: req.instituicaoId,
       simulado: req.simuladoDiagnostico._id,
       'arquivo.sha256': hash,
-      status: { $in: ['analisada', 'processada'] },
-    }).sort({ updatedAt: -1 }).lean();
+      'arquivo.turma': turma,
+      'arquivo.dia': dia,
+      status: { $in: ['analisando', 'analisada', 'processada'] },
+    }).sort({ updatedAt: -1 });
+
+    if (repetida?.status === 'analisando') {
+      await normalizarOmrInterrompido(repetida);
+      if (repetida.status === 'analisando') {
+        return res.status(202).json({
+          ok: true,
+          retomadaProcessamento: true,
+          mensagem: 'Este PDF já está em leitura óptica. O Axoriin retomou o acompanhamento do progresso.',
+          importacao: repetida,
+        });
+      }
+    }
+
     if (repetida?.status === 'analisada') {
       const anterior = await buscarImportacaoAnterior(req, repetida);
       return res.json({
@@ -809,23 +998,9 @@ router.post('/:simuladoId/cartoes/analisar', apenasGestaoPedagogica, carregarSim
         substituicao: resumoSubstituicao(anterior),
       });
     }
-    if (repetida) analise.avisos.push(`Este mesmo PDF já foi analisado em ${new Date(repetida.createdAt).toLocaleString('pt-BR')}.`);
 
-    const anterior = repetida?.status === 'processada' ? repetida : null;
-    let recuperacao = { recuperados: 0, indisponiveis: 0 };
-    if (anterior) {
-      recuperacao = await aplicarVinculosAnteriores(req, {
-        arquivo: { formato: 'pdf', sha256: hash, turma, dia },
-        linhas: analise.linhas,
-      }, anterior);
-      analise.totais = totaisDaImportacao(analise.linhas, req.simuladoDiagnostico);
-      if (recuperacao.recuperados) {
-        analise.avisos.push(`${recuperacao.recuperados} vínculo(s) de aluno foram recuperados do diagnóstico anterior. As respostas e a língua desta nova leitura foram preservadas.`);
-      }
-      if (recuperacao.indisponiveis) {
-        analise.avisos.push(`${recuperacao.indisponiveis} vínculo(s) anterior(es) não puderam ser reutilizados e precisam de conferência.`);
-      }
-    }
+    const anterior = repetida?.status === 'processada' ? repetida.toObject() : null;
+    const iniciadoEm = new Date();
 
     const importacao = await SimuladoImportacao.create({
       instituicao: req.instituicaoId,
@@ -840,41 +1015,71 @@ router.post('/:simuladoId/cartoes/analisar', apenasGestaoPedagogica, carregarSim
         planilha: '',
         turma,
         dia,
-        motorLeitura: analise.motor,
+        motorLeitura: '',
       },
-      status: 'analisada',
-      linhas: analise.linhas,
-      totais: analise.totais,
-      avisos: analise.avisos,
+      status: 'analisando',
+      linhas: [],
+      totais: totaisDaImportacao([], req.simuladoDiagnostico),
+      avisos: [],
+      erro: '',
       criadoPor: ator(req),
       substituiImportacao: anterior?._id || null,
-      vinculosRecuperados: recuperacao.recuperados,
-      vinculosRecuperadosEm: recuperacao.recuperados ? new Date() : null,
+      progressoOmr: progressoOmr('fila', 0, 0, { iniciadoEm }),
     });
-    await auditar(req, 'ANALISAR_CARTOES_OMR', importacao._id, req.simuladoDiagnostico.titulo, {
+
+    const contexto = {
+      importacaoId: importacao._id,
+      instituicaoId: req.instituicaoId,
+      simulado: req.simuladoDiagnostico.toObject(),
+      turma,
+      dia,
+      tempDir: req.file.destination,
+      pdfPath: req.file.path,
+      anteriorId: anterior?._id || null,
+      iniciadoEm,
+    };
+    uploadEntregueAoWorker = true;
+
+    enfileirarProcessamentoOmr(
+      () => executarProcessamentoOmrAssincrono(contexto),
+      {
+        aoEntrar: (posicao) => SimuladoImportacao.updateOne({ _id: importacao._id, status: 'analisando' }, {
+          $set: {
+            progressoOmr: progressoOmr('fila', 0, 0, { iniciadoEm }),
+            avisos: posicao > 1 ? [`Leitura óptica aguardando ${posicao - 1} processamento(s) anterior(es) para proteger o servidor.`] : [],
+          },
+        }).catch(() => null),
+      },
+    ).catch(() => null);
+
+    await auditar(req, 'INICIAR_ANALISE_CARTOES_OMR', importacao._id, req.simuladoDiagnostico.titulo, {
       simulado: req.simuladoDiagnostico._id,
       arquivo: req.file.originalname,
       hash,
       turma,
       dia,
-      paginas: analise.linhas.length,
-      totais: analise.totais,
+      tamanhoBytes: req.file.size,
+      modo: 'assincrono',
     });
-    return res.status(201).json({
+
+    return res.status(202).json({
       ok: true,
-      mensagem: `${analise.linhas.length} cartão(ões) lido(s). Vincule os alunos e confira as marcações sinalizadas.`,
+      mensagem: 'PDF recebido. A leitura óptica continuará em segundo plano; acompanhe o progresso na tela.',
       importacao,
+      processamentoAssincrono: true,
       substituicao: resumoSubstituicao(anterior),
     });
   } catch (error) {
     return next(error);
+  } finally {
+    if (!uploadEntregueAoWorker && req.file?.destination) await limparPdfTemporario(req.file.destination);
   }
 });
 
 router.get('/:simuladoId/importacoes', apenasGestaoPedagogica, carregarSimulado, async (req, res, next) => {
   try {
     const statusSolicitado = texto(req.query.status).toLowerCase();
-    const statusPermitidos = ['analisada', 'processando', 'processada', 'substituida', 'erro', 'cancelada'];
+    const statusPermitidos = ['analisando', 'analisada', 'processando', 'processada', 'substituida', 'erro', 'cancelada'];
     const filtro = {
       instituicao: req.instituicaoId,
       simulado: req.simuladoDiagnostico._id,
@@ -882,7 +1087,7 @@ router.get('/:simuladoId/importacoes', apenasGestaoPedagogica, carregarSimulado,
     filtro.status = statusPermitidos.includes(statusSolicitado) ? statusSolicitado : 'analisada';
     const limite = Math.min(50, Math.max(1, Number(req.query.limite) || 20));
     const importacoes = await SimuladoImportacao.find(filtro)
-      .select('arquivo status totais avisos erro criadoPor processadoPor processadoEm substituiImportacao vinculosRecuperados vinculosRecuperadosEm substituidaPorImportacao substituidaEm createdAt updatedAt')
+      .select('arquivo status totais avisos erro progressoOmr criadoPor processadoPor processadoEm substituiImportacao vinculosRecuperados vinculosRecuperadosEm substituidaPorImportacao substituidaEm createdAt updatedAt')
       .sort({ updatedAt: -1 })
       .limit(limite)
       .lean();
@@ -894,6 +1099,7 @@ router.get('/:simuladoId/importacoes', apenasGestaoPedagogica, carregarSimulado,
 
 router.get('/:simuladoId/importacoes/:importacaoId', apenasGestaoPedagogica, carregarSimulado, carregarImportacao, async (req, res, next) => {
   try {
+    await normalizarOmrInterrompido(req.importacaoSimulado);
     const anterior = req.importacaoSimulado.status === 'analisada'
       ? await buscarImportacaoAnterior(req, req.importacaoSimulado)
       : null;
@@ -1697,6 +1903,14 @@ async function dadosDashboard(req) {
 
 router.get('/:simuladoId/dashboard', carregarSimulado, async (req, res, next) => {
   try {
+    const omrEmAndamento = await SimuladoImportacao.exists({
+      instituicao: req.instituicaoId,
+      simulado: req.simuladoDiagnostico._id,
+      status: 'analisando',
+    });
+    if (omrEmAndamento) {
+      return erro(res, 423, 'A leitura óptica ainda está em andamento. O painel será liberado assim que os cartões terminarem de ser lidos.');
+    }
     const { dashboard, comparacao } = await dadosDashboard(req);
     return res.json({ ok: true, simulado: resumoSimulado(req.simuladoDiagnostico), dashboard, comparacao });
   } catch (error) {
