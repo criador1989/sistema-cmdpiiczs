@@ -6,7 +6,7 @@
  * - Cache-first para estáticos (CSS/JS/IMG/ICO/WEBP/PNG…).
  */
 
-const SW_VERSION = 'axoriin-v2.0.0';
+const SW_VERSION = 'axoriin-v2.0.0-simulados-v1.12.3';
 const CACHE_NAME = `axoriin-cache-${SW_VERSION}`;
 
 const PRECACHE_URLS = [

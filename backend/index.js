@@ -10,6 +10,8 @@ const fs = require('fs');
 const compression = require('compression');
 const cors = require('cors');
 const os = require('os');
+const simuladosRoutes = require('./routes/api/simulados');
+const { acessoPedagogico } = require('./middleware/pedagogicoAccess');
 
 // âœ… NOVOS HELPERS DE RECÃLCULO AUTOMÃTICO
 const { iniciarAgendadorRecalculo } = require('./services/agendadorRecalculoComportamento');
@@ -806,6 +808,7 @@ function mountIf(prefix, router, ...middlewares) {
   else app.use(prefix, router);
 }
 
+mountIf('/api/simulados', simuladosRoutes);
 mountIf('/api/notificacoes', notificacoesMetricsRoutes);
 mountIf('/api/notificacoes', notificacoesApiRoutes);
 
@@ -967,6 +970,14 @@ mountIf('/api/fix-instituicao', fixInstituicaoLegacy, requireSuperAdmin);
 const uploadRoot = path.join(__dirname, 'uploads');
 const publicRoot = path.join(__dirname, 'public');
 const imgRoot = path.join(__dirname, 'img');
+// Axoriin Simulados - pagina protegida por autenticacao e perfil pedagogico.
+app.get('/simulados.html', autenticar, acessoPedagogico, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'simulados.html'));
+});
+app.get('/simulados', autenticar, acessoPedagogico, (_req, res) => {
+  return res.redirect('/simulados.html');
+});
+
 const assetsRoot = path.join(publicRoot, 'assets');
 
 fs.mkdirSync(path.join(uploadRoot, 'alunos'), { recursive: true });
