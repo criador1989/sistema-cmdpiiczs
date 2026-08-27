@@ -20,6 +20,9 @@ const state = {
   omrSavesPending: 0,
   processedLanguageResults: [],
   processedParticipationResults: [],
+  processamentosOmr: [],
+  omrPollId: null,
+  omrPollPromise: null,
 };
 
 function aplicarImportacao(payload) {
@@ -130,6 +133,88 @@ async function api(url, options = {}) {
 function setLoading(active, message = 'Processando…') {
   $('#loadingText').textContent = message;
   $('#loadingOverlay').hidden = !active;
+}
+
+
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+function omrProgressMessage(importacao) {
+  const progresso = importacao?.progressoOmr || {};
+  const etapa = text(progresso.etapa).toLowerCase();
+  const feitas = Number(progresso.paginasProcessadas || 0);
+  const total = Number(progresso.paginasTotal || 0);
+  const percentual = Number(progresso.percentual || 0);
+  if (etapa === 'fila') return 'PDF recebido. Aguardando a vez da leitura óptica…';
+  if (etapa === 'preparando') return total ? `Preparando ${total} página(s) para leitura…` : 'Preparando o PDF para leitura óptica…';
+  if (etapa === 'finalizando') return `Finalizando a conferência OMR${total ? ` — ${total} de ${total} páginas` : ''}…`;
+  if (total) return `Lendo cartões: ${feitas} de ${total} páginas (${fmt(percentual, 0)}%)…`;
+  return 'Lendo a imagem de cada cartão-resposta…';
+}
+
+async function monitorOmrProcess(importacaoId) {
+  if (!state.current || !importacaoId) return null;
+  if (state.omrPollId === String(importacaoId) && state.omrPollPromise) return state.omrPollPromise;
+
+  state.omrPollId = String(importacaoId);
+  const executar = async () => {
+    let falhasConsecutivas = 0;
+    setLoading(true, 'Acompanhando a leitura óptica…');
+    try {
+      while (state.current && state.omrPollId === String(importacaoId)) {
+        try {
+          const response = await api(`/api/simulados/${state.current._id}/importacoes/${importacaoId}`);
+          falhasConsecutivas = 0;
+          const item = response.importacao;
+          if (!item) throw new Error('O processamento OMR não pôde ser localizado.');
+
+          if (item.status === 'analisando') {
+            setLoading(true, omrProgressMessage(item));
+            await sleep(2200);
+            continue;
+          }
+
+          if (item.status === 'erro') {
+            const finalError = new Error(item.erro || 'A leitura óptica não pôde ser concluída.');
+            finalError.omrFinal = true;
+            throw finalError;
+          }
+          if (item.status === 'cancelada') {
+            const finalError = new Error('A leitura óptica foi cancelada.');
+            finalError.omrFinal = true;
+            throw finalError;
+          }
+          if (item.status !== 'analisada') {
+            const finalError = new Error(`A leitura óptica terminou em um estado inesperado: ${item.status}.`);
+            finalError.omrFinal = true;
+            throw finalError;
+          }
+
+          aplicarImportacao(response);
+          remember('ultimaImportacao', item._id);
+          renderImport(false);
+          await loadPendingImports({ restoreLatest: false, monitorActive: false });
+          await loadSimulados();
+          toast(`${item.linhas?.length || item.totais?.linhas || 0} cartão(ões) lido(s). Agora confira alunos e marcações sinalizadas.`);
+          return response;
+        } catch (error) {
+          if (error?.omrFinal || (error?.status && error.status < 500)) throw error;
+          falhasConsecutivas += 1;
+          if (falhasConsecutivas >= 5) throw error;
+          setLoading(true, `Leitura em andamento. Reconectando ao servidor (${falhasConsecutivas}/5)…`);
+          await sleep(3000);
+        }
+      }
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  state.omrPollPromise = executar().finally(() => {
+    if (state.omrPollId === String(importacaoId)) state.omrPollId = null;
+    state.omrPollPromise = null;
+  });
+  return state.omrPollPromise;
 }
 
 function toast(message, type = 'success') {
@@ -275,22 +360,43 @@ function renderPendingImports() {
     const tipo = item.arquivo?.formato === 'pdf'
       ? `${item.arquivo?.turma || 'Turma'} · ${item.arquivo?.dia || '—'}º dia`
       : 'Planilha de respostas';
+    if (item.status === 'analisando') {
+      return `<div class="saved-work-item"><div><b>${escapeHtml(item.arquivo?.nomeOriginal || 'Leitura óptica em andamento')}</b><p>${escapeHtml(tipo)} · ${escapeHtml(omrProgressMessage(item))}<br>O processamento continua no servidor mesmo sem manter a requisição de upload aberta.</p></div><div class="saved-work-actions"><button class="btn btn-secondary btn-small" data-watch-omr="${escapeHtml(item._id)}" type="button">Acompanhar leitura</button></div></div>`;
+    }
     const bloqueios = Number(totals.ambiguas || 0) + Number(totals.naoLocalizadas || 0)
       + Number(totals.duplicadas || 0) + Number(totals.idiomasPendentes || 0) + Number(totals.omrPendentes || 0);
     return `<div class="saved-work-item"><div><b>${escapeHtml(item.arquivo?.nomeOriginal || 'Importação em andamento')}</b><p>${escapeHtml(tipo)} · ${totals.prontas || 0} de ${totals.linhas || 0} vínculo(s) prontos · ${bloqueios} pendência(s)<br>Salvo em ${escapeHtml(dateTime(item.updatedAt))}</p></div><div class="saved-work-actions"><button class="btn btn-secondary btn-small" data-resume-import="${escapeHtml(item._id)}" type="button">Continuar conferência</button><button class="btn btn-danger btn-small" data-discard-import="${escapeHtml(item._id)}" type="button">Excluir</button></div></div>`;
   }).join('');
   $$('[data-resume-import]', list).forEach((button) => button.addEventListener('click', () => resumeImport(button.dataset.resumeImport)));
   $$('[data-discard-import]', list).forEach((button) => button.addEventListener('click', () => discardPendingImport(button.dataset.discardImport)));
+  $$('[data-watch-omr]', list).forEach((button) => button.addEventListener('click', async () => {
+    try { await monitorOmrProcess(button.dataset.watchOmr); } catch (error) { toast(error.message, 'error'); }
+  }));
 }
 
-async function loadPendingImports({ restoreLatest = false } = {}) {
+async function loadPendingImports({ restoreLatest = false, monitorActive = true } = {}) {
   if (!state.current || !state.bootstrap?.permissoes?.gestao) return false;
-  const response = await api(`/api/simulados/${state.current._id}/importacoes?status=analisada&limite=20`);
-  state.importacoesPendentes = response.importacoes || [];
+  const [prontas, processando] = await Promise.all([
+    api(`/api/simulados/${state.current._id}/importacoes?status=analisada&limite=20`),
+    api(`/api/simulados/${state.current._id}/importacoes?status=analisando&limite=10`),
+  ]);
+  const analisadas = prontas.importacoes || [];
+  const ativas = processando.importacoes || [];
+  state.processamentosOmr = ativas;
+  state.importacoesPendentes = [...ativas, ...analisadas];
   renderPendingImports();
-  if (!restoreLatest || !state.importacoesPendentes.length) return false;
+
+  if (monitorActive && ativas.length) {
+    const remembered = recalled('ultimaImportacao');
+    const ativa = ativas.find((item) => String(item._id) === remembered) || ativas[0];
+    remember('ultimaImportacao', ativa._id);
+    setTimeout(() => monitorOmrProcess(ativa._id).catch((error) => toast(error.message, 'error')), 0);
+    return true;
+  }
+
+  if (!restoreLatest || !analisadas.length) return false;
   const remembered = recalled('ultimaImportacao');
-  const chosen = state.importacoesPendentes.find((item) => String(item._id) === remembered) || state.importacoesPendentes[0];
+  const chosen = analisadas.find((item) => String(item._id) === remembered) || analisadas[0];
   const full = await api(`/api/simulados/${state.current._id}/importacoes/${chosen._id}`);
   aplicarImportacao(full);
   remember('ultimaImportacao', chosen._id);
@@ -605,18 +711,27 @@ async function analyzeScans() {
   form.append('cartoes', file);
   form.append('turma', turma);
   form.append('dia', dia);
-  setLoading(true, 'Lendo a imagem de cada cartão-resposta…');
+  setLoading(true, 'Enviando o PDF para a fila de leitura óptica…');
   try {
     const response = await api(`/api/simulados/${state.current._id}/cartoes/analisar`, { method: 'POST', body: form });
     aplicarImportacao(response);
-    remember('ultimaImportacao', state.importacao._id);
+    const importacaoId = response.importacao?._id;
+    if (importacaoId) remember('ultimaImportacao', importacaoId);
+
+    if (response.importacao?.status === 'analisando' || response.processamentoAssincrono || response.retomadaProcessamento) {
+      toast(response.mensagem);
+      await loadPendingImports({ restoreLatest: false, monitorActive: false });
+      if (importacaoId) await monitorOmrProcess(importacaoId);
+      return;
+    }
+
     renderImport();
     await loadPendingImports();
     toast(response.mensagem);
   } catch (error) {
     toast(error.message, 'error');
   } finally {
-    setLoading(false);
+    if (!state.omrPollId) setLoading(false);
   }
 }
 

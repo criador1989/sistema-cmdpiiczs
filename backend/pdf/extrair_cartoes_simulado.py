@@ -430,6 +430,17 @@ def _analyze_page(page: fitz.Page, page_number: int, day: int) -> dict:
         }
 
 
+def _emit_progress(processed: int, total: int, stage: str = "lendo") -> None:
+    percent = round((processed / total) * 100, 1) if total else 0.0
+    print(json.dumps({
+        "tipo": "progresso",
+        "etapa": stage,
+        "pagina": processed,
+        "total": total,
+        "percentual": percent,
+    }, ensure_ascii=False, separators=(",", ":")), flush=True)
+
+
 def extract(pdf_path: Path, day: int) -> dict:
     if not pdf_path.is_file():
         raise OmrError("Arquivo PDF não encontrado.")
@@ -439,11 +450,17 @@ def extract(pdf_path: Path, day: int) -> dict:
             raise OmrError("O PDF não possui páginas.")
         if document.page_count > 500:
             raise OmrError("O PDF possui mais de 500 páginas. Divida-o por turma.")
-        pages = [_analyze_page(document[index], index + 1, day) for index in range(document.page_count)]
+        total = document.page_count
+        pages = []
+        _emit_progress(0, total, "preparando")
+        for index in range(total):
+            pages.append(_analyze_page(document[index], index + 1, day))
+            _emit_progress(index + 1, total, "lendo")
+        _emit_progress(total, total, "finalizando")
     finally:
         document.close()
     return {
-        "versao": "1.1.0",
+        "versao": "1.2.0",
         "motor": "OMR_LOCAL_OPENCV",
         "paginas": len(pages),
         "dia": day,

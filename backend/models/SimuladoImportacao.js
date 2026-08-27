@@ -85,6 +85,20 @@ const LinhaSchema = new Schema({
   avisos: { type: [String], default: [] },
 }, { _id: false });
 
+const ProgressoOmrSchema = new Schema({
+  etapa: {
+    type: String,
+    enum: ['fila', 'preparando', 'lendo', 'finalizando', 'concluido', 'erro'],
+    default: 'fila',
+  },
+  paginasTotal: { type: Number, default: 0, min: 0 },
+  paginasProcessadas: { type: Number, default: 0, min: 0 },
+  percentual: { type: Number, default: 0, min: 0, max: 100 },
+  iniciadoEm: { type: Date, default: null },
+  atualizadoEm: { type: Date, default: null },
+  concluidoEm: { type: Date, default: null },
+}, { _id: false });
+
 const TotaisSchema = new Schema({
   linhas: { type: Number, default: 0, min: 0 },
   prontas: { type: Number, default: 0, min: 0 },
@@ -117,7 +131,7 @@ const SimuladoImportacaoSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ['analisada', 'processando', 'processada', 'substituida', 'erro', 'cancelada'],
+    enum: ['analisando', 'analisada', 'processando', 'processada', 'substituida', 'erro', 'cancelada'],
     default: 'analisada',
     index: true,
   },
@@ -125,6 +139,7 @@ const SimuladoImportacaoSchema = new Schema({
   totais: { type: TotaisSchema, default: () => ({}) },
   avisos: { type: [String], default: [] },
   erro: { type: String, default: '', trim: true },
+  progressoOmr: { type: ProgressoOmrSchema, default: null },
   criadoPor: { type: Schema.Types.Mixed, default: null },
   processadoPor: { type: Schema.Types.Mixed, default: null },
   processadoEm: { type: Date, default: null },

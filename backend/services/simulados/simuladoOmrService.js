@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs/promises');
+const fsNative = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
@@ -10,6 +11,10 @@ const { texto, normalizarResposta } = require('./simuladoAnaliseService');
 
 const EXTRATOR = path.join(__dirname, '..', '..', 'pdf', 'extrair_cartoes_simulado.py');
 const MAX_PDF_BYTES = 120 * 1024 * 1024;
+const MAX_OMR_RUNTIME_MS = Math.max(10, Math.min(120, Number(process.env.SIMULADOS_OMR_MAX_MINUTOS) || 45)) * 60 * 1000;
+
+let filaOmr = Promise.resolve();
+let tarefasOmrNaFila = 0;
 
 function candidatosPython() {
   const itens = [];
@@ -65,7 +70,23 @@ function localizarPythonOmr() {
   throw error;
 }
 
-function executarExtrator({ python, pdfPath, outputPath, dia }) {
+function enfileirarProcessamentoOmr(tarefa, { aoEntrar = null, aoIniciar = null } = {}) {
+  tarefasOmrNaFila += 1;
+  const posicao = tarefasOmrNaFila;
+  try { aoEntrar?.(posicao); } catch (_error) {}
+
+  const executar = async () => {
+    tarefasOmrNaFila = Math.max(0, tarefasOmrNaFila - 1);
+    try { await aoIniciar?.(); } catch (_error) {}
+    return tarefa();
+  };
+
+  const job = filaOmr.then(executar, executar);
+  filaOmr = job.catch(() => null);
+  return job;
+}
+
+function executarExtrator({ python, pdfPath, outputPath, dia, onProgress = null }) {
   return new Promise((resolve, reject) => {
     const child = spawn(python.cmd, [
       ...python.pre,
@@ -79,21 +100,50 @@ function executarExtrator({ python, pdfPath, outputPath, dia }) {
       env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
     });
     let stdout = '';
+    let stdoutBuffer = '';
     let stderr = '';
     let timedOut = false;
+    let settled = false;
+
+    const tratarLinhaStdout = (linha) => {
+      const limpa = String(linha || '').trim();
+      if (!limpa) return;
+      let payload = null;
+      try { payload = JSON.parse(limpa); } catch (_error) {}
+      if (payload?.tipo === 'progresso') {
+        try { onProgress?.(payload); } catch (_error) {}
+        return;
+      }
+      if (stdout.length < 200_000) stdout += `${limpa}\n`;
+    };
+
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill();
-    }, 8 * 60 * 1000);
-    child.stdout.on('data', (chunk) => { if (stdout.length < 200_000) stdout += chunk.toString('utf8'); });
+      try { child.kill(); } catch (_error) {}
+    }, MAX_OMR_RUNTIME_MS);
+
+    child.stdout.on('data', (chunk) => {
+      stdoutBuffer += chunk.toString('utf8');
+      const linhas = stdoutBuffer.split(/\r?\n/);
+      stdoutBuffer = linhas.pop() || '';
+      linhas.forEach(tratarLinhaStdout);
+    });
     child.stderr.on('data', (chunk) => { if (stderr.length < 1_000_000) stderr += chunk.toString('utf8'); });
     child.on('error', (error) => {
       clearTimeout(timer);
+      if (settled) return;
+      settled = true;
       reject(error);
     });
     child.on('close', async (code) => {
       clearTimeout(timer);
-      if (timedOut) return reject(new Error('A leitura óptica ultrapassou oito minutos. Divida o PDF em partes menores.'));
+      if (settled) return;
+      settled = true;
+      tratarLinhaStdout(stdoutBuffer);
+      if (timedOut) {
+        const minutos = Math.round(MAX_OMR_RUNTIME_MS / 60_000);
+        return reject(new Error(`A leitura óptica ultrapassou ${minutos} minutos e foi interrompida por segurança.`));
+      }
       let raw = '';
       try { raw = await fs.readFile(outputPath, 'utf8'); } catch (_error) {}
       let payload = null;
@@ -191,51 +241,117 @@ function mapearCartao(cartao, { turma, dia, porNumero, possuiIdioma }) {
   };
 }
 
-async function analisarPdfCartoes({ arquivo, simulado, turma, dia }) {
-  if (!arquivo?.buffer?.length) throw new Error('Selecione o PDF escaneado dos cartões-resposta.');
-  if (arquivo.buffer.length > MAX_PDF_BYTES) throw new Error('O PDF ultrapassa 120 MB. Divida-o por turma ou em partes menores.');
-  if (arquivo.buffer.subarray(0, 5).toString('ascii') !== '%PDF-') throw new Error('O arquivo não possui uma assinatura PDF válida.');
+function validarContextoPdf({ simulado, turma, dia }) {
   const numeroDia = Number(dia);
   if (![1, 2].includes(numeroDia)) throw new Error('Selecione o dia 1 ou o dia 2 do cartão-resposta.');
   const turmaLimpa = texto(turma).slice(0, 100);
   if (!turmaLimpa) throw new Error('Selecione a turma dos cartões deste PDF.');
   const { questoes, porNumero } = questoesDoDia(simulado, numeroDia);
   const possuiIdioma = diaTemIdioma(questoes);
-  const python = localizarPythonOmr();
+  return { numeroDia, turmaLimpa, porNumero, possuiIdioma };
+}
+
+function validarBufferPdf(buffer) {
+  if (!buffer?.length) throw new Error('Selecione o PDF escaneado dos cartões-resposta.');
+  if (buffer.length > MAX_PDF_BYTES) throw new Error('O PDF ultrapassa 120 MB. Divida-o por turma ou em partes menores.');
+  if (buffer.subarray(0, 5).toString('ascii') !== '%PDF-') throw new Error('O arquivo não possui uma assinatura PDF válida.');
+}
+
+
+async function validarArquivoPdf(pdfPath, tamanhoBytes = 0) {
+  if (!pdfPath) throw new Error('Selecione o PDF escaneado dos cartões-resposta.');
+  if (Number(tamanhoBytes) > MAX_PDF_BYTES) throw new Error('O PDF ultrapassa 120 MB. Divida-o por turma ou em partes menores.');
+  const handle = await fs.open(pdfPath, 'r');
+  try {
+    const assinatura = Buffer.alloc(5);
+    const { bytesRead } = await handle.read(assinatura, 0, 5, 0);
+    if (bytesRead < 5 || assinatura.toString('ascii') !== '%PDF-') throw new Error('O arquivo não possui uma assinatura PDF válida.');
+  } finally {
+    await handle.close();
+  }
+}
+
+function sha256Arquivo(pdfPath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fsNative.createReadStream(pdfPath);
+    stream.on('error', reject);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+async function prepararPdfTemporario(arquivo) {
+  validarBufferPdf(arquivo?.buffer);
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'axoriin-simulado-omr-'));
   const pdfPath = path.join(tempDir, 'cartoes.pdf');
-  const outputPath = path.join(tempDir, 'resultado.json');
   try {
     await fs.writeFile(pdfPath, arquivo.buffer);
-    const extraido = await executarExtrator({ python, pdfPath, outputPath, dia: numeroDia });
-    if (!extraido.cartoes.length) throw new Error('Nenhum cartão foi encontrado no PDF.');
-    const linhas = extraido.cartoes.map((cartao) => mapearCartao(cartao, {
-      turma: turmaLimpa,
-      dia: numeroDia,
-      porNumero,
-      possuiIdioma,
-    }));
-    return {
-      linhas,
-      avisos: [
-        'O PDF original não é armazenado. Revise os cartões sinalizados antes da confirmação.',
-        'A vinculação ao aluno é sempre conferida; o Axoriin não usa caligrafia incerta para atribuir nota.',
-      ],
-      resumoOmr: extraido.resumo || {},
-      dia: numeroDia,
-      turma: turmaLimpa,
-      possuiIdioma,
-      motor: texto(extraido.motor),
-    };
-  } finally {
+    return { tempDir, pdfPath, tamanhoBytes: arquivo.buffer.length };
+  } catch (error) {
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => null);
+    throw error;
+  }
+}
+
+async function limparPdfTemporario(tempDir) {
+  if (!tempDir) return;
+  await fs.rm(tempDir, { recursive: true, force: true }).catch(() => null);
+}
+
+async function analisarPdfCartoesArquivo({ pdfPath, simulado, turma, dia, onProgress = null }) {
+  if (!pdfPath) throw new Error('Arquivo temporário do PDF não localizado.');
+  const { numeroDia, turmaLimpa, porNumero, possuiIdioma } = validarContextoPdf({ simulado, turma, dia });
+  const python = localizarPythonOmr();
+  const outputPath = path.join(path.dirname(pdfPath), `resultado-${crypto.randomUUID()}.json`);
+  const extraido = await executarExtrator({ python, pdfPath, outputPath, dia: numeroDia, onProgress });
+  if (!extraido.cartoes.length) throw new Error('Nenhum cartão foi encontrado no PDF.');
+  const linhas = extraido.cartoes.map((cartao) => mapearCartao(cartao, {
+    turma: turmaLimpa,
+    dia: numeroDia,
+    porNumero,
+    possuiIdioma,
+  }));
+  return {
+    linhas,
+    avisos: [
+      'O PDF original não é armazenado. Revise os cartões sinalizados antes da confirmação.',
+      'A vinculação ao aluno é sempre conferida; o Axoriin não usa caligrafia incerta para atribuir nota.',
+    ],
+    resumoOmr: extraido.resumo || {},
+    dia: numeroDia,
+    turma: turmaLimpa,
+    possuiIdioma,
+    motor: texto(extraido.motor),
+  };
+}
+
+async function analisarPdfCartoes({ arquivo, simulado, turma, dia, onProgress = null }) {
+  const preparado = await prepararPdfTemporario(arquivo);
+  try {
+    return await analisarPdfCartoesArquivo({
+      pdfPath: preparado.pdfPath,
+      simulado,
+      turma,
+      dia,
+      onProgress,
+    });
+  } finally {
+    await limparPdfTemporario(preparado.tempDir);
   }
 }
 
 module.exports = {
   MAX_PDF_BYTES,
+  MAX_OMR_RUNTIME_MS,
   localizarPythonOmr,
   questoesDoDia,
   diaTemIdioma,
+  enfileirarProcessamentoOmr,
+  validarArquivoPdf,
+  sha256Arquivo,
+  prepararPdfTemporario,
+  limparPdfTemporario,
+  analisarPdfCartoesArquivo,
   analisarPdfCartoes,
 };
