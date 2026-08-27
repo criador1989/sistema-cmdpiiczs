@@ -576,7 +576,7 @@ router.get('/busca', autenticar, requireTenant, apenasLeitura, async (req, res) 
 
     const [alunos, total] = await Promise.all([
       Aluno.find(filtro)
-        .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento usuarioId')
+        .select('_id nome turma fotoThumb comportamento notaComportamento usuarioId')
         .sort({ nome: 1 })
         .limit(limite)
         .lean(),
@@ -658,7 +658,7 @@ router.get('/turma/:turma', autenticar, requireTenant, apenasLeitura, async (req
     }
 
     const alunos = await Aluno.find(filtro)
-      .select('_id nome turma foto fotoThumb fotoOriginal comportamento notaComportamento usuarioId')
+      .select('_id nome turma fotoThumb comportamento notaComportamento usuarioId')
       .sort({ nome: 1 })
       .limit(120)
       .lean();
@@ -704,7 +704,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
 
     if (semNota) {
       const alunos = await Aluno.find(filtro)
-        .select('nome turma foto fotoThumb fotoOriginal usuarioId')
+        .select('nome turma fotoThumb usuarioId')
         .lean();
 
       return res.json(alunos.map((aluno) => ({
@@ -715,7 +715,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
 
     if (painel) {
       const alunos = await Aluno.find(filtro)
-        .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento usuarioId')
+        .select('nome turma fotoThumb instituicao tenantId comportamento notaComportamento usuarioId')
         .lean();
 
       const alunosComNota = alunos.map((aluno) => {
@@ -734,7 +734,7 @@ router.get('/', autenticar, requireTenant, apenasLeitura, async (req, res) => {
     }
 
     const alunos = await Aluno.find(filtro)
-      .select('nome turma foto fotoThumb fotoOriginal instituicao tenantId comportamento notaComportamento usuarioId')
+      .select('nome turma fotoThumb instituicao tenantId comportamento notaComportamento usuarioId')
       .lean();
 
     const alunosComNota = alunos.map((aluno) => {
