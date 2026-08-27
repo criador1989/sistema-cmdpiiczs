@@ -23,6 +23,10 @@ const state = {
   processamentosOmr: [],
   omrPollId: null,
   omrPollPromise: null,
+  dashboardRequestKey: null,
+  dashboardRequestPromise: null,
+  dashboardRequestSeq: 0,
+  dashboardLastSuccessKey: null,
 };
 
 function aplicarImportacao(payload) {
@@ -317,12 +321,22 @@ async function selectSimulado(id, preferredView = 'diagnostico') {
   setLoading(true, 'Carregando simulado…');
   try {
     const payload = await api(`/api/simulados/${encodeURIComponent(id)}`);
+    const mesmoSimulado = String(state.current?._id || '') === String(payload.simulado?._id || '');
+    const dashboardAnterior = mesmoSimulado ? state.dashboard : null;
+    const comparacaoAnterior = mesmoSimulado ? state.comparacao : null;
     state.current = payload.simulado;
     state.currentTotalResults = Number(payload.totalResultados || 0);
     state.importacao = null;
     state.substituicao = null;
     state.importacoesPendentes = [];
-    state.dashboard = null;
+    state.dashboard = dashboardAnterior;
+    state.comparacao = comparacaoAnterior;
+    if (!mesmoSimulado) {
+      state.dashboardLastSuccessKey = null;
+      state.dashboardRequestKey = null;
+      state.dashboardRequestPromise = null;
+      state.dashboardRequestSeq += 1;
+    }
     state.resultPage = 1;
     $('#currentSimuladoName').textContent = state.current.titulo;
     $('#currentSimuladoChip').hidden = false;
@@ -376,12 +390,11 @@ function renderPendingImports() {
 
 async function loadPendingImports({ restoreLatest = false, monitorActive = true } = {}) {
   if (!state.current || !state.bootstrap?.permissoes?.gestao) return false;
-  const [prontas, processando] = await Promise.all([
-    api(`/api/simulados/${state.current._id}/importacoes?status=analisada&limite=20`),
-    api(`/api/simulados/${state.current._id}/importacoes?status=analisando&limite=10`),
-  ]);
-  const analisadas = prontas.importacoes || [];
-  const ativas = processando.importacoes || [];
+  // V1.12.5: uma unica consulta substitui duas chamadas paralelas no carregamento inicial.
+  const pendentes = await api(`/api/simulados/${state.current._id}/importacoes?status=pendentes&limite=30`);
+  const itens = pendentes.importacoes || [];
+  const analisadas = itens.filter((item) => item.status === 'analisada');
+  const ativas = itens.filter((item) => item.status === 'analisando');
   state.processamentosOmr = ativas;
   state.importacoesPendentes = [...ativas, ...analisadas];
   renderPendingImports();
@@ -1093,28 +1106,100 @@ async function confirmImport() {
   }
 }
 
-async function loadDashboard() {
-  if (!state.current) return;
+function dashboardRequestUrl({ force = false } = {}) {
+  if (!state.current) return '';
+  const turma = $('#dashboardClass')?.value || '';
+  const params = new URLSearchParams();
+  if (turma) params.set('turma', turma);
+  if (force) params.set('fresh', '1');
+  const query = params.toString();
+  return `/api/simulados/${state.current._id}/dashboard${query ? `?${query}` : ''}`;
+}
+
+function dashboardKey() {
+  if (!state.current) return '';
+  const turma = $('#dashboardClass')?.value || '';
+  return `${state.current._id}::${turma || '*'}`;
+}
+
+function renderDashboardUnavailable(message = 'O diagnóstico está temporariamente indisponível.') {
+  if (state.dashboard && state.dashboardLastSuccessKey === dashboardKey()) return;
+  $('#dParticipants').textContent = '—';
+  $('#dClasses').textContent = 'Não carregado';
+  $('#dAccuracy').textContent = '—';
+  $('#dScore').textContent = '—';
+  $('#dCoverage').textContent = '—';
+  $('#dLanguage').textContent = '—';
+  $('#dNoLanguage').textContent = '—';
+  const aviso = `<div class="visual-empty"><b>Diagnóstico preservado no banco.</b><br>${escapeHtml(message)} Tente novamente em alguns instantes.</div>`;
+  ['#visualAreaChart', '#visualBandDistribution', '#visualHistogram', '#visualClassChart', '#visualParticipation', '#visualSkillsHeatmap', '#visualQuestionBands', '#visualEvolutionChart']
+    .forEach((selector) => { const node = $(selector); if (node) node.innerHTML = aviso; });
+}
+
+async function loadDashboard({ force = false } = {}) {
+  if (!state.current) return null;
   const enemSkillsButton = $('#exportEnemSkillsPdf');
   if (enemSkillsButton) enemSkillsButton.hidden = String(state.current?.tipo || '').toLowerCase() !== 'enem';
   const reviewLanguagesButton = $('#reviewProcessedLanguages');
   if (reviewLanguagesButton) reviewLanguagesButton.hidden = !(state.bootstrap?.permissoes?.gestao && currentHasLanguage() && state.currentTotalResults > 0);
   const reviewParticipationButton = $('#reviewProcessedParticipation');
   if (reviewParticipationButton) reviewParticipationButton.hidden = !(state.bootstrap?.permissoes?.gestao && state.currentTotalResults > 0);
-  const turma = $('#dashboardClass').value;
-  setLoading(true, 'Montando o diagnóstico…');
-  try {
-    const response = await api(`/api/simulados/${state.current._id}/dashboard${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
-    state.dashboard = response.dashboard;
-    state.comparacao = response.comparacao;
-    renderDashboard();
-    state.resultPage = 1;
-    await loadResults();
-  } catch (error) {
-    toast(error.message, 'error');
-  } finally {
-    setLoading(false);
+
+  const key = dashboardKey();
+  if (!force && state.dashboardRequestKey === key && state.dashboardRequestPromise) {
+    return state.dashboardRequestPromise;
   }
+
+  // Um token impede que uma resposta antiga sobrescreva a turma/simulado escolhido depois.
+  const requestSeq = ++state.dashboardRequestSeq;
+  const executar = async () => {
+    setLoading(true, 'Montando o diagnóstico…');
+    try {
+      let response;
+      try {
+        response = await api(dashboardRequestUrl({ force }));
+      } catch (error) {
+        // 429 e um bloqueio temporario de excesso de requisicoes. Repetimos somente UMA vez,
+        // depois de uma espera, e apenas para esta leitura GET do dashboard.
+        if (error?.status !== 429) throw error;
+        setLoading(true, 'O servidor pediu uma breve pausa. Tentando o diagnóstico novamente…');
+        await sleep(2400);
+        response = await api(dashboardRequestUrl({ force }));
+      }
+
+      if (requestSeq !== state.dashboardRequestSeq || key !== dashboardKey()) return null;
+      state.dashboard = response.dashboard;
+      state.comparacao = response.comparacao;
+      state.dashboardLastSuccessKey = key;
+      renderDashboard();
+      state.resultPage = 1;
+      await loadResults();
+      return response;
+    } catch (error) {
+      if (requestSeq === state.dashboardRequestSeq && key === dashboardKey()) {
+        renderDashboardUnavailable(error.message);
+        if (state.dashboard && state.dashboardLastSuccessKey === key) {
+          toast('O servidor não conseguiu atualizar o diagnóstico agora. O último painel carregado foi mantido.', 'warning');
+        } else {
+          toast(error.message, 'error');
+        }
+      }
+      return null;
+    } finally {
+      if (requestSeq === state.dashboardRequestSeq) setLoading(false);
+    }
+  };
+
+  let promise;
+  promise = executar().finally(() => {
+    if (state.dashboardRequestKey === key && state.dashboardRequestPromise === promise) {
+      state.dashboardRequestKey = null;
+      state.dashboardRequestPromise = null;
+    }
+  });
+  state.dashboardRequestKey = key;
+  state.dashboardRequestPromise = promise;
+  return promise;
 }
 
 async function recalculateDashboard() {
@@ -1123,7 +1208,7 @@ async function recalculateDashboard() {
   try {
     const response = await api(`/api/simulados/${state.current._id}/resultados/recalcular`, { method: 'POST', body: '{}' });
     toast(response.mensagem);
-    await loadDashboard();
+    await loadDashboard({ force: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -1492,7 +1577,7 @@ async function updateStudentLanguage(resultId) {
     await api(`/api/simulados/${state.current._id}/resultados/${resultId}/idioma`, { method: 'PATCH', body: JSON.stringify({ idiomaEstrangeiro: language, idiomaOrigem: 'manual' }) });
     $('#studentDialog').close();
     toast('Língua confirmada e resultado recalculado.');
-    await loadDashboard();
+    await loadDashboard({ force: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -1518,7 +1603,7 @@ async function updateStudentParticipation(resultId) {
     });
     $('#studentDialog').close();
     toast(response.mensagem || 'Participação atualizada e diagnóstico recalculado.');
-    await loadDashboard();
+    await loadDashboard({ force: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -1673,7 +1758,7 @@ async function saveProcessedParticipation() {
     });
     $('#processedParticipationDialog').close();
     toast(response.mensagem || 'Participação atualizada e diagnóstico recalculado.');
-    await loadDashboard();
+    await loadDashboard({ force: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -1783,7 +1868,7 @@ async function saveProcessedLanguages() {
     });
     $('#processedLanguageDialog').close();
     toast(response.mensagem || 'Idiomas atualizados e diagnóstico recalculado.');
-    await loadDashboard();
+    await loadDashboard({ force: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
