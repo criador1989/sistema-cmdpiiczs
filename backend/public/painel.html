@@ -3001,6 +3001,17 @@ canvas{
                 <div class="card-watermark card-watermark--transferencia" aria-hidden="true">🔄</div>
               </div>
             </div>
+            <div id="cardSimulados" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('simulados.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">DIAGNÓSTICO PEDAGÓGICO</div>
+                  <h3>Análise de Simulados</h3>
+                  <p>Áreas, habilidades, fragilidades e grupos de intervenção.</p>
+                </div>
+                <div class="card-watermark" aria-hidden="true">◎</div>
+              </div>
+            </div>
+
             <div id="cardGestaoRedacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
               <div class="window-content">
                 <div class="card-copy">
@@ -3445,6 +3456,7 @@ canvas{
       cardFinanceiro:'cardFinanceiro',
         cardUniformes:'cardUniformes',
       cardTransferirTurma:'cardTransferirTurma',
+      cardSimulados:'cardSimulados',
       cardGestaoRedacao:'cardGestaoRedacao',
       cardObservacoesProfessor:'cardObservacoesProfessor'
     };
@@ -3469,6 +3481,10 @@ canvas{
 
       const u = await r.json();
       const tipo = String(u?.tipo || '').toLowerCase();
+      const cardSimulados = document.getElementById(CARDS.cardSimulados);
+      if (cardSimulados && ['admin','master','superadmin','professor'].includes(tipo)) {
+        cardSimulados.style.display = '';
+      }
 
       if (tipo === 'admin') {
           show(SB.sbUniformes, CARDS.cardUniformes);
