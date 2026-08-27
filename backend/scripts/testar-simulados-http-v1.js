@@ -128,7 +128,7 @@ async function executar() {
     const adminBody = await admin.json();
     assert.equal(adminBody.permissoes.gestao, true);
     assert.deepEqual(adminBody.turmas, ['3º A', '3º B']);
-    assert.equal(adminBody.versao, '1.12.4');
+    assert.equal(adminBody.versao, '1.12.5');
     assert.equal(adminBody.regras.retomadaAutomatica, true);
     assert.equal(adminBody.regras.idiomaNaoMarcadoZeraQuestoes, true);
     assert.equal(adminBody.regras.recuperaVinculosDiagnosticoAnterior, true);
@@ -192,7 +192,7 @@ async function executar() {
     const monitor = await fetch(`${base}/api/simulados/bootstrap`, { headers: cabecalho('monitor') });
     assert.equal(monitor.status, 403);
 
-    console.log('Simulados V1.12.4: autenticação, participação parcial separada de base incompleta, idioma e performance aprovados.');
+    console.log('Simulados V1.12.5: autenticação, participação parcial separada de base incompleta, idioma e performance aprovados.');
   } finally {
     await new Promise((resolve) => server.close(resolve));
     Usuario.findById = originais.usuarioFindById;

@@ -69,8 +69,10 @@ const {
   respostasConfirmadas,
   mesclarRespostas,
 } = require('../../services/simulados/simuladoSubstituicaoService');
+const { SimuladoDashboardCache } = require('../../services/simulados/simuladoDashboardCache');
 
 const router = express.Router();
+const dashboardCache = new SimuladoDashboardCache({ ttlMs: 30000, maxEntries: 120 });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024, files: 1 },
@@ -254,6 +256,20 @@ function filtroResultados(req, simuladoId, turma = '') {
     filtro.alunoTurmaSnapshot = { $in: permitidas };
   }
   return filtro;
+}
+
+
+function dashboardCachePrefix(req, simuladoId = req.simuladoDiagnostico?._id) {
+  return `${String(req.instituicaoId)}::${String(simuladoId || '')}::`;
+}
+
+function dashboardCacheKey(req) {
+  const turma = texto(req.query?.turma).slice(0, 100) || '*';
+  return `${dashboardCachePrefix(req)}${turma}`;
+}
+
+function invalidarDashboardCache(req, simuladoId = req.simuladoDiagnostico?._id) {
+  dashboardCache.invalidatePrefix(dashboardCachePrefix(req, simuladoId));
 }
 
 function resumoSimulado(item) {
@@ -562,7 +578,7 @@ router.get('/bootstrap', async (req, res, next) => {
       .lean();
     return res.json({
       ok: true,
-      versao: '1.12.4',
+      versao: '1.12.5',
       usuario: { nome: req.usuario?.nome || '', tipo: req.usuario?.tipo || '', turmas: turmasProfessor(req) },
       permissoes: { gestao: ehGestaoPedagogica(req), somenteLeitura: !ehGestaoPedagogica(req) },
       turmas,
@@ -793,6 +809,7 @@ router.post('/:simuladoId/mapeamento-enem/importar', apenasGestaoPedagogica, car
         };
       });
       await SimuladoResultado.bulkWrite(operacoes, { ordered: true });
+      invalidarDashboardCache(req);
       recalculados = operacoes.length;
     }
 
@@ -1084,7 +1101,10 @@ router.get('/:simuladoId/importacoes', apenasGestaoPedagogica, carregarSimulado,
       instituicao: req.instituicaoId,
       simulado: req.simuladoDiagnostico._id,
     };
-    filtro.status = statusPermitidos.includes(statusSolicitado) ? statusSolicitado : 'analisada';
+    // V1.12.5: a tela inicial busca conferencias prontas + OMR ativo em uma unica chamada.
+    filtro.status = statusSolicitado === 'pendentes'
+      ? { $in: ['analisando', 'analisada'] }
+      : (statusPermitidos.includes(statusSolicitado) ? statusSolicitado : 'analisada');
     const limite = Math.min(50, Math.max(1, Number(req.query.limite) || 20));
     const importacoes = await SimuladoImportacao.find(filtro)
       .select('arquivo status totais avisos erro progressoOmr criadoPor processadoPor processadoEm substituiImportacao vinculosRecuperados vinculosRecuperadosEm substituidaPorImportacao substituidaEm createdAt updatedAt')
@@ -1517,7 +1537,10 @@ router.post('/:simuladoId/importacoes/:importacaoId/confirmar', apenasGestaoPeda
         },
       });
     });
-    if (operacoes.length) await SimuladoResultado.bulkWrite(operacoes, { ordered: true });
+    if (operacoes.length) {
+      await SimuladoResultado.bulkWrite(operacoes, { ordered: true });
+      invalidarDashboardCache(req);
+    }
 
     bloqueada.status = 'processada';
     bloqueada.totais = { ...bloqueada.totais.toObject(), processadas: linhasProcessaveis.length };
@@ -1600,6 +1623,7 @@ router.post('/:simuladoId/resultados/recalcular', apenasGestaoPedagogica, carreg
       };
     });
     await SimuladoResultado.bulkWrite(operacoes, { ordered: true });
+    invalidarDashboardCache(req);
     await auditar(req, 'RECALCULAR_DIAGNOSTICO', req.simuladoDiagnostico._id, req.simuladoDiagnostico.titulo, {
       resultados: operacoes.length,
       versaoDiagnostico: 5,
@@ -1717,6 +1741,7 @@ router.patch('/:simuladoId/resultados/participacao', apenasGestaoPedagogica, car
     }
 
     await SimuladoResultado.bulkWrite(operacoes, { ordered: true });
+    invalidarDashboardCache(req);
     await auditar(req, 'CORRIGIR_PARTICIPACAO_LOTE', req.simuladoDiagnostico._id, req.simuladoDiagnostico.titulo, {
       total: operacoes.length,
       alteracoes: auditoria,
@@ -1787,6 +1812,7 @@ router.patch('/:simuladoId/resultados/:resultadoId/idioma', apenasGestaoPedagogi
       processadoEm: new Date(),
     });
     await resultado.save();
+    invalidarDashboardCache(req);
     await auditar(req, 'CORRIGIR_IDIOMA', resultado._id, resultado.alunoNomeSnapshot, { idioma, origem, simulado: req.simuladoDiagnostico._id });
     return res.json({ ok: true, mensagem: 'Língua confirmada e diagnóstico recalculado.', resultado });
   } catch (error) {
@@ -1867,6 +1893,7 @@ router.patch('/:simuladoId/resultados/idiomas', apenasGestaoPedagogica, carregar
     }
 
     await SimuladoResultado.bulkWrite(operacoes, { ordered: true });
+    invalidarDashboardCache(req);
     await auditar(req, 'CORRIGIR_IDIOMAS_LOTE', req.simuladoDiagnostico._id, req.simuladoDiagnostico.titulo, {
       total: operacoes.length,
       alteracoes: auditoria,
@@ -1884,9 +1911,18 @@ router.patch('/:simuladoId/resultados/idiomas', apenasGestaoPedagogica, carregar
   }
 });
 
-async function dadosDashboard(req) {
+async function dadosDashboard(req, { leve = false } = {}) {
   const filtro = filtroResultados(req, req.simuladoDiagnostico._id, req.query.turma);
-  const resultadosBrutos = await SimuladoResultado.find(filtro).select('-respostasPreservadasAusencia').lean();
+  let consultaResultados = SimuladoResultado.find(filtro);
+  if (leve) {
+    // V1.12.5: na tela, evita transferir do Mongo os varios agregados por aluno que o
+    // dashboard recalcula a partir de respostas. Exportacoes continuam usando o documento completo.
+    const camposDashboard = '_id aluno alunoNomeSnapshot alunoTurmaSnapshot idiomaEstrangeiro idiomaOrigem diasAusentes respostas resumoGeral porArea porHabilidadeEnem versaoDiagnostico';
+    consultaResultados = consultaResultados.select(camposDashboard);
+  } else {
+    consultaResultados = consultaResultados.select('-respostasPreservadasAusencia');
+  }
+  const resultadosBrutos = await consultaResultados.lean();
   const resultados = resultadosBrutos.map((item) => resultadoComIdiomaEfetivo(req.simuladoDiagnostico, item));
   const dashboard = agregarDashboard(req.simuladoDiagnostico.toObject(), resultados);
   dashboard.recalculoNecessario = resultados.filter((item) => Number(item.versaoDiagnostico || 1) < 5).length;
@@ -1895,7 +1931,11 @@ async function dadosDashboard(req) {
     const idsAlunos = resultados.map((item) => item.aluno);
     const filtroAnterior = filtroResultados(req, req.simuladoDiagnostico.simuladoReferencia, req.query.turma);
     filtroAnterior.aluno = { $in: idsAlunos };
-    const anteriores = await SimuladoResultado.find(filtroAnterior).lean();
+    let consultaAnteriores = SimuladoResultado.find(filtroAnterior);
+    if (leve) {
+      consultaAnteriores = consultaAnteriores.select('_id aluno alunoNomeSnapshot alunoTurmaSnapshot diasAusentes resumoGeral porArea porHabilidadeEnem');
+    }
+    const anteriores = await consultaAnteriores.lean();
     comparacao = compararResultados(resultados, anteriores, dashboard.configuracao || {});
   }
   return { resultados, dashboard, comparacao };
@@ -1911,7 +1951,11 @@ router.get('/:simuladoId/dashboard', carregarSimulado, async (req, res, next) =>
     if (omrEmAndamento) {
       return erro(res, 423, 'A leitura óptica ainda está em andamento. O painel será liberado assim que os cartões terminarem de ser lidos.');
     }
-    const { dashboard, comparacao } = await dadosDashboard(req);
+
+    const force = String(req.query?.fresh || '') === '1';
+    const cached = await dashboardCache.getOrCreate(dashboardCacheKey(req), () => dadosDashboard(req, { leve: true }), { force });
+    res.setHeader('X-Axoriin-Dashboard-Cache', cached.source);
+    const { dashboard, comparacao } = cached.value;
     return res.json({ ok: true, simulado: resumoSimulado(req.simuladoDiagnostico), dashboard, comparacao });
   } catch (error) {
     return next(error);
@@ -2074,6 +2118,7 @@ router.patch('/:simuladoId', apenasGestaoPedagogica, carregarSimulado, async (re
     }
     item.atualizadoPor = ator(req);
     await item.save();
+    invalidarDashboardCache(req);
     await auditar(req, 'ATUALIZAR', item._id, item.titulo, { status: item.status, tipo: item.tipo, turmas: item.turmas });
     return res.json({ ok: true, mensagem: 'Simulado atualizado.', simulado: resumoSimulado(item) });
   } catch (error) {
