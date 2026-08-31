@@ -103,7 +103,7 @@ async function safeLogAction(payload) {
   }
 }
 
-async function getNextNumeroProcesso(instituicao) {
+async function getNextNumeroProcesso(instituicao, session = null) {
   const ano = new Date().getFullYear();
   const chave = `processo_disciplinar:${instituicao}:${ano}`;
 
@@ -119,12 +119,59 @@ async function getNextNumeroProcesso(instituicao) {
     },
     {
       new: true,
-      upsert: true
+      upsert: true,
+      ...(session ? { session } : {})
     }
   );
 
   const seq = String(counter.seq || 1).padStart(4, '0');
   return `PD-${seq}/${ano}`;
+}
+
+async function getNextNumeroOcorrenciaColetiva(instituicao, session = null) {
+  const ano = new Date().getFullYear();
+  const chave = `ocorrencia_coletiva:${instituicao}:${ano}`;
+
+  const counter = await Counter.findOneAndUpdate(
+    { chave },
+    {
+      $inc: { seq: 1 },
+      $setOnInsert: {
+        chave,
+        instituicao,
+        tenantId: instituicao
+      }
+    },
+    {
+      new: true,
+      upsert: true,
+      ...(session ? { session } : {})
+    }
+  );
+
+  const seq = String(counter.seq || 1).padStart(4, '0');
+  return `OC-${seq}/${ano}`;
+}
+
+function getDescricaoFatoCompleta(processo) {
+  const base = String(processo?.descricaoFato || '').trim();
+  const individual = String(processo?.relatoIndividual || '').trim();
+  const grupo = String(processo?.ocorrenciaColetivaCodigo || '').trim();
+
+  return [
+    grupo ? `Ocorrência coletiva vinculada: ${grupo}.` : '',
+    base,
+    individual
+      ? `Complemento individual referente ao estudante: ${individual}`
+      : ''
+  ].filter(Boolean).join('\n\n');
+}
+
+function normalizarPapelEnvolvido(valor) {
+  const papel = String(valor || '').trim().toLowerCase();
+  return ['autor', 'vitima', 'testemunha', 'outro'].includes(papel)
+    ? papel
+    : 'autor';
 }
 
 function ordenarDocumentosDossie(documentos = []) {
@@ -764,7 +811,9 @@ router.get(
         await ProcessoDisciplinar.find({
           ...match,
           ativo: { $ne: false }
-        }).lean();
+        })
+          .populate('aluno', 'nome turma')
+          .lean();
 
       const stats = {
 
@@ -782,9 +831,11 @@ router.get(
 
         comparecimentos: 0,
 
+        ocorrenciasColetivas: 0,
+
         gravidade: {
           leve: 0,
-          moderada: 0,
+          media: 0,
           grave: 0,
           gravissima: 0
         },
@@ -792,7 +843,13 @@ router.get(
         porTurma: {}
       };
 
+      const gruposColetivos = new Set();
+
       processos.forEach(p => {
+
+        if (p.ocorrenciaColetivaId) {
+          gruposColetivos.add(String(p.ocorrenciaColetivaId));
+        }
 
         const status =
           String(p.status || '')
@@ -808,7 +865,7 @@ router.get(
           stats.ativos++;
         }
 
-        if (p.classificacao === 'ato_infracional') {
+        if (p.classificacaoOcorrencia === 'ato_infracional' || p.natureza === 'ato_infracional') {
           stats.atosInfracionais++;
         }
 
@@ -837,6 +894,8 @@ router.get(
         stats.porTurma[turma] =
           (stats.porTurma[turma] || 0) + 1;
       });
+
+      stats.ocorrenciasColetivas = gruposColetivos.size;
 
       stats.taxaComparecimento =
         stats.responsaveisNotificados
@@ -885,6 +944,7 @@ router.get('/',
         .sort({ createdAt: -1 })
         .populate('aluno', 'nome turma')
         .populate('notificacao', 'numeroSequencial tipoMedida')
+        .populate('envolvidos.aluno', 'nome turma')
         .lean();
 
       return res.json(processos);
@@ -923,6 +983,7 @@ router.get('/:id',
       })
         .populate('aluno', 'nome turma')
         .populate('notificacao')
+        .populate('envolvidos.aluno', 'nome turma')
         .populate('timeline.usuario', 'nome')
         .lean();
 
@@ -1098,6 +1159,377 @@ router.post('/',
 
       return res.status(500).json({
         message: 'Erro ao abrir processo disciplinar.'
+      });
+    }
+  }
+);
+
+/* =========================================================
+   ABRIR PROCEDIMENTOS EM LOTE / OCORRÊNCIA COLETIVA
+========================================================= */
+
+router.post('/lote',
+  autenticar,
+  requireTenant,
+  attachActor,
+  async (req, res) => {
+    const session = await mongoose.startSession();
+
+    try {
+      const tenantId = getTenantId(req);
+      const body = req.body || {};
+      const alunosEntrada = Array.isArray(body.alunos) ? body.alunos : [];
+
+      if (alunosEntrada.length < 2) {
+        return res.status(400).json({
+          message: 'Selecione pelo menos 2 alunos para uma ocorrência coletiva.'
+        });
+      }
+
+      if (alunosEntrada.length > 40) {
+        return res.status(400).json({
+          message: 'O limite por ocorrência coletiva é de 40 alunos.'
+        });
+      }
+
+      const alunosNormalizados = alunosEntrada.map((item) => {
+        const id = String(item?.aluno || item?.id || '').trim();
+        return {
+          aluno: id,
+          papel: normalizarPapelEnvolvido(item?.papel),
+          observacao: String(item?.observacao || '').trim()
+        };
+      });
+
+      const ids = alunosNormalizados.map(x => x.aluno);
+
+      if (ids.some(id => !mongoose.isValidObjectId(id))) {
+        return res.status(400).json({
+          message: 'Há aluno com identificador inválido na seleção.'
+        });
+      }
+
+      if (new Set(ids).size !== ids.length) {
+        return res.status(400).json({
+          message: 'A seleção contém aluno duplicado.'
+        });
+      }
+
+      const descricaoFato = String(body.descricaoFato || '').trim();
+      const localFato = String(body.localFato || '').trim();
+
+      if (!descricaoFato) {
+        return res.status(400).json({
+          message: 'Informe o relato geral do fato.'
+        });
+      }
+
+      if (!localFato) {
+        return res.status(400).json({
+          message: 'Informe o local do fato.'
+        });
+      }
+
+      const alunosDocs = await Aluno.find({
+        _id: { $in: ids },
+        ...buildTenantMatch(tenantId)
+      })
+        .select('_id nome turma matricula')
+        .lean();
+
+      if (alunosDocs.length !== ids.length) {
+        return res.status(404).json({
+          message: 'Um ou mais alunos selecionados não foram encontrados nesta instituição.'
+        });
+      }
+
+      const porId = new Map(
+        alunosDocs.map(a => [String(a._id), a])
+      );
+
+      let notificacao = null;
+      const notificacaoId = String(body.notificacaoId || '').trim();
+
+      if (notificacaoId) {
+        if (!mongoose.isValidObjectId(notificacaoId)) {
+          return res.status(400).json({
+            message: 'Notificação vinculada inválida.'
+          });
+        }
+
+        notificacao = await Notificacao.findOne({
+          _id: notificacaoId,
+          ...buildTenantMatch(tenantId)
+        });
+
+        if (!notificacao) {
+          return res.status(404).json({
+            message: 'Notificação vinculada não encontrada.'
+          });
+        }
+
+        if (notificacao.processoInstaurado && notificacao.processoDisciplinar) {
+          return res.status(409).json({
+            message: 'Esta notificação já possui procedimento disciplinar instaurado.',
+            processoDisciplinar: notificacao.processoDisciplinar
+          });
+        }
+
+        const alunoNotificacao = String(notificacao.aluno || '');
+        if (alunoNotificacao && !ids.includes(alunoNotificacao)) {
+          return res.status(400).json({
+            message: 'O aluno da notificação precisa permanecer entre os selecionados.'
+          });
+        }
+      }
+
+      const ocorrenciaColetivaId = crypto.randomUUID();
+      let ocorrenciaColetivaCodigo = null;
+      const processosCriados = [];
+
+      await session.withTransaction(async () => {
+        ocorrenciaColetivaCodigo =
+          await getNextNumeroOcorrenciaColetiva(tenantId, session);
+
+        const envolvidos = alunosNormalizados.map(item => {
+          const alunoDoc = porId.get(item.aluno);
+          return {
+            aluno: alunoDoc?._id || item.aluno,
+            nome: alunoDoc?.nome || '',
+            tipo: item.papel,
+            observacao: item.observacao || ''
+          };
+        });
+
+        for (const item of alunosNormalizados) {
+          const alunoDoc = porId.get(item.aluno);
+          const numeroProcesso =
+            await getNextNumeroProcesso(tenantId, session);
+
+          const processo = new ProcessoDisciplinar(
+            tenantData(req, {
+              aluno: alunoDoc._id,
+              notificacao:
+                notificacao && String(notificacao.aluno || '') === String(alunoDoc._id)
+                  ? notificacao._id
+                  : null,
+              tipoAbertura: 'coletiva',
+              ocorrenciaColetivaId,
+              ocorrenciaColetivaCodigo,
+              papelNoFato: item.papel,
+              relatoIndividual: item.observacao || '',
+              envolvidos,
+              numeroProcesso,
+              natureza: body.natureza || 'indisciplina',
+              classificacaoOcorrencia:
+                body.classificacaoOcorrencia || 'indisciplina_leve',
+              gravidade: body.gravidade || 'leve',
+              dataFato: body.dataFato || new Date(),
+              horaFato: body.horaFato,
+              localFato,
+              descricaoFato,
+              providenciasImediatas: body.providenciasImediatas,
+              possuiViolencia: !!body.possuiViolencia,
+              possuiLesao: !!body.possuiLesao,
+              possuiDanoPatrimonial: !!body.possuiDanoPatrimonial,
+              possuiSubstanciaIlicita: !!body.possuiSubstanciaIlicita,
+              possuiArmaOuObjetoPerigoso: !!body.possuiArmaOuObjetoPerigoso,
+              exigeEncaminhamentoExterno: !!body.exigeEncaminhamentoExterno,
+              orgaoEncaminhamento: body.orgaoEncaminhamento || null,
+              abertoPor: req.usuario?.id || null
+            })
+          );
+
+          processo.adicionarTimeline({
+            tipo: 'processo_aberto',
+            titulo: 'Procedimento instaurado em ocorrência coletiva',
+            descricao:
+              `Procedimento individual vinculado à ocorrência coletiva ${ocorrenciaColetivaCodigo}.`,
+            usuario: req.usuario?.id || null,
+            metadados: {
+              ocorrenciaColetivaId,
+              ocorrenciaColetivaCodigo,
+              totalAlunos: alunosNormalizados.length,
+              papelNoFato: item.papel
+            }
+          });
+
+          await processo.save({ session });
+
+          processosCriados.push({
+            processo,
+            alunoDoc
+          });
+        }
+
+        if (notificacao) {
+          const vinculado = processosCriados.find(({ processo }) =>
+            String(processo.aluno) === String(notificacao.aluno)
+          );
+
+          if (vinculado) {
+            notificacao.processoDisciplinar = vinculado.processo._id;
+            notificacao.processoInstaurado = true;
+            await notificacao.save({ session });
+          }
+        }
+      });
+
+      for (const item of processosCriados) {
+        try {
+          await item.processo.populate('aluno');
+          await registrarProcessoNoLivro(item.processo, req);
+        } catch (errLivro) {
+          console.error('[LIVRO_OCORRENCIAS][CRIAR_LOTE]', errLivro);
+        }
+
+        await safeLogAction({
+          req,
+          event: 'PROCESSO_DISCIPLINAR_CRIADO_LOTE',
+          targetType: 'ProcessoDisciplinar',
+          targetId: item.processo._id,
+          entidadeNome: item.alunoDoc?.nome || null,
+          alunoNome: item.alunoDoc?.nome || null,
+          meta: {
+            aluno: item.alunoDoc?.nome,
+            turma: item.alunoDoc?.turma,
+            numeroProcesso: item.processo.numeroProcesso,
+            ocorrenciaColetivaId,
+            ocorrenciaColetivaCodigo,
+            totalAlunos: alunosNormalizados.length
+          }
+        });
+      }
+
+      const idsProcessos = processosCriados.map(x => x.processo._id);
+
+      const completos = await ProcessoDisciplinar.find({
+        _id: { $in: idsProcessos }
+      })
+        .populate('aluno', 'nome turma')
+        .populate('notificacao')
+        .populate('envolvidos.aluno', 'nome turma')
+        .sort({ numeroProcesso: 1 })
+        .lean();
+
+      return res.status(201).json({
+        ok: true,
+        total: completos.length,
+        ocorrenciaColetivaId,
+        ocorrenciaColetivaCodigo,
+        processos: completos
+      });
+
+    } catch (err) {
+      console.error('[PROCESSOS][CRIAR_LOTE]', err);
+
+      return res.status(500).json({
+        message: 'Erro ao abrir procedimentos em lote.'
+      });
+    } finally {
+      try {
+        await session.endSession();
+      } catch {}
+    }
+  }
+);
+
+/* =========================================================
+   OBSERVAÇÃO COMPARTILHADA DA OCORRÊNCIA COLETIVA
+========================================================= */
+
+router.post('/grupo/:grupoId/observacao',
+  autenticar,
+  requireTenant,
+  attachActor,
+  async (req, res) => {
+    try {
+      const tenantId = getTenantId(req);
+      const grupoId = String(req.params.grupoId || '').trim();
+      const titulo = String(req.body?.titulo || '').trim();
+      const descricao = String(req.body?.descricao || '').trim();
+
+      if (!grupoId) {
+        return res.status(400).json({
+          message: 'Ocorrência coletiva não informada.'
+        });
+      }
+
+      if (!descricao) {
+        return res.status(400).json({
+          message: 'Informe a descrição da observação.'
+        });
+      }
+
+      const processos = await ProcessoDisciplinar.find({
+        ...buildTenantMatch(tenantId),
+        ocorrenciaColetivaId: grupoId,
+        ativo: { $ne: false }
+      });
+
+      if (!processos.length) {
+        return res.status(404).json({
+          message: 'Nenhum procedimento foi encontrado para esta ocorrência coletiva.'
+        });
+      }
+
+      const agora = new Date();
+
+      for (const processo of processos) {
+        processo.adicionarTimeline({
+          tipo: 'observacao',
+          titulo: titulo || 'Observação da ocorrência coletiva',
+          descricao,
+          usuario: req.usuario?.id || null,
+          metadados: {
+            ocorrenciaColetivaId: grupoId,
+            ocorrenciaColetivaCodigo: processo.ocorrenciaColetivaCodigo || null,
+            compartilhada: true
+          }
+        });
+
+        if (processo.status === 'aberto') {
+          processo.status = 'em_acompanhamento';
+        }
+
+        await processo.save();
+
+        try {
+          await processo.populate('aluno');
+          await atualizarLivroPorProcesso(processo, req, {
+            tipo: 'observacao',
+            titulo: titulo || 'Observação da ocorrência coletiva',
+            descricao
+          });
+        } catch (errLivro) {
+          console.error('[LIVRO_OCORRENCIAS][OBSERVACAO_GRUPO]', errLivro);
+        }
+      }
+
+      await safeLogAction({
+        req,
+        event: 'PROCESSO_DISCIPLINAR_OBSERVACAO_GRUPO',
+        targetType: 'ProcessoDisciplinar',
+        targetId: processos[0]._id,
+        meta: {
+          ocorrenciaColetivaId: grupoId,
+          ocorrenciaColetivaCodigo:
+            processos[0].ocorrenciaColetivaCodigo || null,
+          totalProcessos: processos.length,
+          criadoEm: agora
+        }
+      });
+
+      return res.json({
+        ok: true,
+        totalAtualizados: processos.length,
+        ocorrenciaColetivaId: grupoId
+      });
+    } catch (err) {
+      console.error('[PROCESSOS][OBSERVACAO_GRUPO]', err);
+
+      return res.status(500).json({
+        message: 'Erro ao registrar observação na ocorrência coletiva.'
       });
     }
   }
@@ -1719,7 +2151,7 @@ publicRouter.get('/publico/:token',
           status: processo.status,
           dataFato: processo.dataFato,
           localFato: processo.localFato,
-          descricaoFato: processo.descricaoFato,
+          descricaoFato: getDescricaoFatoCompleta(processo),
           providenciasImediatas: processo.providenciasImediatas,
           prazoAcompanhamentoAte: processo.prazoAcompanhamentoAte,
           aluno: processo.aluno,
@@ -1898,7 +2330,7 @@ router.post('/:id/gerar-portaria-instauracao',
         dataFato: dataFatoFormatada,
         horaFato: processo.horaFato || '',
         localFato: processo.localFato || '',
-        descricaoFato: processo.descricaoFato || '',
+        descricaoFato: getDescricaoFatoCompleta(processo),
         providencias: processo.providenciasImediatas || '',
 
         naturezaProcedimento:
@@ -2089,7 +2521,7 @@ router.post('/:id/gerar-remessa-conselho-tutelar',
         alunoNome: aluno.nome || '',
         turma: aluno.turma || '',
 
-        descricaoFato: processo.descricaoFato || '',
+        descricaoFato: getDescricaoFatoCompleta(processo),
         providencias: processo.providenciasImediatas || '',
         motivoArquivamento: processo.motivoArquivamento || '',
         parecerFinal: processo.parecerFinal || '',
@@ -2304,7 +2736,7 @@ router.post('/:id/gerar-oficio-ministerio-publico',
           processo.localFato || '',
 
         descricaoFato:
-          processo.descricaoFato || '',
+          getDescricaoFatoCompleta(processo),
 
         providencias:
           processo.providenciasImediatas || '',
@@ -2583,7 +3015,7 @@ router.post('/:id/gerar-oficio-delegacia',
           processo.localFato || '',
 
         descricaoFato:
-          processo.descricaoFato || '',
+          getDescricaoFatoCompleta(processo),
 
         providencias:
           processo.providenciasImediatas || '',
@@ -2862,7 +3294,7 @@ router.post('/:id/gerar-oficio-judiciario',
           processo.localFato || '',
 
         descricaoFato:
-          processo.descricaoFato || '',
+          getDescricaoFatoCompleta(processo),
 
         providencias:
           processo.providenciasImediatas || '',
@@ -3148,7 +3580,7 @@ router.post('/:id/gerar-relatorio-final',
           processo.localFato || '',
 
         descricaoFato:
-          processo.descricaoFato || '',
+          getDescricaoFatoCompleta(processo),
 
         providencias:
           processo.providenciasImediatas || '',
@@ -3474,7 +3906,7 @@ mostrarRodape:
           responsavel.parentesco || '',
 
         descricaoFato:
-          processo.descricaoFato || '',
+          getDescricaoFatoCompleta(processo),
 
         providencias:
           processo.providenciasImediatas || '',

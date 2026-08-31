@@ -1,179 +1,160 @@
 /* =====================================================
    procedimento-modal.js
-   Modal compartilhado para abertura de Procedimento Disciplinar.
-   Reutilizado por: notificacoes.html, lista-alunos.html, ficha-aluno.html
+   Abertura individual e coletiva de Procedimentos Disciplinares.
+
+   Reutilizado por:
+   - notificacoes.html
+   - lista-alunos.html
+   - ficha-aluno.html
+   - processos-disciplinares.html
 
    API pública:
      window.abrirModalProcedimentoDisciplinar(contexto)
      window.fecharModalProcedimentoDisciplinar()
 
-   Contexto origem notificacao:
+   O contexto pode trazer um aluno inicial ou ser aberto sem aluno:
    {
-     origem: 'notificacao',
-     notificacaoId, alunoId, nomeAluno, turma,
-     classificacaoOcorrencia, possuiViolencia, possuiLesao,
-     possuiDanoPatrimonial, possuiSubstanciaIlicita,
-     possuiArmaOuObjetoPerigoso, exigeEncaminhamentoExterno,
-     orgaoEncaminhamento, data, motivo, observacao
-   }
-
-   Contexto origem ficha/lista do aluno:
-   {
-     origem: 'ficha_aluno',
-     alunoId, nomeAluno, turma
+     origem: 'notificacao' | 'ficha_aluno' | 'lista_alunos' | 'processos',
+     notificacaoId?,
+     alunoId?, nomeAluno?, turma?,
+     classificacaoOcorrencia?,
+     possuiViolencia?, possuiLesao?, possuiDanoPatrimonial?,
+     possuiSubstanciaIlicita?, possuiArmaOuObjetoPerigoso?,
+     exigeEncaminhamentoExterno?, orgaoEncaminhamento?,
+     data?, motivo?, observacao?
    }
 ===================================================== */
 (function (global) {
   'use strict';
 
-  const MODAL_ID  = 'pdProcedimentoModal';
+  const MODAL_ID = 'pdProcedimentoModal';
   const STYLES_ID = 'pdProcedimentoStyles';
 
-  /* ----------------------------------------------------------
-     helpers de UI
-  ---------------------------------------------------------- */
-  function _showToast(msg) {
-    if (typeof global.showToast === 'function') return global.showToast(msg);
-    if (typeof global.toast    === 'function') return global.toast(msg, 'ok');
-    console.log('[PD]', msg);
-  }
-  function _showError(msg) {
-    if (typeof global.showError === 'function') return global.showError(msg);
-    if (typeof global.toast     === 'function') return global.toast(msg, 'err', 'Erro');
-    alert(msg);
-  }
-  function _el(id)          { return document.getElementById(id); }
-  function _val(id)         { return (_el(id) || {}).value || ''; }
-  function _checked(id)     { return !!(_el(id) || {}).checked; }
-  function _set(id, val)    { const e = _el(id); if (e) e.value = String(val ?? ''); }
+  let _ctx = null;
+  let _selecionados = new Map();
+  let _buscaTimer = null;
+  let _resultadosBusca = new Map();
+
+  function _el(id) { return document.getElementById(id); }
+  function _val(id) { return (_el(id) || {}).value || ''; }
+  function _checked(id) { return !!(_el(id) || {}).checked; }
+  function _set(id, val) { const e = _el(id); if (e) e.value = String(val ?? ''); }
   function _setCheck(id, v) { const e = _el(id); if (e) e.checked = !!v; }
-  function _setOpt(id, val) {
-    const e = _el(id);
-    if (!e) return;
-    const opt = Array.from(e.options).find(o => o.value === val);
-    if (opt) e.value = val;
+  function _tenant() {
+    return new URLSearchParams(global.location.search).get('t') || '';
   }
   function _todayISO(d) {
     const dt = d ? new Date(d) : new Date();
     if (isNaN(dt.getTime())) return _todayISO();
     const yyyy = dt.getFullYear();
-    const mm   = String(dt.getMonth() + 1).padStart(2, '0');
-    const dd   = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   }
-  function _tenant() {
-    return new URLSearchParams(global.location.search).get('t') || '';
+  function _escape(v) {
+    return String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  function _showToast(msg) {
+    if (typeof global.showToast === 'function') return global.showToast(msg);
+    if (typeof global.toast === 'function') return global.toast(msg, 'ok');
+    console.log('[PD]', msg);
+  }
+  function _showError(msg) {
+    if (typeof global.showError === 'function') return global.showError(msg);
+    if (typeof global.toast === 'function') return global.toast(msg, 'err', 'Erro');
+    alert(msg);
+  }
+  function _api(path) {
+    const url = new URL(path, global.location.origin);
+    const t = _tenant();
+    if (t) url.searchParams.set('t', t);
+    return url;
   }
 
-  /* ----------------------------------------------------------
-     CSS injetado — auto-contido, sem dependência de CSS vars da página
-  ---------------------------------------------------------- */
   const CSS = `
 #pdProcedimentoModal {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(5,10,20,.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 9999;
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  padding: 18px; background: rgba(5,10,20,.68); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); z-index: 9999;
 }
-#pdProcedimentoModal.is-open { display: flex; }
+#pdProcedimentoModal.is-open { display:flex; }
 .pd-modal-card {
-  width: min(620px, 100%);
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.14);
-  background:
-    radial-gradient(circle at top left, rgba(255,196,0,.08), transparent 38%),
-    linear-gradient(180deg, rgba(18,28,46,.96), rgba(10,18,34,.96));
-  box-shadow: 0 24px 60px rgba(0,0,0,.42);
-  overflow: hidden;
+  width:min(820px,100%); max-height:92dvh; border-radius:22px;
+  border:1px solid rgba(255,255,255,.14);
+  background:radial-gradient(circle at top left,rgba(255,196,0,.08),transparent 38%),
+             linear-gradient(180deg,rgba(18,28,46,.98),rgba(10,18,34,.98));
+  box-shadow:0 24px 60px rgba(0,0,0,.42); overflow:hidden;
 }
 .pd-modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px;
-  border-bottom: 1px solid rgba(255,255,255,.10);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:16px 18px; border-bottom:1px solid rgba(255,255,255,.10);
 }
-.pd-modal-title { font-size: 1.05rem; font-weight: 800; color: #ffe082; font-family: inherit; }
+.pd-modal-title {font-size:1.05rem;font-weight:800;color:#ffe082;font-family:inherit;}
 .pd-modal-close {
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: #fff;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  flex-shrink: 0;
+  border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#fff;
+  width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:1rem;flex-shrink:0;
 }
-.pd-modal-body {
-  padding: 18px;
-  display: grid;
-  gap: 12px;
-  overflow-y: auto;
-  max-height: calc(88dvh - 72px);
+.pd-modal-body {padding:18px;display:grid;gap:14px;overflow-y:auto;max-height:calc(92dvh - 72px);}
+.pd-section {
+  border:1px solid rgba(255,255,255,.10); border-radius:14px;
+  background:rgba(255,255,255,.035); padding:13px; display:grid; gap:10px;
 }
-.pd-modal-note { color: #b8c7e0; font-size: .92rem; font-family: inherit; }
-.pd-modal-field-label { display: block; font-size: .85rem; color: #b8c7e0; margin-bottom: 4px; font-family: inherit; }
-.pd-modal-body input,
-.pd-modal-body select,
-.pd-modal-body textarea {
-  width: 100%;
-  box-sizing: border-box;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: 10px;
-  color: #ecf2ff;
-  padding: 9px 12px;
-  font-size: .95rem;
-  font-family: inherit;
+.pd-section-title {font-weight:800;color:#eaf1ff;font-size:.95rem;}
+.pd-note {color:#b8c7e0;font-size:.88rem;line-height:1.45;}
+.pd-grid2 {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pd-grid3 {display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.pd-modal-body input,.pd-modal-body select,.pd-modal-body textarea {
+  width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#ecf2ff;
+  padding:9px 12px;font-size:.94rem;font-family:inherit;
 }
-.pd-modal-body select option { background: #101e36; color: #ecf2ff; }
-.pd-modal-body textarea { min-height: 72px; resize: vertical; }
-.pd-modal-body label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ecf2ff;
-  font-size: .93rem;
-  cursor: pointer;
-  font-family: inherit;
-  user-select: none;
+.pd-modal-body select option {background:#101e36;color:#ecf2ff;}
+.pd-modal-body textarea {min-height:82px;resize:vertical;}
+.pd-checks {display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.pd-checks label {display:flex;align-items:center;gap:8px;color:#ecf2ff;font-size:.9rem;cursor:pointer;}
+.pd-checks input {width:auto;}
+.pd-search-row {display:grid;grid-template-columns:1fr auto;gap:8px;}
+.pd-search-results {display:grid;gap:7px;max-height:210px;overflow:auto;}
+.pd-result,.pd-selected {
+  border:1px solid rgba(255,255,255,.10);border-radius:11px;background:rgba(255,255,255,.04);
+}
+.pd-result {display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 10px;}
+.pd-result strong,.pd-selected strong {color:#fff;}
+.pd-result small,.pd-selected small {color:#aebed8;}
+.pd-mini-btn {
+  border:1px solid rgba(255,196,0,.3);background:rgba(255,170,0,.12);color:#ffe082;
+  border-radius:9px;padding:7px 10px;cursor:pointer;font-weight:700;
+}
+.pd-selected {padding:10px;display:grid;gap:9px;}
+.pd-selected-head {display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.pd-selected-fields {display:grid;grid-template-columns:180px 1fr;gap:9px;}
+.pd-remove {
+  border:0;background:transparent;color:#ffb4b4;cursor:pointer;font-weight:800;padding:5px 7px;
+}
+.pd-count {
+  display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;
+  border-radius:999px;background:rgba(255,196,0,.16);color:#ffe082;font-weight:800;padding:0 8px;
 }
 .pd-btn-primary {
-  border: 1px solid rgba(255,196,0,.38);
-  background: linear-gradient(135deg, rgba(255,170,0,.28), rgba(255,120,0,.24));
-  color: #fff;
-  border-radius: 12px;
-  padding: 10px 16px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: .95rem;
-  font-family: inherit;
-  width: 100%;
-  transition: background .16s ease;
-  margin-top: 4px;
+  border:1px solid rgba(255,196,0,.38);
+  background:linear-gradient(135deg,rgba(255,170,0,.28),rgba(255,120,0,.24));
+  color:#fff;border-radius:12px;padding:11px 16px;cursor:pointer;font-weight:800;
+  font-size:.96rem;font-family:inherit;width:100%;
 }
-.pd-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(255,180,0,.34), rgba(255,130,0,.30));
-}
-.pd-btn-primary:disabled { opacity: .55; cursor: not-allowed; }
-@media (max-width: 768px) {
-  #pdProcedimentoModal { padding: 12px; align-items: flex-end; }
-  .pd-modal-card { width: 100%; border-radius: 20px 20px 0 0; max-height: 88dvh; }
+.pd-btn-primary:disabled {opacity:.55;cursor:not-allowed;}
+.pd-hidden {display:none!important;}
+@media(max-width:700px){
+  #pdProcedimentoModal{padding:8px;align-items:flex-end}
+  .pd-modal-card{border-radius:20px 20px 0 0;max-height:94dvh}
+  .pd-grid2,.pd-grid3,.pd-checks,.pd-selected-fields{grid-template-columns:1fr}
 }
 `;
 
-  /* ----------------------------------------------------------
-     HTML injetado
-  ---------------------------------------------------------- */
   const HTML = `
 <div id="${MODAL_ID}" aria-hidden="true">
   <div class="pd-modal-card">
@@ -182,57 +163,87 @@
       <button type="button" class="pd-modal-close" onclick="window.fecharModalProcedimentoDisciplinar()">✕</button>
     </div>
     <div class="pd-modal-body">
-      <div class="pd-modal-note" id="pdProcAlunoInfo">—</div>
 
-      <input id="pdProcLocalFato" placeholder="Local do fato: sala, pátio, corredor, quadra..." />
-      <input id="pdProcHoraFato" placeholder="Horário aproximado. Ex.: 09:30" />
+      <section class="pd-section">
+        <div class="pd-section-title">
+          Alunos com procedimento <span class="pd-count" id="pdQtdSelecionados">0</span>
+        </div>
+        <div class="pd-note">
+          Selecione um aluno para abertura individual ou vários alunos quando o mesmo fato envolver um grupo.
+          O relato geral será aproveitado em todos os procedimentos, sem perder o histórico individual.
+          Adicione aqui somente estudantes para os quais haverá procedimento; vítimas ou testemunhas sem procedimento não precisam ser incluídas nesta seleção.
+        </div>
 
-      <div>
-        <label for="pdProcDataFato" class="pd-modal-field-label">Data do fato</label>
-        <input id="pdProcDataFato" type="date" />
-      </div>
+        <div class="pd-search-row">
+          <input id="pdBuscaAluno" placeholder="Pesquisar aluno por nome ou turma..." autocomplete="off" />
+          <button type="button" class="pd-mini-btn" id="pdBtnBuscarAluno">Buscar</button>
+        </div>
+        <div id="pdBuscaResultados" class="pd-search-results"></div>
+        <div id="pdSelecionados"></div>
+      </section>
 
-      <select id="pdProcNatureza">
-        <option value="indisciplina">Indisciplina escolar</option>
-        <option value="ato_infracional">Possível ato infracional</option>
-      </select>
+      <section class="pd-section">
+        <div class="pd-section-title">Relato do fato</div>
+        <textarea id="pdProcRelatoGeral" placeholder="Descreva o fato de forma objetiva. Este relato será comum aos alunos selecionados."></textarea>
 
-      <select id="pdProcGravidade">
-        <option value="leve">Leve</option>
-        <option value="media" selected>Média</option>
-        <option value="grave">Grave</option>
-        <option value="gravissima">Gravíssima</option>
-      </select>
+        <div class="pd-grid3">
+          <div>
+            <div class="pd-note">Data do fato</div>
+            <input id="pdProcDataFato" type="date" />
+          </div>
+          <div>
+            <div class="pd-note">Horário aproximado</div>
+            <input id="pdProcHoraFato" placeholder="Ex.: 09:30" />
+          </div>
+          <div>
+            <div class="pd-note">Local</div>
+            <input id="pdProcLocalFato" placeholder="Sala, pátio, corredor..." />
+          </div>
+        </div>
 
-      <textarea id="pdProcComplemento" placeholder="Complemento técnico da coordenação, se necessário"></textarea>
+        <textarea id="pdProcProvidencias" placeholder="Providências imediatas adotadas, se houver."></textarea>
+      </section>
 
-      <label><input type="checkbox" id="pdProcViolencia"> Houve violência</label>
-      <label><input type="checkbox" id="pdProcLesao"> Houve lesão</label>
-      <label><input type="checkbox" id="pdProcDano"> Houve dano patrimonial</label>
-      <label><input type="checkbox" id="pdProcSubstancia"> Envolveu substância ilícita</label>
-      <label><input type="checkbox" id="pdProcObjeto"> Envolveu arma ou objeto perigoso</label>
+      <section class="pd-section">
+        <div class="pd-section-title">Classificação e marcadores</div>
+        <div class="pd-grid2">
+          <select id="pdProcNatureza">
+            <option value="indisciplina">Indisciplina escolar</option>
+            <option value="ato_infracional">Possível ato infracional</option>
+          </select>
+          <select id="pdProcGravidade">
+            <option value="leve">Leve</option>
+            <option value="media" selected>Média</option>
+            <option value="grave">Grave</option>
+            <option value="gravissima">Gravíssima</option>
+          </select>
+        </div>
 
-      <label><input type="checkbox" id="pdProcEncaminhamento"> Exige encaminhamento externo</label>
+        <div class="pd-checks">
+          <label><input type="checkbox" id="pdProcViolencia"> Houve violência</label>
+          <label><input type="checkbox" id="pdProcLesao"> Houve lesão</label>
+          <label><input type="checkbox" id="pdProcDano"> Houve dano patrimonial</label>
+          <label><input type="checkbox" id="pdProcSubstancia"> Envolveu substância ilícita</label>
+          <label><input type="checkbox" id="pdProcObjeto"> Envolveu arma ou objeto perigoso</label>
+          <label><input type="checkbox" id="pdProcEncaminhamento"> Exige encaminhamento externo</label>
+        </div>
 
-      <select id="pdProcOrgao" style="display:none">
-        <option value="">Selecione o órgão</option>
-        <option value="conselho_tutelar">Conselho Tutelar</option>
-        <option value="delegacia">Delegacia</option>
-        <option value="ministerio_publico">Ministério Público</option>
-        <option value="judiciario">Judiciário</option>
-      </select>
+        <select id="pdProcOrgao" class="pd-hidden">
+          <option value="">Selecione o órgão</option>
+          <option value="conselho_tutelar">Conselho Tutelar</option>
+          <option value="delegacia">Delegacia</option>
+          <option value="ministerio_publico">Ministério Público</option>
+          <option value="judiciario">Judiciário</option>
+        </select>
+      </section>
 
-      <button class="pd-btn-primary" id="pdBtnInstaurar" onclick="window._pdConfirmarProcedimento()">
+      <button class="pd-btn-primary" id="pdBtnInstaurar" type="button">
         Instaurar procedimento
       </button>
     </div>
   </div>
-</div>
-`;
+</div>`;
 
-  /* ----------------------------------------------------------
-     injeção no DOM (idempotente)
-  ---------------------------------------------------------- */
   function _inject() {
     if (!_el(STYLES_ID)) {
       const style = document.createElement('style');
@@ -240,91 +251,238 @@
       style.textContent = CSS;
       document.head.appendChild(style);
     }
+
     if (!_el(MODAL_ID)) {
       document.body.insertAdjacentHTML('beforeend', HTML);
+
       _el('pdProcEncaminhamento')?.addEventListener('change', function () {
-        _el('pdProcOrgao').style.display = this.checked ? 'block' : 'none';
+        _el('pdProcOrgao')?.classList.toggle('pd-hidden', !this.checked);
       });
+
+      _el('pdBuscaAluno')?.addEventListener('input', () => {
+        clearTimeout(_buscaTimer);
+        _buscaTimer = setTimeout(_buscarAlunos, 350);
+      });
+
+      _el('pdBuscaAluno')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          _buscarAlunos();
+        }
+      });
+
+      _el('pdBtnBuscarAluno')?.addEventListener('click', _buscarAlunos);
+      _el('pdBtnInstaurar')?.addEventListener('click', _confirmar);
     }
   }
 
-  /* ----------------------------------------------------------
-     estado interno
-  ---------------------------------------------------------- */
-  let _ctx = null;
+  function _adicionarAluno(aluno, opts = {}) {
+    const id = String(aluno?._id || aluno?.id || aluno?.alunoId || '').trim();
+    if (!id || _selecionados.has(id)) return;
 
-  /* ----------------------------------------------------------
-     abrir
-  ---------------------------------------------------------- */
-  function abrir(contexto) {
-    if (!contexto || !contexto.alunoId) {
-      console.error('[PD] abrirModalProcedimentoDisciplinar: contexto inválido', contexto);
-      _showError('Dados do aluno não disponíveis. Tente novamente.');
+    _selecionados.set(id, {
+      id,
+      nome: aluno?.nome || aluno?.nomeAluno || 'Aluno',
+      turma: aluno?.turma || '',
+      papel: opts.papel || 'autor',
+      observacao: opts.observacao || '',
+      obrigatorio: !!opts.obrigatorio
+    });
+
+    _renderSelecionados();
+  }
+
+  function _removerAluno(id) {
+    const item = _selecionados.get(String(id));
+    if (item?.obrigatorio) {
+      _showError('O aluno que originou a notificação precisa permanecer na ocorrência.');
+      return;
+    }
+    _selecionados.delete(String(id));
+    _renderSelecionados();
+  }
+
+  function _atualizarAluno(id, campo, valor) {
+    const item = _selecionados.get(String(id));
+    if (!item) return;
+    item[campo] = valor;
+    _selecionados.set(String(id), item);
+  }
+
+  function _renderSelecionados() {
+    const box = _el('pdSelecionados');
+    const qtd = _el('pdQtdSelecionados');
+    if (!box || !qtd) return;
+
+    qtd.textContent = String(_selecionados.size);
+
+    if (!_selecionados.size) {
+      box.innerHTML = `<div class="pd-note">Nenhum aluno selecionado.</div>`;
       return;
     }
 
-    _inject();
-    _ctx = contexto;
+    box.innerHTML = Array.from(_selecionados.values()).map(item => `
+      <div class="pd-selected">
+        <div class="pd-selected-head">
+          <div>
+            <strong>${_escape(item.nome)}</strong>
+            <small> • ${_escape(item.turma || 'Turma não informada')}</small>
+          </div>
+          <button type="button" class="pd-remove"
+            onclick="window._pdRemoverAluno('${_escape(item.id)}')"
+            ${item.obrigatorio ? 'title="Aluno de origem da notificação"' : ''}>
+            ${item.obrigatorio ? '🔒' : 'Remover'}
+          </button>
+        </div>
+        <div class="pd-selected-fields">
+          <select onchange="window._pdAtualizarAluno('${_escape(item.id)}','papel',this.value)">
+            <option value="autor" ${item.papel === 'autor' ? 'selected' : ''}>Autor / participante da conduta</option>
+            <option value="vitima" ${item.papel === 'vitima' ? 'selected' : ''}>Vítima</option>
+            <option value="testemunha" ${item.papel === 'testemunha' ? 'selected' : ''}>Testemunha</option>
+            <option value="outro" ${item.papel === 'outro' ? 'selected' : ''}>Outro envolvimento</option>
+          </select>
+          <textarea
+            placeholder="Complemento individual deste aluno (opcional)"
+            oninput="window._pdAtualizarAluno('${_escape(item.id)}','observacao',this.value)">${_escape(item.observacao || '')}</textarea>
+        </div>
+      </div>
+    `).join('');
+  }
 
-    /* Cabeçalho com nome e turma */
-    _el('pdProcAlunoInfo').textContent =
-      `${contexto.nomeAluno || 'Aluno'} • ${contexto.turma || 'Turma não informada'}`;
+  async function _buscarAlunos() {
+    const q = _val('pdBuscaAluno').trim();
+    const box = _el('pdBuscaResultados');
+    if (!box) return;
 
-    /* Limpa campos comuns */
-    _set('pdProcLocalFato', '');
-    _set('pdProcHoraFato', '');
-    _set('pdProcComplemento', '');
-    _set('pdProcDataFato', contexto.origem === 'notificacao'
-      ? _todayISO(contexto.data)
-      : _todayISO());
-
-    if (contexto.origem === 'notificacao') {
-      /* Pré-preenche com dados da notificação */
-      const nat  = contexto.classificacaoOcorrencia === 'ato_infracional'
-        ? 'ato_infracional' : 'indisciplina';
-      const grav = contexto.classificacaoOcorrencia === 'ato_infracional'
-        ? 'grave' : 'media';
-      _setOpt('pdProcNatureza',  nat);
-      _setOpt('pdProcGravidade', grav);
-      _setCheck('pdProcViolencia',      contexto.possuiViolencia);
-      _setCheck('pdProcLesao',          contexto.possuiLesao);
-      _setCheck('pdProcDano',           contexto.possuiDanoPatrimonial);
-      _setCheck('pdProcSubstancia',     contexto.possuiSubstanciaIlicita);
-      _setCheck('pdProcObjeto',         contexto.possuiArmaOuObjetoPerigoso);
-      _setCheck('pdProcEncaminhamento', contexto.exigeEncaminhamentoExterno);
-      const orgEl = _el('pdProcOrgao');
-      if (orgEl) {
-        orgEl.style.display = contexto.exigeEncaminhamentoExterno ? 'block' : 'none';
-        orgEl.value = contexto.orgaoEncaminhamento || '';
-      }
-    } else {
-      /* Origem ficha_aluno — defaults neutros */
-      _setOpt('pdProcNatureza',  'indisciplina');
-      _setOpt('pdProcGravidade', 'media');
-      _setCheck('pdProcViolencia',      false);
-      _setCheck('pdProcLesao',          false);
-      _setCheck('pdProcDano',           false);
-      _setCheck('pdProcSubstancia',     false);
-      _setCheck('pdProcObjeto',         false);
-      _setCheck('pdProcEncaminhamento', false);
-      const orgEl = _el('pdProcOrgao');
-      if (orgEl) { orgEl.style.display = 'none'; orgEl.value = ''; }
+    if (q.length < 2) {
+      box.innerHTML = `<div class="pd-note">Digite pelo menos 2 caracteres.</div>`;
+      return;
     }
 
-    /* Restaura botão caso esteja desabilitado de tentativa anterior */
+    box.innerHTML = `<div class="pd-note">Buscando...</div>`;
+
+    try {
+      const url = _api('/api/alunos/busca');
+      url.searchParams.set('q', q);
+      url.searchParams.set('limit', '20');
+
+      const resp = await fetch(url.toString(), {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        throw new Error(data?.message || `Erro ${resp.status}`);
+      }
+
+      const itens = Array.isArray(data?.items) ? data.items : [];
+
+      if (!itens.length) {
+        box.innerHTML = `<div class="pd-note">Nenhum aluno encontrado.</div>`;
+        return;
+      }
+
+      _resultadosBusca = new Map(
+        itens.map(a => [String(a._id), a])
+      );
+
+      box.innerHTML = itens.map(a => {
+        const id = String(a._id);
+        const ja = _selecionados.has(id);
+        return `
+          <div class="pd-result">
+            <div>
+              <strong>${_escape(a.nome)}</strong>
+              <small> • ${_escape(a.turma || 'Sem turma')}</small>
+            </div>
+            <button type="button" class="pd-mini-btn"
+              ${ja ? 'disabled' : ''}
+              onclick="window._pdAdicionarAlunoBusca('${id}')">
+              ${ja ? 'Selecionado' : 'Adicionar'}
+            </button>
+          </div>`;
+      }).join('');
+    } catch (e) {
+      console.error('[PD][BUSCA_ALUNO]', e);
+      box.innerHTML = `<div class="pd-note">Não foi possível pesquisar alunos.</div>`;
+    }
+  }
+
+  function _abrir(contexto = {}) {
+    _inject();
+    _ctx = contexto || {};
+    _selecionados = new Map();
+
+    if (_ctx.alunoId) {
+      _adicionarAluno({
+        _id: _ctx.alunoId,
+        nome: _ctx.nomeAluno || 'Aluno',
+        turma: _ctx.turma || ''
+      }, {
+        papel: 'autor',
+        obrigatorio: _ctx.origem === 'notificacao'
+      });
+    } else {
+      _renderSelecionados();
+    }
+
+    _set('pdBuscaAluno', '');
+    _resultadosBusca = new Map();
+    if (_el('pdBuscaResultados')) _el('pdBuscaResultados').innerHTML = '';
+
+    const relatoOrigem =
+      _ctx.origem === 'notificacao'
+        ? (_ctx.motivo || _ctx.observacao || '')
+        : '';
+
+    _set('pdProcRelatoGeral', relatoOrigem);
+    _set('pdProcProvidencias', '');
+    _set('pdProcLocalFato', '');
+    _set('pdProcHoraFato', '');
+    _set('pdProcDataFato', _todayISO(_ctx.data));
+
+    const nat = _ctx.classificacaoOcorrencia === 'ato_infracional'
+      ? 'ato_infracional'
+      : 'indisciplina';
+
+    const grav = _ctx.classificacaoOcorrencia === 'ato_infracional'
+      ? 'grave'
+      : 'media';
+
+    _set('pdProcNatureza', nat);
+    _set('pdProcGravidade', grav);
+    _setCheck('pdProcViolencia', !!_ctx.possuiViolencia);
+    _setCheck('pdProcLesao', !!_ctx.possuiLesao);
+    _setCheck('pdProcDano', !!_ctx.possuiDanoPatrimonial);
+    _setCheck('pdProcSubstancia', !!_ctx.possuiSubstanciaIlicita);
+    _setCheck('pdProcObjeto', !!_ctx.possuiArmaOuObjetoPerigoso);
+    _setCheck('pdProcEncaminhamento', !!_ctx.exigeEncaminhamentoExterno);
+
+    const org = _el('pdProcOrgao');
+    if (org) {
+      org.value = _ctx.orgaoEncaminhamento || '';
+      org.classList.toggle('pd-hidden', !_ctx.exigeEncaminhamentoExterno);
+    }
+
     const btn = _el('pdBtnInstaurar');
-    if (btn) { btn.disabled = false; btn.textContent = 'Instaurar procedimento'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Instaurar procedimento';
+    }
 
     const modal = _el(MODAL_ID);
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+      if (!_selecionados.size) _el('pdBuscaAluno')?.focus();
+      else _el('pdProcRelatoGeral')?.focus();
+    }, 50);
   }
 
-  /* ----------------------------------------------------------
-     fechar
-  ---------------------------------------------------------- */
-  function fechar() {
+  function _fechar() {
     const modal = _el(MODAL_ID);
     if (modal) {
       modal.classList.remove('is-open');
@@ -332,31 +490,45 @@
     }
     document.body.style.overflow = '';
     _ctx = null;
+    _selecionados = new Map();
   }
 
-  /* ----------------------------------------------------------
-     confirmar (submissão do formulário)
-  ---------------------------------------------------------- */
-  async function confirmar() {
-    if (!_ctx) return;
+  async function _confirmar() {
+    const alunos = Array.from(_selecionados.values());
 
+    if (!alunos.length) {
+      _showError('Selecione pelo menos um aluno.');
+      return;
+    }
+
+    const descricaoFato = _val('pdProcRelatoGeral').trim();
+    const dataFato = _val('pdProcDataFato').trim();
     const localFato = _val('pdProcLocalFato').trim();
+    const horaFato = _val('pdProcHoraFato').trim();
+    const providenciasImediatas = _val('pdProcProvidencias').trim();
+    const natureza = _val('pdProcNatureza');
+    const gravidade = _val('pdProcGravidade');
+
+    if (!descricaoFato) {
+      _showError('Informe o relato do fato.');
+      return;
+    }
+    if (!dataFato) {
+      _showError('Informe a data do fato.');
+      return;
+    }
     if (!localFato) {
       _showError('Informe o local do fato.');
       return;
     }
 
-    const natureza                   = _val('pdProcNatureza');
-    const gravidade                  = _val('pdProcGravidade');
-    const horaFato                   = _val('pdProcHoraFato').trim();
-    const complemento                = _val('pdProcComplemento').trim();
-    const possuiViolencia            = _checked('pdProcViolencia');
-    const possuiLesao                = _checked('pdProcLesao');
-    const possuiDanoPatrimonial      = _checked('pdProcDano');
-    const possuiSubstanciaIlicita    = _checked('pdProcSubstancia');
+    const possuiViolencia = _checked('pdProcViolencia');
+    const possuiLesao = _checked('pdProcLesao');
+    const possuiDanoPatrimonial = _checked('pdProcDano');
+    const possuiSubstanciaIlicita = _checked('pdProcSubstancia');
     const possuiArmaOuObjetoPerigoso = _checked('pdProcObjeto');
     const exigeEncaminhamentoExterno = _checked('pdProcEncaminhamento');
-    const orgaoEncaminhamento        = _val('pdProcOrgao') || null;
+    const orgaoEncaminhamento = _val('pdProcOrgao') || null;
 
     if (exigeEncaminhamentoExterno && !orgaoEncaminhamento) {
       _showError('Selecione o órgão de encaminhamento externo.');
@@ -366,37 +538,13 @@
     const classificacaoOcorrencia =
       natureza === 'ato_infracional'
         ? 'ato_infracional'
-        : gravidade === 'grave' || gravidade === 'gravissima'
+        : (gravidade === 'grave' || gravidade === 'gravissima')
           ? 'indisciplina_grave'
           : gravidade === 'media'
             ? 'indisciplina_media'
             : 'indisciplina_leve';
 
-    const dataFato = _val('pdProcDataFato').trim();
-    if (!dataFato) {
-      _showError('Informe a data do fato.');
-      return;
-    }
-
-    let descricaoFato;
-
-    if (_ctx.origem === 'notificacao') {
-      /* Usa dados da notificação; complemento é acréscimo opcional */
-      const base = _ctx.motivo || _ctx.observacao || 'Ocorrência registrada via notificação.';
-      descricaoFato = (complemento && complemento !== base)
-        ? `${base}\n\n${complemento}`
-        : base;
-    } else {
-      /* Origem ficha_aluno — monta descrição a partir dos campos do formulário */
-      const partes = [`Local: ${localFato}`];
-      if (horaFato) partes.push(`Horário: ${horaFato}`);
-      partes.push(`Natureza: ${natureza}`, `Gravidade: ${gravidade}`);
-      if (complemento) partes.push(complemento);
-      descricaoFato = partes.join('. ');
-    }
-
-    const payload = {
-      aluno: _ctx.alunoId,
+    const base = {
       natureza,
       classificacaoOcorrencia,
       gravidade,
@@ -404,7 +552,7 @@
       horaFato,
       localFato,
       descricaoFato,
-      providenciasImediatas:     complemento || '',
+      providenciasImediatas,
       possuiViolencia,
       possuiLesao,
       possuiDanoPatrimonial,
@@ -412,18 +560,50 @@
       possuiArmaOuObjetoPerigoso,
       exigeEncaminhamentoExterno,
       orgaoEncaminhamento,
-      origem: _ctx.origem || 'ficha_aluno'
+      origem: _ctx?.origem || 'processos'
     };
 
-    if (_ctx.origem === 'notificacao' && _ctx.notificacaoId) {
-      payload.notificacaoId = _ctx.notificacaoId;
+    if (_ctx?.origem === 'notificacao' && _ctx?.notificacaoId) {
+      base.notificacaoId = _ctx.notificacaoId;
     }
 
     const btn = _el('pdBtnInstaurar');
-    if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = alunos.length > 1
+        ? `Criando ${alunos.length} procedimentos...`
+        : 'Criando procedimento...';
+    }
 
     try {
-      const resp = await fetch('/api/processos-disciplinares', {
+      let url;
+      let payload;
+
+      if (alunos.length > 1) {
+        url = _api('/api/processos-disciplinares/lote');
+        payload = {
+          ...base,
+          alunos: alunos.map(a => ({
+            aluno: a.id,
+            papel: a.papel || 'autor',
+            observacao: a.observacao || ''
+          }))
+        };
+      } else {
+        const a = alunos[0];
+        url = _api('/api/processos-disciplinares');
+        payload = {
+          ...base,
+          aluno: a.id
+        };
+
+        if (a.observacao) {
+          payload.descricaoFato = `${descricaoFato}\n\nComplemento individual: ${a.observacao}`;
+          payload.providenciasImediatas = providenciasImediatas;
+        }
+      }
+
+      const resp = await fetch(url.toString(), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -436,27 +616,49 @@
         throw new Error(data?.message || data?.error || `Erro ${resp.status}`);
       }
 
-      fechar();
-      _showToast(`Procedimento ${data.numeroProcesso} criado com sucesso.`);
+      _fechar();
+
+      let processoId = null;
+
+      if (alunos.length > 1) {
+        _showToast(
+          `${data.total || alunos.length} procedimentos criados na ocorrência ${data.ocorrenciaColetivaCodigo || 'coletiva'}.`
+        );
+        processoId = data?.processos?.[0]?._id || null;
+      } else {
+        _showToast(`Procedimento ${data.numeroProcesso || ''} criado com sucesso.`);
+        processoId = data?._id || null;
+      }
 
       const destino = new URL('/processos-disciplinares.html', global.location.origin);
       const t = _tenant();
       if (t) destino.searchParams.set('t', t);
-      destino.searchParams.set('processo', data._id);
+      if (processoId) destino.searchParams.set('processo', processoId);
+      if (data?.ocorrenciaColetivaId) {
+        destino.searchParams.set('grupo', data.ocorrenciaColetivaId);
+      }
       global.location.href = destino.toString();
 
     } catch (e) {
-      console.error('[PD] Erro ao criar processo:', e);
+      console.error('[PD] Erro ao criar procedimento:', e);
       _showError(e.message || 'Erro ao abrir procedimento disciplinar.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Instaurar procedimento'; }
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Instaurar procedimento';
+      }
     }
   }
 
-  /* ----------------------------------------------------------
-     API pública
-  ---------------------------------------------------------- */
-  global.abrirModalProcedimentoDisciplinar  = abrir;
-  global.fecharModalProcedimentoDisciplinar = fechar;
-  global._pdConfirmarProcedimento           = confirmar;
+  global.abrirModalProcedimentoDisciplinar = _abrir;
+  global.fecharModalProcedimentoDisciplinar = _fechar;
+
+  global._pdAdicionarAlunoBusca = function (id) {
+    const aluno = _resultadosBusca.get(String(id));
+    if (!aluno) return;
+    _adicionarAluno(aluno);
+    _buscarAlunos();
+  };
+  global._pdRemoverAluno = _removerAluno;
+  global._pdAtualizarAluno = _atualizarAluno;
 
 })(window);

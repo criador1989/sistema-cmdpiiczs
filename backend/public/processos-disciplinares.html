@@ -614,6 +614,7 @@
 
           <div class="topbar">
             <button class="btn" onclick="window.location.href='notificacoes.html'">← Voltar para notificações</button>
+            <button class="btn primary" onclick="abrirNovoProcedimento()">➕ Novo procedimento</button>
             <button class="btn primary" onclick="carregarProcessos()">🔄 Atualizar</button>
           </div>
 
@@ -660,6 +661,10 @@
       <div class="modal-body">
         <input id="obsTitulo" placeholder="Título da observação" />
         <textarea id="obsDescricao" placeholder="Descreva o acompanhamento, contato com responsável, providência pedagógica, reunião, orientação, etc."></textarea>
+        <label id="obsGrupoWrap" style="display:none;align-items:flex-start;gap:8px">
+          <input id="obsAplicarGrupo" type="checkbox" style="width:auto;margin-top:3px" />
+          <span id="obsGrupoTexto">Aplicar esta observação aos demais procedimentos da mesma ocorrência coletiva.</span>
+        </label>
       </div>
       <div class="modal-foot">
         <button class="btn" onclick="fecharModalObs()">Cancelar</button>
@@ -756,6 +761,7 @@
     </div>
   </div>
 
+  <script src="/assets/js/procedimento-modal.js"></script>
   <script>
     const tenant = new URLSearchParams(window.location.search).get('t') || '';
     const lista = document.getElementById('lista');
@@ -938,9 +944,11 @@
       return processos.filter(p => {
         const texto = [
           p.numeroProcesso,
+          p.ocorrenciaColetivaCodigo,
           p.aluno?.nome,
           p.aluno?.turma,
           p.descricaoFato,
+          p.relatoIndividual,
           p.localFato,
           p.responsavel?.nome,
           p.responsavel?.telefone,
@@ -1330,6 +1338,47 @@ ${
 
   `;
 }
+    function papelFatoLabel(papel) {
+      const map = {
+        autor: 'Autor / participante da conduta',
+        vitima: 'Vítima',
+        testemunha: 'Testemunha',
+        outro: 'Outro envolvimento'
+      };
+      return map[papel] || papel || '—';
+    }
+
+    function renderEnvolvidos(p) {
+      const itens = Array.isArray(p.envolvidos) ? p.envolvidos : [];
+      if (!itens.length) return '';
+
+      return `
+        <div class="section-box">
+          <div class="section-title">👥 Envolvidos na ocorrência coletiva</div>
+          <div class="grid">
+            ${itens.map(e => `
+              <div class="kv">
+                <b>${e.nome || e.aluno?.nome || 'Aluno'}</b>
+                ${papelFatoLabel(e.tipo)}
+                ${e.observacao ? `<div style="margin-top:5px;opacity:.85">${e.observacao}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function abrirNovoProcedimento() {
+      if (typeof window.abrirModalProcedimentoDisciplinar !== 'function') {
+        alert('Módulo de abertura de procedimentos não carregado.');
+        return;
+      }
+
+      window.abrirModalProcedimentoDisciplinar({
+        origem: 'processos'
+      });
+    }
+
     function renderProcessos() {
       const filtrados = aplicarFiltros();
 
@@ -1367,7 +1416,10 @@ const pagina =
           <div class="p-card ${cardRiscoClass}" data-id="${p._id}">
             <div class="p-head" onclick="toggleProcesso('${p._id}')">
               <div>
-                <div class="p-title">${p.numeroProcesso || '—'} — ${nome}</div>
+                <div class="p-title">
+                  ${p.numeroProcesso || '—'} — ${nome}
+                  ${p.ocorrenciaColetivaCodigo ? `<span class="badge">👥 ${p.ocorrenciaColetivaCodigo}</span>` : ''}
+                </div>
                 <div class="p-sub">${turma} • ${p.localFato || 'Local não informado'} • ${fmtDataCurta(p.dataFato)} ${p.horaFato ? `• ${p.horaFato}` : ''}</div>
               </div>
               <div class="badges">
@@ -1394,6 +1446,9 @@ const pagina =
                       <div class="kv"><b>Aluno</b>${nome}</div>
                       <div class="kv"><b>Turma</b>${turma}</div>
                       <div class="kv"><b>Nº do procedimento</b>${p.numeroProcesso || '—'}</div>
+                      <div class="kv"><b>Tipo de abertura</b>${p.tipoAbertura === 'coletiva' ? 'Ocorrência coletiva' : 'Individual'}</div>
+                      ${p.ocorrenciaColetivaCodigo ? `<div class="kv"><b>Código da ocorrência coletiva</b>${p.ocorrenciaColetivaCodigo}</div>` : ''}
+                      ${p.ocorrenciaColetivaId ? `<div class="kv"><b>Papel deste aluno no fato</b>${papelFatoLabel(p.papelNoFato)}</div>` : ''}
                       <div class="kv"><b>Status</b>${statusLabel(p.status)}</div>
                       <div class="kv"><b>Natureza</b>${naturezaLabel(p.natureza)}</div>
                       <div class="kv"><b>Classificação</b>${p.classificacaoOcorrencia || '—'}</div>
@@ -1405,10 +1460,13 @@ const pagina =
                       <div class="kv"><b>Prazo de acompanhamento</b>${fmtDataCurta(p.prazoAcompanhamentoAte)}</div>
                       <div class="kv"><b>Encaminhamento externo</b>${p.exigeEncaminhamentoExterno ? 'Sim' : 'Não'}</div>
                       <div class="kv"><b>Órgão</b>${orgaoLabel(p.orgaoEncaminhamento)}</div>
-                      <div class="kv" style="grid-column:1/-1"><b>Descrição do fato</b>${p.descricaoFato || '—'}</div>
+                      <div class="kv" style="grid-column:1/-1"><b>Relato geral do fato</b>${p.descricaoFato || '—'}</div>
+                      ${p.relatoIndividual ? `<div class="kv" style="grid-column:1/-1"><b>Complemento individual deste aluno</b>${p.relatoIndividual}</div>` : ''}
                       <div class="kv" style="grid-column:1/-1"><b>Providências imediatas</b>${p.providenciasImediatas || '—'}</div>
                     </div>
                   </div>
+
+                  ${p.ocorrenciaColetivaId ? renderEnvolvidos(p) : ''}
 
                   <div class="section-box">
                     <div class="section-title">🚨 Marcadores críticos</div>
@@ -1630,6 +1688,20 @@ function mudarPaginaProcessos(delta) {
         </div>
       </div>
 
+      <div class="stat-card">
+        <div class="stat-label">
+          OCORRÊNCIAS COLETIVAS
+        </div>
+
+        <div class="stat-value">
+          ${stats.ocorrenciasColetivas || 0}
+        </div>
+
+        <div class="stat-sub">
+          casos agrupados
+        </div>
+      </div>
+
     `;
 
   } catch (err) {
@@ -1678,8 +1750,24 @@ function mudarPaginaProcessos(delta) {
 
     function abrirModalObs(id) {
       processoSelecionado = id;
+      const p = processos.find(x => String(x._id) === String(id));
       document.getElementById('obsTitulo').value = '';
       document.getElementById('obsDescricao').value = '';
+
+      const wrap = document.getElementById('obsGrupoWrap');
+      const check = document.getElementById('obsAplicarGrupo');
+      const texto = document.getElementById('obsGrupoTexto');
+
+      if (p?.ocorrenciaColetivaId) {
+        wrap.style.display = 'flex';
+        check.checked = false;
+        texto.textContent =
+          `Aplicar também aos demais procedimentos da ocorrência ${p.ocorrenciaColetivaCodigo || 'coletiva'}.`;
+      } else {
+        wrap.style.display = 'none';
+        check.checked = false;
+      }
+
       document.getElementById('modalObs').classList.add('open');
     }
 
@@ -1693,6 +1781,10 @@ function mudarPaginaProcessos(delta) {
 
       const titulo = document.getElementById('obsTitulo').value.trim() || 'Observação registrada';
       const descricao = document.getElementById('obsDescricao').value.trim();
+      const p = processos.find(x => String(x._id) === String(processoSelecionado));
+      const aplicarGrupo =
+        !!p?.ocorrenciaColetivaId &&
+        !!document.getElementById('obsAplicarGrupo')?.checked;
 
       if (!descricao) {
         alert('Informe a descrição da observação.');
@@ -1700,7 +1792,11 @@ function mudarPaginaProcessos(delta) {
       }
 
       try {
-        await fetchJson(`/api/processos-disciplinares/${processoSelecionado}/observacao`, {
+        const path = aplicarGrupo
+          ? `/api/processos-disciplinares/grupo/${encodeURIComponent(p.ocorrenciaColetivaId)}/observacao`
+          : `/api/processos-disciplinares/${processoSelecionado}/observacao`;
+
+        const resp = await fetchJson(path, {
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({ titulo, descricao })
@@ -1708,7 +1804,12 @@ function mudarPaginaProcessos(delta) {
 
         fecharModalObs();
         await carregarProcessos();
-        alert('Observação registrada com sucesso.');
+
+        if (aplicarGrupo) {
+          alert(`Observação registrada em ${resp?.totalAtualizados || 'todos os'} procedimentos da ocorrência coletiva.`);
+        } else {
+          alert('Observação registrada com sucesso.');
+        }
       } catch (e) {
         alert(e.message || 'Erro ao salvar observação.');
       }
