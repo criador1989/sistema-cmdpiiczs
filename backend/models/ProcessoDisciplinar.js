@@ -340,6 +340,40 @@ const processoDisciplinarSchema = new mongoose.Schema({
     index: true
   },
 
+  tipoAbertura: {
+    type: String,
+    enum: ['individual', 'coletiva'],
+    default: 'individual',
+    index: true
+  },
+
+  ocorrenciaColetivaId: {
+    type: String,
+    trim: true,
+    default: null,
+    index: true
+  },
+
+  ocorrenciaColetivaCodigo: {
+    type: String,
+    trim: true,
+    default: null,
+    index: true
+  },
+
+  papelNoFato: {
+    type: String,
+    enum: ['autor', 'vitima', 'testemunha', 'outro'],
+    default: 'autor',
+    index: true
+  },
+
+  relatoIndividual: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+
   numeroProcesso: {
     type: String,
     required: true,
@@ -711,6 +745,16 @@ processoDisciplinarSchema.index(
 );
 
 processoDisciplinarSchema.index(
+  { instituicao: 1, ocorrenciaColetivaId: 1, dataAbertura: -1 },
+  { name: 'idx_processo_disciplinar_instituicao_ocorrencia_coletiva' }
+);
+
+processoDisciplinarSchema.index(
+  { tenantId: 1, ocorrenciaColetivaId: 1, dataAbertura: -1 },
+  { name: 'idx_processo_disciplinar_tenant_ocorrencia_coletiva' }
+);
+
+processoDisciplinarSchema.index(
   { tokenResponsavel: 1, tokenResponsavelExpiraEm: 1 },
   { name: 'idx_processo_disciplinar_token_responsavel' }
 );
@@ -749,6 +793,9 @@ processoDisciplinarSchema.pre('validate', function () {
   this.horaFato = trimStr(this.horaFato);
   this.localFato = trimStr(this.localFato);
   this.descricaoFato = trimStr(this.descricaoFato);
+  this.relatoIndividual = trimStr(this.relatoIndividual);
+  this.ocorrenciaColetivaId = trimStr(this.ocorrenciaColetivaId);
+  this.ocorrenciaColetivaCodigo = trimStr(this.ocorrenciaColetivaCodigo);
   this.providenciasImediatas = trimStr(this.providenciasImediatas);
   this.motivoEncaminhamento = trimStr(this.motivoEncaminhamento);
   this.parecerFinal = trimStr(this.parecerFinal);
