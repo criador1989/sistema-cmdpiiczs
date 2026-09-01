@@ -573,6 +573,109 @@
     }
 
     @keyframes spin{to{transform:rotate(360deg)}}
+
+
+    /* =========================================================
+       AXORIIN PROCEDIMENTOS — LAYOUT V1.1.1
+       Painel mestre + detalhe lateral, foco em volume de casos
+    ========================================================= */
+    :root{
+      --ax-blue:#178cff;
+      --ax-cyan:#39d8ff;
+      --ax-violet:#6d4aff;
+      --ax-deep:#061329;
+      --ax-panel:#091a32;
+      --ax-panel-2:#0c203c;
+      --ax-border:rgba(126,173,230,.16);
+    }
+
+    body{
+      background:
+        radial-gradient(circle at 78% 22%,rgba(23,140,255,.12),transparent 30%),
+        linear-gradient(180deg,#041020 0%,#061427 55%,#04101f 100%);
+    }
+    body::before{background:linear-gradient(90deg,rgba(3,12,26,.25),rgba(3,12,26,.06),rgba(3,12,26,.3))}
+    .page{grid-template-columns:205px minmax(0,1fr);gap:0;padding:0;min-height:100vh}
+    .sidebar{height:100vh;top:0;border-radius:0;border-width:0 1px 0 0;background:linear-gradient(180deg,#06162b,#07182e);box-shadow:none}
+    .sb-head{padding:20px 16px;gap:10px}
+    .brand{width:42px;height:42px;border-radius:12px;background:url('img/axoriin-logo.png') center/contain no-repeat;box-shadow:none}
+    .sb-title{font-size:1.24rem;text-transform:lowercase;letter-spacing:.01em}
+    .nav{padding:8px;gap:4px}
+    .nav a{padding:11px 10px;border-radius:10px;font-size:.87rem}
+    .nav a.active{background:linear-gradient(90deg,rgba(23,140,255,.32),rgba(61,81,255,.18));border-color:rgba(73,153,255,.34)}
+    .content{min-width:0;padding:16px 18px 24px}
+    .content .wrap{width:100%;max-width:1680px;margin:0 auto}
+    .card{padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;overflow:visible}
+    .card::before{display:none}
+    .ax-page-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 14px}
+    .ax-title-block h1{text-align:left;font-size:1.55rem;margin:0 0 3px}
+    .ax-title-block .subtitle{text-align:left;margin:0;color:#8fa7c3;font-size:.84rem}
+    .ax-head-actions{display:flex;gap:8px;align-items:center}
+    .ax-head-actions .btn{min-height:38px}
+    .filters{grid-template-columns:minmax(260px,1fr) 150px 150px 150px auto;margin:0 0 12px;padding:0;background:transparent;border:0;border-radius:0}
+    .filters input,.filters select{min-height:42px;background:#07162b;border-color:var(--ax-border);border-radius:10px}
+    .filter-btn{min-width:42px}
+    .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin:0 0 14px}
+    .stat-card{padding:11px 12px;border-radius:12px;background:linear-gradient(135deg,#0a1b34,#0a1a31);border-color:var(--ax-border);box-shadow:none;min-height:72px;cursor:default}
+    .stat-card::before{display:none}
+    .stat-label{font-size:.66rem;letter-spacing:.04em;color:#8aa2bd}
+    .stat-value{font-size:1.22rem;margin-top:3px}
+    .stat-sub{font-size:.68rem;margin-top:2px;color:#7189a5}
+    .ax-workspace{display:grid;grid-template-columns:minmax(520px,1.42fr) minmax(400px,.9fr);gap:12px;align-items:start}
+    .ax-list-panel,.ax-detail-panel{border:1px solid var(--ax-border);background:linear-gradient(180deg,rgba(7,23,45,.96),rgba(5,18,35,.96));border-radius:14px;overflow:hidden}
+    .ax-list-panel{min-height:650px}
+    .ax-list-head{height:46px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--ax-border)}
+    .ax-list-head strong{font-size:.93rem}
+    #resumo{font-size:.72rem;margin:0;color:#6f89a6;text-align:right}
+    .list{display:block;padding:0}
+    .ax-proc-head,.ax-proc-row{display:grid;grid-template-columns:118px minmax(138px,1.12fr) 52px minmax(116px,1fr) minmax(118px,auto) 72px 88px 82px;gap:8px;align-items:center}
+    .ax-proc-head{padding:9px 13px;color:#66809f;font-size:.62rem;font-weight:800;text-transform:uppercase;border-bottom:1px solid var(--ax-border)}
+    .ax-proc-row{min-height:58px;padding:8px 13px;border-bottom:1px solid rgba(126,173,230,.09);cursor:pointer;transition:.14s ease;font-size:.77rem}
+    .ax-proc-row:hover{background:rgba(23,140,255,.06)}
+    .ax-proc-row.selected{background:linear-gradient(90deg,rgba(23,140,255,.14),rgba(109,74,255,.07));box-shadow:inset 3px 0 0 #2e8fff}
+    .ax-num{font-weight:900;color:#eef7ff}.ax-muted{font-size:.65rem;color:#6f89a6;margin-top:2px}.ax-student{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ax-avatar{width:27px;height:27px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#102946;border:1px solid rgba(126,173,230,.16);font-size:.65rem;margin-right:7px;color:#cfe6ff}
+    .ax-cell-sub{display:block;color:#768da8;font-size:.66rem;margin-top:2px}.ax-deadline{font-weight:800;color:#f59e0b}.ax-deadline.late{color:#ff5e69}
+    .ax-alert-count{display:inline-flex;align-items:center;justify-content:center;gap:3px;color:#ff7b7b;font-weight:900}
+    .ax-chevron{font-size:1rem;color:#6f89a6;text-align:right}
+    #paginacaoProcessos{min-height:50px;padding:9px 12px;margin:0!important;border-top:1px solid var(--ax-border);justify-content:space-between!important}
+    .ax-detail-panel{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin}
+    .ax-detail-empty{min-height:620px;display:grid;place-items:center;text-align:center;color:#7590ae;padding:30px}
+    .ax-detail-head{padding:13px 15px;border-bottom:1px solid var(--ax-border)}
+    .ax-detail-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.ax-detail-title strong{font-size:1.08rem}.ax-detail-meta{color:#728aa4;font-size:.69rem;margin-top:4px}
+    .ax-summary{padding:12px 15px;border-bottom:1px solid var(--ax-border)}
+    .ax-summary-title,.ax-mini-title{font-size:.78rem;font-weight:900;margin-bottom:8px;color:#e7f2ff}
+    .ax-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.ax-summary-kv b{display:block;color:#6f89a6;font-size:.59rem;text-transform:uppercase;margin-bottom:2px}.ax-summary-kv span{font-size:.72rem;font-weight:700}
+    .ax-family-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:9px 15px 10px;border-bottom:1px solid var(--ax-border);background:rgba(5,18,35,.38)}
+    .ax-flow-step{display:flex;align-items:center;gap:7px;min-width:0;padding:7px 8px;border-radius:9px;border:1px solid var(--ax-border);background:#07162b}.ax-flow-step.done{border-color:rgba(34,197,94,.25);background:rgba(22,101,52,.11)}.ax-flow-step.pending{border-color:rgba(245,158,11,.21);background:rgba(120,74,7,.08)}
+    .ax-flow-icon{width:22px;height:22px;flex:0 0 22px;border-radius:50%;display:grid;place-items:center;font-size:.66rem;background:#102946;color:#9ed7ff}.ax-flow-step.done .ax-flow-icon{background:rgba(22,163,74,.2);color:#86efac}.ax-flow-step.pending .ax-flow-icon{background:rgba(217,119,6,.17);color:#fbbf24}
+    .ax-flow-step b{display:block;font-size:.62rem;color:#dbeafe;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ax-flow-step small{display:block;font-size:.56rem;color:#718aa6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ax-mini-state{width:19px;height:19px;border-radius:6px;display:inline-grid;place-items:center;font-size:.58rem;border:1px solid var(--ax-border);margin-right:3px}.ax-mini-state.done{color:#86efac;background:rgba(22,163,74,.13);border-color:rgba(74,222,128,.18)}.ax-mini-state.pending{color:#fbbf24;background:rgba(217,119,6,.10);border-color:rgba(251,191,36,.16)}
+    .ax-timeline-compact{padding:11px 15px;border-bottom:1px solid var(--ax-border)}
+    .ax-timeline-row{display:grid;grid-template-columns:10px 1fr;gap:8px;margin:7px 0}.ax-tl-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;background:#2ea7ff;box-shadow:0 0 10px rgba(46,167,255,.55)}.ax-tl-text{font-size:.7rem;line-height:1.3}.ax-tl-text small{display:block;color:#718aa6;margin-top:1px}
+    .ax-assistant{position:relative;margin:10px;border:1px solid rgba(70,118,255,.45);border-radius:13px;background:radial-gradient(circle at 28% 48%,rgba(24,122,255,.18),transparent 38%),linear-gradient(135deg,#0a1f45,#120e43);overflow:hidden;padding:10px 10px 9px}
+    .ax-assistant-head{display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:900;margin-bottom:2px}.ax-assistant-body{display:grid;grid-template-columns:145px 1fr;gap:8px;align-items:center;min-height:142px}
+    .ax-mascot-stage{height:140px;display:grid;place-items:center;position:relative;perspective:600px;animation:axFloat 3.4s ease-in-out infinite}
+    .ax-mascot-stage::after{content:'';position:absolute;left:30px;right:30px;bottom:8px;height:10px;background:radial-gradient(ellipse,rgba(34,181,255,.56),transparent 70%);filter:blur(5px);animation:axShadow 3.4s ease-in-out infinite}
+    .ax-mascot-img{width:142px;height:142px;object-fit:cover;border-radius:30%;mask-image:radial-gradient(circle at 50% 50%,#000 52%,rgba(0,0,0,.98) 62%,transparent 78%);-webkit-mask-image:radial-gradient(circle at 50% 50%,#000 52%,rgba(0,0,0,.98) 62%,transparent 78%);filter:drop-shadow(0 0 12px rgba(32,157,255,.46));animation:axTurn 7s ease-in-out infinite;transform-origin:center}
+    .ax-blink{position:absolute;inset:0;pointer-events:none;animation:axBlink 7.3s infinite}.ax-blink::before,.ax-blink::after{content:'';position:absolute;top:70px;width:11px;height:5px;border-radius:50%;background:#07162b;box-shadow:0 0 3px #07162b}.ax-blink::before{left:54px}.ax-blink::after{right:54px}
+    @keyframes axFloat{0%,100%{transform:translateY(1px)}50%{transform:translateY(-7px)}}
+    @keyframes axShadow{0%,100%{opacity:.55;transform:scaleX(.9)}50%{opacity:.28;transform:scaleX(.72)}}
+    @keyframes axTurn{0%,100%{transform:rotateY(-4deg) rotateZ(-.5deg)}50%{transform:rotateY(5deg) rotateZ(.6deg)}}
+    @keyframes axBlink{0%,45%,47%,100%{opacity:0}46%,46.7%{opacity:1}}
+    .ax-assistant-copy h3{font-size:.9rem;margin:0 0 5px}.ax-assistant-copy p{font-size:.7rem;line-height:1.42;color:#bdcce0;margin:0}
+    .ax-assistant-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px}.ax-assistant-actions .btn{font-size:.62rem;padding:7px 5px;min-height:36px;font-weight:750}
+    .ax-docs{padding:11px 15px;border-top:1px solid var(--ax-border)}
+    .ax-doc-tabs{display:flex;gap:5px;margin-bottom:8px;overflow-x:auto}.ax-doc-tab{padding:7px 10px;font-size:.66rem;border-radius:8px;border:1px solid var(--ax-border);background:#07162b;color:#a8bdd5;cursor:pointer;white-space:nowrap}.ax-doc-tab.active{background:linear-gradient(135deg,#165dcc,#5540d8);color:white;border-color:rgba(94,151,255,.55)}
+    .ax-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.ax-doc-action{border:1px solid var(--ax-border);background:#081a31;color:#d8eaff;border-radius:8px;padding:8px 9px;text-align:left;font-size:.67rem;cursor:pointer;transition:.14s}.ax-doc-action:hover{border-color:rgba(54,151,255,.48);background:#0b2342}.ax-doc-action b{display:block;font-size:.69rem}.ax-doc-action small{color:#718ca8}
+    .ax-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 15px 12px}.ax-mini-box{border:1px solid var(--ax-border);background:#07162b;border-radius:10px;padding:9px}.ax-mini-list{display:grid;gap:6px}.ax-mini-item{display:flex;gap:7px;align-items:flex-start;font-size:.66rem;color:#c9d9e9}.ax-mini-item small{display:block;color:#6f89a6;margin-top:1px}.ax-step-dot{width:17px;height:17px;flex:0 0 17px;border-radius:50%;display:grid;place-items:center;background:#16448a;color:#9cd7ff;font-size:.57rem}
+    .ax-more{margin:0 15px 12px;border:1px solid var(--ax-border);border-radius:10px;background:#07162b;overflow:hidden}.ax-more summary{cursor:pointer;padding:9px 11px;font-size:.7rem;font-weight:850;list-style:none}.ax-more summary::-webkit-details-marker{display:none}.ax-more-body{padding:0 10px 10px}.ax-more-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.ax-more-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ax-more .kv{font-size:.7rem;padding:8px;border-radius:8px}.ax-more .kv b{font-size:.59rem}
+    .badge{font-size:.61rem;padding:4px 6px;line-height:1.05}.ax-proc-row .badge{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.btn{border-radius:9px}.empty{border-radius:10px}
+
+    @media(max-width:1250px){.ax-workspace{grid-template-columns:1fr}.ax-detail-panel{position:static;max-height:none}.ax-proc-head,.ax-proc-row{grid-template-columns:112px minmax(132px,1fr) 50px minmax(100px,1fr) minmax(112px,auto) 70px 82px 76px}}
+    @media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{height:auto;position:static;border:0;border-bottom:1px solid var(--ax-border)}.content{padding:10px}.filters{grid-template-columns:1fr 1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.ax-proc-head{display:none}.ax-proc-row{grid-template-columns:1fr 65px 38px;gap:5px}.ax-proc-row>div:nth-child(3),.ax-proc-row>div:nth-child(4),.ax-proc-row>div:nth-child(6),.ax-proc-row>div:nth-child(7){display:none}.ax-summary-grid{grid-template-columns:repeat(2,1fr)}.ax-family-flow{grid-template-columns:repeat(2,1fr)}.ax-assistant-body{grid-template-columns:120px 1fr}.ax-mascot-img{width:118px;height:118px}.ax-assistant-actions{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:560px){.ax-page-head{align-items:flex-start}.ax-head-actions .btn.dark{display:none}.filters{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.ax-bottom-grid{grid-template-columns:1fr}.ax-family-flow{grid-template-columns:1fr 1fr}.ax-assistant-body{grid-template-columns:1fr}.ax-mascot-stage{height:120px}.ax-doc-grid{grid-template-columns:1fr}.ax-more-grid{grid-template-columns:1fr}}
+
   </style>
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 </head>
@@ -583,45 +686,42 @@
       <div class="sb-head">
         <div class="brand"></div>
         <div>
-          <div class="sb-title">CMDPII</div>
-          <div style="font-size:.8rem;color:#cfd6de">Sistema Escolar</div>
+          <div class="sb-title">axoriin</div>
+          <div style="font-size:.7rem;color:#6f89a6">Sistema institucional</div>
         </div>
       </div>
-
       <nav class="nav">
-        <a href="painel.html">🏠 Painel</a>
-        <a href="lista-alunos.html">👥 Alunos</a>
-        <a href="notificacoes.html">🔔 Notificações</a>
-        <a class="active" href="processos-disciplinares.html">⚖️ Procedimentos</a>
-        <a href="estatisticas.html">📉 Relatórios</a>
-        <a href="financeiro.html">💰 Financeiro</a>
-        <a href="usuarios.html">⚙️ Administração</a>
-        <a href="logs.html">🧾 Logs</a>
+        <a href="painel.html">⌂ Início</a>
+        <a href="lista-alunos.html">♙ Alunos</a>
+        <a href="notificacoes.html">♢ Notificações</a>
+        <a class="active" href="processos-disciplinares.html">⚖ Procedimentos Disciplinares</a>
+        <a href="estatisticas.html">▥ Relatórios</a>
+        <a href="usuarios.html">♙ Usuários</a>
+        <a href="logs.html">⚙ Administração</a>
       </nav>
-
       <div class="sb-foot">
-        <button class="sb-logout" onclick="logout()">🚪 Sair</button>
+        <button class="sb-logout" onclick="logout()">Sair</button>
       </div>
     </aside>
 
     <main class="content">
       <div class="wrap">
         <section class="card">
-          <h1>⚖️ Procedimentos Disciplinares</h1>
-          <div class="subtitle">
-            Gestão institucional do caso com leitura rápida, ações essenciais, documentos oficiais e linha do tempo.
-          </div>
-
-          <div class="topbar">
-            <button class="btn" onclick="window.location.href='notificacoes.html'">← Voltar para notificações</button>
-            <button class="btn primary" onclick="abrirNovoProcedimento()">➕ Novo procedimento</button>
-            <button class="btn primary" onclick="carregarProcessos()">🔄 Atualizar</button>
+          <div class="ax-page-head">
+            <div class="ax-title-block">
+              <h1>⚖️ Procedimentos Disciplinares</h1>
+              <div class="subtitle">Gestão rápida dos casos, com foco em pendências, prazos e próximos passos.</div>
+            </div>
+            <div class="ax-head-actions">
+              <button class="btn primary" onclick="abrirNovoProcedimento()">＋ Novo procedimento</button>
+              <button class="btn dark" onclick="carregarProcessos()">↻ Atualizar</button>
+            </div>
           </div>
 
           <div class="filters">
-            <input id="busca" type="text" placeholder="Pesquisar por aluno, turma, responsável, local ou nº do processo..." />
+            <input id="busca" type="text" placeholder="Buscar por nº do procedimento, aluno, turma, responsável ou ocorrência coletiva..." />
             <select id="filtroStatus">
-              <option value="">Todos os status</option>
+              <option value="">Status: todos</option>
               <option value="aberto">Aberto</option>
               <option value="em_apuracao">Em apuração</option>
               <option value="aguardando_responsavel">Aguardando responsável</option>
@@ -630,23 +730,43 @@
               <option value="encaminhado">Encaminhado</option>
               <option value="arquivado">Arquivado</option>
             </select>
-
             <select id="filtroNatureza">
-              <option value="">Todas as naturezas</option>
+              <option value="">Natureza: todas</option>
               <option value="indisciplina">Indisciplina</option>
               <option value="ato_infracional">Ato infracional</option>
             </select>
+            <select id="filtroGravidade">
+              <option value="">Gravidade: todas</option>
+              <option value="leve">Leve</option>
+              <option value="media">Média</option>
+              <option value="grave">Grave</option>
+              <option value="gravissima">Gravíssima</option>
+            </select>
+            <button class="btn dark filter-btn" onclick="limparFiltros()" title="Limpar filtros">✕</button>
           </div>
 
-          <div id="statsProcessos" class="stats-grid">
-  <div class="empty">Carregando estatísticas...</div>
-</div>
+          <div id="statsProcessos" class="stats-grid"><div class="empty">Carregando estatísticas...</div></div>
 
-<div id="resumo" class="subtitle">—</div>
-<div id="lista" class="list">
-            <div class="empty"><span class="spinner"></span>Carregando procedimentos...</div>
+          <div class="ax-workspace">
+            <section class="ax-list-panel">
+              <div class="ax-list-head">
+                <strong>Procedimentos</strong>
+                <div id="resumo">—</div>
+              </div>
+              <div class="ax-proc-head">
+                <div>Procedimento</div><div>Aluno</div><div>Turma</div><div>Tipo / ocorrência</div>
+                <div>Status</div><div>Gravidade</div><div>Prazo</div><div>Alertas</div>
+              </div>
+              <div id="lista" class="list"><div class="empty"><span class="spinner"></span>Carregando procedimentos...</div></div>
+              <div id="paginacaoProcessos" class="actions"></div>
+            </section>
+
+            <aside id="detalheProcesso" class="ax-detail-panel">
+              <div class="ax-detail-empty">
+                <div><div style="font-size:2rem;margin-bottom:8px">⚖️</div><strong>Selecione um procedimento</strong><div style="margin-top:5px;font-size:.8rem">O resumo, os próximos passos e os documentos aparecerão aqui.</div></div>
+              </div>
+            </aside>
           </div>
-          <div id="paginacaoProcessos" class="actions" style="justify-content:center;margin-top:16px"></div>
         </section>
       </div>
     </main>
@@ -770,11 +890,15 @@
     const busca = document.getElementById('busca');
     const filtroStatus = document.getElementById('filtroStatus');
     const filtroNatureza = document.getElementById('filtroNatureza');
+    const filtroGravidade = document.getElementById('filtroGravidade');
+    const detalheProcesso = document.getElementById('detalheProcesso');
 
     let processos = [];
     let processoSelecionado = null;
     let paginaAtualProcessos = 1;
-    let itensPorPaginaProcessos = 10;
+    let itensPorPaginaProcessos = 12;
+    let processoPainelSelecionado = null;
+    let grupoDocumentoAtual = 'abertura';
 
     function apiUrl(path, params = {}) {
       const url = new URL(path, window.location.origin);
@@ -800,7 +924,12 @@
       catch { data = { raw: text }; }
 
       if (!resp.ok) {
-        throw new Error(data?.message || data?.error || `Erro HTTP ${resp.status}`);
+        const principal = data?.message || data?.error || `Erro HTTP ${resp.status}`;
+        const tecnico = data?.erro || data?.details || data?.raw || '';
+        const detalhe = tecnico && String(tecnico).trim() && String(tecnico).trim() !== String(principal).trim()
+          ? `\n\nDetalhes técnicos:\n${String(tecnico).trim()}`
+          : '';
+        throw new Error(`${principal}${detalhe}`);
       }
 
       return data;
@@ -883,6 +1012,31 @@
       `;
     }
 
+    function familiaFluxo(p) {
+      const r = p.responsavel || {};
+      const itens = [
+        { ok: !!r.notificado, rotulo: r.notificado ? 'Notificado' : 'Notificação pendente', icone: '✉' },
+        { ok: !!r.confirmouCiencia, rotulo: r.confirmouCiencia ? 'Ciência confirmada' : 'Ciência pendente', icone: '✓' },
+        { ok: !!r.compareceu, rotulo: r.compareceu ? 'Comparecimento registrado' : 'Comparecimento pendente', icone: '👤' },
+        { ok: (p.documentos || []).length > 0, rotulo: `${(p.documentos || []).length} documento(s)`, icone: '▣' }
+      ];
+      return itens.map((item, i) => `
+        <div class="ax-flow-step ${item.ok ? 'done' : 'pending'}">
+          <span class="ax-flow-icon">${item.icone}</span>
+          <span><b>${i === 0 ? 'Responsável' : i === 1 ? 'Ciência' : i === 2 ? 'Comparecimento' : 'Documentos'}</b><small>${item.rotulo}</small></span>
+        </div>
+      `).join('');
+    }
+
+    function familiaMini(p) {
+      const r = p.responsavel || {};
+      return `
+        <span class="ax-mini-state ${r.notificado ? 'done' : 'pending'}" title="${r.notificado ? 'Responsável notificado' : 'Notificação pendente'}">✉</span>
+        <span class="ax-mini-state ${r.confirmouCiencia ? 'done' : 'pending'}" title="${r.confirmouCiencia ? 'Ciência confirmada' : 'Ciência pendente'}">✓</span>
+        <span class="ax-mini-state ${r.compareceu ? 'done' : 'pending'}" title="${r.compareceu ? 'Comparecimento registrado' : 'Comparecimento pendente'}">👤</span>
+      `;
+    }
+
     function documentosResumo(p) {
       const docs = Array.isArray(p.documentos) ? p.documentos : [];
       return `<span class="badge">${docs.length ? `📄 ${docs.length} documento(s)` : '📄 Sem documentos'}</span>`;
@@ -940,6 +1094,7 @@
       const q = busca.value.trim().toLowerCase();
       const st = filtroStatus.value;
       const nat = filtroNatureza.value;
+      const grav = filtroGravidade?.value || '';
 
       return processos.filter(p => {
         const texto = [
@@ -958,6 +1113,7 @@
         if (q && !texto.includes(q)) return false;
         if (st && p.status !== st) return false;
         if (nat && p.natureza !== nat) return false;
+        if (grav && p.gravidade !== grav) return false;
 
         return true;
       });
@@ -1379,347 +1535,281 @@ ${
       });
     }
 
+
+    function iniciais(nome = '') {
+      return String(nome).trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || 'AL';
+    }
+
+    function prazoInfo(p) {
+      if (!p?.prazoAcompanhamentoAte) return { texto:'—', classe:'' };
+      const fim = new Date(p.prazoAcompanhamentoAte);
+      const hoje = new Date();
+      fim.setHours(23,59,59,999); hoje.setHours(0,0,0,0);
+      const dias = Math.ceil((fim - hoje) / 86400000);
+      if (dias < 0) return { texto:`${fmtDataCurta(p.prazoAcompanhamentoAte)} (${Math.abs(dias)}d atrasado)`, classe:'late' };
+      if (dias <= 5) return { texto:`${fmtDataCurta(p.prazoAcompanhamentoAte)} (${dias}d)`, classe:dias <= 2 ? 'late' : '' };
+      return { texto:`${fmtDataCurta(p.prazoAcompanhamentoAte)} (${dias}d)`, classe:'' };
+    }
+
+    function alertasQuantidade(p) {
+      const r = p.responsavel || {};
+      let n = 0;
+      if (!r.notificado) n++;
+      if (!r.confirmouCiencia) n++;
+      if (!r.compareceu) n++;
+      if (calcularRisco(p).nivel === 'alto') n++;
+      if (p.exigeEncaminhamentoExterno) n++;
+      return n;
+    }
+
+    function limparFiltros() {
+      busca.value = '';
+      filtroStatus.value = '';
+      filtroNatureza.value = '';
+      if (filtroGravidade) filtroGravidade.value = '';
+      paginaAtualProcessos = 1;
+      renderProcessos();
+    }
+
+    function selecionarProcesso(id) {
+      processoPainelSelecionado = String(id);
+      renderProcessos();
+      if (window.innerWidth < 1250) detalheProcesso?.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+
+    function setGrupoDocumento(grupo) {
+      grupoDocumentoAtual = grupo;
+      const p = processos.find(x => String(x._id) === String(processoPainelSelecionado));
+      if (p) renderDetalheProcesso(p);
+    }
+
+    function renderBotoesDocumentos(p) {
+      const grupos = {
+        abertura: [
+          ['Capa','Organização inicial', `gerarDocumento('${p._id}', 'capa')`],
+          ['Portaria','Instauração formal', `gerarPortariaInstauracao('${p._id}')`]
+        ],
+        familia: [
+          ['Termo de ciência','Ciência do responsável', `gerarDocumento('${p._id}', 'termo_ciencia')`],
+          ['Comparecimento','Registro de atendimento', `gerarDocumento('${p._id}', 'termo_comparecimento')`],
+          ['Compromisso','Acompanhamento familiar', `gerarDocumento('${p._id}', 'termo_compromisso')`]
+        ],
+        encaminhamentos: [
+          ['Conselho Tutelar','Encaminhamento protetivo', `gerarRemessaConselhoTutelar('${p._id}')`],
+          ['Ministério Público','Comunicação formal', `gerarOficioMinisterioPublico('${p._id}')`],
+          ['Delegacia','Encaminhamento policial', `gerarOficioDelegacia('${p._id}')`],
+          ['Judiciário','Comunicação ao juízo', `gerarOficioJudiciario('${p._id}')`]
+        ],
+        encerramento: [
+          ['Relatório final','Síntese conclusiva', `gerarRelatorioFinal('${p._id}')`],
+          ['Arquivamento','Termo de encerramento', `gerarDocumento('${p._id}', 'arquivamento')`],
+          ['Dossiê completo','Peças em ordem documental', `gerarDossieCompleto('${p._id}')`],
+          ['PDF único','Dossiê em arquivo único', `gerarDossiePdf('${p._id}')`]
+        ]
+      };
+      return (grupos[grupoDocumentoAtual] || grupos.abertura).map(([titulo,sub,acao]) => `
+        <button class="ax-doc-action" onclick="${acao}"><b>▣ ${titulo}</b><small>${sub}</small></button>
+      `).join('');
+    }
+
+    function renderRecentes(p) {
+      const docs = Array.isArray(p.documentos) ? p.documentos.slice().sort((a,b)=>new Date(b.geradoEm||0)-new Date(a.geradoEm||0)).slice(0,3) : [];
+      if (!docs.length) return '<div class="ax-mini-item"><span class="ax-step-dot">–</span><div>Nenhum documento gerado ainda.</div></div>';
+      return docs.map(d => `<div class="ax-mini-item"><span class="ax-step-dot">▣</span><div>${d.titulo || d.tipo || 'Documento'}<small>${fmtData(d.geradoEm)}</small></div></div>`).join('');
+    }
+
+    function renderProximosPassos(p) {
+      const r = p.responsavel || {};
+      const passos = [];
+      if (!r.notificado) passos.push('Notificar o responsável');
+      if (r.notificado && !r.confirmouCiencia) passos.push('Aguardar / confirmar ciência');
+      if (!r.compareceu) passos.push('Registrar comparecimento');
+      if (!(p.documentos || []).length) passos.push('Gerar documentos iniciais');
+      if (p.status === 'em_acompanhamento') passos.push('Registrar observação de acompanhamento');
+      if (!passos.length && p.status !== 'arquivado') passos.push('Revisar o caso para próximo encaminhamento');
+      if (p.status === 'arquivado') passos.push('Procedimento encerrado');
+      return passos.slice(0,4).map((s,i)=>`<div class="ax-mini-item"><span class="ax-step-dot">${i+1}</span><div>${s}</div></div>`).join('');
+    }
+
+    function renderTimelineCompacta(p) {
+      const timeline = Array.isArray(p.timeline) ? p.timeline.slice().reverse().slice(0,3) : [];
+      if (!timeline.length) return '<div class="ax-timeline-row"><span class="ax-tl-dot"></span><div class="ax-tl-text">Sem movimentações registradas.</div></div>';
+      return timeline.map(t=>`<div class="ax-timeline-row"><span class="ax-tl-dot"></span><div class="ax-tl-text">${t.titulo || 'Registro'}<small>${t.descricao || ''}${t.criadoEm ? ` • ${fmtData(t.criadoEm)}` : ''}</small></div></div>`).join('');
+    }
+
+    function renderDetalheProcesso(p) {
+      if (!p || !detalheProcesso) return;
+      const r = p.responsavel || {};
+      const risco = calcularRisco(p);
+      const prazo = prazoInfo(p);
+      detalheProcesso.innerHTML = `
+        <div class="ax-detail-head">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div>
+              <div class="ax-detail-title"><strong>${p.numeroProcesso || '—'}</strong><span class="badge status-${p.status}">${statusLabel(p.status)}</span><span class="badge natureza-${p.natureza}">${naturezaLabel(p.natureza)}</span></div>
+              <div class="ax-detail-meta">${p.ocorrenciaColetivaCodigo ? `👥 Ocorrência coletiva ${p.ocorrenciaColetivaCodigo}` : 'Abertura individual'}</div>
+            </div>
+            <div style="text-align:right"><div style="font-size:.62rem;color:#718aa6">Prazo</div><div class="ax-deadline ${prazo.classe}" style="font-size:.7rem">${prazo.texto}</div></div>
+          </div>
+        </div>
+
+        <div class="ax-summary">
+          <div class="ax-summary-title">Resumo do caso</div>
+          <div class="ax-summary-grid">
+            <div class="ax-summary-kv"><b>Aluno</b><span>${p.aluno?.nome || '—'}</span></div>
+            <div class="ax-summary-kv"><b>Turma</b><span>${p.aluno?.turma || '—'}</span></div>
+            <div class="ax-summary-kv"><b>Abertura</b><span>${p.tipoAbertura === 'coletiva' ? 'Coletiva' : 'Individual'}</span></div>
+            <div class="ax-summary-kv"><b>Data do fato</b><span>${fmtDataCurta(p.dataFato)} ${p.horaFato || ''}</span></div>
+            <div class="ax-summary-kv"><b>Natureza</b><span>${naturezaLabel(p.natureza)}</span></div>
+            <div class="ax-summary-kv"><b>Gravidade</b><span>${gravidadeLabel(p.gravidade)}</span></div>
+            <div class="ax-summary-kv"><b>Risco</b><span>${risco.emoji} ${risco.label}</span></div>
+            <div class="ax-summary-kv"><b>Responsável</b><span>${r.nome || 'Não informado'}</span></div>
+          </div>
+        </div>
+
+        <div class="ax-family-flow">${familiaFluxo(p)}</div>
+
+        <div class="ax-timeline-compact"><div class="ax-mini-title">Linha do tempo</div>${renderTimelineCompacta(p)}</div>
+
+        <section class="ax-assistant">
+          <div class="ax-assistant-head">✦ Assistente Axoriin</div>
+          <div class="ax-assistant-body">
+            <div class="ax-mascot-stage"><img class="ax-mascot-img" src="img/axoriin-assistente-3d.png" alt="Assistente Axoriin"><span class="ax-blink"></span></div>
+            <div class="ax-assistant-copy"><h3>Olá! 👋</h3><p>Estou aqui para ajudar você a conduzir este caso com clareza. Abaixo estão as ações mais úteis neste momento.</p></div>
+          </div>
+          <div class="ax-assistant-actions">
+            <button class="btn blue" onclick="abrirModalResponsavel('${p._id}')">${r.notificado ? '↻ Reenviar' : '📨 Notificar'}</button>
+            <button class="btn ok" onclick="abrirModalCiencia('${p._id}')" ${r.confirmouCiencia ? 'disabled title="Ciência já confirmada"' : ''}>${r.confirmouCiencia ? '✓ Ciência confirmada' : '✓ Confirmar ciência'}</button>
+            <button class="btn primary" onclick="abrirModalComparecimento('${p._id}')" ${r.compareceu ? 'disabled title="Comparecimento já registrado"' : ''}>${r.compareceu ? '✓ Compareceu' : '👤 Comparecimento'}</button>
+            <button class="btn dark" onclick="abrirModalObs('${p._id}')">＋ Observação</button>
+          </div>
+        </section>
+
+        <section class="ax-docs">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="ax-mini-title">Documentos</div><span style="font-size:.62rem;color:#718aa6">${(p.documentos || []).length} gerado(s)</span></div>
+          <div style="font-size:.58rem;color:#647d9a;margin:-4px 0 8px">Se a geração falhar no ambiente local, o erro técnico agora será exibido para diagnóstico.</div>
+          <div class="ax-doc-tabs">
+            <button class="ax-doc-tab ${grupoDocumentoAtual==='abertura'?'active':''}" onclick="setGrupoDocumento('abertura')">Abertura</button>
+            <button class="ax-doc-tab ${grupoDocumentoAtual==='familia'?'active':''}" onclick="setGrupoDocumento('familia')">Família</button>
+            <button class="ax-doc-tab ${grupoDocumentoAtual==='encaminhamentos'?'active':''}" onclick="setGrupoDocumento('encaminhamentos')">Encaminhamentos</button>
+            <button class="ax-doc-tab ${grupoDocumentoAtual==='encerramento'?'active':''}" onclick="setGrupoDocumento('encerramento')">Encerramento</button>
+          </div>
+          <div class="ax-doc-grid">${renderBotoesDocumentos(p)}</div>
+        </section>
+
+        <div class="ax-bottom-grid">
+          <div class="ax-mini-box"><div class="ax-mini-title">Recentes</div><div class="ax-mini-list">${renderRecentes(p)}</div></div>
+          <div class="ax-mini-box"><div class="ax-mini-title">Próximos passos</div><div class="ax-mini-list">${renderProximosPassos(p)}</div></div>
+        </div>
+
+        <details class="ax-more">
+          <summary>Ver detalhes completos, documentos gerados e ações administrativas ▾</summary>
+          <div class="ax-more-body">
+            ${renderAlertas(p)}
+            <div class="ax-more-grid">
+              <div class="kv"><b>Classificação</b>${p.classificacaoOcorrencia || '—'}</div>
+              <div class="kv"><b>Local</b>${p.localFato || '—'}</div>
+              <div class="kv"><b>Papel no fato</b>${papelFatoLabel(p.papelNoFato)}</div>
+              <div class="kv"><b>Encaminhamento externo</b>${p.exigeEncaminhamentoExterno ? orgaoLabel(p.orgaoEncaminhamento) : 'Não indicado'}</div>
+              <div class="kv" style="grid-column:1/-1"><b>Relato geral</b>${p.descricaoFato || '—'}</div>
+              ${p.relatoIndividual ? `<div class="kv" style="grid-column:1/-1"><b>Complemento individual</b>${p.relatoIndividual}</div>` : ''}
+              <div class="kv" style="grid-column:1/-1"><b>Providências imediatas</b>${p.providenciasImediatas || '—'}</div>
+              <div class="kv"><b>Responsável</b>${r.nome || '—'} • ${r.telefone || 'sem telefone'}</div>
+              <div class="kv"><b>Situação familiar</b>${r.notificado?'Notificado':'Não notificado'} • ${r.confirmouCiencia?'Ciência confirmada':'Ciência pendente'} • ${r.compareceu?'Compareceu':'Sem comparecimento'}</div>
+            </div>
+            ${p.ocorrenciaColetivaId ? renderEnvolvidos(p) : ''}
+            <div class="section-box" style="margin-top:8px"><div class="section-title">Documentos gerados</div>${renderDocumentos(p)}</div>
+            <div class="ax-more-actions">
+              ${p.status !== 'arquivado' ? `<button class="btn ok" onclick="abrirModalArquivar('${p._id}')">📁 Arquivar</button>` : ''}
+              ${p.status !== 'cancelado' ? `<button class="btn danger" onclick="cancelarProcedimento('${p._id}','${p.numeroProcesso || ''}')">✕ Cancelar procedimento</button>` : ''}
+              ${p.notificacao?._id ? `<button class="btn dark" onclick="location.href='notificacoes.html${tenant ? `?t=${encodeURIComponent(tenant)}` : ''}'">Ver notificações</button>` : ''}
+            </div>
+          </div>
+        </details>
+      `;
+    }
+
     function renderProcessos() {
       const filtrados = aplicarFiltros();
-
-      resumo.textContent = `${filtrados.length} procedimento(s) encontrado(s).`;
+      resumo.textContent = `${filtrados.length} encontrado(s)`;
       renderPaginacaoProcessos(filtrados.length);
-      const totalPaginas =
-  Math.max(1, Math.ceil(filtrados.length / itensPorPaginaProcessos));
 
-if (paginaAtualProcessos > totalPaginas) {
-  paginaAtualProcessos = totalPaginas;
-}
-
-const inicio =
-  (paginaAtualProcessos - 1) * itensPorPaginaProcessos;
-
-const fim =
-  inicio + itensPorPaginaProcessos;
-
-const pagina =
-  filtrados.slice(inicio, fim);
+      const totalPaginas = Math.max(1, Math.ceil(filtrados.length / itensPorPaginaProcessos));
+      if (paginaAtualProcessos > totalPaginas) paginaAtualProcessos = totalPaginas;
+      const inicio = (paginaAtualProcessos - 1) * itensPorPaginaProcessos;
+      const pagina = filtrados.slice(inicio, inicio + itensPorPaginaProcessos);
 
       if (!filtrados.length) {
-        lista.innerHTML = `<div class="empty">Nenhum procedimento encontrado.</div>`;
+        lista.innerHTML = `<div class="empty" style="margin:14px">Nenhum procedimento encontrado.</div>`;
+        detalheProcesso.innerHTML = `<div class="ax-detail-empty"><div><strong>Nenhum resultado</strong><div style="margin-top:5px">Ajuste ou limpe os filtros.</div></div></div>`;
         return;
       }
+
+      const existeSelecionado = filtrados.some(p => String(p._id) === String(processoPainelSelecionado));
+      if (!existeSelecionado) processoPainelSelecionado = String((pagina[0] || filtrados[0])._id);
 
       lista.innerHTML = pagina.map(p => {
         const nome = p.aluno?.nome || 'Aluno';
         const turma = p.aluno?.turma || '—';
-        const r = p.responsavel || {};
-        const risco = calcularRisco(p);
-        const cardRiscoClass = risco.nivel === 'alto' ? 'risco-alto' : risco.nivel === 'medio' ? 'risco-medio' : '';
-
+        const prazo = prazoInfo(p);
+        const alertas = alertasQuantidade(p);
+        const selecionado = String(p._id) === String(processoPainelSelecionado);
+        const tipo = p.ocorrenciaColetivaCodigo ? `Ocorrência coletiva<span class="ax-cell-sub">${p.ocorrenciaColetivaCodigo}</span>` : `${p.classificacaoOcorrencia || naturezaLabel(p.natureza)}`;
         return `
-          <div class="p-card ${cardRiscoClass}" data-id="${p._id}">
-            <div class="p-head" onclick="toggleProcesso('${p._id}')">
-              <div>
-                <div class="p-title">
-                  ${p.numeroProcesso || '—'} — ${nome}
-                  ${p.ocorrenciaColetivaCodigo ? `<span class="badge">👥 ${p.ocorrenciaColetivaCodigo}</span>` : ''}
-                </div>
-                <div class="p-sub">${turma} • ${p.localFato || 'Local não informado'} • ${fmtDataCurta(p.dataFato)} ${p.horaFato ? `• ${p.horaFato}` : ''}</div>
-              </div>
-              <div class="badges">
-                <span class="badge status-${p.status}">${statusLabel(p.status)}</span>
-                <span class="badge natureza-${p.natureza}">${naturezaLabel(p.natureza)}</span>
-                <span class="badge risco-${risco.nivel}-badge">${risco.emoji} ${risco.label}</span>
-                <span class="badge">Prazo: ${fmtDataCurta(p.prazoAcompanhamentoAte)}</span>
-
-              </div>
-            </div>
-
-            <div class="p-body" id="body-${p._id}">
-              <div class="actions" style="margin:0 0 12px">
-                ${familiaBadges(p)}
-                ${documentosResumo(p)}
-              </div>
-              <div class="dossie-grid">
-                <div>
-                  ${renderAlertas(p)}
-
-                  <div class="section-box">
-                    <div class="section-title">📌 Dados do caso</div>
-                    <div class="grid">
-                      <div class="kv"><b>Aluno</b>${nome}</div>
-                      <div class="kv"><b>Turma</b>${turma}</div>
-                      <div class="kv"><b>Nº do procedimento</b>${p.numeroProcesso || '—'}</div>
-                      <div class="kv"><b>Tipo de abertura</b>${p.tipoAbertura === 'coletiva' ? 'Ocorrência coletiva' : 'Individual'}</div>
-                      ${p.ocorrenciaColetivaCodigo ? `<div class="kv"><b>Código da ocorrência coletiva</b>${p.ocorrenciaColetivaCodigo}</div>` : ''}
-                      ${p.ocorrenciaColetivaId ? `<div class="kv"><b>Papel deste aluno no fato</b>${papelFatoLabel(p.papelNoFato)}</div>` : ''}
-                      <div class="kv"><b>Status</b>${statusLabel(p.status)}</div>
-                      <div class="kv"><b>Natureza</b>${naturezaLabel(p.natureza)}</div>
-                      <div class="kv"><b>Classificação</b>${p.classificacaoOcorrencia || '—'}</div>
-                      <div class="kv"><b>Gravidade</b>${gravidadeLabel(p.gravidade)}</div>
-                      <div class="kv"><b>Risco operacional</b>${risco.emoji} ${risco.label}</div>
-                      <div class="kv"><b>Data do fato</b>${fmtDataCurta(p.dataFato)}</div>
-                      <div class="kv"><b>Horário aproximado</b>${p.horaFato || '—'}</div>
-                      <div class="kv"><b>Local</b>${p.localFato || '—'}</div>
-                      <div class="kv"><b>Prazo de acompanhamento</b>${fmtDataCurta(p.prazoAcompanhamentoAte)}</div>
-                      <div class="kv"><b>Encaminhamento externo</b>${p.exigeEncaminhamentoExterno ? 'Sim' : 'Não'}</div>
-                      <div class="kv"><b>Órgão</b>${orgaoLabel(p.orgaoEncaminhamento)}</div>
-                      <div class="kv" style="grid-column:1/-1"><b>Relato geral do fato</b>${p.descricaoFato || '—'}</div>
-                      ${p.relatoIndividual ? `<div class="kv" style="grid-column:1/-1"><b>Complemento individual deste aluno</b>${p.relatoIndividual}</div>` : ''}
-                      <div class="kv" style="grid-column:1/-1"><b>Providências imediatas</b>${p.providenciasImediatas || '—'}</div>
-                    </div>
-                  </div>
-
-                  ${p.ocorrenciaColetivaId ? renderEnvolvidos(p) : ''}
-
-                  <div class="section-box">
-                    <div class="section-title">🚨 Marcadores críticos</div>
-                    <div class="risk-grid">
-                      <div class="kv"><b>Violência</b>${p.possuiViolencia ? 'Sim' : 'Não'}</div>
-                      <div class="kv"><b>Lesão</b>${p.possuiLesao ? 'Sim' : 'Não'}</div>
-                      <div class="kv"><b>Dano patrimonial</b>${p.possuiDanoPatrimonial ? 'Sim' : 'Não'}</div>
-                      <div class="kv"><b>Substância ilícita</b>${p.possuiSubstanciaIlicita ? 'Sim' : 'Não'}</div>
-                      <div class="kv"><b>Arma/objeto perigoso</b>${p.possuiArmaOuObjetoPerigoso ? 'Sim' : 'Não'}</div>
-                      <div class="kv"><b>Ato infracional</b>${p.natureza === 'ato_infracional' ? 'Sim' : 'Não'}</div>
-                    </div>
-                  </div>
-
-                  <div class="section-box">
-                    <div class="section-title">👨‍👩‍👧 Acompanhamento familiar</div>
-                    <div class="family-grid">
-                      <div class="kv"><b>Responsável</b>${r.nome || '—'}</div>
-                      <div class="kv"><b>Parentesco</b>${r.parentesco || '—'}</div>
-                      <div class="kv"><b>Telefone</b>${r.telefone || '—'}</div>
-                      <div class="kv"><b>E-mail</b>${r.email || '—'}</div>
-                      <div class="kv"><b>Notificado em</b>${fmtData(r.notificadoEm)}</div>
-                      <div class="kv"><b>Visualizou em</b>${fmtData(r.visualizouEm)}</div>
-                      <div class="kv"><b>Compareceu em</b>${fmtData(r.compareceuEm)}</div>
-                      <div class="kv"><b>Ciência em</b>${fmtData(r.confirmouCienciaEm)}</div>
-                      <div class="kv"><b>IP da ciência</b>${r.ipCiencia || '—'}</div>
-                      <div class="kv" style="grid-column:1/-1"><b>Resposta/observação</b>${r.resposta || '—'}</div>
-                    </div>
-                  </div>
-
-                  <div class="section-box">
-                    <div class="section-title">📁 Documentos do procedimento</div>
-                    <details class="docs-collapse">
-                      <summary>📄 Gerar documentos oficiais</summary>
-                      <div class="actions docs-actions">
-                        <button class="btn dark" onclick="gerarDocumento('${p._id}', 'capa')">🗂️ Capa</button>
-                        <button class="btn warn" onclick="gerarPortariaInstauracao('${p._id}')">📜 Portaria</button>
-                        <button class="btn danger" onclick="gerarRemessaConselhoTutelar('${p._id}')">📤 Conselho Tutelar</button>
-                        <button class="btn danger" onclick="gerarOficioMinisterioPublico('${p._id}')">📨 Ministério Público</button>
-                        <button class="btn danger" onclick="gerarOficioDelegacia('${p._id}')">🚔 Delegacia</button>
-                        <button class="btn danger" onclick="gerarOficioJudiciario('${p._id}')">⚖️ Judiciário</button>
-                        <button class="btn warn" onclick="gerarRelatorioFinal('${p._id}')">📑 Relatório Final</button>
-                        <button class="btn blue" onclick="gerarDocumento('${p._id}', 'termo_ciencia')">📄 Termo de ciência</button>
-                        <button class="btn ok" onclick="gerarDocumento('${p._id}', 'termo_comparecimento')">👤 Comparecimento</button>
-                        <button class="btn primary" onclick="gerarDocumento('${p._id}', 'termo_compromisso')">🤝 Compromisso</button>
-                        <button class="btn dark" onclick="gerarDocumento('${p._id}', 'arquivamento')">📁 Arquivamento</button>
-                        <button class="btn warn" onclick="gerarDossieCompleto('${p._id}')">📚 Dossiê completo</button>
-                        <button class="btn primary" onclick="gerarDossiePdf('${p._id}')">📄 PDF único</button>
-                      </div>
-                    </details>
-                    ${renderDocumentos(p)}
-                  </div>
-                </div>
-
-                <div>
-                  <div class="section-box">
-                    <div class="section-title">⚙️ Ações do procedimento</div>
-                    <div class="quick-actions">
-                      <button class="btn blue" onclick="abrirModalResponsavel('${p._id}')">📨 Notificar responsável</button>
-                      <button class="btn ok" onclick="abrirModalComparecimento('${p._id}')">👤 Responsável compareceu</button>
-                      <button class="btn warn" onclick="abrirModalCiencia('${p._id}')">✅ Confirmar ciência</button>
-                      <button class="btn primary" onclick="abrirModalObs('${p._id}')">➕ Observação</button>
-
-                      ${p.status !== 'arquivado'
-                        ? `<button class="btn ok" onclick="abrirModalArquivar('${p._id}')">📁 Arquivar</button>`
-                        : ''
-                      }
-
-                      ${p.status !== 'cancelado'
-                        ? `<button class="btn danger" onclick="cancelarProcedimento('${p._id}','${p.numeroProcesso}')">❌ Cancelar procedimento</button>`
-                        : ''
-                      }
-
-                      ${p.notificacao?._id
-                        ? `<button class="btn dark" onclick="location.href='notificacoes.html${tenant ? `?t=${encodeURIComponent(tenant)}` : ''}'">🔔 Ver notificações</button>`
-                        : ''
-                      }
-                    </div>
-                  </div>
-
-                  <div class="section-box">
-                    <div class="section-title">🕒 Linha do tempo</div>
-                    ${renderTimeline(p.timeline)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
+          <div class="ax-proc-row ${selecionado ? 'selected' : ''}" onclick="selecionarProcesso('${p._id}')">
+            <div><div class="ax-num">${p.numeroProcesso || '—'}</div><div class="ax-muted">${fmtDataCurta(p.criadoEm || p.dataFato)}</div></div>
+            <div class="ax-student"><span class="ax-avatar">${iniciais(nome)}</span>${nome}</div>
+            <div>${turma}</div>
+            <div>${tipo}</div>
+            <div><span class="badge status-${p.status}">${statusLabel(p.status)}</span></div>
+            <div>${gravidadeLabel(p.gravidade)}</div>
+            <div class="ax-deadline ${prazo.classe}">${prazo.texto}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px"><span style="display:flex;align-items:center;white-space:nowrap">${familiaMini(p)}</span><span class="ax-alert-count" title="Alertas do caso">${alertas ? `♢${alertas}` : ''}</span><span class="ax-chevron">›</span></div>
+          </div>`;
       }).join('');
+
+      const p = processos.find(x => String(x._id) === String(processoPainelSelecionado));
+      if (p) renderDetalheProcesso(p);
     }
 function renderPaginacaoProcessos(totalItens) {
   const el = document.getElementById('paginacaoProcessos');
   if (!el) return;
-
-  const totalPaginas =
-    Math.max(1, Math.ceil(totalItens / itensPorPaginaProcessos));
-
-  if (totalItens <= itensPorPaginaProcessos) {
-    el.innerHTML = '';
-    return;
-  }
-
+  const totalPaginas = Math.max(1, Math.ceil(totalItens / itensPorPaginaProcessos));
+  const inicio = totalItens ? ((paginaAtualProcessos - 1) * itensPorPaginaProcessos) + 1 : 0;
+  const fim = Math.min(totalItens, paginaAtualProcessos * itensPorPaginaProcessos);
   el.innerHTML = `
-    <button class="btn dark" onclick="mudarPaginaProcessos(-1)" ${paginaAtualProcessos <= 1 ? 'disabled' : ''}>
-      ← Anterior
-    </button>
-
-    <span class="badge">
-      Página ${paginaAtualProcessos} de ${totalPaginas}
-    </span>
-
-    <button class="btn dark" onclick="mudarPaginaProcessos(1)" ${paginaAtualProcessos >= totalPaginas ? 'disabled' : ''}>
-      Próxima →
-    </button>
-  `;
+    <span style="font-size:.66rem;color:#718aa6">Mostrando ${inicio}–${fim} de ${totalItens}</span>
+    <div style="display:flex;align-items:center;gap:5px">
+      <button class="btn dark" onclick="mudarPaginaProcessos(-1)" ${paginaAtualProcessos <= 1 ? 'disabled' : ''}>‹</button>
+      <span class="badge">${paginaAtualProcessos} / ${totalPaginas}</span>
+      <button class="btn dark" onclick="mudarPaginaProcessos(1)" ${paginaAtualProcessos >= totalPaginas ? 'disabled' : ''}>›</button>
+    </div>`;
 }
-
 function mudarPaginaProcessos(delta) {
-  paginaAtualProcessos += delta;
+  const total = aplicarFiltros().length;
+  const max = Math.max(1, Math.ceil(total / itensPorPaginaProcessos));
+  paginaAtualProcessos = Math.min(max, Math.max(1, paginaAtualProcessos + delta));
+  processoPainelSelecionado = null;
   renderProcessos();
 }
     async function carregarEstatisticas() {
-
-  try {
-
-    const stats =
-      await fetchJson(
-        '/api/processos-disciplinares/estatisticas'
-      );
-
-    const gravidadeTotal =
-      Object.values(
-        stats.gravidade || {}
-      ).reduce((a, b) => a + b, 0);
-
-    statsProcessos.innerHTML = `
-
-      <div class="stat-card">
-        <div class="stat-label">
-          TOTAL
-        </div>
-
-        <div class="stat-value">
-          ${stats.total || 0}
-        </div>
-
-        <div class="stat-sub">
-          procedimentos registrados
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">
-          ATIVOS
-        </div>
-
-        <div class="stat-value">
-          ${stats.ativos || 0}
-        </div>
-
-        <div class="stat-sub">
-          em andamento
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">
-          ARQUIVADOS
-        </div>
-
-        <div class="stat-value">
-          ${stats.arquivados || 0}
-        </div>
-
-        <div class="stat-sub">
-          concluídos
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">
-          ATOS INFRACIONAIS
-        </div>
-
-        <div class="stat-value">
-          ${stats.atosInfracionais || 0}
-        </div>
-
-        <div class="stat-sub">
-          classificados
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">
-          COMPARECIMENTO
-        </div>
-
-        <div class="stat-value">
-          ${stats.taxaComparecimento || 0}%
-        </div>
-
-        <div class="stat-sub">
-          responsáveis presentes
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">
-          GRAVIDADE
-        </div>
-
-        <div class="stat-value">
-          ${gravidadeTotal}
-        </div>
-
-        <div class="stat-sub">
-          registros classificados
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">
-          OCORRÊNCIAS COLETIVAS
-        </div>
-
-        <div class="stat-value">
-          ${stats.ocorrenciasColetivas || 0}
-        </div>
-
-        <div class="stat-sub">
-          casos agrupados
-        </div>
-      </div>
-
-    `;
-
-  } catch (err) {
-
-    console.error(
-      '[STATS_PROCESSOS]',
-      err
-    );
-
-    statsProcessos.innerHTML = `
-      <div class="empty">
-        Erro ao carregar estatísticas.
-      </div>
-    `;
-  }
-}
+      try {
+        const stats = await fetchJson('/api/processos-disciplinares/estatisticas');
+        const pendenciaCiencia = processos.filter(p => p.status !== 'arquivado' && p.status !== 'cancelado' && !p.responsavel?.confirmouCiencia).length;
+        const semComparecimento = processos.filter(p => p.status !== 'arquivado' && p.status !== 'cancelado' && !p.responsavel?.compareceu).length;
+        statsProcessos.innerHTML = `
+          <div class="stat-card"><div class="stat-label">TOTAL</div><div class="stat-value">${stats.total || processos.length || 0}</div><div class="stat-sub">procedimentos</div></div>
+          <div class="stat-card"><div class="stat-label">ABERTOS / ATIVOS</div><div class="stat-value">${stats.ativos || 0}</div><div class="stat-sub">em andamento</div></div>
+          <div class="stat-card"><div class="stat-label">CIÊNCIA PENDENTE</div><div class="stat-value">${pendenciaCiencia}</div><div class="stat-sub">aguardando responsável</div></div>
+          <div class="stat-card"><div class="stat-label">SEM COMPARECIMENTO</div><div class="stat-value">${semComparecimento}</div><div class="stat-sub">responsáveis pendentes</div></div>
+          <div class="stat-card"><div class="stat-label">OCORRÊNCIAS COLETIVAS</div><div class="stat-value">${stats.ocorrenciasColetivas || 0}</div><div class="stat-sub">casos agrupados</div></div>`;
+      } catch (err) {
+        console.error('[STATS_PROCESSOS]', err);
+        statsProcessos.innerHTML = `<div class="empty">Estatísticas indisponíveis.</div>`;
+      }
+    }
     async function carregarProcessos() {
-      lista.innerHTML = `<div class="empty"><span class="spinner"></span>Carregando procedimentos...</div>`;
+      lista.innerHTML = `<div class="empty" style="margin:14px"><span class="spinner"></span>Carregando procedimentos...</div>`;
 
       try {
         processos = await fetchJson('/api/processos-disciplinares');
@@ -1727,14 +1817,9 @@ function mudarPaginaProcessos(delta) {
         renderProcessos();
 
         const processoQuery = new URLSearchParams(window.location.search).get('processo');
-        if (processoQuery) {
-          setTimeout(() => {
-            const body = document.getElementById(`body-${processoQuery}`);
-            if (body) {
-              body.style.display = 'block';
-              body.scrollIntoView({ behavior:'smooth', block:'center' });
-            }
-          }, 250);
+        if (processoQuery && processos.some(p => String(p._id) === String(processoQuery))) {
+          processoPainelSelecionado = String(processoQuery);
+          renderProcessos();
         }
       } catch (e) {
         console.error(e);
@@ -2486,12 +2571,16 @@ async function limparDocumentos(id) {
       window.location.href = 'login.html';
     }
 
-    busca.addEventListener('input', renderProcessos);
-    filtroStatus.addEventListener('change', renderProcessos);
-    filtroNatureza.addEventListener('change', renderProcessos);
+    busca.addEventListener('input', () => { paginaAtualProcessos = 1; renderProcessos(); });
+    filtroStatus.addEventListener('change', () => { paginaAtualProcessos = 1; renderProcessos(); });
+    filtroNatureza.addEventListener('change', () => { paginaAtualProcessos = 1; renderProcessos(); });
+    filtroGravidade?.addEventListener('change', () => { paginaAtualProcessos = 1; renderProcessos(); });
 
     window.carregarProcessos = carregarProcessos;
     window.toggleProcesso = toggleProcesso;
+    window.selecionarProcesso = selecionarProcesso;
+    window.setGrupoDocumento = setGrupoDocumento;
+    window.limparFiltros = limparFiltros;
     window.abrirModalObs = abrirModalObs;
     window.fecharModalObs = fecharModalObs;
     window.salvarObservacao = salvarObservacao;
