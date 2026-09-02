@@ -282,6 +282,7 @@ const siteAnalyticsRoutes = require('./routes/api/siteAnalytics');
 const termosProfessorRoutes = require('./routes/api/termosProfessor');
 const pedagogicoRoutes = require('./routes/api/pedagogico');
 const pedagogicoBibliotecaGestaoRoutes = require('./routes/api/pedagogicoBibliotecaGestao');
+const simuladosRoutes = require('./routes/api/simulados');
 const { acessoPedagogico } = require('./middleware/pedagogicoAccess');
 const professorOnboardingGuard = require('./middleware/professorOnboardingGuard');
 
@@ -816,6 +817,7 @@ mountIf('/api/observacoes', observacoesRoutes);
 mountIf('/api/observacoes-professores', observacoesProfessoresRoutes);
 mountIf('/api/pedagogico/biblioteca-gestao', pedagogicoBibliotecaGestaoRoutes);
 mountIf('/api/pedagogico', pedagogicoRoutes);
+mountIf('/api/simulados', simuladosRoutes);
 mountIf('/api/controle-acesso', controleAcessoRoutes);
 mountIf('/api/chamada', chamadaRoutes);
 mountIf('/api/diagnostico', diagnosticoNotaRoutes);
@@ -927,6 +929,12 @@ app.get('/pedagogico.html', autenticar, acessoPedagogico, (_req, res) => {
 });
 app.get('/pedagogico', autenticar, acessoPedagogico, (_req, res) => {
   return res.redirect('/pedagogico.html');
+});
+app.get('/simulados.html', autenticar, acessoPedagogico, (_req, res) => {
+  return res.sendFile(path.join(publicRoot, 'simulados.html'));
+});
+app.get('/simulados', autenticar, acessoPedagogico, (_req, res) => {
+  return res.redirect('/simulados.html');
 });
 
 const assetsRoot = path.join(publicRoot, 'assets');
