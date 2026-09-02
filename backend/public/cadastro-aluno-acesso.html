@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axoriin • Criar acesso do aluno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--blue:#0b63c7;--blue2:#1683f5;--navy:#0c2340;--muted:#687789;--line:#dce6f2;--bg:#eef6ff;--ok:#128c55;--danger:#d93f4c}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;font-family:Inter,sans-serif;color:#102033;background:linear-gradient(135deg,#eaf4ff,#f8fbff);padding:24px}
+    .shell{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:.78fr 1.22fr;background:white;border:1px solid #dfeaf6;border-radius:28px;overflow:hidden;box-shadow:0 24px 70px rgba(12,45,92,.16)}
+    .aside{padding:42px;background:linear-gradient(145deg,#063b78,#0b63c7);color:white;display:flex;flex-direction:column;justify-content:space-between;gap:36px}
+    .brand{font:700 21px Orbitron,sans-serif;letter-spacing:.08em}.aside h1{font-size:36px;line-height:1.08;margin:38px 0 16px}.aside p{line-height:1.6;color:rgba(255,255,255,.86)}
+    .security{padding:18px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.12);border-radius:18px;font-size:14px;line-height:1.55}
+    .main{padding:42px}.main h2{font-size:30px;margin:0 0 8px;color:var(--navy)}.subtitle{color:var(--muted);line-height:1.55;margin:0 0 26px}.tenant{display:none;background:#eef7ff;border:1px solid #cfe8ff;color:#16446f;border-radius:14px;padding:11px 13px;margin-bottom:18px;font-size:13px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field.full{grid-column:1/-1}.field label{display:block;font-weight:800;font-size:13px;margin-bottom:7px;color:#24374f}.field input,.field select{width:100%;height:52px;border:1px solid var(--line);border-radius:14px;padding:0 14px;font:500 15px Inter,sans-serif;background:#fbfdff;outline:none}.field input:focus,.field select:focus{border-color:#5aa8f8;box-shadow:0 0 0 4px rgba(22,131,245,.1);background:white}.hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+    .notice{margin:22px 0 16px;padding:14px 16px;border-radius:16px;background:#f5f8fc;border:1px solid #e2eaf3;color:#536477;font-size:13px;line-height:1.5}.actions{display:flex;gap:12px;align-items:center}.btn{border:0;border-radius:14px;height:52px;padding:0 20px;font-weight:800;font-size:15px;cursor:pointer}.primary{flex:1;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white}.ghost{background:#eef4fb;color:#36516f;text-decoration:none;display:grid;place-items:center}.btn:disabled{opacity:.65;cursor:not-allowed}.feedback{display:none;margin-top:16px;padding:13px 14px;border-radius:14px;font-weight:600;font-size:14px;line-height:1.45}.feedback.show{display:block}.feedback.error{background:#fff0f2;color:var(--danger);border:1px solid #ffd0d6}.feedback.success{background:#effaf5;color:var(--ok);border:1px solid #c9f1df}
+    .success-card{display:none;text-align:center;padding:34px 10px}.success-card.show{display:block}.check{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;background:#eaf9f2;color:var(--ok);font-size:34px;font-weight:900}.success-card h3{font-size:26px;color:var(--navy);margin:0 0 10px}.success-card p{color:var(--muted);line-height:1.6}.success-card a{display:inline-grid;place-items:center;margin-top:18px;height:48px;padding:0 20px;border-radius:13px;background:#eef4fb;color:var(--blue);font-weight:800;text-decoration:none}
+    @media(max-width:800px){body{padding:12px}.shell{grid-template-columns:1fr}.aside{padding:28px}.aside h1{font-size:30px;margin-top:24px}.main{padding:28px 20px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.actions{flex-direction:column}.btn,.ghost{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="aside">
+      <div><div class="brand">AXORIIN</div><h1>Crie seu acesso ao Portal do Aluno</h1><p>O cadastro só é liberado quando seus dados correspondem a um aluno que já existe na base oficial da escola.</p></div>
+      <div class="security"><b>Proteção contra cadastros indevidos</b><br>O formulário não cria matrícula. Nome, turma e data de nascimento são conferidos antes de qualquer conta ser vinculada. Cadastros antigos sem nascimento exigem o Código do Aluno.</div>
+    </aside>
+    <section class="main">
+      <div id="formArea">
+        <h2>Primeiro acesso</h2>
+        <p class="subtitle">Informe seus dados exatamente como constam na escola. Pequenas diferenças de acento ou espaçamento são tratadas automaticamente.</p>
+        <div id="tenantInfo" class="tenant"></div>
+        <form id="formCadastro" autocomplete="on">
+          <div class="grid">
+            <div class="field full"><label for="nome">Nome completo</label><input id="nome" name="nome" autocomplete="name" required placeholder="Seu nome completo"><div class="hint">Não use apelidos ou abreviações.</div></div>
+            <div class="field"><label for="turma">Turma</label><select id="turma" name="turma" required><option value="">Carregando turmas...</option></select></div>
+            <div class="field"><label for="nascimento">Data de nascimento</label><input id="nascimento" name="nascimento" type="date" required><div class="hint">A data precisa corresponder ao cadastro escolar.</div></div>
+            <div class="field"><label for="codigoAcesso">Código do aluno <span style="font-weight:500;color:var(--muted)">(opcional)</span></label><input id="codigoAcesso" name="codigoAcesso" autocomplete="off" maxlength="12" placeholder="Ex.: A1B2C3"><div class="hint">Use se a escola ainda não tiver sua data de nascimento cadastrada ou se o sistema solicitar.</div></div>
+            <div class="field"><label for="email">Seu e-mail</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="aluno@email.com"></div>
+            <div class="field"><label for="whatsapp">Seu WhatsApp</label><input id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel" required placeholder="(68) 99999-9999"></div>
+            <div class="field"><label for="senha">Crie uma senha</label><input id="senha" name="senha" type="password" autocomplete="new-password" required minlength="8"><div class="hint">Mínimo 8 caracteres, com maiúscula, minúscula e número.</div></div>
+            <div class="field"><label for="confirmarSenha">Confirme a senha</label><input id="confirmarSenha" name="confirmarSenha" type="password" autocomplete="new-password" required minlength="8"></div>
+          </div>
+          <div class="notice">Após a validação, enviaremos um link para confirmar seu e-mail. A senha escolhida <b>não é enviada por e-mail</b> e permanece conhecida somente por você.</div>
+          <div class="actions"><a class="btn ghost" id="voltarLogin" href="login-aluno.html">Voltar ao login</a><button class="btn primary" id="btnEnviar" type="submit">Criar meu acesso</button></div>
+          <div id="feedback" class="feedback"></div>
+        </form>
+      </div>
+      <div id="successCard" class="success-card"><div class="check">✓</div><h3>Confira seu e-mail</h3><p id="successText">Enviamos um link de confirmação. Seu acesso será liberado depois que você confirmar o endereço informado.</p><a id="successLogin" href="login-aluno.html">Voltar ao Portal do Aluno</a></div>
+    </section>
+  </main>
+<script>
+(function(){
+  const params=new URLSearchParams(location.search); const tenant=(params.get('t')||'').trim();
+  const form=document.getElementById('formCadastro'), feedback=document.getElementById('feedback'), btn=document.getElementById('btnEnviar'), turma=document.getElementById('turma');
+  const voltar=document.getElementById('voltarLogin'), successLogin=document.getElementById('successLogin'), tenantInfo=document.getElementById('tenantInfo');
+  function url(path){if(!tenant)return path;return path+(path.includes('?')?'&':'?')+'t='+encodeURIComponent(tenant)}
+  if(tenant){tenantInfo.style.display='block';tenantInfo.innerHTML='Instituição/tenant: <b>'+tenant.replace(/[<>&"']/g,'')+'</b>';voltar.href=url('login-aluno.html');successLogin.href=url('login-aluno.html')}
+  function msg(text,type){feedback.textContent=text||'';feedback.className='feedback show '+(type||'error')}
+  async function carregarTurmas(){try{const r=await fetch(url('/auth/aluno-autocadastro/turmas'),{credentials:'include'});const d=await r.json();if(!r.ok)throw new Error(d.mensagem||'Falha');turma.innerHTML='<option value="">Selecione sua turma</option>'+d.turmas.map(t=>'<option value="'+String(t).replace(/"/g,'&quot;')+'">'+t+'</option>').join('')}catch(e){turma.innerHTML='<option value="">Não foi possível carregar</option>';msg('Não foi possível carregar as turmas. Recarregue a página.','error')}}
+  form.addEventListener('submit',async(e)=>{e.preventDefault(); feedback.className='feedback'; if(document.getElementById('senha').value!==document.getElementById('confirmarSenha').value){msg('As senhas não coincidem.','error');return} btn.disabled=true;btn.textContent='Validando...';try{const payload={nome:document.getElementById('nome').value,turma:turma.value,nascimento:document.getElementById('nascimento').value,codigoAcesso:document.getElementById('codigoAcesso').value,email:document.getElementById('email').value,whatsapp:document.getElementById('whatsapp').value,senha:document.getElementById('senha').value};if(tenant){payload.t=tenant;payload.tenant=tenant}const r=await fetch(url('/auth/aluno-autocadastro'),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok){msg(d.mensagem||'Não foi possível criar seu acesso.','error');return}document.getElementById('successText').textContent=d.mensagem||'Enviamos um link de confirmação para seu e-mail.';document.getElementById('formArea').style.display='none';document.getElementById('successCard').classList.add('show')}catch(err){msg('Erro de conexão. Tente novamente.','error')}finally{btn.disabled=false;btn.textContent='Criar meu acesso'}});
+  carregarTurmas();
+})();
+</script>
+</body>
+</html>

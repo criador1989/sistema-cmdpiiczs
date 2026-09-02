@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 require('dotenv').config({ path: __dirname + '/.env' });
 
@@ -646,6 +646,9 @@ function buildProfessorGuard(publicRoot) {
     '/api/site-publico',
     '/login.html',
     '/login-aluno.html',
+    '/cadastro-aluno-acesso.html',
+    '/recuperar-senha-aluno.html',
+    '/redefinir-senha-aluno.html',
     '/painel-aluno.html',
     '/painel-aluno.js',
     '/aluno-jogos.html',
@@ -1321,3 +1324,4 @@ process.on('SIGINT', async () => {
   console.log('\nðŸ‘‹ Encerrado com sucesso');
   process.exit(0);
 });
+
