@@ -3,31 +3,297 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#06101f">
-  <title>Axoriin • Simulados</title>
+  <meta name="theme-color" content="#6d4aff">
+  <title>Axoriin • Meus Simulados</title>
   <link rel="manifest" href="/manifest-aluno.json">
-  <link rel="stylesheet" href="/portal-aluno/placeholder.css?v=1.0.0">
+  <link rel="stylesheet" href="/portal-aluno/simulados.css?v=1.15.2">
 </head>
-<body data-placeholder="simulados">
-  <main class="placeholder-shell">
-    <header class="placeholder-top">
-      <div class="placeholder-brand">AXORIIN · SIMULADOS</div>
-      <a class="btn btn-ghost" href="/painel-aluno.html" data-portal-link>← Voltar ao portal</a>
-    </header>
+<body data-theme="light">
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-mark">🎓</div>
+        <div>
+          <strong>Portal</strong>
+          <span>do Aluno</span>
+        </div>
+      </div>
 
-    <section class="placeholder-hero">
-      <span class="eyebrow">Ensino Médio · módulo futuro</span>
-      <h1>Simulados completos, sem improvisar a arquitetura depois.</h1>
-      <p>O espaço já está reservado no Portal do Aluno. Quando o módulo for desenvolvido, poderá receber cadernos por área, cronômetro, salvamento de progresso, gabarito e análise de habilidades.</p>
-    </section>
+      <nav class="side-nav">
+        <a href="/painel-aluno.html" data-portal-link><span>🏠</span><span>Início</span></a>
+        <a href="/aluno-simulados.html" class="active" data-portal-link><span>📝</span><span>Simulados</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>📊</span><span>Desempenho</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>📚</span><span>Conteúdos</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>🎯</span><span>Metas</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>✍️</span><span>Redações</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>🏆</span><span>Ranking</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>📅</span><span>Calendário</span></a>
+        <a href="/painel-aluno.html" data-portal-link><span>💬</span><span>Mensagens</span></a>
+      </nav>
 
-    <section class="placeholder-grid">
-      <article class="placeholder-card"><span class="locked">Em breve</span><div class="big">▤</div><h2>Cadernos de prova</h2><p>Simulados gerais ou por área, com quantidade de questões e duração configuráveis.</p></article>
-      <article class="placeholder-card"><span class="locked">Em breve</span><div class="big">◷</div><h2>Cronômetro e retomada</h2><p>Controle de tempo, salvamento seguro e continuidade da tentativa conforme a regra definida.</p></article>
-      <article class="placeholder-card"><span class="locked">Em breve</span><div class="big">↗</div><h2>Diagnóstico</h2><p>Relatório de acertos por área, habilidade e assunto, conectado ao plano de estudo.</p></article>
+      <section class="student-card panel">
+        <div class="student-avatar"><img id="studentAvatar" src="/portal-aluno/assets/axoriin-bot.png?v=1.14.1" alt="Avatar do portal"></div>
+        <div class="student-meta">
+          <strong id="studentName">Aluno</strong>
+          <span id="studentClass">Ensino Médio</span>
+          <a href="/painel-aluno.html" data-portal-link>Ver portal</a>
+        </div>
+      </section>
+
+      <section class="points-card panel">
+        <div class="points-head">
+          <span>Meus pontos</span>
+          <strong id="studentPoints">—</strong>
+        </div>
+        <div class="points-badge">⭐</div>
+        <p id="studentLevel">Nível Evolução</p>
+        <div class="progress-track"><i id="levelProgress" style="width:0%"></i></div>
+        <small id="levelHint">Continue revisando seus simulados para evoluir.</small>
+      </section>
+    </aside>
+
+    <section class="content-area">
+      <header class="topbar">
+        <div>
+          <h1 id="greetingTitle">Olá!</h1>
+          <p id="greetingText">Cada simulado é uma oportunidade para evoluir.</p>
+        </div>
+        <div class="top-actions">
+          <a href="/painel-aluno.html" class="ghost-btn" data-portal-link>Voltar ao portal</a>
+          <button id="themeToggle" type="button" class="theme-toggle" aria-label="Alternar tema">🌙 Tema escuro</button>
+        </div>
+      </header>
+
+      <section id="loading" class="state-card">Carregando seus resultados…</section>
+      <section id="empty" class="state-card" hidden>
+        <strong>Nenhum resultado disponível ainda.</strong>
+        <p>Quando a escola confirmar seus próximos simulados, eles aparecerão aqui automaticamente.</p>
+      </section>
+      <section id="error" class="state-card error" hidden>
+        <strong>Não foi possível carregar os simulados.</strong>
+        <p id="errorText"></p>
+        <button id="retry" type="button">Tentar novamente</button>
+      </section>
+
+      <div id="dashboard" hidden>
+        <section class="hero-grid">
+          <article class="hero-card panel">
+            <div class="hero-copy">
+              <span class="chip">Último simulado</span>
+              <h2 id="heroTitle">Simulado</h2>
+              <div class="hero-meta" id="heroMeta">—</div>
+              <p id="heroText">Seu desempenho foi processado e já está disponível para análise.</p>
+              <div class="hero-actions">
+                <button id="openDetail" type="button" class="primary-btn">Ver relatório completo</button>
+                <button id="viewAllWrong" type="button" class="ghost-btn">Ver questões erradas</button>
+              </div>
+            </div>
+            <div class="hero-art">
+              <img src="/portal-aluno/assets/alvo-estudos.png?v=1.14.1" alt="Ilustração com alvo, livros e planta">
+            </div>
+          </article>
+
+          <div class="stats-grid">
+            <article class="stat-card panel stat-green">
+              <span class="stat-title">Acertos</span>
+              <strong id="statAcertos">—</strong>
+              <small id="statAcertosSub">—</small>
+              <div class="mini-wave"></div>
+            </article>
+            <article class="stat-card panel stat-blue">
+              <span class="stat-title">Percentual geral</span>
+              <strong id="statPercentual">—</strong>
+              <small id="statPercentualSub">Diagnóstico confirmado</small>
+              <div class="mini-wave"></div>
+            </article>
+            <article class="stat-card panel stat-orange">
+              <span class="stat-title">Total de questões</span>
+              <strong id="statQuestoes">—</strong>
+              <small id="statQuestoesSub">Consideradas no simulado</small>
+              <div class="mini-wave"></div>
+            </article>
+            <article class="stat-card panel stat-purple">
+              <span class="stat-title">Evolução</span>
+              <strong id="statEvolucao">—</strong>
+              <small id="statEvolucaoSub">Comparação com o simulado anterior</small>
+              <div class="mini-wave"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="overview-grid">
+          <article class="panel areas-panel">
+            <div class="section-title">
+              <div>
+                <span class="eyebrow">ANÁLISE POR ÁREA</span>
+                <h3>Desempenho por Área</h3>
+              </div>
+            </div>
+            <p class="section-subtitle">Veja seu desempenho em cada área do conhecimento.</p>
+            <div id="areasList" class="area-table"></div>
+            <button id="openDetailAreas" type="button" class="footer-link">Ver análise detalhada</button>
+          </article>
+
+          <article class="panel mistakes-panel">
+            <div class="section-title split">
+              <div>
+                <span class="eyebrow">REVISÃO DA PROVA</span>
+                <h3>Questões que você errou</h3>
+              </div>
+              <button id="openWrongModal" type="button" class="text-link">Ver todas</button>
+            </div>
+            <p class="section-subtitle">Revise os conteúdos e transforme erros em acertos.</p>
+            <div class="mistakes-table-head">
+              <span>Questão</span>
+              <span>Resposta marcada</span>
+              <span>Gabarito</span>
+              <span>Área</span>
+              <span>Assunto / Habilidade</span>
+              <span></span>
+            </div>
+            <div id="mistakesPreview" class="mistakes-list"></div>
+          </article>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="panel improve-panel">
+            <div class="section-title">
+              <div>
+                <span class="eyebrow">FOCO PEDAGÓGICO</span>
+                <h3>Onde melhorar</h3>
+              </div>
+            </div>
+            <p class="section-subtitle">Foque nos assuntos que mais impactam sua nota.</p>
+            <div id="improveList" class="improve-list"></div>
+          </article>
+
+          <article class="panel cta-panel" id="reviewEvolutionCard">
+            <div class="cta-copy">
+              <span class="chip chip-soft">Bora evoluir!</span>
+              <h3>Hora de revisar e evoluir!</h3>
+              <p>Acesse os conteúdos recomendados para seus pontos de atenção e use esta análise para estudar com mais direção.</p>
+              <button id="scrollImprove" type="button" class="primary-btn">Revisar conteúdos</button>
+            </div>
+            <div class="cta-visual">
+              <div class="cta-mascot-wrap">
+                <img src="/portal-aluno/assets/axoriin-bot.png?v=1.14.1" alt="Robô do Axoriin">
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel results-panel">
+          <div class="section-title split">
+            <div>
+              <span class="eyebrow">HISTÓRICO</span>
+              <h3>Seus simulados</h3>
+            </div>
+            <strong id="totalSimulados">0</strong>
+          </div>
+          <p class="section-subtitle">Clique em qualquer resultado para atualizar o painel acima.</p>
+          <div id="resultsRail" class="results-rail"></div>
+        </section>
+      </div>
     </section>
   </main>
+
+  <dialog id="reviewPlanDialog" class="review-dialog">
+    <article class="review-sheet">
+      <header class="review-header">
+        <div>
+          <span class="eyebrow">PLANO DE REVISÃO</span>
+          <h2>Hora de revisar e evoluir!</h2>
+          <p>Comece pelo que mais precisa de atenção. Abra as questões erradas, estude cada ponto e marque o conteúdo quando concluir a revisão.</p>
+        </div>
+        <button id="closeReviewPlan" class="close" type="button" aria-label="Fechar plano de revisão">×</button>
+      </header>
+
+      <section class="review-summary panel-soft">
+        <div>
+          <span>Progresso da revisão</span>
+          <strong id="reviewProgressText">0 de 0 revisados</strong>
+        </div>
+        <div class="review-progress-track"><i id="reviewProgressBar" style="width:0%"></i></div>
+        <small id="reviewProgressHint">Comece pelo conteúdo de maior prioridade.</small>
+      </section>
+
+      <div class="review-toolbar">
+        <button type="button" class="review-filter active" data-review-filter="all">Todos</button>
+        <button type="button" class="review-filter" data-review-filter="pending">Pendentes</button>
+        <button type="button" class="review-filter" data-review-filter="done">Revisados</button>
+      </div>
+
+      <div id="reviewPlanList" class="review-plan-list"></div>
+    </article>
+  </dialog>
+
+  <dialog id="questionReviewDialog" class="question-review-dialog">
+    <article class="question-review-sheet">
+      <header class="question-review-header">
+        <div>
+          <span class="eyebrow">REVISÃO PAREADA</span>
+          <h2 id="questionReviewTitle">Questão</h2>
+          <p id="questionReviewSubtitle">Veja a prova original ao lado do seu diagnóstico.</p>
+        </div>
+        <button id="closeQuestionReview" class="close" type="button" aria-label="Fechar">×</button>
+      </header>
+
+      <div class="question-review-layout">
+        <section class="question-paper-panel">
+          <div class="paper-toolbar">
+            <div><strong id="paperViewTitle">Questão isolada da prova</strong><span id="paperPageInfo"></span></div>
+            <div class="paper-toolbar-right">
+              <button id="paperToggleOriginal" type="button" class="paper-mode-btn">Ver página original</button>
+              <div class="paper-actions"><button id="paperZoomOut" type="button">−</button><span id="paperZoomLabel">100%</span><button id="paperZoomIn" type="button">+</button></div>
+            </div>
+          </div>
+          <div id="paperOriginalPager" class="paper-original-pager" hidden>
+            <button id="previousPaperPage" type="button">← Página</button>
+            <strong id="paperOriginalPageLabel">Página</strong>
+            <button id="nextPaperPage" type="button">Página →</button>
+          </div>
+          <div id="questionPages" class="question-pages"></div>
+        </section>
+
+        <aside class="question-diagnosis-panel">
+          <div class="question-answer-box">
+            <span>Sua resposta</span><strong id="questionStudentAnswer">—</strong>
+          </div>
+          <div class="question-answer-box correct">
+            <span>Gabarito</span><strong id="questionCorrectAnswer">—</strong>
+          </div>
+          <div class="question-diagnosis-content">
+            <span class="eyebrow" id="questionArea">ÁREA</span>
+            <h3 id="questionTopic">Conteúdo</h3>
+            <p id="questionSkill">Habilidade não informada.</p>
+          </div>
+          <div id="questionBookletNotice" class="question-booklet-notice"></div>
+          <button id="toggleQuestionReviewed" type="button" class="question-reviewed-btn">Marcar questão como revisada</button>
+          <div class="question-review-progress" id="questionReviewProgress"></div>
+          <div class="question-nav-actions">
+            <button id="previousWrongQuestion" type="button" class="ghost-btn">← Anterior</button>
+            <button id="nextWrongQuestion" type="button" class="primary-btn">Próxima →</button>
+          </div>
+        </aside>
+      </div>
+    </article>
+  </dialog>
+
+  <dialog id="detailDialog" class="detail-dialog">
+    <article class="detail-sheet">
+      <header>
+        <div>
+          <span class="eyebrow">RESULTADO INDIVIDUAL</span>
+          <h2 id="detailTitle">Simulado</h2>
+          <p id="detailMeta"></p>
+        </div>
+        <button id="closeDetail" class="close" type="button" aria-label="Fechar">×</button>
+      </header>
+      <div id="detailBody"></div>
+    </article>
+  </dialog>
+
   <script src="/portal-aluno/portal-runtime.js?v=1.0.0"></script>
-  <script src="/portal-aluno/placeholder.js?v=1.0.0"></script>
+  <script src="/portal-aluno/simulados.js?v=1.15.2"></script>
 </body>
 </html>

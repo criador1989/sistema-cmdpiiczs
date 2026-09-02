@@ -61,3 +61,15 @@ button,input,select,textarea{font:inherit}button{color:inherit}
 .visual-summary-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.visual-summary-chip{border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:.59rem;color:var(--muted)}.visual-summary-chip b{color:var(--text)}
 @media(max-width:1180px){.visual-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.visual-span-3{grid-column:span 2}}
 @media(max-width:760px){.visual-analytics-head{flex-direction:column}.visual-grid{grid-template-columns:1fr}.visual-span-2,.visual-span-3{grid-column:auto}.heat-area{grid-template-columns:1fr}.heat-area-label{padding-top:0}.band-legend{grid-template-columns:1fr}}
+
+/* V1.15.0 - Cadernos de prova para revisão no Portal */
+.booklet-grid{grid-template-columns:minmax(180px,.55fr) minmax(280px,1.4fr) auto;align-items:end}
+.booklet-status-list{display:grid;gap:12px;margin-top:16px}
+.booklet-status-item{border:1px solid var(--line,#dbe2ec);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.03)}
+.booklet-status-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.booklet-status-item p{margin:6px 0 4px}
+.booklet-status-item small{color:var(--muted,#708096);line-height:1.5}
+.booklet-warning{display:block;margin-top:8px;color:#b16a13!important}
+.empty-state.compact{padding:16px}
+.status-danger{background:#ffe9ed!important;color:#b72841!important;border-color:#efb5c0!important}
+@media(max-width:900px){.booklet-grid{grid-template-columns:1fr}}

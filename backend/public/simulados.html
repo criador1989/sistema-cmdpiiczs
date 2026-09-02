@@ -185,6 +185,17 @@
           <div class="callout"><b>Proteção contra erro de contagem</b><p>Uma resposta com duas marcas, tinta fraca ou geometria duvidosa fica pendente. O processamento só é liberado depois da revisão.</p></div>
         </article>
 
+        <article class="panel-card gestao-only" id="bookletPanel">
+          <div class="panel-head"><div><span class="section-kicker">CADERNOS DE PROVA · PORTAL DO ALUNO</span><h3>Publique o PDF da prova para a revisão dos estudantes</h3><p>Arraste o caderno do 1º ou 2º dia. O Axoriin indexa automaticamente as questões, renderiza as páginas e conecta os erros do aluno ao trecho original da prova.</p></div><span class="status-pill status-ready">Revisão pareada</span></div>
+          <div class="scanner-grid booklet-grid">
+            <label class="field"><span>Dia do caderno</span><select id="bookletDay"><option value="">Selecione</option><option value="1">1º dia</option><option value="2">2º dia</option></select></label>
+            <label class="file-drop scanner-drop"><input id="bookletFile" type="file" accept="application/pdf,.pdf"><span>Selecionar caderno em PDF</span><small>PDF original da prova · até 120 MB</small></label>
+            <button class="btn btn-primary" id="uploadBooklet" type="button" disabled>Publicar e indexar</button>
+          </div>
+          <div class="callout"><b>O que será preservado</b><p>O aluno verá a página original da prova — inclusive imagens, gráficos, tabelas e fórmulas — ao lado da resposta marcada, gabarito, assunto e habilidade. O caderno não altera OMR, respostas ou diagnóstico já calculado.</p></div>
+          <div id="bookletStatusList" class="booklet-status-list"></div>
+        </article>
+
         <article class="panel-card import-preview" id="importPreview" hidden>
           <div class="panel-head"><div><span class="section-kicker">CONFERÊNCIA</span><h3>Prévia da importação</h3><p>Nenhum resultado foi calculado ainda. As correções desta conferência são salvas continuamente.</p><small class="save-state" id="importSaveState">Progresso carregado</small></div><button class="btn btn-primary" id="confirmImport" type="button">Confirmar e processar</button></div>
           <div class="mini-metrics" id="importMetrics"></div>
@@ -286,6 +297,20 @@
     </form>
   </dialog>
 
+
+
+  <dialog id="relinkDialog" class="modal">
+    <form method="dialog" id="relinkForm" class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">RESULTADO PROCESSADO</span><h2>Corrigir vínculo do aluno</h2></div><button class="icon-button" id="closeRelinkDialog" type="button" aria-label="Fechar">×</button></div>
+      <input id="relinkResultId" type="hidden">
+      <div class="callout"><b>Vínculo atual</b><p id="relinkCurrentStudent">—</p><p>Esta operação não relê o cartão e não recalcula o diagnóstico. Somente transfere o resultado para o cadastro correto do aluno.</p></div>
+      <label class="field"><span>Pesquisar aluno</span><div class="inline-search"><input id="relinkSearch" type="search" maxlength="120" placeholder="Digite o nome ou código"><button class="btn btn-secondary btn-small" id="relinkSearchButton" type="button">Buscar</button></div></label>
+      <label class="field"><span>Aluno correto</span><select id="relinkStudent" required><option value="">Pesquise e selecione o aluno correto</option></select></label>
+      <div class="callout"><b>Proteção contra duplicidade</b><p>Se o aluno escolhido já possuir resultado neste mesmo simulado, o Axoriin bloqueará a alteração para não sobrescrever outro cartão.</p></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelRelinkDialog" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Confirmar novo vínculo</button></div>
+    </form>
+  </dialog>
+
   <dialog id="resolveDialog" class="modal">
     <form method="dialog" id="resolveForm" class="modal-card">
       <div class="modal-head"><div><span class="section-kicker">CORRIGIR IMPORTAÇÃO</span><h2 id="resolveTitle">Conferir aluno</h2></div><button class="icon-button" id="closeResolveDialog" type="button" aria-label="Fechar">×</button></div>
@@ -350,6 +375,6 @@
 
   <div class="loading-overlay" id="loadingOverlay" hidden><div class="loader"></div><p id="loadingText">Processando…</p></div>
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
-  <script src="/simulados/simulados.js?v=1.12.5" defer></script>
+  <script src="/simulados/simulados.js?v=1.15.0" defer></script>
 </body>
 </html>

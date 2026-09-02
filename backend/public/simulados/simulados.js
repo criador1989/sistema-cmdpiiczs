@@ -13,6 +13,7 @@ const state = {
   dashboard: null,
   comparacao: null,
   currentTotalResults: 0,
+  currentResultId: null,
   resultPage: 1,
   resultPages: 1,
   searchTimer: null,
@@ -27,6 +28,8 @@ const state = {
   dashboardRequestPromise: null,
   dashboardRequestSeq: 0,
   dashboardLastSuccessKey: null,
+  cadernos: [],
+  cadernoPollTimer: null,
 };
 
 function aplicarImportacao(payload) {
@@ -346,6 +349,7 @@ async function selectSimulado(id, preferredView = 'diagnostico') {
     const retomada = state.bootstrap.permissoes.gestao
       ? await loadPendingImports({ restoreLatest: true })
       : false;
+    if (state.bootstrap.permissoes.gestao) await loadBooklets({ monitor: true });
     let target = preferredView;
     if (retomada && preferredView === 'diagnostico') {
       target = 'importacao';
@@ -355,6 +359,83 @@ async function selectSimulado(id, preferredView = 'diagnostico') {
         : 'matriz';
     }
     setView(target);
+  } catch (error) {
+    toast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function syncBookletButton() {
+  const button = $('#uploadBooklet');
+  if (!button) return;
+  button.disabled = !state.current || !$('#bookletDay')?.value || !$('#bookletFile')?.files?.[0];
+}
+
+function bookletProgressText(item) {
+  const p = item?.progresso || {};
+  const etapa = text(p.etapa).toLowerCase();
+  const feitas = Number(p.paginasProcessadas || 0);
+  const total = Number(p.paginasTotal || 0);
+  const percent = Number(p.percentual || 0);
+  if (etapa === 'fila') return 'PDF recebido e aguardando indexação…';
+  if (etapa === 'extraindo') return 'Identificando os cabeçalhos das questões…';
+  if (etapa === 'renderizando') return total ? `Preparando páginas: ${feitas} de ${total} (${fmt(percent,0)}%)` : 'Preparando páginas para o portal…';
+  if (etapa === 'enviando') return total ? `Publicando páginas: ${feitas} de ${total} (${fmt(percent,0)}%)` : 'Publicando páginas…';
+  if (etapa === 'finalizando') return 'Finalizando o índice do caderno…';
+  return item?.status === 'pronto' ? 'Pronto para o Portal do Aluno.' : 'Processando caderno…';
+}
+
+function renderBooklets() {
+  const el = $('#bookletStatusList');
+  if (!el) return;
+  const items = state.cadernos || [];
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state compact"><b>Nenhum caderno publicado.</b><p>Envie o PDF do 1º ou 2º dia para liberar a prova original na revisão do aluno.</p></div>';
+    return;
+  }
+  el.innerHTML = items.map((item) => {
+    const status = item.status === 'pronto' ? 'status-ready' : (item.status === 'erro' ? 'status-danger' : 'status-draft');
+    const resumo = item.resumo || {};
+    const meta = item.status === 'pronto'
+      ? `${Number(resumo.paginasTotal||0)} páginas · ${Number(resumo.questoesMapeadas||0)} referências de questão${Number(resumo.variantesIngles||0) ? ` · ${Number(resumo.variantesIngles||0)} Inglês` : ''}${Number(resumo.variantesEspanhol||0) ? ` · ${Number(resumo.variantesEspanhol||0)} Espanhol` : ''}`
+      : bookletProgressText(item);
+    return `<article class="booklet-status-item"><div><div class="booklet-status-top"><b>${Number(item.dia)}º dia</b><span class="status-pill ${status}">${escapeHtml(item.status === 'pronto' ? 'Publicado' : item.status === 'erro' ? 'Erro' : 'Processando')}</span></div><p>${escapeHtml(item.arquivo?.nomeOriginal || 'Caderno de prova')}</p><small>${escapeHtml(meta)}</small>${item.erro ? `<div class="warning-list"><div>${escapeHtml(item.erro)}</div></div>` : ''}${(item.avisos||[]).length ? `<small class="booklet-warning">${escapeHtml((item.avisos||[]).slice(0,2).join(' · '))}</small>` : ''}</div></article>`;
+  }).join('');
+}
+
+async function loadBooklets({ monitor = true } = {}) {
+  if (!state.current) return;
+  try {
+    const response = await api(`/api/simulados/${state.current._id}/cadernos`);
+    state.cadernos = response.cadernos || [];
+    renderBooklets();
+    clearTimeout(state.cadernoPollTimer);
+    if (monitor && state.cadernos.some((item) => item.status === 'analisando')) {
+      state.cadernoPollTimer = setTimeout(() => loadBooklets({ monitor: true }).catch(() => null), 2400);
+    }
+  } catch (error) {
+    const el = $('#bookletStatusList');
+    if (el) el.innerHTML = `<div class="empty-state compact"><b>Não foi possível carregar os cadernos.</b><p>${escapeHtml(error.message)}</p></div>`;
+  }
+}
+
+async function uploadBooklet() {
+  if (!state.current) return;
+  const file = $('#bookletFile')?.files?.[0];
+  const dia = Number($('#bookletDay')?.value);
+  if (!file || !dia) return toast('Selecione o dia e o PDF do caderno.', 'warning');
+  const form = new FormData();
+  form.append('caderno', file);
+  setLoading(true, 'Enviando o caderno para indexação…');
+  try {
+    const response = await api(`/api/simulados/${state.current._id}/cadernos/${dia}`, { method: 'POST', body: form });
+    toast(response.mensagem || 'Caderno recebido.');
+    $('#bookletFile').value = '';
+    const label = $('#bookletFile').closest('.file-drop')?.querySelector('span');
+    if (label) label.textContent = 'Selecionar caderno em PDF';
+    syncBookletButton();
+    await loadBooklets({ monitor: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -1524,6 +1605,7 @@ async function openStudent(id) {
   try {
     const response = await api(`/api/simulados/${state.current._id}/resultados/${id}`);
     const item = response.resultado;
+    state.currentResultId = id;
     $('#studentDetailTitle').textContent = item.alunoNomeSnapshot;
     const diasAusentes = (item.diasAusentes || []).map(Number).filter(Boolean).sort((a, b) => a - b);
     const textoAusencia = diasAusentes.length ? ` · Ausente: ${diasAusentes.map((dia) => `${dia}º dia`).join(', ')}` : '';
@@ -1543,6 +1625,7 @@ async function openStudent(id) {
     const development = studentDiagnosticGroup(diagnosticTargets, 'em_desenvolvimento');
     const plan = individualPlan(item);
     $('#studentDetail').innerHTML = `
+      ${state.bootstrap?.permissoes?.gestao ? `<div class="callout"><b>Vínculo deste resultado</b><p>Este diagnóstico está associado a <strong>${escapeHtml(item.alunoNomeSnapshot)}</strong> (${escapeHtml(item.alunoTurmaSnapshot)}). Se o cartão foi vinculado ao aluno errado, corrija somente o vínculo; respostas e diagnóstico serão preservados.</p><button class="btn btn-secondary btn-small" id="changeResultStudent" type="button">Corrigir vínculo do aluno</button></div>` : ''}
       <div class="detail-metrics">${[['Acertos', `${r.acertos || 0} de ${observadas}`], ['Desempenho confirmado', pct(r.percentualPontuacao)], ['Taxa de acerto nas marcadas', pct(r.percentualAcerto)], ['Cobertura dos dados', pct(r.coberturaPercentual)]].map(([label, value]) => `<div class="info-tile"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`).join('')}</div>
       <div class="callout"><b>Como ler este resultado</b><p>O desempenho confirmado considera somente ${observadas} resposta(s) efetivamente conferida(s), incluindo ${r.brancos || 0} branco(s) como zero. As ${r.naoInformadas || 0} resposta(s) não importada(s) aparecem na cobertura e não são tratadas como erro. Este percentual é diagnóstico por acertos brutos, não nota TRI do ENEM.</p></div>
       ${participationControlHtml(item)}
@@ -1560,9 +1643,71 @@ async function openStudent(id) {
       <div class="detail-section"><h3>Habilidades ENEM</h3>${metricLines(item.porHabilidadeEnem)}</div><div class="detail-section"><h3>Habilidades pedagógicas</h3>${metricLines(item.porHabilidade)}</div>
       <div class="detail-section"><h3>Descritores</h3>${metricLines(item.porDescritor)}</div>
       <div class="detail-section"><h3>Questões</h3><div class="question-chips">${(item.respostas || []).map((answer) => `<span class="question-chip ${escapeHtml(answer.situacao.toLowerCase())}" title="${escapeHtml(answer.conteudo || answer.area || 'Sem classificação')} · Resposta: ${escapeHtml(answer.resposta || '—')} · Gabarito: ${escapeHtml(answer.gabarito || '—')}">${escapeHtml(answer.codigoQuestao)} · ${escapeHtml(answer.situacao.replaceAll('_', ' '))}</span>`).join('')}</div></div>`;
+    if ($('#changeResultStudent')) $('#changeResultStudent').addEventListener('click', () => openResultRelink(item));
     if ($('#saveDetailLanguage')) $('#saveDetailLanguage').addEventListener('click', () => updateStudentLanguage(id));
     if ($('#saveDetailParticipation')) $('#saveDetailParticipation').addEventListener('click', () => updateStudentParticipation(id));
     $('#studentDialog').showModal();
+  } catch (error) {
+    toast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
+function addRelinkStudentOption(student, selected = false) {
+  if (!student?._id) return;
+  const option = document.createElement('option');
+  option.value = String(student._id);
+  option.textContent = `${student.nome || 'Aluno'} — ${student.turma || 'sem turma'}${student.codigoAcesso ? ` · ${student.codigoAcesso}` : ''}`;
+  option.selected = selected;
+  $('#relinkStudent').appendChild(option);
+}
+
+function openResultRelink(item) {
+  $('#relinkResultId').value = item._id;
+  $('#relinkCurrentStudent').textContent = `${item.alunoNomeSnapshot} — ${item.alunoTurmaSnapshot}`;
+  $('#relinkSearch').value = item.alunoNomeSnapshot || '';
+  $('#relinkStudent').innerHTML = '<option value="">Pesquise e selecione o aluno correto</option>';
+  if (item.aluno) addRelinkStudentOption({ _id: item.aluno, nome: item.alunoNomeSnapshot, turma: item.alunoTurmaSnapshot, codigoAcesso: item.alunoCodigoSnapshot }, true);
+  $('#relinkDialog').showModal();
+  searchRelinkStudents().catch(() => null);
+}
+
+async function searchRelinkStudents() {
+  const query = $('#relinkSearch').value.trim();
+  if (!query) return;
+  try {
+    const params = new URLSearchParams({ q: query });
+    const response = await api(`/api/simulados/alunos/buscar?${params}`);
+    const current = $('#relinkStudent').value;
+    $('#relinkStudent').innerHTML = '<option value="">Selecione o aluno correto</option>';
+    (response.alunos || []).forEach((student) => addRelinkStudentOption(student, String(student._id) === current));
+    if (!response.alunos?.length) toast('Nenhum aluno encontrado nessa busca.', 'warning');
+  } catch (error) {
+    toast(error.message, 'error');
+  }
+}
+
+async function saveResultRelink(event) {
+  event.preventDefault();
+  const resultId = $('#relinkResultId').value;
+  const alunoId = $('#relinkStudent').value;
+  if (!resultId || !alunoId) return toast('Selecione o aluno correto.', 'warning');
+  const selected = $('#relinkStudent').selectedOptions?.[0]?.textContent || 'o aluno selecionado';
+  const confirmed = window.confirm(`Revincular este resultado para ${selected}?\n\nAs respostas, percentuais e diagnóstico serão preservados. Apenas o aluno associado será alterado.`);
+  if (!confirmed) return;
+  setLoading(true, 'Corrigindo vínculo do resultado…');
+  try {
+    const response = await api(`/api/simulados/${state.current._id}/resultados/${resultId}/vinculo`, {
+      method: 'PATCH',
+      body: JSON.stringify({ alunoId }),
+    });
+    $('#relinkDialog').close();
+    $('#studentDialog').close();
+    toast(response.mensagem || 'Vínculo corrigido.');
+    await loadDashboard({ force: true });
   } catch (error) {
     toast(error.message, 'error');
   } finally {
@@ -1876,6 +2021,52 @@ async function saveProcessedLanguages() {
   }
 }
 
+async function baixarPdfSeguro(button, url, fallbackName) {
+  if (!state.current || button?.dataset?.baixando === '1') return;
+  if (button) {
+    button.dataset.baixando = '1';
+    button.disabled = true;
+  }
+  toast('Gerando PDF… aguarde a conclusão.', 'info');
+  try {
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) {
+      let mensagem = `Falha ao gerar PDF (${response.status}).`;
+      try {
+        const corpo = await response.json();
+        mensagem = corpo?.erro || corpo?.mensagem || mensagem;
+      } catch (_) {}
+      const error = new Error(mensagem);
+      error.status = response.status;
+      throw error;
+    }
+    const blob = await response.blob();
+    const disposition = response.headers.get('content-disposition') || '';
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    const nome = match?.[1] || fallbackName || 'relatorio.pdf';
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = nome;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 1500);
+    toast('PDF gerado com sucesso.', 'success');
+  } catch (error) {
+    if (error?.status === 423) {
+      toast('Já existe um PDF sendo gerado. Aguarde a conclusão e tente novamente.', 'warning');
+    } else {
+      toast(error.message || 'Não foi possível gerar o PDF.', 'error');
+    }
+  } finally {
+    if (button) {
+      delete button.dataset.baixando;
+      button.disabled = false;
+    }
+  }
+}
+
 function bindEvents() {
   $$('.nav-item').forEach((item) => item.addEventListener('click', () => setView(item.dataset.view)));
   $('#mobileMenu').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
@@ -1894,6 +2085,9 @@ function bindEvents() {
   $('#enemMappingFile').addEventListener('change', () => chooseFile($('#enemMappingFile'), $('#uploadEnemMapping')));
   $('#answersFile').addEventListener('change', () => chooseFile($('#answersFile'), $('#analyzeAnswers')));
   $('#scansFile').addEventListener('change', () => { chooseFile($('#scansFile'), $('#analyzeScans')); syncScanButton(); });
+  $('#bookletFile')?.addEventListener('change', () => { chooseFile($('#bookletFile'), $('#uploadBooklet')); syncBookletButton(); });
+  $('#bookletDay')?.addEventListener('change', syncBookletButton);
+  $('#uploadBooklet')?.addEventListener('click', uploadBooklet);
   $('#scanClass').addEventListener('change', syncScanButton);
   $('#scanDay').addEventListener('change', syncScanButton);
   $('#uploadMatrix').addEventListener('click', uploadMatrix);
@@ -1906,6 +2100,11 @@ function bindEvents() {
   $('#doStudentSearch').addEventListener('click', searchStudents);
   $('#resolveSearch').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); searchStudents(); } });
   $('#resolveForm').addEventListener('submit', saveResolution);
+  $('#relinkSearchButton').addEventListener('click', searchRelinkStudents);
+  $('#relinkSearch').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); searchRelinkStudents(); } });
+  $('#relinkForm').addEventListener('submit', saveResultRelink);
+  $('#closeRelinkDialog').addEventListener('click', () => $('#relinkDialog').close());
+  $('#cancelRelinkDialog').addEventListener('click', () => $('#relinkDialog').close());
   $('#closeResolveDialog').addEventListener('click', () => $('#resolveDialog').close());
   $('#cancelResolveDialog').addEventListener('click', () => $('#resolveDialog').close());
   $('#omrForm').addEventListener('submit', saveOmrReview);
@@ -1933,17 +2132,20 @@ function bindEvents() {
   $('#exportDashboardPdf').addEventListener('click', () => {
     if (!state.current) return;
     const turma = $('#dashboardClass').value;
-    location.href = linkWithTenant(`/api/simulados/${state.current._id}/exportar.pdf${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
+    const url = linkWithTenant(`/api/simulados/${state.current._id}/exportar.pdf${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
+    baixarPdfSeguro($('#exportDashboardPdf'), url, 'diagnostico.pdf');
   });
   $('#exportVisualPdf').addEventListener('click', () => {
     if (!state.current) return;
     const turma = $('#dashboardClass').value;
-    location.href = linkWithTenant(`/api/simulados/${state.current._id}/exportar-visual.pdf${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
+    const url = linkWithTenant(`/api/simulados/${state.current._id}/exportar-visual.pdf${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
+    baixarPdfSeguro($('#exportVisualPdf'), url, 'painel-visual.pdf');
   });
   $('#exportEnemSkillsPdf').addEventListener('click', () => {
     if (!state.current) return;
     const turma = $('#dashboardClass').value;
-    location.href = linkWithTenant(`/api/simulados/${state.current._id}/exportar-habilidades-enem.pdf${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
+    const url = linkWithTenant(`/api/simulados/${state.current._id}/exportar-habilidades-enem.pdf${turma ? `?turma=${encodeURIComponent(turma)}` : ''}`);
+    baixarPdfSeguro($('#exportEnemSkillsPdf'), url, 'habilidades-enem.pdf');
   });
   $('#studentSearch').addEventListener('input', () => {
     clearTimeout(state.searchTimer);
