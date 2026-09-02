@@ -21,6 +21,7 @@ const { getConfigDisciplinar } = require('../../utils/configuracaoDisciplinar');
 const { enviarTelegram } = require('../../services/mensageria');
 const { logAction, attachActor } = require('../../utils/audit');
 const { generateTemporaryPassword, validatePasswordStrength } = require('../../utils/passwordPolicy');
+const { normalizarTelefoneBrasil } = require('../../utils/telefone');
 
 // ======================================================
 // ☁️ AWS S3 / CloudFront
@@ -814,7 +815,7 @@ router.post(
       const inst = getTenantId(req);
       if (!inst) return res.status(400).json({ mensagem: 'Tenant não identificado.' });
 
-      let { nome, turma, dataEntrada, telefone } = req.body;
+      let { nome, turma, dataEntrada, nascimento, telefone, contatos } = req.body;
       nome = String(nome || '').trim();
       turma = normalizaTurma(turma);
 
@@ -829,11 +830,48 @@ router.post(
         if (!isNaN(dt.getTime())) dtEntrada = dt;
       }
 
+      let dtNascimento;
+      if (nascimento) {
+        const valorNascimento = String(nascimento).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(valorNascimento)) {
+          const [yyyy, mm, dd] = valorNascimento.split('-').map(Number);
+          const dt = new Date(Date.UTC(yyyy, mm - 1, dd, 12, 0, 0, 0));
+          if (!Number.isNaN(dt.getTime())) dtNascimento = dt;
+        } else {
+          const convertido = parsePtBrDateToDate(valorNascimento);
+          const dt = convertido instanceof Date ? convertido : new Date(convertido);
+          if (!Number.isNaN(dt.getTime())) dtNascimento = dt;
+        }
+
+        if (!dtNascimento) {
+          return res.status(400).json({ message: 'Data de nascimento invalida.' });
+        }
+      }
+
+      const telefoneOriginal = String(telefone || '').trim();
+      const contatosPayload = contatos && typeof contatos === 'object' ? contatos : {};
+      const whatsappOriginal = limpaString(
+        Object.prototype.hasOwnProperty.call(contatosPayload, 'whatsappOriginal')
+          ? contatosPayload.whatsappOriginal
+          : contatosPayload.whatsapp
+      );
+      const whatsappInfo = normalizarTelefoneBrasil(whatsappOriginal);
+      const telefoneResponsavel = limpaString(contatosPayload.telefoneResponsavel);
+
       const novoAluno = await Aluno.create(tenantData(req, {
         nome,
         turma,
         dataEntrada: dtEntrada,
-        telefone: String(telefone || '').trim(),
+        nascimento: dtNascimento,
+        telefone: telefoneOriginal,
+        contatos: {
+          telefoneResponsavel: telefoneResponsavel || null,
+          whatsappOriginal: whatsappOriginal || null,
+          whatsapp: whatsappOriginal && whatsappInfo.valido ? whatsappInfo.e164 : null,
+          whatsappValido: Boolean(whatsappOriginal && whatsappInfo.valido),
+          whatsappErro: whatsappOriginal && !whatsappInfo.valido ? whatsappInfo.motivo : null,
+          whatsappNormalizadoEm: new Date(),
+        },
         ativo: true
       }));
 
@@ -1271,22 +1309,51 @@ router.put('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdmin,
       dadosAtualizados.nascimento = parsePtBrDateToDate(dadosAtualizados.nascimento);
     }
 
-    const contatosPayload = dadosAtualizados.contatos && typeof dadosAtualizados.contatos === 'object'
+    const contatosFornecidos = Object.prototype.hasOwnProperty.call(dadosAtualizados, 'contatos');
+    const contatosPayload = contatosFornecidos && dadosAtualizados.contatos && typeof dadosAtualizados.contatos === 'object'
       ? dadosAtualizados.contatos
       : {};
 
-    const emailResponsavel = limpaString(contatosPayload.emailResponsavel);
-    const whatsapp = limpaSomenteDigitos(contatosPayload.whatsapp);
-    const telegramChatId = limpaString(contatosPayload.telegramChatId);
-
     delete dadosAtualizados.contatos;
 
-    const updateDoc = {
-      ...dadosAtualizados,
-      'contatos.emailResponsavel': emailResponsavel || null,
-      'contatos.whatsapp': whatsapp || null,
-      'contatos.telegramChatId': telegramChatId || null
-    };
+    const updateDoc = { ...dadosAtualizados };
+
+    if (contatosFornecidos && Object.prototype.hasOwnProperty.call(contatosPayload, 'emailResponsavel')) {
+      const emailResponsavel = limpaString(contatosPayload.emailResponsavel);
+      updateDoc['contatos.emailResponsavel'] = emailResponsavel || null;
+    }
+
+    if (contatosFornecidos && Object.prototype.hasOwnProperty.call(contatosPayload, 'telegramChatId')) {
+      const telegramChatId = limpaString(contatosPayload.telegramChatId);
+      updateDoc['contatos.telegramChatId'] = telegramChatId || null;
+    }
+
+    // Telefone, telefoneResponsavel e WhatsApp são contatos independentes.
+    // Alterar um deles não pode preencher, restaurar ou sobrescrever os demais.
+    if (contatosFornecidos && Object.prototype.hasOwnProperty.call(contatosPayload, 'telefoneResponsavel')) {
+      const telefoneResponsavel = limpaString(contatosPayload.telefoneResponsavel);
+      updateDoc['contatos.telefoneResponsavel'] = telefoneResponsavel || null;
+    }
+
+    const whatsappFoiAtualizado = contatosFornecidos && (
+      Object.prototype.hasOwnProperty.call(contatosPayload, 'whatsapp') ||
+      Object.prototype.hasOwnProperty.call(contatosPayload, 'whatsappOriginal')
+    );
+
+    if (whatsappFoiAtualizado) {
+      const whatsappBruto = Object.prototype.hasOwnProperty.call(contatosPayload, 'whatsappOriginal')
+        ? contatosPayload.whatsappOriginal
+        : contatosPayload.whatsapp;
+
+      const whatsappOriginal = limpaString(whatsappBruto);
+      const whatsappInfo = normalizarTelefoneBrasil(whatsappOriginal);
+
+      updateDoc['contatos.whatsappOriginal'] = whatsappOriginal || null;
+      updateDoc['contatos.whatsapp'] = whatsappOriginal && whatsappInfo.valido ? whatsappInfo.e164 : null;
+      updateDoc['contatos.whatsappValido'] = Boolean(whatsappOriginal && whatsappInfo.valido);
+      updateDoc['contatos.whatsappErro'] = whatsappOriginal && !whatsappInfo.valido ? whatsappInfo.motivo : null;
+      updateDoc['contatos.whatsappNormalizadoEm'] = new Date();
+    }
 
     const antesEntradaMs = alunoAntes.dataEntrada ? new Date(alunoAntes.dataEntrada).getTime() : null;
     const depoisEntradaMs = updateDoc.dataEntrada !== undefined && updateDoc.dataEntrada !== null
@@ -1355,14 +1422,41 @@ router.delete('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdm
 
     const nomeAluno = aluno.nome;
     const turmaAluno = aluno.turma;
+    const instituicaoId = aluno.instituicao || aluno.tenantId || getTenantId(req);
+
+    // V1.0.4: identifica contas exclusivamente de aluno ligadas a esta matricula.
+    // Nunca remove usuario de outro tipo/perfil.
+    const vinculosUsuario = [{ alunoId: aluno._id }];
+    if (aluno.usuarioId) vinculosUsuario.push({ _id: aluno.usuarioId });
+
+    const filtroUsuariosAluno = {
+      tipo: 'aluno',
+      $and: [
+        { $or: [{ instituicao: instituicaoId }, { tenantId: instituicaoId }] },
+        { $or: vinculosUsuario }
+      ]
+    };
+
+    const usuariosAlunoVinculados = await Usuario.find(filtroUsuariosAluno)
+      .select('_id email alunoId')
+      .lean()
+      .catch(() => []);
 
     await apagarFotosAntigasDoAluno(aluno);
 
     await Promise.all([
       Notificacao.deleteMany(tenantFilter(req, { aluno: aluno._id })),
-      Observacao.deleteMany(tenantFilter(req, { aluno: aluno._id })),
-      Aluno.deleteOne(tenantFilter(req, { _id: aluno._id }))
+      Observacao.deleteMany(tenantFilter(req, { aluno: aluno._id }))
     ]);
+
+    await Aluno.deleteOne(tenantFilter(req, { _id: aluno._id }));
+
+    let acessosRemovidos = 0;
+    if (usuariosAlunoVinculados.length) {
+      const ids = usuariosAlunoVinculados.map((u) => u._id);
+      const resultadoUsuarios = await Usuario.deleteMany({ _id: { $in: ids }, tipo: 'aluno' });
+      acessosRemovidos = Number(resultadoUsuarios?.deletedCount || 0);
+    }
 
     console.log('[ALUNOS][EXCLUIR] actor=', req.actor);
     console.log('[ALUNOS][EXCLUIR] usuario=', req.usuario);
@@ -1385,13 +1479,17 @@ router.delete('/:id', autenticar, requireTenant, attachActor, apenasMonitorOuAdm
       entidadeNome: nomeAluno,
       alunoNome: nomeAluno,
       meta: {
-        turma: turmaAluno
+        turma: turmaAluno,
+        acessosAlunoRemovidos: acessosRemovidos
       }
     });
 
     try { detalhesCache.delete(cacheKey(getTenantId(req), String(aluno._id))); } catch {}
 
-    res.json({ message: 'Aluno e dados relacionados deletados com sucesso' });
+    res.json({
+      message: 'Aluno e dados relacionados deletados com sucesso',
+      acessosAlunoRemovidos: acessosRemovidos
+    });
   } catch (error) {
     console.error('Erro ao deletar aluno:', error);
     res.status(500).json({ message: 'Erro ao deletar aluno', error });
