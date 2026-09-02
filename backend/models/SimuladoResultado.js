@@ -95,6 +95,26 @@ const ResumoGeralSchema = new Schema({
   pontosPossiveisAplicaveis: { type: Number, default: 0, min: 0 },
 }, { _id: false });
 
+
+const RevisaoConteudoSchema = new Schema({
+  chave: { type: String, required: true, trim: true },
+  titulo: { type: String, required: true, trim: true },
+  area: { type: String, default: '', trim: true },
+  revisado: { type: Boolean, default: false },
+  revisadoEm: { type: Date, default: null },
+  atualizadoEm: { type: Date, default: Date.now },
+}, { _id: false });
+
+const RevisaoQuestaoSchema = new Schema({
+  codigoQuestao: { type: String, required: true, uppercase: true, trim: true },
+  numero: { type: Number, required: true, min: 1, max: 500 },
+  dia: { type: Number, required: true, min: 1, max: 10 },
+  variante: { type: String, enum: ['', 'PADRAO', 'INGLES', 'ESPANHOL'], default: '' },
+  revisada: { type: Boolean, default: false },
+  revisadaEm: { type: Date, default: null },
+  atualizadoEm: { type: Date, default: Date.now },
+}, { _id: false });
+
 const SimuladoResultadoSchema = new Schema({
   instituicao: { type: Schema.Types.ObjectId, ref: 'Instituicao', required: true, index: true },
   tenantId: { type: Schema.Types.ObjectId, ref: 'Instituicao', required: true, index: true },
@@ -133,6 +153,8 @@ const SimuladoResultadoSchema = new Schema({
   porDescritor: { type: [MetricaSchema], default: [] },
   porDificuldade: { type: [MetricaSchema], default: [] },
   avisos: { type: [String], default: [] },
+  revisoesConteudo: { type: [RevisaoConteudoSchema], default: [] },
+  revisoesQuestao: { type: [RevisaoQuestaoSchema], default: [] },
   versaoMatriz: { type: Number, default: 1, min: 1 },
   versaoDiagnostico: { type: Number, default: 5, min: 1 },
   fonte: { type: String, enum: ['importacao', 'manual', 'api'], default: 'importacao' },

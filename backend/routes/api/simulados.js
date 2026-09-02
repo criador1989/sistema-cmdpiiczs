@@ -10,6 +10,7 @@ const path = require('path');
 const Simulado = require('../../models/Simulado');
 const SimuladoResultado = require('../../models/SimuladoResultado');
 const SimuladoImportacao = require('../../models/SimuladoImportacao');
+const SimuladoCaderno = require('../../models/SimuladoCaderno');
 const Aluno = require('../../models/Aluno');
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
@@ -53,6 +54,9 @@ const {
   gerarRelatorioDiagnosticoPdf,
   gerarRelatorioVisualPdf,
   gerarRelatorioHabilidadesEnemPdf,
+  gerarRelatorioDiagnosticoPdfArquivo,
+  gerarRelatorioVisualPdfArquivo,
+  gerarRelatorioHabilidadesEnemPdfArquivo,
 } = require('../../services/simulados/simuladoPdfService');
 const {
   MAX_PDF_BYTES,
@@ -70,6 +74,13 @@ const {
   mesclarRespostas,
 } = require('../../services/simulados/simuladoSubstituicaoService');
 const { SimuladoDashboardCache } = require('../../services/simulados/simuladoDashboardCache');
+const {
+  MAX_CADERNO_BYTES,
+  validarArquivoPdf: validarArquivoCadernoPdf,
+  sha256Arquivo: sha256CadernoArquivo,
+  processarCaderno,
+  limparUploadTemporario: limparCadernoTemporario,
+} = require('../../services/simulados/simuladoCadernoService');
 
 const router = express.Router();
 const dashboardCache = new SimuladoDashboardCache({ ttlMs: 30000, maxEntries: 120 });
@@ -98,6 +109,26 @@ const uploadCartoes = multer({
     const nome = texto(file.originalname).toLowerCase();
     const valido = nome.endsWith('.pdf') || texto(file.mimetype).toLowerCase() === 'application/pdf';
     cb(valido ? null : new Error('Envie um arquivo PDF com os cartões escaneados.'), valido);
+  },
+});
+
+const uploadCaderno = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      try {
+        const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'axoriin-upload-caderno-'));
+        cb(null, dir);
+      } catch (error) {
+        cb(error);
+      }
+    },
+    filename: (_req, _file, cb) => cb(null, 'caderno.pdf'),
+  }),
+  limits: { fileSize: MAX_CADERNO_BYTES, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const nome = texto(file.originalname).toLowerCase();
+    const valido = nome.endsWith('.pdf') || texto(file.mimetype).toLowerCase() === 'application/pdf';
+    cb(valido ? null : new Error('Envie o caderno de prova em PDF.'), valido);
   },
 });
 
@@ -310,6 +341,96 @@ async function auditar(req, acao, entidadeId, entidadeNome, extra = {}) {
     categoria: 'pedagogico',
     extra,
   });
+}
+
+
+function resumoCaderno(item) {
+  if (!item) return null;
+  return {
+    _id: item._id,
+    dia: item.dia,
+    titulo: item.titulo || `Caderno do ${item.dia}º dia`,
+    status: item.status,
+    arquivo: {
+      nomeOriginal: item.arquivo?.nomeOriginal || '',
+      tamanhoBytes: Number(item.arquivo?.tamanhoBytes || 0),
+      sha256: item.arquivo?.sha256 || '',
+    },
+    progresso: item.progresso || null,
+    resumo: item.resumo || {},
+    avisos: item.avisos || [],
+    erro: item.erro || '',
+    processadoEm: item.processadoEm || null,
+    updatedAt: item.updatedAt || null,
+  };
+}
+
+async function processarCadernoEmSegundoPlano({ cadernoId, pdfPath, reqInfo, simulado, dia, arquivo, hash }) {
+  let ultimaAtualizacao = 0;
+  try {
+    const resultado = await processarCaderno({
+      pdfPath,
+      nomeOriginal: arquivo.originalname,
+      mimeType: arquivo.mimetype,
+      tamanhoBytes: arquivo.size,
+      hash,
+      instituicaoId: reqInfo.instituicaoId,
+      simulado,
+      dia,
+      onProgress: (payload) => {
+        const agora = Date.now();
+        if (agora - ultimaAtualizacao < 700 && payload?.etapa !== 'concluido') return;
+        ultimaAtualizacao = agora;
+        void SimuladoCaderno.updateOne(
+          { _id: cadernoId, instituicao: reqInfo.instituicaoId },
+          { $set: {
+            progresso: {
+              etapa: payload?.etapa || 'extraindo',
+              paginasTotal: Number(payload?.paginasTotal || 0),
+              paginasProcessadas: Number(payload?.paginasProcessadas || 0),
+              percentual: Math.max(0, Math.min(100, Number(payload?.percentual || 0))),
+              atualizadoEm: new Date(),
+            }
+          }}
+        ).catch(() => null);
+      },
+    });
+
+    await SimuladoCaderno.updateOne(
+      { _id: cadernoId, instituicao: reqInfo.instituicaoId },
+      { $set: {
+        status: 'pronto',
+        arquivo: resultado.arquivo,
+        paginas: resultado.paginas,
+        questoes: resultado.questoes,
+        resumo: resultado.resumo,
+        avisos: resultado.avisos,
+        erro: '',
+        processadoPor: reqInfo.ator,
+        processadoEm: new Date(),
+        progresso: {
+          etapa: 'concluido',
+          paginasTotal: Number(resultado.resumo?.paginasTotal || 0),
+          paginasProcessadas: Number(resultado.resumo?.paginasTotal || 0),
+          percentual: 100,
+          atualizadoEm: new Date(),
+        },
+      }}
+    );
+  } catch (error) {
+    console.error('[SIMULADOS] processamento de caderno:', error);
+    await SimuladoCaderno.updateOne(
+      { _id: cadernoId, instituicao: reqInfo.instituicaoId },
+      { $set: {
+        status: 'erro',
+        erro: texto(error?.message || error).slice(0, 2000),
+        'progresso.etapa': 'erro',
+        'progresso.atualizadoEm': new Date(),
+      }}
+    ).catch(() => null);
+  } finally {
+    await limparCadernoTemporario(pdfPath).catch(() => null);
+  }
 }
 
 async function carregarSimulado(req, res, next) {
@@ -578,7 +699,7 @@ router.get('/bootstrap', async (req, res, next) => {
       .lean();
     return res.json({
       ok: true,
-      versao: '1.12.5',
+      versao: '1.12.8',
       usuario: { nome: req.usuario?.nome || '', tipo: req.usuario?.tipo || '', turmas: turmasProfessor(req) },
       permissoes: { gestao: ehGestaoPedagogica(req), somenteLeitura: !ehGestaoPedagogica(req) },
       turmas,
@@ -964,6 +1085,96 @@ router.post('/:simuladoId/importacoes/analisar', apenasGestaoPedagogica, carrega
     });
   } catch (error) {
     return next(error);
+  }
+});
+
+
+router.get('/:simuladoId/cadernos', carregarSimulado, async (req, res, next) => {
+  try {
+    const itens = await SimuladoCaderno.find({
+      instituicao: req.instituicaoId,
+      simulado: req.simuladoDiagnostico._id,
+    }).sort({ dia: 1 }).lean();
+    return res.json({ ok: true, cadernos: itens.map(resumoCaderno) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/:simuladoId/cadernos/:dia', apenasGestaoPedagogica, carregarSimulado, uploadCaderno.single('caderno'), async (req, res, next) => {
+  let entregue = false;
+  try {
+    if (!req.file) return erro(res, 400, 'Selecione o PDF do caderno de prova.');
+    const dia = Number(req.params.dia);
+    const diasValidos = diasAplicacaoSimulado(req.simuladoDiagnostico);
+    if (!Number.isInteger(dia) || dia < 1 || dia > 10 || (diasValidos.length && !diasValidos.includes(dia))) {
+      return erro(res, 400, 'O dia informado não pertence a este simulado.');
+    }
+
+    await validarArquivoCadernoPdf(req.file.path, req.file.size);
+    const hash = await sha256CadernoArquivo(req.file.path);
+    const atual = await SimuladoCaderno.findOne({
+      instituicao: req.instituicaoId,
+      simulado: req.simuladoDiagnostico._id,
+      dia,
+    });
+
+    if (atual?.status === 'pronto' && atual?.arquivo?.sha256 === hash) {
+      await limparCadernoTemporario(req.file.path);
+      return res.json({ ok: true, retomada: true, mensagem: 'Este caderno já está publicado e indexado.', caderno: resumoCaderno(atual) });
+    }
+    if (atual?.status === 'analisando' && atual?.arquivo?.sha256 === hash) {
+      await limparCadernoTemporario(req.file.path);
+      return res.status(202).json({ ok: true, retomada: true, mensagem: 'Este caderno já está sendo processado.', caderno: resumoCaderno(atual) });
+    }
+
+    const caderno = await SimuladoCaderno.findOneAndUpdate(
+      { instituicao: req.instituicaoId, simulado: req.simuladoDiagnostico._id, dia },
+      { $set: {
+        tenantId: req.instituicaoId,
+        titulo: `Caderno do ${dia}º dia`,
+        status: 'analisando',
+        arquivo: {
+          nomeOriginal: texto(req.file.originalname).slice(0,255),
+          mimeType: texto(req.file.mimetype || 'application/pdf').slice(0,120),
+          tamanhoBytes: Number(req.file.size || 0),
+          sha256: hash,
+          storageProvider: 's3',
+          storageKey: '',
+        },
+        paginas: [],
+        questoes: [],
+        avisos: [],
+        erro: '',
+        criadoPor: atual?.criadoPor || ator(req),
+        progresso: { etapa: 'fila', paginasTotal: 0, paginasProcessadas: 0, percentual: 0, atualizadoEm: new Date() },
+      }},
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    await auditar(req, 'PUBLICAR_CADERNO_PROVA', caderno._id, req.simuladoDiagnostico.titulo, { dia, arquivo: req.file.originalname, hash });
+
+    entregue = true;
+    setImmediate(() => processarCadernoEmSegundoPlano({
+      cadernoId: caderno._id,
+      pdfPath: req.file.path,
+      reqInfo: { instituicaoId: req.instituicaoId, ator: ator(req) },
+      simulado: req.simuladoDiagnostico.toObject ? req.simuladoDiagnostico.toObject() : req.simuladoDiagnostico,
+      dia,
+      arquivo: { originalname: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size },
+      hash,
+    }));
+
+    return res.status(202).json({
+      ok: true,
+      processamentoAssincrono: true,
+      mensagem: 'Caderno recebido. O Axoriin está indexando as questões e preparando as páginas para o Portal do Aluno.',
+      caderno: resumoCaderno(caderno),
+    });
+  } catch (error) {
+    return next(error);
+  } finally {
+    if (!entregue && req.file?.path) await limparCadernoTemporario(req.file.path).catch(() => null);
   }
 });
 
@@ -1911,12 +2122,18 @@ router.patch('/:simuladoId/resultados/idiomas', apenasGestaoPedagogica, carregar
   }
 });
 
-async function dadosDashboard(req, { leve = false } = {}) {
+async function dadosDashboard(req, { leve = false, pdfGeral = false } = {}) {
   const filtro = filtroResultados(req, req.simuladoDiagnostico._id, req.query.turma);
   let consultaResultados = SimuladoResultado.find(filtro);
-  if (leve) {
-    // V1.12.5: na tela, evita transferir do Mongo os varios agregados por aluno que o
-    // dashboard recalcula a partir de respostas. Exportacoes continuam usando o documento completo.
+  if (pdfGeral) {
+    // V1.12.6: o PDF gerencial precisa do dashboard e de uma tabela individual, mas nao
+    // precisa carregar todos os agregados do documento Mongo. Mantemos somente o necessario
+    // para recalcular o painel e montar prioridades/avisos dos estudantes.
+    const camposPdfGeral = '_id aluno alunoNomeSnapshot alunoTurmaSnapshot idiomaEstrangeiro idiomaOrigem diasAusentes respostas resumoGeral porArea porHabilidadeEnem porHabilidade porEixo porConteudo avisos versaoDiagnostico';
+    consultaResultados = consultaResultados.select(camposPdfGeral);
+  } else if (leve) {
+    // V1.12.5/V1.12.6: na tela, evita transferir do Mongo os varios agregados por aluno que o
+    // dashboard recalcula a partir de respostas.
     const camposDashboard = '_id aluno alunoNomeSnapshot alunoTurmaSnapshot idiomaEstrangeiro idiomaOrigem diasAusentes respostas resumoGeral porArea porHabilidadeEnem versaoDiagnostico';
     consultaResultados = consultaResultados.select(camposDashboard);
   } else {
@@ -1932,13 +2149,56 @@ async function dadosDashboard(req, { leve = false } = {}) {
     const filtroAnterior = filtroResultados(req, req.simuladoDiagnostico.simuladoReferencia, req.query.turma);
     filtroAnterior.aluno = { $in: idsAlunos };
     let consultaAnteriores = SimuladoResultado.find(filtroAnterior);
-    if (leve) {
+    if (leve || pdfGeral) {
       consultaAnteriores = consultaAnteriores.select('_id aluno alunoNomeSnapshot alunoTurmaSnapshot diasAusentes resumoGeral porArea porHabilidadeEnem');
     }
     const anteriores = await consultaAnteriores.lean();
     comparacao = compararResultados(resultados, anteriores, dashboard.configuracao || {});
   }
   return { resultados, dashboard, comparacao };
+}
+
+async function dashboardCompactoCacheado(req, { force = false } = {}) {
+  return dashboardCache.getOrCreate(dashboardCacheKey(req), async () => {
+    const { dashboard, comparacao } = await dadosDashboard(req, { leve: true });
+    // Importante: o cache NAO guarda o vetor de resultados individuais.
+    return { dashboard, comparacao };
+  }, { force });
+}
+
+function resultadosCompactosPdf(resultados = []) {
+  return resultados.map((item) => ({
+    alunoNomeSnapshot: item.alunoNomeSnapshot,
+    alunoTurmaSnapshot: item.alunoTurmaSnapshot,
+    idiomaEstrangeiro: item.idiomaEstrangeiro,
+    idiomaEstrangeiroEfetivo: item.idiomaEstrangeiroEfetivo,
+    resumoGeral: item.resumoGeral,
+    avisos: item.avisos,
+    porHabilidadeEnem: item.porHabilidadeEnem,
+    porHabilidade: item.porHabilidade,
+    porEixo: item.porEixo,
+    porConteudo: item.porConteudo,
+  }));
+}
+
+async function enviarPdfTemporario(res, arquivo, nomeArquivo) {
+  res.setHeader('Content-Type', MIME_PDF);
+  res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+  res.setHeader('Content-Length', String(arquivo.tamanho));
+  try {
+    await new Promise((resolve, reject) => {
+      res.sendFile(arquivo.caminho, (error) => (error ? reject(error) : resolve()));
+    });
+  } finally {
+    await arquivo.limpar();
+  }
+}
+
+function tratarFalhaPdf(error, res, next) {
+  if (error?.codigo === 'PDF_OCUPADO') {
+    return erro(res, 423, error.message);
+  }
+  return next(error);
 }
 
 router.get('/:simuladoId/dashboard', carregarSimulado, async (req, res, next) => {
@@ -1953,7 +2213,7 @@ router.get('/:simuladoId/dashboard', carregarSimulado, async (req, res, next) =>
     }
 
     const force = String(req.query?.fresh || '') === '1';
-    const cached = await dashboardCache.getOrCreate(dashboardCacheKey(req), () => dadosDashboard(req, { leve: true }), { force });
+    const cached = await dashboardCompactoCacheado(req, { force });
     res.setHeader('X-Axoriin-Dashboard-Cache', cached.source);
     const { dashboard, comparacao } = cached.value;
     return res.json({ ok: true, simulado: resumoSimulado(req.simuladoDiagnostico), dashboard, comparacao });
@@ -1976,41 +2236,42 @@ router.get('/:simuladoId/exportar.xlsx', carregarSimulado, async (req, res, next
 
 router.get('/:simuladoId/exportar.pdf', carregarSimulado, async (req, res, next) => {
   try {
-    const { resultados, dashboard, comparacao } = await dadosDashboard(req);
+    const dados = await dadosDashboard(req, { pdfGeral: true });
+    const resultadosPdf = resultadosCompactosPdf(dados.resultados);
+    // Libera a coleção com respostas antes de iniciar o processo Python.
+    dados.resultados = null;
     const turma = texto(req.query.turma);
-    const buffer = await gerarRelatorioDiagnosticoPdf({
+    const arquivo = await gerarRelatorioDiagnosticoPdfArquivo({
       simulado: req.simuladoDiagnostico.toObject(),
-      dashboard,
-      resultados,
-      comparacao,
+      dashboard: dados.dashboard,
+      resultados: resultadosPdf,
+      comparacao: dados.comparacao,
       turma,
     });
     const sufixoTurma = turma ? `-${nomeSeguro(turma)}` : '';
-    res.setHeader('Content-Type', MIME_PDF);
-    res.setHeader('Content-Disposition', `attachment; filename="diagnostico-${nomeSeguro(req.simuladoDiagnostico.codigo)}${sufixoTurma}.pdf"`);
-    return res.send(buffer);
+    await enviarPdfTemporario(res, arquivo, `diagnostico-${nomeSeguro(req.simuladoDiagnostico.codigo)}${sufixoTurma}.pdf`);
+    return undefined;
   } catch (error) {
-    return next(error);
+    return tratarFalhaPdf(error, res, next);
   }
 });
 
 router.get('/:simuladoId/exportar-visual.pdf', carregarSimulado, async (req, res, next) => {
   try {
-    const { resultados, dashboard, comparacao } = await dadosDashboard(req);
+    const cached = await dashboardCompactoCacheado(req);
+    const { dashboard, comparacao } = cached.value;
     const turma = texto(req.query.turma);
-    const buffer = await gerarRelatorioVisualPdf({
+    const arquivo = await gerarRelatorioVisualPdfArquivo({
       simulado: req.simuladoDiagnostico.toObject(),
       dashboard,
-      resultados,
       comparacao,
       turma,
     });
     const sufixoTurma = turma ? `-${nomeSeguro(turma)}` : '';
-    res.setHeader('Content-Type', MIME_PDF);
-    res.setHeader('Content-Disposition', `attachment; filename="painel-visual-${nomeSeguro(req.simuladoDiagnostico.codigo)}${sufixoTurma}.pdf"`);
-    return res.send(buffer);
+    await enviarPdfTemporario(res, arquivo, `painel-visual-${nomeSeguro(req.simuladoDiagnostico.codigo)}${sufixoTurma}.pdf`);
+    return undefined;
   } catch (error) {
-    return next(error);
+    return tratarFalhaPdf(error, res, next);
   }
 });
 
@@ -2019,21 +2280,20 @@ router.get('/:simuladoId/exportar-habilidades-enem.pdf', carregarSimulado, async
     if (texto(req.simuladoDiagnostico.tipo).toLowerCase() !== 'enem') {
       return erro(res, 409, 'O relatório específico de habilidades está disponível somente para simulados ENEM.');
     }
-    const { resultados, dashboard, comparacao } = await dadosDashboard(req);
+    const cached = await dashboardCompactoCacheado(req);
+    const { dashboard, comparacao } = cached.value;
     const turma = texto(req.query.turma);
-    const buffer = await gerarRelatorioHabilidadesEnemPdf({
+    const arquivo = await gerarRelatorioHabilidadesEnemPdfArquivo({
       simulado: req.simuladoDiagnostico.toObject(),
       dashboard,
-      resultados,
       comparacao,
       turma,
     });
     const sufixoTurma = turma ? `-${nomeSeguro(turma)}` : '';
-    res.setHeader('Content-Type', MIME_PDF);
-    res.setHeader('Content-Disposition', `attachment; filename="habilidades-enem-${nomeSeguro(req.simuladoDiagnostico.codigo)}${sufixoTurma}.pdf"`);
-    return res.send(buffer);
+    await enviarPdfTemporario(res, arquivo, `habilidades-enem-${nomeSeguro(req.simuladoDiagnostico.codigo)}${sufixoTurma}.pdf`);
+    return undefined;
   } catch (error) {
-    return next(error);
+    return tratarFalhaPdf(error, res, next);
   }
 });
 
@@ -2068,6 +2328,110 @@ router.get('/:simuladoId/resultados/:resultadoId', carregarSimulado, async (req,
     if (!resultado) return erro(res, 404, 'Resultado não encontrado ou indisponível para o seu perfil.');
     return res.json({ ok: true, resultado: resultadoComIdiomaEfetivo(req.simuladoDiagnostico, resultado) });
   } catch (error) {
+    return next(error);
+  }
+});
+
+
+
+router.patch('/:simuladoId/resultados/:resultadoId/vinculo', apenasGestaoPedagogica, carregarSimulado, async (req, res, next) => {
+  try {
+    if (!idValido(req.params.resultadoId)) return erro(res, 400, 'Resultado inválido.');
+    const alunoId = texto(req.body?.alunoId);
+    if (!idValido(alunoId)) return erro(res, 400, 'Selecione um aluno válido.');
+
+    const resultado = await SimuladoResultado.findOne({
+      _id: req.params.resultadoId,
+      instituicao: req.instituicaoId,
+      simulado: req.simuladoDiagnostico._id,
+    });
+    if (!resultado) return erro(res, 404, 'Resultado não encontrado.');
+
+    const aluno = await Aluno.findOne({ _id: alunoId, instituicao: req.instituicaoId })
+      .select('_id nome turma codigoAcesso ativo')
+      .lean();
+    if (!aluno || aluno.ativo === false) return erro(res, 404, 'Aluno não encontrado ou inativo nesta instituição.');
+
+    if (req.simuladoDiagnostico.turmas?.length && !req.simuladoDiagnostico.turmas.includes(aluno.turma)) {
+      return erro(res, 409, 'O aluno não pertence a uma turma selecionada para este simulado.');
+    }
+
+    const atualId = String(resultado.aluno);
+    const novoId = String(aluno._id);
+    if (atualId === novoId) {
+      return res.json({ ok: true, mensagem: 'O resultado já está vinculado a este aluno.', resultado });
+    }
+
+    const duplicado = await SimuladoResultado.findOne({
+      instituicao: req.instituicaoId,
+      simulado: req.simuladoDiagnostico._id,
+      aluno: aluno._id,
+      _id: { $ne: resultado._id },
+    }).select('_id alunoNomeSnapshot alunoTurmaSnapshot').lean();
+
+    if (duplicado) {
+      return erro(res, 409, `${aluno.nome} já possui um resultado neste simulado. Verifique os dois cartões antes de alterar o vínculo.`, {
+        resultadoExistente: duplicado,
+      });
+    }
+
+    const anterior = {
+      aluno: resultado.aluno,
+      nome: resultado.alunoNomeSnapshot,
+      turma: resultado.alunoTurmaSnapshot,
+      codigo: resultado.alunoCodigoSnapshot,
+    };
+
+    resultado.aluno = aluno._id;
+    resultado.alunoNomeSnapshot = aluno.nome;
+    resultado.alunoTurmaSnapshot = aluno.turma;
+    resultado.alunoCodigoSnapshot = aluno.codigoAcesso || '';
+    await resultado.save();
+
+    let linhasImportacaoAtualizadas = 0;
+    if (resultado.importacao) {
+      const importacao = await SimuladoImportacao.findOne({
+        _id: resultado.importacao,
+        instituicao: req.instituicaoId,
+        simulado: req.simuladoDiagnostico._id,
+      });
+      if (importacao) {
+        for (const linha of importacao.linhas || []) {
+          if (String(linha.aluno || '') !== atualId) continue;
+          linha.aluno = aluno._id;
+          linha.vinculoStatus = 'manual';
+          linha.candidatos = [];
+          linha.nomeInformado = aluno.nome;
+          linha.turmaInformada = aluno.turma;
+          linha.codigoInformado = aluno.codigoAcesso || '';
+          linhasImportacaoAtualizadas += 1;
+        }
+        if (linhasImportacaoAtualizadas) await importacao.save();
+      }
+    }
+
+    invalidarDashboardCache(req);
+    await auditar(req, 'REVINCULAR_RESULTADO', resultado._id, aluno.nome, {
+      simulado: req.simuladoDiagnostico._id,
+      anterior,
+      novo: { aluno: aluno._id, nome: aluno.nome, turma: aluno.turma, codigo: aluno.codigoAcesso || '' },
+      linhasImportacaoAtualizadas,
+    });
+
+    return res.json({
+      ok: true,
+      mensagem: `Resultado revinculado para ${aluno.nome}. O diagnóstico e as respostas foram preservados.`,
+      resultado: {
+        _id: resultado._id,
+        aluno: resultado.aluno,
+        alunoNomeSnapshot: resultado.alunoNomeSnapshot,
+        alunoTurmaSnapshot: resultado.alunoTurmaSnapshot,
+        alunoCodigoSnapshot: resultado.alunoCodigoSnapshot,
+      },
+      linhasImportacaoAtualizadas,
+    });
+  } catch (error) {
+    if (error?.code === 11000) return erro(res, 409, 'O aluno selecionado já possui resultado neste simulado. Nenhuma alteração foi aplicada.');
     return next(error);
   }
 });

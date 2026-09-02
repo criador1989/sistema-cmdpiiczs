@@ -80,15 +80,26 @@ function modulo({ id, titulo, descricao, rota, icone, status, destaque = false }
 }
 
 function montarModulos(segmento) {
+  const trilhaEnemAtiva = flagAmbiente('PORTAL_ALUNO_TRILHA_ENEM_ATIVO', true);
   const questionariosAtivos = flagAmbiente('PORTAL_ALUNO_QUESTIONARIOS_ATIVO', true);
   const redacaoAtiva = flagAmbiente('PORTAL_ALUNO_REDACAO_ATIVO', true);
-  const simuladosAtivos = flagAmbiente('PORTAL_ALUNO_SIMULADOS_ATIVO', false);
+  const simuladosAtivos = flagAmbiente('PORTAL_ALUNO_SIMULADOS_ATIVO', true);
   const jogosAtivos = flagAmbiente('PORTAL_ALUNO_JOGOS_ATIVO', false);
   const rankingAtivo = flagAmbiente('PORTAL_ALUNO_RANKING_GAMES_ATIVO', true);
   const personagensAtivos = flagAmbiente('PORTAL_ALUNO_PERSONAGENS_ATIVO', false);
 
   if (segmento === SEGMENTOS.ENSINO_MEDIO) {
     return [
+      modulo({
+        id: 'trilha_enem',
+        titulo: 'Minha Trilha ENEM',
+        descricao: 'Diagnóstico, evolução C1–C5 e próxima atividade recomendada com base no seu desempenho.',
+        rota: '/aluno-enem.html',
+        icone: 'trilha',
+        status: trilhaEnemAtiva ? 'ativo' : 'indisponivel',
+        destaque: true,
+        meta: 'Trilha personalizada'
+      }),
       modulo({
         id: 'questionarios',
         titulo: 'Questionários',
@@ -110,10 +121,10 @@ function montarModulos(segmento) {
       modulo({
         id: 'simulados',
         titulo: 'Simulados',
-        descricao: 'Estrutura preparada para provas completas, cronômetro e análise por área.',
+        descricao: 'Consulte seus resultados de simulados, desempenho geral e análise por área do conhecimento.',
         rota: '/aluno-simulados.html',
         icone: 'simulado',
-        status: simuladosAtivos ? 'ativo' : 'em_breve'
+        status: simuladosAtivos ? 'ativo' : 'indisponivel'
       })
     ];
   }
@@ -164,7 +175,7 @@ function montarContextoPortal(turma) {
   const classificacao = classificarSegmento(turma);
 
   return {
-    versao: '1.0.0',
+    versao: '2.0.0-enem',
     ...classificacao,
     modulos: montarModulos(classificacao.segmento),
     capacidades: {
