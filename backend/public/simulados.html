@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07131f">
+  <title>Diagnóstico de Simulados — Axoriin</title>
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="stylesheet" href="/simulados/simulados.css?v=1.12.3">
+</head>
+<body>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="grid-glow" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-row">
+        <div class="brand-mark" aria-hidden="true"><span>A</span></div>
+        <div><strong>Axoriin</strong><small>Simulados</small></div>
+      </div>
+
+      <nav class="side-nav" aria-label="Navegação do módulo">
+        <button class="nav-item active" data-view="lista" type="button"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+        <button class="nav-item requires-current" data-view="matriz" type="button"><span class="nav-icon">▦</span><span>Matriz pedagógica</span></button>
+        <button class="nav-item requires-current gestao-only" data-view="importacao" type="button"><span class="nav-icon">⇧</span><span>Importar respostas</span></button>
+        <button class="nav-item requires-current" data-view="diagnostico" type="button"><span class="nav-icon">◎</span><span>Diagnóstico</span></button>
+      </nav>
+
+      <div class="side-spacer"></div>
+      <div class="rule-card">
+        <span class="rule-icon">✓</span>
+        <div><b>Língua confirmada</b><p>Inglês ou Espanhol nunca é deduzido pelo padrão de respostas.</p></div>
+      </div>
+      <a class="back-link" href="/painel.html">← Voltar ao Axoriin</a>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menu">☰</button>
+        <div class="top-title"><p class="eyebrow">DIAGNÓSTICO PEDAGÓGICO</p><h1 id="pageTitle">Simulados que orientam a intervenção.</h1></div>
+        <div class="top-actions">
+          <button class="context-chip" id="currentSimuladoChip" type="button" hidden><span>Simulado atual</span><b id="currentSimuladoName">—</b></button>
+          <div class="user-chip"><span class="avatar" id="userAvatar">A</span><div><b id="userName">Carregando…</b><small id="userRole">—</small></div></div>
+        </div>
+      </header>
+
+      <div class="connection-banner" id="connectionBanner" hidden></div>
+
+      <section class="view active" id="view-lista">
+        <article class="hero-card reveal">
+          <div class="hero-copy">
+            <span class="hero-pill">DA RESPOSTA À AÇÃO PEDAGÓGICA</span>
+            <h2>Veja o que cada aluno já domina — e o que precisa acontecer depois.</h2>
+            <p>Analise áreas, componentes, conteúdos, habilidades, questões e turmas. O sistema separa lacuna de aprendizagem, resposta em branco, dado ausente e língua ainda não confirmada.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary gestao-only" id="newSimulado" type="button">Criar simulado <span>→</span></button>
+              <button class="btn btn-ghost" id="refreshList" type="button">Atualizar lista</button>
+            </div>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="radar-ring ring-a"></div><div class="radar-ring ring-b"></div><div class="radar-ring ring-c"></div>
+            <div class="radar-core"><span>◎</span><b>Diagnóstico</b><small>evidência + contexto</small></div>
+            <div class="floating-tag tag-a">Áreas</div><div class="floating-tag tag-b">Habilidades</div><div class="floating-tag tag-c">Intervenção</div>
+          </div>
+        </article>
+
+        <div class="metrics-grid reveal delay-1">
+          <article class="metric-card"><span>Simulados</span><strong id="metricSimulados">0</strong><small>neste ambiente</small></article>
+          <article class="metric-card"><span>Com resultados</span><strong id="metricComResultados">0</strong><small>prontos para analisar</small></article>
+          <article class="metric-card"><span>Participações</span><strong id="metricParticipacoes">0</strong><small>resultados processados</small></article>
+          <article class="metric-card metric-accent"><span>Regra de idioma</span><strong>Explícita</strong><small>sem inferência automática</small></article>
+        </div>
+
+        <article class="panel-card reveal delay-2">
+          <div class="panel-head">
+            <div><span class="section-kicker">ACERVO DIAGNÓSTICO</span><h3>Simulados cadastrados</h3><p>Selecione um simulado para continuar a configuração ou abrir os resultados.</p></div>
+            <label class="compact-field"><span>Ano</span><select id="filterYear"><option value="">Todos</option></select></label>
+          </div>
+          <div id="simuladosList" class="simulados-grid"><div class="empty-state">Carregando simulados…</div></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-matriz">
+        <div class="workspace-head reveal">
+          <div><span class="section-kicker">ETAPA 1 · MATRIZ</span><h2>Ensine ao Axoriin o que cada questão avalia.</h2><p>O código da questão liga resposta, gabarito, área, conteúdo e habilidade.</p></div>
+          <span class="status-pill" id="matrixStatus">Sem matriz</span>
+        </div>
+
+        <div class="two-column reveal delay-1">
+          <article class="panel-card action-card">
+            <span class="step-number">01</span><h3>Baixe a matriz</h3>
+            <p>O modelo já traz as colunas necessárias e exemplos de questões comuns e de língua estrangeira.</p>
+            <button class="btn btn-secondary" id="downloadMatrix" type="button">Baixar modelo XLSX</button>
+          </article>
+          <article class="panel-card action-card gestao-only">
+            <span class="step-number">02</span><h3>Importe após preencher</h3>
+            <p>A matriz será validada integralmente. Se houver inconsistência, nada será gravado.</p>
+            <label class="file-drop" id="matrixDrop"><input id="matrixFile" type="file" accept=".xlsx,.csv,.json"><span>Selecionar matriz</span><small>XLSX, CSV ou JSON · até 10 MB</small></label>
+            <button class="btn btn-primary" id="uploadMatrix" type="button" disabled>Validar e importar</button>
+          </article>
+        </div>
+
+
+        <article class="panel-card reveal delay-2" id="enemActivationPanel" hidden style="margin-bottom:17px">
+          <div class="panel-head">
+            <div><span class="section-kicker">COMPATIBILIDADE ENEM</span><h3>Ative a Matriz de Referência ENEM neste simulado</h3><p>Este simulado foi criado antes do diagnóstico por habilidades e ainda está registrado com outro tipo. A ativação altera apenas o tipo pedagógico do simulado; respostas, gabarito e resultados já armazenados são preservados.</p></div>
+            <span class="status-pill status-draft">Ação necessária</span>
+          </div>
+          <div class="callout"><b>Simulado ENEM detectado</b><p>O título ou o código contém “ENEM”. Confirme a ativação para liberar o mapeamento oficial H1–H30.</p></div>
+          <button class="btn btn-primary gestao-only" id="activateEnemMapping" type="button">Ativar Matriz ENEM</button>
+        </article>
+
+        <article class="panel-card reveal delay-2" id="enemMappingPanel" hidden style="margin-bottom:17px">
+          <div class="panel-head">
+            <div><span class="section-kicker">MATRIZ DE REFERÊNCIA ENEM</span><h3>Competências e habilidades oficiais</h3><p>Associe cada variante a H1–H30. O Axoriin valida o código pela área e não deduz a habilidade apenas pelo conteúdo.</p></div>
+            <span class="status-pill" id="enemMappingStatus">0 mapeadas</span>
+          </div>
+          <div class="two-column">
+            <div class="action-card">
+              <h3>Baixar mapeamento</h3><p>A planilha traz todas as questões atuais e uma aba com a referência ENEM incorporada.</p>
+              <button class="btn btn-secondary" id="downloadEnemMapping" type="button">Baixar mapeamento ENEM</button>
+            </div>
+            <div class="action-card gestao-only">
+              <h3>Atualizar habilidades</h3><p>Você pode fazer isso mesmo após processar resultados. Só o metadado pedagógico é alterado; respostas e gabarito são preservados.</p>
+              <label class="file-drop"><input id="enemMappingFile" type="file" accept=".xlsx,.csv,.json"><span>Selecionar mapeamento</span><small>XLSX, CSV ou JSON · até 10 MB</small></label>
+              <button class="btn btn-primary" id="uploadEnemMapping" type="button" disabled>Validar e aplicar</button>
+            </div>
+          </div>
+          <div class="callout"><b>Regra de segurança</b><p>Se não houver segurança sobre a habilidade de uma questão, deixe HABILIDADE_ENEM em branco. O relatório mostrará a lacuna de mapeamento em vez de inventar um diagnóstico.</p></div>
+        </article>
+
+        <article class="panel-card reveal delay-2">
+          <div class="panel-head"><div><span class="section-kicker">MATRIZ ATUAL</span><h3 id="matrixCount">0 questões cadastradas</h3></div><span class="muted" id="matrixVersion">Versão —</span></div>
+          <div class="info-grid" id="matrixSummary"></div>
+          <div class="callout"><b>Questões de Inglês e Espanhol</b><p>Use o mesmo código e duas variantes. Na importação de resultados, a língua será registrada para cada aluno; enquanto estiver pendente, essas questões ficam fora da pontuação e do diagnóstico.</p></div>
+        </article>
+
+        <article class="panel-card reveal delay-3 gestao-only" style="margin-top:17px">
+          <div class="panel-head"><div><span class="section-kicker">CRITÉRIOS E EVOLUÇÃO</span><h3>Configuração do diagnóstico</h3><p>Os limiares ficam protegidos após o primeiro processamento para preservar o histórico.</p></div><button class="btn btn-primary" id="saveSettings" type="button">Salvar configuração</button></div>
+          <div class="form-grid">
+            <label class="field span-2"><span>Simulado anterior para comparar evolução</span><select id="settingReference"><option value="">Sem comparação</option></select></label>
+            <label class="field"><span>Consolidado a partir de (%)</span><input id="settingConsolidated" type="number" min="1" max="100" value="70"></label>
+            <label class="field"><span>Prioritário abaixo de (%)</span><input id="settingAttention" type="number" min="0" max="99" value="50"></label>
+            <label class="field"><span>Mínimo de questões por indicador</span><input id="settingMinQuestions" type="number" min="1" max="50" value="2"></label>
+            <label class="field"><span>Mínimo de respondentes por questão</span><input id="settingMinRespondents" type="number" min="1" max="5000" value="5"></label>
+            <label class="field"><span>Mínimo de alunos no grupo</span><input id="settingMinGroup" type="number" min="1" max="5000" value="2"></label>
+            <label class="field"><span>Cobertura mínima para diagnóstico individual (%)</span><input id="settingMinCoverage" type="number" min="1" max="100" value="80"></label>
+          </div>
+          <div class="callout" id="settingsLock" hidden><b>Critérios protegidos</b><p>Já existem resultados neste simulado. Você ainda pode trocar a referência de evolução, mas os limiares não podem mudar silenciosamente.</p></div>
+          <div class="callout methodology-callout"><b>O que esses parâmetros significam</b><p><strong>Consolidado</strong> e <strong>prioritário</strong> são faixas operacionais escolhidas pela escola; não são cortes oficiais do ENEM. O mínimo de questões evita concluir domínio ou dificuldade com base em um único item. O mínimo de respondentes evita classificar uma questão ou um indicador coletivo com uma amostra muito pequena. A cobertura mínima individual impede que um resultado parcial seja tratado como diagnóstico conclusivo de um estudante.</p></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-importacao">
+        <div class="workspace-head reveal">
+          <div><span class="section-kicker">ETAPA 2 · RESPOSTAS</span><h2>Importe planilhas ou leia cartões escaneados.</h2><p>O Axoriin separa leitura óptica, identificação do aluno e conferência humana antes de calcular qualquer resultado.</p></div>
+        </div>
+
+        <div class="flow-strip reveal delay-1">
+          <div class="flow-step active"><span>1</span><b>Modelo</b><small>alunos + questões</small></div>
+          <div class="flow-line"></div><div class="flow-step"><span>2</span><b>Análise</b><small>sem gravar notas</small></div>
+          <div class="flow-line"></div><div class="flow-step"><span>3</span><b>Conferência</b><small>vínculos e idioma</small></div>
+          <div class="flow-line"></div><div class="flow-step"><span>4</span><b>Confirmação</b><small>diagnóstico calculado</small></div>
+        </div>
+
+        <article class="panel-card saved-work-panel reveal delay-1" id="pendingImportsPanel" hidden>
+          <div class="panel-head"><div><span class="section-kicker">PROGRESSO RECUPERÁVEL</span><h3>Conferências salvas em andamento</h3><p>Cada vínculo e cada correção são guardados no banco. Você pode continuar depois ou excluir um trabalho que foi interrompido.</p></div><span class="status-pill status-ready">Salvamento contínuo</span></div>
+          <div id="pendingImportsList" class="saved-work-list"></div>
+        </article>
+
+        <div class="two-column reveal delay-2">
+          <article class="panel-card action-card"><span class="step-number">01</span><h3>Planilha de respostas</h3><p>Baixe o arquivo já preenchido com os alunos das turmas selecionadas e as colunas das questões.</p><button class="btn btn-secondary" id="downloadAnswers" type="button">Baixar modelo com alunos</button></article>
+          <article class="panel-card action-card"><span class="step-number">02</span><h3>Arquivo preenchido</h3><p>Selecione o arquivo. A primeira ação é apenas uma análise de consistência.</p><label class="file-drop"><input id="answersFile" type="file" accept=".xlsx,.csv,.json"><span>Selecionar respostas</span><small>XLSX, CSV ou JSON · até 10 MB</small></label><button class="btn btn-primary" id="analyzeAnswers" type="button" disabled>Analisar arquivo</button></article>
+        </div>
+
+        <article class="panel-card scanner-panel reveal delay-2">
+          <div class="panel-head"><div><span class="section-kicker">LEITURA ÓPTICA LOCAL · OMR</span><h3>Arraste o PDF escaneado dos cartões-resposta</h3><p>Envie um PDF por turma e por dia. A leitura continua em segundo plano, com progresso por página. O arquivo original não é guardado; o sistema conserva apenas a prévia necessária para conferência.</p></div><span class="status-pill status-ready">Imagem + marcação</span></div>
+          <div class="scanner-form">
+            <label class="field"><span>Turma dos cartões</span><select id="scanClass"><option value="">Selecione</option></select></label>
+            <label class="field"><span>Dia da aplicação</span><select id="scanDay"><option value="">Selecione</option><option value="1">1º dia</option><option value="2">2º dia</option></select></label>
+            <label class="file-drop scanner-drop"><input id="scansFile" type="file" accept="application/pdf,.pdf"><span>Selecionar PDF escaneado</span><small>PDF · até 120 MB</small></label>
+            <button class="btn btn-primary" id="analyzeScans" type="button" disabled>Ler cartões e conferir</button>
+          </div>
+          <div class="callout"><b>Proteção contra erro de contagem</b><p>Uma resposta com duas marcas, tinta fraca ou geometria duvidosa fica pendente. O processamento só é liberado depois da revisão.</p></div>
+        </article>
+
+        <article class="panel-card gestao-only" id="bookletPanel">
+          <div class="panel-head"><div><span class="section-kicker">CADERNOS DE PROVA · PORTAL DO ALUNO</span><h3>Publique o PDF da prova para a revisão dos estudantes</h3><p>Arraste o caderno do 1º ou 2º dia. O Axoriin indexa automaticamente as questões, renderiza as páginas e conecta os erros do aluno ao trecho original da prova.</p></div><span class="status-pill status-ready">Revisão pareada</span></div>
+          <div class="scanner-grid booklet-grid">
+            <label class="field"><span>Dia do caderno</span><select id="bookletDay"><option value="">Selecione</option><option value="1">1º dia</option><option value="2">2º dia</option></select></label>
+            <label class="file-drop scanner-drop"><input id="bookletFile" type="file" accept="application/pdf,.pdf"><span>Selecionar caderno em PDF</span><small>PDF original da prova · até 120 MB</small></label>
+            <button class="btn btn-primary" id="uploadBooklet" type="button" disabled>Publicar e indexar</button>
+          </div>
+          <div class="callout"><b>O que será preservado</b><p>O aluno verá a página original da prova — inclusive imagens, gráficos, tabelas e fórmulas — ao lado da resposta marcada, gabarito, assunto e habilidade. O caderno não altera OMR, respostas ou diagnóstico já calculado.</p></div>
+          <div id="bookletStatusList" class="booklet-status-list"></div>
+        </article>
+
+        <article class="panel-card import-preview" id="importPreview" hidden>
+          <div class="panel-head"><div><span class="section-kicker">CONFERÊNCIA</span><h3>Prévia da importação</h3><p>Nenhum resultado foi calculado ainda. As correções desta conferência são salvas continuamente.</p><small class="save-state" id="importSaveState">Progresso carregado</small></div><button class="btn btn-primary" id="confirmImport" type="button">Confirmar e processar</button></div>
+          <div class="mini-metrics" id="importMetrics"></div>
+          <div class="replacement-notice" id="replacementNotice" hidden>
+            <div><span class="section-kicker">CORREÇÃO SEGURA</span><b id="replacementTitle">Diagnóstico anterior encontrado</b><p id="replacementText"></p><small>Somente os vínculos de aluno podem ser reaproveitados. A língua e as respostas permanecem as desta nova conferência.</small></div>
+            <button class="btn btn-secondary" id="recoverPreviousLinks" type="button">Recuperar vínculos anteriores</button>
+          </div>
+          <div id="importWarnings" class="warning-list"></div>
+          <div class="table-wrap"><table><thead><tr><th>Linha/página</th><th>Cartão</th><th>Aluno informado</th><th>Turma</th><th>Vínculo</th><th>Idioma</th><th>Leitura OMR</th><th>Avisos</th><th></th></tr></thead><tbody id="importRows"></tbody></table></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-diagnostico">
+        <div class="workspace-head reveal">
+          <div><span class="section-kicker">ETAPA 3 · DIAGNÓSTICO</span><h2>Prioridades pedagógicas separadas de problemas de procedimento.</h2><p>Desempenho, taxa de acerto nas respostas marcadas, cobertura e qualidade dos itens aparecem separados para orientar decisões mais seguras.</p></div>
+          <div class="head-actions"><label class="compact-field"><span>Turma</span><select id="dashboardClass"><option value="">Todas permitidas</option></select></label><button class="btn btn-secondary gestao-only" id="recalculateDashboard" type="button" hidden>Atualizar cálculos</button><button class="btn btn-secondary" id="exportDashboard" type="button">Exportar XLSX</button><button class="btn btn-secondary" id="exportDashboardPdf" type="button" title="Relatório gerencial e pedagógico detalhado">Exportar PDF</button><button class="btn btn-secondary" id="exportVisualPdf" type="button" title="Relatório visual com gráficos, distribuição, evolução e prioridades">PDF Visual</button><button class="btn btn-secondary" id="exportEnemSkillsPdf" type="button" title="PDF específico das competências e habilidades trabalhadas no ENEM" hidden>PDF Habilidades ENEM</button></div>
+        </div>
+
+        <div class="callout diagnostic-version-warning" id="diagnosticVersionWarning" hidden><b>Atualização metodológica V3 disponível</b><p>Atualize os resultados para separar ocorrências procedimentais das prioridades pedagógicas, aplicar cobertura mínima individual e gerar eixos e faixas operacionais de intervenção.</p></div>
+
+        <div class="metrics-grid diagnostic-metrics reveal delay-1">
+          <article class="metric-card"><span>Participantes</span><strong id="dParticipants">0</strong><small id="dClasses">0 turmas</small></article>
+          <article class="metric-card"><span>Desempenho confirmado</span><strong id="dScore">0%</strong><small>inclui brancos como zero</small></article>
+          <article class="metric-card"><span>Taxa de acerto nas marcadas</span><strong id="dAccuracy">0%</strong><small>acertos ÷ alternativas A–E</small></article>
+          <article class="metric-card"><span>Cobertura dos dados</span><strong id="dCoverage">0%</strong><small>confirmadas ÷ aplicáveis</small></article>
+          <article class="metric-card metric-warning"><span>Idioma pendente</span><strong id="dLanguage">0</strong><small>alunos a conferir</small></article>
+          <article class="metric-card metric-warning"><span>Sem opção de língua</span><strong id="dNoLanguage">0</strong><small>questões 1–4 com zero</small></article>
+        </div>
+
+        <section class="visual-analytics reveal delay-1" aria-label="Painel visual do diagnóstico">
+          <div class="visual-analytics-head">
+            <div><span class="section-kicker">PAINEL VISUAL</span><h3>Resultados que podem ser vistos, comparados e acompanhados.</h3><p>Gráficos construídos somente com os dados confirmados do Axoriin. Linhas de referência de 50% e 70% são critérios internos de leitura, não cortes oficiais do ENEM.</p></div>
+            <span class="visual-badge">Dados internos · sem TRI estimada</span>
+          </div>
+          <div class="visual-grid">
+            <article class="visual-card visual-span-2"><div class="visual-card-head"><div><b>Desempenho por área</b><small>Comparação entre áreas com referência interna de atenção e consolidação.</small></div></div><div id="visualAreaChart" class="visual-chart"></div></article>
+            <article class="visual-card"><div class="visual-card-head"><div><b>Distribuição dos estudantes</b><small>Faixas operacionais do diagnóstico individual.</small></div></div><div id="visualBandDistribution" class="visual-chart"></div></article>
+            <article class="visual-card"><div class="visual-card-head"><div><b>Distribuição de desempenho</b><small>Somente estudantes com base individual adequada e participação completa.</small></div></div><div id="visualHistogram" class="visual-chart"></div></article>
+            <article class="visual-card visual-span-2"><div class="visual-card-head"><div><b>Turmas lado a lado</b><small>Desempenho e cobertura para identificar diferenças entre salas.</small></div></div><div id="visualClassChart" class="visual-chart"></div></article>
+            <article class="visual-card"><div class="visual-card-head"><div><b>Participação por dia</b><small>Presenças e ausências confirmadas por aplicação.</small></div></div><div id="visualParticipation" class="visual-chart"></div></article>
+            <article class="visual-card visual-span-3"><div class="visual-card-head"><div><b>Mapa de calor das habilidades ENEM</b><small>Cada célula é uma habilidade efetivamente trabalhada. Passe o mouse para ver descrição, evidência e cobertura.</small></div><div class="heat-legend"><span>0%</span><i></i><span>100%</span></div></div><div id="visualSkillsHeatmap" class="skills-heatmap"></div></article>
+            <article class="visual-card"><div class="visual-card-head"><div><b>Questões por faixa de acerto</b><small>Ajuda a distinguir uma prova muito difícil de dificuldades concentradas.</small></div></div><div id="visualQuestionBands" class="visual-chart"></div></article>
+            <article class="visual-card visual-span-2"><div class="visual-card-head"><div><b>Evolução contra o simulado de referência</b><small>Compara os mesmos estudantes; quando possível, detalha a mudança por área.</small></div></div><div id="visualEvolutionChart" class="visual-chart"></div></article>
+          </div>
+        </section>
+
+        <div class="dashboard-grid reveal delay-1">
+          <article class="panel-card span-2"><div class="panel-head"><div><span class="section-kicker">LEITURA EXECUTIVA</span><h3>O que os dados mostram agora</h3></div><span class="status-pill" id="dataStatus">Sem dados</span></div><div id="executiveSummary" class="executive-summary"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">TRANSPARÊNCIA</span><h3>Como os percentuais são calculados</h3></div></div><div id="methodologySummary" class="methodology-summary"></div></article>
+        </div>
+
+        <div class="dashboard-grid reveal delay-2">
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">INTEGRIDADE E PROCEDIMENTO</span><h3>O que precisa ser conferido</h3><p>Estes alertas não são tratados como dificuldade de aprendizagem.</p></div></div><div id="integrityAlerts" class="action-priority-list"></div></article>
+          <article class="panel-card span-2"><div class="panel-head"><div><span class="section-kicker">GESTÃO PEDAGÓGICA</span><h3>Onde atuar primeiro</h3><p>Prioridades acadêmicas em ordem turma → grupo → individual.</p></div></div><div id="managementActions" class="action-priority-list"></div></article>
+        </div>
+
+        <div class="dashboard-grid reveal delay-2">
+          <article class="panel-card span-2"><div class="panel-head"><div><span class="section-kicker">ÁREAS DO CONHECIMENTO</span><h3>Desempenho por área</h3></div><div class="legend"><span class="dot good"></span>Consolidado <span class="dot mid"></span>Em desenvolvimento <span class="dot bad"></span>Prioritário</div></div><div id="areaBars" class="bar-list"></div><div id="seriesSummary" class="group-summary"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">EVOLUÇÃO</span><h3>Comparação</h3></div></div><div id="evolutionBox" class="evolution-box"></div></article>
+        </div>
+
+        <div class="dashboard-grid reveal delay-2">
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">APLICAÇÃO</span><h3>Desempenho por dia</h3></div></div><div id="dayPerformance" class="bar-list"></div></article>
+          <article class="panel-card span-2"><div class="panel-head"><div><span class="section-kicker">TURMAS</span><h3>Comparativo com a média geral</h3><p>A diferença mostra pontos percentuais acima ou abaixo do desempenho geral.</p></div></div><div id="classComparison" class="table-wrap compact-table"></div></article>
+        </div>
+
+        <div class="dashboard-grid reveal delay-3">
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">EIXOS</span><h3>Eixos pedagógicos prioritários</h3><p>Usa macroconteúdo quando informado; caso contrário, componente curricular.</p></div></div><div id="priorityAxes" class="rank-list"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">RETOMADA</span><h3>Conteúdos prioritários</h3></div></div><div id="priorityContents" class="rank-list"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">HABILIDADES</span><h3>Habilidades prioritárias</h3></div></div><div id="prioritySkills" class="rank-list"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">QUESTÕES</span><h3>Menores índices de acerto</h3></div></div><div id="priorityQuestions" class="rank-list"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">INTERVENÇÃO</span><h3>Grupos sugeridos</h3></div></div><div id="interventionGroups" class="rank-list"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">POTENCIALIDADES</span><h3>Pontos consolidados</h3></div></div><div id="strengths" class="rank-list"></div></article>
+          <article class="panel-card"><div class="panel-head"><div><span class="section-kicker">ACOMPANHAMENTO</span><h3>Casos para acompanhamento</h3><p>Acompanhamento individual imediato é reservado aos casos críticos com base suficiente.</p></div></div><div id="priorityStudents" class="rank-list"></div></article>
+        </div>
+
+        <article class="panel-card reveal delay-3">
+          <div class="panel-head"><div><span class="section-kicker">ESTUDANTES</span><h3>Resultados individuais</h3><p>Clique em um aluno para abrir o diagnóstico detalhado.</p></div><div class="head-actions"><button class="btn btn-secondary btn-small gestao-only" id="reviewProcessedParticipation" type="button" hidden>Revisar participação/ausências</button><button class="btn btn-secondary btn-small gestao-only" id="reviewProcessedLanguages" type="button" hidden>Revisar idiomas processados</button><label class="search-field"><span>⌕</span><input id="studentSearch" type="search" placeholder="Buscar aluno…"></label></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Idioma</th><th>Taxa de acerto nas marcadas</th><th>Desempenho confirmado</th><th>Cobertura</th><th>Situação</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+          <div class="pagination"><button class="btn btn-ghost btn-small" id="prevStudents" type="button">← Anterior</button><span id="studentPage">Página 1</span><button class="btn btn-ghost btn-small" id="nextStudents" type="button">Próxima →</button></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="createDialog" class="modal">
+    <form method="dialog" id="createForm" class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">NOVO SIMULADO</span><h2>Informações iniciais</h2></div><button class="icon-button" id="closeCreateDialog" type="button" aria-label="Fechar">×</button></div>
+      <div class="form-grid">
+        <label class="field span-2"><span>Título</span><input id="createTitle" maxlength="240" required placeholder="Ex.: Simulado ENEM — 2ª aplicação"></label>
+        <label class="field"><span>Código</span><input id="createCode" maxlength="60" placeholder="Gerado pelo título"></label>
+        <label class="field"><span>Ano letivo</span><input id="createYear" type="number" min="2000" max="2200" required></label>
+        <label class="field"><span>Tipo</span><select id="createType"><option value="enem">ENEM</option><option value="saeb">SAEB</option><option value="interno" selected>Interno</option><option value="olimpiada">Olimpíada</option><option value="outro">Outro</option></select></label>
+        <label class="field"><span>Etapa</span><input id="createStage" value="Ensino Médio" maxlength="120"></label>
+        <label class="field span-2"><span>Turmas participantes</span><select id="createClasses" multiple size="5"></select><small>Use Ctrl ou ⌘ para selecionar várias. Sem seleção = todas as turmas.</small></label>
+        <label class="field span-2"><span>Descrição <em>opcional</em></span><textarea id="createDescription" maxlength="4000" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelCreateDialog" type="button">Cancelar</button><button class="btn btn-primary" id="saveSimulado" type="submit">Criar e continuar</button></div>
+    </form>
+  </dialog>
+
+
+
+  <dialog id="relinkDialog" class="modal">
+    <form method="dialog" id="relinkForm" class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">RESULTADO PROCESSADO</span><h2>Corrigir vínculo do aluno</h2></div><button class="icon-button" id="closeRelinkDialog" type="button" aria-label="Fechar">×</button></div>
+      <input id="relinkResultId" type="hidden">
+      <div class="callout"><b>Vínculo atual</b><p id="relinkCurrentStudent">—</p><p>Esta operação não relê o cartão e não recalcula o diagnóstico. Somente transfere o resultado para o cadastro correto do aluno.</p></div>
+      <label class="field"><span>Pesquisar aluno</span><div class="inline-search"><input id="relinkSearch" type="search" maxlength="120" placeholder="Digite o nome ou código"><button class="btn btn-secondary btn-small" id="relinkSearchButton" type="button">Buscar</button></div></label>
+      <label class="field"><span>Aluno correto</span><select id="relinkStudent" required><option value="">Pesquise e selecione o aluno correto</option></select></label>
+      <div class="callout"><b>Proteção contra duplicidade</b><p>Se o aluno escolhido já possuir resultado neste mesmo simulado, o Axoriin bloqueará a alteração para não sobrescrever outro cartão.</p></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelRelinkDialog" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Confirmar novo vínculo</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="resolveDialog" class="modal">
+    <form method="dialog" id="resolveForm" class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">CORRIGIR IMPORTAÇÃO</span><h2 id="resolveTitle">Conferir aluno</h2></div><button class="icon-button" id="closeResolveDialog" type="button" aria-label="Fechar">×</button></div>
+      <input id="resolveLine" type="hidden">
+      <input id="resolveMode" type="hidden" value="presente">
+      <div class="callout" id="resolveAbsenceNotice" hidden><b>Registrar ausência</b><p>Selecione o aluno correto. As questões deste dia serão excluídas do denominador e do diagnóstico; não serão tratadas como erro, branco ou dado ausente.</p></div>
+      <div class="scan-header-preview" id="resolveHeaderPreview" hidden><img id="resolveHeaderImage" alt="Cabeçalho escaneado do cartão-resposta"></div>
+      <label class="field"><span>Localizar aluno</span><div class="inline-search"><input id="resolveSearch" placeholder="Nome ou código de acesso"><button class="btn btn-secondary btn-small" id="doStudentSearch" type="button">Buscar</button></div></label>
+      <label class="field"><span>Aluno correto</span><select id="resolveStudent"><option value="">Selecione</option></select></label>
+      <label class="field" id="resolveLanguageField"><span>Língua estrangeira</span><select id="resolveLanguage"><option value="NAO_INFORMADO">Ainda não confirmada</option><option value="NAO_MARCADO">Não marcou nenhuma língua — zerar questões 1–4</option><option value="INGLES">Inglês</option><option value="ESPANHOL">Espanhol</option></select><small>Não escolha uma língua por aproximação. Use “Não marcou” quando as duas bolhas estiverem realmente vazias.</small></label>
+      <label class="field" id="resolveOriginField"><span>Fonte da confirmação da língua</span><select id="resolveOrigin"><option value="manual">Conferência manual</option><option value="lista">Lista aluno × língua</option><option value="cartao">Cartão-resposta</option><option value="prova">Prova respondida</option></select></label>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelResolveDialog" type="button">Cancelar</button><button class="btn btn-primary" id="saveResolution" type="submit">Salvar correção</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="omrDialog" class="modal modal-wide">
+    <form method="dialog" id="omrForm" class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">CONFERÊNCIA OMR</span><h2 id="omrTitle">Revisar cartão</h2><p>Confira principalmente as questões destacadas. BRANCO é uma decisão explícita.</p></div><button class="icon-button" id="closeOmrDialog" type="button" aria-label="Fechar">×</button></div>
+      <input id="omrLine" type="hidden">
+      <div class="omr-review-layout">
+        <div class="omr-scan"><img id="omrGradeImage" alt="Grade de respostas escaneada"></div>
+        <div><div class="omr-legend"><span class="status-pill status-ready">Reconhecida</span><span class="status-pill status-draft">Exige revisão</span><small class="save-state" id="omrSaveState">Todos os ajustes salvos</small></div><div id="omrAnswerGrid" class="omr-answer-grid"></div></div>
+      </div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelOmrDialog" type="button">Cancelar</button><button class="btn btn-primary" type="submit">Salvar conferência das 80 questões</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="processedParticipationDialog" class="modal modal-wide">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">REVISÃO PÓS-PROCESSAMENTO</span><h2>Corrigir participação por dia sem reimportar cartões</h2><p>Use quando a ausência só foi confirmada depois do processamento. O aluno continua no simulado, mas o dia ausente deixa de compor o diagnóstico.</p></div><button class="icon-button" id="closeProcessedParticipationDialog" type="button" aria-label="Fechar">×</button></div>
+      <div class="callout"><b>Sem perda de progresso</b><p>Vínculo, respostas A-E, idioma, matriz pedagógica e habilidades ENEM são preservados. Ao marcar um dia como ausente, as respostas daquele dia ficam arquivadas e podem ser restauradas se a ausência for desfeita.</p></div>
+      <div class="form-grid" style="margin-top:16px">
+        <label class="field"><span>Turma</span><select id="processedParticipationClass"></select></label>
+        <label class="field"><span>Exibir</span><select id="processedParticipationFilter"><option value="parciais" selected>Cobertura parcial / ausência confirmada</option><option value="todos">Todos os alunos da turma</option></select></label>
+      </div>
+      <div class="table-wrap" style="margin-top:16px"><table><thead id="processedParticipationHead"></thead><tbody id="processedParticipationRows"></tbody></table></div>
+      <p class="muted" id="processedParticipationSummary" style="margin-top:10px"></p>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelProcessedParticipationDialog" type="button">Cancelar</button><button class="btn btn-primary" id="saveProcessedParticipation" type="button">Salvar participação e recalcular</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="processedLanguageDialog" class="modal modal-wide">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">REVISÃO PÓS-PROCESSAMENTO</span><h2>Corrigir língua estrangeira sem perder o progresso</h2><p>Use quando a prova foi conferida depois e a opção correta de Inglês/Espanhol ficou conhecida.</p></div><button class="icon-button" id="closeProcessedLanguageDialog" type="button" aria-label="Fechar">×</button></div>
+      <div class="callout"><b>O que será preservado</b><p>O vínculo do aluno, as respostas já marcadas, ausências confirmadas, matriz pedagógica e mapeamento ENEM permanecem intactos. O Axoriin apenas troca a variante de língua das questões correspondentes e recalcula o diagnóstico.</p></div>
+      <div class="form-grid" style="margin-top:16px">
+        <label class="field"><span>Turma</span><select id="processedLanguageClass"></select></label>
+        <label class="field"><span>Exibir</span><select id="processedLanguageFilter"><option value="pendentes" selected>Somente pendente / não marcou</option><option value="todos">Todos os alunos da turma</option></select></label>
+      </div>
+      <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Aluno</th><th>Turma</th><th>Registro atual</th><th>Nova confirmação</th><th>Fonte</th></tr></thead><tbody id="processedLanguageRows"></tbody></table></div>
+      <p class="muted" id="processedLanguageSummary" style="margin-top:10px"></p>
+      <div class="modal-actions"><button class="btn btn-ghost" id="cancelProcessedLanguageDialog" type="button">Cancelar</button><button class="btn btn-primary" id="saveProcessedLanguages" type="button">Salvar alterações e recalcular</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="studentDialog" class="modal modal-wide">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="section-kicker">DIAGNÓSTICO INDIVIDUAL</span><h2 id="studentDetailTitle">Aluno</h2><p id="studentDetailMeta"></p></div><button class="icon-button" id="closeStudentDialog" type="button" aria-label="Fechar">×</button></div>
+      <div id="studentDetail" class="student-detail"></div>
+    </div>
+  </dialog>
+
+  <div class="loading-overlay" id="loadingOverlay" hidden><div class="loader"></div><p id="loadingText">Processando…</p></div>
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+  <script src="/simulados/simulados.js?v=1.15.0" defer></script>
+</body>
+</html>
