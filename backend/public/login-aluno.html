@@ -560,7 +560,7 @@
 
         <h2 class="form-title">Login do Aluno e Responsável</h2>
         <p class="form-subtitle">
-          Aluno: use código de acesso e senha. Responsável: use e-mail e senha.
+          Aluno: use código ou e-mail. Responsável: use e-mail e senha.
         </p>
 
         <div id="tenantInfo" class="tenant-box"></div>
@@ -568,10 +568,10 @@
         <form id="formLoginAluno" autocomplete="on">
           <div class="tabs" role="tablist" aria-label="Tipo de acesso">
             <button type="button" class="tab-btn active" id="tabCodigo" data-mode="codigo">
-              Aluno: Código
+              Aluno: Código / E-mail
             </button>
             <button type="button" class="tab-btn" id="tabEmail" data-mode="email">
-              Responsável: E-mail
+              E-mail
             </button>
           </div>
 
@@ -617,8 +617,13 @@
           <div id="feedback" class="feedback"></div>
 
           <div class="support-row">
-            <span>Não possui acesso?</span>
-            <a href="#" onclick="return false;">Procure a administração da sua instituição.</a>
+            <span>Aluno ainda sem acesso?</span>
+            <a href="cadastro-aluno-acesso.html" id="linkCriarAcesso">Criar meu acesso</a>
+          </div>
+
+          <div class="support-row">
+            <span>Aluno esqueceu a senha?</span>
+            <a href="recuperar-senha-aluno.html" id="linkRecuperarSenha">Recuperar senha</a>
           </div>
 
           <div class="back-row">
@@ -650,6 +655,8 @@
       const tenantInfo = document.getElementById('tenantInfo');
       const toggleSenha = document.getElementById('toggleSenha');
       const linkLoginPadrao = document.getElementById('linkLoginPadrao');
+      const linkCriarAcesso = document.getElementById('linkCriarAcesso');
+      const linkRecuperarSenha = document.getElementById('linkRecuperarSenha');
 
       const tabCodigo = document.getElementById('tabCodigo');
       const tabEmail = document.getElementById('tabEmail');
@@ -712,7 +719,7 @@
           loginLabel.textContent = 'E-mail';
           inputLogin.type = 'email';
           inputLogin.placeholder = 'Ex.: aluno@email.com';
-          loginHint.textContent = 'Use o e-mail vinculado ao seu usuário de aluno.';
+          loginHint.textContent = 'Aluno cadastrado ou responsável: use o e-mail vinculado ao acesso.';
           return;
         }
 
@@ -732,6 +739,8 @@
       function applyTenantToLinks() {
         if (tenant) {
           linkLoginPadrao.href = buildUrl('login.html');
+          if (linkCriarAcesso) linkCriarAcesso.href = buildUrl('cadastro-aluno-acesso.html');
+          if (linkRecuperarSenha) linkRecuperarSenha.href = buildUrl('recuperar-senha-aluno.html');
         }
       }
 
@@ -789,7 +798,7 @@
             payload.t = tenant;
           }
 
-          const response = await fetch('/auth/login-aluno', {
+          const response = await fetch(buildUrl('/auth/login-aluno'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -910,6 +919,12 @@ window.location.href =
       showTenantInfo();
       applyTenantToLinks();
       setLoginMode('codigo');
+
+      if (params.get('verified') === '1') {
+        setFeedback('E-mail confirmado com sucesso. Seu acesso ao Portal do Aluno está liberado.', 'success');
+      } else if (params.get('passwordReset') === '1') {
+        setFeedback('Senha redefinida com sucesso. Entre com sua nova senha.', 'success');
+      }
 
       // IMPORTANTE:
       // Não redirecionar automaticamente para o painel apenas porque existe token salvo.

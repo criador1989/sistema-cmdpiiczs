@@ -241,6 +241,29 @@ const usuarioSchema = new Schema(
       index: true,
     },
 
+    // Recuperacao de senha do Portal do Aluno. O token bruto nunca e salvo.
+    senhaResetTokenHash: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    senhaResetExpiraEm: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
+    senhaResetSolicitadoEm: {
+      type: Date,
+      default: null,
+    },
+
+    senhaResetConsumidoEm: {
+      type: Date,
+      default: null,
+    },
+
     onboardingProfessor: {
       obrigarTrocaSenha: { type: Boolean, default: false, index: true },
       senhaTemporariaDefinidaEm: { type: Date, default: null },
@@ -264,6 +287,7 @@ const usuarioSchema = new Schema(
 usuarioSchema.index({ instituicao: 1, email: 1 }, { unique: true });
 usuarioSchema.index({ tenantId: 1, email: 1 }, { sparse: true });
 usuarioSchema.index({ tokenVerificacaoHash: 1, tokenVerificacaoExpiraEm: 1 });
+usuarioSchema.index({ senhaResetTokenHash: 1, senhaResetExpiraEm: 1 });
 usuarioSchema.index({ instituicao: 1, tipo: 1, turmas: 1 });
 usuarioSchema.index({ tenantId: 1, tipo: 1, turmas: 1 });
 usuarioSchema.index({ instituicao: 1, portal: 1, tipo: 1 });
@@ -489,6 +513,8 @@ function ocultarCampos(_doc, ret) {
   delete ret.__v;
   delete ret.tokenVerificacaoHash;
   delete ret.tokenVerificacaoExpiraEm;
+  delete ret.senhaResetTokenHash;
+  delete ret.senhaResetExpiraEm;
   return ret;
 }
 
