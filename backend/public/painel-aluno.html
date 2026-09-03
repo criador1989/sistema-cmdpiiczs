@@ -9,7 +9,8 @@
   <title>Axoriin • Portal do Aluno</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="manifest" href="/manifest-aluno.json">
-  <link rel="stylesheet" href="/portal-aluno/portal-aluno.css?v=1.0.2">
+  <link rel="stylesheet" href="/portal-aluno/portal-aluno.css?v=4.8.0">
+<link rel="stylesheet" href="/portal-aluno/recuperacao-conta.css?v=1.0.1">
 </head>
 <body>
   <section class="boot-state" id="loadingState" aria-live="polite">
@@ -87,12 +88,41 @@
         </div>
       </section>
 
-      <section class="section" aria-labelledby="metricsTitle">
+            <section class="section recovery-security-section" id="segurancaConta" hidden>
+        <article class="recovery-security-card" aria-labelledby="recoverySecurityTitle">
+          <div class="recovery-security-card__main">
+            <div class="recovery-security-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2.5L19 5.5V11.2C19 15.8 16.2 19.2 12 21.5C7.8 19.2 5 15.8 5 11.2V5.5L12 2.5Z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M9 12L11 14L15.5 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <h3 id="recoverySecurityTitle">Proteja sua conta</h3>
+              <p data-recovery-state>Cadastre um e-mail para recuperar seu acesso caso esque&ccedil;a a senha.</p>
+            </div>
+          </div>
+          <a class="recovery-security-card__action" href="/seguranca-aluno.html">Cadastrar e-mail</a>
+        </article>
+      </section>
+<section class="section" aria-labelledby="metricsTitle">
         <div class="section-head">
           <div><h2 id="metricsTitle">Seu panorama</h2><p id="metricsSubtitle">Dados reais das atividades já realizadas.</p></div>
           <span class="section-tag" id="contextLabel">Carregando contexto</span>
         </div>
         <div class="metrics-grid" id="metricsGrid"></div>
+      </section>
+
+      <section class="section enem-focus-section" id="enemFocusSection" aria-labelledby="enemFocusTitle" hidden>
+        <div class="section-head">
+          <div>
+            <h2 id="enemFocusTitle">Seu foco no ENEM</h2>
+            <p>Diagnóstico, evolução por competência e próxima atividade recomendada.</p>
+          </div>
+          <span class="section-tag">Trilha personalizada</span>
+        </div>
+        <div class="enem-competencias-grid" id="enemCompetenciasGrid"></div>
+        <article class="enem-next-action" id="enemNextAction"></article>
       </section>
 
       <section class="section" id="modulos" aria-labelledby="modulesTitle">
@@ -145,7 +175,8 @@
     </nav>
   </div>
 
-  <script src="/portal-aluno/portal-runtime.js?v=1.0.2"></script>
-  <script src="/portal-aluno/portal-aluno.js?v=1.0.2"></script>
+  <script src="/portal-aluno/portal-runtime.js?v=4.8.0"></script>
+  <script src="/portal-aluno/portal-aluno.js?v=4.8.0"></script>
+<script src="/portal-aluno/recuperacao-conta.js?v=1.0.1"></script>
 </body>
 </html>

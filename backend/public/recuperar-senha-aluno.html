@@ -1,6 +1,86 @@
-<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Axoriin • Recuperar senha</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><style>
-:root{--blue:#0b63c7;--blue2:#1683f5;--navy:#0c2340;--muted:#687789;--line:#dce6f2;--ok:#128c55;--danger:#d93f4c}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#eaf4ff,#f8fbff);font-family:Inter,sans-serif;color:#102033}.card{width:min(100%,520px);background:#fff;border:1px solid #dfeaf6;border-radius:26px;padding:38px;box-shadow:0 24px 70px rgba(12,45,92,.16)}.badge{display:inline-block;padding:7px 11px;border-radius:999px;background:#eaf4ff;color:var(--blue);font-size:12px;font-weight:800}.card h1{font-size:30px;color:var(--navy);margin:16px 0 9px}.card p{color:var(--muted);line-height:1.6}.field{margin:24px 0 16px}.field label{display:block;font-size:13px;font-weight:800;margin-bottom:8px}.field input{width:100%;height:54px;border:1px solid var(--line);border-radius:14px;padding:0 14px;font:500 15px Inter,sans-serif;outline:none}.field input:focus{border-color:#5aa8f8;box-shadow:0 0 0 4px rgba(22,131,245,.1)}button,.link{width:100%;height:52px;border:0;border-radius:14px;font-weight:800;font-size:15px;display:grid;place-items:center;text-decoration:none;cursor:pointer}.primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:white}.link{margin-top:10px;background:#eef4fb;color:#36516f}.feedback{display:none;margin-top:16px;padding:13px;border-radius:14px;font-size:14px;font-weight:600;line-height:1.45}.feedback.show{display:block}.feedback.error{background:#fff0f2;color:var(--danger)}.feedback.success{background:#effaf5;color:var(--ok)}button:disabled{opacity:.65}.tenant{font-size:12px;color:#5d7087;margin-top:8px}@media(max-width:540px){.card{padding:28px 20px}}
-</style></head><body><main class="card"><span class="badge">PORTAL DO ALUNO</span><h1>Esqueci minha senha</h1><p>Informe o e-mail vinculado ao seu acesso. Se a conta existir, enviaremos um link temporário para criar uma nova senha.</p><div id="tenantInfo" class="tenant"></div><form id="form"><div class="field"><label for="email">E-mail do aluno</label><input id="email" type="email" autocomplete="email" required placeholder="aluno@email.com"></div><button id="btn" class="primary" type="submit">Enviar link de recuperação</button><a id="login" class="link" href="login-aluno.html">Voltar ao login</a><div id="feedback" class="feedback"></div></form></main><script>
-(function(){const p=new URLSearchParams(location.search),t=(p.get('t')||'').trim(),form=document.getElementById('form'),btn=document.getElementById('btn'),fb=document.getElementById('feedback'),login=document.getElementById('login');function url(path){return t?path+(path.includes('?')?'&':'?')+'t='+encodeURIComponent(t):path}if(t){document.getElementById('tenantInfo').textContent='Instituição/tenant: '+t;login.href=url('login-aluno.html')}function msg(x,type){fb.textContent=x;fb.className='feedback show '+type}form.addEventListener('submit',async e=>{e.preventDefault();btn.disabled=true;btn.textContent='Enviando...';try{const payload={email:document.getElementById('email').value};if(t){payload.t=t;payload.tenant=t}const r=await fetch(url('/auth/aluno-senha/solicitar'),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok){msg(d.mensagem||'Não foi possível enviar a solicitação.','error');return}msg(d.mensagem||'Se a conta existir, as instruções serão enviadas por e-mail.','success');form.reset()}catch(e){msg('Erro de conexão. Tente novamente.','error')}finally{btn.disabled=false;btn.textContent='Enviar link de recuperação'}})})();
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Recuperar senha • Axoriin Portal do Aluno</title>
+  <style>
+    :root{--bg:#080b1c;--card:#111831;--line:#29345f;--txt:#f1f3ff;--muted:#aab4d6;--acc:#8068ff;--ok:#43d99d}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--txt);
+    background:radial-gradient(circle at 20% 15%,rgba(128,104,255,.2),transparent 35%),var(--bg)}
+    .card{width:min(480px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px;
+    box-shadow:0 24px 70px rgba(0,0,0,.3)}
+    h1{margin:0 0 8px;font-size:29px}.lead{color:var(--muted);line-height:1.5;margin:0 0 22px}
+    label{display:block;font-weight:800;margin:15px 0 7px}input{width:100%;padding:13px 14px;border-radius:12px;
+    border:1px solid #354273;background:#0a1027;color:var(--txt);font:inherit}
+    button{width:100%;border:0;border-radius:12px;padding:13px;margin-top:20px;background:var(--acc);color:white;font:inherit;font-weight:900;cursor:pointer}
+    button:disabled{opacity:.55}.msg{display:none;margin-top:16px;padding:13px;border-radius:12px;background:rgba(67,217,157,.08);border:1px solid rgba(67,217,157,.3);line-height:1.45}
+    .msg.show{display:block}.links{text-align:center;margin-top:18px}.links a{color:#bcb2ff;text-decoration:none;font-weight:800}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Esqueceu sua senha?</h1>
+    <p class="lead">
+      Informe seu código de acesso e o e-mail de recuperação que você confirmou no Portal do Aluno.
+    </p>
+
+    <form id="form">
+      <label for="codigo">Código de acesso</label>
+      <input id="codigo" autocomplete="username" required placeholder="Ex.: 2J8HOUJ7">
+
+      <label for="email">E-mail de recuperação</label>
+      <input id="email" type="email" autocomplete="email" required placeholder="seuemail@exemplo.com">
+      <div class="hint">Pode ser o seu e-mail ou o e-mail de recuperação de um responsável.</div>
+
+      <button id="btn" type="submit">Enviar link de recuperação</button>
+    </form>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="links">
+      <a href="/login-aluno.html">← Voltar ao Portal do Aluno</a>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const form = document.getElementById('form');
+      const btn = document.getElementById('btn');
+      const msg = document.getElementById('msg');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+
+        try {
+          const r = await fetch('/api/aluno-recuperacao/solicitar-reset', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              codigoAcesso: document.getElementById('codigo').value.trim(),
+              emailRecuperacao: document.getElementById('email').value.trim()
+            })
+          });
+
+          const data = await r.json().catch(() => ({}));
+          msg.className = 'msg show';
+          msg.textContent = data.mensagem ||
+            'Se os dados corresponderem a uma conta protegida, enviaremos um link.';
+        } catch {
+          msg.className = 'msg show';
+          msg.textContent =
+            'Se os dados corresponderem a uma conta protegida, enviaremos um link.';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Enviar link de recuperação';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

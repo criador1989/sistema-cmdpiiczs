@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 require('dotenv').config({ path: __dirname + '/.env' });
 
@@ -266,6 +266,7 @@ const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
 const arenaQuestionariosRoutes = require('./routes/api/arenaQuestionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
+const alunoRecuperacaoRoutes = require('./routes/api/alunoRecuperacao');
 const enemPortalRoutes = require('./routes/api/enemPortal');
 const arenaRankingPortalRoutes = require('./routes/api/arenaRankingPortal');
 const rifasRoutes = require('./routes/api/rifas');
@@ -619,6 +620,7 @@ function buildProfessorGuard(publicRoot) {
     '/cadastro-aluno-acesso.html',
     '/recuperar-senha-aluno.html',
     '/redefinir-senha-aluno.html',
+      '/confirmar-recuperacao-aluno.html',
     '/painel-aluno.html',
     '/painel-aluno.js',
     '/aluno-enem.html',
@@ -796,7 +798,10 @@ mountIf('/api', fichaTesteRoute);
 
 // ðŸ”¥ IMPORTANTE: rotas pÃºblicas do aluno precisam vir ANTES de /api/alunos
 // para /api/alunos/:id/public/qrcode, /enable e /disable nÃ£o caÃ­rem no CRUD normal.
-mountIf('/api', publicAlunoRoutes);
+// Axoriin Portal do Aluno - recuperacao de conta.
+// IMPORTANTE: precisa vir antes de routers amplos montados em /api,
+// pois confirmar/resetar senha possuem endpoints publicos.
+mountIf('/api/aluno-recuperacao', alunoRecuperacaoRoutes);mountIf('/api', publicAlunoRoutes);
 mountIf('/api/alunos', alunoRoutes);
 
 // mountIf('/api', pdfRoutes);
