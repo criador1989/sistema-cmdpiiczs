@@ -1,3 +1,4 @@
+// AXORIIN V1.15.9 - mascote apontando com piscada e expressao suave
 (function(){
 'use strict';
 
@@ -625,6 +626,116 @@ async function load(){
     $('#errorText').textContent = error.message || 'Erro inesperado.';
   }
 }
+
+
+function initReviewMascotAnimation(){
+  const card = document.getElementById('reviewEvolutionCard');
+  if (!card) return;
+
+  const stage = card.querySelector('.cta-mascot-stage');
+  const blinkSoft = card.querySelector('.cta-mascot-blink-soft');
+  const blinkFull = card.querySelector('.cta-mascot-blink-full');
+  const mouthFrame = card.querySelector('.cta-mascot-mouth');
+  const reviewButton = document.getElementById('scrollImprove');
+
+  if (!stage || !blinkSoft || !blinkFull || !mouthFrame) return;
+
+  card.classList.add('ax-mascot-awake');
+
+  let alive = true;
+  let blinkTimer = null;
+  let expressionTimer = null;
+  let reactTimer = null;
+
+  const animateOpacity = (el, keyframes, options) => {
+    if (!el || typeof el.animate !== 'function') return null;
+    return el.animate(keyframes, options);
+  };
+
+  // Piscada em aproximadamente 170 ms. O corpo e a escala nunca mudam:
+  // apenas dois overlays recortados no visor ganham/perdem opacidade.
+  const blinkOnce = () => {
+    if (!alive || document.hidden) return;
+
+    animateOpacity(blinkSoft, [
+      { opacity:0, offset:0 },
+      { opacity:1, offset:.28 },
+      { opacity:1, offset:.72 },
+      { opacity:0, offset:1 }
+    ], { duration:170, easing:'linear' });
+
+    animateOpacity(blinkFull, [
+      { opacity:0, offset:0 },
+      { opacity:0, offset:.22 },
+      { opacity:1, offset:.43 },
+      { opacity:1, offset:.60 },
+      { opacity:0, offset:.82 },
+      { opacity:0, offset:1 }
+    ], { duration:170, easing:'linear' });
+  };
+
+  const scheduleBlink = () => {
+    window.clearTimeout(blinkTimer);
+    blinkTimer = window.setTimeout(() => {
+      blinkOnce();
+      if (Math.random() > .78) window.setTimeout(blinkOnce, 255);
+      scheduleBlink();
+    }, 2800 + Math.floor(Math.random() * 2600));
+  };
+
+  const smilePulse = () => {
+    if (!alive || document.hidden) return;
+    animateOpacity(mouthFrame, [
+      { opacity:0, offset:0 },
+      { opacity:1, offset:.28 },
+      { opacity:1, offset:.66 },
+      { opacity:0, offset:1 }
+    ], { duration:620, easing:'ease-in-out' });
+  };
+
+  const scheduleExpression = () => {
+    window.clearTimeout(expressionTimer);
+    expressionTimer = window.setTimeout(() => {
+      smilePulse();
+      scheduleExpression();
+    }, 7600 + Math.floor(Math.random() * 4200));
+  };
+
+  const react = () => {
+    if (!alive) return;
+    card.classList.remove('ax-mascot-react');
+    void card.offsetWidth;
+    card.classList.add('ax-mascot-react');
+    blinkOnce();
+    window.setTimeout(smilePulse, 170);
+    window.clearTimeout(reactTimer);
+    reactTimer = window.setTimeout(() => card.classList.remove('ax-mascot-react'), 980);
+  };
+
+  scheduleBlink();
+  scheduleExpression();
+
+  card.addEventListener('mouseenter', react, { passive:true });
+  card.addEventListener('focusin', react, { passive:true });
+  if (reviewButton) reviewButton.addEventListener('mouseenter', react, { passive:true });
+  if (reviewButton) reviewButton.addEventListener('focus', react, { passive:true });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      scheduleBlink();
+      scheduleExpression();
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    alive = false;
+    window.clearTimeout(blinkTimer);
+    window.clearTimeout(expressionTimer);
+    window.clearTimeout(reactTimer);
+  }, { once:true });
+}
+
+initReviewMascotAnimation();
 
 $('#retry').addEventListener('click', load);
 $('#closeDetail').addEventListener('click', () => $('#detailDialog').close());
