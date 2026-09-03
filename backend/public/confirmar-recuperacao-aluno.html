@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Confirmar e-mail de recuperação • Axoriin</title>
+  <meta name="theme-color" content="#081326">
+  <style>
+    :root{--bg:#07101f;--card:#101b35;--line:#2b4167;--txt:#f4f7ff;--muted:#b9c5dc;--accent:#7157ff;--ok:#3ed69a;--bad:#ff7888}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--txt);background:radial-gradient(circle at 20% 5%,rgba(113,87,255,.22),transparent 34%),radial-gradient(circle at 90% 20%,rgba(55,203,214,.12),transparent 30%),var(--bg)}
+    .card{width:min(620px,100%);background:linear-gradient(145deg,rgba(18,29,58,.98),rgba(10,20,42,.98));border:1px solid var(--line);border-radius:24px;padding:30px;box-shadow:0 26px 80px rgba(0,0,0,.35)}
+    .brand{font-weight:900;letter-spacing:.2px;margin-bottom:26px;color:#dfe8ff}.icon{width:62px;height:62px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#4b35dd);margin-bottom:18px}.icon svg{width:31px;height:31px;fill:none;stroke:white;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    h1{font-size:clamp(26px,5vw,38px);margin:0 0 10px}.lead{color:var(--muted);font-size:16px;line-height:1.6;margin:0}.status{margin-top:24px;border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(4,11,29,.45);line-height:1.5}.status.ok{border-color:rgba(62,214,154,.42);background:rgba(62,214,154,.08)}.status.bad{border-color:rgba(255,120,136,.42);background:rgba(255,120,136,.08)}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:13px;text-decoration:none;font-weight:850;color:#fff;background:linear-gradient(135deg,var(--accent),#5842e9)}.btn.secondary{background:transparent;border:1px solid var(--line);color:#dce6ff}
+    .small{font-size:13px;color:var(--muted);margin-top:18px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">AXORIIN • Portal do Aluno</div>
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg>
+    </div>
+    <h1 id="title">Confirmando seu e-mail...</h1>
+    <p class="lead" id="lead">Aguarde alguns segundos enquanto o Axoriin valida o link de recuperação.</p>
+    <div class="status" id="status">Processando confirmação.</div>
+    <div class="actions">
+      <a class="btn" id="loginBtn" href="/login-aluno.html" hidden>Ir para o Portal do Aluno</a>
+      <a class="btn secondary" id="securityBtn" href="/seguranca-aluno.html" hidden>Solicitar novo link</a>
+    </div>
+    <p class="small">Por segurança, links antigos deixam de funcionar quando um novo link de confirmação é solicitado.</p>
+  </main>
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const code = String(params.get('c') || '').trim();
+      const estado = String(params.get('estado') || '').trim();
+      const title = document.getElementById('title');
+      const lead = document.getElementById('lead');
+      const status = document.getElementById('status');
+      const loginBtn = document.getElementById('loginBtn');
+      const securityBtn = document.getElementById('securityBtn');
+
+      function ok(message) {
+        title.textContent = 'E-mail confirmado';
+        lead.textContent = 'Seu endereço de recuperação foi confirmado e sua conta está protegida.';
+        status.className = 'status ok';
+        status.textContent = message || 'E-mail de recuperação confirmado com sucesso.';
+        loginBtn.hidden = false;
+      }
+
+      function fail(message) {
+        title.textContent = 'Não foi possível confirmar';
+        lead.textContent = 'Este link pode ter expirado ou ter sido substituído por um link enviado mais recentemente.';
+        status.className = 'status bad';
+        status.textContent = message || 'Solicite um novo link de confirmação no Portal do Aluno.';
+        loginBtn.hidden = false;
+        securityBtn.hidden = false;
+      }
+
+      if (estado === 'confirmado') return ok();
+      if (estado === 'invalido') return fail();
+      if (estado === 'erro') return fail('Ocorreu uma falha ao confirmar. Tente solicitar um novo link.');
+
+      if (!/^[a-f0-9]{64}$/i.test(code)) {
+        return fail('Link de confirmação inválido ou incompleto.');
+      }
+
+      fetch('/api/aluno-recuperacao/confirmar-email', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json; charset=UTF-8'
+        },
+        body: JSON.stringify({ codigoConfirmacao: code })
+      })
+        .then(async (r) => {
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.mensagem || 'Não foi possível confirmar o e-mail.');
+          return data;
+        })
+        .then((data) => ok(data.mensagem))
+        .catch((err) => fail(err.message));
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Segurança e recuperação • Axoriin</title>
+  <meta name="theme-color" content="#090d22">
+  <style>
+    :root{
+      --bg:#070a18;--card:#10162f;--card2:#141c3b;--line:#27325e;
+      --txt:#eef2ff;--muted:#aeb8d8;--accent:#826cff;--accent2:#28d5d5;
+      --ok:#41d89c;--warn:#ffd166;--bad:#ff7484
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+      color:var(--txt);background:
+        radial-gradient(circle at 15% 10%,rgba(130,108,255,.18),transparent 35%),
+        radial-gradient(circle at 85% 20%,rgba(40,213,213,.10),transparent 32%),
+        var(--bg)
+    }
+    .wrap{width:min(760px,calc(100% - 28px));margin:0 auto;padding:32px 0 48px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+    .brand{font-weight:900;letter-spacing:.2px}
+    .back{color:var(--muted);text-decoration:none;font-weight:700}
+    .card{
+      background:linear-gradient(145deg,rgba(20,28,59,.97),rgba(13,19,43,.97));
+      border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)
+    }
+    .shield{
+      width:54px;height:54px;border-radius:16px;display:grid;place-items:center;
+      background:linear-gradient(145deg,var(--accent),#5841e8);font-size:26px;margin-bottom:14px
+    }
+    h1{font-size:clamp(24px,5vw,34px);margin:0 0 8px}
+    .lead{color:var(--muted);line-height:1.55;margin:0 0 22px}
+    .status{
+      border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin:18px 0;
+      background:rgba(5,9,27,.42)
+    }
+    .status strong{display:block;margin-bottom:5px}
+    .status p{margin:0;color:var(--muted);line-height:1.45}
+    .ok{border-color:rgba(65,216,156,.35);background:rgba(65,216,156,.08)}
+    .pending{border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.08)}
+    label{display:block;font-weight:800;margin:17px 0 7px}
+    input{
+      width:100%;border:1px solid #344175;background:#0b1027;color:var(--txt);
+      border-radius:13px;padding:13px 14px;font:inherit;outline:none
+    }
+    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(130,108,255,.14)}
+    .hint{font-size:13px;color:var(--muted);line-height:1.45;margin-top:7px}
+    button{
+      width:100%;border:0;border-radius:13px;padding:13px 16px;margin-top:20px;
+      font:inherit;font-weight:900;color:#fff;background:linear-gradient(135deg,var(--accent),#5f49eb);
+      cursor:pointer
+    }
+    button:disabled{opacity:.55;cursor:wait}
+    .msg{display:none;margin-top:16px;padding:12px 14px;border-radius:12px;line-height:1.45}
+    .msg.show{display:block}
+    .msg.ok{color:#c7ffe7}
+    .msg.bad{color:#ffd4da;border:1px solid rgba(255,116,132,.35);background:rgba(255,116,132,.08)}
+    .privacy{font-size:13px;color:var(--muted);line-height:1.5;margin-top:20px}
+    .privacy b{color:var(--txt)}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div class="brand">AXORIIN • Portal do Aluno</div>
+      <a class="back" href="/painel-aluno.html">← Voltar ao portal</a>
+    </div>
+
+    <section class="card">
+      <div class="shield">🛡️</div>
+      <h1>Segurança e recuperação</h1>
+      <p class="lead">
+        Cadastre um e-mail ao qual você realmente tenha acesso. Ele será usado
+        somente para recuperar sua conta caso você esqueça a senha.
+      </p>
+
+      <div class="status" id="statusBox">
+        <strong>Verificando sua conta...</strong>
+        <p>Aguarde um instante.</p>
+      </div>
+
+      <form id="recoveryForm" autocomplete="off">
+        <label for="email">E-mail de recuperação</label>
+        <input id="email" name="email" type="email" inputmode="email"
+               autocomplete="email" placeholder="seuemail@exemplo.com" required>
+        <div class="hint">
+          Pode ser seu e-mail pessoal ou, se você não tiver um, o e-mail de um
+          responsável de confiança. O mesmo e-mail pode proteger contas de irmãos.
+        </div>
+
+        <label for="senhaAtual">Sua senha atual</label>
+        <input id="senhaAtual" name="senhaAtual" type="password"
+               autocomplete="current-password" required>
+        <div class="hint">
+          Pedimos sua senha atual para impedir que outra pessoa altere o endereço
+          de recuperação de uma sessão aberta.
+        </div>
+
+        <button id="saveBtn" type="submit">Enviar link de confirmação</button>
+      </form>
+
+      <div class="msg" id="msg"></div>
+
+      <p class="privacy">
+        <b>Importante:</b> o e-mail de recuperação não muda seu login.
+        Você continuará entrando normalmente com seu <b>código de acesso + senha</b>.
+      </p>
+    </section>
+  </main>
+
+  <script src="/portal-aluno/portal-runtime.js"></script>
+  <script>
+    (() => {
+      const runtime = window.AxoriinAluno;
+      if (!runtime || !runtime.garantirSessao || !runtime.garantirSessao()) return;
+
+      const statusBox = document.getElementById('statusBox');
+      const form = document.getElementById('recoveryForm');
+      const email = document.getElementById('email');
+      const senhaAtual = document.getElementById('senhaAtual');
+      const saveBtn = document.getElementById('saveBtn');
+      const msg = document.getElementById('msg');
+
+      const showMsg = (text, type = 'ok') => {
+        msg.className = `msg show ${type}`;
+        msg.textContent = text;
+      };
+
+      const api = async (url, opts = {}) => {
+        const request = {
+          credentials: 'include',
+          cache: 'no-store',
+          ...opts,
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json; charset=UTF-8',
+            ...(opts.headers || {})
+          }
+        };
+
+        const r = await fetch(url, request);
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.mensagem || 'Falha na solicitação.');
+        return data;
+      };
+
+      async function loadStatus() {
+        try {
+          const data = await api('/api/aluno-recuperacao/status');
+
+          if (data.verificado) {
+            statusBox.className = 'status ok';
+            statusBox.innerHTML =
+              `<strong>✓ Conta protegida</strong>` +
+              `<p>E-mail confirmado: ${escapeHtml(data.emailMascarado || data.emailRecuperacao || '')}</p>`;
+            email.value = data.emailRecuperacao || '';
+          } else if (data.emailPendente) {
+            statusBox.className = 'status pending';
+            statusBox.innerHTML =
+              `<strong>Confirmação pendente</strong>` +
+              `<p>Enviamos um link para ${escapeHtml(data.emailPendenteMascarado || '')}. ` +
+              `Se necessário, informe novamente o endereço abaixo.</p>`;
+            email.value = data.emailPendente || '';
+          } else {
+            statusBox.className = 'status';
+            statusBox.innerHTML =
+              '<strong>Recuperação ainda não configurada</strong>' +
+              '<p>Cadastre e confirme um e-mail para não depender da escola caso esqueça sua senha.</p>';
+          }
+        } catch (e) {
+          statusBox.className = 'status';
+          statusBox.innerHTML =
+            '<strong>Não foi possível consultar o status</strong>' +
+            '<p>Tente novamente em alguns instantes.</p>';
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        msg.className = 'msg';
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Enviando...';
+
+        try {
+          const emailNormalizado = email.value.trim().toLowerCase();
+
+          if (!emailNormalizado || !email.checkValidity()) {
+            showMsg('Informe um e-mail válido.', 'bad');
+            return;
+          }
+
+          const data = await api('/api/aluno-recuperacao/email', {
+            method: 'POST',
+            body: JSON.stringify({
+              email: emailNormalizado,
+              emailRecuperacao: emailNormalizado,
+              senhaAtual: senhaAtual.value
+            })
+          });
+
+          senhaAtual.value = '';
+          showMsg(data.mensagem || 'Verifique o e-mail informado.', 'ok');
+          await loadStatus();
+        } catch (e) {
+          showMsg(e.message || 'Não foi possível cadastrar o e-mail.', 'bad');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Enviar link de confirmação';
+        }
+      });
+
+      const params = new URLSearchParams(location.search);
+      if (params.get('email_confirmado') === '1') {
+        showMsg('E-mail de recuperação confirmado com sucesso.', 'ok');
+      } else if (params.get('email_confirmado') === '0') {
+        showMsg('O link de confirmação é inválido ou expirou. Envie um novo link.', 'bad');
+      }
+
+      loadStatus();
+    })();
+  </script>
+</body>
+</html>

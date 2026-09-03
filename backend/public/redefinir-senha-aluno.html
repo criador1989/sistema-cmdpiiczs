@@ -1,6 +1,105 @@
-<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Axoriin • Nova senha</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><style>
-:root{--blue:#0b63c7;--blue2:#1683f5;--navy:#0c2340;--muted:#687789;--line:#dce6f2;--ok:#128c55;--danger:#d93f4c}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#eaf4ff,#f8fbff);font-family:Inter,sans-serif}.card{width:min(100%,520px);background:#fff;border:1px solid #dfeaf6;border-radius:26px;padding:38px;box-shadow:0 24px 70px rgba(12,45,92,.16)}h1{color:var(--navy);font-size:30px;margin:0 0 9px}p{color:var(--muted);line-height:1.55}.field{margin:18px 0}.field label{display:block;font-weight:800;font-size:13px;margin-bottom:8px}.field input{width:100%;height:54px;border:1px solid var(--line);border-radius:14px;padding:0 14px;font:500 15px Inter,sans-serif;outline:none}.field input:focus{border-color:#5aa8f8;box-shadow:0 0 0 4px rgba(22,131,245,.1)}button,.link{width:100%;height:52px;border:0;border-radius:14px;font-weight:800;font-size:15px;display:grid;place-items:center;text-decoration:none;cursor:pointer}.primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}.link{display:none;margin-top:10px;background:#eef4fb;color:#36516f}.feedback{display:none;margin-top:16px;padding:13px;border-radius:14px;font-size:14px;font-weight:600;line-height:1.45}.feedback.show{display:block}.feedback.error{background:#fff0f2;color:var(--danger)}.feedback.success{background:#effaf5;color:var(--ok)}button:disabled{opacity:.65}@media(max-width:540px){.card{padding:28px 20px}}
-</style></head><body><main class="card"><h1>Crie sua nova senha</h1><p>Use uma senha com pelo menos 8 caracteres, incluindo letra maiúscula, minúscula e número.</p><form id="form"><div class="field"><label for="senha">Nova senha</label><input id="senha" type="password" autocomplete="new-password" required minlength="8"></div><div class="field"><label for="confirmar">Confirme a nova senha</label><input id="confirmar" type="password" autocomplete="new-password" required minlength="8"></div><button id="btn" class="primary" type="submit">Salvar nova senha</button><a id="login" class="link" href="login-aluno.html">Entrar no Portal do Aluno</a><div id="feedback" class="feedback"></div></form></main><script>
-(function(){const p=new URLSearchParams(location.search),token=(p.get('token')||'').trim(),t=(p.get('t')||'').trim(),form=document.getElementById('form'),btn=document.getElementById('btn'),fb=document.getElementById('feedback'),login=document.getElementById('login');function url(path){return t?path+(path.includes('?')?'&':'?')+'t='+encodeURIComponent(t):path}if(t)login.href=url('login-aluno.html');function msg(x,type){fb.textContent=x;fb.className='feedback show '+type}if(!token){msg('Este link de redefinição é inválido. Solicite um novo link na tela de login.','error');btn.disabled=true}form.addEventListener('submit',async e=>{e.preventDefault();const s=document.getElementById('senha').value,c=document.getElementById('confirmar').value;if(s!==c){msg('As senhas não coincidem.','error');return}btn.disabled=true;btn.textContent='Salvando...';try{const payload={token,senha:s};if(t){payload.t=t;payload.tenant=t}const r=await fetch(url('/auth/aluno-senha/redefinir'),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok){msg(d.mensagem||'Não foi possível redefinir a senha.','error');return}msg('Senha redefinida com sucesso. Você já pode entrar no Portal do Aluno.','success');login.style.display='grid';btn.style.display='none'}catch(e){msg('Erro de conexão. Tente novamente.','error')}finally{if(btn.style.display!=='none'){btn.disabled=false;btn.textContent='Salvar nova senha'}}})})();
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Criar nova senha • Axoriin</title>
+  <style>
+    :root{--bg:#080b1c;--card:#111831;--line:#29345f;--txt:#f1f3ff;--muted:#aab4d6;--acc:#8068ff;--ok:#43d99d;--bad:#ff7888}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--txt);
+    background:radial-gradient(circle at 20% 15%,rgba(128,104,255,.2),transparent 35%),var(--bg)}
+    .card{width:min(480px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px;
+    box-shadow:0 24px 70px rgba(0,0,0,.3)}h1{margin:0 0 8px;font-size:29px}
+    .lead{color:var(--muted);line-height:1.5;margin:0 0 22px}label{display:block;font-weight:800;margin:15px 0 7px}
+    input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #354273;background:#0a1027;color:var(--txt);font:inherit}
+    button{width:100%;border:0;border-radius:12px;padding:13px;margin-top:20px;background:var(--acc);color:white;font:inherit;font-weight:900;cursor:pointer}
+    button:disabled{opacity:.55}.msg{display:none;margin-top:16px;padding:13px;border-radius:12px;line-height:1.45}
+    .msg.show{display:block}.msg.ok{border:1px solid rgba(67,217,157,.3);background:rgba(67,217,157,.08)}
+    .msg.bad{border:1px solid rgba(255,120,136,.3);background:rgba(255,120,136,.08)}
+    .links{text-align:center;margin-top:18px}.links a{color:#bcb2ff;text-decoration:none;font-weight:800}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Crie sua nova senha</h1>
+    <p class="lead">Escolha uma senha nova para o Axoriin • Portal do Aluno.</p>
+
+    <form id="form">
+      <label for="senha">Nova senha</label>
+      <input id="senha" type="password" autocomplete="new-password" required minlength="8">
+
+      <label for="confirmar">Confirmar nova senha</label>
+      <input id="confirmar" type="password" autocomplete="new-password" required minlength="8">
+      <div class="hint">Use uma senha que você não utilize em outros serviços.</div>
+
+      <button id="btn" type="submit">Salvar nova senha</button>
+    </form>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="links">
+      <a href="/login-aluno.html">← Voltar ao login</a>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const token = new URLSearchParams(location.search).get('token') || '';
+      const form = document.getElementById('form');
+      const btn = document.getElementById('btn');
+      const msg = document.getElementById('msg');
+
+      const show = (text, type) => {
+        msg.className = `msg show ${type}`;
+        msg.textContent = text;
+      };
+
+      if (!token) {
+        show('Link de redefinição inválido. Solicite uma nova recuperação.', 'bad');
+        form.style.display = 'none';
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const senha = document.getElementById('senha').value;
+        const confirmar = document.getElementById('confirmar').value;
+
+        if (senha !== confirmar) {
+          show('As senhas não coincidem.', 'bad');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        try {
+          const r = await fetch('/api/aluno-recuperacao/redefinir', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, novaSenha: senha })
+          });
+
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.mensagem || 'Não foi possível redefinir a senha.');
+
+          form.style.display = 'none';
+          show(data.mensagem || 'Senha alterada com sucesso.', 'ok');
+
+          setTimeout(() => {
+            location.href = '/login-aluno.html';
+          }, 2200);
+        } catch (e) {
+          show(e.message || 'Não foi possível redefinir a senha.', 'bad');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar nova senha';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
