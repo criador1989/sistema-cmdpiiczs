@@ -268,6 +268,7 @@ const redacaoGestaoRoutes = require('./routes/api/redacaoGestao');
 const questionariosRoutes = require('./routes/api/questionarios');
 const arenaQuestionariosRoutes = require('./routes/api/arenaQuestionarios');
 const portalAlunoRoutes = require('./routes/api/portalAluno');
+const adminObservatorioPortalAlunoRoutes = require('./routes/api/adminObservatorioPortalAluno');
 const alunoRecuperacaoRoutes = require('./routes/api/alunoRecuperacao');
 const arenaRankingPortalRoutes = require('./routes/api/arenaRankingPortal');
 const rifasRoutes = require('./routes/api/rifas');
@@ -886,6 +887,7 @@ mountIf('/api/questionarios', questionariosRoutes);
 
 /* Portal do Aluno segmentado */
 mountIf('/api/portal-aluno', portalAlunoRoutes);
+mountIf('/api/admin/observatorio-portal-aluno', adminObservatorioPortalAlunoRoutes);
 mountIf('/api/portal-aluno/ranking-arena', arenaRankingPortalRoutes);
 
 /* =========================
@@ -1107,6 +1109,19 @@ app.get(
   }
 );
 
+
+function exigirAdminPortalAlunoObservatorio(req, res, next) {
+  const tipo = String(req.usuario?.tipo || '').trim().toLowerCase();
+  if (tipo !== 'admin') return send403(res, publicRoot);
+  return next();
+}
+
+app.get(
+  '/observatorio-portal-aluno.html',
+  autenticar,
+  exigirAdminPortalAlunoObservatorio,
+  (_req, res) => res.sendFile(path.join(publicRoot, 'observatorio-portal-aluno.html'))
+);
 
 app.get('/admin-site/site-analytics.html', autenticar, exigirAdmin, (_req, res) => {
   return res.sendFile(path.join(publicRoot, 'admin-site', 'site-analytics.html'));

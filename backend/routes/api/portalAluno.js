@@ -12,6 +12,7 @@ const SimuladoResultado = require('../../models/SimuladoResultado');
 const SimuladoCaderno = require('../../models/SimuladoCaderno');
 const { autenticar } = require('../../middleware/autenticacao');
 const { montarContextoPortal } = require('../../services/portalAlunoService');
+const { registrarAtividadePortalAluno } = require('../../services/portalAlunoAtividadeService');
 const { getObjectFromS3 } = require('../../services/s3');
 
 const router = express.Router();
@@ -28,6 +29,14 @@ function idAluno(req) {
 
 function idInstituicao(req) {
   return req.usuario?.instituicao || req.usuario?.tenantId || null;
+}
+
+async function registrarAtividadeSegura(args) {
+  try {
+    await registrarAtividadePortalAluno(args);
+  } catch (error) {
+    console.warn('[PORTAL-ATIVIDADE] Registro ignorado:', error?.message || error);
+  }
 }
 
 function filtroInstituicao(valor) {
@@ -132,6 +141,13 @@ router.get('/contexto', async (req, res) => {
     const portal = montarContextoPortal(aluno.turma);
     const usuarioAluno = await Usuario.findById(idUsuario(req)).select('arena.avatar').lean().catch(() => null);
     const avatar = usuarioAluno?.arena?.avatar || 'cadete-azul';
+
+    await registrarAtividadeSegura({
+      req,
+      tipo: 'portal_acesso',
+      aluno,
+      detalhe: 'Carregou o Portal do Aluno.',
+    });
 
     return res.json({
       ok: true,
@@ -314,6 +330,12 @@ router.get('/simulados', async (req, res) => {
       .filter((item) => item.simulado && item.simulado.status !== 'arquivado')
       .map(resumoResultadoPortal);
 
+    await registrarAtividadeSegura({
+      req,
+      tipo: 'simulados_abriu',
+      detalhe: 'Abriu o módulo de Simulados.',
+    });
+
     return res.json({ ok: true, resultados: itens, total: itens.length });
   } catch (error) {
     console.error('[PORTAL-ALUNO] GET /simulados:', error);
@@ -399,6 +421,27 @@ router.get('/simulados/:resultadoId', async (req, res) => {
     }).select('dia questoes resumo').lean();
     const cadernosPorDia = new Map(cadernos.map((caderno) => [Number(caderno.dia), caderno]));
     const revisoesQuestao = mapaRevisoesQuestao(item);
+    const totalQuestoesRevisao = (Array.isArray(item.respostas) ? item.respostas : [])
+      .filter((q) => q && q.situacao === 'ERRO').length;
+    const revisadas = (Array.isArray(item.revisoesQuestao) ? item.revisoesQuestao : [])
+      .filter((q) => q?.revisada === true).length;
+
+    await registrarAtividadeSegura({
+      req,
+      tipo: 'simulado_abriu',
+      resultadoId: item._id,
+      simuladoId: item.simulado?._id,
+      simuladoTitulo: item.simulado?.titulo || '',
+      detalhe: 'Abriu o diagnóstico e o plano de revisão.',
+      progresso: {
+        resultadoId: item._id,
+        simuladoId: item.simulado?._id,
+        titulo: item.simulado?.titulo || '',
+        totalQuestoesRevisao,
+        revisadas,
+        concluido: totalQuestoesRevisao > 0 && revisadas >= totalQuestoesRevisao,
+      },
+    });
 
     return res.json({
       ok: true,
@@ -636,6 +679,34 @@ router.patch('/simulados/:resultadoId/revisoes-questao', async (req, res) => {
       { new: true }
     ).select('revisoesQuestao').lean();
 
+    const totalQuestoesRevisao = (Array.isArray(item.respostas) ? item.respostas : [])
+      .filter((q) => q && q.situacao === 'ERRO').length;
+    const revisadas = (Array.isArray(atualizado?.revisoesQuestao) ? atualizado.revisoesQuestao : [])
+      .filter((q) => q?.revisada === true).length;
+
+    const simuladoResumo = await SimuladoResultado.findById(resultadoId)
+      .select('simulado')
+      .populate({ path: 'simulado', model: Simulado, select: '_id titulo' })
+      .lean()
+      .catch(() => null);
+
+    await registrarAtividadeSegura({
+      req,
+      tipo: 'revisao_questao',
+      resultadoId,
+      simuladoId: simuladoResumo?.simulado?._id,
+      simuladoTitulo: simuladoResumo?.simulado?.titulo || '',
+      detalhe: `${revisada ? 'Marcou' : 'Desmarcou'} a questão ${Number(resposta.numero || 0)} como revisada.`,
+      progresso: {
+        resultadoId,
+        simuladoId: simuladoResumo?.simulado?._id,
+        titulo: simuladoResumo?.simulado?.titulo || '',
+        totalQuestoesRevisao,
+        revisadas,
+        concluido: totalQuestoesRevisao > 0 && revisadas >= totalQuestoesRevisao,
+      },
+    });
+
     return res.json({ ok: true, revisao: registro, revisoesQuestao: atualizado?.revisoesQuestao || [] });
   } catch (error) {
     console.error('[PORTAL-ALUNO] PATCH revisoes-questao:', error);
@@ -707,6 +778,21 @@ router.patch('/simulados/:resultadoId/revisoes-conteudo', async (req, res) => {
       { new: true }
     ).select('revisoesConteudo').lean();
 
+    const simuladoResumo = await SimuladoResultado.findById(resultadoId)
+      .select('simulado')
+      .populate({ path: 'simulado', model: Simulado, select: '_id titulo' })
+      .lean()
+      .catch(() => null);
+
+    await registrarAtividadeSegura({
+      req,
+      tipo: 'revisao_conteudo',
+      resultadoId,
+      simuladoId: simuladoResumo?.simulado?._id,
+      simuladoTitulo: simuladoResumo?.simulado?.titulo || '',
+      detalhe: `${revisado ? 'Marcou' : 'Desmarcou'} o conteúdo "${permitido.titulo}" como revisado.`,
+    });
+
     return res.json({
       ok: true,
       revisao: registro,
@@ -715,6 +801,50 @@ router.patch('/simulados/:resultadoId/revisoes-conteudo', async (req, res) => {
   } catch (error) {
     console.error('[PORTAL-ALUNO] PATCH /simulados/:resultadoId/revisoes-conteudo:', error);
     return res.status(500).json({ ok: false, mensagem: 'Não foi possível atualizar o controle de revisão.' });
+  }
+});
+
+router.post('/atividade', async (req, res) => {
+  try {
+    if (!somenteAluno(req, res)) return;
+
+    const tipo = String(req.body?.tipo || '').trim();
+    if (tipo !== 'questao_abriu') {
+      return res.status(400).json({ ok: false, mensagem: 'Tipo de atividade não permitido.' });
+    }
+
+    const resultadoId = String(req.body?.resultadoId || '').trim();
+    const numero = Number(req.body?.numero || 0);
+    if (!mongoose.Types.ObjectId.isValid(resultadoId)) {
+      return res.status(400).json({ ok: false, mensagem: 'Resultado inválido.' });
+    }
+
+    const item = await SimuladoResultado.findOne({
+      _id: resultadoId,
+      aluno: idAluno(req),
+      instituicao: idInstituicao(req),
+    })
+      .select('simulado')
+      .populate({ path: 'simulado', model: Simulado, select: '_id titulo' })
+      .lean();
+
+    if (!item) {
+      return res.status(404).json({ ok: false, mensagem: 'Resultado não encontrado.' });
+    }
+
+    await registrarAtividadeSegura({
+      req,
+      tipo: 'questao_abriu',
+      resultadoId,
+      simuladoId: item.simulado?._id,
+      simuladoTitulo: item.simulado?.titulo || '',
+      detalhe: numero > 0 ? `Abriu a questão ${numero} para revisão.` : 'Abriu uma questão para revisão.',
+    });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('[PORTAL-ALUNO] POST /atividade:', error);
+    return res.status(500).json({ ok: false, mensagem: 'Não foi possível registrar a atividade.' });
   }
 });
 

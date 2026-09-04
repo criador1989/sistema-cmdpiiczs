@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Observatório do Portal do Aluno • Axoriin</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/observatorio-portal-aluno.css?v=1.0.0">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <span class="eyebrow">ADMIN • ACOMPANHAMENTO</span>
+      <h1>Observatório do Portal do Aluno</h1>
+      <p>Acessos reais, uso dos Simulados e progresso de revisão dos estudantes.</p>
+    </div>
+    <div class="top-actions">
+      <button id="btnAtualizar" class="btn primary" type="button">Atualizar agora</button>
+      <a id="btnVoltar" class="btn" href="/painel.html">Voltar ao painel</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="notice">
+      <strong>Acompanhamento de atividade real no Portal.</strong>
+      <span>O Axoriin diferencia conta criada, Portal aberto, módulo de Simulados aberto e ações de revisão. As respostas importadas da prova não são confundidas com cliques no Portal. O histórico de acesso começa a ser registrado a partir da implantação desta versão.</span>
+    </section>
+
+    <section class="metrics" aria-label="Indicadores">
+      <article class="metric"><span>Alunos com conta</span><strong id="mConta">—</strong><small>contas vinculadas ao Portal</small></article>
+      <article class="metric"><span>Já acessaram</span><strong id="mPortal">—</strong><small id="mPortalPct">—</small></article>
+      <article class="metric danger"><span>Nunca acessaram</span><strong id="mNunca">—</strong><small>conta criada, sem entrada no Portal</small></article>
+      <article class="metric"><span>Últimos 7 dias</span><strong id="m7d">—</strong><small>alunos com acesso recente</small></article>
+      <article class="metric"><span>Abriram Simulados</span><strong id="mSimulados">—</strong><small>entraram no módulo</small></article>
+      <article class="metric"><span>Iniciaram atividade</span><strong id="mIniciaram">—</strong><small>abriram um resultado para revisar</small></article>
+      <article class="metric warning"><span>Em andamento</span><strong id="mAndamento">—</strong><small>atividade ainda não concluída</small></article>
+      <article class="metric success"><span>Concluíram revisão</span><strong id="mConcluiram">—</strong><small>ao menos uma revisão concluída</small></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">FUNIL DE PARTICIPAÇÃO</span>
+          <h2>Da conta criada à atividade concluída</h2>
+        </div>
+        <span id="geradoEm" class="updated">—</span>
+      </div>
+      <div id="funil" class="funnel"></div>
+    </section>
+
+    <section class="alerts" aria-label="Alertas">
+      <article><strong id="aNunca">—</strong><span>alunos têm conta, mas nunca acessaram.</span></article>
+      <article><strong id="aSemSimulados">—</strong><span>acessaram o Portal, mas nunca abriram Simulados.</span></article>
+      <article><strong id="aSemIniciar">—</strong><span>abriram Simulados, mas não iniciaram uma revisão.</span></article>
+      <article><strong id="aAndamento">—</strong><span>estão com atividade em andamento.</span></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">ALUNOS</span>
+          <h2>Acompanhamento nominal</h2>
+        </div>
+      </div>
+
+      <div class="filters">
+        <label>
+          <span>Buscar aluno</span>
+          <input id="fBusca" type="search" placeholder="Nome, turma ou código">
+        </label>
+        <label>
+          <span>Turma</span>
+          <select id="fTurma"><option value="">Todas as turmas</option></select>
+        </label>
+        <label>
+          <span>Situação</span>
+          <select id="fStatus">
+            <option value="todos">Todas</option>
+            <option value="nunca_acessou">Nunca acessou</option>
+            <option value="so_portal">Acessou o Portal</option>
+            <option value="abriu_simulados">Abriu Simulados</option>
+            <option value="iniciou">Iniciou atividade</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluido">Concluiu revisão</option>
+          </select>
+        </label>
+        <label>
+          <span>Período de atividade</span>
+          <select id="fPeriodo">
+            <option value="todos">Todo o histórico</option>
+            <option value="hoje">Hoje</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Turma</th>
+              <th>Portal</th>
+              <th>Último acesso</th>
+              <th>Simulados</th>
+              <th>Progresso atual</th>
+              <th>Última atividade</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAlunos">
+            <tr><td colspan="7" class="empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="tableCount" class="table-count">—</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">ATIVIDADE RECENTE</span>
+          <h2>O que os alunos estão fazendo</h2>
+        </div>
+        <span class="updated">atualização automática a cada 60 s</span>
+      </div>
+      <div id="timeline" class="timeline">
+        <div class="empty">Carregando atividade...</div>
+      </div>
+    </section>
+
+    <section id="erro" class="error-box" hidden></section>
+  </main>
+
+  <script src="/observatorio-portal-aluno.js?v=1.0.0"></script>
+</body>
+</html>

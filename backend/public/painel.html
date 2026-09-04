@@ -3012,6 +3012,17 @@ canvas{
               </div>
             </div>
 
+            <div id="cardObservatorioPortalAluno" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('observatorio-portal-aluno.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">ACOMPANHAMENTO</div>
+                  <h3>Observatório do Portal do Aluno</h3>
+                  <p>Acessos reais, uso dos Simulados e progresso dos estudantes.</p>
+                </div>
+                <div class="card-watermark" aria-hidden="true">◉</div>
+              </div>
+            </div>
+
             <div id="cardGestaoRedacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
               <div class="window-content">
                 <div class="card-copy">
@@ -3457,6 +3468,7 @@ canvas{
         cardUniformes:'cardUniformes',
       cardTransferirTurma:'cardTransferirTurma',
       cardSimulados:'cardSimulados',
+      cardObservatorioPortalAluno:'cardObservatorioPortalAluno',
       cardGestaoRedacao:'cardGestaoRedacao',
       cardObservacoesProfessor:'cardObservacoesProfessor'
     };
@@ -3487,7 +3499,7 @@ canvas{
       }
 
       if (tipo === 'admin') {
-          show(SB.sbUniformes, CARDS.cardUniformes);
+          show(SB.sbUniformes, CARDS.cardUniformes, CARDS.cardObservatorioPortalAluno);
         const cardRedacao = document.getElementById(CARDS.cardGestaoRedacao);
         if (cardRedacao) cardRedacao.style.display = '';
         return;

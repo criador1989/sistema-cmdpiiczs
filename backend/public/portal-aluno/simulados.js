@@ -449,6 +449,19 @@ function openQuestionReview(identifier){
   renderQuestionReview();
   if ($('#detailDialog')?.open) $('#detailDialog').close();
   $('#questionReviewDialog').showModal();
+
+  const q = state.selected?.questoesErradas?.[idx];
+  if (q && state.selectedId) {
+    runtime.apiFetch('/api/portal-aluno/atividade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tipo: 'questao_abriu',
+        resultadoId: state.selectedId,
+        numero: q.numero,
+      }),
+    }).catch(() => {});
+  }
 }
 
 async function toggleQuestionReviewed(){
