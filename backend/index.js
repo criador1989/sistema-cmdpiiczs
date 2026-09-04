@@ -658,6 +658,7 @@ function buildProfessorGuard(publicRoot) {
     '/ficha-responsavel.html',
     '/ficha-responsavel.js',
     '/procedimento-responsavel.html',
+    '/notificacao-responsavel.html',
     '/aluno-redacao.html',
     '/aluno-questionarios.html',
     '/superadmin-login.html',
