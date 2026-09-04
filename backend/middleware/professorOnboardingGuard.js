@@ -9,6 +9,8 @@ const ROTAS_LIBERADAS = [
   '/primeiro-acesso-professor.html',
   '/bem-vindo.html',
   '/login.html',
+  '/notificacao-responsavel.html',
+  '/procedimento-responsavel.html',
   '/logout.js',
   '/manifest.json',
   '/service-worker.js',
