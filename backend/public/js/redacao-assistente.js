@@ -29,8 +29,9 @@
 
   function sentences(s) {
     return String(s || '')
+      .replace(/(\d)\.(?=\d)/g, '$1§DOT§')
       .split(/[.!?]+/)
-      .map((x) => x.trim())
+      .map((x) => x.replace(/§DOT§/g, '.').trim())
       .filter((x) => words(x).length > 2);
   }
 
@@ -113,11 +114,11 @@
           n
         ),
       finalidade:
-        /(a fim de|para que|com o objetivo|visando|de modo a|com a finalidade|para reduzir|para garantir|para promover|para combater|para assegurar)/.test(
+        /(a fim de|para que|com o objetivo|visando|de modo a|com a finalidade|para reduzir|para garantir|para promover|para combater|para assegurar|de modo que|o que permitira|o que permitirá|sera possivel|será possível|com essas medidas[^.]{0,120}(reduzir|garantir|promover|combater|assegurar|ampliar|transformar))/.test(
           n
         ),
       detalhe:
-        /(tais como|por exemplo|especialmente|sobretudo|incluindo|responsavel por|responsaveis por|periodicamente|individualizado|continuo|formadas por|composto por|de forma|junto as familias|junto às famílias)/.test(
+        /(tais como|por exemplo|especialmente|sobretudo|incluindo|responsavel por|responsaveis por|periodicamente|individualizado|continuo|formadas por|composto por|de forma|junto as familias|junto às famílias|conduzid[oa]s? por|capacitad[oa]s?|mensalmente|semanalmente|em todas as turmas|com apoio d[aeo]|com acompanhamento)/.test(
           n
         )
     };
@@ -262,7 +263,7 @@
     if ((telemetry.proporcaoColada || 0) > 0.65) {
       alerts.push({
         level: 'integridade',
-        text: 'Uma grande parte do texto foi inserida por colagem. Revise e confirme que o conteúdo corresponde à sua própria produção.'
+        text: 'Trecho extenso inserido por colagem. Confirme se corresponde à sua própria produção ou transcrição; esse registro não altera automaticamente a nota.'
       });
     }
 
@@ -327,28 +328,33 @@
     if (small) small.textContent = texto;
   }
 
-  function apply(report) {
+  function apply(report, options = {}) {
     const panel = ensurePanel();
     const interventionCount =
       report.interventionCount ??
       Object.values(report.intervention || {}).filter(Boolean).length;
 
     if (panel) {
+      const modo = String(options.modo || document.body?.dataset?.assistenciaEscrita || 'formativa').toLowerCase();
+      const reescrita = modo === 'reescrita';
+      const titulo = reescrita ? 'Reescrita orientada' : 'Acompanhamento da escrita';
       const mensagem =
         report.readiness === 100
           ? 'Texto pronto para a etapa de revisão'
           : `${report.readiness}% dos critérios formativos identificados`;
+      const focoAnterior = String(options.orientacaoReescrita?.competenciaPrioritaria || '').trim();
 
       panel.innerHTML =
-        `<div class="assistente-top"><strong>Assistente de escrita</strong><span>${mensagem}</span></div>` +
+        `<div class="assistente-top"><strong>${titulo}</strong><span>${mensagem}</span></div>` +
         `<div class="assistente-bar"><i style="width:${report.readiness}%"></i></div>` +
         `<div class="assistente-metricas">` +
         `<span>${report.wordCount} palavras</span>` +
         `<span>${report.paragraphs.length} parágrafos</span>` +
         `<span>${report.thesis ? 'tese detectada' : 'tese a esclarecer'}</span>` +
         `<span>${interventionCount}/5 intervenção</span>` +
+        `${reescrita && focoAnterior ? `<span>foco anterior: ${focoAnterior}</span>` : ''}` +
         `</div>` +
-        `<small>Indicador formativo: não é uma nota ENEM.</small>`;
+        `<small>${reescrita ? 'Acompanhamento da reescrita com base na devolutiva anterior.' : 'Acompanhamento formativo: não é uma nota ENEM.'}</small>`;
     }
 
     document.querySelectorAll('.competencia-live').forEach((c) => {
@@ -379,7 +385,7 @@
           .map(
             (x) =>
               `<div class="alerta-redacao ${
-                x.level === 'alta' || x.level === 'integridade' ? 'bad' : ''
+                x.level === 'alta' ? 'bad' : (x.level === 'integridade' ? 'warn' : '')
               }">${x.text}</div>`
           )
           .join('') ||
