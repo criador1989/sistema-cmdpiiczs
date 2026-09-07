@@ -6,7 +6,7 @@ const {
   nivelParaPontos
 } = require('./redacaoRubrica2025');
 
-const VERSAO_VALIDACAO = 'axoriin-coerencia-grade-2025-v7-c1-auditoria-independente';
+const VERSAO_VALIDACAO = 'axoriin-coerencia-grade-2025-v8-c2-c5-auditoria-semantica';
 
 function s(v) {
   return String(v ?? '').trim();
@@ -119,11 +119,109 @@ const CATALOGO_REPERTORIOS_C2 = Object.freeze([
   { nome: 'Ipea', tipo: 'dado_pesquisa', regex: /\bIpea\b/i }
 ]);
 
+
+function extrairAncoraGenericaC2(sentenca = '') {
+  const original = s(sentenca);
+  if (!original) return null;
+
+  // Referências normativas numeradas: Lei nº 13.185/2015, Decreto 12.345/2026 etc.
+  const norma = original.match(/\b((?:Lei|Decreto|Resolu[cç][aã]o|Portaria|Emenda\s+Constitucional)\s*(?:n(?:º|°|o|\.)?\s*)?\d{1,6}(?:\.\d{3})*(?:\/\d{2,4})?)/i);
+  if (norma) {
+    return { nome: norma[1].replace(/\s+/g, ' ').trim(), tipo: 'lei_documento' };
+  }
+
+  // Autores/pensadores identificados por função social ou área do conhecimento.
+  const autor = original.match(/\b(?:sociólog[oa]|filóso[fv][oa]|pensador(?:a)?|educador(?:a)?|pedagog[oa]|historiador(?:a)?|economista|psicólog[oa]|jurista|cientista|pesquisador(?:a)?|escritor(?:a)?|antropólog[oa]|geógraf[oa])\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}'’-]+(?:\s+(?:de|da|do|dos|das|e))?\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}'’-]+(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}'’-]+){0,2})/iu);
+  if (autor) {
+    return { nome: autor[1].replace(/\s+/g, ' ').trim(), tipo: 'autor_obra' };
+  }
+
+  // Obras e produções culturais explicitamente nomeadas.
+  const obra = original.match(/\b(?:obra|livro|romance|filme|document[aá]rio|poema|can[cç][aã]o|pe[cç]a|s[eé]rie|teoria|conceito)\s+(?:intitulad[oa]\s+|chamad[oa]\s+)?[“"']?([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^,.;:!?]{2,90})[”"']?/iu);
+  if (obra) {
+    const nome = obra[1].replace(/[”"']+$/g, '').trim();
+    if (nome && tokensSignificativos(nome).length >= 1) {
+      return { nome, tipo: /teoria|conceito/i.test(obra[0]) ? 'conceito_area_conhecimento' : 'autor_obra' };
+    }
+  }
+
+  // Instituições/órgãos claramente nomeados após marcador de atribuição.
+  const instituicao = original.match(/\b(?:segundo|conforme|de\s+acordo\s+com)\s+(?:o|a|os|as)?\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}'’-]+(?:\s+(?:de|da|do|dos|das|e|para))?\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}'’-]+(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}'’-]+){0,4})/iu);
+  if (instituicao) {
+    return { nome: instituicao[1].replace(/\s+/g, ' ').trim(), tipo: 'conhecimento_mundo_especifico' };
+  }
+
+  return null;
+}
+
+function pertinenciaRepertorioNoParagrafo(paragrafo = '', contexto = {}) {
+  const temaRef = `${s(contexto.temaTitulo)} ${s(contexto.proposta)}`;
+  const temaTokens = new Set(tokensSignificativos(temaRef));
+  const tokensParagrafo = new Set(tokensSignificativos(paragrafo));
+  const temaComum = [...temaTokens].filter((x) => tokensParagrafo.has(x)).length;
+  return temaComum >= 1 || /\b(?:direit|educa[cç]|adolesc|crian[cç]|internet|digital|viol[eê]ncia|sa[uú]de|cidadania|igualdade|dignidade|sociedade|brasil|escola|bullying|cultura|paz)\w*/i.test(paragrafo);
+}
+
+function localizarRepertorioGenerico(redacao = '', contexto = {}) {
+  const texto = s(redacao);
+  if (!texto) return null;
+  const sentencas = sentencasDoTexto(texto);
+
+  for (let idx = 0; idx < sentencas.length; idx += 1) {
+    const atual = sentencas[idx];
+    const ancora = extrairAncoraGenericaC2(atual.texto);
+    if (!ancora) continue;
+
+    const sobreposicaoMotivadores = sobreposicaoComMotivadores(atual.texto, contexto.textosMotivadores);
+    if (sobreposicaoMotivadores >= 0.72) continue;
+
+    const pertinente = pertinenciaRepertorioNoParagrafo(atual.paragrafo, contexto);
+    let articulacao = '';
+    const candidatos = [sentencas[idx + 1], sentencas[idx - 1]]
+      .filter(Boolean)
+      .filter((x) => x.paragrafo === atual.paragrafo);
+
+    for (const cand of candidatos) {
+      if ((temConectorAplicacao(cand.texto) && temLinguagemDeAplicacao(cand.texto)) ||
+          (temLinguagemDeAplicacao(cand.texto) && tokensSignificativos(cand.texto).length >= 8)) {
+        articulacao = cand.texto;
+        break;
+      }
+    }
+
+    // A produtividade pode estar no mesmo período da referência. A Grade não
+    // exige duas frases independentes; exige uso efetivo do repertório.
+    if (!articulacao && temLinguagemDeAplicacao(atual.texto) && tokensSignificativos(atual.texto).length >= 14) {
+      articulacao = atual.texto;
+    }
+
+    return {
+      repertorioIdentificado: ancora.nome,
+      repertorioEvidenciaLiteral: atual.texto,
+      repertorioArticulacaoEvidenciaLiteral: articulacao,
+      repertorioOrigem: 'externo',
+      repertorioTipo: ancora.tipo,
+      repertorioLegitimado: true,
+      repertorioPertinente: Boolean(pertinente),
+      repertorioProdutivo: Boolean(pertinente && articulacao),
+      fonteDeteccao: 'backend_generico',
+      sobreposicaoMotivadores: Number(sobreposicaoMotivadores.toFixed(3))
+    };
+  }
+  return null;
+}
+
 function sentencasDoTexto(texto = '') {
   const out = [];
   for (const paragrafo of paragrafosDaRedacao(texto)) {
-    const sentencas = paragrafo.match(/[^.!?]+[.!?]?/g) || [paragrafo];
-    sentencas.map((x) => x.trim()).filter(Boolean).forEach((x) => out.push({ texto: x, paragrafo }));
+    // Não quebre referências numéricas como Lei 13.185/2015, percentuais e
+    // outros números com ponto interno: isso destruía a própria âncora de C2.
+    const protegido = paragrafo.replace(/(?<=\d)\.(?=\d)/g, '§DOT§');
+    const sentencas = protegido.match(/[^.!?]+[.!?]?/g) || [protegido];
+    sentencas
+      .map((x) => x.replace(/§DOT§/g, '.').trim())
+      .filter(Boolean)
+      .forEach((x) => out.push({ texto: x, paragrafo }));
   }
   return out;
 }
@@ -133,16 +231,13 @@ function temConectorAplicacao(v = '') {
 }
 
 function temLinguagemDeAplicacao(v = '') {
-  return /\b(?:contrari|viola|garant|direit|dignidad|integridad|evidencia|demonstra|mostra|comprova|refor[cç]a|explica|relacion|aplica|revela|indica|contribui|resulta|provoca|consequ[eê]ncia|problema|desafio)\w*/i.test(s(v));
+  return /\b(?:contrari|viola|garant|direit|dignidad|integridad|evidencia|demonstra|mostra|comprova|refor[cç]a|explica|compreend|contextualiz|relacion|aplica|revela|indica|contribui|resulta|provoca|consequ[eê]ncia|problema|desafio)\w*/i.test(s(v));
 }
 
 function localizarRepertorioCatalogado(redacao = '', contexto = {}) {
   const texto = s(redacao);
   if (!texto) return null;
   const sentencas = sentencasDoTexto(texto);
-  const temaRef = `${s(contexto.temaTitulo)} ${s(contexto.proposta)}`;
-  const temaTokens = new Set(tokensSignificativos(temaRef));
-
   for (const item of CATALOGO_REPERTORIOS_C2) {
     const idx = sentencas.findIndex((x) => item.regex.test(x.texto));
     if (idx < 0) continue;
@@ -150,9 +245,7 @@ function localizarRepertorioCatalogado(redacao = '', contexto = {}) {
     const sobreposicaoMotivadores = sobreposicaoComMotivadores(atual.texto, contexto.textosMotivadores);
     if (sobreposicaoMotivadores >= 0.72) continue;
 
-    const tokensParagrafo = new Set(tokensSignificativos(atual.paragrafo));
-    const temaComum = [...temaTokens].filter((x) => tokensParagrafo.has(x)).length;
-    const pertinente = temaComum >= 1 || /\b(?:direit|educa[cç]|adolesc|crian[cç]|internet|digital|viol[eê]ncia|sa[uú]de|cidadania|igualdade|dignidade|sociedade|brasil)\w*/i.test(atual.paragrafo);
+    const pertinente = pertinenciaRepertorioNoParagrafo(atual.paragrafo, contexto);
 
     let articulacao = '';
     const candidatos = [sentencas[idx + 1], sentencas[idx - 1]].filter(Boolean).filter((x) => x.paragrafo === atual.paragrafo);
@@ -332,8 +425,12 @@ function validarRepertorioC2(m = {}, contexto = {}) {
       (ancoraNoIdentificadoLocal || ancoraNaEvidenciaLocal);
     const normEvLocal = normalizarBusca(evidencia);
     const normArtLocal = normalizarBusca(articulacaoEv);
-    const articulacaoDistintaLocal = Boolean(normArtLocal) && normArtLocal !== normEvLocal &&
-      (tokensSignificativos(articulacaoEv).length >= 3);
+    const articulacaoNoMesmoTrechoLocal = Boolean(normArtLocal) && normArtLocal === normEvLocal &&
+      temLinguagemDeAplicacao(articulacaoEv) && tokensSignificativos(articulacaoEv).length >= 14;
+    const articulacaoDistintaLocal = Boolean(normArtLocal) && (
+      (normArtLocal !== normEvLocal && tokensSignificativos(articulacaoEv).length >= 3) ||
+      articulacaoNoMesmoTrechoLocal
+    );
     const articulacaoValidadaLocal = ancoraValidaLocal && articulacaoOkLocal && articulacaoDistintaLocal;
     return {
       evidOk: evidOkLocal,
@@ -353,13 +450,13 @@ function validarRepertorioC2(m = {}, contexto = {}) {
   }
 
   let audit = auditarAtual();
-  let suporteCatalogo = localizarRepertorioCatalogado(redacao, contexto);
+  let suporteDeterministico = localizarRepertorioCatalogado(redacao, contexto) || localizarRepertorioGenerico(redacao, contexto);
 
   // v4.13: segunda camada determinística. Se o extrator omitir uma referência
   // normativa/institucional explicitamente nomeada, o backend procura a âncora
   // no próprio texto. Isso evita reduzir C2 por falha de extração da IA.
   if (!audit.ancoraValida) {
-    const recuperado = suporteCatalogo;
+    const recuperado = suporteDeterministico;
     if (recuperado) {
       identificado = recuperado.repertorioIdentificado;
       evidencia = recuperado.repertorioEvidenciaLiteral;
@@ -382,16 +479,23 @@ function validarRepertorioC2(m = {}, contexto = {}) {
   // conservadora/inconsistente, um item catalogado explicitamente presente pode
   // confirmar legitimidade, pertinência e produtividade a partir do próprio texto.
   // Isso não se aplica a repertórios genéricos: apenas às âncoras auditáveis acima.
-  if (!suporteCatalogo) suporteCatalogo = localizarRepertorioCatalogado(redacao, contexto);
-  const mesmoCatalogado = Boolean(suporteCatalogo) && (
-    normalizarBusca(identificado).includes(normalizarBusca(suporteCatalogo.repertorioIdentificado)) ||
-    normalizarBusca(suporteCatalogo.repertorioIdentificado).includes(normalizarBusca(identificado)) ||
-    evidenciaPresente(suporteCatalogo.repertorioEvidenciaLiteral, redacao)
+  if (!suporteDeterministico) {
+    suporteDeterministico = localizarRepertorioCatalogado(redacao, contexto) || localizarRepertorioGenerico(redacao, contexto);
+  }
+  const mesmoDeterministico = Boolean(suporteDeterministico) && (
+    normalizarBusca(identificado).includes(normalizarBusca(suporteDeterministico.repertorioIdentificado)) ||
+    normalizarBusca(suporteDeterministico.repertorioIdentificado).includes(normalizarBusca(identificado)) ||
+    evidenciaPresente(suporteDeterministico.repertorioEvidenciaLiteral, redacao)
   );
-  const legitimado = audit.ancoraValida && (Boolean(m.repertorioLegitimado) || Boolean(mesmoCatalogado && suporteCatalogo?.repertorioLegitimado));
-  const pertinente = legitimado && (Boolean(m.repertorioPertinente) || Boolean(mesmoCatalogado && suporteCatalogo?.repertorioPertinente));
-  const produtivo = pertinente && audit.articulacaoValidada &&
-    (Boolean(m.repertorioProdutivo) || Boolean(mesmoCatalogado && suporteCatalogo?.repertorioProdutivo));
+  const legitimado = audit.ancoraValida && (
+    Boolean(m.repertorioLegitimado) || Boolean(mesmoDeterministico && suporteDeterministico?.repertorioLegitimado)
+  );
+  const pertinente = legitimado && (
+    Boolean(m.repertorioPertinente) || Boolean(mesmoDeterministico && suporteDeterministico?.repertorioPertinente)
+  );
+  const produtivo = pertinente && audit.articulacaoValidada && (
+    Boolean(m.repertorioProdutivo) || Boolean(mesmoDeterministico && suporteDeterministico?.repertorioProdutivo)
+  );
 
   return {
     ...m,
@@ -446,21 +550,27 @@ function validarC3(m = {}, contexto = {}) {
   const coberturaAprofundamento = coberturaParagrafosEvidencias(aprofundamento, redacao);
   const coberturaProgressao = coberturaParagrafosEvidencias(progressao, redacao);
 
+  // A Grade descreve qualidade do projeto/desenvolvimento; não fixa uma
+  // quantidade de citações de evidência. As contagens abaixo servem apenas para
+  // confirmar distribuição e profundidade mínimas, sem transformar o descritor
+  // qualitativo em uma checklist numérica artificial.
   const nivel4Comprovavel = teseConfirmada &&
-    projeto.length >= 2 &&
-    desenvolvimento.length >= 3 &&
+    projeto.length >= 1 &&
+    desenvolvimento.length >= 2 &&
     coberturaDesenvolvimento >= 2 &&
     progressao.length >= 1 &&
     lacunas.length <= 2 &&
     !contradicaoConfirmada;
 
   const nivel5Comprovavel = nivel4Comprovavel &&
-    desenvolvimento.length >= 4 &&
+    projeto.length >= 2 &&
+    desenvolvimento.length >= 2 &&
+    coberturaDesenvolvimento >= 2 &&
     aprofundamento.length >= 2 &&
     coberturaAprofundamento >= 2 &&
     progressao.length >= 2 &&
     coberturaProgressao >= 2 &&
-    relacaoTese.length >= 2 &&
+    relacaoTese.length >= 1 &&
     lacunas.length <= 1 &&
     deslizes.length <= 1;
 
@@ -589,12 +699,14 @@ function validarC4(m = {}, contexto = {}) {
   const funcoesInter = new Set(funcoesValidadas.filter((x) => x.escopo === 'inter').map((x) => x.funcao));
   const coberturaInter = coberturaParagrafosEvidencias(inter, redacao);
 
+  // "Presença expressiva" é um descritor qualitativo da Grade. Exigimos
+  // distribuição intra/inter, variedade funcional e ausência de inadequações,
+  // mas não duas funções semânticas diferentes em cada escopo — requisito que
+  // não existe na grade e causava falsos tetos em 160.
   const nivel5Qualitativo = intra.length >= 2 &&
     inter.length >= 2 &&
     coberturaInter >= 2 &&
-    funcoesDistintas.size >= 4 &&
-    funcoesIntra.size >= 2 &&
-    funcoesInter.size >= 2 &&
+    funcoesDistintas.size >= 3 &&
     todos.length >= 6 &&
     repeticoesEv.length <= 1 &&
     inadequacoesEv.length === 0 &&
@@ -639,7 +751,7 @@ function validarC4(m = {}, contexto = {}) {
       paragrafosDetectados: paragrafos.length,
       nivel5Comprovavel: nivel5Qualitativo,
       motivo: nivel5Qualitativo
-        ? 'C4 nível 5 confirmado por articulação funcional expressiva, diversidade semântica, presença intra/inter e retomada referencial sem inadequações relevantes.'
+        ? 'C4 nível 5 confirmado por articulação funcional expressiva, diversidade semântica e distribuição intra/inter sem inadequações relevantes.'
         : 'C4 foi calculada apenas com problemas genuinamente coesivos; desvios gramaticais de C1 não são usados para reduzir esta competência.'
     }
   };
@@ -663,18 +775,28 @@ function validarElementosC5(m = {}, raw = {}, contexto = {}) {
   const evidencias = {};
   const validos = {};
 
-  const evidenciasUsadas = [];
+  const flagPorNome = {
+    agente: 'agenteValido',
+    acao: 'acaoValida',
+    meio: 'meioValido',
+    finalidade: 'finalidadeValida',
+    detalhamento: 'detalhamentoValido'
+  };
+
   for (const nome of nomes) {
     const evidencia = escolherEvidencia(m, raw, nome);
-    const normalizada = normalizarBusca(evidencia);
-    const repetida = Boolean(normalizada) && evidenciasUsadas.includes(normalizada);
     evidencias[nome] = evidencia;
-    validos[nome] = !repetida && evidenciaPresente(evidencia, redacao);
-    if (validos[nome] && normalizada) evidenciasUsadas.push(normalizada);
+    // Um mesmo período pode conter agente + ação + meio + finalidade + detalhe.
+    // Compartilhar a evidência não invalida elementos distintos da intervenção.
+    validos[nome] = Boolean(m[flagPorNome[nome]]) && evidenciaPresente(evidencia, redacao);
   }
+
+  const estruturaCondicionalConfirmada = Boolean(m.estruturaCondicional) &&
+    /(?:^|[\s,;:(])se\s+\S+|\b(?:caso|desde\s+que|contanto\s+que|na\s+hip[oó]tese\s+de)\b/i.test(redacao);
 
   return {
     ...m,
+    estruturaCondicional: estruturaCondicionalConfirmada,
     agenteValido: validos.agente,
     acaoValida: validos.acao,
     meioValido: validos.meio,
@@ -688,7 +810,8 @@ function validarElementosC5(m = {}, raw = {}, contexto = {}) {
     validacaoBackend: {
       elementosConfirmados: nomes.filter((nome) => validos[nome]),
       quantidade: nomes.filter((nome) => validos[nome]).length,
-      motivo: 'Os elementos da intervenção só são considerados válidos quando a evidência correspondente é confirmada no texto do aluno.'
+      estruturaCondicionalConfirmada,
+      motivo: 'Os elementos da intervenção são válidos quando a IA os identifica semanticamente e a evidência correspondente é confirmada no texto; o mesmo trecho pode comprovar mais de um elemento.'
     }
   };
 }
