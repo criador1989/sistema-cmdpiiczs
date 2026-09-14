@@ -644,6 +644,7 @@
       ${item.resolucao?.nota ? `<div class="op-admin-attendance"><strong>Retorno registrado:</strong> ${esc(item.resolucao.nota)}</div>` : ''}
       <div class="op-admin-actions">
         <button class="op-admin-btn primary" type="button" id="opAdminFicha">Abrir ficha do aluno</button>
+        <button class="op-admin-btn" type="button" id="opAdminNotificar">Notificar aluno</button>
         ${semResponsavel && !concluida ? '<button class="op-admin-btn success" type="button" id="opAdminAssumir">Assumir atendimento</button>' : ''}
         ${souResponsavel && !concluida ? '<button class="op-admin-btn warn" type="button" id="opAdminLiberar">Liberar atendimento</button>' : ''}
       </div>
@@ -658,6 +659,22 @@
 
     document.getElementById('opAdminFicha').onclick = () => {
       location.href = `/ficha-aluno.html?id=${encodeURIComponent(idValor(item.aluno))}`;
+    };
+    document.getElementById('opAdminNotificar').onclick = () => {
+      const alunoId = idValor(item.aluno);
+      if (!alunoId) {
+        window.alert('Aluno n\u00e3o identificado para notifica\u00e7\u00e3o.');
+        return;
+      }
+
+      const url = new URL('/cadastrar-notificacao.html', window.location.origin);
+      url.searchParams.set('aluno', alunoId);
+      if (item.alunoNome) url.searchParams.set('nome', item.alunoNome);
+
+      const tenant = new URLSearchParams(window.location.search).get('t');
+      if (tenant) url.searchParams.set('t', tenant);
+
+      window.location.href = url.toString();
     };
     const assumir = document.getElementById('opAdminAssumir');
     if (assumir) assumir.onclick = () => acaoAdmin('assumir');
