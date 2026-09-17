@@ -106,6 +106,22 @@
     #valorNumerico.positivo{ background:#0f1a14; border-color:#1b7a55 }
     #valorNumerico.negativo{ background:#1a0f10; border-color:#7a1b1b }
 
+    .batch-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0}
+    .batch-toolbar .batch-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .batch-mini-btn{border:1px solid var(--line);background:#171a1e;color:#eaecef;border-radius:10px;padding:8px 10px;cursor:pointer;font-weight:700}
+    .batch-mini-btn:hover{filter:brightness(1.08)}
+    .batch-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:340px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:12px;background:#0f1114}
+    .batch-item{display:flex;align-items:flex-start;gap:9px;padding:9px;border:1px solid #242932;border-radius:10px;background:#14171b;cursor:pointer}
+    .batch-item:hover{border-color:#8f494b}
+    .batch-item input{width:auto;margin-top:3px}
+    .batch-item span{display:flex;flex-direction:column;min-width:0}
+    .batch-item strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .batch-item small{color:var(--muted)}
+    .batch-count{font-weight:800;color:#fff}
+    .batch-origin{margin:10px 0;padding:10px 12px;border:1px solid rgba(56,189,248,.35);border-radius:12px;background:rgba(56,189,248,.08);color:#dff7ff}
+    .batch-download{display:inline-flex;margin-top:10px;text-decoration:none}
+    @media(max-width:700px){.batch-list{grid-template-columns:1fr}}
+
     .hidden{ display:none !important; }
 
     @keyframes rise{
@@ -123,11 +139,36 @@
     <form id="formNotificacao" novalidate>
       <div id="alunoSelecionado" class="pill" style="display:none;"></div>
 
-      <label for="pesquisaAluno">Pesquisar aluno</label>
-      <input type="text" id="pesquisaAluno" placeholder="Digite o nome do aluno..." />
+      <label for="modoCadastro">Modo de lançamento</label>
+      <select id="modoCadastro">
+        <option value="individual" selected>Individual — um aluno</option>
+        <option value="lote">Em lote — vários alunos</option>
+      </select>
 
-      <label for="aluno">Aluno</label>
-      <select id="aluno" name="aluno" required></select>
+      <div id="grupoAlunoIndividual">
+        <label for="pesquisaAluno">Pesquisar aluno</label>
+        <input type="text" id="pesquisaAluno" placeholder="Digite o nome do aluno..." />
+
+        <label for="aluno">Aluno</label>
+        <select id="aluno" name="aluno" required></select>
+      </div>
+
+      <div id="grupoAlunosLote" class="hidden">
+        <label for="pesquisaAlunosLote">Pesquisar alunos do lote</label>
+        <input type="text" id="pesquisaAlunosLote" placeholder="Digite o nome do aluno..." />
+
+        <div id="origemObservacoesLote" class="batch-origin hidden"></div>
+
+        <div class="batch-toolbar">
+          <span id="contadorAlunosLote" class="batch-count">0 alunos selecionados</span>
+          <div class="batch-actions">
+            <button type="button" class="batch-mini-btn" id="selecionarVisiveisLote">Selecionar visíveis</button>
+            <button type="button" class="batch-mini-btn" id="limparSelecaoLote">Limpar seleção</button>
+          </div>
+        </div>
+
+        <div id="listaAlunosLote" class="batch-list" aria-label="Seleção de alunos"></div>
+      </div>
 
       <div class="row">
         <div>
@@ -219,6 +260,7 @@
       </div>
 
       <p id="mensagem" class="msg"></p>
+      <div id="acoesLote" class="hidden" style="text-align:center;"></div>
     </form>
   </main>
 
@@ -305,10 +347,37 @@
 
     let motivosPorTipo = {};
     let listaCompletaMotivos = [];
+    let alunosCache = [];
 
     const qs = new URLSearchParams(location.search);
     const alunoQS = qs.get('aluno');
     const nomeQS  = qs.get('nome');
+
+    const alunosLoteQS = String(qs.get('alunos') || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    const observacoesLoteQS = String(qs.get('observacoes') || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    const origemLoteObservacaoQS = String(qs.get('origemLoteId') || '').trim();
+    const observacaoProfessorQS = String(qs.get('observacaoProfessor') || '').trim();
+
+    const observacaoPorAlunoQS = new Map(
+      alunosLoteQS.map((alunoId, index) => [
+        alunoId,
+        observacoesLoteQS[index] || null
+      ])
+    );
+
+    if (alunoQS && observacaoProfessorQS) {
+      observacaoPorAlunoQS.set(alunoQS, observacaoProfessorQS);
+    }
+
+    const selecionadosLote = new Set(alunosLoteQS);
 
     async function verificarAutenticado() {
       try {
@@ -339,12 +408,91 @@
       }
     }
 
+    function atualizarContadorLote() {
+      const count = selecionadosLote.size;
+      const el = document.getElementById('contadorAlunosLote');
+      if (el) {
+        el.textContent = `${count} ${count === 1 ? 'aluno selecionado' : 'alunos selecionados'}`;
+      }
+    }
+
+    function renderizarAlunosLote(filtro = '') {
+      const lista = document.getElementById('listaAlunosLote');
+      if (!lista) return;
+
+      const termo = String(filtro || '').trim().toLowerCase();
+      const visiveis = alunosCache.filter((aluno) => {
+        const nome = String(aluno.nome || '').toLowerCase();
+        const turma = String(aluno.turma || '').toLowerCase();
+        return !termo || nome.includes(termo) || turma.includes(termo);
+      });
+
+      if (!visiveis.length) {
+        lista.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);padding:10px;">Nenhum aluno encontrado.</div>';
+        atualizarContadorLote();
+        return;
+      }
+
+      lista.innerHTML = visiveis.map((aluno) => {
+        const id = String(aluno._id || '');
+        const checked = selecionadosLote.has(id) ? 'checked' : '';
+        const nome = String(aluno.nome || 'Aluno');
+        const turma = String(aluno.turma || 'Turma não informada');
+
+        return `<label class="batch-item">
+          <input type="checkbox" data-aluno-lote="${id}" ${checked}>
+          <span><strong>${nome}</strong><small>${turma}</small></span>
+        </label>`;
+      }).join('');
+
+      lista.querySelectorAll('[data-aluno-lote]').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          const id = String(checkbox.dataset.alunoLote || '');
+
+          if (checkbox.checked) {
+            if (selecionadosLote.size >= 50 && !selecionadosLote.has(id)) {
+              checkbox.checked = false;
+              alert('O limite é de 50 alunos por lote.');
+              return;
+            }
+            selecionadosLote.add(id);
+          } else {
+            selecionadosLote.delete(id);
+          }
+
+          atualizarContadorLote();
+        });
+      });
+
+      atualizarContadorLote();
+    }
+
+    function toggleModoCadastro() {
+      const modo = document.getElementById('modoCadastro').value;
+      const grupoIndividual = document.getElementById('grupoAlunoIndividual');
+      const grupoLote = document.getElementById('grupoAlunosLote');
+      const selectIndividual = document.getElementById('aluno');
+
+      const emLote = modo === 'lote';
+
+      grupoIndividual.classList.toggle('hidden', emLote);
+      grupoLote.classList.toggle('hidden', !emLote);
+      selectIndividual.required = !emLote;
+
+      if (emLote) {
+        renderizarAlunosLote(document.getElementById('pesquisaAlunosLote').value);
+      }
+    }
+
     async function carregarAlunos() {
       const select     = document.getElementById('aluno');
       const pesquisa   = document.getElementById('pesquisaAluno');
       const seloAluno  = document.getElementById('alunoSelecionado');
 
-      if (alunoQS) {
+      /* -------------------------------------------------------
+         Fluxo individual vindo da ficha/observação de um aluno
+         ------------------------------------------------------- */
+      if (alunoQS && alunosLoteQS.length === 0) {
         const nomeDecod = nomeQS ? decodeURIComponent(nomeQS) : 'Carregando aluno...';
         select.innerHTML = '';
         const opt = document.createElement('option');
@@ -352,53 +500,113 @@
         opt.textContent = nomeDecod;
         select.appendChild(opt);
         select.value = alunoQS;
-        select.disabled = true; pesquisa.disabled = true;
+        select.disabled = true;
+        pesquisa.disabled = true;
 
         seloAluno.style.display = 'inline-block';
         seloAluno.textContent = `Aluno selecionado: ${nomeDecod}`;
 
         try {
           const { ok, status, data } = await getJSON(API(`/alunos/${alunoQS}`));
-          if (status === 401) { window.location.href = '/login.html'; return; }
+          if (status === 401) {
+            window.location.href = '/login.html';
+            return;
+          }
+
           if (ok && data && data._id) {
             opt.textContent = `${data.nome} (${data.turma || ''})`;
             seloAluno.textContent = `Aluno selecionado: ${data.nome} (${data.turma || 'turma não informada'})`;
-            if (![...select.options].some(o => o.value === data._id)) {
-              const optNew = document.createElement('option');
-              optNew.value = data._id;
-              optNew.textContent = `${data.nome} (${data.turma || ''})`;
-              select.appendChild(optNew);
-              select.value = data._id;
-            }
+            alunosCache = [data];
           }
         } catch (_) {}
+
         return;
       }
 
+      /* -------------------------------------------------------
+         Fluxo geral: carrega alunos para individual e lote
+         ------------------------------------------------------- */
       try {
         const { ok, status, data } = await getJSON(API('/alunos'));
-        if (status === 401) { window.location.href = '/login.html'; return; }
-        if (!ok) throw 0;
 
-        const alunos = Array.isArray(data) ? data : [];
+        if (status === 401) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        if (!ok) throw new Error('Falha ao carregar alunos.');
+
+        alunosCache = Array.isArray(data) ? data : [];
+
         function atualizarOpcoes(filtro = '') {
+          const atual = select.value;
           select.innerHTML = '';
-          alunos
-            .filter(a => (a.nome || '').toLowerCase().includes(filtro.toLowerCase()))
-            .forEach(a => {
+
+          alunosCache
+            .filter((a) => {
+              const nome = String(a.nome || '').toLowerCase();
+              const turma = String(a.turma || '').toLowerCase();
+              const termo = String(filtro || '').toLowerCase();
+              return !termo || nome.includes(termo) || turma.includes(termo);
+            })
+            .forEach((a) => {
               const opt = document.createElement('option');
               opt.value = a._id;
-              opt.textContent = `${a.nome} (${a.turma})`;
+              opt.textContent = `${a.nome} (${a.turma || ''})`;
               select.appendChild(opt);
             });
+
+          if (atual && [...select.options].some((o) => o.value === atual)) {
+            select.value = atual;
+          }
         }
+
         pesquisa.addEventListener('input', () => atualizarOpcoes(pesquisa.value));
         atualizarOpcoes();
+
+        const pesquisaLote = document.getElementById('pesquisaAlunosLote');
+        pesquisaLote.addEventListener('input', () => {
+          renderizarAlunosLote(pesquisaLote.value);
+        });
+
+        document.getElementById('selecionarVisiveisLote').addEventListener('click', () => {
+          const checkboxes = [
+            ...document.querySelectorAll('#listaAlunosLote [data-aluno-lote]')
+          ];
+
+          for (const checkbox of checkboxes) {
+            const id = String(checkbox.dataset.alunoLote || '');
+
+            if (!selecionadosLote.has(id) && selecionadosLote.size >= 50) break;
+            selecionadosLote.add(id);
+          }
+
+          renderizarAlunosLote(pesquisaLote.value);
+        });
+
+        document.getElementById('limparSelecaoLote').addEventListener('click', () => {
+          selecionadosLote.clear();
+          renderizarAlunosLote(pesquisaLote.value);
+        });
+
+        if (alunosLoteQS.length) {
+          document.getElementById('modoCadastro').value = 'lote';
+
+          const origemBox = document.getElementById('origemObservacoesLote');
+          origemBox.classList.remove('hidden');
+          origemBox.textContent = origemLoteObservacaoQS
+            ? `Seleção recebida das Observações dos Professores • lote ${origemLoteObservacaoQS.slice(0, 8)}…`
+            : 'Seleção recebida das Observações dos Professores.';
+        }
+
+        renderizarAlunosLote();
+        toggleModoCadastro();
       } catch (err) {
-        console.error('Erro ao carregar alunos');
+        console.error('Erro ao carregar alunos', err);
       }
     }
 
+    const modoCadastro = document.getElementById('modoCadastro');
     const tipoRegistro = document.getElementById('tipoRegistro');
     const grupoIndisciplina = document.getElementById('grupoIndisciplina');
     const grupoElogio = document.getElementById('grupoElogio');
@@ -423,6 +631,7 @@
         aplicarValorIndisciplina();
       }
     }
+    modoCadastro.addEventListener('change', toggleModoCadastro);
     tipoRegistro.addEventListener('change', toggleGrupos);
 
     tipo.addEventListener('change', function () {
@@ -492,14 +701,33 @@
     }
     tipoElogio.addEventListener('change', aplicarValorElogio);
 
-    // ===== SUBMIT AJUSTADO =====
+    // ===== SUBMIT INDIVIDUAL / LOTE =====
     document.getElementById('formNotificacao').addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const tipoRegistroValor = document.getElementById('tipoRegistro').value;
+      const modoCadastroValor = modoCadastro.value;
+      const tipoRegistroValor = tipoRegistro.value;
+
+      const idsSelecionados = modoCadastroValor === 'lote'
+        ? [...selecionadosLote]
+        : [String(document.getElementById('aluno').value || '').trim()].filter(Boolean);
+
+      if (modoCadastroValor === 'lote') {
+        if (idsSelecionados.length < 2) {
+          alert('Selecione pelo menos dois alunos para o lançamento em lote.');
+          return;
+        }
+
+        if (idsSelecionados.length > 50) {
+          alert('O limite é de 50 alunos por lote.');
+          return;
+        }
+      } else if (!idsSelecionados.length) {
+        alert('Selecione um aluno.');
+        return;
+      }
 
       const dadosBasicos = {
-        aluno: document.getElementById('aluno').value,
         observacao: document.getElementById('observacao').value || '',
         data: document.getElementById('data').value,
         tipoRegistro: tipoRegistroValor
@@ -508,7 +736,6 @@
       let body;
 
       if (tipoRegistroValor === 'elogio') {
-        // --- ELOGIO ---
         if (!tipoElogio.value) {
           alert('Selecione o tipo de elogio.');
           return;
@@ -539,21 +766,21 @@
           classificacaoRegulamento: '',
           comentarioMonitor: ''
         };
-
       } else {
-        // --- INDISCIPLINA ---
         const gravidadeSelecionada = tipo.value || '';
-        const motivoSelecionado    = motivo.value || '';
+        const motivoSelecionado = motivo.value || '';
         const tipoMedidaSelecionada = tipoMedida.value || '';
 
         if (!gravidadeSelecionada) {
           alert('Selecione a gravidade do ato.');
           return;
         }
+
         if (!motivoSelecionado) {
           alert('Selecione o motivo do ato de indisciplina.');
           return;
         }
+
         if (!tipoMedidaSelecionada) {
           alert('Selecione o tipo de medida aplicada.');
           return;
@@ -562,7 +789,10 @@
         const base = medidasNegativas[tipoMedidaSelecionada] || 0;
         const precisaDias = ['A.E.C.D.E', 'A.I.A'].includes(tipoMedidaSelecionada);
 
-        let dias = precisaDias ? parseInt(document.getElementById('quantidadeDias').value, 10) : 1;
+        let dias = precisaDias
+          ? parseInt(document.getElementById('quantidadeDias').value, 10)
+          : 1;
+
         if (!Number.isInteger(dias) || dias < 1) dias = 1;
 
         const valor = round2(base * dias);
@@ -584,15 +814,51 @@
         };
       }
 
-      console.log('Body enviado para /api/notificacoes:', body);
+      let endpoint = API('/notificacoes');
+
+      if (modoCadastroValor === 'lote') {
+        body.alunos = idsSelecionados.map((alunoId) => ({
+          aluno: alunoId,
+          origemObservacaoProfessor: observacaoPorAlunoQS.get(alunoId) || null
+        }));
+
+        body.origemRegistro = [...observacaoPorAlunoQS.values()].some(Boolean)
+          ? 'observacao_professor'
+          : 'manual';
+
+        body.origemLoteObservacao = origemLoteObservacaoQS || '';
+
+        endpoint = API('/notificacoes/lote');
+      } else {
+        body.aluno = idsSelecionados[0];
+
+        if (alunoQS && observacaoPorAlunoQS.get(alunoQS)) {
+          body.origemRegistro = 'observacao_professor';
+          body.origemObservacaoProfessor = observacaoPorAlunoQS.get(alunoQS);
+          body.origemLoteObservacao = origemLoteObservacaoQS || '';
+        }
+      }
+
+      console.log('Body enviado para notificações:', body);
+
+      const botaoSubmit = this.querySelector('button[type="submit"]');
+      const textoOriginalBotao = botaoSubmit?.textContent || 'Cadastrar';
 
       try {
-        const r = await fetch(API('/notificacoes'), {
+        if (botaoSubmit) {
+          botaoSubmit.disabled = true;
+          botaoSubmit.textContent = modoCadastroValor === 'lote'
+            ? `Cadastrando ${idsSelecionados.length} notificações...`
+            : 'Cadastrando...';
+        }
+
+        const r = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(body)
         });
+
         const resultado = await r.json().catch(() => ({}));
 
         if (r.status === 401) {
@@ -600,17 +866,57 @@
           return;
         }
 
+        const msg = document.getElementById('mensagem');
+        const acoesLote = document.getElementById('acoesLote');
+
         if (r.ok) {
-          const msg = document.getElementById('mensagem');
-          msg.textContent = '✅ Registro salvo com sucesso!';
-          msg.className = 'msg ok';
+          if (modoCadastroValor === 'lote') {
+            const total = Number(resultado?.total || idsSelecionados.length);
 
-          this.reset();
+            msg.textContent = `✅ ${total} notificações individuais criadas com sucesso.`;
+            msg.className = 'msg ok';
+
+            acoesLote.innerHTML = '';
+
+            if (resultado?.downloadUrl) {
+              const link = document.createElement('a');
+              link.className = 'btn batch-download';
+              link.href = resultado.downloadUrl;
+              link.textContent = '⬇ Baixar todas as notificações (.ZIP)';
+              link.setAttribute('download', '');
+              acoesLote.appendChild(link);
+              acoesLote.classList.remove('hidden');
+            }
+
+            // Evita duplicidade acidental depois do envio.
+            selecionadosLote.clear();
+            renderizarAlunosLote(document.getElementById('pesquisaAlunosLote').value);
+          } else {
+            msg.textContent = '✅ Registro salvo com sucesso!';
+            msg.className = 'msg ok';
+            acoesLote.classList.add('hidden');
+            acoesLote.innerHTML = '';
+          }
+
+          // Limpa apenas os campos do fato, preservando o modo de seleção.
+          document.getElementById('observacao').value = '';
           document.getElementById('detalhesMotivo').classList.add('hidden');
-          toggleGrupos();
-          valorNumerico.className = '';
 
-          if (alunoQS) {
+          if (tipoRegistroValor === 'indisciplina') {
+            tipo.value = '';
+            motivo.innerHTML = '<option value="">Selecione uma gravidade</option>';
+            tipoMedida.value = '';
+            qtdDias.value = '';
+            valorNumerico.value = '';
+          } else {
+            tipoElogio.value = '';
+            valorNumerico.value = '';
+          }
+
+          valorNumerico.className = '';
+          document.getElementById('data').value = axDateOnlyHoje();
+
+          if (alunoQS && modoCadastroValor === 'individual') {
             const select = document.getElementById('aluno');
             const pesquisa = document.getElementById('pesquisaAluno');
             select.disabled = true;
@@ -618,16 +924,26 @@
             select.value = alunoQS;
           }
         } else {
-          const msg = document.getElementById('mensagem');
-          msg.textContent = resultado?.mensagem || resultado?.message || resultado?.error || '❌ Erro ao cadastrar.';
+          msg.textContent =
+            resultado?.mensagem ||
+            resultado?.message ||
+            resultado?.error ||
+            '❌ Erro ao cadastrar.';
+
           msg.className = 'msg err';
           console.error('Erro ao cadastrar notificação:', resultado);
         }
       } catch (err) {
         console.error('Erro de conexão ao cadastrar notificação:', err);
+
         const msg = document.getElementById('mensagem');
         msg.textContent = '❌ Erro de conexão com o servidor.';
         msg.className = 'msg err';
+      } finally {
+        if (botaoSubmit) {
+          botaoSubmit.disabled = false;
+          botaoSubmit.textContent = textoOriginalBotao;
+        }
       }
     });
 
@@ -637,6 +953,7 @@
       verificarAutenticado();
       carregarAlunos();
       carregarMotivos();
+      toggleModoCadastro();
       toggleGrupos();
     })();
   </script>

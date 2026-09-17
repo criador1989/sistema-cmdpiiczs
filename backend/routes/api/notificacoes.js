@@ -3,23 +3,18 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 
 const Notificacao = require('../../models/Notificacao');
 const Aluno = require('../../models/Aluno');
+const ObservacaoProfessor = require('../../models/ObservacaoProfessor');
 const Counter = require('../../models/Counter'); // pode ficar aqui, mesmo sem uso direto
 
 const calcularNotaTSMD = require('../../utils/calculoNota');
 const {
   recalcularHistoricoComportamentoAluno
 } = require('../../utils/recalculoHistoricoComportamento');
-
-let enviarWhatsapp = null;
-try {
-  enviarWhatsapp = require('../../utils/twilio');
-} catch (_) {
-  enviarWhatsapp = null;
-}
 
 const { autenticar } = require('../../middleware/autenticacao');
 const { requireTenant } = require('../../middleware/tenantScope');
@@ -586,16 +581,33 @@ async function enviarAvisoDeferidoIfNeeded({ req, notifId }) {
 
   if (mensageria && typeof mensageria.enfileirarParaResponsaveis === 'function') {
     try {
-      await mensageria.enfileirarParaResponsaveis({
+      const resultadoEnvio = await mensageria.enfileirarParaResponsaveis({
         alunoId: aluno?._id,
         instituicao: notif.instituicao || tenantId,
         tenantId,
-        preferenciaCanais: ['email', 'telegram'],
+        preferenciaCanais: ['email', 'telegram', 'whatsapp'],
         titulo: subject,
         texto: text,
         html,
-        meta: { tipo: 'NOTIFICACAO_DEFERIDA', notifId: String(notif._id) }
+        meta: {
+          tipo: 'NOTIFICACAO_DEFERIDA',
+          notifId: String(notif._id),
+          whatsapp: {
+            contentSid: process.env.TWILIO_WHATSAPP_NOTIFICACAO_CONTENT_SID || undefined,
+            contentVariables: {
+              1: contexto?.nomeInstituicao || contexto?.siglaInstituicao || 'Instituição de ensino',
+              2: aluno?.nome || 'estudante',
+              3: notif?.tipoMedida || notif?.tipo || 'Notificação disciplinar',
+              4: notif?.numeroSequencial || String(notif?._id || ''),
+              5: 'Entre em contato com a instituição para orientações e ciência.',
+            },
+          },
+        }
       });
+
+      if (!resultadoEnvio?.ok) {
+        return { ok: false, skipped: false, reason: 'nenhum canal confirmou o envio', resultadoEnvio };
+      }
     } catch (e) {
       console.warn('[deferido] falha no enfileirarParaResponsaveis:', e?.message || e);
       const chatIds = getChatIdsFromAlunoDoc(aluno);
@@ -857,17 +869,20 @@ async function verificarEnvioNP(alunoDoc, instituicao) {
       tenantId: instituicao,
       linkAgendamento: NP_AGENDAMENTO_URL,
       contatoEscola: CONTATO_ESCOLA,
-      preferenciaCanais: ['email', 'telegram']
+      preferenciaCanais: ['email', 'telegram', 'whatsapp']
     });
 
     console.log('[NP] Resultado envio:', resultado);
 
-    alunoDoc.alertas = alunoDoc.alertas || {};
-    alunoDoc.alertas.npRegularEnviadoAt = new Date();
-    alunoDoc.alertas.npRegularUltimaNota = nota;
-    await alunoDoc.save();
-
-    console.log('[NP] Enviado com sucesso!');
+    if (resultado?.ok) {
+      alunoDoc.alertas = alunoDoc.alertas || {};
+      alunoDoc.alertas.npRegularEnviadoAt = new Date();
+      alunoDoc.alertas.npRegularUltimaNota = nota;
+      await alunoDoc.save();
+      console.log('[NP] Enviado com sucesso!');
+    } else {
+      console.warn('[NP] Nenhum canal confirmou o envio; alerta não marcado como enviado.');
+    }
   } catch (e) {
     console.warn('[NP] Falha ao enviar encaminhamento:', e.message);
   }
@@ -1266,6 +1281,398 @@ router.get('/:id', autenticar, requireTenant, attachActor, async (req, res) => {
   }
 });
 
+
+/* =========================================================
+   ===== CRIAR NOTIFICAÇÕES EM LOTE =========================
+   =========================================================
+   Um mesmo fato gera N notificações individuais. Cada registro
+   possui aluno, número sequencial, nota e documento próprios.
+   O lote serve apenas para agrupar a origem comum.
+========================================================= */
+router.post('/lote', autenticar, requireTenant, attachActor, async (req, res) => {
+  let inst = null;
+  const criadasIds = [];
+  const alunosImpactados = new Set();
+
+  try {
+    inst = getTenantId(req);
+    if (!inst) {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
+
+    const body = req.body || {};
+    const entradasRaw = Array.isArray(body.alunos) ? body.alunos : [];
+
+    if (entradasRaw.length < 2) {
+      return res.status(400).json({
+        message: 'Selecione pelo menos dois alunos para criar notificações em lote.'
+      });
+    }
+
+    if (entradasRaw.length > 50) {
+      return res.status(400).json({
+        message: 'O limite é de 50 alunos por lote.'
+      });
+    }
+
+    const entradas = entradasRaw.map((item) => {
+      if (typeof item === 'string') {
+        return {
+          aluno: String(item || '').trim(),
+          origemObservacaoProfessor: null
+        };
+      }
+
+      return {
+        aluno: String(item?.aluno || item?.id || '').trim(),
+        origemObservacaoProfessor: item?.origemObservacaoProfessor
+          ? String(item.origemObservacaoProfessor).trim()
+          : null
+      };
+    });
+
+    const ids = entradas.map((item) => item.aluno);
+
+    if (ids.some((id) => !mongoose.isValidObjectId(id))) {
+      return res.status(400).json({
+        message: 'Há aluno com identificador inválido na seleção.'
+      });
+    }
+
+    if (new Set(ids).size !== ids.length) {
+      return res.status(400).json({
+        message: 'A seleção contém aluno duplicado.'
+      });
+    }
+
+    const alunosDocs = await Aluno.find({
+      _id: { $in: ids },
+      ...buildAlunoMatch(inst)
+    })
+      .select('_id nome turma instituicao tenantId')
+      .lean();
+
+    if (alunosDocs.length !== ids.length) {
+      return res.status(404).json({
+        message: 'Um ou mais alunos não foram encontrados nesta instituição.'
+      });
+    }
+
+    const alunosPorId = new Map(
+      alunosDocs.map((alunoDoc) => [String(alunoDoc._id), alunoDoc])
+    );
+
+    /* -------------------------------------------------------
+       Validação opcional da origem "Observações dos Professores"
+       ------------------------------------------------------- */
+    const observacaoIds = entradas
+      .map((item) => item.origemObservacaoProfessor)
+      .filter(Boolean);
+
+    if (observacaoIds.some((id) => !mongoose.isValidObjectId(id))) {
+      return res.status(400).json({
+        message: 'Há observação de professor com identificador inválido.'
+      });
+    }
+
+    let observacoesPorId = new Map();
+
+    if (observacaoIds.length) {
+      const observacoes = await ObservacaoProfessor.find({
+        _id: { $in: observacaoIds },
+        ...buildTenantMatch(inst)
+      })
+        .select('_id aluno loteId')
+        .lean();
+
+      observacoesPorId = new Map(
+        observacoes.map((obs) => [String(obs._id), obs])
+      );
+
+      if (observacoes.length !== new Set(observacaoIds).size) {
+        return res.status(404).json({
+          message: 'Uma ou mais observações de professor não foram encontradas nesta instituição.'
+        });
+      }
+
+      for (const entrada of entradas) {
+        if (!entrada.origemObservacaoProfessor) continue;
+
+        const obs = observacoesPorId.get(entrada.origemObservacaoProfessor);
+        if (!obs || String(obs.aluno || '') !== entrada.aluno) {
+          return res.status(400).json({
+            message: 'A origem da observação não corresponde ao aluno informado.'
+          });
+        }
+      }
+    }
+
+    const {
+      natureza,
+      tipo,
+      tipoMedida,
+      tipoElogio,
+      motivo,
+      quantidadeDias,
+      valorNumerico,
+      observacao,
+      data,
+      artigo,
+      paragrafo,
+      inciso,
+      classificacaoRegulamento,
+      comentarioMonitor
+    } = body;
+
+    const ehElogio = natureza === 'elogio';
+    const config = await getConfigDisciplinar(inst);
+    const tituloMedida = ehElogio
+      ? 'Elogio'
+      : String(tipoMedida || tipo || '').trim();
+
+    if (!tituloMedida) {
+      return res.status(400).json({
+        message: 'Tipo de medida inválido/ausente.'
+      });
+    }
+
+    let dias = 1;
+    if (!ehElogio && PRECISA_DIAS.has(tituloMedida)) {
+      const d = parseInt(quantidadeDias, 10);
+      dias = Number.isInteger(d) && d > 0 ? d : 1;
+    }
+
+    let valor = 0;
+
+    if (ehElogio) {
+      let valorBase = 0;
+
+      if (tipoElogio === 'elogioVerbal') {
+        valorBase = config.recompensas.elogioVerbal;
+      } else if (tipoElogio === 'boletimInternoIndividual') {
+        valorBase = config.recompensas.elogioIndividual;
+      } else if (tipoElogio === 'boletimInternoColetivo') {
+        valorBase = config.recompensas.elogioColetivo;
+      } else if (tipoElogio === 'mediaAlta') {
+        valorBase = config.recompensas.mediaAlta;
+      }
+
+      valor = typeof valorNumerico === 'number'
+        ? valorNumerico
+        : valorBase;
+
+      valor = normalizarValorPorNatureza('elogio', valor);
+    } else {
+      let valorBase = 0;
+      const tipoNorm = String(tituloMedida || '').toLowerCase();
+
+      if (tipoNorm.includes('advert')) {
+        valorBase = config.medidas.advertenciaEscrita;
+      } else if (tipoNorm.includes('repre')) {
+        valorBase = config.medidas.repreensao;
+      } else if (tipoNorm.includes('a.e.c.d.e') || tipoNorm.includes('aecde')) {
+        valorBase = config.medidas.aecdePorDia;
+      } else if (tipoNorm.includes('a.i.a') || tipoNorm.includes('aia')) {
+        valorBase = config.medidas.aiaPorDia;
+      }
+
+      valor = typeof valorNumerico === 'number'
+        ? valorNumerico
+        : Number(valorBase.toFixed(2));
+
+      valor = normalizarValorPorNatureza('indisciplina', valor);
+    }
+
+    const dataBase = data
+      ? parseDateOnlyNoonUTC(data)
+      : parseDateOnlyNoonUTC(dateOnlyFromAny(new Date()));
+
+    let dadosRegulamento = montarDadosRegulamentoBase({
+      artigo,
+      paragrafo,
+      inciso,
+      classificacaoRegulamento,
+      motivo
+    });
+
+    if (!ehElogio) {
+      dadosRegulamento = await resolverDadosRegulamentoDaInstituicao(inst, {
+        artigo,
+        paragrafo,
+        inciso,
+        classificacaoRegulamento,
+        motivo
+      });
+    }
+
+    const loteId = crypto.randomUUID();
+    const total = entradas.length;
+    const origemLoteObservacao = String(body.origemLoteObservacao || '').trim();
+
+    for (let indice = 0; indice < entradas.length; indice += 1) {
+      const entrada = entradas[indice];
+      const alunoDoc = alunosPorId.get(entrada.aluno);
+      const seqInfo = await getNextNumeroSequencialAtomic(inst, dataBase);
+
+      const origemRegistro = entrada.origemObservacaoProfessor
+        ? 'observacao_professor'
+        : (
+            ['manual', 'observacao_professor', 'idface'].includes(String(body.origemRegistro || '').trim())
+              ? String(body.origemRegistro).trim()
+              : 'manual'
+          );
+
+      const nova = new Notificacao(
+        tenantData(req, {
+          aluno: alunoDoc._id,
+          natureza,
+          tipo,
+          tipoMedida: tituloMedida,
+          tipoElogio: ehElogio ? tipoElogio : undefined,
+          motivo: dadosRegulamento.texto || motivo,
+          quantidadeDias: dias,
+          valorNumerico: valor,
+          observacao,
+          data: dataBase,
+          status: 'pendente',
+          numeroSequencial: seqInfo.numeroSequencial,
+          artigo: dadosRegulamento.artigo,
+          paragrafo: dadosRegulamento.paragrafo,
+          inciso: dadosRegulamento.inciso,
+          classificacaoRegulamento: dadosRegulamento.classificacao,
+          comentarioMonitor,
+          mensagemEnviada: false,
+
+          modoRegistro: 'lote',
+          loteId,
+          loteTotal: total,
+          loteIndice: indice + 1,
+          origemRegistro,
+          origemObservacaoProfessor: entrada.origemObservacaoProfessor || null,
+          origemLoteObservacao
+        })
+      );
+
+      await nova.save();
+      criadasIds.push(nova._id);
+      alunosImpactados.add(String(alunoDoc._id));
+    }
+
+    /* -------------------------------------------------------
+       Só após TODAS as notificações terem sido gravadas,
+       recalcula cada aluno e dispara os efeitos individuais.
+       ------------------------------------------------------- */
+    for (const notificacaoId of criadasIds) {
+      const notif = await Notificacao.findById(notificacaoId).lean();
+      if (!notif) continue;
+
+      const alunoDoc = alunosPorId.get(String(notif.aluno));
+
+      const recalculoHistorico = await recalcularHistoricoComportamentoAluno({
+        alunoId: notif.aluno,
+        instituicao: inst
+      });
+
+      const alunoAtualizado = recalculoHistorico.aluno;
+
+      const itemRecalculado = (recalculoHistorico.historico || []).find(
+        (h) => String(h._id) === String(notif._id)
+      );
+
+      await verificarEnvioNP(alunoAtualizado, inst);
+
+      await safeLogAction({
+        req,
+        event: 'NOTIFICACAO_CRIADA_LOTE',
+        targetType: 'Notificacao',
+        targetId: notif._id,
+        entidadeNome: alunoAtualizado?.nome || alunoDoc?.nome || null,
+        alunoNome: alunoAtualizado?.nome || alunoDoc?.nome || null,
+        meta: {
+          loteId,
+          loteTotal: total,
+          loteIndice: notif.loteIndice,
+          aluno: alunoAtualizado?.nome || alunoDoc?.nome,
+          turma: alunoAtualizado?.turma || alunoDoc?.turma,
+          natureza,
+          tipoMedida: tituloMedida,
+          valor,
+          quantidadeDias: dias,
+          numeroSequencial: notif.numeroSequencial,
+          notaAnterior: itemRecalculado?.notaAnterior ?? null,
+          notaAtual: itemRecalculado?.notaAtual ?? null,
+          artigo: dadosRegulamento.artigo,
+          paragrafo: dadosRegulamento.paragrafo,
+          inciso: dadosRegulamento.inciso,
+          classificacaoRegulamento: dadosRegulamento.classificacao,
+          origemRegistro: notif.origemRegistro,
+          origemObservacaoProfessor: notif.origemObservacaoProfessor || null
+        }
+      });
+    }
+
+    const criadas = await Notificacao.find({
+      _id: { $in: criadasIds },
+      ...buildInstMatch(inst)
+    })
+      .populate({
+        path: 'aluno',
+        select: 'nome turma instituicao tenantId',
+        match: buildAlunoMatch(inst)
+      })
+      .sort({ loteIndice: 1 })
+      .lean();
+
+    return res.status(201).json({
+      ok: true,
+      loteId,
+      total: criadas.length,
+      notificacoes: criadas,
+      downloadUrl: `/api/pdf/lote/${encodeURIComponent(loteId)}`
+    });
+  } catch (error) {
+    console.error('Erro ao criar notificações em lote:', error);
+
+    /* -------------------------------------------------------
+       Evita lote parcialmente gravado.
+       Os números sequenciais eventualmente reservados podem
+       ficar com lacunas, mas nunca serão reutilizados.
+       ------------------------------------------------------- */
+    if (inst && criadasIds.length) {
+      try {
+        await Notificacao.deleteMany({
+          _id: { $in: criadasIds },
+          ...buildInstMatch(inst)
+        });
+
+        for (const alunoId of alunosImpactados) {
+          try {
+            await recalcularHistoricoComportamentoAluno({
+              alunoId,
+              instituicao: inst
+            });
+          } catch (recalcErr) {
+            console.warn(
+              '[NOTIFICACOES][LOTE][ROLLBACK] Falha ao recalcular aluno:',
+              alunoId,
+              recalcErr?.message || recalcErr
+            );
+          }
+        }
+      } catch (rollbackError) {
+        console.error(
+          '[NOTIFICACOES][LOTE][ROLLBACK] Falha ao remover lote parcial:',
+          rollbackError
+        );
+      }
+    }
+
+    return res.status(500).json({
+      message: 'Erro ao criar notificações em lote.'
+    });
+  }
+});
+
 router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
   try {
     const inst = getTenantId(req);
@@ -1288,7 +1695,10 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
       paragrafo,
       inciso,
       classificacaoRegulamento,
-      comentarioMonitor
+      comentarioMonitor,
+      origemRegistro,
+      origemObservacaoProfessor,
+      origemLoteObservacao
     } = req.body || {};
 
     if (!aluno || !mongoose.isValidObjectId(aluno)) {
@@ -1305,6 +1715,38 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
     if (!alunoDoc) {
       return res.status(404).json({ message: 'Aluno não encontrado nesta instituição.' });
     }
+
+    let origemObservacaoProfessorValida = null;
+
+    if (origemObservacaoProfessor) {
+      if (!mongoose.isValidObjectId(origemObservacaoProfessor)) {
+        return res.status(400).json({ message: 'Observação de professor inválida.' });
+      }
+
+      const obsOrigem = await ObservacaoProfessor.findOne({
+        _id: origemObservacaoProfessor,
+        aluno,
+        ...buildTenantMatch(inst)
+      })
+        .select('_id loteId')
+        .lean();
+
+      if (!obsOrigem) {
+        return res.status(404).json({
+          message: 'A observação de professor vinculada não foi encontrada para este aluno.'
+        });
+      }
+
+      origemObservacaoProfessorValida = obsOrigem._id;
+    }
+
+    const origemRegistroFinal = origemObservacaoProfessorValida
+      ? 'observacao_professor'
+      : (
+          ['manual', 'observacao_professor', 'idface'].includes(String(origemRegistro || '').trim())
+            ? String(origemRegistro).trim()
+            : 'manual'
+        );
 
     const ehElogio = natureza === 'elogio';
     const config = await getConfigDisciplinar(inst);
@@ -1397,7 +1839,11 @@ router.post('/', autenticar, requireTenant, attachActor, async (req, res) => {
         classificacaoRegulamento: dadosRegulamento.classificacao,
         comentarioMonitor,
         criadoPor: req.usuario?.id,
-        mensagemEnviada: false
+        mensagemEnviada: false,
+        modoRegistro: 'individual',
+        origemRegistro: origemRegistroFinal,
+        origemObservacaoProfessor: origemObservacaoProfessorValida,
+        origemLoteObservacao: String(origemLoteObservacao || '').trim()
       })
     );
 
