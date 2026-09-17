@@ -7,6 +7,38 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
+const JSZip = require('jszip');
+/**
+ * Resolve o Python usado pelos geradores de documentos.
+ *
+ * Prioridade:
+ * 1. AXORIIN_PYTHON / PYTHON_EXECUTABLE configurado no ambiente;
+ * 2. .venv local do backend;
+ * 3. comando "python" do sistema, preservando compatibilidade.
+ */
+function resolvePythonExecutable() {
+  const configurado = String(
+    process.env.AXORIIN_PYTHON ||
+    process.env.PYTHON_EXECUTABLE ||
+    ''
+  ).trim();
+
+  if (configurado) return configurado;
+
+  const backendRoot = path.resolve(__dirname, '../../');
+
+  const venvPython = process.platform === 'win32'
+    ? path.join(backendRoot, '.venv', 'Scripts', 'python.exe')
+    : path.join(backendRoot, '.venv', 'bin', 'python');
+
+  if (fs.existsSync(venvPython)) {
+    return venvPython;
+  }
+
+  return 'python';
+}
+
+const PYTHON_EXECUTABLE = resolvePythonExecutable();
 
 const Notificacao = require('../../models/Notificacao');
 const Instituicao = require('../../models/Instituicao');
@@ -222,11 +254,24 @@ async function gerarDocxNotificacao(req, res) {
       '../../public/uploads/qrcodes'
     );
 
+    const pastaTemp = path.join(
+      __dirname,
+      '../../tmp/notificacoes'
+    );
+
     fs.mkdirSync(pastaQr, { recursive: true });
+    fs.mkdirSync(pastaTemp, { recursive: true });
+
+    const tokenTemporario = crypto.randomUUID();
 
     const qrCodePath = path.join(
       pastaQr,
-      `notif_${notificacao._id}.png`
+      `notif_${notificacao._id}_${tokenTemporario}.png`
+    );
+
+    const saidaPath = path.join(
+      pastaTemp,
+      `notificacao_${notificacao._id}_${tokenTemporario}.docx`
     );
 
     const urlValidacao =
@@ -241,6 +286,10 @@ async function gerarDocxNotificacao(req, res) {
     const dataOcorrenciaBR = formatarDataCalendarioBR(notificacao.data);
 
     const dados = {
+      // Cada geração usa um arquivo exclusivo para evitar colisões
+      // quando várias notificações são emitidas ao mesmo tempo.
+      saidaPath,
+
       numero: (notificacao._id || '').toString().slice(-6).toUpperCase(),
       numeroSequencial: notificacao.numeroSequencial || '',
       aluno: aluno.nome,
@@ -322,7 +371,7 @@ async function gerarDocxNotificacao(req, res) {
     };
 
     const scriptPath = path.join(__dirname, '../../pdf/generate_notification_docx.py');
-    const python = spawn('python', [scriptPath], { cwd: path.resolve(__dirname, '../../') });
+    const python = spawn(PYTHON_EXECUTABLE, [scriptPath], { cwd: path.resolve(__dirname, '../../') });
 
     python.stdin.write(JSON.stringify(dados));
     python.stdin.end();
@@ -332,14 +381,26 @@ async function gerarDocxNotificacao(req, res) {
     python.stderr.on('data', (data) => { console.error('❌ Erro Python:', data.toString()); });
 
     python.on('close', (code) => {
+      const limparTemporarios = () => {
+        for (const arquivo of [saidaPath, qrCodePath]) {
+          try {
+            if (arquivo && fs.existsSync(arquivo)) fs.unlinkSync(arquivo);
+          } catch (cleanupErr) {
+            console.warn('[PDF][NOTIFICACAO] Falha ao limpar temporário:', cleanupErr?.message || cleanupErr);
+          }
+        }
+      };
+
       if (code !== 0) {
         console.error(`❌ Python finalizou com código ${code}`);
+        limparTemporarios();
         return res.status(500).send('Erro ao gerar DOCX');
       }
 
-      const docxPath = output.trim();
+      const docxPath = output.trim() || saidaPath;
 
       if (!fs.existsSync(docxPath)) {
+        limparTemporarios();
         return res.status(500).send('Arquivo gerado não encontrado');
       }
 
@@ -347,6 +408,7 @@ async function gerarDocxNotificacao(req, res) {
 
       res.download(docxPath, filename, (err) => {
         if (err) console.error('❌ Erro ao enviar o arquivo gerado:', err);
+        limparTemporarios();
       });
     });
   } catch (err) {
@@ -354,6 +416,158 @@ async function gerarDocxNotificacao(req, res) {
     res.status(500).json({ error: 'Erro ao gerar notificação' });
   }
 }
+
+
+function nomeArquivoSeguro(valor) {
+  return String(valor || 'aluno')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 100) || 'aluno';
+}
+
+/**
+ * Reaproveita a rota individual sem duplicar toda a montagem dos dados.
+ * O "res" interno captura o arquivo antes da limpeza dos temporários.
+ */
+function gerarDocxNotificacaoEmBuffer(req, notificacaoId) {
+  return new Promise((resolve, reject) => {
+    let encerrado = false;
+
+    const finalizarErro = (erro) => {
+      if (encerrado) return;
+      encerrado = true;
+      reject(erro instanceof Error ? erro : new Error(String(erro || 'Erro ao gerar DOCX')));
+    };
+
+    const reqInterno = Object.create(req);
+    reqInterno.params = {
+      ...(req.params || {}),
+      id: String(notificacaoId)
+    };
+
+    const resInterno = {
+      statusCode: 200,
+
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+
+      json(payload) {
+        const msg = payload?.error || payload?.message || JSON.stringify(payload || {});
+        finalizarErro(new Error(msg || `Falha HTTP ${this.statusCode}`));
+        return this;
+      },
+
+      send(payload) {
+        finalizarErro(new Error(String(payload || `Falha HTTP ${this.statusCode}`)));
+        return this;
+      },
+
+      download(docxPath, filename, callback) {
+        fs.readFile(docxPath, (err, buffer) => {
+          if (typeof callback === 'function') callback(err || null);
+
+          if (err) {
+            finalizarErro(err);
+            return;
+          }
+
+          if (encerrado) return;
+          encerrado = true;
+          resolve({ buffer, filename });
+        });
+
+        return this;
+      }
+    };
+
+    Promise.resolve(gerarDocxNotificacao(reqInterno, resInterno))
+      .catch(finalizarErro);
+  });
+}
+
+/* ============ Rota: gerar ZIP de um lote ============ */
+router.get('/pdf/lote/:loteId', autenticar, async (req, res) => {
+  try {
+    const loteId = String(req.params.loteId || '').trim();
+
+    if (!loteId || loteId.length > 100) {
+      return res.status(400).json({ error: 'Lote inválido.' });
+    }
+
+    const notificacoes = await Notificacao.find({
+      instituicao: req.usuario.instituicao,
+      loteId,
+      modoRegistro: 'lote'
+    })
+      .populate('aluno')
+      .sort({ loteIndice: 1, numeroSequencial: 1 });
+
+    if (!notificacoes.length) {
+      return res.status(404).json({ error: 'Lote de notificações não encontrado.' });
+    }
+
+    const zip = new JSZip();
+    const nomesUsados = new Set();
+
+    for (let i = 0; i < notificacoes.length; i += 1) {
+      const notificacao = notificacoes[i];
+      const aluno = notificacao.aluno;
+
+      if (!aluno) continue;
+
+      const gerado = await gerarDocxNotificacaoEmBuffer(req, notificacao._id);
+
+      const numero = String(notificacao.numeroSequencial || `${i + 1}`)
+        .replace(/[\\/]/g, '-');
+
+      const baseNome = `${numero} - ${nomeArquivoSeguro(aluno.nome)}.docx`;
+      let nomeZip = baseNome;
+      let sufixo = 2;
+
+      while (nomesUsados.has(nomeZip.toLowerCase())) {
+        nomeZip = `${numero} - ${nomeArquivoSeguro(aluno.nome)}_${sufixo}.docx`;
+        sufixo += 1;
+      }
+
+      nomesUsados.add(nomeZip.toLowerCase());
+      zip.file(nomeZip, gerado.buffer);
+    }
+
+    if (!Object.keys(zip.files).length) {
+      return res.status(500).json({ error: 'Nenhum documento pôde ser gerado para este lote.' });
+    }
+
+    const zipBuffer = await zip.generateAsync({
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    const dataRef = notificacoes[0]?.data
+      ? dateOnlyFromAny(notificacoes[0].data)
+      : dateOnlyFromAny(new Date());
+
+    const dataNome = (dataRef || '').replace(/-/g, '') || 'lote';
+    const nomeDownload = `notificacoes_${dataNome}_${loteId.slice(0, 8)}.zip`;
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${nomeDownload}"`
+    );
+    res.setHeader('Content-Length', String(zipBuffer.length));
+
+    return res.send(zipBuffer);
+  } catch (err) {
+    console.error('❌ Erro ao gerar lote de notificações:', err);
+    return res.status(500).json({ error: 'Erro ao gerar lote de notificações.' });
+  }
+});
 
 router.get('/pdf/:id', autenticar, gerarDocxNotificacao);
 router.post('/pdf/:id', autenticar, gerarDocxNotificacao);

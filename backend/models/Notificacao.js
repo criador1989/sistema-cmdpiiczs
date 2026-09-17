@@ -93,6 +93,61 @@ const notificacaoSchema = new mongoose.Schema({
     index: true
   },
 
+  /* =========================
+     AGRUPAMENTO / ORIGEM
+     - Mantém cada notificação individual por aluno.
+     - Quando houver vários alunos no mesmo fato, os registros
+       compartilham o mesmo loteId.
+  ========================= */
+  modoRegistro: {
+    type: String,
+    enum: ['individual', 'lote'],
+    default: 'individual',
+    index: true
+  },
+
+  loteId: {
+    type: String,
+    trim: true,
+    default: '',
+    index: true
+  },
+
+  loteTotal: {
+    type: Number,
+    min: 1,
+    max: 50,
+    default: 1
+  },
+
+  loteIndice: {
+    type: Number,
+    min: 1,
+    max: 50,
+    default: 1
+  },
+
+  origemRegistro: {
+    type: String,
+    enum: ['manual', 'observacao_professor', 'idface'],
+    default: 'manual',
+    index: true
+  },
+
+  origemObservacaoProfessor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ObservacaoProfessor',
+    default: null,
+    index: true
+  },
+
+  origemLoteObservacao: {
+    type: String,
+    trim: true,
+    default: '',
+    index: true
+  },
+
   natureza: {
     type: String,
     enum: ['indisciplina', 'elogio'],
@@ -225,6 +280,33 @@ const notificacaoSchema = new mongoose.Schema({
   mensagemEnviadaEm: {
     type: Date,
     default: null
+  },
+
+  comunicacaoEnvio: {
+    email: {
+      tentou: { type: Boolean, default: false },
+      ok: { type: Boolean, default: false },
+      enviadoEm: { type: Date, default: null },
+      erro: { type: String, trim: true, default: null },
+      provedor: { type: String, trim: true, default: null },
+      mensagemId: { type: String, trim: true, default: null }
+    },
+    whatsapp: {
+      tentou: { type: Boolean, default: false },
+      ok: { type: Boolean, default: false },
+      enviadoEm: { type: Date, default: null },
+      erro: { type: String, trim: true, default: null },
+      provedor: { type: String, trim: true, default: null },
+      mensagemId: { type: String, trim: true, default: null },
+      destino: { type: String, trim: true, default: null }
+    },
+    telegram: {
+      tentou: { type: Boolean, default: false },
+      ok: { type: Boolean, default: false },
+      enviadoEm: { type: Date, default: null },
+      erro: { type: String, trim: true, default: null }
+    },
+    atualizadoEm: { type: Date, default: null }
   },
 
   /* =========================
@@ -454,6 +536,16 @@ notificacaoSchema.index(
 );
 
 notificacaoSchema.index(
+  { instituicao: 1, loteId: 1, loteIndice: 1 },
+  { name: 'idx_notificacao_instituicao_lote' }
+);
+
+notificacaoSchema.index(
+  { tenantId: 1, loteId: 1, loteIndice: 1 },
+  { name: 'idx_notificacao_tenant_lote' }
+);
+
+notificacaoSchema.index(
   { instituicao: 1, status: 1 },
   { name: 'idx_notificacao_instituicao_status' }
 );
@@ -504,9 +596,25 @@ notificacaoSchema.pre('validate', function () {
   this.paragrafo = trimStr(this.paragrafo);
   this.inciso = trimStr(this.inciso);
   this.classificacaoRegulamento = trimStr(this.classificacaoRegulamento);
+  this.loteId = trimStr(this.loteId) || '';
+  this.origemLoteObservacao = trimStr(this.origemLoteObservacao) || '';
   this.comentarioMonitor = trimStr(this.comentarioMonitor);
   this.comentarioRevisao = trimStr(this.comentarioRevisao);
   this.numeroSequencial = trimStr(this.numeroSequencial);
+
+  if (this.modoRegistro !== 'lote') {
+    this.modoRegistro = 'individual';
+    this.loteId = '';
+    this.loteTotal = 1;
+    this.loteIndice = 1;
+  } else {
+    this.loteTotal = Math.max(1, Math.min(50, Number(this.loteTotal || 1)));
+    this.loteIndice = Math.max(1, Math.min(this.loteTotal, Number(this.loteIndice || 1)));
+  }
+
+  if (!['manual', 'observacao_professor', 'idface'].includes(this.origemRegistro)) {
+    this.origemRegistro = 'manual';
+  }
 
   if (this.arquivada === true && lowerTrim(this.status) !== 'arquivado') {
     this.status = 'arquivado';

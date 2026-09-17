@@ -3,7 +3,7 @@
 
   const INTERVALO_ATUALIZACAO_MS = 8000;
   const CHAVE_SOM = 'axoriin.observacoesProfessores.alertasSonoros.v1_4';
-  const URL_SIRENE = '/audio/alerta-observacao.wav?v=1.7.0';
+  const URL_SIRENE = '/audio/alerta-observacao.wav?v=1.8.0';
   const ORDEM_PRIORIDADE = { normal: 1, atencao: 2, urgente: 3 };
 
   const estado = {
@@ -27,7 +27,8 @@
     prioridadePendente: 'normal',
     tocando: false,
     ultimaSireneEm: 0,
-    timerAviso: null
+    timerAviso: null,
+    mostrarHistorico: false
   };
 
   const categorias = {
@@ -75,7 +76,7 @@
   function garantirEstrutura() {
     if (document.getElementById('opAdminWidget')) return;
     const link = document.createElement('link');
-    link.rel = 'stylesheet'; link.href = '/css/observacoes-professores-admin.css?v=1.7.0';
+    link.rel = 'stylesheet'; link.href = '/css/observacoes-professores-admin.css?v=1.8.0';
     document.head.appendChild(link);
 
     document.body.insertAdjacentHTML('beforeend', `
@@ -86,6 +87,7 @@
           </div>
           <div class="op-admin-head-copy"><h2>Notificações dos professores</h2><p>Registros que precisam de acompanhamento</p></div>
           <span class="op-admin-count zero" id="opAdminCount">0</span>
+          <button class="op-admin-history" id="opAdminHistory" type="button" title="Mostrar histórico" aria-label="Mostrar histórico completo" aria-pressed="false">🗂️</button>
           <button class="op-admin-sound" id="opAdminSound" type="button" title="Alertas sonoros" aria-label="Alertas sonoros" aria-pressed="true">🔊</button>
           <button class="op-admin-refresh" id="opAdminRefresh" type="button" title="Atualizar" aria-label="Atualizar notificações">↻</button>
           <button class="op-admin-toggle" id="opAdminToggle" type="button" title="Recolher" aria-label="Recolher notificações">⌄</button>
@@ -108,6 +110,14 @@
       </div>`);
 
     document.getElementById('opAdminRefresh').addEventListener('click', carregarFeed);
+    document.getElementById('opAdminHistory').addEventListener('click', () => {
+      estado.mostrarHistorico = !estado.mostrarHistorico;
+      const botao = document.getElementById('opAdminHistory');
+      botao.classList.toggle('active', estado.mostrarHistorico);
+      botao.setAttribute('aria-pressed', String(estado.mostrarHistorico));
+      botao.title = estado.mostrarHistorico ? 'Mostrar somente registros ativos' : 'Mostrar histórico completo';
+      carregarFeed();
+    });
     document.getElementById('opAdminToggle').addEventListener('click', () => {
       document.getElementById('opAdminWidget').classList.toggle('collapsed');
     });
@@ -480,7 +490,8 @@
     const count = document.getElementById('opAdminCount');
     const summary = document.getElementById('opAdminSummary');
     const itens = Array.isArray(payload.observacoes) ? payload.observacoes : [];
-    const itensNaoLidos = itens.filter((item) => !item.lidaPeloUsuario);
+    const itensAtivos = itens.filter((item) => !['resolvida', 'arquivada'].includes(item.status));
+    const itensNaoLidos = itensAtivos.filter((item) => !item.lidaPeloUsuario);
     const idsAtuais = new Set(itensNaoLidos.map((item) => idValor(item._id)).filter(Boolean));
     const itensNovos = estado.primeiraCarga
       ? itensNaoLidos
@@ -491,15 +502,18 @@
     estado.itens = itens;
 
     const naoLidas = Number(payload.totalNaoLidas || itensNaoLidos.length || 0);
-    const ativas = Number(payload.totalAtivas || itens.length || 0);
+    const ativas = Number(payload.totalAtivas || itensAtivos.length || 0);
+    const totalRegistros = Number(payload.totalRegistros || itens.length || 0);
     count.textContent = naoLidas > 99 ? '99+' : String(naoLidas);
     count.classList.toggle('zero', naoLidas === 0);
-    summary.textContent = `${naoLidas} não ${naoLidas === 1 ? 'lida' : 'lidas'} • ${ativas} ${ativas === 1 ? 'registro ativo' : 'registros ativos'} • ${grupos.length} ${grupos.length === 1 ? 'aviso' : 'avisos'}`;
+    summary.textContent = estado.mostrarHistorico
+      ? `Histórico completo • ${totalRegistros} ${totalRegistros === 1 ? 'registro' : 'registros'} • ${grupos.length} ${grupos.length === 1 ? 'aviso exibido' : 'avisos exibidos'}`
+      : `${naoLidas} não ${naoLidas === 1 ? 'lida' : 'lidas'} • ${ativas} ${ativas === 1 ? 'registro ativo' : 'registros ativos'} • ${grupos.length} ${grupos.length === 1 ? 'aviso' : 'avisos'}`;
 
     atualizarEstadoVisual(naoLidas, itensNaoLidos);
 
     if (!grupos.length) {
-      list.innerHTML = '<div class="op-admin-empty">Nenhuma observação ativa dos professores.</div>';
+      list.innerHTML = `<div class="op-admin-empty">${estado.mostrarHistorico ? 'Nenhuma observação encontrada no histórico.' : 'Nenhuma observação ativa dos professores.'}</div>`;
       widget.hidden = false;
     } else {
       list.innerHTML = grupos.map((grupo) => {
@@ -513,6 +527,7 @@
               <span class="op-admin-dot ${unread ? '' : 'read'}"></span>
               <span class="op-admin-name">${esc(item.alunoNome)} • ${esc(item.turma)}</span>
               <span class="op-admin-chip ${esc(item.prioridade)}">${esc(prioridades[item.prioridade] || item.prioridade)}</span>
+              ${estado.mostrarHistorico ? `<span class="op-admin-chip status">${esc(situacoes[item.status] || item.status)}</span>` : ''}
             </div>
             <div class="op-admin-text">${esc(item.texto)}</div>
             <div class="op-admin-meta"><span>${esc(item.professorNome)}</span><span>${esc(dataHora(item.createdAt))}</span></div>
@@ -532,6 +547,7 @@
             <span class="op-admin-dot ${unread ? '' : 'read'}"></span>
             <span class="op-admin-name">${totalOriginal} alunos • ${esc(primeiro.turma)}</span>
             <span class="op-admin-chip ${esc(prioridade)}">${esc(prioridades[prioridade] || prioridade)}</span>
+            ${estado.mostrarHistorico ? `<span class="op-admin-chip status">${esc(new Set(itensLote.map((item) => item.status)).size > 1 ? 'Situações diferentes' : (situacoes[primeiro.status] || primeiro.status))}</span>` : ''}
           </div>
           <div class="op-admin-batch-label">REGISTRO EM LOTE${naoLidasLote ? ` • ${naoLidasLote} não ${naoLidasLote === 1 ? 'lida' : 'lidas'}` : ''}</div>
           <div class="op-admin-text">${esc(primeiro.texto)}</div>
@@ -542,7 +558,7 @@
       widget.hidden = false;
     }
 
-    const deveAlertar = estado.primeiraCarga ? naoLidas > 0 : itensNovos.length > 0;
+    const deveAlertar = !estado.mostrarHistorico && (estado.primeiraCarga ? naoLidas > 0 : itensNovos.length > 0);
     if (deveAlertar) {
       const quantidade = estado.primeiraCarga ? naoLidas : itensNovos.length;
       const prioridade = prioridadeDosItens(estado.primeiraCarga ? itensNaoLidos : itensNovos);
@@ -561,7 +577,8 @@
     if (estado.carregando) return;
     estado.carregando = true;
     try {
-      renderFeed(await api('/api/observacoes-professores/admin/feed?limit=60'));
+      const incluirConcluidas = estado.mostrarHistorico ? '&incluirConcluidas=1' : '';
+      renderFeed(await api(`/api/observacoes-professores/admin/feed?limit=100${incluirConcluidas}`));
     } catch (error) {
       const summary = document.getElementById('opAdminSummary');
       const list = document.getElementById('opAdminList');
@@ -591,17 +608,100 @@
         <div class="op-admin-detail"><b>Componente</b><span>${esc(lote.componenteCurricular || 'Não informado')}</span></div>
       </div>
       <div class="op-admin-report">${esc(lote.texto || '')}</div>
-      <div class="op-admin-batch-modal-note">O relato foi registrado individualmente na ficha de cada aluno. Abra um estudante para assumir, encaminhar ou resolver o acompanhamento específico.</div>
+      <div class="op-admin-batch-modal-note">O relato foi registrado individualmente na ficha de cada aluno. Para emitir a mesma notificação a vários estudantes, selecione abaixo e use <strong>Notificar selecionados</strong>. O sistema continuará gerando uma notificação e um documento separados para cada aluno.</div>
+      <div class="op-admin-batch-notify-toolbar">
+        <label class="op-admin-batch-checkall"><input type="checkbox" id="opAdminSelecionarTodosLote" checked> Selecionar todos</label>
+        <span id="opAdminSelecionadosLote">${itens.length} selecionados</span>
+        <button class="op-admin-btn primary" type="button" id="opAdminNotificarLote">Notificar selecionados</button>
+      </div>
       <div class="op-admin-batch-students">
-        ${itens.map((item) => `<button class="op-admin-batch-student" type="button" data-op-open-id="${esc(item._id)}">
-          <span><strong>${esc(item.alunoNome)}</strong><small>${esc(situacoes[item.status] || item.status)}${item.atendimento?.nome ? ` • ${esc(item.atendimento.nome)}` : ''}</small></span>
-          <em>Abrir →</em>
-        </button>`).join('')}
-      </div>`;
+        ${itens.map((item) => `<div class="op-admin-batch-student">
+          <label class="op-admin-batch-select">
+            <input type="checkbox" data-op-select-obs="${esc(item._id)}" data-op-select-aluno="${esc(idValor(item.aluno))}" checked>
+            <span><strong>${esc(item.alunoNome)}</strong><small>${esc(situacoes[item.status] || item.status)}${item.atendimento?.nome ? ` • ${esc(item.atendimento.nome)}` : ''}</small></span>
+          </label>
+          <button class="op-admin-batch-open" type="button" data-op-open-id="${esc(item._id)}">Abrir →</button>
+        </div>`).join('')}
+      </div>
+      <div class="op-admin-danger-zone">
+        <strong>Correção de registros indevidos</strong>
+        <p>Use somente para testes ou lançamentos realizados por engano. A exclusão remove todas as observações deste lote das fichas e dos históricos.</p>
+        <button class="op-admin-btn danger" type="button" id="opAdminExcluirLote">Excluir lote permanentemente</button>
+      </div>
+      <div class="op-admin-feedback" id="opAdminFeedback" role="status"></div>`;
 
     document.querySelectorAll('[data-op-open-id]').forEach((botao) => {
       botao.addEventListener('click', () => abrir(botao.dataset.opOpenId));
     });
+
+    const caixasLote = [
+      ...document.querySelectorAll('[data-op-select-obs][data-op-select-aluno]')
+    ];
+
+    const selecionarTodos = document.getElementById('opAdminSelecionarTodosLote');
+    const contadorSelecionados = document.getElementById('opAdminSelecionadosLote');
+
+    const atualizarSelecaoLote = () => {
+      const quantidade = caixasLote.filter((item) => item.checked).length;
+      contadorSelecionados.textContent = `${quantidade} selecionado${quantidade === 1 ? '' : 's'}`;
+      selecionarTodos.checked = quantidade > 0 && quantidade === caixasLote.length;
+      selecionarTodos.indeterminate = quantidade > 0 && quantidade < caixasLote.length;
+    };
+
+    caixasLote.forEach((checkbox) => {
+      checkbox.addEventListener('change', atualizarSelecaoLote);
+    });
+
+    selecionarTodos.addEventListener('change', () => {
+      caixasLote.forEach((checkbox) => {
+        checkbox.checked = selecionarTodos.checked;
+      });
+      atualizarSelecaoLote();
+    });
+
+    document.getElementById('opAdminNotificarLote').onclick = () => {
+      const selecionados = caixasLote.filter((item) => item.checked);
+
+      if (!selecionados.length) {
+        window.alert('Selecione pelo menos um aluno.');
+        return;
+      }
+
+      const alunos = selecionados
+        .map((item) => String(item.dataset.opSelectAluno || '').trim())
+        .filter(Boolean);
+
+      const observacoes = selecionados
+        .map((item) => String(item.dataset.opSelectObs || '').trim())
+        .filter(Boolean);
+
+      if (alunos.length !== selecionados.length || observacoes.length !== selecionados.length) {
+        window.alert('Não foi possível identificar todos os alunos selecionados.');
+        return;
+      }
+
+      const url = new URL('/cadastrar-notificacao.html', window.location.origin);
+
+      if (alunos.length === 1) {
+        url.searchParams.set('aluno', alunos[0]);
+        url.searchParams.set('observacaoProfessor', observacoes[0]);
+      } else {
+        url.searchParams.set('alunos', alunos.join(','));
+        url.searchParams.set('observacoes', observacoes.join(','));
+      }
+
+      if (lote.loteId) {
+        url.searchParams.set('origemLoteId', lote.loteId);
+      }
+
+      const tenant = new URLSearchParams(window.location.search).get('t');
+      if (tenant) url.searchParams.set('t', tenant);
+
+      window.location.href = url.toString();
+    };
+
+    atualizarSelecaoLote();
+    document.getElementById('opAdminExcluirLote').onclick = () => excluirLotePermanentemente(lote.loteId);
   }
 
   async function abrirLote(loteId) {
@@ -655,6 +755,11 @@
         <div class="op-admin-field"><label for="opAdminNota">Encaminhamento/retorno</label><textarea id="opAdminNota" ${bloqueadoPorOutro ? 'disabled' : ''} maxlength="1500" placeholder="Registre a providência adotada ou o retorno ao professor.">${esc(item.resolucao?.nota || '')}</textarea></div>
         <button class="op-admin-btn success" type="button" id="opAdminSalvarStatus" ${bloqueadoPorOutro ? 'disabled' : ''}>Salvar</button>
       </div>
+      <div class="op-admin-danger-zone">
+        <strong>Correção de registro indevido</strong>
+        <p>Use somente para teste ou lançamento feito por engano. Esta ação remove o registro da ficha do aluno e do histórico do professor.</p>
+        <button class="op-admin-btn danger" type="button" id="opAdminExcluirPermanente">Excluir permanentemente</button>
+      </div>
       <div class="op-admin-feedback" id="opAdminFeedback" role="status">${bloqueadoPorOutro ? 'Somente o responsável atual pode alterar este acompanhamento.' : ''}</div>`;
 
     document.getElementById('opAdminFicha').onclick = () => {
@@ -670,6 +775,8 @@
       const url = new URL('/cadastrar-notificacao.html', window.location.origin);
       url.searchParams.set('aluno', alunoId);
       if (item.alunoNome) url.searchParams.set('nome', item.alunoNome);
+      if (item._id) url.searchParams.set('observacaoProfessor', item._id);
+      if (item.loteId) url.searchParams.set('origemLoteId', item.loteId);
 
       const tenant = new URLSearchParams(window.location.search).get('t');
       if (tenant) url.searchParams.set('t', tenant);
@@ -681,6 +788,60 @@
     const liberar = document.getElementById('opAdminLiberar');
     if (liberar) liberar.onclick = () => acaoAdmin('liberar');
     document.getElementById('opAdminSalvarStatus').onclick = salvarStatus;
+    document.getElementById('opAdminExcluirPermanente').onclick = excluirPermanentemente;
+  }
+
+  function solicitarDadosExclusao(escopo) {
+    const motivo = window.prompt(`Informe o motivo da exclusão permanente ${escopo}:`, 'Registro de teste');
+    if (motivo === null) return null;
+    if (String(motivo).trim().length < 5) {
+      window.alert('Informe um motivo com pelo menos 5 caracteres.');
+      return null;
+    }
+
+    const confirmacao = window.prompt('Esta ação não pode ser desfeita. Digite EXCLUIR para confirmar:');
+    if (confirmacao === null) return null;
+    if (String(confirmacao).trim().toUpperCase() !== 'EXCLUIR') {
+      window.alert('Confirmação inválida. Nada foi excluído.');
+      return null;
+    }
+
+    return { motivo: String(motivo).trim(), confirmacao: 'EXCLUIR' };
+  }
+
+  async function excluirPermanentemente() {
+    if (!estado.atual) return;
+    const dados = solicitarDadosExclusao('desta observação');
+    if (!dados) return;
+
+    modalFeedback('Excluindo permanentemente...');
+    try {
+      const payload = await api(`/api/observacoes-professores/admin/${encodeURIComponent(estado.atual._id)}/permanente`, {
+        method: 'DELETE', body: JSON.stringify(dados)
+      });
+      fecharModal();
+      await carregarFeed();
+      window.alert(payload.mensagem || 'Observação excluída permanentemente.');
+    } catch (error) {
+      modalFeedback(error.message, 'error');
+    }
+  }
+
+  async function excluirLotePermanentemente(loteId) {
+    const dados = solicitarDadosExclusao('deste lote');
+    if (!dados) return;
+
+    modalFeedback('Excluindo o lote permanentemente...');
+    try {
+      const payload = await api(`/api/observacoes-professores/admin/lote/${encodeURIComponent(loteId)}/permanente`, {
+        method: 'DELETE', body: JSON.stringify(dados)
+      });
+      fecharModal();
+      await carregarFeed();
+      window.alert(payload.mensagem || 'Lote excluído permanentemente.');
+    } catch (error) {
+      modalFeedback(error.message, 'error');
+    }
   }
 
   async function abrir(id) {
