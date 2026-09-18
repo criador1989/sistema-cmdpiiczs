@@ -378,6 +378,7 @@
     }
 
     const selecionadosLote = new Set(alunosLoteQS);
+    if (alunoQS) selecionadosLote.add(alunoQS);
 
     async function verificarAutenticado() {
       try {
@@ -520,7 +521,7 @@
           }
         } catch (_) {}
 
-        return;
+
       }
 
       /* -------------------------------------------------------
