@@ -109,29 +109,87 @@ function contentDisposition(filename, download) {
   return `${download ? 'attachment' : 'inline'}; filename="${safe}"`;
 }
 
+function parseByteRange(rangeHeader, size) {
+  const raw = String(rangeHeader || '').trim();
+  if (!raw || !Number.isFinite(size) || size <= 0) return null;
+  const m = /^bytes=(\d*)-(\d*)$/i.exec(raw);
+  if (!m) return null;
+  let start = m[1] ? Number(m[1]) : null;
+  let end = m[2] ? Number(m[2]) : null;
+  if (start == null && end == null) return null;
+  if (start == null) {
+    const suffix = end;
+    if (!Number.isFinite(suffix) || suffix <= 0) return null;
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    if (!Number.isFinite(start) || start < 0 || start >= size) return { invalid: true };
+    if (end == null || !Number.isFinite(end) || end >= size) end = size - 1;
+    if (end < start) return { invalid: true };
+  }
+  return { start, end };
+}
+
 async function streamGrid(res, ref, opts = {}) {
   const id = ref.mediaId;
   if (!mongoose.Types.ObjectId.isValid(String(id))) return res.status(404).end();
-  if (opts.contentType) res.type(opts.contentType);
+  const objectId = new mongoose.Types.ObjectId(String(id));
+  const bucket = gridBucket();
+  const file = await bucket.find({ _id: objectId }).next();
+  if (!file) return res.status(404).end();
+  const size = Number(file.length || 0);
+  const range = parseByteRange(opts.range, size);
+  if (range?.invalid) {
+    res.status(416).setHeader('Content-Range', `bytes */${size}`);
+    return res.end();
+  }
+  const contentType = opts.contentType || file.contentType || 'application/octet-stream';
+  res.type(contentType);
   const disp = contentDisposition(opts.filename, opts.download);
   if (disp) res.setHeader('Content-Disposition', disp);
+  res.setHeader('Accept-Ranges', 'bytes');
   res.setHeader('Cache-Control', opts.publicCache ? 'public, max-age=3600' : 'private, max-age=0, no-cache');
-  const stream = gridBucket().openDownloadStream(new mongoose.Types.ObjectId(String(id)));
-  stream.on('file', file => { if (!opts.contentType && file?.contentType) res.type(file.contentType); });
+  if (range) {
+    const len = range.end - range.start + 1;
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${size}`);
+    res.setHeader('Content-Length', String(len));
+    const stream = bucket.openDownloadStream(objectId, { start: range.start, end: range.end + 1 });
+    stream.on('error', () => { if (!res.headersSent) res.status(404); res.end(); });
+    return stream.pipe(res);
+  }
+  if (size > 0) res.setHeader('Content-Length', String(size));
+  const stream = bucket.openDownloadStream(objectId);
   stream.on('error', () => { if (!res.headersSent) res.status(404); res.end(); });
-  stream.pipe(res);
+  return stream.pipe(res);
 }
 
 async function streamS3(res, ref, opts = {}) {
   if (!s3Configured() || !ref.storageKey) return res.status(404).end();
-  const obj = await s3Client().send(new GetObjectCommand({ Bucket: BUCKET, Key: ref.storageKey }));
-  if (obj.ContentType) res.type(obj.ContentType);
+  const input = { Bucket: BUCKET, Key: ref.storageKey };
+  if (opts.range) input.Range = String(opts.range);
+  let obj;
+  try {
+    obj = await s3Client().send(new GetObjectCommand(input));
+  } catch (e) {
+    if (opts.range && (e?.$metadata?.httpStatusCode === 416 || /InvalidRange/i.test(String(e?.name || e?.message || '')))) {
+      return res.status(416).end();
+    }
+    throw e;
+  }
+  if (obj.ContentType || opts.contentType) res.type(opts.contentType || obj.ContentType);
   if (obj.ContentLength != null) res.setHeader('Content-Length', String(obj.ContentLength));
+  if (obj.AcceptRanges) res.setHeader('Accept-Ranges', obj.AcceptRanges);
+  else res.setHeader('Accept-Ranges', 'bytes');
+  if (obj.ContentRange) {
+    res.status(206);
+    res.setHeader('Content-Range', obj.ContentRange);
+  }
   const disp = contentDisposition(opts.filename, opts.download);
   if (disp) res.setHeader('Content-Disposition', disp);
   res.setHeader('Cache-Control', opts.publicCache ? 'public, max-age=3600' : 'private, max-age=0, no-cache');
   obj.Body.on('error', () => { if (!res.headersSent) res.status(500); res.end(); });
-  obj.Body.pipe(res);
+  return obj.Body.pipe(res);
 }
 
 async function streamEventMedia(res, ref = {}, opts = {}) {
