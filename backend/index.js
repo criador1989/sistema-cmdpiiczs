@@ -536,6 +536,7 @@ app.use((req, res, next) => {
   const rotaExclusivaDoSiteDoColegio =
     p === '/site-cmdpii' ||
     p.startsWith('/site-cmdpii/') ||
+    p.startsWith('/eventos/') ||
     p === '/api/site-publico' ||
     p.startsWith('/api/site-publico/');
 
@@ -699,6 +700,7 @@ function buildProfessorGuard(publicRoot) {
   p.startsWith('/uploads/')
 ) return next();
 
+    if (p.startsWith('/eventos/')) return next();
     if (alwaysPublic.has(p)) return next();
 
     const looksLikeHtml = p.endsWith('.html');
