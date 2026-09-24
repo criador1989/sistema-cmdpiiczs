@@ -58,6 +58,18 @@ const receiptUpload = multer({
   },
 });
 
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const mime = String(file.mimetype || '').toLowerCase();
+    const name = String(file.originalname || '').toLowerCase();
+    const ok = mime === 'video/mp4' || name.endsWith('.mp4');
+    if (!ok) return cb(new Error('Somente vídeo MP4 é permitido para o percurso.'));
+    cb(null, true);
+  },
+});
+
 function jwtSecret() {
   const secret = process.env.EVENTOS_JWT_SECRET || process.env.JWT_SECRET || process.env.SECRET_KEY;
   if (secret) return secret;
@@ -347,7 +359,7 @@ async function ensureHistoricalPhotos(cfg) {
 }
 
 function needsV131Migration(cfg) {
-  return Number(cfg.schemaVersion || 0) < 136;
+  return Number(cfg.schemaVersion || 0) < 137;
 }
 
 function needsV130Migration(cfg) {
@@ -360,7 +372,7 @@ async function ensureConfig() {
   let cfg = await EventoConfig.findOne({ slug: EVENT_SLUG });
   if (!cfg) cfg = await EventoConfig.create({ slug: EVENT_SLUG });
   if (needsV130Migration(cfg)) {
-    cfg.schemaVersion = 136;
+    cfg.schemaVersion = 137;
     cfg.categorias = V120_CATEGORIES;
     if (!cfg.eventDate) cfg.eventDate = new Date('2026-11-22T22:00:00.000Z');
     cfg.categoryReferenceDate = new Date('2026-11-22T12:00:00.000Z');
@@ -382,7 +394,7 @@ async function ensureConfig() {
     await cfg.save();
   }
   if (needsV131Migration(cfg)) {
-    cfg.schemaVersion = 136;
+    cfg.schemaVersion = 137;
     if (!cfg.bannerStorageProvider && cfg.bannerMediaId) cfg.bannerStorageProvider = 'gridfs';
     await cfg.save();
   }
@@ -428,6 +440,10 @@ function publicConfig(cfg) {
     certificado: c.certificado, medalha: c.medalha,
     bannerUrl: c.bannerMediaId ? `/api/eventos/${EVENT_SLUG}/media/${c.bannerMediaId}?v=${new Date(c.updatedAt || Date.now()).getTime()}` : `/eventos/${EVENT_SLUG}/assets/img/evento/hero-banner-principal.png`,
     bannerInternoUrl: c.bannerInternoMediaId ? `/api/eventos/${EVENT_SLUG}/media/${c.bannerInternoMediaId}?v=${new Date(c.updatedAt || Date.now()).getTime()}` : `/eventos/${EVENT_SLUG}/assets/img/evento/hero-banner-interno.png`,
+    percursoVideoUrl: c.percursoVideoMediaId ? `/api/eventos/${EVENT_SLUG}/media/${c.percursoVideoMediaId}?v=${new Date(c.percursoVideoAtualizadoEm || c.updatedAt || Date.now()).getTime()}` : `/eventos/${EVENT_SLUG}/assets/media/percurso-oficial.mp4`,
+    percursoVideoCustomizado: Boolean(c.percursoVideoMediaId),
+    percursoVideoNome: c.percursoVideoNome || 'percurso-oficial.mp4',
+    percursoVideoAtualizadoEm: c.percursoVideoAtualizadoEm || null,
   };
 }
 
@@ -474,6 +490,15 @@ function bannerInternoMediaRef(cfg) {
     storageProvider: cfg?.bannerInternoStorageProvider || (cfg?.bannerInternoMediaId ? 'gridfs' : ''),
     storageKey: cfg?.bannerInternoStorageKey || '',
     storageUrl: cfg?.bannerInternoStorageUrl || '',
+  };
+}
+
+function percursoVideoMediaRef(cfg) {
+  return {
+    mediaId: String(cfg?.percursoVideoMediaId || ''),
+    storageProvider: cfg?.percursoVideoStorageProvider || (cfg?.percursoVideoMediaId ? 'gridfs' : ''),
+    storageKey: cfg?.percursoVideoStorageKey || '',
+    storageUrl: cfg?.percursoVideoStorageUrl || '',
   };
 }
 
@@ -633,6 +658,9 @@ router.get(`/${EVENT_SLUG}/media/:id`, async (req, res) => {
     }
     if (String(cfg.bannerInternoMediaId || '') === req.params.id) {
       return streamEventMedia(res, bannerInternoMediaRef(cfg), { publicCache: true });
+    }
+    if (String(cfg.percursoVideoMediaId || '') === req.params.id) {
+      return streamEventMedia(res, percursoVideoMediaRef(cfg), { publicCache: true, contentType: 'video/mp4', filename: cfg.percursoVideoNome || 'percurso.mp4', range: req.headers.range || '' });
     }
     if (cfg.regulamentoPdfPublicado && String(cfg.regulamentoPdfMediaId || '') === req.params.id) {
       return streamGridFile(res, req.params.id, { filename: cfg.regulamentoPdfNome || 'regulamento.pdf' });
@@ -1052,7 +1080,7 @@ admin.put('/config', async (req, res) => {
     }
     if (req.body.certificado) cfg.certificado = { titulo: safeText(req.body.certificado.titulo,100), textoBase: safeText(req.body.certificado.textoBase,1500), assinatura: safeText(req.body.certificado.assinatura,150), publicado: req.body.certificado.publicado !== false };
     if (req.body.medalha) cfg.medalha = { titulo: safeText(req.body.medalha.titulo,100), edicao: safeText(req.body.medalha.edicao,50), ano: safeText(req.body.medalha.ano,10), mensagem: safeText(req.body.medalha.mensagem,300), publicado: req.body.medalha.publicado !== false };
-    cfg.schemaVersion = 136;
+    cfg.schemaVersion = 137;
     cfg.markModified('categorias'); cfg.markModified('lotes'); cfg.markModified('camisetas'); cfg.markModified('pagamento'); cfg.markModified('kitItems'); cfg.markModified('publicoPermitido');
     await cfg.save();
     res.json({ ok: true, config: adminConfig(cfg) });
@@ -1112,6 +1140,65 @@ admin.post('/banner-interno', upload.single('imagem'), async (req, res) => {
   } catch (e) {
     console.error('[eventos/admin/banner-interno]', e);
     res.status(500).json({ mensagem: 'Não foi possível salvar o banner interno.' });
+  }
+});
+
+admin.post('/percurso-video', videoUpload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ mensagem: 'Selecione um vídeo MP4.' });
+    const cfg = await ensureConfig();
+    const oldRef = percursoVideoMediaRef(cfg);
+    const stored = await saveEventMedia(req.file, { eventSlug: EVENT_SLUG, tipo: 'percurso-video', metadata: { tipo: 'percurso-video' } });
+    cfg.percursoVideoMediaId = stored.mediaId;
+    cfg.percursoVideoStorageProvider = stored.storageProvider;
+    cfg.percursoVideoStorageKey = stored.storageKey || '';
+    cfg.percursoVideoStorageUrl = stored.storageUrl || '';
+    cfg.percursoVideoNome = safeText(req.file.originalname || 'percurso.mp4', 180).replace(/[^a-zA-Z0-9._() -]/g, '_');
+    cfg.percursoVideoAtualizadoEm = new Date();
+    cfg.schemaVersion = 137;
+    await cfg.save();
+    if (oldRef.mediaId && oldRef.mediaId !== stored.mediaId) {
+      try { await deleteEventMedia(oldRef); } catch (e) { console.warn('[eventos/percurso-video/delete-old]', e?.message || e); }
+    }
+    return res.json({
+      ok: true,
+      percursoVideoUrl: `/api/eventos/${EVENT_SLUG}/media/${stored.mediaId}?v=${Date.now()}`,
+      percursoVideoCustomizado: true,
+      percursoVideoNome: cfg.percursoVideoNome,
+      percursoVideoAtualizadoEm: cfg.percursoVideoAtualizadoEm,
+      storage: publicStorageStatus(),
+    });
+  } catch (e) {
+    console.error('[eventos/admin/percurso-video]', e);
+    const msg = /File too large/i.test(String(e?.message || '')) ? 'O vídeo ultrapassa o limite de 100 MB.' : 'Não foi possível salvar o vídeo do percurso.';
+    res.status(500).json({ mensagem: msg });
+  }
+});
+
+admin.delete('/percurso-video', async (_req, res) => {
+  try {
+    const cfg = await ensureConfig();
+    const oldRef = percursoVideoMediaRef(cfg);
+    cfg.percursoVideoMediaId = '';
+    cfg.percursoVideoStorageProvider = '';
+    cfg.percursoVideoStorageKey = '';
+    cfg.percursoVideoStorageUrl = '';
+    cfg.percursoVideoNome = '';
+    cfg.percursoVideoAtualizadoEm = null;
+    cfg.schemaVersion = 137;
+    await cfg.save();
+    if (oldRef.mediaId) {
+      try { await deleteEventMedia(oldRef); } catch (e) { console.warn('[eventos/percurso-video/delete]', e?.message || e); }
+    }
+    return res.json({
+      ok: true,
+      percursoVideoUrl: `/eventos/${EVENT_SLUG}/assets/media/percurso-oficial.mp4`,
+      percursoVideoCustomizado: false,
+      percursoVideoNome: 'percurso-oficial.mp4',
+    });
+  } catch (e) {
+    console.error('[eventos/admin/percurso-video/delete]', e);
+    res.status(500).json({ mensagem: 'Não foi possível restaurar o vídeo original.' });
   }
 });
 
