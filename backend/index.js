@@ -536,7 +536,6 @@ app.use((req, res, next) => {
   const rotaExclusivaDoSiteDoColegio =
     p === '/site-cmdpii' ||
     p.startsWith('/site-cmdpii/') ||
-    p.startsWith('/eventos/') ||
     p === '/api/site-publico' ||
     p.startsWith('/api/site-publico/');
 
