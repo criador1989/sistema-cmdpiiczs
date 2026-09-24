@@ -288,6 +288,7 @@ const professorOnboardingGuard = require('./middleware/professorOnboardingGuard'
 // Axoriin AssociaÃ§Ãµes â€” mÃ³dulo multi-tenant
 const associacaoRoutes = require('./routes/api/associacao');
 const masterAssociacoesRoutes = require('./routes/api/masterAssociacoes');
+const eventosCorridaRoutes = require('./routes/api/eventosCorrida');
 const { carregarContextoAssociacao } = require('./middleware/associacaoAuth');
 
 let masterInstituicoesRoutes = null;
@@ -969,6 +970,8 @@ mountIf('/api/site-analytics', siteAnalyticsRoutes);
    ========================= */
 mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin);
 mountIf('/api/master/associacoes', masterAssociacoesRoutes, requireSuperAdmin);
+mountIf('/api/eventos', eventosCorridaRoutes.router);
+mountIf('/eventos-admin/corrida-cmdpii-2026', eventosCorridaRoutes.adminUiRouter);
 
 /* =========================
    âœ… FIX TEMPORÃRIO DE INSTITUIÃ‡ÃƒO LEGADA (SuperAdmin)
