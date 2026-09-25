@@ -714,15 +714,21 @@ router.post(`/${EVENT_SLUG}/auth/cadastro`, authRateLimit, async (req, res) => {
   try {
     const nome = safeText(req.body.nome, 120);
     const email = normalizeEmail(req.body.email);
-    const cpf = onlyDigits(req.body.cpf) || undefined;
+    // A conta da Corrida e independente dos cadastros internos do Axoriin.
+    // CPF sera informado e validado somente no participante/inscricao.
     const telefone = onlyDigits(req.body.telefone).slice(0, 15);
     const senha = String(req.body.senha || '');
 
-    if (nome.length < 3 || !isValidEmail(email) || !passwordOk(senha) || !isValidCpf(cpf)) {
-      return res.status(400).json({ mensagem: 'Confira nome, e-mail, CPF e senha. A senha deve ter 8+ caracteres, maiúscula, minúscula e número.' });
+    if (nome.length < 3 || !isValidEmail(email) || !passwordOk(senha)) {
+      return res.status(400).json({
+        mensagem: 'Confira nome, e-mail e senha. A senha deve ter 8+ caracteres, mai\u00fascula, min\u00fascula e n\u00famero.'
+      });
     }
 
-    const exists = await EventoConta.findOne({ eventSlug: EVENT_SLUG, $or: [{ email }, ...(cpf ? [{ cpf }] : [])] }).select('+emailConfirmTokenHash');
+    const exists = await EventoConta.findOne({
+      eventSlug: EVENT_SLUG,
+      email
+    }).select('+emailConfirmTokenHash');
     if (exists) {
       if (exists.email === email && exists.emailConfirmado === false) {
         try {
@@ -733,14 +739,17 @@ router.post(`/${EVENT_SLUG}/auth/cadastro`, authRateLimit, async (req, res) => {
           return res.status(503).json({ ok: false, code: 'EMAIL_SEND_FAILED', requiresEmailConfirmation: true, email: maskEmail(email), mensagem: 'A conta já existe, mas não foi possível enviar a confirmação agora. Tente reenviar em instantes.' });
         }
       }
-      return res.status(409).json({ mensagem: 'Já existe uma conta com este e-mail ou CPF.' });
+      return res.status(409).json({
+        code: 'EMAIL_ALREADY_REGISTERED',
+        mensagem: 'Ja existe uma conta da Corrida com este e-mail. Entre na sua conta ou utilize a recuperacao de senha.'
+      });
     }
 
     const account = await EventoConta.create({
       eventSlug: EVENT_SLUG,
       nome,
       email,
-      cpf,
+
       telefone,
       senhaHash: await bcrypt.hash(senha, 12),
       emailConfirmado: false,
@@ -767,7 +776,39 @@ router.post(`/${EVENT_SLUG}/auth/cadastro`, authRateLimit, async (req, res) => {
       });
     }
   } catch (e) {
-    if (e?.code === 11000) return res.status(409).json({ mensagem: 'E-mail ou CPF já cadastrado.' });
+    if (e?.code === 11000) {
+      const keyPattern = e?.keyPattern || {};
+      const keyValue = e?.keyValue || {};
+
+      if (
+        keyPattern.email ||
+        Object.prototype.hasOwnProperty.call(keyValue, 'email')
+      ) {
+        return res.status(409).json({
+          code: 'EMAIL_ALREADY_REGISTERED',
+          mensagem: 'Ja existe uma conta da Corrida com este e-mail. Entre na sua conta ou utilize a recuperacao de senha.'
+        });
+      }
+
+      if (
+        keyPattern.cpf ||
+        Object.prototype.hasOwnProperty.call(keyValue, 'cpf')
+      ) {
+        console.warn(
+          '[eventos/cadastro] conflito em indice legado de CPF:',
+          keyValue
+        );
+        return res.status(409).json({
+          code: 'LEGACY_ACCOUNT_CPF_CONFLICT',
+          mensagem: 'Foi encontrado um conflito em um cadastro antigo da Corrida.'
+        });
+      }
+
+      return res.status(409).json({
+        code: 'ACCOUNT_ALREADY_REGISTERED',
+        mensagem: 'Ja existe uma conta da Corrida com estes dados.'
+      });
+    }
     console.error('[eventos/cadastro]', e);
     res.status(500).json({ mensagem: 'Não foi possível criar a conta.' });
   }
