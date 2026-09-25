@@ -374,9 +374,9 @@ async function ensureConfig() {
   if (needsV130Migration(cfg)) {
     cfg.schemaVersion = 137;
     cfg.categorias = V120_CATEGORIES;
-    if (!cfg.eventDate) cfg.eventDate = new Date('2026-11-22T12:00:00.000Z');
+    if (!cfg.eventDate) cfg.eventDate = new Date('2026-11-22T11:30:00.000Z');
     cfg.categoryReferenceDate = new Date('2026-11-22T12:00:00.000Z');
-    if (!cfg.dataLabel || cfg.dataLabel === 'Novembro de 2026') cfg.dataLabel = '22 de novembro de 2026 • largada às 17h';
+    if (!cfg.dataLabel || cfg.dataLabel === 'Novembro de 2026') cfg.dataLabel = '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30';
     if (!cfg.local || cfg.local === 'Cruzeiro do Sul - AC') cfg.local = 'Colégio Militar Dom Pedro II • Cruzeiro do Sul - AC';
     cfg.resumoCategorias = 'Fundamental II, Ensino Médio, AEE, PCD, servidores e comunidade escolar';
     cfg.resumoPremiacao = 'Premiação por categoria e sexo';
@@ -402,9 +402,9 @@ async function ensureConfig() {
     // PATCH_FINAL_CORRIDA_2026_V140
   if (Number(cfg.schemaVersion || 0) < 140) {
     cfg.schemaVersion = 140;
-    cfg.eventDate = new Date('2026-11-22T12:00:00.000Z');
+    cfg.eventDate = new Date('2026-11-22T11:30:00.000Z');
     cfg.categoryReferenceDate = new Date('2026-11-22T12:00:00.000Z');
-    cfg.dataLabel = '22 de novembro de 2026 • largada às 07h';
+    cfg.dataLabel = '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30';
     cfg.percursoLabel = '4 km';
     cfg.ctaSecundario = '?rea do participante';
     cfg.categorias = V120_CATEGORIES;
@@ -438,7 +438,7 @@ async function ensureConfig() {
       new Date('2026-11-22T12:00:00.000Z');
 
     cfg.dataLabel =
-      '22 de novembro de 2026 • largada às 07h';
+      '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30';
 
     cfg.percursoLabel = '4 km';
 
@@ -460,6 +460,19 @@ async function ensureConfig() {
       '2026-09-24-v3';
 
     cfg.regulamentoPdfPublicado = false;
+
+    await cfg.save();
+  }
+
+  // PATCH_CMS_PERSISTENCIA_CORRIDA_V142
+  if (Number(cfg.schemaVersion || 0) < 142) {
+    cfg.schemaVersion = 142;
+
+    cfg.eventDate =
+      new Date('2026-11-22T11:30:00.000Z');
+
+    cfg.dataLabel =
+      '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30';
 
     await cfg.save();
   }
@@ -1228,10 +1241,24 @@ admin.put('/config', async (req, res) => {
     }
     if (req.body.certificado) cfg.certificado = { titulo: safeText(req.body.certificado.titulo,100), textoBase: safeText(req.body.certificado.textoBase,1500), assinatura: safeText(req.body.certificado.assinatura,150), publicado: req.body.certificado.publicado !== false };
     if (req.body.medalha) cfg.medalha = { titulo: safeText(req.body.medalha.titulo,100), edicao: safeText(req.body.medalha.edicao,50), ano: safeText(req.body.medalha.ano,10), mensagem: safeText(req.body.medalha.mensagem,300), publicado: req.body.medalha.publicado !== false };
-    cfg.schemaVersion = 137;
+    cfg.schemaVersion = Math.max(Number(cfg.schemaVersion || 0), 142);
     cfg.markModified('categorias'); cfg.markModified('lotes'); cfg.markModified('camisetas'); cfg.markModified('pagamento'); cfg.markModified('kitItems'); cfg.markModified('publicoPermitido');
     await cfg.save();
-    res.json({ ok: true, config: adminConfig(cfg) });
+
+    const persistedCfg =
+      await EventoConfig.findOne({ slug: EVENT_SLUG });
+
+    if (!persistedCfg) {
+      throw new Error(
+        'A configuração foi salva, mas não pôde ser relida.'
+      );
+    }
+
+    res.json({
+      ok: true,
+      persisted: true,
+      config: adminConfig(persistedCfg),
+    });
   } catch (e) {
     console.error('[eventos/admin/config]', e);
     res.status(500).json({ mensagem: 'Não foi possível salvar a configuração.' });
