@@ -26,15 +26,15 @@ const CamisetaSchema = new mongoose.Schema({
 
 const EventoConfigSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true, index: true },
-  schemaVersion: { type: Number, default: 140 },
+  schemaVersion: { type: Number, default: 141 },
   publicado: { type: Boolean, default: true },
   inscricoesAbertas: { type: Boolean, default: false },
   titulo: { type: String, default: 'Corrida CMDPII-CZS 2ª edição' },
   subtitulo: { type: String, default: 'Mais que uma corrida, um encontro da nossa comunidade. Esporte, educação e um futuro em movimento.' },
   destaque: { type: String, default: 'Esporte • Educação • Comunidade' },
   ctaPrincipal: { type: String, default: 'Inscreva-se agora' },
-  ctaSecundario: { type: String, default: '?rea do participante' },
-  dataLabel: { type: String, default: '22 de novembro de 2026 • largada às 17h' },
+  ctaSecundario: { type: String, default: 'Área do participante' },
+  dataLabel: { type: String, default: '22 de novembro de 2026 • largada às 07h' },
   eventDate: { type: Date, default: new Date('2026-11-22T12:00:00.000Z') },
   categoryReferenceDate: { type: Date, default: new Date('2026-11-22T12:00:00.000Z') },
   local: { type: String, default: 'Colégio Militar Dom Pedro II • Cruzeiro do Sul - AC' },
@@ -68,7 +68,7 @@ const EventoConfigSchema = new mongoose.Schema({
   regulamentoPdfNome: { type: String, default: '' },
   regulamentoPdfPublicado: { type: Boolean, default: false },
   regulamentoPdfAtualizadoEm: { type: Date, default: null },
-  termoVersao: { type: String, default: '2026-09-23-v1' },
+  termoVersao: { type: String, default: '2026-09-24-v3' },
   publicoPermitido: { type: [String], default: [
     'Alunos do CMDPII/CZS', 'Pais e mães de alunos', 'Irmãos e irmãs de alunos', 'Ex-alunos (egressos)',
     'Servidores e colaboradores', 'Cônjuges e filhos de servidores/colaboradores', 'Comunidade Escolar II'
