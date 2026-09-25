@@ -1,7 +1,56 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Regulamento | Corrida CMDPII-CZS</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oxanium:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/eventos.css"></head><body class="v130"><header class="topbar"><div class="wrap nav"><a class="brand" href="./">AXORIIN<small>EVENTOS</small></a><nav class="navlinks"><a href="./">Início</a><a href="inscricao.html">Inscrição</a><a class="active" href="regulamento.html">Regulamento</a><a href="resultados.html">Resultados</a><a href="fotos.html">Fotos</a></nav><a class="account-btn" href="minha-conta.html">Minha conta</a></div></header>
-<section class="page-hero130" style="--page-photo:url('assets/img/evento/hero-banner-interno.png')"><div class="wrap"><div class="eyebrow">INFORMAÇÕES OFICIAIS</div><h1>Regulamento</h1><p>Tudo o que você precisa saber antes de participar.</p><div class="identity-crests"><img src="assets/img/brand/brasao-cbmac-cmdpii.png" alt="Brasão institucional"><img src="assets/img/brand/brasao-colegio.png" alt="Brasão do Colégio Militar"></div></div></section>
-<main><div class="wrap reg-summary130"><article class="regbox130"><small>DATA E LARGADA</small><strong data-date></strong></article><article class="regbox130"><small>LOCAL</small><strong data-local></strong></article><article class="regbox130"><small>PAGAMENTO</small><strong>PIX com comprovante até ativação da API Sicoob</strong></article><article class="regbox130"><small>KIT DO ATLETA</small><strong>Camiseta e número de peito. Medalha somente no dia da corrida, após concluir a prova.</strong></article></div>
-<section class="section130"><div class="wrap reg-grid130"><article class="reg-panel130"><div class="eyebrow">PARTICIPAÇÃO</div><h2>Quem pode participar?</h2><p>Participação restrita aos públicos previstos no regulamento oficial. O vínculo informado na inscrição é declarado sob responsabilidade do participante ou responsável legal.</p><div id="publicList"></div></article><article class="reg-panel130"><div class="eyebrow">CATEGORIAS</div><h2>Escolha na inscrição</h2><div class="reg-cats130"><div class="r"><b>Regular</b><br><span>Categoria regular conforme vínculo.</span></div><div class="a"><b>AEE</b><br><span>Atendimento Educacional Especializado.</span></div><div class="p"><b>PCD</b><br><span>Pessoa com deficiência.</span></div></div></article><article class="reg-panel130"><div class="eyebrow">ORIENTAÇÕES</div><h2>Pontos importantes</h2><ul><li>Leia o regulamento completo antes de se inscrever.</li><li>O comprovante de pagamento será analisado pela organização enquanto a API Sicoob não estiver ativa.</li><li>A medalha será entregue exclusivamente no dia da corrida, após a conclusão regular da prova.</li><li>Regular, AEE e PCD aparecem explicitamente no formulário de inscrição.</li></ul></article></div></section>
-<section class="section130" id="percurso" style="padding-top:0"><div class="wrap feature130 route"><div class="copy"><div class="eyebrow">PERCURSO OFICIAL</div><h3>Visualize o arquivo do trajeto</h3><p>O vídeo de percurso fornecido pela organização está incorporado abaixo. Distância e detalhes finais devem ser confirmados no PDF oficial antes da abertura das inscrições.</p></div><video data-route-video controls poster="assets/img/evento/percurso-poster.jpg"><source src="assets/media/percurso-oficial.mp4" type="video/mp4"></video></div></section>
-<section class="section130" style="padding-top:16px"><div class="wrap"><div class="feature-row130"><article class="feature130" style="background:linear-gradient(90deg,rgba(2,12,24,.97),rgba(2,12,24,.35)),url('assets/img/evento/IMG_9256.webp') center/cover"><div class="eyebrow">MEDALHA</div><h3>Conquista no dia da prova</h3><p>A medalha de finisher será entregue somente após a conclusão da corrida.</p></article><article class="feature130" style="grid-column:span 2"><div class="eyebrow">DOCUMENTO OFICIAL</div><h3>PDF do regulamento</h3><p>Esta página é um resumo visual. Em caso de divergência, prevalece o PDF oficial publicado pela organização.</p><div id="pdfArea" class="hidden"><a id="openPdf" class="btn-v130 primary" href="#" target="_blank" data-track="baixar-regulamento">Baixar regulamento em PDF ↓</a></div><div id="pdfMissing" class="notice">O PDF ainda não foi publicado no CMS.</div></article></div></div></section></main>
-<footer class="footer"><div class="wrap">Corrida CMDPII-CZS 2ª edição • Axoriin Eventos</div></footer><script src="assets/js/common.js?v=139-video-sync"></script><script>(async()=>{try{const c=await getConfig();applyConfig(c);publicList.innerHTML=(c.publicoPermitido||[]).map(x=>`<p>• ${esc(x)}</p>`).join('');if(c.regulamentoPdfDisponivel){pdfArea.classList.remove('hidden');pdfMissing.classList.add('hidden');openPdf.href=c.regulamentoPdfUrl+'?download=1'}}catch(e){console.error(e)}})();</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Regulamento ? Acesso restrito</title>
+<link rel="stylesheet" href="assets/css/eventos.css">
+</head>
+
+<body class="v130">
+
+<main class="section">
+<div class="wrap">
+
+<section class="panel"
+style="max-width:720px;margin:60px auto;text-align:center">
+
+<div class="eyebrow">ACESSO RESTRITO</div>
+
+<h1>Regulamento Oficial</h1>
+
+<p class="muted">
+O Regulamento da 2? Corrida CMDPII-CZS est? dispon?vel
+exclusivamente na Central do Participante.
+</p>
+
+<p>Verificando sua sess?o...</p>
+
+</section>
+</div>
+</main>
+
+<script>
+(async function () {
+  try {
+    const r = await fetch(
+      '/api/eventos/corrida-cmdpii-2026/auth/me',
+      {
+        credentials: 'same-origin',
+        cache: 'no-store'
+      }
+    );
+
+    if (r.ok) {
+      location.replace('minha-conta.html?regulamento=1');
+      return;
+    }
+  } catch (_) {}
+
+  location.replace('entrar.html');
+})();
+</script>
+
+</body>
+</html>

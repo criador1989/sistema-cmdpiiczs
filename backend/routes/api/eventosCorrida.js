@@ -374,7 +374,7 @@ async function ensureConfig() {
   if (needsV130Migration(cfg)) {
     cfg.schemaVersion = 137;
     cfg.categorias = V120_CATEGORIES;
-    if (!cfg.eventDate) cfg.eventDate = new Date('2026-11-22T22:00:00.000Z');
+    if (!cfg.eventDate) cfg.eventDate = new Date('2026-11-22T12:00:00.000Z');
     cfg.categoryReferenceDate = new Date('2026-11-22T12:00:00.000Z');
     if (!cfg.dataLabel || cfg.dataLabel === 'Novembro de 2026') cfg.dataLabel = '22 de novembro de 2026 • largada às 17h';
     if (!cfg.local || cfg.local === 'Cruzeiro do Sul - AC') cfg.local = 'Colégio Militar Dom Pedro II • Cruzeiro do Sul - AC';
@@ -399,7 +399,34 @@ async function ensureConfig() {
     await cfg.save();
   }
   await ensureHistoricalPhotos(cfg);
-  return cfg;
+    // PATCH_FINAL_CORRIDA_2026_V140
+  if (Number(cfg.schemaVersion || 0) < 140) {
+    cfg.schemaVersion = 140;
+    cfg.eventDate = new Date('2026-11-22T12:00:00.000Z');
+    cfg.categoryReferenceDate = new Date('2026-11-22T12:00:00.000Z');
+    cfg.dataLabel = '22 de novembro de 2026 ? largada ?s 07h';
+    cfg.percursoLabel = '4 km';
+    cfg.ctaSecundario = '?rea do participante';
+    cfg.categorias = V120_CATEGORIES;
+    cfg.publicoPermitido = [
+      'Alunos do CMDPII/CZS',
+      'Pais e m?es de alunos',
+      'Irm?os e irm?s de alunos',
+      'Ex-alunos (egressos)',
+      'Servidores e colaboradores',
+      'C?njuges e filhos de servidores/colaboradores'
+    ];
+    cfg.termoVersao = '2026-09-24-v2';
+    cfg.regulamentoPdfPublicado = false;
+    await cfg.save();
+
+    await EventoParticipante.updateMany(
+      { eventSlug: EVENT_SLUG, vinculo: 'filho_bombeiro' },
+      { $set: { vinculo: 'filho_servidor' } }
+    );
+  }
+
+return cfg;
 }
 
 function moneyBRL(cents) {
@@ -429,9 +456,9 @@ function publicConfig(cfg) {
     resumoCategorias: c.resumoCategorias, resumoPremiacao: c.resumoPremiacao, premioDescricao: c.premioDescricao,
     sponsorMessage: c.sponsorMessage, sponsorSubMessage: c.sponsorSubMessage, contatoEmail: c.contatoEmail, contatoTelefone: c.contatoTelefone,
     fraseLateral: c.fraseLateral, regulamentoTexto: c.regulamentoTexto,
-    regulamentoPdfDisponivel: Boolean(c.regulamentoPdfMediaId && c.regulamentoPdfPublicado),
-    regulamentoPdfNome: c.regulamentoPdfNome || 'regulamento.pdf',
-    regulamentoPdfUrl: c.regulamentoPdfMediaId && c.regulamentoPdfPublicado ? `/api/eventos/${EVENT_SLUG}/regulamento.pdf` : '',
+    regulamentoPdfDisponivel: false,
+    regulamentoPdfNome: '',
+    regulamentoPdfUrl: '',
     regulamentoPdfAtualizadoEm: c.regulamentoPdfAtualizadoEm || null,
     kitItems: c.kitItems || [], publicoPermitido: (c.publicoPermitido || []).filter(x => !(/bombeiros? militares?/i.test(String(x || '')) && !/filhos?/i.test(String(x || '')))), camisetas: (c.camisetas || []).filter(x => x.ativo !== false),
     categorias: (c.categorias || []).filter(x => x.ativo !== false && x.key !== 'bombeiros'),
@@ -530,7 +557,7 @@ function categoryForParticipant(participant, cfg) {
     else base = participant.etapaEnsino === 'fundamental2' ? 'fundamental-regular' : 'medio-regular';
   } else if (participant.vinculo === 'servidor') base = 'servidores';
   else if (['pai','mae','conjuge_servidor'].includes(participant.vinculo)) base = 'comunidade-1';
-  else if (['irmao','irma','egresso','filho_servidor','filho_bombeiro'].includes(participant.vinculo)) base = 'comunidade-2';
+  else if (['irmao','irma','egresso','filho_servidor'].includes(participant.vinculo)) base = 'comunidade-2';
   if (!base) return { error: 'Vínculo sem categoria competitiva configurada.' };
   const cat = (cfg.categorias || []).find(c => c.key === base && c.ativo !== false);
   if (!cat) return { error: 'Categoria indisponível no momento.' };
@@ -662,9 +689,6 @@ router.get(`/${EVENT_SLUG}/media/:id`, async (req, res) => {
     if (String(cfg.percursoVideoMediaId || '') === req.params.id) {
       return streamEventMedia(res, percursoVideoMediaRef(cfg), { publicCache: true, contentType: 'video/mp4', filename: cfg.percursoVideoNome || 'percurso.mp4', range: req.headers.range || '' });
     }
-    if (cfg.regulamentoPdfPublicado && String(cfg.regulamentoPdfMediaId || '') === req.params.id) {
-      return streamGridFile(res, req.params.id, { filename: cfg.regulamentoPdfNome || 'regulamento.pdf' });
-    }
 
     const photo = await EventoFoto.findOne({ eventSlug: EVENT_SLUG, mediaId: req.params.id, ativo: true }).lean();
     if (!photo) return res.status(404).end();
@@ -698,15 +722,40 @@ router.get(`/${EVENT_SLUG}/fotos/publicas`, async (req, res) => {
   }
 });
 
-router.get(`/${EVENT_SLUG}/regulamento.pdf`, async (req, res) => {
+router.get(`/${EVENT_SLUG}/regulamento.pdf`, (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  return res.status(404).json({
+    mensagem: 'Regulamento dispon?vel somente na Central do Participante.'
+  });
+});
+
+router.get(`/${EVENT_SLUG}/regulamento`, participantAuth, async (_req, res) => {
   try {
-    const cfg = await ensureConfig();
-    if (!cfg.regulamentoPdfPublicado || !cfg.regulamentoPdfMediaId) return res.status(404).send('Regulamento em PDF ainda não publicado.');
-    const download = String(req.query.download || '') === '1';
-    return streamGridFile(res, cfg.regulamentoPdfMediaId, { filename: cfg.regulamentoPdfNome || 'regulamento.pdf', download });
+    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+    const html = await require('fs').promises.readFile(
+      require('path').join(
+        __dirname,
+        '../../private/eventos-corrida/regulamento.html'
+      ),
+      'utf8'
+    );
+
+    return res.json({
+      titulo: 'Regulamento Oficial ? 2? Corrida CMDPII-CZS',
+      versao: '2026-09-24-v2',
+      restrito: true,
+      html
+    });
   } catch (e) {
-    console.error('[eventos/regulamento.pdf]', e);
-    return res.status(500).send('Não foi possível abrir o regulamento.');
+    console.error('[eventos/regulamento-privado]', e);
+    return res.status(500).json({
+      mensagem: 'N?o foi poss?vel carregar o Regulamento.'
+    });
   }
 });
 
@@ -933,7 +982,7 @@ router.post(`/${EVENT_SLUG}/participantes`, participantAuth, async (req, res) =>
     const nascimento = new Date(req.body.nascimento);
     const cpf = onlyDigits(req.body.cpf) || undefined;
     const sexo = ['masculino', 'feminino'].includes(req.body.sexo) ? req.body.sexo : null;
-    const vinculos = ['aluno','pai','mae','irmao','irma','egresso','servidor','conjuge_servidor','filho_servidor','filho_bombeiro'];
+    const vinculos = ['aluno','pai','mae','irmao','irma','egresso','servidor','conjuge_servidor','filho_servidor'];
     const vinculo = vinculos.includes(req.body.vinculo) ? req.body.vinculo : null;
     const enquadramento = ['regular','aee','pcd'].includes(req.body.enquadramento) ? req.body.enquadramento : 'regular';
     const etapaEnsino = vinculo === 'aluno' && ['fundamental2','medio'].includes(req.body.etapaEnsino) ? req.body.etapaEnsino : 'nao_aplicavel';
@@ -945,7 +994,7 @@ router.post(`/${EVENT_SLUG}/participantes`, participantAuth, async (req, res) =>
     if (nome.length < 3 || Number.isNaN(nascimento.getTime()) || !vinculo || !sexo || !isValidCpf(cpf)) return res.status(400).json({ mensagem: 'Confira nome, nascimento, sexo, vínculo e CPF.' });
     if (vinculo === 'aluno' && (!['fundamental2','medio'].includes(etapaEnsino) || !turma)) return res.status(400).json({ mensagem: 'Para aluno, informe etapa de ensino e turma.' });
     if (enquadramento === 'aee' && vinculo !== 'aluno') return res.status(400).json({ mensagem: 'A categoria AEE está disponível para alunos do CMDPII/CZS.' });
-    const precisaReferencia = ['pai','mae','irmao','irma','conjuge_servidor','filho_servidor','filho_bombeiro'].includes(vinculo);
+    const precisaReferencia = ['pai','mae','irmao','irma','conjuge_servidor','filho_servidor'].includes(vinculo);
     if (precisaReferencia && referenciaNome.length < 3) return res.status(400).json({ mensagem: 'Informe o nome da pessoa que comprova seu vínculo com a comunidade escolar.' });
 
     const existingParticipant = await EventoParticipante.findOne({ eventSlug: EVENT_SLUG, accountId: req.eventAccount._id, nome, nascimento, ativo: true });
@@ -1243,100 +1292,23 @@ admin.delete('/percurso-video', async (_req, res) => {
   }
 });
 
-admin.post('/regulamento-pdf', pdfUpload.single('pdf'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ mensagem: 'Selecione o regulamento em PDF.' });
-    const cfg = await ensureConfig();
-    const oldId = cfg.regulamentoPdfMediaId;
-    const id = await saveGridFile(req.file, { tipo: 'regulamento-pdf' });
-    cfg.regulamentoPdfMediaId = id;
-    cfg.regulamentoPdfNome = safeText(req.file.originalname || 'regulamento.pdf', 180).replace(/[^a-zA-Z0-9._() -]/g, '_');
-    cfg.regulamentoPdfPublicado = true;
-    cfg.regulamentoPdfAtualizadoEm = new Date();
-    await cfg.save();
-    if (oldId && oldId !== id) await deleteGridFile(oldId);
-    res.json({
-      ok: true,
-      regulamentoPdfDisponivel: true,
-      regulamentoPdfNome: cfg.regulamentoPdfNome,
-      regulamentoPdfUrl: `/api/eventos/${EVENT_SLUG}/regulamento.pdf`,
-      regulamentoPdfAtualizadoEm: cfg.regulamentoPdfAtualizadoEm,
-    });
-  } catch (e) {
-    console.error('[eventos/admin/regulamento-pdf]', e);
-    res.status(500).json({ mensagem: 'Não foi possível salvar o regulamento em PDF.' });
-  }
+admin.post('/regulamento-pdf', (_req, res) => {
+  return res.status(410).json({
+    mensagem: 'O Regulamento passou a ser disponibilizado somente na Central do Participante.'
+  });
 });
 
-admin.patch('/regulamento-pdf', async (req, res) => {
-  try {
-    const cfg = await ensureConfig();
-    cfg.regulamentoPdfPublicado = req.body.publicado !== false;
-    await cfg.save();
-    res.json({ ok: true, regulamentoPdfPublicado: cfg.regulamentoPdfPublicado });
-  } catch (e) {
-    res.status(500).json({ mensagem: 'Não foi possível alterar a publicação do regulamento.' });
-  }
+admin.patch('/regulamento-pdf', (_req, res) => {
+  return res.status(410).json({
+    mensagem: 'Publica??o de PDF do Regulamento desativada.'
+  });
 });
 
-admin.delete('/regulamento-pdf', async (_req, res) => {
-  try {
-    const cfg = await ensureConfig();
-    const oldId = cfg.regulamentoPdfMediaId;
-    cfg.regulamentoPdfMediaId = '';
-    cfg.regulamentoPdfNome = '';
-    cfg.regulamentoPdfPublicado = false;
-    cfg.regulamentoPdfAtualizadoEm = null;
-    await cfg.save();
-    if (oldId) await deleteGridFile(oldId);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('[eventos/admin/regulamento-pdf/delete]', e);
-    res.status(500).json({ mensagem: 'Não foi possível remover o regulamento em PDF.' });
-  }
+admin.delete('/regulamento-pdf', (_req, res) => {
+  return res.status(410).json({
+    mensagem: 'Publica??o de PDF do Regulamento desativada.'
+  });
 });
-
-function participantReportStatusLabel(status) {
-  const labels = {
-    rascunho: 'Rascunho',
-    aguardando_pagamento: 'Aguardando pagamento',
-    pagamento_em_analise: 'Pagamento em análise',
-    pagamento_recusado: 'Pagamento recusado',
-    confirmada: 'Inscrição deferida',
-    cancelada: 'Cancelada',
-  };
-  return labels[String(status || '')] || String(status || '');
-}
-
-function participantReportVinculoLabel(vinculo) {
-  const labels = {
-    aluno: 'Aluno(a)', pai: 'Pai', mae: 'Mãe', irmao: 'Irmão', irma: 'Irmã',
-    egresso: 'Egresso(a)', servidor: 'Servidor/Colaborador',
-    conjuge_servidor: 'Cônjuge de servidor', filho_servidor: 'Filho(a) de servidor',
-    filho_bombeiro: 'Filho(a) de Bombeiro Militar',
-  };
-  return labels[String(vinculo || '')] || String(vinculo || '').replace(/_/g, ' ');
-}
-
-function participantReportKitLabel(status) {
-  const labels = { aguardando: 'Aguardando', disponivel: 'Disponível', retirado: 'Retirado', nao_disponivel: 'N/D' };
-  return labels[String(status || '')] || 'Aguardando';
-}
-
-function reportCategoryRank(key) {
-  const order = [
-    'fundamental-regular-masculino','fundamental-regular-feminino',
-    'fundamental-aee-masculino','fundamental-aee-feminino',
-    'medio-regular-masculino','medio-regular-feminino',
-    'medio-aee-masculino','medio-aee-feminino',
-    'servidores-masculino','servidores-feminino',
-    'comunidade-1-masculino','comunidade-1-feminino',
-    'comunidade-2-masculino','comunidade-2-feminino',
-    'pcd-masculino','pcd-feminino',
-  ];
-  const idx = order.indexOf(String(key || ''));
-  return idx < 0 ? 9999 : idx;
-}
 
 admin.get('/relatorios/participantes.pdf', async (req, res) => {
   try {
@@ -1596,7 +1568,7 @@ admin.post('/resultados/upsert', async (req, res) => {
       numeroPeito,
       tempoTexto: safeText(req.body.tempo, 20),
       tempoMs: parseTimeMs(req.body.tempo),
-      distanciaKm: req.body.distanciaKm ? Number(req.body.distanciaKm) : null,
+      distanciaKm: req.body.distanciaKm ? Number(req.body.distanciaKm) : 4,
       colocacaoGeral: req.body.colocacaoGeral ? Number(req.body.colocacaoGeral) : null,
       colocacaoCategoria,
       status,
@@ -1624,7 +1596,7 @@ admin.post('/resultados/importar', async (req, res) => {
       await EventoResultado.findOneAndUpdate({ inscriptionId: ins._id }, { $set: {
         eventSlug: EVENT_SLUG, inscriptionId: ins._id, participantId: ins.participantId, numeroPeito,
         tempoTexto: safeText(row.tempo, 20), tempoMs: parseTimeMs(row.tempo),
-        distanciaKm: row.distanciaKm ? Number(row.distanciaKm) : null,
+        distanciaKm: row.distanciaKm ? Number(row.distanciaKm) : 4,
         colocacaoGeral: row.colocacaoGeral ? Number(row.colocacaoGeral) : null,
         colocacaoCategoria, status, medalha: medalFromPosition(colocacaoCategoria, status), publicado: row.publicado !== false,
       } }, { upsert: true, new: true, setDefaultsOnInsert: true });

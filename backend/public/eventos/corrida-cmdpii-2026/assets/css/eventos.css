@@ -81,3 +81,216 @@ body.v130:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-
 .confirm-verify130{max-width:620px;margin:55px auto;padding:30px;border:1px solid rgba(54,240,153,.4);background:#061a2f}.confirm-verify130 h1{font-family:"Oxanium"}.valid130{color:var(--green3)}
 @media(max-width:1050px){.hero130-inner{grid-template-columns:1fr}.hero130-quote{display:none}.event-facts130{grid-template-columns:repeat(2,1fr)}.category130{grid-template-columns:1fr 1fr}.cat130-intro{grid-column:1/-1}.photo-story130{grid-template-columns:1fr 1fr}.feature-row130{grid-template-columns:1fr}.reg-grid130,.results-hero-cards{grid-template-columns:1fr}.gallery130{grid-template-columns:1fr 1fr}.gallery130 figure:first-child{grid-row:auto}.gallery130 figure:nth-child(4){grid-column:auto}.confirm-card-callout{grid-template-columns:1fr}.reg-summary130{grid-template-columns:1fr 1fr}}
 @media(max-width:650px){.event-hero130,.hero130-inner{min-height:430px}.hero130-inner{padding-top:42px}.hero130-copy h1{font-size:50px}.event-facts130,.category130,.photo-story130,.reg-summary130,.gallery130,.account-status130{grid-template-columns:1fr}.efact{border-right:0;border-bottom:1px solid rgba(72,163,217,.22)}.feature130.route{grid-template-columns:1fr}.identity-crests{display:none}.participant-summary130 .row{grid-template-columns:1fr 1fr}.site-stats130{display:none}}
+
+
+/* AXORIIN_PRIVATE_REGULATION_V1 */
+
+.reg-modal.hidden{
+  display:none!important
+}
+
+.reg-modal{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px
+}
+
+.reg-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(2,10,22,.88);
+  backdrop-filter:blur(5px)
+}
+
+.reg-dialog{
+  position:relative;
+  width:min(980px,100%);
+  height:min(88vh,980px);
+  display:flex;
+  flex-direction:column;
+  background:#071a31;
+  border:1px solid rgba(49,215,255,.32);
+  border-radius:20px;
+  box-shadow:0 28px 90px rgba(0,0,0,.55);
+  overflow:hidden
+}
+
+.reg-modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:20px 24px;
+  border-bottom:1px solid rgba(255,255,255,.1)
+}
+
+.reg-modal-head small{
+  display:block;
+  color:#31d7ff;
+  font-weight:800;
+  letter-spacing:.08em
+}
+
+.reg-modal-head h2{
+  margin:5px 0 0;
+  color:#fff
+}
+
+.reg-close{
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:50%;
+  background:rgba(255,255,255,.1);
+  color:#fff;
+  font-size:30px;
+  line-height:1;
+  cursor:pointer
+}
+
+.reg-modal-warning{
+  padding:11px 24px;
+  background:rgba(49,215,255,.08);
+  color:#b9d8e8;
+  font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,.07)
+}
+
+.reg-modal-body{
+  flex:1;
+  overflow:auto;
+  padding:28px 30px;
+  background:#f8fbfd;
+  color:#182536
+}
+
+.reg-modal-open{
+  overflow:hidden
+}
+
+.reg-doc{
+  max-width:820px;
+  margin:0 auto;
+  line-height:1.65
+}
+
+.reg-doc h1,
+.reg-doc h2,
+.reg-doc h3,
+.reg-doc h4{
+  color:#102a43
+}
+
+.reg-doc h3{
+  margin-top:34px;
+  padding-bottom:7px;
+  border-bottom:1px solid #d9e3ea;
+  font-size:18px
+}
+
+.reg-doc p,
+.reg-doc li{
+  color:#334e68
+}
+
+.reg-title{
+  text-align:center;
+  margin-bottom:28px
+}
+
+.reg-title p{
+  font-size:12px;
+  font-weight:700;
+  color:#486581
+}
+
+.reg-restricted{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:12px 15px;
+  margin-bottom:24px;
+  border:1px solid #c9e6ef;
+  background:#eaf8fc;
+  border-radius:10px
+}
+
+.reg-restricted strong{
+  color:#087d96
+}
+
+.reg-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:18px 0;
+  font-size:14px
+}
+
+.reg-table th,
+.reg-table td{
+  padding:10px;
+  border:1px solid #d6e1e8;
+  text-align:left
+}
+
+.reg-table th{
+  background:#eaf2f6;
+  color:#243b53
+}
+
+.private-reg-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:28px
+}
+
+.reg-security-note{
+  font-size:13px;
+  opacity:.72
+}
+
+.reg-inline-link{
+  margin-left:8px;
+  padding:4px 8px;
+  border:0;
+  background:transparent;
+  color:#31d7ff;
+  text-decoration:underline;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer
+}
+
+@media(max-width:700px){
+
+  .reg-modal{
+    padding:0
+  }
+
+  .reg-dialog{
+    width:100%;
+    height:100vh;
+    border-radius:0
+  }
+
+  .reg-modal-body{
+    padding:20px 16px
+  }
+
+  .private-reg-card{
+    flex-direction:column;
+    align-items:flex-start
+  }
+}
+
+/* n?o oferece vers?o impressa do Regulamento */
+@media print{
+  .reg-modal{
+    display:none!important
+  }
+}
