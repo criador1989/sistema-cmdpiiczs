@@ -404,17 +404,17 @@ async function ensureConfig() {
     cfg.schemaVersion = 140;
     cfg.eventDate = new Date('2026-11-22T12:00:00.000Z');
     cfg.categoryReferenceDate = new Date('2026-11-22T12:00:00.000Z');
-    cfg.dataLabel = '22 de novembro de 2026 ? largada ?s 07h';
+    cfg.dataLabel = '22 de novembro de 2026 • largada às 07h';
     cfg.percursoLabel = '4 km';
     cfg.ctaSecundario = '?rea do participante';
     cfg.categorias = V120_CATEGORIES;
     cfg.publicoPermitido = [
       'Alunos do CMDPII/CZS',
-      'Pais e m?es de alunos',
-      'Irm?os e irm?s de alunos',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
       'Ex-alunos (egressos)',
       'Servidores e colaboradores',
-      'C?njuges e filhos de servidores/colaboradores'
+      'Cônjuges e filhos de servidores/colaboradores'
     ];
     cfg.termoVersao = '2026-09-24-v2';
     cfg.regulamentoPdfPublicado = false;
@@ -424,6 +424,44 @@ async function ensureConfig() {
       { eventSlug: EVENT_SLUG, vinculo: 'filho_bombeiro' },
       { $set: { vinculo: 'filho_servidor' } }
     );
+  }
+
+  // PATCH_UTF8_CORRIDA_2026_V141
+  if (Number(cfg.schemaVersion || 0) < 141) {
+
+    cfg.schemaVersion = 141;
+
+    cfg.eventDate =
+      new Date('2026-11-22T12:00:00.000Z');
+
+    cfg.categoryReferenceDate =
+      new Date('2026-11-22T12:00:00.000Z');
+
+    cfg.dataLabel =
+      '22 de novembro de 2026 • largada às 07h';
+
+    cfg.percursoLabel = '4 km';
+
+    cfg.ctaSecundario =
+      'Área do participante';
+
+    cfg.categorias = V120_CATEGORIES;
+
+    cfg.publicoPermitido = [
+      'Alunos do CMDPII/CZS',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
+      'Ex-alunos (egressos)',
+      'Servidores e colaboradores',
+      'Cônjuges e filhos de servidores/colaboradores'
+    ];
+
+    cfg.termoVersao =
+      '2026-09-24-v3';
+
+    cfg.regulamentoPdfPublicado = false;
+
+    await cfg.save();
   }
 
 return cfg;
@@ -725,17 +763,32 @@ router.get(`/${EVENT_SLUG}/fotos/publicas`, async (req, res) => {
 router.get(`/${EVENT_SLUG}/regulamento.pdf`, (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
   return res.status(404).json({
-    mensagem: 'Regulamento dispon?vel somente na Central do Participante.'
+    mensagem: 'Regulamento disponível somente na Central do Participante.'
   });
 });
 
-router.get(`/${EVENT_SLUG}/regulamento`, participantAuth, async (_req, res) => {
+router.get(`/${EVENT_SLUG}/regulamento`, participantAuth, async (req, res) => {
   try {
-    res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    if (req.eventAccount?.emailConfirmado === false) {
+      return res.status(403).json({
+        mensagem: 'Confirme seu e-mail antes de consultar o Regulamento.'
+      });
+    }
+
+    res.set(
+      'Cache-Control',
+      'private, no-store, no-cache, must-revalidate, max-age=0'
+    );
+
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
-    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+    res.set(
+      'X-Robots-Tag',
+      'noindex, nofollow, noarchive'
+    );
 
     const html = await require('fs').promises.readFile(
       require('path').join(
@@ -746,15 +799,20 @@ router.get(`/${EVENT_SLUG}/regulamento`, participantAuth, async (_req, res) => {
     );
 
     return res.json({
-      titulo: 'Regulamento Oficial ? 2? Corrida CMDPII-CZS',
-      versao: '2026-09-24-v2',
+      titulo: 'Regulamento Oficial — 2ª Corrida CMDPII-CZS',
+      versao: '2026-09-24-v3',
       restrito: true,
       html
     });
+
   } catch (e) {
-    console.error('[eventos/regulamento-privado]', e);
+    console.error(
+      '[eventos/regulamento-privado]',
+      e
+    );
+
     return res.status(500).json({
-      mensagem: 'N?o foi poss?vel carregar o Regulamento.'
+      mensagem: 'Não foi possível carregar o Regulamento.'
     });
   }
 });

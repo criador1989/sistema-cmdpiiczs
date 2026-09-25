@@ -25,7 +25,6 @@ async function axPublicStats(){try{return await api('/analytics/public-summary')
 function initAxAnalytics(){axTrack('pageview');setInterval(()=>axTrack('heartbeat'),25000);document.addEventListener('click',e=>{const el=e.target.closest('a,button,[data-track]');if(el)axTrackClick(el)});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initAxAnalytics);else initAxAnalytics();
 
-
 /* AXORIIN_PRIVATE_REGULATION_V1 */
 (() => {
 
@@ -58,7 +57,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
           <div>
             <small>
-              ACESSO RESTRITO ? CENTRAL DO PARTICIPANTE
+              ACESSO RESTRITO • CENTRAL DO PARTICIPANTE
             </small>
 
             <h2 id="regModalTitle">
@@ -70,7 +69,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
                   class="reg-close"
                   data-close-regulamento
                   aria-label="Fechar">
-            ?
+            ×
           </button>
 
         </header>
@@ -92,8 +91,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     document.body.appendChild(modal);
 
-    modal.addEventListener('click', e => {
-      if (e.target.closest('[data-close-regulamento]')) {
+    modal.addEventListener('click', event => {
+      if (event.target.closest('[data-close-regulamento]')) {
         closeModal();
       }
     });
@@ -125,7 +124,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     document.body.classList.add('reg-modal-open');
 
     body.innerHTML =
-      '<div class="reg-loading">Carregando Regulamento...</div>';
+      '<div class="reg-loading">'
+      + 'Carregando Regulamento...'
+      + '</div>';
 
     try {
 
@@ -150,7 +151,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
       if (!response.ok) {
         throw new Error(
-          'N?o foi poss?vel abrir o Regulamento.'
+          'Não foi possível abrir o Regulamento.'
         );
       }
 
@@ -158,45 +159,48 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
       body.innerHTML =
         data.html ||
-        '<p>Regulamento indispon?vel.</p>';
+        '<p>Regulamento indisponível.</p>';
 
       body.scrollTop = 0;
 
-    } catch (e) {
+    } catch (error) {
 
       body.innerHTML =
-        '<div class="notice">' +
-        String(
-          e.message ||
-          'N?o foi poss?vel abrir o Regulamento.'
-        ) +
-        '</div>';
+        '<div class="notice">'
+        + String(
+          error.message ||
+          'Não foi possível abrir o Regulamento.'
+        )
+        + '</div>';
     }
   }
 
-  document.addEventListener('click', e => {
+  document.addEventListener('click', event => {
 
     const trigger =
-      e.target.closest('[data-open-regulamento]');
+      event.target.closest('[data-open-regulamento]');
 
     if (!trigger) return;
 
-    e.preventDefault();
+    event.preventDefault();
+
     openModal();
   });
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      closeModal();
+    }
   });
 
   document.addEventListener(
     'DOMContentLoaded',
     () => {
 
-      const p =
+      const params =
         new URLSearchParams(location.search);
 
-      if (p.get('regulamento') === '1') {
+      if (params.get('regulamento') === '1') {
         openModal();
       }
     }
