@@ -26,7 +26,7 @@ const CamisetaSchema = new mongoose.Schema({
 
 const EventoConfigSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true, index: true },
-  schemaVersion: { type: Number, default: 141 },
+  schemaVersion: { type: Number, default: 142 },
   publicado: { type: Boolean, default: true },
   inscricoesAbertas: { type: Boolean, default: false },
   titulo: { type: String, default: 'Corrida CMDPII-CZS 2ª edição' },
@@ -34,8 +34,8 @@ const EventoConfigSchema = new mongoose.Schema({
   destaque: { type: String, default: 'Esporte • Educação • Comunidade' },
   ctaPrincipal: { type: String, default: 'Inscreva-se agora' },
   ctaSecundario: { type: String, default: 'Área do participante' },
-  dataLabel: { type: String, default: '22 de novembro de 2026 • largada às 07h' },
-  eventDate: { type: Date, default: new Date('2026-11-22T12:00:00.000Z') },
+  dataLabel: { type: String, default: '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30' },
+  eventDate: { type: Date, default: new Date('2026-11-22T11:30:00.000Z') },
   categoryReferenceDate: { type: Date, default: new Date('2026-11-22T12:00:00.000Z') },
   local: { type: String, default: 'Colégio Militar Dom Pedro II • Cruzeiro do Sul - AC' },
   percursoLabel: { type: String, default: '4 km' },
