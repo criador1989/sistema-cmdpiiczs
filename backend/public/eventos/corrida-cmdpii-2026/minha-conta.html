@@ -1,7 +1,34 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Minha conta | Axoriin Eventos</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oxanium:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/eventos.css"></head><body class="v130"><header class="topbar"><div class="wrap nav"><a class="brand" href="./">AXORIIN<small>EVENTOS</small></a><nav class="navlinks"><a href="./">Início</a><a href="inscricao.html">Inscrição</a><a href="regulamento.html">Regulamento</a><a href="resultados.html">Resultados</a><a href="fotos.html">Fotos</a></nav><button class="account-btn" onclick="logout()">Sair</button></div></header>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Minha conta | Axoriin Eventos</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oxanium:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/eventos.css"></head><body class="v130"><header class="topbar"><div class="wrap nav"><a class="brand" href="./">AXORIIN<small>EVENTOS</small></a><nav class="navlinks"><a href="./">Início</a><a href="inscricao.html">Inscrição</a><a href="resultados.html">Resultados</a><a href="fotos.html">Fotos</a></nav><button class="account-btn" onclick="logout()">Sair</button></div></header>
 <section class="account130-hero"><div class="wrap"><div class="eyebrow">CENTRAL DO PARTICIPANTE</div><h1>Minha conta</h1><p>Acompanhe inscrição, pagamento, kit, cartão de confirmação, resultados e fotos.</p></div></section>
 <main><section class="section130"><div class="wrap"><div class="account-status130" id="topStatus"><article class="status130"><small>CONTA</small><b id="hello">Carregando...</b><p>Seus dados e inscrições ficam concentrados nesta central.</p></article><article class="status130"><small>EVENTO</small><b>Corrida CMDPII-CZS</b><p>22 de novembro de 2026 • Cruzeiro do Sul - AC</p></article></div></div></section>
-<section class="section130" style="padding-top:0"><div class="wrap"><div id="participants"></div><div id="empty" class="notice hidden">Nenhum participante cadastrado ainda. <a href="inscricao.html">Fazer nova inscrição</a>.</div></div></section></main>
+<section class="section130" style="padding-top:0"><div class="wrap"><div id="participants"></div><div id="empty" class="notice hidden">Nenhum participante cadastrado ainda. <a href="inscricao.html">Fazer nova inscrição</a>.</div></div></section>
+<section class="section private-reg-section"
+         data-private-regulation-card="1">
+  <div class="wrap">
+    <article class="panel private-reg-card">
+      <div>
+        <div class="eyebrow">
+          DOCUMENTO OFICIAL ? ACESSO RESTRITO
+        </div>
+        <h2>Regulamento Oficial</h2>
+        <p class="muted">
+          Consulte o Regulamento da 2? Corrida CMDPII-CZS
+          dentro da sua Central do Participante.
+        </p>
+        <p class="reg-security-note">
+          Dispon?vel somente para consulta neste ambiente autenticado.
+        </p>
+      </div>
+
+      <button type="button"
+              class="btn primary"
+              data-open-regulamento>
+        Ver Regulamento
+      </button>
+    </article>
+  </div>
+</section>
+</main>
 <footer class="footer"><div class="wrap">Central do participante • Axoriin Eventos</div></footer><script src="assets/js/common.js"></script><script>
 function kitLabel(s){return {nao_disponivel:'Não disponível',aguardando:'Aguardando',disponivel:'A retirar',retirado:'Retirado'}[s]||s||'Aguardando'}
 async function uploadFor(id,input,msgEl){if(!input.files[0])return showMsg(msgEl,'Selecione o comprovante.');try{const fd=new FormData();fd.append('comprovante',input.files[0]);await api(`/inscricoes/${id}/comprovante`,{method:'POST',body:fd});showMsg(msgEl,'Comprovante enviado para análise.',true);setTimeout(()=>location.reload(),900)}catch(e){showMsg(msgEl,e.message)}}

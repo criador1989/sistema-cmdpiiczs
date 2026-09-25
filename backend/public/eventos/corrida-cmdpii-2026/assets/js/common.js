@@ -24,3 +24,184 @@ function axTrackClick(el){const label=el.dataset.track||el.getAttribute('aria-la
 async function axPublicStats(){try{return await api('/analytics/public-summary')}catch{return{pageViews:0,live:0}}}
 function initAxAnalytics(){axTrack('pageview');setInterval(()=>axTrack('heartbeat'),25000);document.addEventListener('click',e=>{const el=e.target.closest('a,button,[data-track]');if(el)axTrackClick(el)});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initAxAnalytics);else initAxAnalytics();
+
+
+/* AXORIIN_PRIVATE_REGULATION_V1 */
+(() => {
+
+  const ENDPOINT =
+    '/api/eventos/corrida-cmdpii-2026/regulamento';
+
+  function buildModal() {
+
+    let modal =
+      document.getElementById('axoriinRegulationModal');
+
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+
+    modal.id = 'axoriinRegulationModal';
+    modal.className = 'reg-modal hidden';
+    modal.setAttribute('aria-hidden', 'true');
+
+    modal.innerHTML = `
+      <div class="reg-backdrop"
+           data-close-regulamento></div>
+
+      <section class="reg-dialog"
+               role="dialog"
+               aria-modal="true"
+               aria-labelledby="regModalTitle">
+
+        <header class="reg-modal-head">
+
+          <div>
+            <small>
+              ACESSO RESTRITO ? CENTRAL DO PARTICIPANTE
+            </small>
+
+            <h2 id="regModalTitle">
+              Regulamento Oficial
+            </h2>
+          </div>
+
+          <button type="button"
+                  class="reg-close"
+                  data-close-regulamento
+                  aria-label="Fechar">
+            ?
+          </button>
+
+        </header>
+
+        <div class="reg-modal-warning">
+          Documento disponibilizado somente para consulta
+          dentro do ambiente autenticado.
+        </div>
+
+        <div class="reg-modal-body"
+             id="regModalBody">
+          <div class="reg-loading">
+            Carregando Regulamento...
+          </div>
+        </div>
+
+      </section>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', e => {
+      if (e.target.closest('[data-close-regulamento]')) {
+        closeModal();
+      }
+    });
+
+    return modal;
+  }
+
+  function closeModal() {
+
+    const modal =
+      document.getElementById('axoriinRegulationModal');
+
+    if (!modal) return;
+
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+
+    document.body.classList.remove('reg-modal-open');
+  }
+
+  async function openModal() {
+
+    const modal = buildModal();
+    const body = modal.querySelector('#regModalBody');
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    document.body.classList.add('reg-modal-open');
+
+    body.innerHTML =
+      '<div class="reg-loading">Carregando Regulamento...</div>';
+
+    try {
+
+      const response = await fetch(
+        ENDPOINT,
+        {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json'
+          }
+        }
+      );
+
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        location.href = 'entrar.html';
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          'N?o foi poss?vel abrir o Regulamento.'
+        );
+      }
+
+      const data = await response.json();
+
+      body.innerHTML =
+        data.html ||
+        '<p>Regulamento indispon?vel.</p>';
+
+      body.scrollTop = 0;
+
+    } catch (e) {
+
+      body.innerHTML =
+        '<div class="notice">' +
+        String(
+          e.message ||
+          'N?o foi poss?vel abrir o Regulamento.'
+        ) +
+        '</div>';
+    }
+  }
+
+  document.addEventListener('click', e => {
+
+    const trigger =
+      e.target.closest('[data-open-regulamento]');
+
+    if (!trigger) return;
+
+    e.preventDefault();
+    openModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+      const p =
+        new URLSearchParams(location.search);
+
+      if (p.get('regulamento') === '1') {
+        openModal();
+      }
+    }
+  );
+
+  window.abrirRegulamentoCorrida = openModal;
+
+})();
