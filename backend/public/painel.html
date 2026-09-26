@@ -103,9 +103,6 @@ h1, h2, h3, h4, h5, h6,
 .metric *, .window-card *, .pend-card *,
 .alertas-comportamento *, .chart-card *, .qrcode-box *,
 .kicker, .card-copy h3,
-.sidebar, .sidebar *, .nav a, .nav a span,
-.sb-logout, .sb-logout *, .nav a.active,
-.nav a i, .sidebar i,
 .muted, span{
   color:var(--text-main) !important;
 }
@@ -169,8 +166,8 @@ h1, h2, h3, h4, h5, h6,
   position:relative;
   width:100%;
   display:grid;
-  grid-template-columns:280px 1fr;
-  gap:22px;
+  grid-template-columns:minmax(0,1fr);
+  gap:0;
   padding:20px;
 }
 
@@ -180,200 +177,6 @@ h1, h2, h3, h4, h5, h6,
     padding:14px;
   }
 }
-
-.sidebar{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  height:calc(100dvh - 40px);
-  max-height:calc(100dvh - 40px);
-  position:sticky;
-  top:20px;
-  border-radius:28px;
-  background:
-    linear-gradient(180deg, rgba(6,14,25,0.92), rgba(4,10,19,0.86));
-  border:1px solid rgba(90,220,255,0.08);
-  backdrop-filter:blur(var(--glass-blur));
-  -webkit-backdrop-filter:blur(var(--glass-blur));
-  box-shadow:
-    0 0 0 1px rgba(90,220,255,0.03),
-    0 20px 50px rgba(0,0,0,0.50);
-  z-index:120;
-  overflow:hidden;
-}
-
-@media(max-width:1024px){
-  .sidebar{ display:none; }
-}
-
-.sb-head{
-  padding:16px 16px 12px;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-  border-bottom:1px solid rgba(90,220,255,0.08);
-}
-
-.sb-head-top{
-  display:flex;
-  gap:12px;
-  align-items:center;
-}
-
-.brand{
-  width:42px;
-  height:42px;
-  border-radius:999px;
-  background:
-    radial-gradient(circle at 35% 25%, rgba(255,255,255,0.82), rgba(102,207,255,0.34) 30%, rgba(10,18,28,0.9) 72%);
-  box-shadow:0 0 18px rgba(92,212,255,0.16);
-}
-
-.sb-title{
-  font-weight:700;
-  font-size:.98rem;
-  letter-spacing:.03em;
-}
-
-.sb-subtitle{
-  font-size:.8rem;
-  color:var(--text-soft) !important;
-}
-
-.sb-top-actions{
-  display:flex;
-  width:100%;
-}
-
-.sb-logout-top{
-  width:100%;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  text-decoration:none;
-  border:1px solid rgba(90,220,255,0.16);
-  border-radius:16px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-  padding:10px 14px;
-  cursor:pointer;
-  box-shadow:0 8px 22px rgba(0,0,0,0.30);
-  transition:
-    transform .20s ease,
-    box-shadow .20s ease,
-    background .20s ease,
-    border-color .20s ease;
-}
-
-.sb-logout-top:hover{
-  transform:translateY(-1px);
-  background:rgba(255,255,255,0.05);
-  border-color:rgba(90,220,255,0.26);
-  box-shadow:0 12px 28px rgba(0,0,0,0.38), 0 0 12px rgba(37,215,255,0.06);
-}
-
-.sb-logout-top:active{
-  transform:translateY(0);
-}
-
-.sb-logout-icon{
-  font-size:1rem;
-  line-height:1;
-}
-
-.sb-logout-label{
-  font-size:.9rem;
-  font-weight:600;
-  letter-spacing:.02em;
-}
-
-.nav{
-  padding:10px 12px 16px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  position:relative;
-  z-index:1;
-  overflow:auto;
-  min-height:0;
-  flex:1 1 auto;
-
-  scrollbar-width:thin;
-  scrollbar-color:rgba(89,231,255,0.22) transparent;
-}
-
-.nav::-webkit-scrollbar{
-  width:8px;
-}
-
-.nav::-webkit-scrollbar-track{
-  background:transparent;
-}
-
-.nav::-webkit-scrollbar-thumb{
-  background:rgba(89,231,255,0.18);
-  border-radius:999px;
-}
-
-.nav::-webkit-scrollbar-thumb:hover{
-  background:rgba(89,231,255,0.28);
-}
-
-.nav a{
-  text-decoration:none;
-  font-size:.92rem;
-  padding:11px 14px;
-  border-radius:16px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  border:1px solid transparent;
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  transition:
-    background .2s ease,
-    border-color .2s ease,
-    transform .2s ease,
-    box-shadow .2s ease;
-  position:relative;
-  overflow:hidden;
-}
-
-.nav a::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg, transparent, rgba(89,231,255,0.08), transparent);
-  transform:translateX(-120%);
-  transition:transform .55s ease;
-}
-
-.nav a:hover{
-  background:rgba(255,255,255,0.045);
-  border-color:rgba(90,220,255,0.15);
-  box-shadow:0 8px 18px rgba(0,0,0,0.42);
-  transform:translateY(-1px);
-}
-
-.nav a:hover::before,
-.nav a.active::before{
-  transform:translateX(120%);
-}
-
-.nav a.active{
-  background:
-    linear-gradient(180deg, rgba(89,231,255,0.12), rgba(89,231,255,0.04));
-  border-color:rgba(90,220,255,0.24);
-  box-shadow:
-    0 10px 24px rgba(0,0,0,0.42),
-    inset 0 0 0 1px rgba(180,245,255,0.04);
-}
-
-.sb-foot{
-  display:none !important;
-}
-
 .content{ width:100%; }
 
 .wrap{
@@ -529,7 +332,7 @@ h1, h2, h3, h4, h5, h6,
   box-shadow:var(--glass-shadow) !important;
 }
 
-/* ===== MÃ‰TRICAS HUD ===== */
+/* ===== MÉTRICAS HUD ===== */
 .metrics{
   display:grid;
   grid-template-columns:1.25fr 1fr 1fr;
@@ -1326,52 +1129,8 @@ canvas{
   color:#fff;
   margin-bottom:8px;
 }
-
-.bottom-nav{
-  position:fixed;
-  inset-inline:0;
-  bottom:0;
-  display:none;
-  z-index:50;
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
-  background:rgba(7,15,28,0.86);
-  border-top:1px solid rgba(90,220,255,0.10);
-}
-
-.bottom-nav .row{
-  display:flex;
-  max-width:100%;
-  overflow-x:auto;
-}
-
-.bottom-nav button{
-  appearance:none;
-  background:transparent;
-  border:0;
-  padding:8px 10px 10px;
-  font-size:.8rem;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:4px;
-  flex:0 0 80px;
-  white-space:nowrap;
-}
-
-.bottom-nav button span{
-  font-size:.72rem;
-  color:var(--text-soft) !important;
-}
-
-.bottom-nav button.active{
-  background:rgba(89,231,255,0.10);
-  border-radius:16px 16px 0 0;
-}
-
 @media(max-width:1024px){
-  .bottom-nav{ display:block; z-index:70; }
-  .wrap{ margin-bottom:140px; }
+.wrap{ margin-bottom:24px; }
 }
 
 .toast{
@@ -1658,111 +1417,18 @@ canvas{
 @media(max-width:1024px){
   #axoriin-footer-phrase{ bottom:54px; }
 }
-/* ===== MENU MOBILE / SIDEBAR RETRÁTIL ===== */
-.mobile-menu-btn{
-  display:none;
-  position:fixed;
-  top:14px;
-  left:14px;
-  z-index:260;
-  border:1px solid rgba(90,220,255,0.14);
-  border-radius:14px;
-  background:rgba(7,16,28,0.78);
-  color:#fff;
-  padding:10px 14px;
-  font-size:.95rem;
-  font-weight:600;
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  box-shadow:0 8px 18px rgba(0,0,0,0.24);
-  cursor:pointer;
-  transition:opacity .18s ease, transform .18s ease;
-}
-
-.mobile-sidebar-backdrop{
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:200; /* menor que a sidebar */
-  background:rgba(0,0,0,0.32);
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .22s ease;
-}
-
-.mobile-close-sidebar{
-  display:none;
-  position:absolute;
-  top:12px;
-  right:12px;
-  z-index:5;
-  width:38px;
-  height:38px;
-  border:none;
-  border-radius:12px;
-  background:rgba(255,255,255,0.06);
-  color:#fff;
-  font-size:1rem;
-  cursor:pointer;
-}
-
 @media (max-width: 1024px){
+  html, body{
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
   .page{
     grid-template-columns:1fr;
     padding:12px;
+    min-width:0;
   }
-
-  .mobile-menu-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-  }
-
-  .mobile-close-sidebar{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-  .mobile-sidebar-backdrop.show{
-    display:block;
-    opacity:1;
-    pointer-events:auto;
-  }
-
-  .sidebar{
-    display:flex !important;
-    position:fixed !important;
-    top:0 !important;
-    left:0 !important;
-    bottom:0 !important;
-    width:min(88vw, 320px);
-    height:100vh !important;
-    max-height:100vh !important;
-    border-radius:0 22px 22px 0;
-    z-index:250;
-    transform:translateX(-105%);
-    transition:transform .24s ease;
-    overflow:hidden;
-  }
-
-  .sidebar.open{
-    transform:translateX(0);
-  }
-
-  .sb-head{
-    padding-top:56px;
-  }
-
-  .nav{
-    flex:1 1 auto;
-    min-height:0;
-    overflow-y:auto;
-    padding-bottom:18px;
-  }
-
-  .content{
+.content{
     width:100%;
     min-width:0;
   }
@@ -1770,41 +1436,6 @@ canvas{
   .wrap{
     margin-top:58px;
   }
-}
-
-/* ===== AJUSTE DE CLIQUE SIDEBAR MOBILE ===== */
-.sidebar{
-  pointer-events:auto;
-}
-
-.mobile-sidebar-backdrop.show{
-  pointer-events:auto;
-}
-
-.mobile-sidebar-backdrop{
-  pointer-events:none;
-}
-/* ===== CORREÃ‡ÃƒO DE CLIQUES NO MENU MOBILE ===== */
-.sidebar,
-.sidebar *{
-  pointer-events:auto !important;
-}
-
-.mobile-sidebar-backdrop{
-  z-index:200 !important;
-  pointer-events:none;
-}
-
-.mobile-sidebar-backdrop.show{
-  pointer-events:auto;
-}
-
-.sidebar{
-  z-index:250 !important;
-}
-
-.mobile-menu-btn{
-  z-index:260 !important;
 }
 
 .mobile-menu-btn.is-hidden{
@@ -1878,72 +1509,11 @@ canvas{
     cursor:pointer;
     box-shadow:inset 0 0 0 1px rgba(90,220,255,0.08);
   }
-
-  .mobile-menu-btn{
-    display:none !important;
-  }
-
-  .mobile-close-sidebar{
-    top:14px;
-    right:14px;
-    width:40px;
-    height:40px;
-    border-radius:12px;
-    background:rgba(255,255,255,0.06);
-    box-shadow:inset 0 0 0 1px rgba(90,220,255,0.08);
-  }
-
-  .sidebar{
-    width:min(86vw, 330px) !important;
-    border-radius:0 22px 22px 0 !important;
-    background:
-      linear-gradient(180deg, rgba(5,12,22,0.96), rgba(4,10,18,0.94)) !important;
-    box-shadow:18px 0 36px rgba(0,0,0,0.28);
-  }
-
-  .sb-head{
-    padding-top:64px !important;
-  }
-
-  .sb-head-top{
-    align-items:flex-start;
-  }
-
-  .brand{
+.brand{
     width:40px;
     height:40px;
   }
-
-  .sb-title{
-    font-size:1rem;
-  }
-
-  .sb-subtitle{
-    font-size:.76rem;
-  }
-
-  .sb-top-actions{
-    margin-top:2px;
-  }
-
-  .sb-logout-top{
-    min-height:42px;
-    border-radius:14px;
-  }
-
-  .nav{
-    padding:10px 10px 20px !important;
-    gap:10px !important;
-  }
-
-  .nav a{
-    min-height:46px;
-    border-radius:14px;
-    font-size:.95rem;
-    padding:12px 14px;
-  }
-
-  .wrap{
+.wrap{
     margin-top:74px !important;
     margin-bottom:110px !important;
   }
@@ -2095,47 +1665,14 @@ canvas{
   .chart-title{
     font-size:.76rem !important;
   }
-
-  .bottom-nav{
-    display:block;
-    z-index:270;
-    background:rgba(7,15,28,0.92);
-    border-top:1px solid rgba(90,220,255,0.10);
-    backdrop-filter:blur(16px);
-    -webkit-backdrop-filter:blur(16px);
-  }
-
-  .bottom-nav .row{
-    display:grid;
-    grid-template-columns:repeat(5, 1fr);
-    overflow:hidden;
-  }
-
-  .bottom-nav button{
-    min-height:58px;
-    padding:8px 4px 9px;
-    flex:none;
-    border-radius:0;
-  }
-
-  .bottom-nav button span{
-    font-size:.68rem;
-    margin-top:2px;
-  }
-
-  .bottom-nav button.active{
-    background:linear-gradient(180deg, rgba(89,231,255,0.14), rgba(89,231,255,0.05));
-    border-radius:0;
-  }
-
-  #axoriin-footer-phrase{
-    bottom:58px !important;
+#axoriin-footer-phrase{
+    bottom:12px !important;
     font-size:.8rem;
     padding:8px 10px;
   }
 
   #smartclass-mascote{
-    bottom:72px !important;
+    bottom:18px !important;
     right:10px !important;
     width:58px !important;
     height:58px !important;
@@ -2169,10 +1706,6 @@ canvas{
   .window-card{
     min-height:110px !important;
     height:110px !important;
-  }
-
-  .bottom-nav .row{
-    grid-template-columns:repeat(5, 1fr);
   }
 }
 .review-alert-box{
@@ -2645,6 +2178,298 @@ canvas{
   }
 }
 
+
+/* =========================================================
+   AXORIIN V5.0 — NAVEGAÇÃO RADIAL ESTÁVEL
+   Navegação única para mobile e desktop; fonte semântica oculta preserva permissões.
+   ========================================================= */
+.page{
+  grid-template-columns:minmax(0,1fr) !important;
+  max-width:1800px;
+  margin-inline:auto;
+}
+.ax-source-nav{
+  display:none !important;
+}
+
+.ax-radial-nav{
+  position:fixed;
+  inset:0;
+  z-index:9500;
+  pointer-events:none;
+}
+.ax-radial-backdrop{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 100%, rgba(0,213,255,.09), transparent 44%),
+    rgba(0,5,12,.18);
+  backdrop-filter:blur(0px);
+  -webkit-backdrop-filter:blur(0px);
+  transition:opacity .28s ease, backdrop-filter .28s ease;
+}
+.ax-radial-nav.open .ax-radial-backdrop{
+  opacity:1;
+  pointer-events:auto;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+.ax-radial-stage{
+  position:absolute;
+  left:50%;
+  bottom:max(22px, env(safe-area-inset-bottom, 0px));
+  width:0;
+  height:0;
+  pointer-events:none;
+}
+.ax-radial-fab{
+  position:absolute;
+  left:0;
+  top:0;
+  width:66px;
+  height:66px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:1px solid rgba(126,241,255,.86);
+  background:
+    radial-gradient(circle at 38% 25%, rgba(255,255,255,.16), transparent 28%),
+    linear-gradient(145deg, rgba(10,35,57,.98), rgba(4,14,28,.98));
+  color:#eaffff;
+  box-shadow:
+    0 0 0 5px rgba(33,214,255,.07),
+    0 0 22px rgba(33,214,255,.55),
+    0 14px 38px rgba(0,0,0,.48),
+    inset 0 0 18px rgba(44,222,255,.12);
+  cursor:pointer;
+  pointer-events:auto;
+  display:grid;
+  place-items:center;
+  z-index:4;
+  transition:transform .24s ease, box-shadow .28s ease, border-color .28s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.ax-radial-fab::before{
+  content:"";
+  position:absolute;
+  inset:-9px;
+  border-radius:50%;
+  border:1px solid rgba(60,220,255,.18);
+  opacity:.72;
+  animation:axRadialPulse 2.4s ease-in-out infinite;
+  pointer-events:none;
+}
+.ax-radial-fab:hover{
+  transform:translate(-50%,-50%) scale(1.05);
+  box-shadow:0 0 0 6px rgba(33,214,255,.09),0 0 30px rgba(33,214,255,.72),0 16px 40px rgba(0,0,0,.48),inset 0 0 22px rgba(44,222,255,.18);
+}
+.ax-radial-nav.open .ax-radial-fab{
+  border-color:rgba(109,244,255,.98);
+  box-shadow:0 0 0 7px rgba(33,214,255,.08),0 0 36px rgba(33,214,255,.82),0 16px 42px rgba(0,0,0,.52),inset 0 0 26px rgba(44,222,255,.20);
+}
+.ax-radial-dots{
+  width:24px;
+  height:24px;
+  display:grid;
+  grid-template-columns:repeat(3,5px);
+  grid-auto-rows:5px;
+  gap:4px;
+  transition:opacity .18s ease, transform .28s ease;
+}
+.ax-radial-dots i{
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#dffcff;
+  box-shadow:0 0 8px rgba(99,230,255,.78);
+}
+.ax-radial-close{
+  position:absolute;
+  font:300 2.15rem/1 system-ui,sans-serif;
+  opacity:0;
+  transform:rotate(-90deg) scale(.55);
+  transition:opacity .18s ease, transform .28s cubic-bezier(.2,.85,.2,1.2);
+}
+.ax-radial-nav.open .ax-radial-dots{opacity:0;transform:rotate(90deg) scale(.5)}
+.ax-radial-nav.open .ax-radial-close{opacity:1;transform:rotate(0) scale(1)}
+
+.ax-radial-lines{
+  position:absolute;
+  left:0;
+  top:0;
+  overflow:visible;
+  pointer-events:none;
+  z-index:0;
+}
+.ax-radial-path{
+  fill:none;
+  stroke:rgba(101,236,255,.52);
+  stroke-width:2;
+  stroke-linecap:round;
+  filter:drop-shadow(0 0 4px rgba(54,220,255,.28)) drop-shadow(0 0 10px rgba(54,220,255,.18));
+  opacity:0;
+  stroke-dasharray:var(--ax-path-len, 180);
+  stroke-dashoffset:var(--ax-path-len, 180);
+  transition:opacity .25s ease var(--ax-line-delay, 0ms), stroke-dashoffset .48s cubic-bezier(.2,.8,.2,1) var(--ax-line-delay, 0ms);
+}
+.ax-radial-path.is-primary{
+  stroke:rgba(126,244,255,.72);
+  stroke-width:2.2;
+  filter:drop-shadow(0 0 5px rgba(54,220,255,.34)) drop-shadow(0 0 14px rgba(54,220,255,.24));
+}
+.ax-radial-nav.open .ax-radial-path{
+  opacity:.92;
+  stroke-dashoffset:0;
+}
+.ax-radial-items{
+  position:absolute;
+  left:0;
+  top:0;
+  width:0;
+  height:0;
+  pointer-events:none;
+  z-index:1;
+}
+.ax-radial-item{
+  --ax-tx:0px;
+  --ax-ty:0px;
+  --ax-delay:0ms;
+  position:absolute;
+  left:0;
+  top:0;
+  width:82px;
+  height:82px;
+  min-height:82px;
+  padding:8px 6px;
+  transform:translate(-50%,-50%) translate(0,0) scale(.18);
+  transform-origin:center;
+  opacity:0;
+  pointer-events:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  text-align:center;
+  text-decoration:none;
+  color:#f0feff !important;
+  border-radius:50%;
+  border:1px solid rgba(116,239,255,.56);
+  background:radial-gradient(circle at 34% 26%, rgba(255,255,255,.20), rgba(160,230,255,.06) 16%, rgba(12,33,52,.18) 42%, rgba(5,18,31,.30) 68%, rgba(3,12,22,.44) 100%);
+  box-shadow:
+    0 0 0 2px rgba(70,222,255,.05),
+    0 0 18px rgba(62,222,255,.18),
+    0 12px 30px rgba(0,0,0,.32),
+    inset 0 0 22px rgba(95,235,255,.06);
+  backdrop-filter:blur(18px) saturate(125%);
+  -webkit-backdrop-filter:blur(18px) saturate(125%);
+  transition:
+    transform .42s cubic-bezier(.18,.9,.22,1.16) var(--ax-delay),
+    opacity .24s ease var(--ax-delay),
+    box-shadow .2s ease,
+    border-color .2s ease;
+}
+.ax-radial-item::before{
+  content:"";
+  position:absolute;
+  inset:3px;
+  border-radius:50%;
+  border:1px solid rgba(166,245,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), inset 0 0 18px rgba(98,234,255,.03);
+  background:radial-gradient(circle at 34% 24%, rgba(255,255,255,.12), transparent 28%), radial-gradient(circle at 65% 68%, rgba(0,213,255,.04), transparent 30%);
+  pointer-events:none;
+}
+.ax-radial-item::after{display:none;}
+.ax-radial-nav.open .ax-radial-item{
+  transform:translate(-50%,-50%) translate(var(--ax-tx),var(--ax-ty)) scale(1);
+  opacity:1;
+  pointer-events:auto;
+}
+.ax-radial-item:hover,
+.ax-radial-item:focus-visible,
+.ax-radial-item.active{
+  border-color:rgba(146,248,255,.92);
+  box-shadow:0 0 0 4px rgba(48,216,255,.08),0 0 28px rgba(48,216,255,.46),0 12px 34px rgba(0,0,0,.42),inset 0 0 28px rgba(48,216,255,.10);
+  outline:none;
+}
+.ax-radial-item-icon{
+  font-size:1.28rem;
+  line-height:1;
+  filter:drop-shadow(0 0 7px rgba(94,229,255,.26));
+}
+.ax-radial-item-label{
+  max-width:70px;
+  font-size:.62rem !important;
+  font-weight:700;
+  line-height:1.08;
+  text-wrap:balance;
+  text-shadow:0 1px 5px rgba(0,0,0,.72);
+}
+.ax-radial-item--primary{
+  width:90px;
+  height:90px;
+  min-height:90px;
+  border-color:rgba(146,248,255,.94);
+  background:radial-gradient(circle at 34% 24%, rgba(255,255,255,.24), rgba(179,238,255,.08) 16%, rgba(11,42,63,.22) 42%, rgba(4,18,32,.38) 68%, rgba(3,12,23,.52) 100%);
+  box-shadow:
+    0 0 0 5px rgba(43,220,255,.06),
+    0 0 34px rgba(43,220,255,.44),
+    0 14px 34px rgba(0,0,0,.42),
+    inset 0 0 28px rgba(76,230,255,.12);
+  z-index:2;
+}
+.ax-radial-item--primary .ax-radial-item-icon{font-size:1.42rem}
+.ax-radial-item--primary .ax-radial-item-label{font-size:.68rem !important;letter-spacing:.01em}
+body.ax-radial-open .op-admin-widget{
+  opacity:.18 !important;
+  pointer-events:none !important;
+  filter:blur(1.5px);
+  transition:opacity .2s ease, filter .2s ease;
+}
+
+@keyframes axRadialPulse{
+  0%,100%{transform:scale(.96);opacity:.42}
+  50%{transform:scale(1.10);opacity:.88}
+}
+
+@media(max-width:1024px){
+  .page{padding:12px !important}
+  .wrap{margin-top:74px !important;margin-bottom:84px !important}
+  .mobile-appbar{z-index:9300}
+  .mobile-appbar-menu{font-size:1.35rem;line-height:1}
+  .ax-radial-stage{bottom:max(30px, calc(env(safe-area-inset-bottom, 0px) + 18px))}
+  .ax-radial-fab{width:62px;height:62px}
+  #smartclass-mascote{bottom:82px !important}
+  #axoriin-footer-phrase{bottom:76px !important}
+}
+
+@media(max-width:620px){
+  .ax-radial-item{
+    width:68px;
+    height:68px;
+    min-height:68px;
+    padding:6px 4px;
+  }
+  .ax-radial-item--primary{
+    width:76px;
+    height:76px;
+    min-height:76px;
+    padding:7px 4px;
+  }
+  .ax-radial-item-icon{font-size:1.08rem}
+  .ax-radial-item-label{max-width:60px;font-size:.54rem !important;line-height:1.05}
+  .ax-radial-fab{width:58px;height:58px}
+  .ax-radial-dots{width:21px;height:21px;grid-template-columns:repeat(3,4px);grid-auto-rows:4px;gap:4px}
+  .ax-radial-dots i{width:4px;height:4px}
+  body.ax-radial-open{overflow:hidden}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .ax-radial-fab::before{animation:none}
+  .ax-radial-item,.ax-radial-backdrop,.ax-radial-dots,.ax-radial-close{transition:none!important}
+}
+
 </style>
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 
@@ -2655,8 +2480,8 @@ canvas{
 
 <body>
   <div class="mobile-appbar">
-  <button id="mobileMenuBtn" class="mobile-appbar-btn mobile-appbar-menu" type="button" aria-label="Abrir menu">
-    â˜°
+  <button id="mobileMenuBtn" class="mobile-appbar-btn mobile-appbar-menu" type="button" aria-label="Abrir menu de módulos" aria-expanded="false">
+    ⠿
   </button>
 
   <div class="mobile-appbar-center">
@@ -2669,7 +2494,6 @@ canvas{
   </button>
 </div>
 
-<div id="mobileSidebarBackdrop" class="mobile-sidebar-backdrop"></div>
   <div id="bg-wallpaper"></div>
   <div id="intro-hex-overlay"></div>
 
@@ -2687,47 +2511,21 @@ canvas{
   <div id="axoriin-footer-phrase">O eixo que organiza e ilumina a gestão educacional.</div>
 
   <div class="page">
-    <aside class="sidebar" aria-label="Navegação lateral">
-      <button id="mobileCloseSidebar" class="mobile-close-sidebar" type="button" aria-label="Fechar menu">
-  âœ•
-</button>
-      <div class="sb-head">
-  <div class="sb-head-top">
-    <div class="brand"></div>
-    <div>
-      <div class="sb-title" id="sbNomeInstituicao">CMDPII</div>
-      <div class="sb-subtitle">Sistema Escolar</div>
-    </div>
-  </div>
-
-  <div class="sb-top-actions">
-    <button
-      class="sb-logout-top"
-      onclick="logout()"
-      title="Sair do sistema"
-      aria-label="Sair do sistema"
-      type="button"
-    >
-      <span class="sb-logout-icon">⏻</span>
-      <span class="sb-logout-label">Sair do sistema</span>
-    </button>
-  </div>
-</div>
-
-            <nav class="nav" id="sb-nav">
-  <a class="active" href="painel.html?t=cmdpii" id="sbPainel">🏠 Painel</a>
-  <a href="lista-alunos.html?t=cmdpii" id="sbAlunos">👥 Alunos</a>
-  <a href="ranking-alunos.html?t=cmdpii" id="sbRanking">🏆 Ranking de Alunos</a>
-  <a href="alamar.html?t=cmdpii" id="sbAlamar">🎖️ Aluno Alamar</a>
-  <a href="/notificacoes?t=cmdpii" id="sbNotificacoes">🔔 Notificações</a>
-  <a href="livro-ocorrencias.html?t=cmdpii" id="sbLivroOcorrencias">📘 Livro Digital</a>
-  <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
-  <a href="financeiro.html?t=cmdpii" id="sbFinanceiro">💰 Financeiro</a>
-  <a href="uniformes.html?t=cmdpii" id="sbUniformes" style="display:none">👕 Uniformes e Vouchers</a>
-  <a href="transferir-turma.html?t=cmdpii" id="sbTransferir">🔁 Transferir Turmas</a>
-  <a href="gestao-sistema.html?t=cmdpii" id="sbGestaoSistema">⚙️ Gestão do Sistema</a>
-</nav>
-    </aside>
+    <!-- Fonte semântica de módulos: permanece oculta e alimenta permissões + menu radial. -->
+    <span id="sbNomeInstituicao" hidden>CMDPII</span>
+    <nav class="ax-source-nav" id="sb-nav" hidden aria-hidden="true">
+      <a class="active" href="painel.html?t=cmdpii" id="sbPainel">🏠 Painel</a>
+      <a href="lista-alunos.html?t=cmdpii" id="sbAlunos">👥 Alunos</a>
+      <a href="ranking-alunos.html?t=cmdpii" id="sbRanking">🏆 Ranking de Alunos</a>
+      <a href="alamar.html?t=cmdpii" id="sbAlamar">🎖️ Aluno Alamar</a>
+      <a href="/notificacoes?t=cmdpii" id="sbNotificacoes">🔔 Notificações</a>
+      <a href="livro-ocorrencias.html?t=cmdpii" id="sbLivroOcorrencias">📘 Livro Digital</a>
+      <a href="estatisticas.html?t=cmdpii" id="sbEstatisticas">📉 Relatórios</a>
+      <a href="financeiro.html?t=cmdpii" id="sbFinanceiro">💰 Financeiro</a>
+      <a href="uniformes.html?t=cmdpii" id="sbUniformes" style="display:none">👕 Uniformes e Vouchers</a>
+      <a href="transferir-turma.html?t=cmdpii" id="sbTransferir">🔁 Transferir Turmas</a>
+      <a href="gestao-sistema.html?t=cmdpii" id="sbGestaoSistema">⚙️ Gestão do Sistema</a>
+    </nav>
 
     <main class="content">
       <div class="wrap">
@@ -2744,7 +2542,7 @@ canvas{
   <section id="reviewAlertBox" style="display:none;" class="review-alert-box">
     <div class="review-alert-head">
       <div>
-        <div class="review-alert-kicker">REVISÃƒO PENDENTE</div>
+        <div class="review-alert-kicker">REVISÃO PENDENTE</div>
         <h3 class="review-alert-title">Existem notificações aguardando correção</h3>
         <p class="review-alert-text">Abra as notificações e ajuste os documentos devolvidos pelo controle.</p>
       </div>
@@ -2874,7 +2672,7 @@ canvas{
             <div id="cardCadastrarAluno" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('cadastro-aluno.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">MÃ“DULO</div>
+                  <div class="kicker">MÓDULO</div>
                   <h3>Cadastrar Aluno</h3>
                 </div>
                 <div class="card-watermark card-watermark--cadastro" aria-hidden="true">🎓</div>
@@ -2913,7 +2711,7 @@ canvas{
             <div id="cardControleNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('controle-notificacoes.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">GESTÃƒO</div>
+                  <div class="kicker">GESTÃO</div>
                   <h3>Controle de Notificações</h3>
                 </div>
                 <div class="card-watermark card-watermark--controle" aria-hidden="true">🛡️</div>
@@ -2923,7 +2721,7 @@ canvas{
             <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('ranking-alunos.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">CLASSIFICAÃ‡ÃƒO</div>
+                  <div class="kicker">CLASSIFICAÇÃO</div>
                   <h3>Ranking de Alunos</h3>
                 </div>
                 <div class="card-watermark card-watermark--ranking" aria-hidden="true">🏆</div>
@@ -2952,7 +2750,7 @@ canvas{
             <div id="cardFinanceiro" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('financeiro.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">GESTÃƒO FINANCEIRA</div>
+                  <div class="kicker">GESTÃO FINANCEIRA</div>
                   <h3>Módulo Financeiro</h3>
                 </div>
                 <div class="card-watermark card-watermark--financeiro" aria-hidden="true">R$</div>
@@ -2973,7 +2771,7 @@ canvas{
             <div id="cardAssociacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="window.AxoriinAmbientes?.abrirPrimeiraAssociacao()">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">MÃ“DULO VINCULADO</div>
+                  <div class="kicker">MÓDULO VINCULADO</div>
                   <h3>Axoriin Associações</h3>
                 </div>
                 <div class="card-watermark card-watermark--associacao" aria-hidden="true">🤝</div>
@@ -2983,7 +2781,7 @@ canvas{
             <div id="cardTransferirTurma" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('transferir-turma.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">AÃ‡ÃƒO</div>
+                  <div class="kicker">AÇÃO</div>
                   <h3>Transferir Turma</h3>
                 </div>
                 <div class="card-watermark card-watermark--transferencia" aria-hidden="true">🔄</div>
@@ -2999,10 +2797,21 @@ canvas{
               </div>
             </div>
 
+            <div id="cardSimulados" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('simulados.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">DIAGNÓSTICO PEDAGÓGICO</div>
+                  <h3>Análise de Simulados</h3>
+                  <p>Áreas, habilidades, fragilidades e grupos de intervenção.</p>
+                </div>
+                <div class="card-watermark" aria-hidden="true">◎</div>
+              </div>
+            </div>
+
             <div id="cardGestaoRedacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('admin-redacao.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">PEDAGÃ“GICO</div>
+                  <div class="kicker">PEDAGÓGICO</div>
                   <h3>Painel ENEM — Redação</h3>
                 </div>
                 <div class="card-watermark card-watermark--redacao" aria-hidden="true">✍️</div>
@@ -3058,9 +2867,9 @@ canvas{
     </div>
 
     <div class="pager">
-      <button class="btn" id="reg-prev">â—€</button>
+      <button class="btn" id="reg-prev">◀</button>
       <span class="info">Página <span id="reg-page">1</span> de <span id="reg-pages">1</span></span>
-      <button class="btn" id="reg-next">â–¶</button>
+      <button class="btn" id="reg-next">▶</button>
       <span class="info">10 por página</span>
     </div>
   </div>
@@ -3088,9 +2897,9 @@ canvas{
     </div>
 
     <div class="pager">
-      <button class="btn" id="ins-prev">â—€</button>
+      <button class="btn" id="ins-prev">◀</button>
       <span class="info">Página <span id="ins-page">1</span> de <span id="ins-pages">1</span></span>
-      <button class="btn" id="ins-next">â–¶</button>
+      <button class="btn" id="ins-next">▶</button>
       <span class="info">10 por página</span>
     </div>
   </div>
@@ -3118,9 +2927,9 @@ canvas{
     </div>
 
     <div class="pager">
-      <button class="btn" id="inc-prev">â—€</button>
+      <button class="btn" id="inc-prev">◀</button>
       <span class="info">Página <span id="inc-page">1</span> de <span id="inc-pages">1</span></span>
-      <button class="btn" id="inc-next">â–¶</button>
+      <button class="btn" id="inc-next">▶</button>
       <span class="info">10 por página</span>
     </div>
   </div>
@@ -3169,39 +2978,31 @@ canvas{
   </div>
 
   <div class="pager">
-    <button class="btn" id="inc-prev">â—€</button>
+    <button class="btn" id="inc-prev">◀</button>
     <span class="info">Página <span id="inc-page">1</span> de <span id="inc-pages">1</span></span>
-    <button class="btn" id="inc-next">â–¶</button>
+    <button class="btn" id="inc-next">▶</button>
     <span class="info">10 por página</span>
     <input type="number" id="inc-size" min="10" max="10" step="10" value="10" disabled />
   </div>
 </div>
 
-  <nav class="bottom-nav" aria-label="Navegação inferior" id="bottomNav">
-    <div class="row">
-      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})" id="bnPainel">
-        🏠<span>Painel</span>
+  <!-- AXORIIN V4.1 — navegação radial espaçada com Alunos central -->
+  <div class="ax-radial-nav" id="axRadialNav" aria-hidden="false">
+    <div class="ax-radial-backdrop" id="axRadialBackdrop"></div>
+    <div class="ax-radial-stage" id="axRadialStage" aria-label="Menu de módulos">
+      <svg class="ax-radial-lines" id="axRadialLines" aria-hidden="true"></svg>
+      <div class="ax-radial-items" id="axRadialItems"></div>
+      <button class="ax-radial-fab" id="axRadialFab" type="button" aria-label="Abrir menu de módulos" aria-expanded="false">
+        <span class="ax-radial-dots" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="ax-radial-close" aria-hidden="true">×</span>
       </button>
-      <button onclick="location.href=withTenant('lista-alunos.html')" id="bnAlunos">
-        👥<span>Alunos</span>
-      </button>
-      <button onclick="location.href=withTenant('ranking-alunos.html')" id="bnRanking">
-        🏆<span>Ranking</span>
-      </button>
-      <button onclick="location.href=withTenant('/notificacoes')" id="bnNotifs">
-        🔔<span>Notifs</span>
-      </button>
-      <button onclick="location.href=withTenant('estatisticas.html')" id="bnRelatorios">
-        📉<span>Relatórios</span>
-      </button>
-      <button onclick="location.href=withTenant('financeiro.html')" id="bnFinanceiro">
-        💰<span>Financeiro</span>
-      </button>
-      <button type="button" id="bnMais">
-  â˜°<span>Mais</span>
-</button>
     </div>
-  </nav>  <script>
+  </div>
+
+  <!-- A antiga sidebar permanece apenas como fonte de rotas/permissões; não é exibida. -->
+  <script>
   const DEFAULT_TENANT = 'cmdpii';
   const TENANT_STORAGE_KEY = 'smartclass_tenant';
   const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
@@ -3259,7 +3060,7 @@ canvas{
     history.replaceState({}, '', u.toString());
   }
 
-  /* ===== PAPEL DE PAREDE DINÃ‚MICO ===== */
+  /* ===== PAPEL DE PAREDE DINÂMICO ===== */
   (function(){
     const wallpapers = [
       'url("img/bg-painel-smart.png")',
@@ -3445,7 +3246,8 @@ canvas{
       cardGestaoRedacao:'cardGestaoRedacao',
       cardObservacoesProfessor:'cardObservacoesProfessor',
       cardControleAcesso:'cardControleAcesso',
-      cardPedagogico:'cardPedagogico'
+      cardPedagogico:'cardPedagogico',
+      cardSimulados:'cardSimulados'
     };
 
     const SECOES = {
@@ -3477,6 +3279,8 @@ canvas{
         if (cardAcesso) cardAcesso.style.display = '';
         const cardPedagogico = document.getElementById(CARDS.cardPedagogico);
         if (cardPedagogico) cardPedagogico.style.display = '';
+        const cardSimulados = document.getElementById(CARDS.cardSimulados);
+        if (cardSimulados) cardSimulados.style.display = '';
         return;
       }
 
@@ -3487,6 +3291,7 @@ canvas{
           SB.sbGestaoSistema,
           CARDS.cardFinanceiro,
           CARDS.cardPedagogico,
+          CARDS.cardSimulados,
           BN.bnFinanceiro
         );
         return;
@@ -3497,6 +3302,8 @@ canvas{
         if (cardObservacoes) cardObservacoes.style.display = '';
         const cardPedagogico = document.getElementById(CARDS.cardPedagogico);
         if (cardPedagogico) cardPedagogico.style.display = '';
+        const cardSimulados = document.getElementById(CARDS.cardSimulados);
+        if (cardSimulados) cardSimulados.style.display = '';
 
         hide(
           CARDS.cardGestaoRedacao,
@@ -4020,7 +3827,6 @@ document.addEventListener('click', (ev) => {
 });
 
 
-
   function setupHiDPICanvas(canvas){
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -4169,7 +3975,7 @@ document.addEventListener('click', (ev) => {
 
     const items = [
       {name:'Excepcional', value:dist.exc||0, color:'#7CFFEA'},
-      {name:'Ã“timo',       value:dist.oti||0, color:'#3DD9FF'},
+      {name:'Ótimo',       value:dist.oti||0, color:'#3DD9FF'},
       {name:'Bom',         value:dist.bom||0, color:'#FFD166'},
       {name:'Regular',     value:dist.reg||0, color:'#FF7A59'},
       {name:'Insuficiente',value:dist.ins||0, color:'#FF5C8A'},
@@ -4337,6 +4143,7 @@ async function carregarAlertaRevisoes() {
 }
   async function boot(){
   await aplicarPermissoesNoPainel();
+  initAxoriinRadialMenu();
   await verificarUsuario();
   await verificarAdmin();
   await carregarMetricas();
@@ -4358,167 +4165,210 @@ async function carregarAlertaRevisoes() {
         .catch(err => console.warn('Falha ao registrar SW:', err));
     });
   }
-  (function mobileSidebarController(){
-  const sidebar = document.querySelector('.sidebar');
-  const openBtn = document.getElementById('mobileMenuBtn');
-  const closeBtn = document.getElementById('mobileCloseSidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  function initAxoriinRadialMenu(){
+    const root = document.getElementById('axRadialNav');
+    const stage = document.getElementById('axRadialStage');
+    const itemsBox = document.getElementById('axRadialItems');
+    const linesSvg = document.getElementById('axRadialLines');
+    const fab = document.getElementById('axRadialFab');
+    const backdrop = document.getElementById('axRadialBackdrop');
+    const appbarBtn = document.getElementById('mobileMenuBtn');
+    const appbarTitle = document.getElementById('mobileAppbarTitle');
+    const sourceNav = document.getElementById('sb-nav');
 
-  if (!sidebar || !openBtn || !closeBtn || !backdrop) return;
+    if (!root || !stage || !itemsBox || !fab || !backdrop || !sourceNav) return;
 
-  function openSidebar(){
-    sidebar.classList.add('open');
-    backdrop.classList.add('show');
-    openBtn.classList.add('is-hidden');
-    document.body.style.overflow = 'hidden';
-  }
+    function visibleSourceLinks(){
+      return Array.from(sourceNav.querySelectorAll('a')).filter(link => {
+        const style = getComputedStyle(link);
+        return style.display !== 'none' && !link.hidden;
+      });
+    }
 
-  function closeSidebar(){
-    sidebar.classList.remove('open');
-    backdrop.classList.remove('show');
-    openBtn.classList.remove('is-hidden');
-    document.body.style.overflow = '';
-  }
+    function semanticKey(link, label){
+      const id = String(link.id || '').toLowerCase();
+      if (id.includes('sbalunos')) return 'alunos';
+      if (id.includes('sbranking')) return 'ranking';
+      if (id.includes('sbalamar')) return 'alamar';
+      if (id.includes('sbnotific')) return 'notificacoes';
+      if (id.includes('sblivro')) return 'livro';
+      if (id.includes('sbestat')) return 'relatorios';
+      if (id.includes('sbfinance')) return 'financeiro';
+      if (id.includes('sbuniform')) return 'uniformes';
+      if (id.includes('sbtransfer')) return 'transferir';
+      if (id.includes('sbgestao')) return 'gestao';
+      if (id.includes('sbpainel')) return 'painel';
+      return String(label || '').toLowerCase();
+    }
 
-  openBtn.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    openSidebar();
-  });
+    function parseLink(link){
+      const raw = (link.textContent || '').trim().replace(/\s+/g, ' ');
+      const firstSpace = raw.indexOf(' ');
+      const label = firstSpace > 0 ? raw.slice(firstSpace + 1) : raw;
+      return {
+        icon: firstSpace > 0 ? raw.slice(0, firstSpace) : '•',
+        label,
+        href: link.href,
+        active: link.classList.contains('active'),
+        key: semanticKey(link, label)
+      };
+    }
 
-  closeBtn.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    closeSidebar();
-  });
+    function buildItems(){
+      const priority = ['financeiro','alunos','relatorios','transferir','notificacoes','livro','gestao'];
+      const hiddenKeys = new Set(['alamar','uniformes','ranking','painel']);
+      const data = visibleSourceLinks().map(parseLink).filter(item => !hiddenKeys.has(item.key)).sort((a, b) => {
+        const ai = priority.indexOf(a.key);
+        const bi = priority.indexOf(b.key);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+      itemsBox.innerHTML = '';
 
-  backdrop.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    closeSidebar();
-  });
+      data.forEach((item, index) => {
+        const a = document.createElement('a');
+        const alunoCentral = item.key === 'alunos';
+        a.className = 'ax-radial-item' + (item.active ? ' active' : '') + (alunoCentral ? ' ax-radial-item--primary' : '');
+        a.href = item.href;
+        a.dataset.index = String(index);
+        a.dataset.label = item.label;
+        a.dataset.key = item.key;
+        a.innerHTML = `<span class="ax-radial-item-icon" aria-hidden="true">${item.icon}</span><span class="ax-radial-item-label">${item.label}</span>`;
+        a.addEventListener('click', closeMenu);
+        itemsBox.appendChild(a);
+      });
+      positionItems();
+    }
 
-  document.querySelectorAll('.sidebar a').forEach(link => {
-    link.addEventListener('click', function(){
-      if (window.innerWidth <= 1024) {
-        setTimeout(() => {
-          closeSidebar();
-        }, 80);
+    function positionItems(){
+      const items = Array.from(itemsBox.querySelectorAll('.ax-radial-item'));
+      if (!items.length) return;
+
+      const mobile = window.innerWidth <= 620;
+      const tablet = window.innerWidth <= 1024;
+      const h = window.visualViewport?.height || window.innerHeight;
+
+      // Geometria da Etapa 2: leque amplo e simétrico, fiel ao mockup.
+      // O botão principal é a origem; Alunos ocupa o ápice central.
+      const layout = tablet
+        ? {
+            alunos:[0,-246],
+            financeiro:[-132,-194],
+            relatorios:[132,-194],
+            transferir:[-188,-116],
+            notificacoes:[188,-116],
+            livro:[-112,-54],
+            gestao:[112,-54]
+          }
+        : {
+            alunos:[0,-278],
+            financeiro:[-158,-222],
+            relatorios:[158,-222],
+            transferir:[-224,-132],
+            notificacoes:[224,-132],
+            livro:[-132,-60],
+            gestao:[132,-60]
+          };
+
+      const primary = items.find(el => el.dataset.key === 'alunos') || items[0];
+      const others = items.filter(el => el !== primary);
+      const requiredHeight = mobile ? 470 : (tablet ? 540 : 610);
+      const available = Math.max(330, h - 88);
+      const scale = Math.min(1, Math.max(mobile ? .82 : .88, available / requiredHeight));
+
+      const points = [];
+      items.forEach((el, idx) => {
+        const key = el.dataset.key || '';
+        let slot = layout[key];
+        if (!slot) {
+          const fallback = [[-154,-162],[0,-214],[154,-162],[-112,-78],[112,-78],[-64,-26],[64,-26]];
+          slot = fallback[idx % fallback.length];
+        }
+        const x = slot[0] * scale;
+        const y = slot[1] * scale;
+        const delay = key === 'alunos' ? 0 : (others.indexOf(el) + 1) * 26;
+        el.style.setProperty('--ax-tx', `${x.toFixed(1)}px`);
+        el.style.setProperty('--ax-ty', `${y.toFixed(1)}px`);
+        el.style.setProperty('--ax-delay', `${delay}ms`);
+        points.push({ x, y, key, primary: key === 'alunos' });
+      });
+      drawRadialLines(points);
+    }
+
+    function drawRadialLines(points){
+      if (!linesSvg) return;
+      if (!points.length){
+        linesSvg.innerHTML = '';
+        return;
       }
-    });
-  });
-
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 1024) {
-      closeSidebar();
+      const maxX = Math.max(...points.map(p => Math.abs(p.x)), 180);
+      const maxY = Math.max(...points.map(p => Math.abs(p.y)), 180);
+      const halfWidth = Math.ceil(maxX + 96);
+      const top = Math.ceil(maxY + 92);
+      const bottomPad = 74;
+      linesSvg.setAttribute('viewBox', `${-halfWidth} ${-top} ${halfWidth * 2} ${top + bottomPad}`);
+      linesSvg.style.width = `${halfWidth * 2}px`;
+      linesSvg.style.height = `${top + bottomPad}px`;
+      linesSvg.style.transform = `translate(${-halfWidth}px, ${-top}px)`;
+      linesSvg.innerHTML = points.map((p, idx) => {
+        const c1x = p.x * 0.14;
+        const c1y = p.y * 0.18;
+        const c2x = p.x * 0.58;
+        const c2y = p.y * 0.76;
+        const d = `M 0 0 C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+        const len = Math.max(120, Math.hypot(p.x, p.y) * 1.12);
+        const klass = `ax-radial-path${p.primary ? ' is-primary' : ''}`;
+        const delay = p.primary ? 40 : (idx + 1) * 34;
+        return `<path class="${klass}" style="--ax-path-len:${len.toFixed(0)};--ax-line-delay:${delay}ms" d="${d}" />`;
+      }).join('');
     }
-  });
-})();
-(function mobileAppUx(){
-  const sidebar = document.querySelector('.sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-  const openBtn = document.getElementById('mobileMenuBtn');
-  const closeBtn = document.getElementById('mobileCloseSidebar');
-  const moreBtn = document.getElementById('bnMais');
-  const appbarTitle = document.getElementById('mobileAppbarTitle');
 
-  if (!sidebar || !backdrop || !openBtn || !closeBtn) return;
+    function syncMobileTitle(){
+      const el = document.getElementById('sbNomeInstituicao');
+      if (el && appbarTitle) appbarTitle.textContent = el.textContent.trim() || 'CMDPII-CZS';
+    }
 
-  function openSidebar(){
-    sidebar.classList.add('open');
-    backdrop.classList.add('show');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeSidebar(){
-    sidebar.classList.remove('open');
-    backdrop.classList.remove('show');
-    document.body.style.overflow = '';
-  }
-
-  openBtn.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    openSidebar();
-  });
-
-  closeBtn.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    closeSidebar();
-  });
-
-  backdrop.addEventListener('click', function(){
-    closeSidebar();
-  });
-
-  if (moreBtn) {
-    moreBtn.addEventListener('click', function(){
-      openSidebar();
-    });
-  }
-
-  document.querySelectorAll('.sidebar a').forEach(link => {
-    link.addEventListener('click', function(){
-      if (window.innerWidth <= 1024) {
-        setTimeout(closeSidebar, 80);
+    function setOpen(open){
+      root.classList.toggle('open', open);
+      document.body.classList.toggle('ax-radial-open', open);
+      fab.setAttribute('aria-expanded', String(open));
+      fab.setAttribute('aria-label', open ? 'Recolher menu de módulos' : 'Abrir menu de módulos');
+      if (appbarBtn) {
+        appbarBtn.setAttribute('aria-expanded', String(open));
+        appbarBtn.setAttribute('aria-label', open ? 'Recolher menu de módulos' : 'Abrir menu de módulos');
       }
+      if (open) {
+        positionItems();
+      }
+    }
+
+    function toggleMenu(e){
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      setOpen(!root.classList.contains('open'));
+    }
+
+    function closeMenu(){ setOpen(false); }
+
+    fab.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', closeMenu);
+    appbarBtn?.addEventListener('click', toggleMenu);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && root.classList.contains('open')) closeMenu();
     });
-  });
 
-  function setActiveBottomNav(){
-    const path = location.pathname.toLowerCase();
-    const buttons = document.querySelectorAll('.bottom-nav button');
-    buttons.forEach(btn => btn.classList.remove('active'));
+    window.addEventListener('resize', () => {
+      if (root.classList.contains('open')) positionItems();
+    });
 
-    const byId = (id) => document.getElementById(id);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        if (root.classList.contains('open')) positionItems();
+      });
+    }
 
-    if (path.includes('lista-alunos')) byId('bnAlunos')?.classList.add('active');
-    else if (path.includes('ranking-alunos')) byId('bnRanking')?.classList.add('active');
-    else if (path.includes('financeiro') || path.includes('rifas') || path.includes('baile-formatura')) byId('bnFinanceiro')?.classList.add('active');
-    else if (path.includes('estatisticas')) byId('bnRelatorios')?.classList.add('active');
-    else if (path.includes('notific')) byId('bnNotifs')?.classList.add('active');
-    else byId('bnPainel')?.classList.add('active');
+    buildItems();
+    syncMobileTitle();
   }
-
-  function syncMobileTitle(){
-    const el = document.getElementById('sbNomeInstituicao');
-    if (el && appbarTitle) {
-      appbarTitle.textContent = el.textContent.trim() || 'CMDPII-CZS';
-    }
-  }
-
-  let touchStartX = 0;
-  let touchCurrentX = 0;
-
-  sidebar.addEventListener('touchstart', (e) => {
-    if (!sidebar.classList.contains('open')) return;
-    touchStartX = e.touches[0].clientX;
-    touchCurrentX = touchStartX;
-  }, { passive: true });
-
-  sidebar.addEventListener('touchmove', (e) => {
-    if (!sidebar.classList.contains('open')) return;
-    touchCurrentX = e.touches[0].clientX;
-  }, { passive: true });
-
-  sidebar.addEventListener('touchend', () => {
-    if (!sidebar.classList.contains('open')) return;
-    const delta = touchCurrentX - touchStartX;
-    if (delta < -60) {
-      closeSidebar();
-    }
-  });
-
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 1024) {
-      closeSidebar();
-    }
-  });
-
-  syncMobileTitle();
-  setActiveBottomNav();
-})();
   </script>
 <script>
 (function(){
@@ -4768,8 +4618,7 @@ async function carregarAlertaRevisoes() {
 </script>
 
 
-
-  <script src="/js/observacoes-professores-admin.js?v=1.8.0"></script>
+  <script src="/js/observacoes-professores-admin.js?v=1.9.1"></script>
   <script src="/js/axoriin-ambientes.js"></script>
   <script src="notify.js"></script>
   <script src="/painel.js"></script>

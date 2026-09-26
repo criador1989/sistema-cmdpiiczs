@@ -3,6 +3,7 @@
 
   const INTERVALO_ATUALIZACAO_MS = 8000;
   const CHAVE_SOM = 'axoriin.observacoesProfessores.alertasSonoros.v1_4';
+  const CHAVE_POS_WIDGET = 'axoriin.observacoesProfessores.widgetPos.v1';
   const URL_SIRENE = '/audio/alerta-observacao.wav?v=1.8.0';
   const ORDEM_PRIORIDADE = { normal: 1, atencao: 2, urgente: 3 };
 
@@ -76,7 +77,7 @@
   function garantirEstrutura() {
     if (document.getElementById('opAdminWidget')) return;
     const link = document.createElement('link');
-    link.rel = 'stylesheet'; link.href = '/css/observacoes-professores-admin.css?v=1.8.0';
+    link.rel = 'stylesheet'; link.href = '/css/observacoes-professores-admin.css?v=1.9.1';
     document.head.appendChild(link);
 
     document.body.insertAdjacentHTML('beforeend', `
@@ -136,8 +137,223 @@
       if (event.key === 'Escape') fecharModal();
     });
 
+    prepararWidgetArrastavel();
+    prepararModalArrastavel();
     atualizarControleSom();
     prepararDesbloqueioAudio();
+  }
+
+  function prepararWidgetArrastavel() {
+    const widget = document.getElementById('opAdminWidget');
+    const handle = widget?.querySelector('.op-admin-head');
+    if (!widget || !handle || handle.dataset.widgetDragReady === '1') return;
+    handle.dataset.widgetDragReady = '1';
+
+    const margem = 8;
+    let ativo = false;
+    let pointerId = null;
+    let inicioX = 0;
+    let inicioY = 0;
+    let inicioLeft = 0;
+    let inicioTop = 0;
+
+    const viewportMedidas = () => ({
+      largura: window.visualViewport?.width || window.innerWidth,
+      altura: window.visualViewport?.height || window.innerHeight
+    });
+
+    const aplicar = (left, top, salvar = true) => {
+      const { largura, altura } = viewportMedidas();
+      const rect = widget.getBoundingClientRect();
+      const maxLeft = Math.max(margem, largura - rect.width - margem);
+      const maxTop = Math.max(margem, altura - rect.height - margem);
+      const x = Math.min(Math.max(margem, left), maxLeft);
+      const y = Math.min(Math.max(margem, top), maxTop);
+
+      widget.style.left = `${x}px`;
+      widget.style.top = `${y}px`;
+      widget.style.right = 'auto';
+      widget.style.bottom = 'auto';
+
+      if (salvar) {
+        try { localStorage.setItem(CHAVE_POS_WIDGET, JSON.stringify({ left:x, top:y })); }
+        catch (_error) { /* posição é apenas uma preferência local */ }
+      }
+    };
+
+    const restaurar = () => {
+      try {
+        const salvo = JSON.parse(localStorage.getItem(CHAVE_POS_WIDGET) || 'null');
+        if (salvo && Number.isFinite(salvo.left) && Number.isFinite(salvo.top)) {
+          requestAnimationFrame(() => aplicar(salvo.left, salvo.top, false));
+        }
+      } catch (_error) { /* mantém posição padrão */ }
+    };
+
+    const manterVisivel = () => {
+      if (widget.hidden) return;
+      const rect = widget.getBoundingClientRect();
+      aplicar(rect.left, rect.top, false);
+    };
+
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.button !== undefined && event.button !== 0) return;
+      if (event.target.closest('button,a,input,select,textarea,[role="button"]')) return;
+
+      const rect = widget.getBoundingClientRect();
+      ativo = true;
+      pointerId = event.pointerId;
+      inicioX = event.clientX;
+      inicioY = event.clientY;
+      inicioLeft = rect.left;
+      inicioTop = rect.top;
+      handle.setPointerCapture?.(pointerId);
+      widget.classList.add('dragging');
+      event.preventDefault();
+    });
+
+    handle.addEventListener('pointermove', (event) => {
+      if (!ativo || event.pointerId !== pointerId) return;
+      aplicar(
+        inicioLeft + (event.clientX - inicioX),
+        inicioTop + (event.clientY - inicioY),
+        false
+      );
+      event.preventDefault();
+    });
+
+    const finalizar = (event) => {
+      if (!ativo || (event.pointerId !== undefined && event.pointerId !== pointerId)) return;
+      ativo = false;
+      widget.classList.remove('dragging');
+      if (pointerId !== null) handle.releasePointerCapture?.(pointerId);
+      pointerId = null;
+      const rect = widget.getBoundingClientRect();
+      aplicar(rect.left, rect.top, true);
+    };
+
+    handle.addEventListener('pointerup', finalizar);
+    handle.addEventListener('pointercancel', finalizar);
+
+    const ajustar = () => requestAnimationFrame(manterVisivel);
+    window.addEventListener('resize', ajustar);
+    window.visualViewport?.addEventListener('resize', ajustar);
+    window.visualViewport?.addEventListener('scroll', ajustar);
+
+    restaurar();
+  }
+
+  function obterModalElementos() {
+    const backdrop = document.getElementById('opAdminBackdrop');
+    const modal = backdrop?.querySelector('.op-admin-modal');
+    const handle = modal?.querySelector('.op-admin-modal-head');
+    return { backdrop, modal, handle };
+  }
+
+  function resetarPosicaoModal() {
+    const { modal } = obterModalElementos();
+    if (!modal) return;
+    modal.dataset.dragX = '0';
+    modal.dataset.dragY = '0';
+    modal.style.transform = 'translate3d(0px, 0px, 0)';
+  }
+
+  function limitarModalNaViewport() {
+    const { backdrop, modal } = obterModalElementos();
+    if (!backdrop || !modal || backdrop.hidden) return;
+
+    const margem = 8;
+    const rect = modal.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const largura = viewport?.width || window.innerWidth;
+    const altura = viewport?.height || window.innerHeight;
+    let x = Number(modal.dataset.dragX || 0);
+    let y = Number(modal.dataset.dragY || 0);
+
+    if (rect.left < margem) x += margem - rect.left;
+    if (rect.right > largura - margem) x -= rect.right - (largura - margem);
+    if (rect.top < margem) y += margem - rect.top;
+    if (rect.bottom > altura - margem) y -= rect.bottom - (altura - margem);
+
+    modal.dataset.dragX = String(x);
+    modal.dataset.dragY = String(y);
+    modal.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  function prepararModalArrastavel() {
+    const { modal, handle } = obterModalElementos();
+    if (!modal || !handle || handle.dataset.dragReady === '1') return;
+    handle.dataset.dragReady = '1';
+
+    let ativo = false;
+    let pointerId = null;
+    let inicioX = 0;
+    let inicioY = 0;
+    let baseX = 0;
+    let baseY = 0;
+    let rectInicial = null;
+
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.button !== undefined && event.button !== 0) return;
+      if (event.target.closest('button,a,input,select,textarea,[role="button"]')) return;
+
+      ativo = true;
+      pointerId = event.pointerId;
+      inicioX = event.clientX;
+      inicioY = event.clientY;
+      baseX = Number(modal.dataset.dragX || 0);
+      baseY = Number(modal.dataset.dragY || 0);
+      rectInicial = modal.getBoundingClientRect();
+      handle.setPointerCapture?.(pointerId);
+      event.preventDefault();
+    });
+
+    handle.addEventListener('pointermove', (event) => {
+      if (!ativo || event.pointerId !== pointerId || !rectInicial) return;
+
+      const margem = 8;
+      const viewport = window.visualViewport;
+      const largura = viewport?.width || window.innerWidth;
+      const altura = viewport?.height || window.innerHeight;
+      let dx = event.clientX - inicioX;
+      let dy = event.clientY - inicioY;
+
+      dx = Math.max(margem - rectInicial.left, Math.min(dx, largura - margem - rectInicial.right));
+      dy = Math.max(margem - rectInicial.top, Math.min(dy, altura - margem - rectInicial.bottom));
+
+      const x = baseX + dx;
+      const y = baseY + dy;
+      modal.dataset.dragX = String(x);
+      modal.dataset.dragY = String(y);
+      modal.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      event.preventDefault();
+    });
+
+    const finalizar = (event) => {
+      if (!ativo || (event.pointerId !== undefined && event.pointerId !== pointerId)) return;
+      ativo = false;
+      if (pointerId !== null) handle.releasePointerCapture?.(pointerId);
+      pointerId = null;
+      rectInicial = null;
+      limitarModalNaViewport();
+    };
+
+    handle.addEventListener('pointerup', finalizar);
+    handle.addEventListener('pointercancel', finalizar);
+
+    const ajustar = () => requestAnimationFrame(limitarModalNaViewport);
+    window.addEventListener('resize', ajustar);
+    window.visualViewport?.addEventListener('resize', ajustar);
+    window.visualViewport?.addEventListener('scroll', ajustar);
+  }
+
+  function exibirModal() {
+    const { backdrop } = obterModalElementos();
+    if (!backdrop) return;
+    resetarPosicaoModal();
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(limitarModalNaViewport);
   }
 
   function obterAudioContext() {
@@ -708,8 +924,7 @@
     try {
       const payload = await api(`/api/observacoes-professores/admin/lote/${encodeURIComponent(loteId)}`);
       renderModalLote(payload);
-      document.getElementById('opAdminBackdrop').hidden = false;
-      document.body.style.overflow = 'hidden';
+      exibirModal();
       await carregarFeed();
     } catch (error) {
       window.alert(error.message);
@@ -848,8 +1063,7 @@
     try {
       const payload = await api(`/api/observacoes-professores/admin/${encodeURIComponent(id)}`);
       renderModal(payload.observacao);
-      document.getElementById('opAdminBackdrop').hidden = false;
-      document.body.style.overflow = 'hidden';
+      exibirModal();
       history.replaceState(null, '', location.pathname + location.search.replace(/([?&])observacaoProfessor=[^&]*&?/, '$1').replace(/[?&]$/, '') + location.hash);
       await carregarFeed();
     } catch (error) {
@@ -860,6 +1074,7 @@
   function fecharModal() {
     const backdrop = document.getElementById('opAdminBackdrop');
     if (backdrop) backdrop.hidden = true;
+    resetarPosicaoModal();
     document.body.style.overflow = '';
     estado.atual = null;
   }
