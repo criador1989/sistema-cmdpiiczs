@@ -1,0 +1,422 @@
+/* ==========================================================
+   AXORIIN GALAXIA v2.2.1 - ISOLADO SOBRE O PAINEL ORIGINAL
+   IMPORTANTE:
+   - nao substitui loaders, APIs ou regras de negocio;
+   - nao move #metrics nem a area de comportamento;
+   - nao desativa folhas CSS dos outros temas;
+   - todas as mudancas visuais usam data-ax-theme="galaxy".
+   ========================================================== */
+
+.ax-galaxy-hero,.ax-galaxy-section-head,.ax-galaxy-card-art{display:none;}
+
+html[data-ax-theme="galaxy"] body{
+  background:#020916 !important;
+}
+html[data-ax-theme="galaxy"] #bg-wallpaper,
+html[data-ax-theme="galaxy"] #intro-hex-overlay{
+  display:none !important;
+}
+html[data-ax-theme="galaxy"] body::before{
+  content:"" !important;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:0 !important;
+  pointer-events:none !important;
+  opacity:1 !important;
+  mask-image:none !important;
+  -webkit-mask-image:none !important;
+  background:
+    linear-gradient(180deg,rgba(2,8,20,.54),rgba(2,8,20,.76)),
+    radial-gradient(circle at 76% 14%,rgba(98,93,255,.15),transparent 28%),
+    url('/assets/painel/galaxia/wallpaper-galaxy-dashboard.png') center top/cover no-repeat fixed !important;
+  filter:saturate(.92) brightness(.70);
+}
+html[data-ax-theme="galaxy"] body::after{
+  content:"";position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(circle at 20% 18%,rgba(50,180,255,.08),transparent 26%);
+}
+html[data-ax-theme="galaxy"] .page{position:relative;z-index:3;max-width:1800px;margin:auto;padding:22px 28px 120px !important;}
+html[data-ax-theme="galaxy"] .wrap{width:min(1480px,100%) !important;margin:0 auto 130px !important;}
+
+/* Cabecalho: estrutura original preservada. */
+html[data-ax-theme="galaxy"] .topo{
+  display:grid !important;grid-template-columns:minmax(0,1fr) auto !important;
+  grid-template-areas:"title controls" "sub controls" !important;
+  align-items:center !important;gap:6px 20px !important;text-align:left !important;
+  margin:0 0 20px !important;
+}
+html[data-ax-theme="galaxy"] .titulo{grid-area:title;font-size:clamp(2.1rem,3.2vw,3.4rem) !important;line-height:1 !important;letter-spacing:-.025em !important;}
+html[data-ax-theme="galaxy"] .sub{grid-area:sub;font-size:1.08rem !important;color:rgba(222,235,255,.76) !important;}
+html[data-ax-theme="galaxy"] #btn-wallpaper{display:none !important;}
+html[data-ax-theme="galaxy"] #axThemeControls{grid-area:controls;justify-self:end;align-self:start;}
+
+/* Hero decorativo. Nenhum dado do painel e movido para dentro dele. */
+html[data-ax-theme="galaxy"] .ax-galaxy-hero{
+  position:relative;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr);
+  gap:22px;min-height:260px;margin-bottom:16px;padding:30px 34px;overflow:hidden;
+  border-radius:28px;border:1px solid rgba(107,204,255,.20);
+  background:
+    linear-gradient(90deg,rgba(4,14,31,.94) 0%,rgba(4,14,31,.78) 42%,rgba(4,14,31,.22) 78%),
+    url('/assets/painel/galaxia/wallpaper-galaxy-dashboard.png') center right/cover no-repeat;
+  box-shadow:0 26px 65px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.04);
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero-copy{position:relative;z-index:2;align-self:center;max-width:690px;}
+html[data-ax-theme="galaxy"] .ax-galaxy-eyebrow{font-size:.76rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#7eeaff !important;}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero h2{margin:12px 0 0;font-size:clamp(2.15rem,3vw,3.6rem);line-height:1.02;letter-spacing:-.035em;color:#f7fbff !important;}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero h2 span{background:linear-gradient(100deg,#72e9ff,#84b6ff 54%,#a083ff);-webkit-background-clip:text;background-clip:text;color:transparent !important;}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero p{margin:14px 0 0;max-width:620px;font-size:1.04rem;line-height:1.48;color:rgba(220,233,255,.74) !important;}
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit{position:relative;z-index:2;display:grid;place-items:center;min-height:180px;}
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit img{width:min(280px,90%);max-height:205px;object-fit:contain;filter:drop-shadow(0 0 26px rgba(75,209,255,.30));animation:gxFloat 6s ease-in-out infinite;}
+@keyframes gxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* METRICAS: usa exatamente mAlunos/mNotif/mMedia do painel original. */
+html[data-ax-theme="galaxy"] .metrics{
+  display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:14px !important;margin:0 0 28px !important;align-items:stretch !important;
+}
+html[data-ax-theme="galaxy"] .metrics::before,html[data-ax-theme="galaxy"] .metrics::after{display:none !important;}
+html[data-ax-theme="galaxy"] .metric.metric--hud{
+  position:relative !important;min-height:112px !important;height:112px !important;
+  padding:18px 18px 16px 92px !important;display:block !important;overflow:hidden !important;
+  border:1px solid rgba(104,198,255,.18) !important;border-radius:21px !important;
+  background:linear-gradient(145deg,rgba(9,23,48,.90),rgba(4,12,28,.96)) !important;
+  box-shadow:0 18px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.035) !important;
+  transform:none !important;
+}
+html[data-ax-theme="galaxy"] .metric.metric--hud::before{
+  content:"" !important;display:block !important;position:absolute !important;left:16px !important;top:50% !important;
+  width:60px !important;height:60px !important;transform:translateY(-50%) !important;border-radius:16px !important;
+  background-position:center !important;background-repeat:no-repeat !important;background-size:contain !important;
+  filter:drop-shadow(0 0 14px rgba(68,190,255,.20));opacity:.96 !important;
+}
+html[data-ax-theme="galaxy"] #metricAlunos::before{background-image:url('/assets/painel/galaxia/card-cadastro.png') !important;}
+html[data-ax-theme="galaxy"] #metricNotif::before{background-image:url('/assets/painel/galaxia/card-notificacoes.png') !important;}
+html[data-ax-theme="galaxy"] #metricMedia::before{background-image:url('/assets/painel/galaxia/card-estatisticas.png') !important;}
+html[data-ax-theme="galaxy"] .metric-hud-frame,
+html[data-ax-theme="galaxy"] .metric-hud-corners,
+html[data-ax-theme="galaxy"] .metric-hud-outer,
+html[data-ax-theme="galaxy"] .metric-hud-sweep,
+html[data-ax-theme="galaxy"] .metric-hud-segments,
+html[data-ax-theme="galaxy"] .metric-hud-mid,
+html[data-ax-theme="galaxy"] .metric-hud-decor-left,
+html[data-ax-theme="galaxy"] .metric-hud-decor-right,
+html[data-ax-theme="galaxy"] .metric-hud-line{display:none !important;}
+html[data-ax-theme="galaxy"] .metric .k{width:auto !important;margin:0 86px 7px 0 !important;text-align:left !important;font-size:.76rem !important;letter-spacing:.12em !important;color:rgba(190,211,238,.70) !important;}
+html[data-ax-theme="galaxy"] .metric-hud-wrap{display:block !important;margin:0 !important;width:auto !important;}
+html[data-ax-theme="galaxy"] .metric-hud{position:absolute !important;right:18px !important;top:50% !important;transform:translateY(-50%) !important;width:auto !important;height:auto !important;display:block !important;filter:none !important;border:0 !important;background:none !important;}
+html[data-ax-theme="galaxy"] .metric-hud-core{position:static !important;width:auto !important;height:auto !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:0 !important;background:none !important;box-shadow:none !important;}
+html[data-ax-theme="galaxy"] .metric .v{font-size:2.15rem !important;line-height:1 !important;font-weight:800 !important;color:#fff !important;text-shadow:0 0 16px rgba(88,208,255,.16) !important;}
+html[data-ax-theme="galaxy"] .metric-hud-meta{display:flex !important;align-items:center !important;gap:10px !important;margin:0 !important;color:rgba(174,199,229,.66) !important;font-size:.82rem !important;}
+html[data-ax-theme="galaxy"] .metric-hud-status{color:rgba(174,199,229,.66) !important;}
+html[data-ax-theme="galaxy"] .metric-hud-percent{padding:4px 8px;border-radius:999px;background:rgba(46,156,255,.10);color:#9ceaff !important;font-weight:700;}
+
+/* MODULOS: bloqueia visual antigo por propriedade, sem desabilitar sua folha CSS. */
+html[data-ax-theme="galaxy"] .ax-galaxy-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:8px 2px 13px;}
+html[data-ax-theme="galaxy"] .ax-galaxy-section-head h2{margin:0;font-size:1.55rem;color:#fff !important;}
+html[data-ax-theme="galaxy"] .ax-galaxy-section-head p{margin:3px 0 0;color:rgba(180,203,231,.64) !important;}
+html[data-ax-theme="galaxy"] .menu-windows{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:14px !important;margin-top:0 !important;}
+html[data-ax-theme="galaxy"] body .window-card{
+  grid-column:span 1 !important;min-height:154px !important;height:154px !important;max-height:154px !important;
+  overflow:hidden !important;border-radius:21px !important;border:1px solid rgba(101,195,255,.16) !important;
+  background:linear-gradient(145deg,rgba(8,21,44,.92),rgba(3,11,25,.97)) !important;
+  background-image:none !important;box-shadow:0 17px 38px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+html[data-ax-theme="galaxy"] body .window-card::before{content:"" !important;position:absolute !important;inset:0 !important;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 34%) !important;opacity:1 !important;}
+html[data-ax-theme="galaxy"] body .window-card::after{content:"" !important;position:absolute !important;left:16px !important;right:16px !important;bottom:0 !important;height:1px !important;background:linear-gradient(90deg,transparent,rgba(89,217,255,.34),transparent) !important;opacity:.45 !important;}
+html[data-ax-theme="galaxy"] .window-content{position:absolute !important;inset:0 !important;padding:16px 17px !important;overflow:hidden !important;}
+html[data-ax-theme="galaxy"] .card-copy{position:relative !important;z-index:3 !important;max-width:64% !important;text-align:left !important;}
+html[data-ax-theme="galaxy"] .card-copy h3{margin:6px 0 0 !important;font-size:1.42rem !important;line-height:1.08 !important;color:#fff !important;}
+html[data-ax-theme="galaxy"] .card-copy p,html[data-ax-theme="galaxy"] .ax-galaxy-card-description{display:block !important;margin:8px 0 0 !important;font-size:.91rem !important;line-height:1.25 !important;color:rgba(205,222,243,.70) !important;}
+html[data-ax-theme="galaxy"] .kicker{font-size:.68rem !important;letter-spacing:.18em !important;color:rgba(165,197,230,.62) !important;}
+html[data-ax-theme="galaxy"] .card-watermark{display:none !important;}
+html[data-ax-theme="galaxy"] .window-card img:not(.ax-galaxy-card-art){display:none !important;}
+html[data-ax-theme="galaxy"] .ax-galaxy-card-art{display:block !important;position:absolute !important;right:7px !important;bottom:7px !important;width:38% !important;height:72% !important;max-width:118px !important;max-height:108px !important;object-fit:contain !important;z-index:2 !important;pointer-events:none !important;filter:drop-shadow(0 0 15px rgba(67,185,255,.14));}
+html[data-ax-theme="galaxy"] .window-card:hover{transform:translateY(-3px) !important;border-color:rgba(112,222,255,.34) !important;box-shadow:0 22px 46px rgba(0,0,0,.34),0 0 22px rgba(51,183,255,.05) !important;}
+
+/* O menu radial mantem A POSICAO ORIGINAL do painel (centro inferior). */
+html[data-ax-theme="galaxy"] .ax-radial-fab{
+  border-color:rgba(126,229,255,.86) !important;
+  background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.16),transparent 28%),linear-gradient(145deg,rgba(12,38,72,.98),rgba(4,15,31,.98)) !important;
+  box-shadow:0 0 0 5px rgba(48,196,255,.07),0 0 28px rgba(65,184,255,.45),0 15px 38px rgba(0,0,0,.46),inset 0 0 18px rgba(113,106,255,.10) !important;
+}
+html[data-ax-theme="galaxy"] .ax-radial-item{border-color:rgba(102,201,255,.40) !important;background:radial-gradient(circle at 38% 26%,rgba(255,255,255,.10),transparent 25%),linear-gradient(145deg,rgba(9,33,62,.98),rgba(4,14,29,.98)) !important;box-shadow:0 0 22px rgba(55,181,255,.20),0 12px 28px rgba(0,0,0,.38) !important;}
+html[data-ax-theme="galaxy"] .ax-radial-path{stroke:rgba(99,215,255,.64) !important;}
+
+/* Blocos funcionais abaixo permanecem estruturalmente originais. */
+html[data-ax-theme="galaxy"] .pend-card,
+html[data-ax-theme="galaxy"] .alertas-comportamento,
+html[data-ax-theme="galaxy"] .chart-card,
+html[data-ax-theme="galaxy"] .qrcode-box{
+  background:linear-gradient(180deg,rgba(7,19,40,.88),rgba(4,12,27,.95)) !important;
+  border-color:rgba(101,194,255,.16) !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.03) !important;
+}
+
+@media(max-width:1280px){html[data-ax-theme="galaxy"] .menu-windows{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}}
+@media(max-width:1024px){html[data-ax-theme="galaxy"] .menu-windows{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}html[data-ax-theme="galaxy"] .ax-galaxy-hero{grid-template-columns:1fr minmax(220px,.55fr);}}
+@media(max-width:760px){
+  html[data-ax-theme="galaxy"] .page{padding:14px 12px 105px !important;}
+  html[data-ax-theme="galaxy"] .topo{grid-template-columns:1fr !important;grid-template-areas:"title" "sub" "controls" !important;text-align:center !important;}
+  html[data-ax-theme="galaxy"] #axThemeControls{justify-self:center;}
+  html[data-ax-theme="galaxy"] .ax-galaxy-hero{grid-template-columns:1fr;min-height:350px;padding:24px 22px;}
+  html[data-ax-theme="galaxy"] .ax-galaxy-orbit{min-height:130px;} html[data-ax-theme="galaxy"] .ax-galaxy-orbit img{max-height:150px;}
+  html[data-ax-theme="galaxy"] .metrics{grid-template-columns:1fr !important;}
+  html[data-ax-theme="galaxy"] .metric.metric--hud{height:105px !important;min-height:105px !important;}
+  html[data-ax-theme="galaxy"] .menu-windows{grid-template-columns:1fr !important;}
+  html[data-ax-theme="galaxy"] body .window-card{height:146px !important;min-height:146px !important;max-height:146px !important;}
+  html[data-ax-theme="galaxy"] .ax-galaxy-section-head{display:block;}html[data-ax-theme="galaxy"] .ax-galaxy-section-head>p{margin-top:6px;}
+}
+
+
+/* ==========================================================
+   v2.2.1 — LIMPEZA DE ARTE LEGADA SOMENTE NO GALAXY
+   Nao altera DOM, APIs, loaders, tenants ou valores.
+   ========================================================== */
+
+/* --- metricas: remove qualquer desenho/HUD herdado --- */
+html[data-ax-theme="galaxy"] #metrics .metric.metric--hud{
+  background-image:none !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric.metric--hud::after{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+  background-image:none !important;
+  box-shadow:none !important;
+}
+
+/* O ::before do card e reservado exclusivamente ao pequeno icone Galaxy. */
+html[data-ax-theme="galaxy"] #metricAlunos::before{
+  content:"" !important;
+  display:block !important;
+  background-image:url('/assets/painel/galaxia/card-cadastro.png') !important;
+}
+html[data-ax-theme="galaxy"] #metricNotif::before{
+  content:"" !important;
+  display:block !important;
+  background-image:url('/assets/painel/galaxia/card-notificacoes.png') !important;
+}
+html[data-ax-theme="galaxy"] #metricMedia::before{
+  content:"" !important;
+  display:block !important;
+  background-image:url('/assets/painel/galaxia/card-estatisticas.png') !important;
+}
+
+html[data-ax-theme="galaxy"] #metrics img{
+  display:none !important;
+}
+
+html[data-ax-theme="galaxy"] #metrics .metric-hud,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-wrap,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-core,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-meta,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-status,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-percent{
+  background-image:none !important;
+}
+
+html[data-ax-theme="galaxy"] #metrics .metric-hud::before,
+html[data-ax-theme="galaxy"] #metrics .metric-hud::after,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-wrap::before,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-wrap::after,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-core::before,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-core::after,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-meta::before,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-meta::after,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-status::before,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-status::after,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-percent::before,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-percent::after{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  filter:none !important;
+}
+
+html[data-ax-theme="galaxy"] #metrics .metric-hud-frame,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-corners,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-outer,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-sweep,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-segments,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-mid,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-decor-left,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-decor-right,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-line{
+  display:none !important;
+  background:none !important;
+  background-image:none !important;
+}
+
+/* Mantem os dados originais visiveis e acima de qualquer decoracao. */
+html[data-ax-theme="galaxy"] #metrics .metric-hud-core,
+html[data-ax-theme="galaxy"] #metrics .metric .v,
+html[data-ax-theme="galaxy"] #metrics .metric .k,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-meta{
+  position:relative;
+  z-index:20 !important;
+}
+
+/* --- cards de modulos: elimina qualquer arte do pacote antigo --- */
+html[data-ax-theme="galaxy"] #menuWindows .window-card,
+html[data-ax-theme="galaxy"] #menuWindows .window-content,
+html[data-ax-theme="galaxy"] #menuWindows .card-copy{
+  background-image:none !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .window-card > img:not(.ax-galaxy-card-art),
+html[data-ax-theme="galaxy"] #menuWindows .window-content > img:not(.ax-galaxy-card-art),
+html[data-ax-theme="galaxy"] #menuWindows img:not(.ax-galaxy-card-art),
+html[data-ax-theme="galaxy"] #menuWindows .card-watermark,
+html[data-ax-theme="galaxy"] #menuWindows [class*="legacy-art"],
+html[data-ax-theme="galaxy"] #menuWindows [class*="card-art"]:not(.ax-galaxy-card-art){
+  display:none !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .window-content::before,
+html[data-ax-theme="galaxy"] #menuWindows .window-content::after,
+html[data-ax-theme="galaxy"] #menuWindows .card-copy::before,
+html[data-ax-theme="galaxy"] #menuWindows .card-copy::after{
+  background-image:none !important;
+}
+
+/* A unica arte permitida dentro dos modulos no tema Galaxy. */
+html[data-ax-theme="galaxy"] #menuWindows .ax-galaxy-card-art{
+  display:block !important;
+}
+
+
+/* ==========================================================
+   v2.2.2 — AJUSTE FINO
+   - restaura grade de modulos no Galaxy;
+   - limpa somente as metricas do topo;
+   - reposiciona a porcentagem para nao sobrepor o valor principal.
+   ========================================================== */
+
+/* 1) grade de modulos: desfaz a limpeza ampla da v2.2.1 */
+html[data-ax-theme="galaxy"] #menuWindows{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:14px !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .window-card{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .window-content{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .card-copy{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+/* Removemos apenas pseudo-decoracoes antigas; nao ocultamos mais todo o conteudo interno. */
+html[data-ax-theme="galaxy"] #menuWindows .window-card::before{
+  content:"" !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .window-card::after{
+  content:"" !important;
+}
+html[data-ax-theme="galaxy"] #menuWindows .window-content::before,
+html[data-ax-theme="galaxy"] #menuWindows .window-content::after,
+html[data-ax-theme="galaxy"] #menuWindows .card-copy::before,
+html[data-ax-theme="galaxy"] #menuWindows .card-copy::after{
+  content:none !important;
+  display:none !important;
+}
+/* Mantem a arte galaxy injetada; nao esconde genericamente outros elementos para nao quebrar cards. */
+html[data-ax-theme="galaxy"] #menuWindows .ax-galaxy-card-art{
+  display:block !important;
+  position:absolute !important;
+  right:7px !important;
+  bottom:7px !important;
+  width:38% !important;
+  height:72% !important;
+  max-width:118px !important;
+  max-height:108px !important;
+  object-fit:contain !important;
+  z-index:2 !important;
+}
+
+/* 2) metricas: card limpo, valor e porcentagem em areas separadas */
+html[data-ax-theme="galaxy"] #metrics .metric.metric--hud{
+  padding:18px 18px 16px 92px !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric .k{
+  margin:0 108px 7px 0 !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric-hud{
+  position:absolute !important;
+  right:16px !important;
+  top:18px !important;
+  transform:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-end !important;
+  gap:8px !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric-hud-core{
+  display:block !important;
+  text-align:right !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric .v{
+  display:block !important;
+  min-width:70px !important;
+  text-align:right !important;
+  font-size:2.15rem !important;
+  line-height:1 !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric-hud-meta{
+  position:static !important;
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+  gap:6px !important;
+  margin:0 !important;
+  font-size:.78rem !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric-hud-status{
+  display:none !important;
+}
+html[data-ax-theme="galaxy"] #metrics .metric-hud-percent{
+  position:static !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:36px !important;
+  height:28px !important;
+  padding:0 10px !important;
+  border-radius:999px !important;
+  background:rgba(46,156,255,.14) !important;
+  color:#b7efff !important;
+  font-weight:700 !important;
+  box-shadow:inset 0 0 0 1px rgba(102,210,255,.18) !important;
+}
+
+/* 3) responsivo da grade restaurada */
+@media(max-width:1280px){
+  html[data-ax-theme="galaxy"] #menuWindows{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+}
+@media(max-width:1024px){
+  html[data-ax-theme="galaxy"] #menuWindows{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
+@media(max-width:760px){
+  html[data-ax-theme="galaxy"] #menuWindows{grid-template-columns:1fr !important;}
+  html[data-ax-theme="galaxy"] #metrics .metric-hud{top:16px !important;right:14px !important;}
+  html[data-ax-theme="galaxy"] #metrics .metric .k{margin-right:96px !important;}
+  html[data-ax-theme="galaxy"] #metrics .metric .v{font-size:1.95rem !important;}
+}
+
+
+/* ==========================================================
+   v2.2.3 - A visibilidade dos modulos Galaxy e reconciliada
+   pelo JS com base nas permissoes originais do painel.
+   Nao force display universal aqui.
+   ========================================================== */
+html[data-ax-theme="galaxy"] #menuWindows .window-card{
+  visibility:visible;
+}

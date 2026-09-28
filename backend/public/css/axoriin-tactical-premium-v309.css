@@ -1,0 +1,57 @@
+/* AXORIIN Verde Tático Premium v3.0.9 — banner premium completo */
+.ax-tactical-v309-bg,.ax-tactical-v309-hero,.ax-tactical-v309-head,.ax-tactical-v309-metric,.ax-tactical-v309-card{display:none}
+html.ax-tac-v309-ready body{background:#03110d!important;color:#f4fbf8!important}
+html.ax-tac-v309-ready #bg-wallpaper,
+html.ax-tac-v309-ready #intro-hex-overlay,
+html.ax-tac-v309-ready .ax-gx-living-bg,
+html.ax-tac-v309-ready .ax-experience-canvas{display:none!important}
+html.ax-tac-v309-ready .page{position:relative;z-index:3}
+html.ax-tac-v309-ready .wrap{width:min(1480px,100%)!important;margin-bottom:110px!important}
+html.ax-tac-v309-ready .ax-tactical-v309-bg{display:block;position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,rgba(2,12,10,.58),rgba(2,12,10,.82)),url('/assets/painel/tactical-v309/tactical-command-bg.webp') center/cover no-repeat;filter:saturate(.86) brightness(.72)}
+html.ax-tac-v309-ready .ax-tactical-v309-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 5%,rgba(39,224,178,.10),transparent 26%),linear-gradient(90deg,rgba(1,8,7,.28),transparent 20%,transparent 80%,rgba(1,8,7,.32))}
+
+html.ax-tac-v309-ready .ax-tactical-v309-hero{display:block!important;min-height:305px;margin:0 0 18px;border:1px solid rgba(77,234,191,.30);border-radius:26px;overflow:hidden;position:relative;background:linear-gradient(90deg,rgba(2,16,13,.94),rgba(3,18,15,.78) 38%,rgba(3,17,15,.18) 62%,rgba(3,17,15,.05) 100%),url('/assets/painel/tactical-v309/hero-banner-premium.webp') center/cover no-repeat;box-shadow:0 24px 58px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.035)}
+html.ax-tac-v309-ready .ax-tactical-v309-copy{padding:38px 42px;align-self:center;max-width:54%}
+html.ax-tac-v309-ready .ax-tactical-v309-eyebrow{font-size:.74rem;font-weight:800;letter-spacing:.27em;text-transform:uppercase;color:#76f5d2;margin-bottom:16px}
+html.ax-tac-v309-ready .ax-tactical-v309-hero h2{margin:0;color:#f8fcfb;font-size:clamp(2rem,4vw,4rem);line-height:.98;letter-spacing:-.055em;max-width:720px}
+html.ax-tac-v309-ready .ax-tactical-v309-hero h2 span{color:#55efc9}
+html.ax-tac-v309-ready .ax-tactical-v309-hero p{margin:18px 0 0;color:#d3e6de;font-size:1.02rem;line-height:1.48;max-width:660px}
+html.ax-tac-v309-ready .ax-tactical-v309-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+html.ax-tac-v309-ready .ax-tactical-v309-chips span{padding:8px 12px;border-radius:999px;border:1px solid rgba(72,223,182,.20);background:rgba(4,23,19,.62);color:#c7ebe0;font-size:.75rem;font-weight:700}
+
+html.ax-tac-v309-ready #metrics{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important;margin:0 0 18px!important}
+html.ax-tac-v309-ready #metrics .metric{display:block!important;grid-column:auto!important;grid-row:auto!important;min-width:0!important;min-height:122px!important;height:auto!important;padding:0!important;border-radius:20px!important;border:1px solid rgba(72,229,184,.24)!important;background:linear-gradient(125deg,rgba(6,25,21,.96),rgba(3,14,13,.94))!important;overflow:hidden!important;box-shadow:0 12px 28px rgba(0,0,0,.23)!important;position:relative!important}
+html.ax-tac-v309-ready #metrics .metric>:not(.ax-tactical-v309-metric){position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none!important;clip-path:inset(50%)!important}
+html.ax-tac-v309-ready #metrics .metric::before,html.ax-tac-v309-ready #metrics .metric::after{content:none!important;display:none!important}
+html.ax-tac-v309-ready .ax-tactical-v309-metric{display:grid!important;grid-template-columns:64px minmax(0,1fr) auto;gap:15px;align-items:center;padding:18px;height:100%}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-icon{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;border:1px solid rgba(77,234,191,.27);background:rgba(7,31,26,.78)}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-icon img{width:36px;height:36px}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-label{font-size:.86rem;font-weight:800;text-transform:uppercase;letter-spacing:.11em;color:#bfe3d8}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-note{margin-top:5px;font-size:.82rem;color:#8eada4}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-values{display:flex;align-items:center;gap:9px}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-values strong{font-size:2.15rem;line-height:1;color:#fff}
+html.ax-tac-v309-ready .ax-tactical-v309-metric-values span{font-size:.88rem;font-weight:800;color:#dcfff4;background:rgba(10,117,103,.34);border:1px solid rgba(96,246,206,.24);border-radius:999px;padding:6px 10px}
+
+html.ax-tac-v309-ready .ax-tactical-v309-head{display:flex!important;align-items:end;justify-content:space-between;margin:6px 2px 12px}
+html.ax-tac-v309-ready .ax-tactical-v309-head h2{font-size:1.55rem;margin:0;color:#f6fbf9}
+html.ax-tac-v309-ready .ax-tactical-v309-head p{margin:3px 0 0;color:#839d95;font-size:.89rem}
+html.ax-tac-v309-ready .ax-tactical-v309-head span{color:#718b84;font-size:.78rem}
+
+html.ax-tac-v309-ready #menuWindows{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-auto-flow:row!important;gap:14px!important;align-items:stretch!important}
+html.ax-tac-v309-ready #menuWindows .window-card.ax-tac-v309-denied{display:none!important}
+html.ax-tac-v309-ready #menuWindows .window-card.ax-tac-v309-permitted{display:block!important;grid-column:auto / span 1!important;grid-row:auto!important;width:auto!important;max-width:none!important;min-width:0!important;min-height:124px!important;height:auto!important;margin:0!important;padding:0!important;border-radius:20px!important;border:1px solid color-mix(in srgb,var(--ax-tac-accent,#38efbd) 36%,transparent)!important;background:linear-gradient(125deg,color-mix(in srgb,var(--ax-tac-accent,#38efbd) 8%,rgba(5,20,18,.94)),rgba(5,17,17,.90) 58%,color-mix(in srgb,var(--ax-tac-accent,#38efbd) 4%,rgba(5,17,17,.90)))!important;box-shadow:0 12px 28px rgba(0,0,0,.22)!important;overflow:hidden!important;order:var(--ax-tac-order,99)!important;position:relative!important}
+html.ax-tac-v309-ready #menuWindows .window-card.ax-tac-v309-permitted::before,html.ax-tac-v309-ready #menuWindows .window-card.ax-tac-v309-permitted::after{content:none!important;display:none!important}
+html.ax-tac-v309-ready #menuWindows .window-card.ax-tac-v309-permitted>:not(.ax-tactical-v309-card){position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none!important;clip-path:inset(50%)!important}
+html.ax-tac-v309-ready .ax-tactical-v309-card{display:grid!important;grid-template-columns:62px minmax(0,1fr) 32px;gap:14px;align-items:center;padding:15px;height:100%}
+html.ax-tac-v309-ready .ax-tactical-v309-card-icon{width:58px;height:58px;border-radius:15px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--ax-tac-accent,#38efbd) 38%,transparent);background:color-mix(in srgb,var(--ax-tac-accent,#38efbd) 10%,rgba(3,14,13,.88))}
+html.ax-tac-v309-ready .ax-tactical-v309-card-icon img{width:38px;height:38px}
+html.ax-tac-v309-ready .ax-tactical-v309-card-copy{min-width:0}
+html.ax-tac-v309-ready .ax-tactical-v309-card-kicker{font-size:.69rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:color-mix(in srgb,var(--ax-tac-accent,#38efbd) 70%,#d8fff5);margin-bottom:4px}
+html.ax-tac-v309-ready .ax-tactical-v309-card-title{font-size:1rem;font-weight:800;color:#f6fbfa;margin-bottom:4px}
+html.ax-tac-v309-ready .ax-tactical-v309-card-copy p{margin:0;color:#9eb9b0;font-size:.87rem;line-height:1.32}
+html.ax-tac-v309-ready .ax-tactical-v309-card-arrow{width:31px;height:31px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:1.2rem;color:#dcfff3}
+
+html.ax-tac-v309-ready #reviewAlertBox{border-radius:22px!important;background:linear-gradient(135deg,rgba(7,22,20,.93),rgba(3,15,13,.93))!important;border:1px solid rgba(77,234,191,.16)!important;box-shadow:0 18px 38px rgba(0,0,0,.20)!important}
+
+@media(max-width:1180px){html.ax-tac-v309-ready .ax-tactical-v309-copy{max-width:62%}html.ax-tac-v309-ready #metrics,html.ax-tac-v309-ready #menuWindows{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:760px){html.ax-tac-v309-ready .ax-tactical-v309-copy{max-width:100%;padding:28px 24px}html.ax-tac-v309-ready #metrics,html.ax-tac-v309-ready #menuWindows{grid-template-columns:1fr!important}html.ax-tac-v309-ready .ax-tactical-v309-head>span{display:none}}

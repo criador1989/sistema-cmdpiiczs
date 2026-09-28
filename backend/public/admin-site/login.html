@@ -1,85 +1,542 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login CMS | Site Institucional</title>
-  <link rel="stylesheet" href="./admin-site.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Axoriin</title>
+  <meta name="theme-color" content="#071327" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/axoriin-32x32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/axoriin-192x192.png" />
+  <link rel="apple-touch-icon" href="/icons/axoriin-192x192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-0:#031021; --bg-1:#07172f; --bg-2:#0b1230;
+      --panel:rgba(9,18,39,.75); --panel-2:rgba(7,14,30,.92);
+      --line:rgba(110,190,255,.22); --line-strong:rgba(110,210,255,.42);
+      --text:#eef5ff; --muted:rgba(220,234,255,.72); --dim:rgba(184,203,229,.52);
+      --cyan:#45d7ff; --blue:#1b8cff; --violet:#7b68ff; --gold:#ffd98b;
+      --shadow: 0 28px 80px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.05);
+      --glass: blur(18px) saturate(150%);
+      --radius: 28px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family:"Rajdhani",system-ui,sans-serif; color:var(--text);
+      background:
+        radial-gradient(1200px 700px at -10% 10%, rgba(77,139,255,.18), transparent 55%),
+        radial-gradient(900px 600px at 120% 0%, rgba(109,78,255,.14), transparent 52%),
+        radial-gradient(800px 520px at 50% 120%, rgba(0,199,255,.10), transparent 46%),
+        linear-gradient(135deg, var(--bg-0), var(--bg-1) 48%, var(--bg-2));
+      overflow:auto;
+    }
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none;
+      background:
+        linear-gradient(rgba(97,182,255,.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(97,182,255,.035) 1px, transparent 1px);
+      background-size:90px 90px; opacity:.25;
+      mask-image:radial-gradient(circle at center, black 28%, transparent 90%);
+    }
+    .shell{min-height:100%; display:grid; place-items:center; padding:24px;}
+    .layout{
+      width:min(1440px, 100%); min-height:min(860px, calc(100vh - 48px));
+      display:grid; grid-template-columns: minmax(380px,1.1fr) minmax(360px,.76fr);
+      border-radius:34px; overflow:hidden; position:relative;
+      background:linear-gradient(180deg, rgba(5,14,28,.92), rgba(4,10,20,.86));
+      border:1px solid rgba(98,180,255,.18); box-shadow: var(--shadow);
+      backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
+    }
+    .layout::before{
+      content:""; position:absolute; inset:0; pointer-events:none;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(63,217,255,.10), transparent 26%),
+        radial-gradient(circle at 88% 84%, rgba(123,104,255,.10), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,.03), transparent 16%);
+    }
+    .hero{position:relative; padding:42px 42px 38px; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid rgba(98,180,255,.12); background:linear-gradient(180deg, rgba(6,20,40,.52), rgba(4,12,25,.22));}
+    .hero::before{content:""; position:absolute; inset:0; background:url('/assets/painel/galaxia/login-hero-galaxy.png') center/cover no-repeat; opacity:.68;}
+    .hero::after{content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(5,14,30,.84) 0%, rgba(5,14,30,.68) 48%, rgba(5,14,30,.35) 100%), linear-gradient(180deg, rgba(5,14,30,.20), rgba(5,14,30,.68));}
+    .hero > *{position:relative; z-index:1}
+    .brand-block{display:flex; align-items:flex-start; gap:14px; margin-bottom:12px;}
+    .brand-mark{width:80px; height:80px; object-fit:contain; filter:drop-shadow(0 0 26px rgba(69,215,255,.35));}
+    .brand-copy h1{margin:0; font-family:"Orbitron",system-ui,sans-serif; font-size:clamp(2.9rem, 5vw, 4.9rem); line-height:.95; font-weight:800; letter-spacing:.01em; background:linear-gradient(135deg,#ffffff 10%, #7ce7ff 40%, #7f8fff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;}
+    .brand-copy .sys{margin-top:8px; font-family:"Orbitron",system-ui,sans-serif; letter-spacing:.34em; text-transform:uppercase; color:rgba(239,248,255,.92); font-size:1.15rem;}
+    .hero-grid{display:grid; grid-template-columns:1fr auto; gap:22px; align-items:end;}
+    .hero-main h2{margin:0 0 12px; font-size:clamp(2.7rem, 4vw, 4.8rem); line-height:.98; font-weight:700; text-wrap:balance;}
+    .hero-main h2 .accent{color:#6fe0ff}
+    .hero-main p{margin:0; max-width:640px; font-size:1.24rem; line-height:1.45; color:var(--muted)}
+    .pill-list{display:flex; flex-wrap:wrap; gap:12px; margin-top:24px}
+    .pill{padding:10px 14px; border-radius:999px; border:1px solid rgba(112,196,255,.20); background:rgba(7,20,39,.46); color:#f6fbff; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); font-size:1rem; font-weight:600}
+    .hero-icons{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-top:28px; max-width:620px}
+    .hero-icon{display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid rgba(110,190,255,.16); border-radius:18px; background:rgba(8,18,39,.48); backdrop-filter: blur(12px);}
+    .hero-icon .bubble{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.20), transparent 32%), linear-gradient(145deg, rgba(27,140,255,.42), rgba(123,104,255,.28)); box-shadow:0 0 18px rgba(69,215,255,.18)}
+    .hero-icon span{font-size:1rem; font-weight:600; color:var(--muted)}
+    .panel{position:relative; padding:36px 32px; display:flex; flex-direction:column; justify-content:center; background:linear-gradient(180deg, rgba(4,12,26,.88), rgba(3,9,19,.94));}
+    .panel::before{content:""; position:absolute; inset:0; background:radial-gradient(circle at 50% 22%, rgba(70,210,255,.08), transparent 26%), radial-gradient(circle at 50% 115%, rgba(125,104,255,.09), transparent 36%); pointer-events:none}
+    .panel-box{position:relative; z-index:1; width:min(100%, 430px); margin:0 auto; padding:28px 28px 24px; border-radius:28px; border:1px solid rgba(110,190,255,.18); background:linear-gradient(180deg, rgba(10,22,45,.78), rgba(7,15,31,.92)); box-shadow:0 24px 60px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.04); backdrop-filter: blur(18px);}
+    .badge{display:inline-flex; align-items:center; gap:10px; padding:8px 12px; border-radius:999px; border:1px solid rgba(170,200,240,.20); background:rgba(8,18,34,.50); color:rgba(235,245,255,.78); font-size:.95rem; margin-bottom:18px}
+    .dot{width:8px;height:8px;border-radius:50%; background:linear-gradient(135deg,var(--cyan), var(--violet)); box-shadow:0 0 10px rgba(69,215,255,.38)}
+    .panel-logo{text-align:center; margin-bottom:12px}
+    .panel-logo img{width:92px; height:92px; object-fit:contain; filter:drop-shadow(0 0 20px rgba(69,215,255,.35))}
+    .brand{font-family:"Orbitron",system-ui,sans-serif; font-size:1.55rem; text-align:center; margin:0 0 4px}
+    .brand span{background:linear-gradient(135deg, var(--cyan), #9fdfff 42%, var(--violet)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+    .sysline{font-family:"Orbitron",system-ui,sans-serif; text-align:center; text-transform:uppercase; letter-spacing:.34em; color:rgba(230,240,255,.88); font-size:.78rem; margin:0 0 14px}
+    .login-title{margin:0; font-size:2.35rem; line-height:1; font-weight:700; color:#f7fbff}
+    .subtitle{margin:10px 0 8px; font-size:1.02rem; color:var(--muted); line-height:1.35; text-align:left}
+    .subtitle strong{color:#fff}
+    .portal-hint{margin:0 0 18px; font-size:.98rem; color:var(--dim); text-align:left}
+    form{display:grid; gap:14px; margin-top:8px}
+    .erro, .notice-ok, .tenant-box, .verify-box{display:none}
+    .tenant-list{display:grid; gap:10px; margin-top:12px}
+    .tenant-btn{width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:56px; padding:14px 16px; border-radius:16px; border:1px solid rgba(110,190,255,.18); background:rgba(6,18,36,.84); color:#f3fbff; font-family:inherit; font-size:1rem; text-align:left; cursor:pointer}
+    .tenant-btn .tenant-meta{color:var(--muted); font-size:.92rem}
+    .spinner{display:inline-block; width:16px; height:16px; border:2px solid rgba(7,19,33,.35); border-top-color:#071321; border-radius:50%; animation:spin .8s linear infinite; margin-right:10px; vertical-align:-3px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .erro.is-show, .notice-ok.is-show, .tenant-box.is-show, .verify-box.is-show{display:block}
+    .erro, .notice-ok, .tenant-box, .verify-box{border-radius:18px; padding:14px 15px; text-align:left; border:1px solid rgba(110,190,255,.16)}
+    .erro{background:rgba(255,70,90,.10); color:#ffd8dd; border-color:rgba(255,70,90,.22)}
+    .notice-ok{background:rgba(64,190,120,.10); color:#d4ffe7; border-color:rgba(64,190,120,.22)}
+    .tenant-box, .verify-box{background:rgba(255,255,255,.04)}
+    .tenant-box .title, .verify-box .title{font-weight:700; margin-bottom:4px; color:#fff}
+    .tenant-box .desc, .verify-box .desc{color:var(--muted)}
+    .field{position:relative; display:grid; gap:8px}
+    .label{font-size:1rem; font-weight:600; color:#dfeeff}
+    input{width:100%; min-height:56px; padding:0 16px; border-radius:16px; border:1px solid rgba(110,190,255,.18); outline:none; background:rgba(6,18,36,.82); color:#f3fbff; font-family:inherit; font-size:1rem; box-shadow: inset 0 1px 0 rgba(255,255,255,.03)}
+    input::placeholder{color:rgba(201,220,244,.46)}
+    input:focus{border-color:rgba(69,215,255,.50); box-shadow:0 0 0 4px rgba(69,215,255,.12), inset 0 1px 0 rgba(255,255,255,.03)}
+    .pass-tools{position:absolute; right:10px; bottom:10px}
+    .toggle-pass{min-height:38px; padding:0 14px; border-radius:14px; border:1px solid rgba(110,190,255,.18); background:rgba(11,20,38,.74); color:#dcedff; font-family:inherit; font-weight:700; cursor:pointer}
+    .actions{display:grid; gap:10px; margin-top:4px}
+    #btn-entrar,.btn-ghost, .btn-portal{min-height:54px; border-radius:16px; border:1px solid rgba(110,190,255,.22); font-family:inherit; font-size:1.05rem; font-weight:700; cursor:pointer; text-decoration:none; display:inline-grid; place-items:center}
+    #btn-entrar{background:linear-gradient(135deg, #1ab5ff, #2c86ff 46%, #7b68ff); color:#071321; box-shadow:0 0 24px rgba(42,149,255,.20)}
+    .btn-ghost, .btn-portal{background:rgba(8,18,37,.66); color:#ebf6ff}
+    .links-row{display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; font-size:.96rem; color:var(--muted)}
+    .remember{display:flex; align-items:center; gap:8px}
+    .remember input{width:18px;height:18px;min-height:18px}
+    .links-row a, .btn-sub a{color:#74deff; text-decoration:none; font-weight:700}
+    .btn-sub{margin-top:4px; text-align:center; color:var(--muted); font-size:.98rem}
+    .portal-access{margin-top:8px}
+    .foot-copy{margin-top:18px; text-align:center; color:rgba(214,229,255,.58); font-size:.86rem; letter-spacing:.12em; text-transform:uppercase}
+    @media (max-width: 1100px){
+      .layout{grid-template-columns:1fr; min-height:auto}
+      .hero{min-height:520px; border-right:0; border-bottom:1px solid rgba(98,180,255,.12)}
+      .hero-grid{grid-template-columns:1fr}
+      .hero-icons{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width: 700px){
+      .shell{padding:12px}
+      .layout{border-radius:24px}
+      .hero{padding:24px 22px 22px; min-height:420px}
+      .brand-block{align-items:center}
+      .brand-mark{width:58px;height:58px}
+      .brand-copy h1{font-size:2.7rem}
+      .brand-copy .sys{font-size:.86rem; letter-spacing:.18em}
+      .hero-main h2{font-size:2.15rem}
+      .hero-main p{font-size:1.02rem}
+      .hero-icons{grid-template-columns:1fr}
+      .panel{padding:18px 14px}
+      .panel-box{padding:22px 18px 20px; border-radius:22px}
+      .login-title{font-size:2rem}
+      .links-row{grid-template-columns:1fr}
+    }
+  </style>
 </head>
-<body class="login-body">
+<body>
+  <div class="shell">
+    <div class="layout">
+      <section class="hero" aria-hidden="true">
+        <div>
+          <div class="brand-block">
+            <img class="brand-mark" src="/assets/painel/galaxia/orbital-core.png" alt="">
+            <div class="brand-copy">
+              <h1>Axoriin</h1>
+              <div class="sys">Sistema Escolar</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-grid">
+          <div class="hero-main">
+            <h2>Conhecimento que conecta <span class="accent">pessoas e futuros.</span></h2>
+            <p>Gestão, aprendizagem e tecnologia em um ambiente pensado para a comunidade escolar, com identidade própria, navegação moderna e foco educacional.</p>
+            <div class="pill-list">
+              <div class="pill">Tecnologia</div>
+              <div class="pill">Educação</div>
+              <div class="pill">Gestão</div>
+              <div class="pill">Resultados</div>
+            </div>
+            <div class="hero-icons">
+              <div class="hero-icon"><div class="bubble">📘</div><span>Aprendizagem</span></div>
+              <div class="hero-icon"><div class="bubble">🌐</div><span>Integração</span></div>
+              <div class="hero-icon"><div class="bubble">📊</div><span>Indicadores</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-box">
+          <div class="badge"><span class="dot"></span> Ambiente seguro • Acesso institucional</div>
+          <div class="panel-logo"><img src="/assets/painel/galaxia/orbital-core.png" alt="Axoriin"></div>
+          <div class="brand"><span>Axoriin</span></div>
+          <div class="sysline">Sistema Escolar</div>
+          <h2 class="login-title">Bem-vindo(a)</h2>
+          <div class="subtitle">Entre para acessar o sistema da instituição <strong id="nome-colegio">Instituição</strong>.</div>
+          <div class="portal-hint">Professores, monitores e administradores entram por aqui.</div>
+          <form id="login-form">
+            <div class="erro" id="erro"></div>
+            <div class="notice-ok" id="ok"></div>
+            <div class="tenant-box" id="tenant-box">
+              <div class="title">Selecione sua instituição</div>
+              <div class="desc">Seu e-mail está cadastrado em mais de uma instituição. Escolha abaixo para entrar no ambiente correto.</div>
+              <div class="tenant-list" id="tenant-list"></div>
+            </div>
+            <div class="verify-box" id="verify-box">
+              <div class="title">Conta não confirmada</div>
+              <div class="desc">Verifique sua caixa de e-mail (e o spam). Se quiser, clique abaixo para reenviar o link.</div>
+              <button type="button" class="btn-ghost" id="btn-reenviar">Reenviar confirmação</button>
+            </div>
+            <div class="field">
+              <label class="label" for="email">Usuário</label>
+              <input type="email" id="email" placeholder="Digite seu e-mail" required autocomplete="username" autofocus />
+            </div>
+            <div class="field">
+              <label class="label" for="senha">Senha</label>
+              <input type="password" id="senha" placeholder="Digite sua senha" required autocomplete="current-password" />
+              <div class="pass-tools"><button type="button" class="toggle-pass" id="toggle-pass" aria-label="Mostrar/ocultar senha">Mostrar</button></div>
+            </div>
+            <div class="links-row">
+              <label class="remember"><input type="checkbox" checked disabled /> Lembrar de mim</label>
+              <a href="/recuperar-senha-professor.html" id="link-recuperar">Esqueceu a senha?</a>
+            </div>
+            <div class="actions"><button type="submit" id="btn-entrar">Entrar</button></div>
+            <div class="portal-access"><a class="btn-portal" id="btn-portal-aluno" href="/login-aluno.html">Portal do aluno</a></div>
+            <div class="btn-sub">Ainda não tem conta? <a href="/cadastro-usuario.html" id="link-cadastro">Cadastre-se</a></div>
+            <div class="foot-copy">Gestão • Aprendizagem • Resultados</div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+<script>
+    if ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') && !sessionStorage.getItem('dev_sw_cleaned')) {
+      sessionStorage.setItem('dev_sw_cleaned', '1');
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
+      }
+      if (window.caches) {
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      }
+      console.log('[DEV] SW e caches limpos (uma vez por sessão) para localhost');
+    }
 
-  <main class="login-card">
-    <div class="login-seal">⚜</div>
+    const API_BASE = (location.port === '5173') ? 'http://localhost:5000' : '';
+    const DEFAULT_TENANT = 'cmdpii';
+    const TENANT_STORAGE_KEY = 'smartclass_tenant';
+    const TENANT_STORAGE_KEY_OLD = 'axoriin_tenant';
 
-    <h1>CMS do Site</h1>
-    <p>Acesso administrativo do site institucional.</p>
+    const erroDiv = document.getElementById('erro');
+    const okBox = document.getElementById('ok');
+    const verifyBox = document.getElementById('verify-box');
+    const btnReenviar = document.getElementById('btn-reenviar');
+    const tenantBox = document.getElementById('tenant-box');
+    const tenantList = document.getElementById('tenant-list');
+    const qs = new URLSearchParams(location.search);
 
-    <form id="login-form">
-      <label>Email ou login</label>
-      <input id="login" type="text" required placeholder="Digite seu login">
+    function getTenantFromUrl() {
+      return (qs.get('t') || qs.get('tenant') || '').trim();
+    }
 
-      <label>Senha</label>
-      <input id="senha" type="password" required placeholder="Digite sua senha">
+    function getTenantFromStorage() {
+      const current = (localStorage.getItem(TENANT_STORAGE_KEY) || '').trim();
+      if (current) return current;
 
-      <button class="btn primary" type="submit">Entrar</button>
-    </form>
+      const legacy = (localStorage.getItem(TENANT_STORAGE_KEY_OLD) || '').trim();
+      if (legacy) {
+        localStorage.setItem(TENANT_STORAGE_KEY, legacy);
+        return legacy;
+      }
 
-    <small id="login-msg"></small>
-  </main>
+      return '';
+    }
 
-  <script>
-    const form = document.getElementById('login-form');
-    const msg = document.getElementById('login-msg');
+    function setTenantStorage(t) {
+      const value = String(t || '').trim();
+      if (!value) return;
+      localStorage.setItem(TENANT_STORAGE_KEY, value);
+      localStorage.setItem(TENANT_STORAGE_KEY_OLD, value);
+    }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    function getResolvedTenant() {
+      const tUrl = getTenantFromUrl();
+      const tLs = getTenantFromStorage();
+      const finalTenant = tUrl || tLs || DEFAULT_TENANT;
+      setTenantStorage(finalTenant);
+      return finalTenant;
+    }
 
-      msg.textContent = 'Entrando...';
+    function ensureTenantInUrl() {
+      const finalTenant = getResolvedTenant();
+      const tUrl = getTenantFromUrl();
+
+      if (!tUrl || tUrl !== finalTenant) {
+        const u = new URL(location.href);
+        u.searchParams.set('t', finalTenant);
+        location.replace(u.toString());
+        return finalTenant;
+      }
+
+      return finalTenant;
+    }
+
+    const TENANT = ensureTenantInUrl();
+
+    (function () {
+      const a = document.getElementById('link-cadastro');
+      if (!a) return;
+      a.href = `/cadastro-usuario.html?t=${encodeURIComponent(TENANT)}`;
+    })();
+
+    (function () {
+      const a = document.getElementById('btn-portal-aluno');
+      if (!a) return;
+      a.href = `/login-aluno.html?t=${encodeURIComponent(TENANT)}`;
+    })();
+
+    (async () => {
+      const el = document.getElementById('nome-colegio');
+      if (!el) return;
+
+      const key = `axoriin_nome_colegio__${TENANT}`;
+      const cached = localStorage.getItem(key);
+      if (cached && cached.trim().length > 2) {
+        el.textContent = cached.trim();
+      }
 
       try {
-        const login = document.getElementById('login').value.trim();
-        const senha = document.getElementById('senha').value;
+        const url = `${API_BASE}/public/tenant?t=${encodeURIComponent(TENANT)}`;
+        const r = await fetch(url, { cache: 'no-store', credentials: 'include' });
+        if (!r.ok) {
+          if (!cached) el.textContent = 'Instituição';
+          return;
+        }
 
-        const res = await fetch('/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ login, email: login, senha })
+        const data = await r.json().catch(() => ({}));
+        const nome =
+          data?.nomeColegio ||
+          data?.nome_escola ||
+          data?.nome ||
+          data?.instituicao?.nome ||
+          'Instituição';
+
+        if (nome && String(nome).trim().length > 2) {
+          const nomeFinal = String(nome).trim();
+          el.textContent = nomeFinal;
+          localStorage.setItem(key, nomeFinal);
+        } else if (!cached) {
+          el.textContent = 'Instituição';
+        }
+      } catch {
+        if (!cached) el.textContent = 'Instituição';
+      }
+    })();
+
+    (function showVerifiedNotice() {
+      const verified = (qs.get('verified') === '1') || (qs.get('confirmado') === '1');
+      if (!verified) return;
+
+      okBox.textContent = 'E-mail confirmado! Você já pode entrar.';
+      okBox.style.display = 'block';
+
+      try {
+        const u = new URL(location.href);
+        u.searchParams.delete('verified');
+        u.searchParams.delete('confirmado');
+        history.replaceState({}, '', u.toString());
+      } catch {}
+    })();
+
+    const senhaInput = document.getElementById('senha');
+    const togglePass = document.getElementById('toggle-pass');
+    togglePass.addEventListener('click', () => {
+      const isPass = senhaInput.type === 'password';
+      senhaInput.type = isPass ? 'text' : 'password';
+      togglePass.textContent = isPass ? 'Ocultar' : 'Mostrar';
+      senhaInput.focus();
+    });
+
+    const btnEntrar = document.getElementById('btn-entrar');
+    const setLoading = (on) => {
+      btnEntrar.disabled = !!on;
+      btnEntrar.innerHTML = on ? '<span class="spinner"></span>Entrando...' : 'Entrar';
+    };
+
+    function clearMessages() {
+      erroDiv.textContent = '';
+      okBox.style.display = 'none';
+      verifyBox.style.display = 'none';
+      tenantBox.style.display = 'none';
+      tenantList.innerHTML = '';
+    }
+
+    function showTenantChoices(instituicoes) {
+      tenantList.innerHTML = '';
+
+      (instituicoes || []).forEach(inst => {
+        const tenant = inst?.tenant || inst?.slug || inst?.id;
+        const nome = inst?.nome || 'Instituição';
+        const meta = [inst?.sigla, inst?.slug].filter(Boolean).join(' • ');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tenant-btn';
+        btn.innerHTML = `
+          <div>
+            <div>${escapeHtml(nome)}</div>
+            ${meta ? `<div class="tenant-meta">${escapeHtml(meta)}</div>` : `<div class="tenant-meta">Selecionar</div>`}
+          </div>
+          <div class="tenant-meta">→</div>
+        `;
+
+        btn.addEventListener('click', () => {
+          if (!tenant) return;
+          setTenantStorage(tenant);
+
+          const u = new URL(location.href);
+          u.searchParams.set('t', tenant);
+          location.assign(u.toString());
         });
 
-        const data = await res.json();
+        tenantList.appendChild(btn);
+      });
 
-        const token =
-          data.token ||
-          data.accessToken ||
-          data.jwt ||
-          data?.usuario?.token;
+      tenantBox.style.display = 'block';
+    }
 
-        if (!res.ok || !token) {
-          msg.textContent = data.mensagem || data.erro || 'Login inválido.';
+    function escapeHtml(s) {
+      return String(s || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    btnReenviar.addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      clearMessages();
+
+      if (!email) {
+        erroDiv.textContent = 'Informe seu e-mail para reenviar a confirmação.';
+        return;
+      }
+
+      btnReenviar.disabled = true;
+      btnReenviar.textContent = 'Reenviando...';
+
+      try {
+        const body = { email, t: TENANT, tenantSlug: TENANT };
+
+        const r = await fetch(`${API_BASE}/auth/reenviar-confirmacao?t=${encodeURIComponent(TENANT)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+
+        const data = await r.json().catch(()=> ({}));
+        if (!r.ok) {
+          erroDiv.textContent = data?.mensagem || 'Não foi possível reenviar.';
+        } else {
+          const nomeInst =
+            data?.instituicao?.nome ||
+            data?.nomeColegio ||
+            'sua instituição';
+
+          okBox.textContent = data?.mensagem || `Link reenviado! Verifique seu e-mail (${nomeInst}).`;
+          okBox.style.display = 'block';
+        }
+      } catch (e) {
+        erroDiv.textContent = 'Erro de conexão ao reenviar.';
+      } finally {
+        btnReenviar.disabled = false;
+        btnReenviar.textContent = 'Reenviar confirmação';
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      clearMessages();
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+
+      setLoading(true);
+
+      try {
+        const body = { email, senha, t: TENANT, tenantSlug: TENANT };
+
+        const resposta = await fetch(`${API_BASE}/auth/login?t=${encodeURIComponent(TENANT)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+
+        let data = {};
+        try { data = await resposta.json(); } catch {}
+
+        if (!resposta.ok) {
+          if (data?.code === 'EMAIL_NOT_VERIFIED') {
+            verifyBox.style.display = 'block';
+            setLoading(false);
+            return;
+          }
+
+          if (data?.code === 'AMBIGUOUS_TENANT') {
+            showTenantChoices(data?.instituicoes || []);
+            erroDiv.textContent = '';
+            setLoading(false);
+            return;
+          }
+
+          erroDiv.textContent = data?.mensagem || 'Erro ao fazer login.';
+          setLoading(false);
           return;
         }
 
-        const usuario = data.usuario || data.user || {};
+        const tenantRetornado =
+          data?.tenant ||
+          data?.instituicao?.slug ||
+          TENANT;
 
-        const perfil = String(
-          usuario.tipo || usuario.perfil || usuario.role || ''
-        ).toLowerCase();
+        setTenantStorage(tenantRetornado);
 
-        if (!perfil.includes('admin')) {
-          msg.textContent = 'Acesso permitido apenas para administradores.';
+        const ping = await fetch(`${API_BASE}/auth/usuario-logado`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+
+        if (!ping.ok) {
+          erroDiv.textContent = 'Falha ao validar sessão após login.';
+          setLoading(false);
           return;
         }
 
-        localStorage.setItem('site_cms_token', token);
-        localStorage.setItem('site_cms_usuario', JSON.stringify(usuario));
+        const next = data.redirecionar || '/painel.html';
+        window.location.href = `/bem-vindo.html?next=${encodeURIComponent(next)}&t=${encodeURIComponent(tenantRetornado)}`;
 
-        window.location.href = '/admin-site/painel-site.html';
       } catch (err) {
         console.error(err);
-        msg.textContent = 'Erro ao tentar entrar.';
+        erroDiv.textContent = 'Erro de conexão com o servidor.';
+        setLoading(false);
       }
     });
   </script>
-
+  <script src="/update-client.js"></script>
 </body>
 </html>

@@ -935,3 +935,39 @@ html[data-ax-theme="tactical"] .window-card::after{
 html[data-ax-theme="tactical"] .titulo{
   text-shadow:0 0 18px rgba(42,214,161,.10), 0 8px 30px rgba(0,0,0,.28) !important;
 }
+
+
+/* ==========================================================
+   AXORIIN GALAXIA - tema adicional isolado v2.2.0
+   Este bloco apenas fornece variaveis. O layout Galaxy vive
+   em axoriin-galaxia-v2.css e nao altera os temas existentes.
+   ========================================================== */
+html[data-ax-theme="galaxy"]{
+  --bg-deep:#030a1a;
+  --bg-mid:#071735;
+  --bg-soft:#0b1e42;
+  --glass-bg:rgba(7,18,39,.72);
+  --glass-bg-2:rgba(5,13,29,.92);
+  --glass-border:rgba(103,194,255,.18);
+  --glass-border-strong:rgba(110,222,255,.38);
+  --glass-highlight:rgba(255,255,255,.09);
+  --glass-shadow:0 18px 48px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.04);
+  --hud-cyan:#68e4ff;
+  --hud-cyan-2:#2b9dff;
+  --hud-cyan-soft:rgba(104,228,255,.12);
+  --hud-cyan-line:rgba(104,228,255,.26);
+  --hud-cyan-dim:rgba(104,228,255,.08);
+  --text-main:#f2f7ff;
+  --text-soft:rgba(222,235,255,.78);
+  --text-dim:rgba(176,199,229,.58);
+  --ax-accent:#68e4ff;
+  --ax-accent-rgb:104,228,255;
+  --ax-accent-2:#7d73ff;
+  --ax-accent-2-rgb:125,115,255;
+  --ax-panel-bg:rgba(7,17,37,.76);
+  --ax-panel-bg-strong:rgba(4,11,27,.94);
+  --ax-panel-border:rgba(102,193,255,.18);
+  --ax-panel-border-strong:rgba(112,222,255,.38);
+  --ax-shadow:0 20px 52px rgba(0,0,0,.42);
+  --ax-icon-filter:none;
+}

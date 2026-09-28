@@ -1,0 +1,54 @@
+/* Axoriin Desktop Logout v2.6.3 — controle global do painel, independente do tema. */
+#axDesktopLogout{
+  position:fixed;
+  z-index:2147482000;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  height:38px;
+  min-width:82px;
+  padding:0 14px;
+  border:1px solid rgba(148,181,217,.22);
+  border-radius:999px;
+  background:rgba(4,14,30,.74);
+  color:#eaf4ff;
+  box-shadow:0 10px 28px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter:blur(14px) saturate(1.12);
+  -webkit-backdrop-filter:blur(14px) saturate(1.12);
+  font:700 12px/1 Inter,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:.02em;
+  cursor:pointer;
+  opacity:0;
+  transform:translateY(-2px);
+  transition:opacity .22s ease,transform .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease,color .22s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+#axDesktopLogout.ax-desktop-logout-ready{opacity:1;transform:none}
+#axDesktopLogout .ax-logout-icon{display:grid;place-items:center;width:16px;height:16px;flex:0 0 16px}
+#axDesktopLogout .ax-logout-icon svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#axDesktopLogout:hover,
+#axDesktopLogout:focus-visible{
+  color:#fff;
+  border-color:rgba(255,112,125,.48);
+  background:rgba(58,17,29,.82);
+  box-shadow:0 12px 30px rgba(0,0,0,.28),0 0 0 3px rgba(255,96,112,.08),inset 0 1px 0 rgba(255,255,255,.06);
+  outline:none;
+}
+#axDesktopLogout:active{transform:translateY(1px) scale(.985)}
+
+/* Galaxy: mantém a linguagem glass/cósmica, sem parecer um terceiro tema. */
+html[data-ax-theme="galaxy"] #axDesktopLogout{
+  border-color:rgba(111,208,255,.23);
+  background:linear-gradient(145deg,rgba(5,22,49,.76),rgba(9,13,38,.78));
+  box-shadow:0 10px 30px rgba(0,0,0,.24),0 0 18px rgba(69,179,255,.055),inset 0 1px 0 rgba(255,255,255,.05);
+}
+html[data-ax-theme="galaxy"] #axDesktopLogout:hover,
+html[data-ax-theme="galaxy"] #axDesktopLogout:focus-visible{
+  border-color:rgba(255,118,145,.48);
+  background:linear-gradient(145deg,rgba(56,18,39,.84),rgba(23,13,39,.86));
+  box-shadow:0 12px 32px rgba(0,0,0,.28),0 0 20px rgba(255,92,137,.09),inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+@media(max-width:899px){#axDesktopLogout{display:none!important}}
+@media(prefers-reduced-motion:reduce){#axDesktopLogout{transition:none!important}}
