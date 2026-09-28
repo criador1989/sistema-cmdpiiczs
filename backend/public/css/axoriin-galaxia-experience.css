@@ -1,0 +1,143 @@
+/* Axoriin Living Galaxy v2.4.0 — camada visual isolada. Não altera dados, permissões ou APIs. */
+.ax-experience-canvas,.ax-gx-living-bg{display:none}
+html[data-ax-theme="galaxy"] .ax-experience-canvas{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:.54;mix-blend-mode:screen;transition:opacity 1.5s ease}
+html[data-ax-theme="galaxy"].ax-gx-idle .ax-experience-canvas{opacity:.80}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg{display:block;position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-12%;height:54vh;background:url('/assets/painel/galaxia/living/energy-flow.png') center bottom/contain no-repeat;opacity:.12;mix-blend-mode:screen;transform:translate3d(calc(var(--gx-px,0)*-10px),calc(var(--gx-py,0)*-6px),0);transition:transform .35s ease-out}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg::after{content:"";position:absolute;right:-12%;top:6%;width:min(54vw,860px);aspect-ratio:4/3;background:url('/assets/painel/galaxia/living/nebula.png') center/contain no-repeat;opacity:.10;mix-blend-mode:screen;filter:blur(.2px);transform:translate3d(calc(var(--gx-px,0)*18px),calc(var(--gx-py,0)*12px),0);transition:transform .35s ease-out}
+html[data-ax-theme="galaxy"] .page{position:relative;z-index:3}
+
+/* Hero vivo: mantém o conteúdo existente e adiciona profundidade. */
+html[data-ax-theme="galaxy"] .ax-galaxy-hero{isolation:isolate;transform:translate3d(calc(var(--gx-px,0)*2px),calc(var(--gx-py,0)*1.5px),0);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero::before{content:"";position:absolute;inset:-16% -8% -20% 42%;z-index:0;background:url('/assets/painel/galaxia/living/orbital-stream.png') center/contain no-repeat;opacity:.13;mix-blend-mode:screen;pointer-events:none;animation:gxDrift 10s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero::after{content:"";position:absolute;right:3%;top:50%;width:min(31vw,360px);aspect-ratio:1;z-index:1;background:url('/assets/painel/galaxia/living/portal-ring.png') center/contain no-repeat;opacity:.28;mix-blend-mode:screen;pointer-events:none;transform:translateY(-50%);animation:gxSpinSlow 24s linear infinite}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero-copy,html[data-ax-theme="galaxy"] .ax-galaxy-orbit{position:relative;z-index:3}
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit::before{content:"";position:absolute;inset:8%;background:url('/assets/painel/galaxia/living/energy-burst.png') center/contain no-repeat;opacity:.18;mix-blend-mode:screen;animation:gxPulse 4.5s ease-in-out infinite;pointer-events:none}
+
+/* Cards: profundidade holográfica bem sutil. */
+html[data-ax-theme="galaxy"] #menuWindows .window-card{transform-style:preserve-3d;will-change:transform,box-shadow;transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease,border-color .28s ease}
+html[data-ax-theme="galaxy"] #menuWindows .window-card.ax-gx-tilt{transform:perspective(900px) rotateX(var(--gx-tilt-x,0deg)) rotateY(var(--gx-tilt-y,0deg)) translateY(-2px);border-color:rgba(111,222,255,.34)!important;box-shadow:0 22px 48px rgba(0,0,0,.34),0 0 26px rgba(42,176,255,.10),inset 0 1px 0 rgba(255,255,255,.05)!important}
+html[data-ax-theme="galaxy"] #menuWindows .window-card.ax-gx-tilt::after{content:""!important;display:block!important;position:absolute!important;inset:0!important;pointer-events:none!important;border-radius:inherit!important;background:radial-gradient(circle at calc((var(--gx-local-x,0)*100%) + 50%) calc((var(--gx-local-y,0)*100%) + 50%),rgba(116,229,255,.16),transparent 42%)!important;opacity:1!important;z-index:5!important}
+html[data-ax-theme="galaxy"] #menuWindows .window-card.ax-gx-launch{animation:gxLaunch .42s ease-out}
+
+/* Métricas: onda curta somente quando o texto original muda. */
+html[data-ax-theme="galaxy"] .metric.ax-gx-data-pulse{animation:gxMetricPulse .62s ease-out}
+html[data-ax-theme="galaxy"] .metric.ax-gx-data-pulse::after{content:"";position:absolute;inset:-35%;pointer-events:none;background:linear-gradient(108deg,transparent 42%,rgba(132,238,255,.20) 49%,rgba(255,255,255,.36) 50%,rgba(129,185,255,.16) 52%,transparent 59%);transform:translateX(-70%) rotate(3deg);animation:gxSweep .62s ease-out}
+
+/* Menu radial: constelação institucional. */
+html[data-ax-theme="galaxy"] .ax-radial-stage::before{content:"";position:absolute;left:0;top:0;width:460px;height:460px;transform:translate(-50%,-50%) scale(.60);background:url('/assets/painel/galaxia/living/stellar-mandala.png') center/contain no-repeat;opacity:0;pointer-events:none;mix-blend-mode:screen;transition:opacity .35s ease,transform .45s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 28px rgba(64,186,255,.18))}
+html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-stage::before{opacity:.16;transform:translate(-50%,-50%) scale(1)}
+html[data-ax-theme="galaxy"] .ax-radial-fab{isolation:isolate;overflow:visible}
+html[data-ax-theme="galaxy"] .ax-radial-fab::before{content:"";position:absolute;inset:-34px;z-index:-1;background:url('/assets/painel/galaxia/living/portal-ring.png') center/contain no-repeat;opacity:.54;mix-blend-mode:screen;animation:gxSpinOrbit 18s linear infinite;pointer-events:none}
+html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-item{filter:drop-shadow(0 0 16px rgba(67,205,255,.28));animation:gxNodeAwake .46s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--gx-i,0)*42ms)}
+html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-path{filter:drop-shadow(0 0 5px rgba(79,218,255,.50));animation:gxPathPulse 2.8s ease-in-out infinite}
+
+/* Micro ambiente em repouso. */
+html[data-ax-theme="galaxy"].ax-gx-idle .ax-galaxy-orbit img{filter:drop-shadow(0 0 34px rgba(95,221,255,.40))}
+html[data-ax-theme="galaxy"].ax-gx-idle .ax-gx-living-bg::after{opacity:.15}
+
+@keyframes gxSpinSlow{to{transform:translateY(-50%) rotate(360deg)}}
+@keyframes gxSpinOrbit{to{transform:rotate(360deg)}}
+@keyframes gxDrift{to{transform:translate3d(10px,-5px,0) scale(1.025)}}
+@keyframes gxPulse{50%{opacity:.34;transform:scale(1.07)}}
+@keyframes gxLaunch{0%{transform:scale(1)}40%{transform:scale(1.018);box-shadow:0 0 34px rgba(84,216,255,.22)}100%{transform:scale(1)}}
+@keyframes gxMetricPulse{0%{box-shadow:inherit}42%{box-shadow:0 0 34px rgba(85,213,255,.20),inset 0 0 28px rgba(85,213,255,.06)}100%{box-shadow:inherit}}
+@keyframes gxSweep{to{transform:translateX(85%) rotate(3deg)}}
+@keyframes gxNodeAwake{from{opacity:.25;filter:blur(4px) drop-shadow(0 0 0 transparent)}to{opacity:1;filter:blur(0) drop-shadow(0 0 16px rgba(67,205,255,.28))}}
+@keyframes gxPathPulse{50%{opacity:.62}}
+
+@media(max-width:760px){html[data-ax-theme="galaxy"] .ax-gx-living-bg::before{height:38vh;opacity:.09}html[data-ax-theme="galaxy"] .ax-gx-living-bg::after{width:82vw;opacity:.08}html[data-ax-theme="galaxy"] .ax-galaxy-hero::after{width:52vw;right:-7%;opacity:.20}html[data-ax-theme="galaxy"] .ax-radial-stage::before{width:360px;height:360px}}
+@media(prefers-reduced-motion:reduce){html[data-ax-theme="galaxy"] .ax-experience-canvas{display:none!important}html[data-ax-theme="galaxy"] .ax-gx-living-bg::before,html[data-ax-theme="galaxy"] .ax-gx-living-bg::after,html[data-ax-theme="galaxy"] .ax-galaxy-hero,html[data-ax-theme="galaxy"] #menuWindows .window-card{transform:none!important;transition:none!important}html[data-ax-theme="galaxy"] .ax-galaxy-hero::before,html[data-ax-theme="galaxy"] .ax-galaxy-hero::after,html[data-ax-theme="galaxy"] .ax-radial-fab::before{animation:none!important}}
+
+/* v2.6.0 — chegada cinematográfica sem flash */
+.ax-gx-arrival-curtain{position:fixed;inset:0;z-index:2147483000;pointer-events:none;background:radial-gradient(circle at 50% 38%,#0a1d42 0,#041126 42%,#020817 78%);opacity:1;transition:opacity 1.15s cubic-bezier(.2,.7,.2,1)}
+.ax-gx-arrival-curtain::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,rgba(92,206,255,.12),transparent 34%);opacity:.7}
+.ax-gx-arrival-curtain.ax-gx-arrival-out{opacity:0}
+@media(prefers-reduced-motion:reduce){.ax-gx-arrival-curtain{transition-duration:.45s}}
+
+
+/* v2.6.0 — motion premium: profundidade, névoa viva e realce sutil */
+html[data-ax-theme="galaxy"] .ax-gx-living-bg{perspective:1200px}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg::before{animation:gxFlowFloat 14s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg::after{animation:gxNebulaFloat 17s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-gx-atmo{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen}
+html[data-ax-theme="galaxy"] .ax-gx-atmo-a{background:radial-gradient(circle at 74% 18%,rgba(137,109,255,.12),transparent 0 22%),radial-gradient(circle at 22% 72%,rgba(88,206,255,.10),transparent 0 18%);opacity:.32;animation:gxAtmoShift 16s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-gx-atmo-b{background:radial-gradient(circle at 72% 56%,rgba(112,234,255,.08),transparent 0 14%),radial-gradient(circle at 58% 36%,rgba(115,143,255,.10),transparent 0 20%);opacity:.22;animation:gxAtmoShiftB 20s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero::after{animation:gxSpinSlow 24s linear infinite,gxHeroFloat 11s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit img{animation:gxHeroOrbBreath 6.8s ease-in-out infinite}
+html[data-ax-theme="galaxy"] .ax-radial-fab::before{animation:gxSpinOrbit 18s linear infinite,gxFabPulse 5.8s ease-in-out infinite}
+html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-stage::before{animation:gxMandalaRise 8.5s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .metric{overflow:hidden}
+html[data-ax-theme="galaxy"] .metric::before{content:"";position:absolute;inset:-18% auto auto -14%;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(115,229,255,.10),transparent 65%);pointer-events:none;opacity:.0;transition:opacity .35s ease;mix-blend-mode:screen}
+html[data-ax-theme="galaxy"] .metric:hover::before{opacity:1}
+@keyframes gxFlowFloat{to{transform:translate3d(14px,-6px,0) scale(1.028)}}
+@keyframes gxNebulaFloat{to{transform:translate3d(-14px,10px,0) scale(1.03)}}
+@keyframes gxAtmoShift{to{transform:translate3d(-10px,8px,0) scale(1.03)}}
+@keyframes gxAtmoShiftB{to{transform:translate3d(12px,-9px,0) scale(1.02)}}
+@keyframes gxHeroFloat{to{transform:translateY(-49%) rotate(360deg) scale(1.03)}}
+@keyframes gxHeroOrbBreath{50%{filter:drop-shadow(0 0 36px rgba(95,221,255,.45)) brightness(1.05);transform:translateY(-3px) scale(1.02)}}
+@keyframes gxFabPulse{50%{opacity:.72;filter:drop-shadow(0 0 24px rgba(91,219,255,.22))}}
+@keyframes gxMandalaRise{to{transform:translate(-50%,-50%) scale(1.04) rotate(6deg)}}
+@media(prefers-reduced-motion:reduce){html[data-ax-theme="galaxy"] .ax-gx-atmo-a,html[data-ax-theme="galaxy"] .ax-gx-atmo-b,html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-stage::before,html[data-ax-theme="galaxy"] .ax-galaxy-orbit img{animation:none!important}}
+
+
+/* v2.6.1 — premium polish: transição mais suave e painel respirando */
+.ax-gx-arrival-curtain{background:radial-gradient(circle at 50% 38%,#0d234f 0,#06142c 42%,#030b18 78%);transition:opacity 1.55s cubic-bezier(.2,.7,.2,1),transform 1.55s cubic-bezier(.2,.7,.2,1);transform:scale(1)}
+.ax-gx-arrival-curtain::after{background:radial-gradient(circle at 50% 46%,rgba(92,206,255,.14),transparent 36%);opacity:.82;animation:gxArrivalBloom 1.6s ease-out both}
+.ax-gx-arrival-curtain.ax-gx-arrival-out{opacity:0;transform:scale(1.022)}
+html[data-ax-theme="galaxy"] .ax-experience-canvas{opacity:.58}
+html[data-ax-theme="galaxy"].ax-gx-idle .ax-experience-canvas{opacity:.86}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg::before{opacity:.15}
+html[data-ax-theme="galaxy"] .ax-gx-living-bg::after{opacity:.13}
+html[data-ax-theme="galaxy"] .ax-gx-atmo-a{opacity:.38}
+html[data-ax-theme="galaxy"] .ax-gx-atmo-b{opacity:.28}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero{overflow:hidden}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero::before{opacity:.17;animation:gxDrift 11s ease-in-out infinite alternate}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero::after{opacity:.34}
+html[data-ax-theme="galaxy"] .ax-galaxy-hero-copy::after{content:"";position:absolute;left:-8%;bottom:-8%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(116,229,255,.14),transparent 66%);mix-blend-mode:screen;pointer-events:none;animation:gxCopyGlow 9s ease-in-out infinite}
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit::after{content:"";position:absolute;inset:14%;background:radial-gradient(circle,rgba(106,226,255,.08),transparent 64%);mix-blend-mode:screen;pointer-events:none;animation:gxOrbHalo 6.8s ease-in-out infinite}
+html[data-ax-theme="galaxy"] #menuWindows .window-card{backdrop-filter:blur(16px)}
+html[data-ax-theme="galaxy"] #menuWindows .window-card::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(120deg,transparent 0%,rgba(121,224,255,.035) 22%,transparent 40%);opacity:.0;transform:translateX(-18%);animation:gxCardShimmer 12s ease-in-out infinite}
+html[data-ax-theme="galaxy"] #menuWindows .window-card:hover::before{opacity:1}
+html[data-ax-theme="galaxy"] .ax-radial-fab{box-shadow:0 0 0 1px rgba(121,224,255,.20),0 10px 34px rgba(13,29,74,.55),0 0 28px rgba(95,219,255,.18)}
+html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-stage::after{content:"";position:absolute;left:50%;top:50%;width:min(360px,74vw);height:min(360px,74vw);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(116,229,255,.08),transparent 62%);pointer-events:none;mix-blend-mode:screen;animation:gxConstellationPulse 5.5s ease-in-out infinite}
+@keyframes gxArrivalBloom{0%{opacity:.0;transform:scale(.96)}35%{opacity:.96}100%{opacity:.82;transform:scale(1)}}
+@keyframes gxCopyGlow{50%{opacity:.92;transform:translateY(-4px) scale(1.04)}}
+@keyframes gxOrbHalo{50%{opacity:.92;transform:scale(1.05)}}
+@keyframes gxCardShimmer{0%,72%,100%{opacity:0;transform:translateX(-18%)}78%{opacity:1}88%{opacity:1;transform:translateX(18%)}}
+@keyframes gxConstellationPulse{50%{opacity:.82;transform:translate(-50%,-50%) scale(1.05)}}
+@media(prefers-reduced-motion:reduce){.ax-gx-arrival-curtain,.ax-gx-arrival-curtain::after,html[data-ax-theme="galaxy"] .ax-galaxy-hero-copy::after,html[data-ax-theme="galaxy"] .ax-galaxy-orbit::after,html[data-ax-theme="galaxy"] .ax-radial-nav.open .ax-radial-stage::after,html[data-ax-theme="galaxy"] #menuWindows .window-card::before{animation:none!important;transition-duration:.45s!important}}
+
+
+/* v2.6.2 — Final Seamless Polish */
+.ax-gx-portal-handoff{position:fixed;inset:0;z-index:2147483000;pointer-events:none;overflow:hidden;background:radial-gradient(circle at 50% 50%,rgba(52,126,255,.18),rgba(4,15,34,.70) 46%,rgba(3,10,24,.94) 100%);opacity:1;transition:opacity .92s ease,background .92s ease}
+.ax-gx-handoff-ring,.ax-gx-handoff-orb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
+.ax-gx-handoff-ring{width:min(92vmin,920px);aspect-ratio:1;background:url('/assets/painel/galaxia/living/portal-ring.png') center/contain no-repeat;opacity:.78;filter:drop-shadow(0 0 48px rgba(88,215,255,.32));animation:gxHandoffSpin 13s linear infinite;transition:transform 1.15s cubic-bezier(.16,.82,.22,1),opacity .95s ease}
+.ax-gx-handoff-orb{width:min(46vmin,510px);height:auto;filter:drop-shadow(0 0 58px rgba(91,221,255,.46));opacity:.96;transition:transform 1.15s cubic-bezier(.16,.82,.22,1),opacity .92s ease,filter .92s ease}
+.ax-gx-portal-handoff::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(181,243,255,.18),transparent 22%),radial-gradient(circle at 50% 50%,rgba(107,128,255,.12),transparent 44%);opacity:.9;transition:opacity .9s ease}
+.ax-gx-portal-handoff.ax-gx-handoff-land{background:radial-gradient(circle at 73% 28%,rgba(52,126,255,.13),rgba(4,15,34,.32) 42%,rgba(3,10,24,.58) 100%)}
+.ax-gx-portal-handoff.ax-gx-handoff-land .ax-gx-handoff-ring{transform:translate(calc(-50% + 24vw),calc(-50% - 20vh)) scale(.44);opacity:.52}
+.ax-gx-portal-handoff.ax-gx-handoff-land .ax-gx-handoff-orb{transform:translate(calc(-50% + 24vw),calc(-50% - 20vh)) scale(.42);opacity:.72;filter:drop-shadow(0 0 32px rgba(91,221,255,.32))}
+.ax-gx-portal-handoff.ax-gx-handoff-land::before{opacity:.25}
+.ax-gx-portal-handoff.ax-gx-handoff-fade{opacity:0}
+@keyframes gxHandoffSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+html[data-ax-theme="galaxy"] #metrics .v,
+html[data-ax-theme="galaxy"] #metrics .metric-hud-percent{transition:opacity .46s ease,transform .46s ease,filter .46s ease}
+html[data-ax-theme="galaxy"].ax-gx-metrics-loading #metrics .v,
+html[data-ax-theme="galaxy"].ax-gx-metrics-loading #metrics .metric-hud-percent{opacity:0!important;transform:translateY(7px) scale(.97)!important;filter:blur(3px)!important}
+.ax-gx-metric-skeleton{display:none}
+html[data-ax-theme="galaxy"].ax-gx-metrics-loading .ax-gx-metric-skeleton{display:block;position:absolute;right:18px;top:18px;width:78px;height:36px;border-radius:12px;background:linear-gradient(100deg,rgba(62,120,183,.12) 12%,rgba(121,226,255,.28) 38%,rgba(111,139,255,.16) 62%,rgba(62,120,183,.12) 88%);background-size:220% 100%;box-shadow:inset 0 0 0 1px rgba(125,221,255,.10),0 0 22px rgba(58,177,255,.08);animation:gxMetricShimmer 1.35s linear infinite;pointer-events:none;z-index:8}
+html[data-ax-theme="galaxy"].ax-gx-metrics-revealed #metrics .v{animation:gxMetricReveal .58s cubic-bezier(.18,.76,.22,1) both}
+@keyframes gxMetricShimmer{to{background-position:-220% 0}}
+@keyframes gxMetricReveal{0%{opacity:0;transform:translateY(8px) scale(.96);filter:blur(4px)}100%{opacity:1;transform:none;filter:none}}
+
+@media(max-width:760px){
+  .ax-gx-portal-handoff.ax-gx-handoff-land .ax-gx-handoff-ring{transform:translate(calc(-50% + 16vw),calc(-50% - 24vh)) scale(.36)}
+  .ax-gx-portal-handoff.ax-gx-handoff-land .ax-gx-handoff-orb{transform:translate(calc(-50% + 16vw),calc(-50% - 24vh)) scale(.34)}
+  html[data-ax-theme="galaxy"].ax-gx-metrics-loading .ax-gx-metric-skeleton{right:14px;top:16px;width:68px;height:32px}
+}
+@media(prefers-reduced-motion:reduce){
+  .ax-gx-handoff-ring{animation:none!important}.ax-gx-portal-handoff,.ax-gx-handoff-ring,.ax-gx-handoff-orb{transition-duration:.45s!important}
+  html[data-ax-theme="galaxy"].ax-gx-metrics-loading .ax-gx-metric-skeleton{animation:none!important;background:rgba(121,226,255,.14)}
+}

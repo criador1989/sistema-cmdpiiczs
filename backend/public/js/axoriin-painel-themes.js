@@ -1,12 +1,13 @@
 'use strict';
 
 (() => {
-  const VERSION = '1.0.4';
+  const VERSION = '2.2.0';
   const STORAGE_KEY = 'axoriin_panel_theme_v1';
 
   const THEMES = {
     dark: { label: 'Escuro', mode: 'dark', meta: '#06111d', swatch: 'linear-gradient(135deg,#071220,#132943)' },
     tactical: { label: 'Verde Tático', mode: 'dark', meta: '#07110f', swatch: 'linear-gradient(135deg,#07110f,#0c6f57)' },
+    galaxy: { label: 'Axoriin Galáxia', mode: 'dark', meta: '#071735', swatch: 'linear-gradient(135deg,#061326,#0d3870 52%,#776bff)' },
   };
 
   function safeStorageGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
@@ -38,7 +39,7 @@
     const icon = document.getElementById('axModeIcon');
     const toggle = document.getElementById('axModeToggle');
     if (current) current.textContent = config.label;
-    if (icon) icon.textContent = chosen === 'tactical' ? '◈' : '◐';
+    if (icon) icon.textContent = chosen === 'galaxy' ? '✦' : (chosen === 'tactical' ? '◈' : '◐');
     if (toggle) {
       toggle.setAttribute('aria-label', chosen === 'dark' ? 'Ativar tema Verde Tático' : 'Ativar tema Escuro');
       toggle.title = chosen === 'dark' ? 'Ativar tema Verde Tático' : 'Ativar tema Escuro';

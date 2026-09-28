@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#01040d"/><stop offset=".5" stop-color="#071a38"/><stop offset="1" stop-color="#020817"/></linearGradient>
+  <radialGradient id="neb"><stop stop-color="#168cff" stop-opacity=".46"/><stop offset=".48" stop-color="#174fb4" stop-opacity=".16"/><stop offset="1" stop-opacity="0"/></radialGradient>
+  <radialGradient id="vio"><stop stop-color="#7c55ff" stop-opacity=".38"/><stop offset=".48" stop-color="#4b2ab7" stop-opacity=".13"/><stop offset="1" stop-opacity="0"/></radialGradient>
+  <linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8ef2ff"/><stop offset=".55" stop-color="#32a4ff"/><stop offset="1" stop-color="#8868ff"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1920" height="1080" fill="url(#bg)"/>
+<ellipse cx="420" cy="310" rx="760" ry="560" fill="url(#neb)" opacity=".76"/>
+<ellipse cx="1030" cy="140" rx="610" ry="410" fill="url(#vio)" opacity=".55"/>
+<ellipse cx="820" cy="940" rx="760" ry="330" fill="url(#neb)" opacity=".22"/>
+<g fill="#e9fbff">
+ <circle cx="80" cy="92" r="1.5" opacity=".74"/><circle cx="164" cy="168" r="1" opacity=".50"/><circle cx="274" cy="82" r="1.8" opacity=".80"/><circle cx="390" cy="202" r="1.3" opacity=".62"/><circle cx="526" cy="112" r="1.4" opacity=".65"/><circle cx="672" cy="246" r="1.8" opacity=".80"/><circle cx="810" cy="92" r="1.1" opacity=".52"/><circle cx="966" cy="176" r="1.6" opacity=".72"/><circle cx="1144" cy="84" r="1.2" opacity=".56"/><circle cx="1328" cy="216" r="1.5" opacity=".68"/><circle cx="1512" cy="116" r="1.7" opacity=".74"/><circle cx="1778" cy="186" r="1.1" opacity=".54"/>
+ <circle cx="122" cy="512" r="1.4" opacity=".64"/><circle cx="326" cy="424" r="1.7" opacity=".76"/><circle cx="512" cy="566" r="1.1" opacity=".52"/><circle cx="748" cy="462" r="1.8" opacity=".78"/><circle cx="1002" cy="548" r="1.2" opacity=".57"/><circle cx="1248" cy="438" r="1.6" opacity=".70"/><circle cx="1480" cy="578" r="1.3" opacity=".60"/><circle cx="1764" cy="468" r="1.7" opacity=".75"/>
+</g>
+<!-- open book -->
+<g transform="translate(520 805)" fill="none" stroke="url(#c)" filter="url(#glow)" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M-310 0 Q-155-108 0-34 Q155-108 310 0" stroke-width="5"/>
+ <path d="M-310 0 Q-155 20 0 72 Q155 20 310 0" stroke-width="2.5" opacity=".76"/>
+ <path d="M0-34V72" stroke-width="2.5"/>
+ <path d="M-252-36 Q-155-82-42-52 M252-36 Q155-82 42-52" stroke-width="2" opacity=".50"/>
+</g>
+<!-- rising knowledge beams -->
+<g transform="translate(520 640)" opacity=".58" fill="none" stroke="url(#c)" filter="url(#glow)">
+ <path d="M0 120C-42 10-126-38-220-134" stroke-width="2"/>
+ <path d="M0 120C28-12 114-68 202-166" stroke-width="2"/>
+ <path d="M0 120C6-40 6-132 0-228" stroke-width="2.5"/>
+ <ellipse rx="220" ry="72" cy="-74" transform="rotate(-8)" stroke-width="2" opacity=".58"/>
+ <ellipse rx="196" ry="56" cy="-74" transform="rotate(28)" stroke-width="1.5" opacity=".42"/>
+</g>
+<!-- A orbital -->
+<g transform="translate(520 460)" fill="none" stroke="url(#c)" filter="url(#glow)" opacity=".76">
+ <path d="M0-122L-102 118H-50L0 5L50 118H102Z" stroke-width="8" stroke-linejoin="round"/>
+ <ellipse rx="190" ry="63" transform="rotate(-13)" stroke-width="2.6"/>
+ <ellipse rx="168" ry="50" transform="rotate(30)" stroke-width="1.6" opacity=".62"/>
+ <circle cy="25" r="9" fill="#7ceaff" stroke="none"/>
+</g>
+<!-- educational line icons -->
+<g transform="translate(520 455)" fill="none" stroke="#8cecff" stroke-opacity=".55" stroke-width="2.2" stroke-linejoin="round" filter="url(#glow)">
+ <g transform="translate(-320 -90)"><path d="M-34 0L0-18 34 0 0 18Z"/><path d="M-20 8v22q20 12 40 0V8"/><path d="M34 0v24"/></g>
+ <g transform="translate(315 -65)"><path d="M-32-24v48q32-14 64 0v-48q-32-14-64 0Z"/><path d="M0-18v37"/></g>
+ <g transform="translate(-280 170)"><path d="M-28 26h56"/><path d="M-20 22V4h12v18M-2 22v-34h12v34M16 22V-2h12v24"/></g>
+ <g transform="translate(300 165)"><circle r="30"/><path d="M-14 2h28M0-14v28"/></g>
+</g>
+<!-- subtle horizon -->
+<path d="M0 960C340 900 620 934 930 910C1250 886 1510 926 1920 850V1080H0Z" fill="#031126" opacity=".55"/>
+</svg>

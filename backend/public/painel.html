@@ -11,7 +11,7 @@
 
   <!-- AXORIIN_PAINEL_CARD_ART_V1_0_3_METRIC_CENTER_FIX -->
   <script id="axoriin-theme-preload">
-  (()=>{try{const a=new Set(['dark','tactical']);const s=String(localStorage.getItem('axoriin_panel_theme_v1')||'dark').toLowerCase();document.documentElement.dataset.axTheme=a.has(s)?s:'dark';}catch{document.documentElement.dataset.axTheme='dark';}})();
+  (()=>{try{const a=new Set(['dark','tactical','galaxy']);const s=String(localStorage.getItem('axoriin_panel_theme_v1')||'dark').toLowerCase();document.documentElement.dataset.axTheme=a.has(s)?s:'dark';}catch{document.documentElement.dataset.axTheme='dark';}})();
   </script>
 <style>
 :root{
@@ -2474,8 +2474,14 @@ body.ax-radial-open .op-admin-widget{
   <link rel="stylesheet" href="/axoriin-ajuda/ajuda-contextual.css">
 
   <!-- AXORIIN_PAINEL_CARD_ART_V1_0_3_METRIC_CENTER_FIX -->
-  <link rel="stylesheet" href="/css/axoriin-painel-themes.css?v=1.0.4" />
+  <link rel="stylesheet" href="/css/axoriin-painel-themes.css?v=2.2.0" />
   <link rel="stylesheet" href="/css/axoriin-panel-card-art.css?v=1.0.3" />
+  <link rel="stylesheet" href="/css/axoriin-galaxia-v2.css?v=2.2.3" />
+  <link rel="stylesheet" href="/css/axoriin-galaxia-experience.css?v=2.6.2" />
+  <link rel="stylesheet" href="/css/axoriin-desktop-logout.css?v=2.6.3" />
+
+    <link rel="stylesheet" href="/css/axoriin-module-transition.css?v=2.7.1">
+  <link rel="stylesheet" href="/css/axoriin-tactical-premium-v309.css?v=3.0.9">
 </head>
 
 <body>
@@ -2689,6 +2695,15 @@ body.ax-radial-open .op-admin-widget{
               </div>
             </div>
 
+            <div id="cardControleAcesso" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('controle-acesso.html')">
+              <div class="card-copy">
+                <span class="kicker">Acesso inteligente</span>
+                <h3>Controle de Acesso</h3>
+                <p>Entradas, iDFace Max, vínculos e simulador.</p>
+              </div>
+              <div class="card-watermark" aria-hidden="true">🚪</div>
+            </div>
+
             <div id="cardVerNotificacoes" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('/notificacoes')">
               <div class="window-content">
                 <div class="card-copy">
@@ -2709,15 +2724,6 @@ body.ax-radial-open .op-admin-widget{
               </div>
             </div>
 
-            <div id="cardControleAcesso" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('controle-acesso.html')">
-              <div class="window-content">
-                <div class="card-copy">
-                  <div class="kicker">ACESSO ESCOLAR</div>
-                  <h3>Controle de Acesso</h3>
-                </div>
-                <div class="card-watermark" aria-hidden="true">&#128272;</div>
-              </div>
-            </div>
             <div id="cardRankingAlunos" class="window-card" role="link" tabindex="0" onclick="location.href=withTenant('ranking-alunos.html')">
               <div class="window-content">
                 <div class="card-copy">
@@ -2757,28 +2763,16 @@ body.ax-radial-open .op-admin-widget{
               </div>
             </div>
 
-            <div
-              id="cardUniformes"
-              class="window-card"
-              style="display:none"
-              role="link"
-              tabindex="0"
-              onclick="location.href=withTenant('uniformes.html')"
-            >
+            <div id="cardUniformes" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('uniformes.html')">
               <div class="window-content">
                 <div class="card-copy">
                   <div class="kicker">GESTÃO DE ENTREGA</div>
                   <h3>Uniformes e Vouchers</h3>
                   <p>Importação PDF, fornecedores, conferência e relatórios.</p>
                 </div>
-
-                <div
-                  class="card-watermark"
-                  aria-hidden="true"
-                >👕</div>
+                <div class="card-watermark" aria-hidden="true">👕</div>
               </div>
             </div>
-
 
             <div id="cardAssociacao" class="window-card" style="display:none" role="link" tabindex="0" onclick="window.AxoriinAmbientes?.abrirPrimeiraAssociacao()">
               <div class="window-content">
@@ -2799,25 +2793,13 @@ body.ax-radial-open .op-admin-widget{
                 <div class="card-watermark card-watermark--transferencia" aria-hidden="true">🔄</div>
               </div>
             </div>
-            <div id="cardSimulados" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('simulados.html')">
+            <div id="cardPedagogico" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('pedagogico.html')">
               <div class="window-content">
                 <div class="card-copy">
-                  <div class="kicker">DIAGNÓSTICO PEDAGÓGICO</div>
-                  <h3>Análise de Simulados</h3>
-                  <p>Áreas, habilidades, fragilidades e grupos de intervenção.</p>
+                  <div class="kicker">AGENTE PEDAGÓGICO</div>
+                  <h3>Axoriin Pedagógico</h3>
                 </div>
-                <div class="card-watermark" aria-hidden="true">◎</div>
-              </div>
-            </div>
-
-            <div id="cardObservatorioPortalAluno" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('observatorio-portal-aluno.html')">
-              <div class="window-content">
-                <div class="card-copy">
-                  <div class="kicker">ACOMPANHAMENTO</div>
-                  <h3>Observatório do Portal do Aluno</h3>
-                  <p>Acessos reais, uso dos Simulados e progresso dos estudantes.</p>
-                </div>
-                <div class="card-watermark" aria-hidden="true">◉</div>
+                <div class="card-watermark" aria-hidden="true">✦</div>
               </div>
             </div>
 
@@ -3197,7 +3179,7 @@ body.ax-radial-open .op-admin-widget{
     sbNotificacoes: '/notificacoes',
     sbEstatisticas: 'estatisticas.html',
     sbFinanceiro: 'financeiro.html',
-      sbUniformes: 'uniformes.html',
+    sbUniformes: 'uniformes.html',
     sbTransferir: 'transferir-turma.html',
     sbGestaoSistema: 'gestao-sistema.html'
   };
@@ -3243,7 +3225,6 @@ body.ax-radial-open .op-admin-widget{
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-
     const show = (...ids) => ids.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = '';
@@ -3254,7 +3235,7 @@ body.ax-radial-open .op-admin-widget{
       sbNotificacoes:'sbNotificacoes',
       sbEstatisticas:'sbEstatisticas',
       sbFinanceiro:'sbFinanceiro',
-        sbUniformes:'sbUniformes',
+      sbUniformes:'sbUniformes',
       sbTransferir:'sbTransferir',
       sbGestaoSistema:'sbGestaoSistema',
     };
@@ -3266,14 +3247,13 @@ body.ax-radial-open .op-admin-widget{
       cardRankingAlunos:'cardRankingAlunos',
       cardEstatisticas:'cardEstatisticas',
       cardFinanceiro:'cardFinanceiro',
-        cardUniformes:'cardUniformes',
+      cardUniformes:'cardUniformes',
       cardTransferirTurma:'cardTransferirTurma',
-      cardSimulados:'cardSimulados',
-      cardObservatorioPortalAluno:'cardObservatorioPortalAluno',
       cardGestaoRedacao:'cardGestaoRedacao',
       cardObservacoesProfessor:'cardObservacoesProfessor',
       cardControleAcesso:'cardControleAcesso',
-      cardPedagogico:'cardPedagogico'
+      cardPedagogico:'cardPedagogico',
+      cardSimulados:'cardSimulados'
     };
 
     const SECOES = {
@@ -3296,24 +3276,22 @@ body.ax-radial-open .op-admin-widget{
 
       const u = await r.json();
       const tipo = String(u?.tipo || '').toLowerCase();
-      const cardSimulados = document.getElementById(CARDS.cardSimulados);
-      if (cardSimulados && ['admin','master','superadmin','professor'].includes(tipo)) {
-        cardSimulados.style.display = '';
-      }
 
       if (tipo === 'admin') {
-          show(SB.sbUniformes, CARDS.cardUniformes, CARDS.cardObservatorioPortalAluno);
+        show(SB.sbUniformes, CARDS.cardUniformes);
         const cardRedacao = document.getElementById(CARDS.cardGestaoRedacao);
         if (cardRedacao) cardRedacao.style.display = '';
         const cardAcesso = document.getElementById(CARDS.cardControleAcesso);
         if (cardAcesso) cardAcesso.style.display = '';
         const cardPedagogico = document.getElementById(CARDS.cardPedagogico);
         if (cardPedagogico) cardPedagogico.style.display = '';
+        const cardSimulados = document.getElementById(CARDS.cardSimulados);
+        if (cardSimulados) cardSimulados.style.display = '';
         return;
       }
 
       if (tipo === 'monitor') {
-          show(SB.sbUniformes, CARDS.cardUniformes);
+        show(SB.sbUniformes, CARDS.cardUniformes);
         hide(
           SB.sbFinanceiro,
           SB.sbGestaoSistema,
@@ -3330,6 +3308,8 @@ body.ax-radial-open .op-admin-widget{
         if (cardObservacoes) cardObservacoes.style.display = '';
         const cardPedagogico = document.getElementById(CARDS.cardPedagogico);
         if (cardPedagogico) cardPedagogico.style.display = '';
+        const cardSimulados = document.getElementById(CARDS.cardSimulados);
+        if (cardSimulados) cardSimulados.style.display = '';
 
         hide(
           CARDS.cardGestaoRedacao,
@@ -3598,7 +3578,7 @@ function hudEaseOutCubic(t){
     hudResetMetric('metricNotif', 'mNotif', 'mNotifPct', 'mNotifLine', 0);
     hudResetMetric('metricMedia', 'mMedia', 'mMediaPct', 'mMediaLine', 1);
   }
-  
+
   async function carregarMetricas(){
     hudResetAllMetrics();
 
@@ -4653,7 +4633,13 @@ async function carregarAlertaRevisoes() {
   <script src="/axoriin-ajuda/ajuda-contextual.js"></script>
 
   <!-- AXORIIN_PAINEL_CARD_ART_V1_0_3_METRIC_CENTER_FIX -->
-  <script src="/js/axoriin-painel-themes.js?v=1.0.4"></script>
+  <script src="/js/axoriin-painel-themes.js?v=2.2.0"></script>
   <script src="/js/axoriin-panel-card-art.js?v=1.0.3"></script>
+  <script src="/js/axoriin-galaxia-v2.js?v=2.2.3"></script>
+  <script src="/js/axoriin-galaxia-experience.js?v=2.6.2"></script>
+  <script src="/js/axoriin-desktop-logout.js?v=2.6.3"></script>
+
+    <script defer src="/js/axoriin-module-transition.js?v=2.7.1"></script>
+  <script defer src="/js/axoriin-tactical-premium-v309.js?v=3.0.9"></script>
 </body>
 </html>

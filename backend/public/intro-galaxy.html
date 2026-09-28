@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#020817" />
+<title>Axoriin — Living Galaxy Final Seamless Polish</title>
+<link rel="preload" as="image" href="/assets/painel/galaxia/living/intro-desktop.webp" />
+<link rel="preload" as="image" href="/assets/painel/galaxia/living/portal-ring.png" />
+<link rel="preload" as="image" href="/assets/painel/galaxia/living/axoriin-orb.png" />
+<link rel="preload" as="image" href="/assets/painel/galaxia/living/energy-burst.png" />
+<link rel="preload" as="image" href="/assets/painel/galaxia/living/nebula.png" />
+<link rel="prefetch" href="/painel.html" />
+<style>
+:root{--cyan:#7cecff;--blue:#5ea8ff;--violet:#9c80ff;--text:#f6fbff;--muted:rgba(225,237,255,.74)}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#031022}body{font-family:Inter,"Segoe UI",system-ui,sans-serif;color:var(--text)}
+.scene{position:fixed;inset:0;isolation:isolate;background:#031022;opacity:.001;transition:opacity .95s ease}.scene.ready{opacity:1}.scene::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,rgba(92,170,255,.10),transparent 32%),radial-gradient(circle at 50% 68%,rgba(64,126,255,.08),transparent 42%);z-index:-14;pointer-events:none}
+.bg{position:absolute;inset:-4%;z-index:-15;background:url('/assets/painel/galaxia/living/intro-desktop.webp') center/cover no-repeat;transform:scale(1.035);filter:brightness(.58) saturate(1.08);animation:bgDrift 20s ease-in-out infinite alternate}
+.nebula{position:absolute;inset:0;z-index:-13;background:url('/assets/painel/galaxia/living/nebula.png') right 12% top 12%/58% no-repeat;opacity:.26;mix-blend-mode:screen;animation:nebulaDrift 18s ease-in-out infinite alternate;pointer-events:none}
+.veil{position:absolute;inset:0;z-index:-12;background:radial-gradient(circle at 50% 50%,rgba(37,104,205,.12),rgba(4,9,22,.14) 42%,rgba(1,4,11,.60) 100%),linear-gradient(180deg,rgba(2,7,17,.06),rgba(1,4,12,.34))}
+.atmo{position:absolute;inset:0;z-index:-10;pointer-events:none}
+.atmo::before,.atmo::after{content:"";position:absolute;pointer-events:none;mix-blend-mode:screen}
+.atmo::before{left:-8%;right:-8%;bottom:-12%;height:38vh;background:url('/assets/painel/galaxia/living/energy-flow.png') center bottom/contain no-repeat;opacity:.14;animation:flowDrift 13s ease-in-out infinite alternate}
+.atmo::after{right:-10%;top:4%;width:min(56vw,860px);aspect-ratio:4/3;background:url('/assets/painel/galaxia/living/orbital-stream.png') center/contain no-repeat;opacity:.16;animation:streamDrift 12s ease-in-out infinite alternate}
+.stars{position:absolute;inset:0;z-index:-8;width:100%;height:100%;pointer-events:none;opacity:.72}
+.particles{position:absolute;inset:0;z-index:-7;pointer-events:none;overflow:hidden}
+.particles i{position:absolute;display:block;width:3px;height:3px;border-radius:50%;background:rgba(165,231,255,.95);box-shadow:0 0 12px rgba(128,219,255,.7),0 0 24px rgba(135,124,255,.25);opacity:.0;animation:particleFloat var(--d,10s) linear infinite;animation-delay:var(--delay,0s)}
+.particles i::after{content:"";position:absolute;left:-1px;top:-1px;width:100%;height:100%;border-radius:50%;background:inherit;filter:blur(2px)}
+.phase{position:absolute;inset:0;display:grid;place-items:center;padding:28px;transition:opacity .9s ease,transform .9s cubic-bezier(.2,.78,.2,1)}
+.phase-cinematic{opacity:1;transform:none}.phase-welcome{opacity:0;pointer-events:none;transform:translateY(18px) scale(.987)}
+body.welcome .phase-cinematic{opacity:.15;transform:scale(1.018);filter:blur(1.5px)}body.welcome .phase-welcome{opacity:1;pointer-events:auto;transform:none}body.leaving .phase-cinematic{opacity:0;transform:scale(1.03);filter:blur(4px)}body.leaving .phase-welcome{opacity:.08;transform:scale(1.016);filter:blur(3px)}
+.stage{width:min(95vw,1040px);display:grid;place-items:center;text-align:center}
+.portal{position:relative;width:min(56vw,520px);aspect-ratio:1;display:grid;place-items:center;opacity:0;transform:translateY(10px) scale(.82);transition:opacity 1.25s ease,transform 2.3s cubic-bezier(.16,.84,.22,1)}
+.scene.ready .portal{opacity:1;transform:none}
+.portal-ring,.portal-ring-2,.burst,.orb,.aura,.flare{position:absolute;inset:0;margin:auto;object-fit:contain;pointer-events:none}
+.portal-ring{width:128%;height:128%;opacity:.74;filter:drop-shadow(0 0 28px rgba(82,213,255,.28));animation:spinA 24s linear infinite}
+.portal-ring-2{width:103%;height:103%;opacity:.36;filter:drop-shadow(0 0 18px rgba(141,117,255,.18));animation:spinB 16s linear infinite}
+.burst{width:96%;height:96%;mix-blend-mode:screen;opacity:.18;animation:pulse 4.6s ease-in-out infinite}
+.orb{width:60%;height:60%;filter:drop-shadow(0 0 38px rgba(80,210,255,.52));animation:float 5.2s ease-in-out infinite}
+.aura{width:74%;height:74%;border-radius:50%;background:radial-gradient(circle,rgba(112,235,255,.22),rgba(92,143,255,.10) 45%,rgba(139,108,255,.08) 58%,transparent 72%);filter:blur(8px);animation:auraPulse 4.6s ease-in-out infinite}
+.flare{width:132%;height:132%;background:radial-gradient(circle,rgba(110,210,255,.08),transparent 48%);animation:flareSpin 18s linear infinite}
+.orbit-dots{position:absolute;inset:0}
+.orbit-dots b{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px;border-radius:50%;background:radial-gradient(circle,#c1f4ff,#73c7ff 52%,#7b79ff 100%);box-shadow:0 0 12px rgba(110,221,255,.55)}
+.orbit-dots b:nth-child(1){animation:orbit1 11s linear infinite}
+.orbit-dots b:nth-child(2){width:7px;height:7px;margin:-3.5px;background:radial-gradient(circle,#fff7be,#8fdfff 42%,#7c78ff 100%);animation:orbit2 8.4s linear infinite}
+.orbit-dots b:nth-child(3){width:6px;height:6px;margin:-3px;background:radial-gradient(circle,#dcf8ff,#87cfff 48%,#6eb0ff 100%);animation:orbit3 13.5s linear infinite}
+.copy{margin-top:-18px;max-width:770px;opacity:0;transform:translateY(18px);transition:opacity 1s 1.6s ease,transform 1s 1.6s ease}.scene.ready .copy{opacity:1;transform:none}
+.eyebrow{font-size:.76rem;font-weight:800;letter-spacing:.30em;text-transform:uppercase;color:#8cecff;margin-bottom:12px}h1{margin:0;font-size:clamp(2.15rem,4.8vw,4.45rem);letter-spacing:-.048em;line-height:.98}h1 span,h2 span{background:linear-gradient(90deg,#83efff,#84bcff 47%,#a186ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+p{margin:15px auto 0;max-width:640px;font-size:1rem;line-height:1.55;color:var(--muted)}
+.status{margin-top:21px;font-size:.79rem;letter-spacing:.115em;text-transform:uppercase;color:rgba(181,228,255,.72);min-height:19px}.timeline{width:min(72vw,450px);height:3px;margin:12px auto 0;background:rgba(137,211,255,.10);overflow:hidden;border-radius:99px}.timeline i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5ce6ff,#4c91ff,#9276ff);box-shadow:0 0 14px rgba(80,205,255,.42);transition:width 6.5s linear}.scene.ready .timeline i{width:100%}
+.welcome-card{position:relative;width:min(92vw,780px);padding:40px 34px 34px;text-align:center;border:1px solid rgba(117,213,255,.24);border-radius:34px;background:linear-gradient(145deg,rgba(4,18,42,.60),rgba(6,10,30,.74));box-shadow:0 34px 90px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
+.welcome-card::before{content:"";position:absolute;left:8%;right:8%;top:-110px;height:230px;background:radial-gradient(ellipse,rgba(87,198,255,.24),transparent 68%);pointer-events:none;animation:softGlow 6s ease-in-out infinite}
+.welcome-card::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(117,222,255,.34),transparent 42%,rgba(148,122,255,.22));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.85;pointer-events:none}
+.welcome-orbit{position:relative;width:200px;height:200px;margin:-4px auto 5px;display:grid;place-items:center}.welcome-orbit .portal-ring{opacity:.68}.welcome-orbit .portal-ring-2{opacity:.34}.welcome-orbit .orb{width:58%;height:58%}.welcome-card h2{margin:8px 0 0;font-size:clamp(2.05rem,4.5vw,3.65rem);line-height:1;letter-spacing:-.042em}.welcome-progress{width:min(72vw,430px);height:3px;margin:24px auto 0;background:rgba(142,211,255,.10);overflow:hidden;border-radius:99px}.welcome-progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#59e4ff,#3f91ff,#8b70ff);box-shadow:0 0 14px rgba(75,205,255,.45)}body.welcome .welcome-progress i{animation:load 4.8s linear forwards}.welcome-status{margin-top:12px;font-size:.84rem;color:rgba(210,230,255,.58);letter-spacing:.04em}
+.skip{position:absolute;right:22px;bottom:18px;z-index:10;border:1px solid rgba(132,211,255,.20);background:rgba(5,15,34,.34);color:rgba(224,240,255,.70);border-radius:999px;padding:9px 14px;font:600 .72rem/1 Inter,"Segoe UI",sans-serif;letter-spacing:.04em;backdrop-filter:blur(10px);cursor:pointer;transition:.25s ease}.skip:hover{color:#fff;border-color:rgba(128,226,255,.48);background:rgba(11,30,64,.52)}
+.warp{position:absolute;inset:0;z-index:50;pointer-events:none;opacity:0;transform:scale(.985);transition:opacity 1.02s ease,transform 1.02s ease;background:radial-gradient(circle at 50% 50%,rgba(121,223,255,.22) 0,rgba(65,136,255,.14) 15%,rgba(12,32,70,.38) 46%,rgba(4,14,32,.80) 100%)}
+.warp::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,rgba(167,236,255,.14),transparent 25%);opacity:0;transition:opacity .9s ease}
+.warp::after{content:"";position:absolute;left:50%;top:50%;width:min(52vmin,560px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.68);background:url('/assets/painel/galaxia/living/axoriin-orb.png') center/contain no-repeat;filter:drop-shadow(0 0 56px rgba(93,220,255,.42));opacity:0;transition:transform .98s cubic-bezier(.15,.78,.2,1),opacity .70s ease}
+body.leaving .warp{opacity:1;transform:scale(1)}body.leaving .warp::before{opacity:1}body.leaving .warp::after{opacity:1;transform:translate(-50%,-50%) scale(2.45)}
+@keyframes spinA{to{transform:rotate(360deg)}}@keyframes spinB{to{transform:rotate(-360deg)}}@keyframes flareSpin{to{transform:rotate(360deg)}}@keyframes float{50%{transform:translateY(-8px) scale(1.026)}}@keyframes pulse{50%{opacity:.34;transform:scale(1.06)}}@keyframes auraPulse{50%{opacity:.9;transform:scale(1.04)}}@keyframes softGlow{50%{opacity:.9;transform:translateY(6px)}}@keyframes load{to{width:100%}}
+@keyframes bgDrift{to{transform:scale(1.065) translate3d(-10px,-6px,0)}}@keyframes nebulaDrift{to{transform:translate3d(8px,-12px,0) scale(1.05)}}@keyframes flowDrift{to{transform:translate3d(10px,-4px,0) scale(1.03)}}@keyframes streamDrift{to{transform:translate3d(-8px,6px,0) scale(1.04)}}
+@keyframes particleFloat{0%{transform:translate3d(0,8px,0) scale(.7);opacity:0}10%{opacity:.85}80%{opacity:.7}100%{transform:translate3d(var(--x,40px),var(--y,-240px),0) scale(1.15);opacity:0}}
+@keyframes orbit1{from{transform:rotate(0deg) translateX(128px) rotate(0deg)}to{transform:rotate(360deg) translateX(128px) rotate(-360deg)}}
+@keyframes orbit2{from{transform:rotate(180deg) translateX(94px) rotate(-180deg)}to{transform:rotate(-180deg) translateX(94px) rotate(180deg)}}
+@keyframes orbit3{from{transform:rotate(35deg) translateX(152px) rotate(-35deg)}to{transform:rotate(395deg) translateX(152px) rotate(-395deg)}}
+@media(max-width:700px){.bg{background-image:url('/assets/painel/galaxia/living/intro-mobile.webp');background-position:center 58%}.nebula{background-size:92%;background-position:center 22%;opacity:.16}.phase{padding:18px}.portal{width:min(88vw,390px)}.copy{margin-top:-8px}p{font-size:.92rem}.welcome-card{padding:28px 20px 24px;border-radius:26px}.welcome-orbit{width:168px;height:168px}.skip{right:14px;bottom:14px}.atmo::before{height:30vh}.atmo::after{width:92vw}}
+@media(prefers-reduced-motion:reduce){.bg,.nebula,.atmo::before,.atmo::after,.portal-ring,.portal-ring-2,.orb,.burst,.aura,.flare,.orbit-dots b,.welcome-card::before,.particles i{animation:none!important}.phase,.portal,.copy,.scene,.warp{transition-duration:.4s!important}.stars{opacity:.36}.timeline i,.welcome-progress i{transition:none!important;animation:none!important;width:100%!important}}
+</style>
+
+    <link rel="stylesheet" href="/css/axoriin-module-transition.css?v=2.7.1">
+</head>
+<body>
+<main class="scene" id="scene" aria-live="polite">
+  <div class="bg" aria-hidden="true"></div>
+  <div class="nebula" aria-hidden="true"></div>
+  <div class="veil" aria-hidden="true"></div>
+  <div class="atmo" aria-hidden="true"></div>
+  <canvas class="stars" id="stars" aria-hidden="true"></canvas>
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <section class="phase phase-cinematic" aria-label="Introdução Axoriin">
+    <div class="stage">
+      <div class="portal" aria-hidden="true">
+        <div class="flare"></div>
+        <div class="aura"></div>
+        <img class="portal-ring" src="/assets/painel/galaxia/living/portal-ring.png" alt="">
+        <img class="portal-ring-2" src="/assets/painel/galaxia/living/portal-ring.png" alt="">
+        <img class="burst" src="/assets/painel/galaxia/living/energy-burst.png" alt="">
+        <img class="orb" src="/assets/painel/galaxia/living/axoriin-orb.png" alt="">
+        <div class="orbit-dots"><b></b><b></b><b></b></div>
+      </div>
+      <div class="copy">
+        <div class="eyebrow">Axoriin Living Galaxy</div>
+        <h1>Seu universo de gestão <span>ganha vida.</span></h1>
+        <p>Dados, pessoas e decisões conectados em uma experiência institucional única, viva e cinematográfica.</p>
+        <div class="status" id="status">Inicializando núcleo Axoriin</div>
+        <div class="timeline" aria-hidden="true"><i></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="phase phase-welcome" aria-label="Boas-vindas">
+    <div class="welcome-card">
+      <div class="welcome-orbit" aria-hidden="true">
+        <img class="portal-ring" src="/assets/painel/galaxia/living/portal-ring.png" alt="">
+        <img class="portal-ring-2" src="/assets/painel/galaxia/living/portal-ring.png" alt="">
+        <img class="orb" src="/assets/painel/galaxia/living/axoriin-orb.png" alt="">
+      </div>
+      <div class="eyebrow">Acesso confirmado</div>
+      <h2>Bem-vindo(a) ao <span>Axoriin.</span></h2>
+      <p>O eixo que organiza e ilumina a gestão educacional. Seu ambiente institucional está pronto para continuar.</p>
+      <div class="welcome-progress" aria-hidden="true"><i></i></div>
+      <div class="welcome-status" id="welcomeStatus">Preparando o painel principal…</div>
+    </div>
+  </section>
+
+  <button class="skip" id="skip" type="button">Pular introdução</button>
+  <div class="warp" aria-hidden="true"></div>
+</main>
+<script>
+(()=>{
+ const q=new URLSearchParams(location.search);const tenant=q.get('t')||localStorage.getItem('tenantSlug')||localStorage.getItem('tenant')||'';let next=q.get('next')||'/painel.html';
+ try{const u=new URL(next,location.origin);next=u.origin===location.origin?(u.pathname+u.search+u.hash):'/painel.html'}catch{next='/painel.html'}if(!next.startsWith('/')||next.startsWith('//'))next='/painel.html';if(tenant){const u=new URL(next,location.origin);if(!u.searchParams.get('t'))u.searchParams.set('t',tenant);next=u.pathname+u.search+u.hash}
+ const scene=document.getElementById('scene'),status=document.getElementById('status'),welcomeStatus=document.getElementById('welcomeStatus'),skip=document.getElementById('skip'),particles=document.getElementById('particles');let phase='intro',leaving=false;
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const assets=[...document.images];Promise.all(assets.map(img=>img.complete?Promise.resolve():new Promise(r=>{img.addEventListener('load',r,{once:true});img.addEventListener('error',r,{once:true})}))).then(()=>requestAnimationFrame(()=>scene.classList.add('ready')));
+ setTimeout(()=>scene.classList.add('ready'),800);
+ // starfield
+ const c=document.getElementById('stars'),x=c.getContext('2d');let W=0,H=0,dpr=1,stars=[];
+ function resize(){dpr=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';x.setTransform(dpr,0,0,dpr,0,0);const n=Math.min(140,Math.max(56,Math.round(W*H/15000)));stars=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,r:.35+Math.random()*1.4,z:.35+Math.random()*.75,p:Math.random()*6.28,v:.02+Math.random()*.03}))}
+ function draw(t){x.clearRect(0,0,W,H);for(const a of stars){const o=.08+.36*(.5+.5*Math.sin(t*.0011+a.p));x.beginPath();x.fillStyle=`rgba(150,228,255,${o})`;x.arc(a.x,a.y,a.r*a.z,0,6.283);x.fill();if(!reduced){a.y+=a.v*a.z;a.x+=Math.sin(t*.0002+a.p)*.02;if(a.y>H+3)a.y=-3}}requestAnimationFrame(draw)}
+ resize();addEventListener('resize',resize,{passive:true});requestAnimationFrame(draw);
+ // floating particles
+ function buildParticles(){if(reduced)return;const total=16;particles.innerHTML='';for(let i=0;i<total;i++){const el=document.createElement('i');el.style.left=(8+Math.random()*84)+'%';el.style.top=(42+Math.random()*46)+'%';el.style.setProperty('--x',(-60+Math.random()*120).toFixed(0)+'px');el.style.setProperty('--y',(-130-Math.random()*220).toFixed(0)+'px');el.style.setProperty('--d',(9+Math.random()*8).toFixed(2)+'s');el.style.setProperty('--delay',(-Math.random()*10).toFixed(2)+'s');particles.appendChild(el)}}buildParticles();
+ // status progression
+ const steps=[[2200,'Ativando constelação institucional'],[4700,'Sincronizando painéis e módulos'],[7300,'Experiência pronta']];
+ steps.forEach(([ms,txt])=>setTimeout(()=>{if(phase==='intro')status.textContent=txt},ms));
+ function showWelcome(){if(phase!=='intro')return;phase='welcome';document.body.classList.add('welcome');skip.textContent='Abrir painel';setTimeout(()=>{if(phase==='welcome')welcomeStatus.textContent='Tudo pronto. Alinhando o painel principal…'},3100)}
+ function go(){if(leaving)return;leaving=true;phase='leaving';sessionStorage.setItem('axoriin:cinematic-arrival','1');sessionStorage.setItem('axoriin:metric-gate','1');document.body.classList.add('leaving');setTimeout(()=>location.replace(next),1040)}
+ skip.addEventListener('click',()=>phase==='intro'?showWelcome():go());addEventListener('keydown',e=>{if(e.key==='Escape'&&phase==='intro')showWelcome()});
+ setTimeout(showWelcome,7600);setTimeout(()=>{if(phase==='welcome')go()},13800);
+})();
+</script>
+
+    <script defer src="/js/axoriin-module-transition.js?v=2.7.1"></script>
+</body>
+</html>
