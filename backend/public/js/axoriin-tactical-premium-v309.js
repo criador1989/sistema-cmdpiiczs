@@ -171,3 +171,384 @@
   window.AxoriinTacticalPremium={version:VERSION,refresh:activate};
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
 })();
+
+/* === AXORIIN LIVE HERO CORE V3.2.2 START === */
+(()=>{
+  'use strict';
+
+  const VERSION='3.2.0';
+  const ROOT=document.documentElement;
+  const ART={w:2172,h:724};
+  const PLANET={cx:1135,cy:329,rx:307,ry:281};
+
+  let hero=null,canvas=null,ctx=null,aura=null,scan=null,ro=null;
+  let raf=0,w=0,h=0,dpr=1,t0=performance.now();
+  let stars=[],surface=[],orbiters=[],flyers=[],bursts=[];
+
+  function tactical(){
+    return ROOT.dataset.axTheme==='tactical' || ROOT.classList.contains('ax-tac-v309-ready');
+  }
+
+  function mapArt(){
+    const scale=Math.max(w/ART.w,h/ART.h);
+    const rw=ART.w*scale, rh=ART.h*scale;
+    const ox=(w-rw)/2, oy=(h-rh)/2;
+    return {
+      cx:ox+PLANET.cx*scale,
+      cy:oy+PLANET.cy*scale,
+      rx:PLANET.rx*scale,
+      ry:PLANET.ry*scale
+    };
+  }
+
+  function mk(cls){
+    const d=document.createElement('div');
+    d.className=cls;
+    d.setAttribute('aria-hidden','true');
+    return d;
+  }
+
+  function ensure(){
+    hero=document.querySelector('.ax-tactical-v309-hero');
+    if(!hero) return false;
+
+    canvas=hero.querySelector('.ax-live-core-canvas');
+    if(!canvas){
+      aura=mk('ax-live-core-aura');
+      scan=mk('ax-live-core-scan');
+      canvas=document.createElement('canvas');
+      canvas.className='ax-live-core-canvas';
+      canvas.setAttribute('aria-hidden','true');
+      hero.append(aura,scan,canvas);
+    }else{
+      aura=hero.querySelector('.ax-live-core-aura');
+      scan=hero.querySelector('.ax-live-core-scan');
+    }
+
+    ctx=canvas.getContext('2d',{alpha:true,desynchronized:true});
+
+    if(!ro && 'ResizeObserver' in window){
+      ro=new ResizeObserver(resize);
+      ro.observe(hero);
+    }
+
+    resize();
+    return true;
+  }
+
+  function resize(){
+    if(!hero||!canvas||!ctx) return;
+    const r=hero.getBoundingClientRect();
+    w=r.width; h=r.height;
+    if(!w||!h) return;
+
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.max(1,Math.round(w*dpr));
+    canvas.height=Math.max(1,Math.round(h*dpr));
+    canvas.style.width=`${w}px`;
+    canvas.style.height=`${h}px`;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const p=mapArt();
+    if(aura){
+      Object.assign(aura.style,{
+        left:`${p.cx-p.rx*1.08}px`,
+        top:`${p.cy-p.ry*1.08}px`,
+        width:`${p.rx*2.16}px`,
+        height:`${p.ry*2.16}px`
+      });
+    }
+    if(scan){
+      Object.assign(scan.style,{
+        left:`${p.cx-p.rx*.98}px`,
+        top:`${p.cy-p.ry*.98}px`,
+        width:`${p.rx*1.96}px`,
+        height:`${p.ry*1.96}px`
+      });
+    }
+
+    const mobile=w<=760;
+    stars=Array.from({length:mobile?12:18},()=>({
+      x:p.cx+(Math.random()*2.75-1.20)*p.rx,
+      y:p.cy+(Math.random()*2.20-1.10)*p.ry,
+      r:.45+Math.random()*1.45,
+      a:.24+Math.random()*.62,
+      dx:(Math.random()-.5)*(mobile?.045:.085),
+      dy:(Math.random()-.5)*(mobile?.032:.055),
+      phase:Math.random()*Math.PI*2
+    }));
+
+    surface=Array.from({length:mobile?24:36},()=>({
+      lat:-1.04+Math.random()*2.08,
+      lon:Math.random()*Math.PI*2,
+      size:.50+Math.random()*1.12,
+      alpha:.25+Math.random()*.50,
+      phase:Math.random()*Math.PI*2
+    }));
+
+    orbiters=[
+      {sx:1.18,sy:.59,speed:.00027,phase:.10,size:2.10,trail:3},
+      {sx:1.40,sy:.45,speed:-.00019,phase:2.15,size:1.95,trail:3},
+      {sx:1.13,sy:.79,speed:.00016,phase:4.10,size:1.80,trail:2}
+    ];
+
+    flyers=Array.from({length:mobile?2:3},(_,i)=>({
+      phase:(i/(mobile?2:3))*Math.PI*2,
+      speed:(i%2?-.00010:.00012)*(1+(i%3)*.12),
+      rx:1.06+(i%4)*.18,
+      ry:.36+(i%3)*.18,
+      size:mobile?5.5:7+(i%2)*2
+    }));
+
+    bursts=[
+      {x:-.45,y:-.16,phase:.2},
+      {x:.36,y:.18,phase:3.4}
+    ];
+  }
+
+  function dot(x,y,r,a,blur=8){
+    if(a<=0) return;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(174,255,243,${a})`;
+    ctx.shadowColor='rgba(111,255,230,.82)';
+    ctx.shadowBlur=blur;
+    ctx.fill();
+  }
+
+  function clipRight(p){
+    /* proteção explícita da região textual */
+    const left=Math.max(w*.38,p.cx-p.rx*1.50);
+    ctx.beginPath();
+    ctx.rect(left,0,w-left,h);
+    ctx.clip();
+  }
+
+  function drawPlanet(now,p){
+    const dt=now-t0;
+    const rot=dt*(Math.PI*2/54000);
+
+    ctx.save();
+    clipRight(p);
+
+    /* grade e pontos restritos ao disco */
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(p.cx,p.cy,p.rx*.97,p.ry*.97,0,0,Math.PI*2);
+    ctx.clip();
+
+    ctx.shadowBlur=0;
+    ctx.setLineDash([3,10]);
+    for(const lat of [-.72,-.48,-.24,0,.24,.48,.72]){
+      const yy=p.cy+lat*p.ry;
+      const localRx=p.rx*Math.sqrt(Math.max(0,1-lat*lat));
+      ctx.beginPath();
+      ctx.ellipse(p.cx,yy,localRx,p.ry*.035,0,0,Math.PI*2);
+      ctx.strokeStyle='rgba(130,255,238,.055)';
+      ctx.lineWidth=.72;
+      ctx.stroke();
+    }
+
+    for(let i=0;i<10;i++){
+      const a=rot+(i/10)*Math.PI*2;
+      const xoff=Math.sin(a)*p.rx*.94;
+      const squeeze=Math.max(.03,Math.abs(Math.cos(a)));
+      ctx.beginPath();
+      ctx.ellipse(p.cx+xoff,p.cy,Math.max(1,p.rx*.11*squeeze),p.ry*.95,0,0,Math.PI*2);
+      ctx.lineDashOffset=-dt*.004;
+      ctx.strokeStyle=`rgba(143,255,241,${Math.cos(a)>0?.11:.024})`;
+      ctx.lineWidth=.78;
+      ctx.stroke();
+    }
+
+    ctx.setLineDash([]);
+    for(const s of surface){
+      const lon=s.lon+rot;
+      const cl=Math.cos(s.lat);
+      const depth=Math.cos(lon)*cl;
+      if(depth<-.10) continue;
+      const x=p.cx+Math.sin(lon)*cl*p.rx*.91;
+      const y=p.cy+Math.sin(s.lat)*p.ry*.90;
+      const edge=Math.max(.18,1-Math.pow(Math.abs(x-p.cx)/(p.rx*.98),4));
+      const tw=.73+.27*Math.sin(dt*.0015+s.phase);
+      dot(x,y,s.size,s.alpha*(.28+.44*Math.max(0,depth))*edge*tw,6);
+    }
+    ctx.restore();
+
+    /* órbitas */
+    ctx.save();
+    ctx.shadowBlur=0;
+    ctx.lineWidth=.80;
+    orbiters.slice(0,3).forEach((o,i)=>{
+      ctx.beginPath();
+      ctx.ellipse(p.cx,p.cy,p.rx*o.sx,p.ry*o.sy,i%2?.10:-.08,0,Math.PI*2);
+      ctx.setLineDash(i%2?[4,17]:[13,18]);
+      ctx.lineDashOffset=(i%2?-1:1)*dt*.010;
+      ctx.strokeStyle=`rgba(143,255,241,${i<4?.10:.065})`;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    /* nós orbitais */
+    orbiters.forEach(o=>{
+      const a=o.phase+dt*o.speed;
+      const orx=p.rx*o.sx, ory=p.ry*o.sy;
+      for(let k=o.trail;k>=0;k--){
+        const aa=a-Math.sign(o.speed)*k*.030;
+        const x=p.cx+Math.cos(aa)*orx;
+        const y=p.cy+Math.sin(aa)*ory;
+        const fade=1-k/(o.trail+1);
+        dot(x,y,Math.max(.48,o.size-k*.24),(k===0?.62:.20)*fade,k===0?7:4);
+      }
+    });
+
+    /* pulsos */
+    bursts.forEach(b=>{
+      const pulse=(Math.sin(dt*.002+b.phase)+1)/2;
+      if(pulse<.61) return;
+      const gain=(pulse-.61)/.39;
+      const x=p.cx+b.x*p.rx, y=p.cy+b.y*p.ry;
+      dot(x,y,1.1+gain*.85,.22+gain*.58,10);
+      ctx.beginPath();
+      ctx.arc(x,y,3+gain*8,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(160,255,243,${gain*.20})`;
+      ctx.lineWidth=.8;
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  }
+
+  function drawFlyers(now,p){
+    const dt=now-t0;
+    ctx.save();
+    clipRight(p);
+
+    flyers.forEach(f=>{
+      const a=f.phase+dt*f.speed;
+      const x=p.cx+Math.cos(a)*p.rx*f.rx;
+      const y=p.cy+Math.sin(a)*p.ry*f.ry;
+      const vx=-Math.sin(a), vy=Math.cos(a);
+      const ang=Math.atan2(vy,vx);
+
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.rotate(ang);
+      ctx.shadowColor='rgba(126,255,234,.58)';
+      ctx.shadowBlur=10;
+
+      const trail=ctx.createLinearGradient(-f.size*4.4,0,0,0);
+      trail.addColorStop(0,'rgba(126,255,234,0)');
+      trail.addColorStop(1,'rgba(126,255,234,.20)');
+      ctx.fillStyle=trail;
+      ctx.fillRect(-f.size*4.4,-.6,f.size*4.4,1.2);
+
+      ctx.fillStyle='rgba(165,255,243,.46)';
+      ctx.strokeStyle='rgba(222,255,250,.64)';
+      ctx.lineWidth=.72;
+      ctx.beginPath();
+      ctx.rect(-f.size/2,-2.4,f.size,4.8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle='rgba(245,255,253,1)';
+      ctx.fillRect(f.size*.12,-.8,1.6,1.6);
+      ctx.restore();
+    });
+
+    ctx.restore();
+  }
+
+  function drawStars(now,p){
+    ctx.save();
+    clipRight(p);
+
+    for(const s of stars){
+      s.x+=s.dx; s.y+=s.dy; s.phase+=.016;
+      const minX=Math.max(w*.39,p.cx-p.rx*1.52);
+      const maxX=Math.min(w+5,p.cx+p.rx*2.0);
+      const minY=Math.max(0,p.cy-p.ry*1.16);
+      const maxY=Math.min(h,p.cy+p.ry*1.16);
+      if(s.x<minX)s.x=maxX;
+      if(s.x>maxX)s.x=minX;
+      if(s.y<minY)s.y=maxY;
+      if(s.y>maxY)s.y=minY;
+      dot(s.x,s.y,s.r,s.a*(.48+.28*Math.sin(s.phase)),7);
+    }
+
+    ctx.restore();
+  }
+
+  function frame(now){
+    if(!ctx||!hero||!tactical()||document.hidden){
+      raf=0;
+      return;
+    }
+
+    ctx.clearRect(0,0,w,h);
+    const p=mapArt();
+    drawPlanet(now,p);
+    drawFlyers(now,p);
+    drawStars(now,p);
+    ctx.shadowBlur=0;
+    ctx.setLineDash([]);
+    raf=requestAnimationFrame(frame);
+  }
+
+  function start(){
+    if(!raf && tactical() && !document.hidden){
+      t0=performance.now();
+      raf=requestAnimationFrame(frame);
+    }
+  }
+
+  function stop(){
+    if(raf){cancelAnimationFrame(raf);raf=0}
+    if(ctx)ctx.clearRect(0,0,w,h);
+  }
+
+  function activate(){
+    if(!tactical()){
+      stop();
+      return false;
+    }
+    if(!ensure()) return false;
+    hero.dataset.axLiveCore=VERSION;
+    resize();
+    start();
+    return true;
+  }
+
+  function init(){
+    activate();
+    [250,650,1300,2500].forEach(ms=>setTimeout(activate,ms));
+    window.addEventListener('resize',resize,{passive:true});
+    window.addEventListener('axoriin:themechange',()=>setTimeout(activate,70));
+    document.addEventListener('visibilitychange',()=>document.hidden?stop():activate());
+
+    const mo=new MutationObserver(()=>tactical()?activate():stop());
+    mo.observe(ROOT,{attributes:true,attributeFilter:['data-ax-theme','class']});
+  }
+
+  window.AxoriinLiveHero={
+    version:VERSION,
+    refresh:activate,
+    stop,
+    status:()=>({
+      version:VERSION,
+      tactical:tactical(),
+      hero:!!document.querySelector('.ax-tactical-v309-hero'),
+      canvas:!!document.querySelector('.ax-live-core-canvas'),
+      running:!!raf,
+      width:w,
+      height:h
+    })
+  };
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init,{once:true});
+  }else{
+    init();
+  }
+})();
+/* === AXORIIN LIVE HERO CORE V3.2.2 END === */

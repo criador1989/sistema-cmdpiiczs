@@ -197,3 +197,220 @@
   if (document.readyState === 'complete') schedule();
   else if (document.readyState !== 'loading') schedule();
 })();
+
+/* === AXORIIN GALAXIA VIVO CORE V2.2.4 START === */
+(()=>{
+  'use strict';
+
+  const VERSION='2.2.4';
+  const ROOT=document.documentElement;
+
+  let hero=null;
+  let orbit=null;
+  let canvas=null;
+  let ctx=null;
+  let ro=null;
+  let raf=0;
+  let w=0;
+  let h=0;
+  let dpr=1;
+  let stars=[];
+
+  function isGalaxy(){
+    return ROOT.dataset.axTheme==='galaxy';
+  }
+
+  function mk(cls){
+    const el=document.createElement('div');
+    el.className=cls;
+    el.setAttribute('aria-hidden','true');
+    return el;
+  }
+
+  function ensure(){
+    hero=document.querySelector('.ax-galaxy-hero');
+    orbit=document.querySelector('.ax-galaxy-orbit');
+    if(!hero || !orbit) return false;
+
+    if(!hero.querySelector('.ax-galaxy-live-stars')){
+      hero.appendChild(mk('ax-galaxy-live-nebula a'));
+      hero.appendChild(mk('ax-galaxy-live-nebula b'));
+
+      canvas=document.createElement('canvas');
+      canvas.className='ax-galaxy-live-stars';
+      canvas.setAttribute('aria-hidden','true');
+      hero.appendChild(canvas);
+
+      hero.appendChild(mk('ax-galaxy-live-flyer a'));
+      hero.appendChild(mk('ax-galaxy-live-flyer b'));
+
+      orbit.appendChild(mk('ax-galaxy-live-ring r1'));
+      orbit.appendChild(mk('ax-galaxy-live-ring r2'));
+      orbit.appendChild(mk('ax-galaxy-live-ring r3'));
+      orbit.appendChild(mk('ax-galaxy-live-runner a'));
+      orbit.appendChild(mk('ax-galaxy-live-runner b'));
+      orbit.appendChild(mk('ax-galaxy-live-runner c'));
+    }else{
+      canvas=hero.querySelector('.ax-galaxy-live-stars');
+    }
+
+    ctx=canvas?.getContext('2d',{alpha:true,desynchronized:true}) || null;
+    if(!ctx) return false;
+
+    if(!ro && 'ResizeObserver' in window){
+      ro=new ResizeObserver(resize);
+      ro.observe(hero);
+    }
+
+    if(!hero.dataset.axGalaxyLiveBound){
+      hero.dataset.axGalaxyLiveBound='1';
+      hero.addEventListener('mousemove',onMouseMove,{passive:true});
+      hero.addEventListener('mouseleave',onMouseLeave,{passive:true});
+    }
+
+    resize();
+    return true;
+  }
+
+  function resize(){
+    if(!hero || !canvas || !ctx) return;
+    const r=hero.getBoundingClientRect();
+    w=r.width;
+    h=r.height;
+    if(!w || !h) return;
+
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.max(1,Math.round(w*dpr));
+    canvas.height=Math.max(1,Math.round(h*dpr));
+    canvas.style.width=`${w}px`;
+    canvas.style.height=`${h}px`;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const mobile=w<=760;
+    stars=Array.from({length:mobile?12:20},()=>({
+      x:w*(.43+Math.random()*.52),
+      y:h*(.06+Math.random()*.88),
+      r:.35+Math.random()*.95,
+      a:.15+Math.random()*.45,
+      dx:(Math.random()-.5)*.032,
+      dy:(Math.random()-.5)*.022,
+      phase:Math.random()*Math.PI*2,
+      speed:.008+Math.random()*.012
+    }));
+  }
+
+  function draw(){
+    if(!ctx || !isGalaxy() || document.hidden){
+      raf=0;
+      return;
+    }
+
+    ctx.clearRect(0,0,w,h);
+
+    for(const s of stars){
+      s.x+=s.dx;
+      s.y+=s.dy;
+      s.phase+=s.speed;
+
+      if(s.x<w*.40) s.x=w*.97;
+      if(s.x>w+4) s.x=w*.43;
+      if(s.y<0) s.y=h;
+      if(s.y>h) s.y=0;
+
+      const alpha=s.a*(.58+.42*Math.sin(s.phase));
+
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(178,231,255,${alpha})`;
+      ctx.shadowColor='rgba(105,195,255,.75)';
+      ctx.shadowBlur=6;
+      ctx.fill();
+    }
+
+    ctx.shadowBlur=0;
+    raf=requestAnimationFrame(draw);
+  }
+
+  function start(){
+    if(!raf && isGalaxy() && !document.hidden){
+      raf=requestAnimationFrame(draw);
+    }
+  }
+
+  function stop(){
+    if(raf){
+      cancelAnimationFrame(raf);
+      raf=0;
+    }
+    if(ctx) ctx.clearRect(0,0,w,h);
+    if(orbit) orbit.style.transform='';
+  }
+
+  function onMouseMove(e){
+    if(window.innerWidth<900 || !isGalaxy() || !orbit) return;
+    const r=hero.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5;
+    const y=(e.clientY-r.top)/r.height-.5;
+    orbit.style.transform=`translate3d(${x*5}px,${y*3}px,0)`;
+  }
+
+  function onMouseLeave(){
+    if(orbit) orbit.style.transform='';
+  }
+
+  function activate(){
+    if(!isGalaxy()){
+      stop();
+      return false;
+    }
+
+    if(!ensure()) return false;
+    ROOT.dataset.galaxyLiveVersion=VERSION;
+    resize();
+    start();
+    return true;
+  }
+
+  function init(){
+    activate();
+
+    // O hero Galaxy é criado dinamicamente pelo bloco anterior do mesmo arquivo.
+    [120,350,850,1600].forEach(ms=>setTimeout(activate,ms));
+
+    window.addEventListener('resize',resize,{passive:true});
+    window.addEventListener('axoriin:themechange',()=>setTimeout(activate,60));
+
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden) stop();
+      else activate();
+    });
+
+    const mo=new MutationObserver(()=>{
+      if(isGalaxy()) activate();
+      else stop();
+    });
+    mo.observe(ROOT,{attributes:true,attributeFilter:['data-ax-theme']});
+  }
+
+  window.AxoriinGalaxyLive={
+    version:VERSION,
+    refresh:activate,
+    stop,
+    status:()=>({
+      version:VERSION,
+      galaxy:isGalaxy(),
+      hero:!!document.querySelector('.ax-galaxy-hero'),
+      canvas:!!document.querySelector('.ax-galaxy-live-stars'),
+      running:!!raf,
+      width:w,
+      height:h
+    })
+  };
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init,{once:true});
+  }else{
+    init();
+  }
+})();
+/* === AXORIIN GALAXIA VIVO CORE V2.2.4 END === */

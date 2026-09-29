@@ -420,3 +420,294 @@ html[data-ax-theme="galaxy"] #metrics .metric-hud-percent{
 html[data-ax-theme="galaxy"] #menuWindows .window-card{
   visibility:visible;
 }
+
+/* === AXORIIN GALAXIA VIVO CORE V2.2.4 START ===
+   Movimento sutil do hero Galaxy.
+   Não altera dados, métricas, permissões, APIs ou estrutura funcional. */
+
+.ax-galaxy-live-stars,
+.ax-galaxy-live-nebula,
+.ax-galaxy-live-ring,
+.ax-galaxy-live-runner,
+.ax-galaxy-live-flyer{
+  display:none;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-hero{
+  isolation:isolate;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-hero-copy{
+  position:relative;
+  z-index:40 !important;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit{
+  z-index:25 !important;
+  transition:transform .26s ease-out;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-orbit img{
+  position:relative;
+  z-index:6;
+  animation:
+    gxFloat 6s ease-in-out infinite,
+    axGalaxyLiveOrbPulse 8s ease-in-out infinite !important;
+  filter:
+    drop-shadow(0 0 24px rgba(75,209,255,.28))
+    drop-shadow(0 0 44px rgba(102,91,255,.10)) !important;
+}
+
+/* Estrelas dinâmicas; o Canvas só desenha da região central para a direita. */
+html[data-ax-theme="galaxy"] .ax-galaxy-live-stars{
+  display:block;
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:8;
+  pointer-events:none;
+  mix-blend-mode:screen;
+}
+
+/* Névoas muito lentas, sem invadir visualmente o texto. */
+html[data-ax-theme="galaxy"] .ax-galaxy-live-nebula{
+  display:block;
+  position:absolute;
+  pointer-events:none;
+  z-index:5;
+  border-radius:50%;
+  filter:blur(34px);
+  mix-blend-mode:screen;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-live-nebula.a{
+  left:42%;
+  top:2%;
+  width:43%;
+  height:64%;
+  opacity:.10;
+  background:radial-gradient(ellipse,
+    rgba(54,131,255,.22),
+    rgba(94,73,245,.075) 43%,
+    transparent 72%);
+  animation:axGalaxyLiveNebulaA 15s ease-in-out infinite alternate;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-live-nebula.b{
+  left:56%;
+  top:43%;
+  width:36%;
+  height:51%;
+  opacity:.08;
+  background:radial-gradient(ellipse,
+    rgba(99,65,255,.17),
+    rgba(34,173,255,.06) 45%,
+    transparent 72%);
+  animation:axGalaxyLiveNebulaB 18s ease-in-out infinite alternate;
+}
+
+/* Anéis do orbe */
+html[data-ax-theme="galaxy"] .ax-galaxy-live-ring{
+  display:block;
+  position:absolute;
+  left:50%;
+  top:50%;
+  border-radius:50%;
+  pointer-events:none;
+  border:1px solid rgba(122,221,255,.15);
+  box-shadow:0 0 11px rgba(75,174,255,.055);
+  transform:translate(-50%,-50%);
+  z-index:3;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-live-ring::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  border-radius:inherit;
+  border-top:1px solid rgba(170,244,255,.40);
+  border-right:1px solid transparent;
+  border-bottom:1px solid rgba(136,108,255,.17);
+  border-left:1px solid transparent;
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-live-ring.r1{
+  width:94%;
+  aspect-ratio:1;
+  animation:axGalaxyLiveRingF 26s linear infinite;
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-ring.r2{
+  width:108%;
+  aspect-ratio:1;
+  animation:axGalaxyLiveRingR 34s linear infinite;
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-ring.r3{
+  width:78%;
+  aspect-ratio:1;
+  animation:axGalaxyLiveRingF 21s linear infinite;
+}
+
+/* Três nós discretos orbitando o núcleo. */
+html[data-ax-theme="galaxy"] .ax-galaxy-live-runner{
+  display:block;
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:9;
+  width:5px;
+  height:5px;
+  margin:-2.5px;
+  border-radius:50%;
+  pointer-events:none;
+  background:#dafbff;
+  box-shadow:
+    0 0 6px #8deeff,
+    0 0 13px rgba(92,199,255,.76);
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-runner::after{
+  content:"";
+  position:absolute;
+  right:4px;
+  top:2px;
+  width:20px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(141,229,255,.36));
+}
+
+html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.a{
+  animation:axGalaxyLiveRunnerA 10s linear infinite;
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.b{
+  opacity:.80;
+  animation:axGalaxyLiveRunnerB 13s linear infinite 1.8s;
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.c{
+  opacity:.68;
+  animation:axGalaxyLiveRunnerC 15.5s linear infinite 4.2s;
+}
+
+/* Dois pequenos packets atravessam o campo de vez em quando. */
+html[data-ax-theme="galaxy"] .ax-galaxy-live-flyer{
+  display:block;
+  position:absolute;
+  z-index:13;
+  width:9px;
+  height:4px;
+  border:1px solid rgba(177,236,255,.68);
+  border-radius:2px;
+  pointer-events:none;
+  background:rgba(111,193,255,.18);
+  box-shadow:0 0 7px rgba(82,189,255,.43);
+  opacity:0;
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-flyer::after{
+  content:"";
+  position:absolute;
+  right:100%;
+  top:50%;
+  width:26px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(134,215,255,.34));
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-flyer.a{
+  animation:axGalaxyLiveFlyA 13.5s linear infinite 2s;
+}
+html[data-ax-theme="galaxy"] .ax-galaxy-live-flyer.b{
+  animation:axGalaxyLiveFlyB 17s linear infinite 8s;
+}
+
+@keyframes axGalaxyLiveOrbPulse{
+  0%,100%{filter:drop-shadow(0 0 22px rgba(75,209,255,.25)) drop-shadow(0 0 38px rgba(102,91,255,.08))}
+  50%{filter:drop-shadow(0 0 30px rgba(75,209,255,.37)) drop-shadow(0 0 50px rgba(102,91,255,.13))}
+}
+@keyframes axGalaxyLiveNebulaA{
+  from{transform:translate3d(-6px,4px,0) scale(.98);opacity:.07}
+  to{transform:translate3d(12px,-5px,0) scale(1.05);opacity:.14}
+}
+@keyframes axGalaxyLiveNebulaB{
+  from{transform:translate3d(10px,-2px,0) scale(.98);opacity:.06}
+  to{transform:translate3d(-12px,5px,0) scale(1.06);opacity:.12}
+}
+@keyframes axGalaxyLiveRingF{
+  from{transform:translate(-50%,-50%) rotate(0deg)}
+  to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+@keyframes axGalaxyLiveRingR{
+  from{transform:translate(-50%,-50%) rotate(0deg)}
+  to{transform:translate(-50%,-50%) rotate(-360deg)}
+}
+@keyframes axGalaxyLiveRunnerA{
+  from{transform:rotate(0deg) translateX(112px) rotate(0deg)}
+  to{transform:rotate(360deg) translateX(112px) rotate(-360deg)}
+}
+@keyframes axGalaxyLiveRunnerB{
+  from{transform:rotate(55deg) translateX(127px) scale(.85) rotate(-55deg)}
+  to{transform:rotate(415deg) translateX(127px) scale(.85) rotate(-415deg)}
+}
+@keyframes axGalaxyLiveRunnerC{
+  from{transform:rotate(180deg) translateX(92px) scale(.72) rotate(-180deg)}
+  to{transform:rotate(540deg) translateX(92px) scale(.72) rotate(-540deg)}
+}
+@keyframes axGalaxyLiveFlyA{
+  0%{left:53%;top:83%;transform:rotate(-20deg) scale(.70);opacity:0}
+  12%{opacity:.58}
+  50%{left:69%;top:28%;transform:rotate(-20deg) scale(.94);opacity:.68}
+  88%{opacity:.44}
+  100%{left:83%;top:39%;transform:rotate(12deg) scale(.68);opacity:0}
+}
+@keyframes axGalaxyLiveFlyB{
+  0%{left:84%;top:74%;transform:rotate(205deg) scale(.65);opacity:0}
+  12%{opacity:.50}
+  50%{left:69%;top:51%;transform:rotate(205deg) scale(.90);opacity:.58}
+  90%{opacity:.38}
+  100%{left:54%;top:19%;transform:rotate(225deg) scale(.65);opacity:0}
+}
+
+/* Tablet */
+@media(max-width:1024px){
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.a{
+    animation-name:axGalaxyLiveRunnerATablet;
+  }
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.b{
+    animation-name:axGalaxyLiveRunnerBTablet;
+  }
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.c{
+    animation-name:axGalaxyLiveRunnerCTablet;
+  }
+}
+@keyframes axGalaxyLiveRunnerATablet{
+  from{transform:rotate(0deg) translateX(90px) rotate(0deg)}
+  to{transform:rotate(360deg) translateX(90px) rotate(-360deg)}
+}
+@keyframes axGalaxyLiveRunnerBTablet{
+  from{transform:rotate(55deg) translateX(103px) scale(.85) rotate(-55deg)}
+  to{transform:rotate(415deg) translateX(103px) scale(.85) rotate(-415deg)}
+}
+@keyframes axGalaxyLiveRunnerCTablet{
+  from{transform:rotate(180deg) translateX(74px) scale(.72) rotate(-180deg)}
+  to{transform:rotate(540deg) translateX(74px) scale(.72) rotate(-540deg)}
+}
+
+/* Mobile: mantém movimento, mas reduz densidade. */
+@media(max-width:760px){
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-nebula.a{
+    left:18%;
+    top:40%;
+    width:72%;
+    height:55%;
+  }
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-nebula.b{
+    left:40%;
+    top:56%;
+    width:55%;
+    height:38%;
+  }
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-flyer{
+    display:none !important;
+  }
+  html[data-ax-theme="galaxy"] .ax-galaxy-live-runner.b{
+    display:none !important;
+  }
+}
+/* === AXORIIN GALAXIA VIVO CORE V2.2.4 END === */
