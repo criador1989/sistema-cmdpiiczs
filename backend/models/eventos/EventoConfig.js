@@ -26,7 +26,7 @@ const CamisetaSchema = new mongoose.Schema({
 
 const EventoConfigSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true, index: true },
-  schemaVersion: { type: Number, default: 142 },
+  schemaVersion: { type: Number, default: 144 },
   publicado: { type: Boolean, default: true },
   inscricoesAbertas: { type: Boolean, default: false },
   titulo: { type: String, default: 'Corrida CMDPII-CZS 2ª edição' },
@@ -40,8 +40,8 @@ const EventoConfigSchema = new mongoose.Schema({
   local: { type: String, default: 'Colégio Militar Dom Pedro II • Cruzeiro do Sul - AC' },
   percursoLabel: { type: String, default: '4 km' },
   resumoCategorias: { type: String, default: 'Fundamental II, Ensino Médio, AEE, PCD, servidores e comunidade escolar' },
-  resumoPremiacao: { type: String, default: 'Premiação por categoria e sexo' },
-  premioDescricao: { type: String, default: 'Troféus conforme o regulamento e medalha de finisher aos concluintes.' },
+  resumoPremiacao: { type: String, default: 'Premiação apenas para o 1º lugar por categoria e sexo' },
+  premioDescricao: { type: String, default: 'Troféus aos primeiros colocados de cada categoria e sexo, além dos atletas mais experientes em Servidores/Colaboradores; medalha de finisher aos concluintes.' },
   sponsorMessage: { type: String, default: 'Espaço reservado para patrocinadores e apoiadores do evento' },
   sponsorSubMessage: { type: String, default: 'Em breve, nossos parceiros estarão aqui.' },
   contatoEmail: { type: String, default: 'colegiodompedro.czs@gmail.com' },
@@ -68,19 +68,26 @@ const EventoConfigSchema = new mongoose.Schema({
   regulamentoPdfNome: { type: String, default: '' },
   regulamentoPdfPublicado: { type: Boolean, default: false },
   regulamentoPdfAtualizadoEm: { type: Date, default: null },
-  termoVersao: { type: String, default: '2026-09-24-v3' },
+  termoVersao: { type: String, default: '2026-10-01-v5' },
   publicoPermitido: { type: [String], default: [
-    'Alunos do CMDPII/CZS', 'Pais e mães de alunos', 'Irmãos e irmãs de alunos', 'Ex-alunos (egressos)',
-    'Servidores e colaboradores', 'Cônjuges e filhos de servidores/colaboradores', 'Comunidade Escolar II'
+    'Alunos do CMDPII/CZS',
+    'Pais e mães de alunos',
+    'Irmãos e irmãs de alunos',
+    'Servidores e colaboradores',
+    'Cônjuges e filhos de servidores/colaboradores'
   ] },
   kitItems: { type: [String], default: [
-    'Camiseta oficial com manga', 'Número de peito oficial', 'Estrutura pós-corrida', 'Medalha metálica de finisher (entregue somente no dia da corrida, após a conclusão da prova)'
+    'Camiseta oficial com manga',
+    'Número de peito oficial',
+    'Acesso à mesa de frutas e hidratação',
+    'Estrutura pós-corrida',
+    'Medalha metálica de finisher (entregue somente no dia da corrida, após a conclusão da prova)'
   ] },
   camisetas: { type: [CamisetaSchema], default: () => ([
     { tamanho: 'PP' }, { tamanho: 'P' }, { tamanho: 'M' }, { tamanho: 'G' }, { tamanho: 'GG' }, { tamanho: 'XG' }
   ]) },
   lotes: { type: [LoteSchema], default: () => ([
-    { key: 'promocional', nome: 'Lote Promocional', inicio: new Date('2026-09-24T05:00:00.000Z'), fim: new Date('2026-10-10T04:59:59.999Z'), valorCentavos: 7500, ativo: true },
+    { key: 'promocional', nome: 'Lote Promocional', inicio: new Date('2026-09-24T05:00:00.000Z'), fim: new Date('2026-10-10T04:59:59.999Z'), valorCentavos: 8000, ativo: true },
     { key: 'normal', nome: 'Lote Normal', inicio: new Date('2026-10-10T05:00:00.000Z'), fim: null, valorCentavos: 9000, ativo: true },
   ]) },
   pagamento: {
@@ -95,14 +102,13 @@ const EventoConfigSchema = new mongoose.Schema({
   categorias: {
     type: [CategoriaSchema],
     default: () => ([
-      { key: 'fundamental-regular', nome: 'Ensino Fundamental II Regular', descricao: 'Alunos do Ensino Fundamental II • turno da manhã.', premiacao: '1º, 2º e 3º • Masculino e Feminino' },
-      { key: 'fundamental-aee', nome: 'Ensino Fundamental II AEE', descricao: 'Alunos do Ensino Fundamental II que optarem pela categoria AEE • turno da manhã.', premiacao: '1º, 2º e 3º • Masculino e Feminino' },
-      { key: 'medio-regular', nome: 'Ensino Médio Regular', descricao: 'Alunos do Ensino Médio • turno da tarde.', premiacao: '1º, 2º e 3º • Masculino e Feminino' },
-      { key: 'medio-aee', nome: 'Ensino Médio AEE', descricao: 'Alunos do Ensino Médio que optarem pela categoria AEE • turno da tarde.', premiacao: '1º, 2º e 3º • Masculino e Feminino' },
-      { key: 'servidores', nome: 'Servidores/Colaboradores', descricao: 'Servidores e colaboradores do CMDPII/CZS.', premiacao: '1º e 2º • Masculino e Feminino' },
-      { key: 'comunidade-1', nome: 'Comunidade Escolar I', descricao: 'Pais e mães de alunos e cônjuges de servidores/colaboradores.', premiacao: '1º e 2º • Masculino e Feminino' },
-      { key: 'comunidade-2', nome: 'Comunidade Escolar II', descricao: 'Egressos, filhos de Bombeiros, filhos de servidores/colaboradores e irmãos/irmãs de alunos.', premiacao: '1º e 2º • Masculino e Feminino' },
-      { key: 'pcd', nome: 'PCD', descricao: 'Atletas PCD pertencentes aos públicos autorizados no regulamento.', premiacao: '1º e 2º • Masculino e Feminino' },
+      { key: 'fundamental-regular', nome: 'Ensino Fundamental II Regular', descricao: 'Alunos do Ensino Fundamental II • turno da manhã.', premiacao: '1º lugar • Masculino e Feminino' },
+      { key: 'fundamental-aee', nome: 'Ensino Fundamental II AEE', descricao: 'Alunos do Ensino Fundamental II que optarem pela categoria AEE • turno da manhã.', premiacao: '1º lugar • Masculino e Feminino' },
+      { key: 'medio-regular', nome: 'Ensino Médio Regular', descricao: 'Alunos do Ensino Médio • turno da tarde.', premiacao: '1º lugar • Masculino e Feminino' },
+      { key: 'medio-aee', nome: 'Ensino Médio AEE', descricao: 'Alunos do Ensino Médio que optarem pela categoria AEE • turno da tarde.', premiacao: '1º lugar • Masculino e Feminino' },
+      { key: 'servidores', nome: 'Servidores/Colaboradores', descricao: 'Servidores e colaboradores do CMDPII/CZS.', premiacao: '1º lugar • Masculino e Feminino' },
+      { key: 'comunidade-1', nome: 'Comunidade Escolar I', descricao: 'Pais e mães, irmãos e irmãs de alunos e cônjuges e filhos de servidores/colaboradores.', premiacao: '1º lugar • Masculino e Feminino' },
+      { key: 'pcd', nome: 'PCD', descricao: 'Atletas PCD pertencentes aos públicos autorizados no regulamento.', premiacao: '1º lugar • Masculino e Feminino' }
     ])
   },
   certificado: {

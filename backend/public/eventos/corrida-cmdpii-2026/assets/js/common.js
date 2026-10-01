@@ -209,3 +209,67 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.abrirRegulamentoCorrida = openModal;
 
 })();
+
+
+/* AXORIIN_ROUTE_VIDEO_EXTERNAL_V145
+   Restaura o comportamento do botão "Ver percurso":
+   abre o vídeo completo em nova aba, respeitando o vídeo
+   configurado no CMS quando existir. */
+(() => {
+  const FALLBACK_ROUTE_VIDEO =
+    '/eventos/corrida-cmdpii-2026/assets/media/percurso-oficial.mp4';
+
+  async function bindRouteVideoLink() {
+    let routeUrl = FALLBACK_ROUTE_VIDEO;
+
+    try {
+      const cfg = await getConfig();
+
+      if (cfg && cfg.percursoVideoUrl) {
+        routeUrl = cfg.percursoVideoUrl;
+      }
+    } catch (_) {
+      // Se a configuração não estiver disponível,
+      // utiliza o vídeo oficial local.
+    }
+
+    const candidates =
+      document.querySelectorAll('a, button');
+
+    candidates.forEach(el => {
+      const label = String(el.textContent || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase();
+
+      if (!label.includes('VER PERCURSO')) return;
+
+      if (el.tagName === 'A') {
+        el.setAttribute('href', routeUrl);
+        el.setAttribute('target', '_blank');
+        el.setAttribute('rel', 'noopener noreferrer');
+        el.removeAttribute('download');
+        return;
+      }
+
+      if (el.dataset.routeExternalBound === '1') return;
+
+      el.dataset.routeExternalBound = '1';
+
+      el.addEventListener('click', event => {
+        event.preventDefault();
+        window.open(routeUrl, '_blank', 'noopener,noreferrer');
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      bindRouteVideoLink,
+      { once: true }
+    );
+  } else {
+    bindRouteVideoLink();
+  }
+})();
