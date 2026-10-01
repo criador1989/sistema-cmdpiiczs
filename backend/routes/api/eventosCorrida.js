@@ -321,14 +321,13 @@ async function sendRegistrationStatusEmail(req, account, participant, inscriptio
 }
 
 const V120_CATEGORIES = [
-  { key: 'fundamental-regular', nome: 'Ensino Fundamental II Regular', descricao: 'Alunos do Ensino Fundamental II • turno da manhã.', premiacao: '1º, 2º e 3º • Masculino e Feminino', ativo: true },
-  { key: 'fundamental-aee', nome: 'Ensino Fundamental II AEE', descricao: 'Alunos do Ensino Fundamental II que optarem pela categoria AEE • turno da manhã.', premiacao: '1º, 2º e 3º • Masculino e Feminino', ativo: true },
-  { key: 'medio-regular', nome: 'Ensino Médio Regular', descricao: 'Alunos do Ensino Médio • turno da tarde.', premiacao: '1º, 2º e 3º • Masculino e Feminino', ativo: true },
-  { key: 'medio-aee', nome: 'Ensino Médio AEE', descricao: 'Alunos do Ensino Médio que optarem pela categoria AEE • turno da tarde.', premiacao: '1º, 2º e 3º • Masculino e Feminino', ativo: true },
-  { key: 'servidores', nome: 'Servidores/Colaboradores', descricao: 'Servidores e colaboradores do CMDPII/CZS.', premiacao: '1º e 2º • Masculino e Feminino', ativo: true },
-  { key: 'comunidade-1', nome: 'Comunidade Escolar I', descricao: 'Pais e mães de alunos e cônjuges de servidores/colaboradores.', premiacao: '1º e 2º • Masculino e Feminino', ativo: true },
-  { key: 'comunidade-2', nome: 'Comunidade Escolar II', descricao: 'Egressos, filhos de Bombeiros, filhos de servidores/colaboradores e irmãos/irmãs de alunos.', premiacao: '1º e 2º • Masculino e Feminino', ativo: true },
-  { key: 'pcd', nome: 'PCD', descricao: 'Atletas PCD pertencentes aos públicos autorizados no regulamento.', premiacao: '1º e 2º • Masculino e Feminino', ativo: true },
+  { key: 'fundamental-regular', nome: 'Ensino Fundamental II Regular', descricao: 'Alunos do Ensino Fundamental II • turno da manhã.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'fundamental-aee', nome: 'Ensino Fundamental II AEE', descricao: 'Alunos do Ensino Fundamental II que optarem pela categoria AEE • turno da manhã.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'medio-regular', nome: 'Ensino Médio Regular', descricao: 'Alunos do Ensino Médio • turno da tarde.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'medio-aee', nome: 'Ensino Médio AEE', descricao: 'Alunos do Ensino Médio que optarem pela categoria AEE • turno da tarde.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'servidores', nome: 'Servidores/Colaboradores', descricao: 'Servidores e colaboradores do CMDPII/CZS.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'comunidade-1', nome: 'Comunidade Escolar I', descricao: 'Pais e mães, irmãos e irmãs de alunos e cônjuges e filhos de servidores/colaboradores.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'pcd', nome: 'PCD', descricao: 'Atletas PCD pertencentes aos públicos autorizados no regulamento.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
 ];
 
 const HISTORICAL_PHOTOS = [
@@ -364,8 +363,8 @@ function needsV131Migration(cfg) {
 
 function needsV130Migration(cfg) {
   const keys = (cfg.categorias || []).map(c => c.key);
-  const directFirefighter = (cfg.publicoPermitido || []).some(x => /bombeiros? militares?/i.test(String(x || '')) && !/filhos?/i.test(String(x || '')));
-  return Number(cfg.schemaVersion || 0) < 130 || keys.includes('bombeiros') || directFirefighter || keys.some(k => ['infantil','juvenil','adulto','comunidade'].includes(k));
+  return Number(cfg.schemaVersion || 0) < 130 ||
+    keys.some(k => ['infantil','juvenil','adulto','comunidade'].includes(k));
 }
 
 async function ensureConfig() {
@@ -379,14 +378,26 @@ async function ensureConfig() {
     if (!cfg.dataLabel || cfg.dataLabel === 'Novembro de 2026') cfg.dataLabel = '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30';
     if (!cfg.local || cfg.local === 'Cruzeiro do Sul - AC') cfg.local = 'Colégio Militar Dom Pedro II • Cruzeiro do Sul - AC';
     cfg.resumoCategorias = 'Fundamental II, Ensino Médio, AEE, PCD, servidores e comunidade escolar';
-    cfg.resumoPremiacao = 'Premiação por categoria e sexo';
-    cfg.premioDescricao = 'Troféus conforme o regulamento e medalha de finisher aos concluintes.';
-    cfg.publicoPermitido = ['Alunos do CMDPII/CZS','Pais e mães de alunos','Irmãos e irmãs de alunos','Ex-alunos (egressos)','Servidores e colaboradores','Cônjuges e filhos de servidores/colaboradores','Comunidade Escolar II'];
+    cfg.resumoPremiacao = 'Premiação apenas para o 1º lugar por categoria e sexo';
+    cfg.premioDescricao = 'Troféus aos primeiros colocados de cada categoria e sexo, além dos atletas mais experientes em Servidores/Colaboradores; medalha de finisher aos concluintes.';
+    cfg.publicoPermitido = [
+      'Alunos do CMDPII/CZS',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
+      'Servidores e colaboradores',
+      'Cônjuges e filhos de servidores/colaboradores'
+    ];
     if (!cfg.fraseLateral || cfg.fraseLateral === 'Juntos corremos mais longe.') cfg.fraseLateral = 'Correndo uma comunidade mais forte.';
     if (!cfg.subtitulo || cfg.subtitulo === 'Inscrições, regulamento, kit do atleta, pagamento, resultados e galeria em um só lugar.') cfg.subtitulo = 'Mais que uma corrida, um encontro da nossa comunidade. Esporte, educação e um futuro em movimento.';
-    cfg.kitItems = ['Camiseta oficial com manga','Número de peito oficial','Estrutura pós-corrida','Medalha metálica de finisher (entregue somente no dia da corrida, após a conclusão da prova)'];
+    cfg.kitItems = [
+      'Camiseta oficial com manga',
+      'Número de peito oficial',
+      'Acesso à mesa de frutas e hidratação',
+      'Estrutura pós-corrida',
+      'Medalha metálica de finisher (entregue somente no dia da corrida, após a conclusão da prova)'
+    ];
     if (!Array.isArray(cfg.lotes) || !cfg.lotes.length) cfg.lotes = [
-      { key: 'promocional', nome: 'Lote Promocional', inicio: new Date('2026-09-24T05:00:00.000Z'), fim: new Date('2026-10-10T04:59:59.999Z'), valorCentavos: 7500, ativo: true },
+      { key: 'promocional', nome: 'Lote Promocional', inicio: new Date('2026-09-24T05:00:00.000Z'), fim: new Date('2026-10-10T04:59:59.999Z'), valorCentavos: 8000, ativo: true },
       { key: 'normal', nome: 'Lote Normal', inicio: new Date('2026-10-10T05:00:00.000Z'), fim: null, valorCentavos: 9000, ativo: true },
     ];
     if (!Array.isArray(cfg.camisetas) || !cfg.camisetas.length) cfg.camisetas = ['PP','P','M','G','GG','XG'].map(tamanho => ({ tamanho, estoque: null, ativo: true }));
@@ -412,19 +423,13 @@ async function ensureConfig() {
       'Alunos do CMDPII/CZS',
       'Pais e mães de alunos',
       'Irmãos e irmãs de alunos',
-      'Ex-alunos (egressos)',
       'Servidores e colaboradores',
       'Cônjuges e filhos de servidores/colaboradores'
     ];
     cfg.termoVersao = '2026-09-24-v2';
     cfg.regulamentoPdfPublicado = false;
     await cfg.save();
-
-    await EventoParticipante.updateMany(
-      { eventSlug: EVENT_SLUG, vinculo: 'filho_bombeiro' },
-      { $set: { vinculo: 'filho_servidor' } }
-    );
-  }
+}
 
   // PATCH_UTF8_CORRIDA_2026_V141
   if (Number(cfg.schemaVersion || 0) < 141) {
@@ -451,7 +456,6 @@ async function ensureConfig() {
       'Alunos do CMDPII/CZS',
       'Pais e mães de alunos',
       'Irmãos e irmãs de alunos',
-      'Ex-alunos (egressos)',
       'Servidores e colaboradores',
       'Cônjuges e filhos de servidores/colaboradores'
     ];
@@ -473,6 +477,117 @@ async function ensureConfig() {
 
     cfg.dataLabel =
       '22 de novembro de 2026 • concentração às 06h00 • largada às 06h30';
+
+    await cfg.save();
+  }
+
+  // PATCH_REGRAS_FINAIS_CORRIDA_V143
+  if (Number(cfg.schemaVersion || 0) < 143) {
+    cfg.schemaVersion = 143;
+
+    cfg.resumoPremiacao =
+      'Premiação apenas para o 1º lugar por categoria e sexo';
+
+    cfg.premioDescricao =
+      'Troféus aos primeiros colocados de cada categoria e sexo, além dos atletas mais experientes em Servidores/Colaboradores; medalha de finisher aos concluintes.';
+
+    cfg.categorias = V120_CATEGORIES;
+
+    cfg.publicoPermitido = [
+      'Alunos do CMDPII/CZS',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
+      'Servidores e colaboradores',
+      'Cônjuges e filhos de servidores/colaboradores'
+    ];
+
+    cfg.kitItems = [
+      'Camiseta oficial com manga',
+      'Número de peito oficial',
+      'Acesso à mesa de frutas e hidratação',
+      'Estrutura pós-corrida',
+      'Medalha metálica de finisher (entregue somente no dia da corrida, após a conclusão da prova)'
+    ];
+
+    cfg.lotes = [
+      {
+        key: 'promocional',
+        nome: 'Lote Promocional',
+        inicio: new Date('2026-09-24T05:00:00.000Z'),
+        fim: new Date('2026-10-10T04:59:59.999Z'),
+        valorCentavos: 8000,
+        ativo: true
+      },
+      {
+        key: 'normal',
+        nome: 'Lote Normal',
+        inicio: new Date('2026-10-10T05:00:00.000Z'),
+        fim: null,
+        valorCentavos: 9000,
+        ativo: true
+      }
+    ];
+
+    cfg.termoVersao = '2026-09-30-v4';
+
+    cfg.markModified('categorias');
+    cfg.markModified('publicoPermitido');
+    cfg.markModified('kitItems');
+    cfg.markModified('lotes');
+
+    await cfg.save();
+  }
+
+  // PATCH_LIMPEZA_GLOBAL_CORRIDA_V144
+  if (Number(cfg.schemaVersion || 0) < 144) {
+    cfg.schemaVersion = 144;
+
+    cfg.categorias = V120_CATEGORIES;
+
+    cfg.publicoPermitido = [
+      'Alunos do CMDPII/CZS',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
+      'Servidores e colaboradores',
+      'Cônjuges e filhos de servidores/colaboradores'
+    ];
+
+    cfg.kitItems = [
+      'Camiseta oficial com manga',
+      'Número de peito oficial',
+      'Acesso à mesa de frutas e hidratação',
+      'Estrutura pós-corrida',
+      'Medalha metálica de finisher (entregue somente no dia da corrida, após a conclusão da prova)'
+    ];
+
+    cfg.lotes = [
+      {
+        key: 'promocional',
+        nome: 'Lote Promocional',
+        inicio: new Date('2026-09-24T05:00:00.000Z'),
+        fim: new Date('2026-10-10T04:59:59.999Z'),
+        valorCentavos: 8000,
+        ativo: true
+      },
+      {
+        key: 'normal',
+        nome: 'Lote Normal',
+        inicio: new Date('2026-10-10T05:00:00.000Z'),
+        fim: null,
+        valorCentavos: 9000,
+        ativo: true
+      }
+    ];
+
+    cfg.resumoPremiacao =
+      'Premiação apenas para o 1º lugar por categoria e sexo';
+
+    cfg.termoVersao = '2026-10-01-v5';
+
+    cfg.markModified('categorias');
+    cfg.markModified('publicoPermitido');
+    cfg.markModified('kitItems');
+    cfg.markModified('lotes');
 
     await cfg.save();
   }
@@ -511,8 +626,14 @@ function publicConfig(cfg) {
     regulamentoPdfNome: '',
     regulamentoPdfUrl: '',
     regulamentoPdfAtualizadoEm: c.regulamentoPdfAtualizadoEm || null,
-    kitItems: c.kitItems || [], publicoPermitido: (c.publicoPermitido || []).filter(x => !(/bombeiros? militares?/i.test(String(x || '')) && !/filhos?/i.test(String(x || '')))), camisetas: (c.camisetas || []).filter(x => x.ativo !== false),
-    categorias: (c.categorias || []).filter(x => x.ativo !== false && x.key !== 'bombeiros'),
+    kitItems: c.kitItems || [], publicoPermitido: (c.publicoPermitido || []).filter(x => [
+      'Alunos do CMDPII/CZS',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
+      'Servidores e colaboradores',
+      'Cônjuges e filhos de servidores/colaboradores'
+    ].includes(String(x || ''))), camisetas: (c.camisetas || []).filter(x => x.ativo !== false),
+    categorias: (c.categorias || []).filter(x => x.ativo !== false && ['fundamental-regular','fundamental-aee','medio-regular','medio-aee','servidores','comunidade-1','pcd'].includes(x.key)),
     lotes: activeLots(c).map(l => ({ key:l.key, nome:l.nome, inicio:l.inicio, fim:l.fim, valorCentavos:l.valorCentavos, valorLabel:moneyBRL(l.valorCentavos) })),
     pagamento: { modo: c.pagamento?.modo === 'sicoob_api' && c.pagamento?.sicoobApiAtiva ? 'sicoob_api' : 'manual', modoConfigurado: c.pagamento?.modo || 'manual', banco: c.pagamento?.banco || 'Sicoob', favorecido: c.pagamento?.favorecido || '', instrucoes: c.pagamento?.instrucoes || '', sicoobApiAtiva: Boolean(c.pagamento?.sicoobApiAtiva) },
     certificado: c.certificado, medalha: c.medalha,
@@ -597,6 +718,22 @@ function ageOnDate(birth, ref) {
   return age;
 }
 
+const CURRENT_RACE_CATEGORY_BASES = new Set([
+  'fundamental-regular',
+  'fundamental-aee',
+  'medio-regular',
+  'medio-aee',
+  'servidores',
+  'comunidade-1',
+  'pcd'
+]);
+
+function isCurrentRaceCategoryKey(key) {
+  const value = String(key || '');
+  const base = value.replace(/-(masculino|feminino)$/, '');
+  return CURRENT_RACE_CATEGORY_BASES.has(base);
+}
+
 function categoryForParticipant(participant, cfg) {
   const sexo = participant.sexo;
   if (!['masculino','feminino'].includes(sexo)) return { error: 'Selecione Masculino ou Feminino para a categoria competitiva.' };
@@ -607,8 +744,7 @@ function categoryForParticipant(participant, cfg) {
     if (participant.enquadramento === 'aee' || participant.aee) base = participant.etapaEnsino === 'fundamental2' ? 'fundamental-aee' : 'medio-aee';
     else base = participant.etapaEnsino === 'fundamental2' ? 'fundamental-regular' : 'medio-regular';
   } else if (participant.vinculo === 'servidor') base = 'servidores';
-  else if (['pai','mae','conjuge_servidor'].includes(participant.vinculo)) base = 'comunidade-1';
-  else if (['irmao','irma','egresso','filho_servidor'].includes(participant.vinculo)) base = 'comunidade-2';
+  else if (['pai','mae','irmao','irma','conjuge_servidor','filho_servidor'].includes(participant.vinculo)) base = 'comunidade-1';
   if (!base) return { error: 'Vínculo sem categoria competitiva configurada.' };
   const cat = (cfg.categorias || []).find(c => c.key === base && c.ativo !== false);
   if (!cat) return { error: 'Categoria indisponível no momento.' };
@@ -699,7 +835,7 @@ router.get(`/${EVENT_SLUG}/resultados`, async (req, res) => {
     const filter = { eventSlug: EVENT_SLUG, publicado: true };
     const results = await EventoResultado.find(filter).sort({ colocacaoGeral: 1, tempoMs: 1 }).limit(500).lean();
     const ids = results.map(r => r.inscriptionId);
-    const inscriptions = (await EventoInscricao.find({ _id: { $in: ids }, 'consent.publicResult': true }).lean()).filter(i => !String(i.categoriaKey || '').startsWith('bombeiros-'));
+    const inscriptions = (await EventoInscricao.find({ _id: { $in: ids }, 'consent.publicResult': true }).lean()).filter(i => isCurrentRaceCategoryKey(i.categoriaKey));
     const allowed = new Map(inscriptions.map(i => [String(i._id), i]));
     const participants = await EventoParticipante.find({ _id: { $in: inscriptions.map(i => i.participantId) } }).select('nome').lean();
     const pmap = new Map(participants.map(p => [String(p._id), p.nome]));
@@ -1053,7 +1189,7 @@ router.post(`/${EVENT_SLUG}/participantes`, participantAuth, async (req, res) =>
     const nascimento = new Date(req.body.nascimento);
     const cpf = onlyDigits(req.body.cpf) || undefined;
     const sexo = ['masculino', 'feminino'].includes(req.body.sexo) ? req.body.sexo : null;
-    const vinculos = ['aluno','pai','mae','irmao','irma','egresso','servidor','conjuge_servidor','filho_servidor'];
+    const vinculos = ['aluno','pai','mae','irmao','irma','servidor','conjuge_servidor','filho_servidor'];
     const vinculo = vinculos.includes(req.body.vinculo) ? req.body.vinculo : null;
     const enquadramento = ['regular','aee','pcd'].includes(req.body.enquadramento) ? req.body.enquadramento : 'regular';
     const etapaEnsino = vinculo === 'aluno' && ['fundamental2','medio'].includes(req.body.etapaEnsino) ? req.body.etapaEnsino : 'nao_aplicavel';
@@ -1222,11 +1358,17 @@ admin.put('/config', async (req, res) => {
     if (req.body.inscricoesAbertas !== undefined) cfg.inscricoesAbertas = Boolean(req.body.inscricoesAbertas);
     if (req.body.eventDate !== undefined) cfg.eventDate = req.body.eventDate ? new Date(req.body.eventDate) : null;
     if (req.body.categoryReferenceDate) cfg.categoryReferenceDate = new Date(req.body.categoryReferenceDate);
-    if (Array.isArray(req.body.publicoPermitido)) cfg.publicoPermitido = req.body.publicoPermitido.map(x => safeText(x, 160)).filter(Boolean).filter(x => !(/bombeiros? militares?/i.test(x) && !/filhos?/i.test(x))).slice(0, 30);
+    if (Array.isArray(req.body.publicoPermitido)) cfg.publicoPermitido = req.body.publicoPermitido.map(x => safeText(x, 160)).filter(x => [
+      'Alunos do CMDPII/CZS',
+      'Pais e mães de alunos',
+      'Irmãos e irmãs de alunos',
+      'Servidores e colaboradores',
+      'Cônjuges e filhos de servidores/colaboradores'
+    ].includes(x));
     if (Array.isArray(req.body.kitItems)) cfg.kitItems = req.body.kitItems.map(x => safeText(x, 160)).filter(Boolean).slice(0, 30);
     if (Array.isArray(req.body.camisetas)) cfg.camisetas = req.body.camisetas.map(c => ({ tamanho: safeText(c.tamanho, 10).toUpperCase(), estoque: c.estoque === '' || c.estoque === null || c.estoque === undefined ? null : Math.max(0, Number(c.estoque) || 0), ativo: c.ativo !== false })).filter(c => c.tamanho).slice(0, 20);
     if (Array.isArray(req.body.lotes)) cfg.lotes = req.body.lotes.map((l,idx) => ({ key: safeText(l.key || `lote-${idx+1}`,50).toLowerCase().replace(/[^a-z0-9-]/g,'-'), nome: safeText(l.nome,80), inicio: l.inicio ? new Date(l.inicio) : null, fim: l.fim ? new Date(l.fim) : null, valorCentavos: Math.max(0, Number(l.valorCentavos)||0), ativo: l.ativo !== false })).filter(l => l.nome && l.valorCentavos > 0).slice(0,10);
-    if (Array.isArray(req.body.categorias)) cfg.categorias = req.body.categorias.map((c, idx) => ({ key: safeText(c.key || `categoria-${idx+1}`, 50).toLowerCase().replace(/[^a-z0-9-]/g, '-'), nome: safeText(c.nome, 100), descricao: safeText(c.descricao, 250), premiacao: safeText(c.premiacao, 120), ativo: c.ativo !== false })).filter(c => c.nome && c.key !== 'bombeiros' && !/bombeiros? militares?/i.test(c.nome));
+    if (Array.isArray(req.body.categorias)) cfg.categorias = req.body.categorias.map((c, idx) => ({ key: safeText(c.key || `categoria-${idx+1}`, 50).toLowerCase().replace(/[^a-z0-9-]/g, '-'), nome: safeText(c.nome, 100), descricao: safeText(c.descricao, 250), premiacao: safeText(c.premiacao, 120), ativo: c.ativo !== false })).filter(c => c.nome && ['fundamental-regular','fundamental-aee','medio-regular','medio-aee','servidores','comunidade-1','pcd'].includes(c.key));
     if (req.body.pagamento) {
       const modo = req.body.pagamento.modo === 'sicoob_api' ? 'sicoob_api' : 'manual';
       cfg.pagamento = {
@@ -1241,7 +1383,7 @@ admin.put('/config', async (req, res) => {
     }
     if (req.body.certificado) cfg.certificado = { titulo: safeText(req.body.certificado.titulo,100), textoBase: safeText(req.body.certificado.textoBase,1500), assinatura: safeText(req.body.certificado.assinatura,150), publicado: req.body.certificado.publicado !== false };
     if (req.body.medalha) cfg.medalha = { titulo: safeText(req.body.medalha.titulo,100), edicao: safeText(req.body.medalha.edicao,50), ano: safeText(req.body.medalha.ano,10), mensagem: safeText(req.body.medalha.mensagem,300), publicado: req.body.medalha.publicado !== false };
-    cfg.schemaVersion = Math.max(Number(cfg.schemaVersion || 0), 142);
+    cfg.schemaVersion = Math.max(Number(cfg.schemaVersion || 0), 144);
     cfg.markModified('categorias'); cfg.markModified('lotes'); cfg.markModified('camisetas'); cfg.markModified('pagamento'); cfg.markModified('kitItems'); cfg.markModified('publicoPermitido');
     await cfg.save();
 
@@ -1410,7 +1552,7 @@ admin.get('/relatorios/participantes.pdf', async (req, res) => {
     const pmap = new Map(participants.map(p => [String(p._id), p]));
 
     const rows = inscriptions
-      .filter(i => !String(i.categoriaKey || '').startsWith('bombeiros-'))
+      .filter(i => isCurrentRaceCategoryKey(i.categoriaKey))
       .map(i => ({ ins: i, participante: pmap.get(String(i.participantId)) || null }))
       .filter(x => x.participante)
       .sort((a, b) => {
@@ -1578,7 +1720,7 @@ admin.get('/inscricoes', async (req, res) => {
   const accounts = await EventoConta.find({ _id: { $in: inscriptions.map(i => i.accountId) } }).select('nome email telefone').lean();
   const pmap = new Map(participants.map(p => [String(p._id), p]));
   const amap = new Map(accounts.map(a => [String(a._id), a]));
-  let out = inscriptions.filter(i => !String(i.categoriaKey || '').startsWith('bombeiros-')).map(i => ({ ...i, participante: pmap.get(String(i.participantId)) || null, conta: amap.get(String(i.accountId)) || null, comprovanteUrl: i.pagamento?.comprovanteMediaId ? `/api/eventos/${EVENT_SLUG}/admin/inscricoes/${i._id}/comprovante` : '' }));
+  let out = inscriptions.filter(i => isCurrentRaceCategoryKey(i.categoriaKey)).map(i => ({ ...i, participante: pmap.get(String(i.participantId)) || null, conta: amap.get(String(i.accountId)) || null, comprovanteUrl: i.pagamento?.comprovanteMediaId ? `/api/eventos/${EVENT_SLUG}/admin/inscricoes/${i._id}/comprovante` : '' }));
   if (vinculo) out = out.filter(x => x.participante?.vinculo === vinculo);
   if (turno) out = out.filter(x => x.participante?.turno === turno);
   if (enquadramento) out = out.filter(x => x.participante?.enquadramento === enquadramento);
