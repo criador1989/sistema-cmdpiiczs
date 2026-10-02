@@ -22,7 +22,7 @@ const EventoContaSchema = new mongoose.Schema({
 }, { timestamps: true, collection: 'evento_contas' });
 
 EventoContaSchema.index({ eventSlug: 1, email: 1 }, { unique: true });
-EventoContaSchema.index({ eventSlug: 1, cpf: 1 }, { unique: true, sparse: true });
+
 EventoContaSchema.index({ eventSlug: 1, emailConfirmTokenHash: 1 }, { sparse: true });
 
 module.exports = mongoose.models.EventoConta || mongoose.model('EventoConta', EventoContaSchema);
