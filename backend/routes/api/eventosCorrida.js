@@ -301,7 +301,7 @@ async function createAndSendEmailConfirmation(req, account) {
   account.emailConfirmadoEm = null;
   await account.save();
 
-  const confirmationUrl = `${publicBaseUrl(req)}/api/eventos/${EVENT_SLUG}/auth/confirmar-email?token=${encodeURIComponent(rawToken)}`;
+  const confirmationUrl = `${publicBaseUrl(req)}/api/eventos/${EVENT_SLUG}/auth/confirmar-email?eventoToken=${encodeURIComponent(rawToken)}`;
   return sendEventEmail(mailPayload(account.email, confirmationUrl, account.nome));
 }
 
@@ -1072,7 +1072,7 @@ router.post(`/${EVENT_SLUG}/auth/cadastro`, authRateLimit, async (req, res) => {
 
 router.get(`/${EVENT_SLUG}/auth/confirmar-email`, async (req, res) => {
   try {
-    const rawToken = String(req.query.token || '').trim();
+    const rawToken = String(req.query.eventoToken || req.query.token || '').trim();
     if (!rawToken) return res.redirect(`/eventos/${EVENT_SLUG}/entrar.html?confirmacao=token-ausente`);
     const tokenHash = sha256(rawToken);
     const account = await EventoConta.findOne({
@@ -1087,8 +1087,10 @@ router.get(`/${EVENT_SLUG}/auth/confirmar-email`, async (req, res) => {
     account.emailConfirmadoEm = new Date();
     account.emailConfirmTokenHash = '';
     account.emailConfirmExpiraEm = null;
+    account.ultimoLoginEm = new Date();
     await account.save();
-    return res.redirect(`/eventos/${EVENT_SLUG}/entrar.html?confirmado=1`);
+    setAccountCookie(res, signAccount(account));
+    return res.redirect(`/eventos/${EVENT_SLUG}/inscricao.html?confirmado=1`);
   } catch (e) {
     console.error('[eventos/confirmar-email]', e);
     return res.redirect(`/eventos/${EVENT_SLUG}/entrar.html?confirmacao=erro`);
