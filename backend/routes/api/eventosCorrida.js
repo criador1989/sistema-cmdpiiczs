@@ -326,7 +326,7 @@ const V120_CATEGORIES = [
   { key: 'medio-regular', nome: 'Ensino Médio Regular', descricao: 'Alunos do Ensino Médio • turno da tarde.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
   { key: 'medio-aee', nome: 'Ensino Médio AEE', descricao: 'Alunos do Ensino Médio que optarem pela categoria AEE • turno da tarde.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
   { key: 'servidores', nome: 'Servidores/Colaboradores', descricao: 'Servidores e colaboradores do CMDPII/CZS.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
-  { key: 'comunidade-1', nome: 'Comunidade Escolar I', descricao: 'Pais e mães, irmãos e irmãs de alunos e cônjuges e filhos de servidores/colaboradores.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
+  { key: 'comunidade-1', nome: 'Comunidade Escolar I', descricao: 'Pais, mães, irmãos, irmãs e outros familiares de alunos do CMDPII/CZS, além de cônjuges e filhos de servidores/colaboradores.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
   { key: 'pcd', nome: 'PCD', descricao: 'Atletas PCD pertencentes aos públicos autorizados no regulamento.', premiacao: '1º lugar • Masculino e Feminino', ativo: true },
 ];
 
@@ -630,6 +630,7 @@ function publicConfig(cfg) {
       'Alunos do CMDPII/CZS',
       'Pais e mães de alunos',
       'Irmãos e irmãs de alunos',
+      'Outros familiares de alunos',
       'Servidores e colaboradores',
       'Cônjuges e filhos de servidores/colaboradores'
     ].includes(String(x || ''))), camisetas: (c.camisetas || []).filter(x => x.ativo !== false),
@@ -744,7 +745,7 @@ function categoryForParticipant(participant, cfg) {
     if (participant.enquadramento === 'aee' || participant.aee) base = participant.etapaEnsino === 'fundamental2' ? 'fundamental-aee' : 'medio-aee';
     else base = participant.etapaEnsino === 'fundamental2' ? 'fundamental-regular' : 'medio-regular';
   } else if (participant.vinculo === 'servidor') base = 'servidores';
-  else if (['pai','mae','irmao','irma','conjuge_servidor','filho_servidor'].includes(participant.vinculo)) base = 'comunidade-1';
+  else if (['pai','mae','irmao','irma','conjuge_servidor','filho_servidor','outro_familiar'].includes(participant.vinculo)) base = 'comunidade-1';
   if (!base) return { error: 'Vínculo sem categoria competitiva configurada.' };
   const cat = (cfg.categorias || []).find(c => c.key === base && c.ativo !== false);
   if (!cat) return { error: 'Categoria indisponível no momento.' };
@@ -1191,7 +1192,7 @@ router.post(`/${EVENT_SLUG}/participantes`, participantAuth, async (req, res) =>
     const nascimento = new Date(req.body.nascimento);
     const cpf = onlyDigits(req.body.cpf) || undefined;
     const sexo = ['masculino', 'feminino'].includes(req.body.sexo) ? req.body.sexo : null;
-    const vinculos = ['aluno','pai','mae','irmao','irma','servidor','conjuge_servidor','filho_servidor'];
+    const vinculos = ['aluno','pai','mae','irmao','irma','servidor','conjuge_servidor','filho_servidor','outro_familiar'];
     const vinculo = vinculos.includes(req.body.vinculo) ? req.body.vinculo : null;
     const enquadramento = ['regular','aee','pcd'].includes(req.body.enquadramento) ? req.body.enquadramento : 'regular';
     const etapaEnsino = vinculo === 'aluno' && ['fundamental2','medio'].includes(req.body.etapaEnsino) ? req.body.etapaEnsino : 'nao_aplicavel';
@@ -1200,11 +1201,14 @@ router.post(`/${EVENT_SLUG}/participantes`, participantAuth, async (req, res) =>
     const referenciaNome = safeText(req.body.referenciaNome, 120);
     const referenciaTurma = safeText(req.body.referenciaTurma, 50);
     const referenciaObs = safeText(req.body.referenciaObs, 200);
+    const referenciaParentesco = safeText(req.body.referenciaParentesco, 80);
     if (nome.length < 3 || Number.isNaN(nascimento.getTime()) || !vinculo || !sexo || !isValidCpf(cpf)) return res.status(400).json({ mensagem: 'Confira nome, nascimento, sexo, vínculo e CPF.' });
     if (vinculo === 'aluno' && (!['fundamental2','medio'].includes(etapaEnsino) || !turma)) return res.status(400).json({ mensagem: 'Para aluno, informe etapa de ensino e turma.' });
     if (enquadramento === 'aee' && vinculo !== 'aluno') return res.status(400).json({ mensagem: 'A categoria AEE está disponível para alunos do CMDPII/CZS.' });
-    const precisaReferencia = ['pai','mae','irmao','irma','conjuge_servidor','filho_servidor'].includes(vinculo);
+    const precisaReferencia = ['pai','mae','irmao','irma','conjuge_servidor','filho_servidor','outro_familiar'].includes(vinculo);
     if (precisaReferencia && referenciaNome.length < 3) return res.status(400).json({ mensagem: 'Informe o nome da pessoa que comprova seu vínculo com a comunidade escolar.' });
+    if (vinculo === 'outro_familiar' && referenciaParentesco.length < 2) return res.status(400).json({ mensagem: 'Informe o parentesco com o aluno do CMDPII/CZS.' });
+    if (vinculo === 'outro_familiar' && referenciaTurma.length < 1) return res.status(400).json({ mensagem: 'Informe a série/turma do aluno do CMDPII/CZS.' });
 
     const existingParticipant = await EventoParticipante.findOne({ eventSlug: EVENT_SLUG, accountId: req.eventAccount._id, nome, nascimento, ativo: true });
     if (existingParticipant) return res.json({ participante: existingParticipant, reutilizado: true });
@@ -1212,7 +1216,7 @@ router.post(`/${EVENT_SLUG}/participantes`, participantAuth, async (req, res) =>
       eventSlug: EVENT_SLUG, accountId: req.eventAccount._id, nome, nascimento, cpf, sexo, vinculo,
       etapaEnsino, turno, turma: vinculo === 'aluno' ? turma : '', matricula: safeText(req.body.matricula, 50),
       enquadramento, aee: enquadramento === 'aee', pcd: enquadramento === 'pcd',
-      referenciaVinculo: { nome: referenciaNome, turma: referenciaTurma, observacao: referenciaObs },
+      referenciaVinculo: { nome: referenciaNome, turma: referenciaTurma, observacao: vinculo === 'outro_familiar' ? `Parentesco: ${referenciaParentesco}` : referenciaObs },
       titular: Boolean(req.body.titular),
     });
     res.status(201).json({ participante: p });
@@ -1229,9 +1233,19 @@ router.post(`/${EVENT_SLUG}/inscricoes`, participantAuth, async (req, res) => {
     if (!participant) return res.status(404).json({ mensagem: 'Participante não encontrado.' });
     if (!req.body.termsAccepted || !req.body.vinculoVerdadeiro) return res.status(400).json({ mensagem: 'É necessário aceitar o regulamento e declarar a veracidade do vínculo e das informações.' });
     const existing = await EventoInscricao.findOne({ eventSlug: EVENT_SLUG, participantId: participant._id });
-    if (existing) return res.status(409).json({ mensagem: 'Este participante já possui uma solicitação de inscrição.', inscricao: existing });
-
     const cfg = await ensureConfig();
+    if (existing) {
+      if (['aguardando_pagamento','pagamento_recusado'].includes(existing.status)) {
+        return res.status(200).json({
+          inscricao: existing,
+          pagamento: participantPaymentConfig(cfg),
+          reutilizado: true,
+          retomadaPagamento: true,
+          mensagem: 'Solicitação existente retomada. Conclua o pagamento e envie o comprovante.'
+        });
+      }
+      return res.status(409).json({ mensagem: 'Este participante já possui uma solicitação de inscrição.', inscricao: existing });
+    }
     if (cfg.inscricoesAbertas === false) return res.status(403).json({ mensagem: 'As inscrições estão temporariamente fechadas.' });
     const category = categoryForParticipant(participant, cfg);
     if (category.error) return res.status(400).json({ mensagem: category.error });
@@ -1272,6 +1286,8 @@ router.post(`/${EVENT_SLUG}/inscricoes/:id/comprovante`, participantAuth, receip
     const old = ins.pagamento?.comprovanteMediaId;
     const mediaId = await saveGridFile(req.file, { tipo: 'comprovante_pagamento', inscriptionId: String(ins._id), accountId: String(req.eventAccount._id) });
     ins.pagamento = { ...(ins.pagamento?.toObject ? ins.pagamento.toObject() : ins.pagamento || {}), modo: 'manual', status: 'em_analise', comprovanteMediaId: mediaId, comprovanteNome: safeText(req.file.originalname, 180), comprovanteMime: req.file.mimetype, comprovanteEnviadoEm: new Date(), analisadoEm: null, analisadoPorId: null, analisadoPorNome: '', pagoEm: null, observacao: '' };
+    ins.pagamento.origemComprovante = 'plataforma';
+    ins.pagamento.comprovanteExternoEm = null;
     ins.status = 'pagamento_em_analise';
     await ins.save();
     if (old) await deleteGridFile(old);
@@ -1364,6 +1380,7 @@ admin.put('/config', async (req, res) => {
       'Alunos do CMDPII/CZS',
       'Pais e mães de alunos',
       'Irmãos e irmãs de alunos',
+      'Outros familiares de alunos',
       'Servidores e colaboradores',
       'Cônjuges e filhos de servidores/colaboradores'
     ].includes(x));
@@ -1741,18 +1758,28 @@ admin.get('/inscricoes/:id/comprovante', async (req, res) => {
 admin.patch('/inscricoes/:id/pagamento', async (req, res) => {
   try {
     const action = String(req.body.acao || '').toLowerCase();
-    if (!['deferir','recusar'].includes(action)) return res.status(400).json({ mensagem: 'Ação inválida.' });
+    if (!['deferir','deferir_externo','recusar'].includes(action)) return res.status(400).json({ mensagem: 'Ação inválida.' });
     const ins = await EventoInscricao.findOne({ _id: req.params.id, eventSlug: EVENT_SLUG });
     if (!ins) return res.status(404).json({ mensagem: 'Inscrição não encontrada.' });
     if (action === 'deferir' && !ins.pagamento?.comprovanteMediaId && ins.pagamento?.modo !== 'sicoob_api') return res.status(400).json({ mensagem: 'Não há comprovante anexado para conferência.' });
+    const deferimento = action === 'deferir' || action === 'deferir_externo';
+    const origemExterna = action === 'deferir_externo' && ['whatsapp','presencial','outro'].includes(String(req.body.origemComprovante || '').toLowerCase()) ? String(req.body.origemComprovante).toLowerCase() : '';
+    if (action === 'deferir_externo' && !origemExterna) return res.status(400).json({ mensagem: 'Informe a origem do comprovante externo: WhatsApp, presencial ou outro.' });
     const adminUser = req.usuario || {};
     const now = new Date();
-    ins.pagamento.status = action === 'deferir' ? 'aprovado' : 'recusado';
+    ins.pagamento.status = deferimento ? 'aprovado' : 'recusado';
     ins.pagamento.analisadoEm = now;
     ins.pagamento.analisadoPorId = adminUser._id || adminUser.id || null;
     ins.pagamento.analisadoPorNome = safeText(adminUser.nome || adminUser.email || 'Administrador', 140);
     ins.pagamento.observacao = safeText(req.body.observacao, 500);
-    if (action === 'deferir') {
+    if (action === 'deferir_externo') {
+      ins.pagamento.origemComprovante = origemExterna;
+      ins.pagamento.comprovanteExternoEm = now;
+    } else if (action === 'deferir' && !ins.pagamento.origemComprovante) {
+      ins.pagamento.origemComprovante = ins.pagamento?.modo === 'sicoob_api' ? 'sicoob_api' : 'plataforma';
+      ins.pagamento.comprovanteExternoEm = null;
+    }
+    if (deferimento) {
       ins.pagamento.pagoEm = req.body.pagoEm ? new Date(req.body.pagoEm) : now;
       ins.status = 'confirmada';
       ins.deferidaEm = now;
@@ -1763,7 +1790,7 @@ admin.patch('/inscricoes/:id/pagamento', async (req, res) => {
     }
     await ins.save();
     const [participant, account] = await Promise.all([EventoParticipante.findById(ins.participantId).lean(), EventoConta.findById(ins.accountId).lean()]);
-    await sendRegistrationStatusEmail(req, account, participant || { nome: 'Participante' }, ins, action === 'deferir' ? 'aprovado' : 'recusado');
+    await sendRegistrationStatusEmail(req, account, participant || { nome: 'Participante' }, ins, deferimento ? 'aprovado' : 'recusado');
     res.json({ ok: true, inscricao: ins });
   } catch (e) {
     console.error('[eventos/admin/pagamento]', e);

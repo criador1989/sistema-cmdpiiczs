@@ -22,6 +22,8 @@ const EventoInscricaoSchema = new mongoose.Schema({
     comprovanteNome: { type: String, default: '' },
     comprovanteMime: { type: String, default: '' },
     comprovanteEnviadoEm: { type: Date, default: null },
+    origemComprovante: { type: String, enum: ['', 'plataforma', 'whatsapp', 'presencial', 'outro', 'sicoob_api'], default: '' },
+    comprovanteExternoEm: { type: Date, default: null },
     analisadoEm: { type: Date, default: null },
     analisadoPorId: { type: mongoose.Schema.Types.ObjectId, default: null },
     analisadoPorNome: { type: String, default: '' },

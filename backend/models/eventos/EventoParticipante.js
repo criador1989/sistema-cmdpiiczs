@@ -8,7 +8,7 @@ const EventoParticipanteSchema = new mongoose.Schema({
   nascimento: { type: Date, required: true },
   cpf: { type: String, default: undefined },
   sexo: { type: String, enum: ['masculino', 'feminino', 'outro', 'nao_informado'], default: 'nao_informado' },
-  vinculo: { type: String, enum: ['aluno','pai','mae','irmao','irma','servidor','conjuge_servidor','filho_servidor'], required: true },
+  vinculo: { type: String, enum: ['aluno','pai','mae','irmao','irma','servidor','conjuge_servidor','filho_servidor','outro_familiar'], required: true },
   etapaEnsino: { type: String, enum: ['fundamental2','medio','nao_aplicavel'], default: 'nao_aplicavel' },
   turno: { type: String, enum: ['manha','tarde','nao_aplicavel'], default: 'nao_aplicavel' },
   turma: { type: String, default: '' },
