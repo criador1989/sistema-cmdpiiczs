@@ -242,97 +242,218 @@ router.get('/aluno/resumo', somenteAluno, async (req, res) => {
   }
 });
 
-router.post('/aluno/destinar', somenteAluno, async (req, res) => {
-  try {
-    const tenantId = tenantFromActor(actor(req));
-    const cfg = await lerConfig(tenantId);
-    if (cfg.ativo === false) return res.status(403).json({ mensagem: 'A destinação dos pontos ainda não está liberada.' });
-    if (nowAfter(cfg.prazoDestinacao)) return res.status(403).json({ mensagem: 'O prazo para destinar os pontos da Corrida foi encerrado.' });
+async function contextoParaDestinacao(req, res) {
+  const tenantId = tenantFromActor(actor(req));
+  const cfg = await lerConfig(tenantId);
+  if (cfg.ativo === false) {
+    res.status(403).json({ mensagem: 'A destinação dos pontos ainda não está liberada.' });
+    return null;
+  }
+  if (nowAfter(cfg.prazoDestinacao)) {
+    res.status(403).json({ mensagem: 'O prazo para destinar os pontos da Corrida foi encerrado.' });
+    return null;
+  }
 
-    const aluno = await alunoAtual(req);
-    if (!aluno) return res.status(404).json({ mensagem: 'Aluno vinculado não encontrado.' });
-    const info = inferirEtapaETurno(aluno.turma);
+  const aluno = await alunoAtual(req);
+  if (!aluno) {
+    res.status(404).json({ mensagem: 'Aluno vinculado não encontrado.' });
+    return null;
+  }
 
-    const tipo = String(req.body?.tipo || '').trim().toLowerCase();
-    let destino;
+  return {
+    tenantId,
+    cfg,
+    aluno,
+    info: inferirEtapaETurno(aluno.turma),
+  };
+}
 
-    if (tipo === 'disciplinar') {
-      destino = {
-        tipo: 'disciplinar',
-        chave: 'DISCIPLINAR',
-        turno: info.turno,
-        turma: aluno.turma,
-        disciplina: 'Nota Disciplinar',
-        destinadoEm: new Date(),
-      };
-    } else if (tipo === 'disciplina') {
-      const turno = String(req.body?.turno || '').trim().toLowerCase();
-      const turma = String(req.body?.turma || '').trim();
-      const disciplina = String(req.body?.disciplina || '').trim();
-      const permitidas = Array.isArray(cfg.disciplinas?.[info.etapa]) ? cfg.disciplinas[info.etapa] : [];
+async function gravarDestinacaoSegura(req, res, { tenantId, aluno, destino, rota, disciplinaSolicitada = null }) {
+  const duplicado = await CorridaCredito.exists({
+    eventSlug: EVENT_SLUG,
+    instituicao: tenantId,
+    beneficiarioAlunoId: aluno._id,
+    'destino.chave': destino.chave,
+    status: { $in: ['destinado', 'processado'] },
+  });
 
-      if (turno !== info.turno || normalizarTurma(turma) !== normalizarTurma(aluno.turma)) {
-        return res.status(400).json({ mensagem: 'Turno ou turma não correspondem ao cadastro oficial do aluno.' });
-      }
-      const disciplinaOficial = permitidas.find((d) => normalizarTexto(d) === normalizarTexto(disciplina));
-      if (!disciplinaOficial) return res.status(400).json({ mensagem: 'Selecione uma disciplina válida da lista oficial.' });
-
-      destino = {
-        tipo: 'disciplina',
-        chave: chaveDisciplina(info.turno, aluno.turma, disciplinaOficial),
-        turno: info.turno,
-        turma: aluno.turma,
-        disciplina: disciplinaOficial,
-        destinadoEm: new Date(),
-      };
-    } else {
-      return res.status(400).json({ mensagem: 'Destino inválido.' });
-    }
-
-    const duplicado = await CorridaCredito.exists({
-      eventSlug: EVENT_SLUG,
-      instituicao: tenantId,
-      beneficiarioAlunoId: aluno._id,
-      'destino.chave': destino.chave,
-      status: { $in: ['destinado', 'processado'] },
+  if (duplicado) {
+    return res.status(409).json({
+      mensagem: destino.tipo === 'disciplinar'
+        ? 'Você já destinou um ponto para a Nota Disciplinar.'
+        : `Você já destinou um ponto para ${destino.disciplina}. Não é permitido acumular dois pontos na mesma disciplina.`,
     });
-    if (duplicado) {
-      return res.status(409).json({
-        mensagem: destino.tipo === 'disciplinar'
-          ? 'Você já destinou um ponto para a Nota Disciplinar.'
-          : `Você já destinou um ponto para ${destino.disciplina}. Não é permitido acumular dois pontos na mesma disciplina.`,
-      });
-    }
+  }
 
-    let credito;
-    try {
-      credito = await CorridaCredito.findOneAndUpdate(
-        {
-          eventSlug: EVENT_SLUG,
-          instituicao: tenantId,
-          beneficiarioAlunoId: aluno._id,
-          status: 'disponivel',
-        },
-        {
-          $set: { status: 'destinado', destino },
-          $push: { auditoria: actorAudit(req, 'credito_destinado', { destino }) },
-        },
-        { new: true, sort: { deferidaEm: 1, createdAt: 1 }, runValidators: true }
-      );
-    } catch (e) {
-      if (e?.code === 11000) {
-        return res.status(409).json({ mensagem: 'Já existe um ponto destinado para este mesmo destino.' });
-      }
-      throw e;
-    }
+  const auditoriaSolicitacao = {
+    rota,
+    solicitadoComo: destino.tipo,
+    disciplinaSolicitada: disciplinaSolicitada || destino.disciplina || null,
+    chaveSolicitada: destino.chave,
+    destinoEsperado: destino,
+  };
 
-    if (!credito) return res.status(409).json({ mensagem: 'Você não possui crédito disponível para realizar esta destinação.' });
-    return res.json({ ok: true, credito, mensagem: 'Ponto destinado com sucesso.' });
+  let credito;
+  try {
+    credito = await CorridaCredito.findOneAndUpdate(
+      {
+        eventSlug: EVENT_SLUG,
+        instituicao: tenantId,
+        beneficiarioAlunoId: aluno._id,
+        status: 'disponivel',
+      },
+      {
+        $set: { status: 'destinado', destino },
+        $push: { auditoria: actorAudit(req, 'credito_destinado', auditoriaSolicitacao) },
+      },
+      { new: true, sort: { deferidaEm: 1, createdAt: 1 }, runValidators: true }
+    );
   } catch (e) {
-    console.error('[corrida-creditos/aluno/destinar]', e);
-    return res.status(500).json({ mensagem: 'Não foi possível destinar o ponto.' });
+    if (e?.code === 11000) {
+      return res.status(409).json({ mensagem: 'Já existe um ponto destinado para este mesmo destino.' });
+    }
+    throw e;
+  }
+
+  if (!credito) {
+    return res.status(409).json({ mensagem: 'Você não possui crédito disponível para realizar esta destinação.' });
+  }
+
+  const tipoGravado = String(credito.destino?.tipo || '');
+  const chaveGravada = String(credito.destino?.chave || '');
+  const disciplinaGravada = String(credito.destino?.disciplina || '');
+  const destinoConfere = tipoGravado === destino.tipo
+    && chaveGravada === destino.chave
+    && normalizarTexto(disciplinaGravada) === normalizarTexto(destino.disciplina || '');
+
+  if (!destinoConfere) {
+    const destinoIncorreto = credito.destino ? {
+      tipo: credito.destino.tipo || '',
+      chave: credito.destino.chave || '',
+      turno: credito.destino.turno || '',
+      turma: credito.destino.turma || '',
+      disciplina: credito.destino.disciplina || '',
+      destinadoEm: credito.destino.destinadoEm || null,
+    } : null;
+
+    await CorridaCredito.updateOne(
+      { _id: credito._id, status: 'destinado' },
+      {
+        $set: { status: 'disponivel' },
+        $unset: { destino: 1 },
+        $push: {
+          auditoria: actorAudit(req, 'destinacao_revertida_divergencia', {
+            rota,
+            solicitadoComo: destino.tipo,
+            disciplinaSolicitada: disciplinaSolicitada || destino.disciplina || null,
+            destinoEsperado: destino,
+            destinoIncorreto,
+          }),
+        },
+      }
+    );
+
+    console.error('[corrida-creditos/destinacao-divergente]', {
+      creditoId: String(credito._id),
+      rota,
+      esperado: destino,
+      gravado: destinoIncorreto,
+    });
+
+    return res.status(500).json({
+      mensagem: 'A destinação não pôde ser confirmada com segurança. O crédito foi devolvido ao seu saldo. Atualize a página e tente novamente.',
+    });
+  }
+
+  return res.json({
+    ok: true,
+    credito,
+    destinoConfirmado: {
+      tipo: tipoGravado,
+      disciplina: disciplinaGravada,
+      chave: chaveGravada,
+    },
+    mensagem: destino.tipo === 'disciplinar'
+      ? 'Ponto enviado para a Nota Disciplinar com sucesso.'
+      : `Ponto enviado para ${destino.disciplina} com sucesso.`,
+  });
+}
+
+router.post('/aluno/destinar-disciplina', somenteAluno, async (req, res) => {
+  try {
+    const ctx = await contextoParaDestinacao(req, res);
+    if (!ctx) return;
+
+    const { tenantId, cfg, aluno, info } = ctx;
+    const turno = String(req.body?.turno || '').trim().toLowerCase();
+    const turma = String(req.body?.turma || '').trim();
+    const disciplina = String(req.body?.disciplina || '').trim();
+    const permitidas = Array.isArray(cfg.disciplinas?.[info.etapa]) ? cfg.disciplinas[info.etapa] : [];
+
+    if (turno !== info.turno || normalizarTurma(turma) !== normalizarTurma(aluno.turma)) {
+      return res.status(400).json({ mensagem: 'Turno ou turma não correspondem ao cadastro oficial do aluno.' });
+    }
+
+    const disciplinaOficial = permitidas.find((d) => normalizarTexto(d) === normalizarTexto(disciplina));
+    if (!disciplinaOficial) {
+      return res.status(400).json({ mensagem: 'Selecione uma disciplina válida da lista oficial.' });
+    }
+
+    const destino = {
+      tipo: 'disciplina',
+      chave: chaveDisciplina(info.turno, aluno.turma, disciplinaOficial),
+      turno: info.turno,
+      turma: aluno.turma,
+      disciplina: disciplinaOficial,
+      destinadoEm: new Date(),
+    };
+
+    return gravarDestinacaoSegura(req, res, {
+      tenantId,
+      aluno,
+      destino,
+      rota: '/aluno/destinar-disciplina',
+      disciplinaSolicitada: disciplinaOficial,
+    });
+  } catch (e) {
+    console.error('[corrida-creditos/aluno/destinar-disciplina]', e);
+    return res.status(500).json({ mensagem: 'Não foi possível destinar o ponto para a disciplina.' });
   }
 });
+
+router.post('/aluno/destinar-nota-disciplinar', somenteAluno, async (req, res) => {
+  try {
+    const ctx = await contextoParaDestinacao(req, res);
+    if (!ctx) return;
+
+    const { tenantId, aluno, info } = ctx;
+    const destino = {
+      tipo: 'disciplinar',
+      chave: 'DISCIPLINAR',
+      turno: info.turno,
+      turma: aluno.turma,
+      disciplina: 'Nota Disciplinar',
+      destinadoEm: new Date(),
+    };
+
+    return gravarDestinacaoSegura(req, res, {
+      tenantId,
+      aluno,
+      destino,
+      rota: '/aluno/destinar-nota-disciplinar',
+      disciplinaSolicitada: 'Nota Disciplinar',
+    });
+  } catch (e) {
+    console.error('[corrida-creditos/aluno/destinar-nota-disciplinar]', e);
+    return res.status(500).json({ mensagem: 'Não foi possível destinar o ponto para a Nota Disciplinar.' });
+  }
+});
+
+// A rota antiga fica deliberadamente desativada. Assim, uma página antiga em cache
+// não consegue mais enviar um tipo de destino ambíguo para o backend.
+router.post('/aluno/destinar', somenteAluno, (req, res) => res.status(410).json({
+  mensagem: 'Esta página está desatualizada. Atualize o Portal do Aluno antes de destinar o ponto.',
+}));
 
 router.get('/professor/solicitacoes', somenteProfessorOuGestao, async (req, res) => {
   try {

@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Meus Pontos da Corrida | Axoriin</title>
   <style>
     :root{--bg:#041326;--panel:#08213c;--panel2:#0b2947;--line:#1d5677;--cyan:#35d9ff;--green:#42e6a4;--yellow:#ffd65a;--text:#f4fbff;--muted:#a9bfd1;--red:#ff6b77}
@@ -28,9 +31,9 @@
         <div class="field"><label>Turno</label><select id="turno"></select></div>
         <div class="field"><label>Turma</label><select id="turma"></select></div>
         <div class="field"><label>Disciplina</label><select id="disciplina"><option value="">Selecione...</option></select></div>
-        <button class="btn" id="btnEnviar">Enviar ao professor</button>
+        <button type="button" class="btn" id="btnEnviar">Enviar ao professor</button>
       </div>
-      <div class="notice"><b>Nota Disciplinar:</b> se desejar utilizar um crédito na sua nota disciplinar, ele será enviado diretamente à Monitoria. <button class="btn disc" id="btnDisciplinar" style="margin-left:8px">Usar 1 ponto na Nota Disciplinar</button></div>
+      <div class="notice"><b>Nota Disciplinar:</b> se desejar utilizar um crédito na sua nota disciplinar, ele será enviado diretamente à Monitoria. <button type="button" class="btn disc" id="btnDisciplinar" style="margin-left:8px">Usar 1 ponto na Nota Disciplinar</button></div>
     </section>
     <section class="panel"><h2>Origem e situação dos seus créditos</h2><div id="credits" class="credits"><div class="empty">Carregando...</div></div></section>
   </main>
@@ -81,23 +84,39 @@
     }catch(e){if(e.status===401||e.status===403){login();return}show(e.message||'Não foi possível carregar seus pontos.')}
   }
 
-  async function destinar(tipo){
+  async function executarDestinacao(url, body, alvo){
     if(enviando)return;
-    if(tipo==='disciplina'&&!disciplina.value){show('Selecione a disciplina.');return}
-    const alvo=tipo==='disciplinar'?'Nota Disciplinar':disciplina.value;
     if(!confirm(`Confirmar o uso de 1 crédito para ${alvo}? Após confirmar, somente este crédito ficará aguardando o lançamento.`))return;
     enviando=true;
     document.getElementById('btnEnviar').disabled=true;
     document.getElementById('btnDisciplinar').disabled=true;
     try{
-      const body=tipo==='disciplinar'?{tipo:'disciplinar'}:{tipo:'disciplina',turno:turno.value,turma:turma.value,disciplina:disciplina.value};
-      const r=await A.apiFetch('/api/corrida-creditos/aluno/destinar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const r=await A.apiFetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
       show(r.mensagem||'Ponto destinado.',true);
     }catch(e){show(e.message||'Não foi possível destinar o ponto.')}
     finally{enviando=false;await carregar()}
   }
-  document.getElementById('btnEnviar').onclick=()=>destinar('disciplina');
-  document.getElementById('btnDisciplinar').onclick=()=>destinar('disciplinar');
+
+  async function destinarDisciplina(){
+    if(!disciplina.value){show('Selecione a disciplina.');return}
+    const disciplinaEscolhida=disciplina.value;
+    return executarDestinacao(
+      '/api/corrida-creditos/aluno/destinar-disciplina',
+      {turno:turno.value,turma:turma.value,disciplina:disciplinaEscolhida},
+      disciplinaEscolhida
+    );
+  }
+
+  async function destinarNotaDisciplinar(){
+    return executarDestinacao(
+      '/api/corrida-creditos/aluno/destinar-nota-disciplinar',
+      {},
+      'Nota Disciplinar'
+    );
+  }
+
+  document.getElementById('btnEnviar').onclick=destinarDisciplina;
+  document.getElementById('btnDisciplinar').onclick=destinarNotaDisciplinar;
   carregar();
 })();
 </script>
