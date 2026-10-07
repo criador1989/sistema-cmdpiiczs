@@ -43,6 +43,7 @@
   const turma = document.getElementById('turma');
   const disciplina = document.getElementById('disciplina');
   let contexto = null;
+  let enviando = false;
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
   function show(text, ok=false){msg.textContent=text;msg.className='msg show '+(ok?'ok':'err');setTimeout(()=>{msg.className='msg'},5000)}
@@ -66,7 +67,7 @@
       document.getElementById('mDestinados').textContent=resumo.saldo.destinados;
       document.getElementById('mProcessados').textContent=resumo.saldo.processados;
       const box=document.getElementById('credits');
-      box.innerHTML=resumo.creditos.length?resumo.creditos.map(c=>`<div class="credit"><div><b>${esc(labelOrigem(c))}</b><div class="muted">Deferido em ${esc(data(c.deferidaEm))}${c.destino?` • Destino: ${esc(c.destino.disciplina||'Nota Disciplinar')}`:''}</div></div>${labelStatus(c)}</div>`).join(''):'<div class="empty">Nenhum crédito foi localizado para este aluno. Se existem inscrições deferidas, a gestão deve executar a sincronização dos créditos.</div>';
+      box.innerHTML=resumo.creditos.length?resumo.creditos.map(c=>`<div class="credit"><div><b>${esc(labelOrigem(c))}</b><div class="muted">Deferido em ${esc(data(c.deferidaEm))}${c.destino?` • Destino: ${esc(c.destino.disciplina||'Nota Disciplinar')} • Destinado em ${esc(data(c.destino.destinadoEm))}`:''}</div></div>${labelStatus(c)}</div>`).join(''):'<div class="empty">Nenhum crédito foi localizado para este aluno. Se existem inscrições deferidas, a gestão deve executar a sincronização dos créditos.</div>';
       const prazoEncerrado=Boolean(contexto.prazoDestinacao)&&Date.now()>new Date(contexto.prazoDestinacao).getTime();
       const bloqueado=contexto.destinacaoDisponivel===false||contexto.ativo===false||prazoEncerrado;
       const liberacao=document.getElementById('liberacao');
@@ -81,14 +82,19 @@
   }
 
   async function destinar(tipo){
+    if(enviando)return;
     if(tipo==='disciplina'&&!disciplina.value){show('Selecione a disciplina.');return}
     const alvo=tipo==='disciplinar'?'Nota Disciplinar':disciplina.value;
-    if(!confirm(`Confirmar o uso de 1 crédito para ${alvo}? Após confirmar, o crédito ficará aguardando o lançamento.`))return;
+    if(!confirm(`Confirmar o uso de 1 crédito para ${alvo}? Após confirmar, somente este crédito ficará aguardando o lançamento.`))return;
+    enviando=true;
+    document.getElementById('btnEnviar').disabled=true;
+    document.getElementById('btnDisciplinar').disabled=true;
     try{
       const body=tipo==='disciplinar'?{tipo:'disciplinar'}:{tipo:'disciplina',turno:turno.value,turma:turma.value,disciplina:disciplina.value};
       const r=await A.apiFetch('/api/corrida-creditos/aluno/destinar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      show(r.mensagem||'Ponto destinado.',true);await carregar();
+      show(r.mensagem||'Ponto destinado.',true);
     }catch(e){show(e.message||'Não foi possível destinar o ponto.')}
+    finally{enviando=false;await carregar()}
   }
   document.getElementById('btnEnviar').onclick=()=>destinar('disciplina');
   document.getElementById('btnDisciplinar').onclick=()=>destinar('disciplinar');

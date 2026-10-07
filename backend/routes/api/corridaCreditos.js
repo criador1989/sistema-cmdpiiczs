@@ -592,6 +592,112 @@ router.put('/admin/configuracao', somenteGestao, async (req, res) => {
   }
 });
 
+// V1.2.2 - gestão pode devolver ao saldo um crédito ainda não processado.
+router.get('/admin/destinacoes-pendentes', somenteGestao, async (req, res) => {
+  try {
+    const tenantId = tenantFromActor(actor(req));
+    if (!tenantId) return res.status(400).json({ mensagem: 'Instituição não identificada.' });
+
+    const docs = await CorridaCredito.find({
+      eventSlug: EVENT_SLUG,
+      instituicao: tenantId,
+      status: 'destinado',
+    })
+      .sort({ 'destino.destinadoEm': -1, updatedAt: -1 })
+      .limit(1000)
+      .lean();
+
+    return res.json({
+      ok: true,
+      destinacoes: docs.map((c) => ({
+        id: c._id,
+        aluno: c.beneficiarioNome || 'Aluno',
+        turma: c.beneficiarioTurma || c.destino?.turma || '',
+        origem: c.origem,
+        origemParticipante: c.sourceParticipanteNome || '',
+        destino: c.destino || null,
+        destinadoEm: c.destino?.destinadoEm || c.updatedAt || null,
+      })),
+    });
+  } catch (e) {
+    console.error('[corrida-creditos/admin/destinacoes-pendentes]', e);
+    return res.status(500).json({ mensagem: 'Não foi possível carregar as destinações pendentes.' });
+  }
+});
+
+router.post('/admin/creditos/:id/cancelar-destinacao', somenteGestao, async (req, res) => {
+  try {
+    const tenantId = tenantFromActor(actor(req));
+    if (!tenantId) return res.status(400).json({ mensagem: 'Instituição não identificada.' });
+
+    const id = String(req.params.id || '').trim();
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ mensagem: 'Crédito inválido.' });
+    }
+
+    const atual = await CorridaCredito.findOne({
+      _id: id,
+      eventSlug: EVENT_SLUG,
+      instituicao: tenantId,
+      status: 'destinado',
+    }).lean();
+
+    if (!atual) {
+      return res.status(409).json({
+        mensagem: 'Esta destinação não está mais aguardando lançamento. Atualize a lista antes de tentar novamente.',
+      });
+    }
+
+    const destinoAnterior = atual.destino ? {
+      tipo: atual.destino.tipo || '',
+      chave: atual.destino.chave || '',
+      turno: atual.destino.turno || '',
+      turma: atual.destino.turma || '',
+      disciplina: atual.destino.disciplina || '',
+      destinadoEm: atual.destino.destinadoEm || null,
+    } : null;
+
+    const motivo = String(req.body?.motivo || 'Cancelada pela Gestão antes do lançamento.')
+      .trim()
+      .slice(0, 300);
+
+    const credito = await CorridaCredito.findOneAndUpdate(
+      {
+        _id: id,
+        eventSlug: EVENT_SLUG,
+        instituicao: tenantId,
+        status: 'destinado',
+      },
+      {
+        $set: { status: 'disponivel' },
+        $unset: { destino: 1 },
+        $push: {
+          auditoria: actorAudit(req, 'destinacao_cancelada_gestao', {
+            motivo,
+            destinoAnterior,
+          }),
+        },
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!credito) {
+      return res.status(409).json({
+        mensagem: 'O ponto foi processado ou alterado por outra pessoa. Atualize a lista.',
+      });
+    }
+
+    return res.json({
+      ok: true,
+      credito,
+      mensagem: 'Destinação cancelada. O crédito voltou a ficar disponível para o aluno.',
+    });
+  } catch (e) {
+    console.error('[corrida-creditos/admin/cancelar-destinacao]', e);
+    return res.status(500).json({ mensagem: 'Não foi possível cancelar a destinação.' });
+  }
+});
+
 router.post('/admin/sincronizar', somenteGestao, async (req, res) => {
   try {
     const resumo = await sincronizarTodosConfirmados(actor(req));
