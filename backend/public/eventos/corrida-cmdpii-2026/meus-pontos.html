@@ -67,9 +67,13 @@
       document.getElementById('mProcessados').textContent=resumo.saldo.processados;
       const box=document.getElementById('credits');
       box.innerHTML=resumo.creditos.length?resumo.creditos.map(c=>`<div class="credit"><div><b>${esc(labelOrigem(c))}</b><div class="muted">Deferido em ${esc(data(c.deferidaEm))}${c.destino?` • Destino: ${esc(c.destino.disciplina||'Nota Disciplinar')}`:''}</div></div>${labelStatus(c)}</div>`).join(''):'<div class="empty">Nenhum crédito foi localizado para este aluno. Se existem inscrições deferidas, a gestão deve executar a sincronização dos créditos.</div>';
-      const bloqueado=contexto.ativo===false;
+      const prazoEncerrado=Boolean(contexto.prazoDestinacao)&&Date.now()>new Date(contexto.prazoDestinacao).getTime();
+      const bloqueado=contexto.destinacaoDisponivel===false||contexto.ativo===false||prazoEncerrado;
       const liberacao=document.getElementById('liberacao');
-      if(bloqueado){liberacao.style.display='block';liberacao.textContent='A consulta dos creditos ja esta disponivel, mas a destinacao ainda nao foi liberada pela Gestao.'}else{liberacao.style.display='none'}
+      if(contexto.ativo===false){liberacao.style.display='block';liberacao.textContent='A consulta dos créditos já está disponível, mas a destinação ainda não foi liberada pela Gestão.'}
+      else if(prazoEncerrado){liberacao.style.display='block';liberacao.textContent='O prazo para destinar os pontos da Corrida foi encerrado.'}
+      else if(contexto.prazoDestinacao){liberacao.style.display='block';liberacao.textContent=`Destinação liberada até ${data(contexto.prazoDestinacao)}.`}
+      else{liberacao.style.display='none'}
       const semSaldo=resumo.saldo.disponiveis<=0;
       document.getElementById('btnEnviar').disabled=semSaldo||bloqueado;
       document.getElementById('btnDisciplinar').disabled=semSaldo||bloqueado;

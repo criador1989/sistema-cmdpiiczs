@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const Aluno = require('../../models/Aluno');
 const CorridaCredito = require('../../models/eventos/CorridaCredito');
 const CorridaAlunoAlias = require('../../models/eventos/CorridaAlunoAlias');
+const CorridaCreditosConfig = require('../../models/eventos/CorridaCreditosConfig');
 const { autenticar } = require('../../middleware/autenticacao');
 const {
   EVENT_SLUG,
@@ -25,14 +26,40 @@ router.use(autenticar);
 
 const CONFIG_PATH = path.join(__dirname, '../../configs/corrida-creditos-2026.json');
 
-function lerConfig() {
+function lerConfigBase() {
   try {
     const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
     return data && typeof data === 'object' ? data : {};
   } catch (e) {
-    console.error('[corrida-creditos/config]', e?.message || e);
-    return { eventSlug: EVENT_SLUG, ativo: false, disciplinas: {} };
+    console.error('[corrida-creditos/config/base]', e?.message || e);
+    return { eventSlug: EVENT_SLUG, ativo: false, prazoDestinacao: null, prazoProcessamento: null, disciplinas: {} };
   }
+}
+
+async function lerConfig(tenantId) {
+  const base = lerConfigBase();
+  if (!tenantId) return base;
+  const persistida = await CorridaCreditosConfig.findOne({
+    eventSlug: EVENT_SLUG,
+    instituicao: tenantId,
+  }).lean();
+  if (!persistida) return base;
+  return {
+    ...base,
+    ativo: Boolean(persistida.ativo),
+    prazoDestinacao: persistida.prazoDestinacao || null,
+    prazoProcessamento: persistida.prazoProcessamento || null,
+    controlePersistido: true,
+    alteradoEm: persistida.alteradoEm || persistida.updatedAt || null,
+    alteradoPorNome: persistida.alteradoPorNome || '',
+  };
+}
+
+function parseOptionalDate(value) {
+  if (value === null || value === undefined || value === '') return { ok: true, value: null };
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return { ok: false, value: null };
+  return { ok: true, value: d };
 }
 
 function tipoUsuario(req) {
@@ -127,9 +154,9 @@ async function listaTurmas(tenantId) {
 
 router.get('/contexto', async (req, res) => {
   try {
-    const cfg = lerConfig();
     const tenantId = tenantFromActor(actor(req));
     if (!tenantId) return res.status(400).json({ mensagem: 'Instituição não identificada.' });
+    const cfg = await lerConfig(tenantId);
 
     const turmas = await listaTurmas(tenantId);
     const porTurno = { manha: [], tarde: [] };
@@ -143,6 +170,7 @@ router.get('/contexto', async (req, res) => {
       ok: true,
       evento: EVENT_SLUG,
       ativo: cfg.ativo !== false,
+      destinacaoDisponivel: cfg.ativo !== false && !nowAfter(cfg.prazoDestinacao),
       prazoDestinacao: cfg.prazoDestinacao || null,
       prazoProcessamento: cfg.prazoProcessamento || null,
       turnos: [
@@ -216,13 +244,13 @@ router.get('/aluno/resumo', somenteAluno, async (req, res) => {
 
 router.post('/aluno/destinar', somenteAluno, async (req, res) => {
   try {
-    const cfg = lerConfig();
+    const tenantId = tenantFromActor(actor(req));
+    const cfg = await lerConfig(tenantId);
     if (cfg.ativo === false) return res.status(403).json({ mensagem: 'A destinação dos pontos ainda não está liberada.' });
     if (nowAfter(cfg.prazoDestinacao)) return res.status(403).json({ mensagem: 'O prazo para destinar os pontos da Corrida foi encerrado.' });
 
     const aluno = await alunoAtual(req);
     if (!aluno) return res.status(404).json({ mensagem: 'Aluno vinculado não encontrado.' });
-    const tenantId = tenantFromActor(actor(req));
     const info = inferirEtapaETurno(aluno.turma);
 
     const tipo = String(req.body?.tipo || '').trim().toLowerCase();
@@ -308,8 +336,8 @@ router.post('/aluno/destinar', somenteAluno, async (req, res) => {
 
 router.get('/professor/solicitacoes', somenteProfessorOuGestao, async (req, res) => {
   try {
-    const cfg = lerConfig();
     const tenantId = tenantFromActor(actor(req));
+    const cfg = await lerConfig(tenantId);
     const turno = String(req.query.turno || '').trim().toLowerCase();
     const turma = String(req.query.turma || '').trim();
     const disciplina = String(req.query.disciplina || '').trim();
@@ -359,9 +387,9 @@ router.get('/professor/solicitacoes', somenteProfessorOuGestao, async (req, res)
 
 router.post('/professor/solicitacoes/:id/confirmar', somenteProfessorOuGestao, async (req, res) => {
   try {
-    const cfg = lerConfig();
-    if (nowAfter(cfg.prazoProcessamento)) return res.status(403).json({ mensagem: 'O prazo de processamento dos pontos foi encerrado.' });
     const tenantId = tenantFromActor(actor(req));
+    const cfg = await lerConfig(tenantId);
+    if (nowAfter(cfg.prazoProcessamento)) return res.status(403).json({ mensagem: 'O prazo de processamento dos pontos foi encerrado.' });
     const now = new Date();
     const credito = await CorridaCredito.findOneAndUpdate(
       {
@@ -420,9 +448,9 @@ router.get('/monitoria/solicitacoes', somenteMonitoriaOuGestao, async (req, res)
 
 router.post('/monitoria/solicitacoes/:id/confirmar', somenteMonitoriaOuGestao, async (req, res) => {
   try {
-    const cfg = lerConfig();
-    if (nowAfter(cfg.prazoProcessamento)) return res.status(403).json({ mensagem: 'O prazo de processamento dos pontos foi encerrado.' });
     const tenantId = tenantFromActor(actor(req));
+    const cfg = await lerConfig(tenantId);
+    if (nowAfter(cfg.prazoProcessamento)) return res.status(403).json({ mensagem: 'O prazo de processamento dos pontos foi encerrado.' });
     const now = new Date();
     const credito = await CorridaCredito.findOneAndUpdate(
       {
@@ -450,6 +478,117 @@ router.post('/monitoria/solicitacoes/:id/confirmar', somenteMonitoriaOuGestao, a
   } catch (e) {
     console.error('[corrida-creditos/monitoria/confirmar]', e);
     return res.status(500).json({ mensagem: 'Não foi possível confirmar a Nota Disciplinar.' });
+  }
+});
+
+router.get('/admin/configuracao', somenteGestao, async (req, res) => {
+  try {
+    const tenantId = tenantFromActor(actor(req));
+    if (!tenantId) return res.status(400).json({ mensagem: 'Instituição não identificada.' });
+    const efetiva = await lerConfig(tenantId);
+    const doc = await CorridaCreditosConfig.findOne({ eventSlug: EVENT_SLUG, instituicao: tenantId }).lean();
+    const historico = Array.isArray(doc?.auditoria) ? [...doc.auditoria].slice(-20).reverse() : [];
+    return res.json({
+      ok: true,
+      configuracao: {
+        ativo: efetiva.ativo !== false,
+        destinacaoDisponivel: efetiva.ativo !== false && !nowAfter(efetiva.prazoDestinacao),
+        prazoDestinacao: efetiva.prazoDestinacao || null,
+        prazoProcessamento: efetiva.prazoProcessamento || null,
+        alteradoEm: doc?.alteradoEm || doc?.updatedAt || null,
+        alteradoPorNome: doc?.alteradoPorNome || '',
+        controlePersistido: Boolean(doc),
+      },
+      historico,
+    });
+  } catch (e) {
+    console.error('[corrida-creditos/admin/configuracao/get]', e);
+    return res.status(500).json({ mensagem: 'Não foi possível carregar a configuração dos pontos.' });
+  }
+});
+
+router.put('/admin/configuracao', somenteGestao, async (req, res) => {
+  try {
+    const tenantId = tenantFromActor(actor(req));
+    if (!tenantId) return res.status(400).json({ mensagem: 'Instituição não identificada.' });
+    if (typeof req.body?.ativo !== 'boolean') return res.status(400).json({ mensagem: 'Informe se a destinação deve ficar aberta ou fechada.' });
+
+    const dest = parseOptionalDate(req.body?.prazoDestinacao);
+    const proc = parseOptionalDate(req.body?.prazoProcessamento);
+    if (!dest.ok) return res.status(400).json({ mensagem: 'Prazo de destinação inválido.' });
+    if (!proc.ok) return res.status(400).json({ mensagem: 'Prazo de processamento inválido.' });
+    if (dest.value && proc.value && proc.value.getTime() < dest.value.getTime()) {
+      return res.status(400).json({ mensagem: 'O prazo de professores/monitoria não pode terminar antes do prazo dos alunos.' });
+    }
+    if (req.body.ativo === true && dest.value && dest.value.getTime() <= Date.now()) {
+      return res.status(400).json({ mensagem: 'Para abrir a destinação, informe um prazo futuro ou deixe o prazo dos alunos em branco.' });
+    }
+
+    const anteriorDoc = await CorridaCreditosConfig.findOne({ eventSlug: EVENT_SLUG, instituicao: tenantId }).lean();
+    const anteriorEfetivo = await lerConfig(tenantId);
+    const anterior = {
+      ativo: anteriorEfetivo.ativo !== false,
+      prazoDestinacao: anteriorEfetivo.prazoDestinacao || null,
+      prazoProcessamento: anteriorEfetivo.prazoProcessamento || null,
+    };
+    const novo = {
+      ativo: req.body.ativo,
+      prazoDestinacao: dest.value,
+      prazoProcessamento: proc.value,
+    };
+    let acao = 'configuracao_atualizada';
+    if (anterior.ativo !== novo.ativo) acao = novo.ativo ? 'destinacao_aberta' : 'destinacao_encerrada';
+
+    const agora = new Date();
+    const audit = {
+      acao,
+      em: agora,
+      usuarioId: req.usuario?._id || req.usuario?.id || null,
+      usuarioNome: String(req.usuario?.nome || req.usuario?.email || '').slice(0, 140),
+      usuarioTipo: tipoUsuario(req),
+      anterior,
+      novo,
+    };
+
+    const doc = await CorridaCreditosConfig.findOneAndUpdate(
+      { eventSlug: EVENT_SLUG, instituicao: tenantId },
+      {
+        $set: {
+          tenantId,
+          ativo: novo.ativo,
+          prazoDestinacao: novo.prazoDestinacao,
+          prazoProcessamento: novo.prazoProcessamento,
+          alteradoEm: agora,
+          alteradoPorId: audit.usuarioId,
+          alteradoPorNome: audit.usuarioNome,
+          alteradoPorTipo: audit.usuarioTipo,
+        },
+        $setOnInsert: { eventSlug: EVENT_SLUG, instituicao: tenantId },
+        $push: { auditoria: { $each: [audit], $slice: -100 } },
+      },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    ).lean();
+
+    return res.json({
+      ok: true,
+      configuracao: {
+        ativo: doc.ativo,
+        destinacaoDisponivel: doc.ativo && !nowAfter(doc.prazoDestinacao),
+        prazoDestinacao: doc.prazoDestinacao || null,
+        prazoProcessamento: doc.prazoProcessamento || null,
+        alteradoEm: doc.alteradoEm || doc.updatedAt || null,
+        alteradoPorNome: doc.alteradoPorNome || '',
+      },
+      mensagem: acao === 'destinacao_aberta'
+        ? 'Destinação dos pontos liberada para os alunos.'
+        : acao === 'destinacao_encerrada'
+          ? 'Destinação dos pontos encerrada para os alunos.'
+          : `Configuração salva. A destinação permanece ${doc.ativo ? 'aberta' : 'fechada'}.`,
+    });
+  } catch (e) {
+    console.error('[corrida-creditos/admin/configuracao/put]', e);
+    if (e?.code === 11000) return res.status(409).json({ mensagem: 'A configuração foi alterada simultaneamente. Atualize a tela e tente novamente.' });
+    return res.status(500).json({ mensagem: 'Não foi possível salvar a configuração dos pontos.' });
   }
 });
 
