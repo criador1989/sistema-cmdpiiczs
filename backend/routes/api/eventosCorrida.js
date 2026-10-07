@@ -18,6 +18,7 @@ const EventoResultado = require('../../models/eventos/EventoResultado');
 const EventoFoto = require('../../models/eventos/EventoFoto');
 const EventoCounter = require('../../models/eventos/EventoCounter');
 const v130Extras = require('./eventosCorridaV130');
+const { sincronizarCreditoDaInscricao, revogarCreditoDaInscricao } = require('../../services/corridaCreditosService');
 const { saveEventMedia, deleteEventMedia, streamEventMedia, publicStorageStatus } = require('../../utils/eventosMediaStorage');
 
 const router = express.Router();
@@ -1790,6 +1791,20 @@ admin.patch('/inscricoes/:id/pagamento', async (req, res) => {
     }
     await ins.save();
     const [participant, account] = await Promise.all([EventoParticipante.findById(ins.participantId).lean(), EventoConta.findById(ins.accountId).lean()]);
+
+    // O deferimento da inscricao passa a ser a fonte oficial do credito da Corrida.
+    // A sincronizacao e idempotente: a mesma inscricao nunca gera dois creditos.
+    try {
+      if (deferimento) {
+        await sincronizarCreditoDaInscricao(ins, participant, req.usuario || {});
+      } else {
+        await revogarCreditoDaInscricao(ins, req.usuario || {}, 'Pagamento/inscricao recusado pela organizacao.');
+      }
+    } catch (creditoErr) {
+      // Nao desfaz o deferimento por falha secundaria: a gestao pode executar
+      // a sincronizacao administrativa depois, preservando o estado da Corrida.
+      console.error('[eventos/admin/pagamento/credito-corrida]', creditoErr);
+    }
     await sendRegistrationStatusEmail(req, account, participant || { nome: 'Participante' }, ins, deferimento ? 'aprovado' : 'recusado');
     res.json({ ok: true, inscricao: ins });
   } catch (e) {

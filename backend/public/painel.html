@@ -2695,6 +2695,17 @@ body.ax-radial-open .op-admin-widget{
               </div>
             </div>
 
+            <div id="cardPontosCorrida" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('pontos-corrida.html')">
+              <div class="window-content">
+                <div class="card-copy">
+                  <div class="kicker">II CORRIDA ESCOLAR</div>
+                  <h3>Pontos da Corrida</h3>
+                  <p>Professor, Monitoria e Gestão: confira e processe os créditos destinados pelos alunos.</p>
+                </div>
+                <div class="card-watermark" aria-hidden="true">🏃</div>
+              </div>
+            </div>
+
             <div id="cardControleAcesso" class="window-card" style="display:none" role="link" tabindex="0" onclick="location.href=withTenant('controle-acesso.html')">
               <div class="card-copy">
                 <span class="kicker">Acesso inteligente</span>
@@ -3253,7 +3264,8 @@ body.ax-radial-open .op-admin-widget{
       cardObservacoesProfessor:'cardObservacoesProfessor',
       cardControleAcesso:'cardControleAcesso',
       cardPedagogico:'cardPedagogico',
-      cardSimulados:'cardSimulados'
+      cardSimulados:'cardSimulados',
+      cardPontosCorrida:'cardPontosCorrida'
     };
 
     const SECOES = {
@@ -3279,6 +3291,7 @@ body.ax-radial-open .op-admin-widget{
 
       if (tipo === 'admin') {
         show(SB.sbUniformes, CARDS.cardUniformes);
+        show(CARDS.cardPontosCorrida);
         const cardRedacao = document.getElementById(CARDS.cardGestaoRedacao);
         if (cardRedacao) cardRedacao.style.display = '';
         const cardAcesso = document.getElementById(CARDS.cardControleAcesso);
@@ -3292,6 +3305,7 @@ body.ax-radial-open .op-admin-widget{
 
       if (tipo === 'monitor') {
         show(SB.sbUniformes, CARDS.cardUniformes);
+        show(CARDS.cardPontosCorrida);
         hide(
           SB.sbFinanceiro,
           SB.sbGestaoSistema,
@@ -3306,6 +3320,8 @@ body.ax-radial-open .op-admin-widget{
       if (tipo === 'professor') {
         const cardObservacoes = document.getElementById(CARDS.cardObservacoesProfessor);
         if (cardObservacoes) cardObservacoes.style.display = '';
+        const cardPontosCorrida = document.getElementById(CARDS.cardPontosCorrida);
+        if (cardPontosCorrida) cardPontosCorrida.style.display = '';
         const cardPedagogico = document.getElementById(CARDS.cardPedagogico);
         if (cardPedagogico) cardPedagogico.style.display = '';
         const cardSimulados = document.getElementById(CARDS.cardSimulados);

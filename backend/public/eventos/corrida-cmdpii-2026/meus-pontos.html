@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Meus Pontos da Corrida | Axoriin</title>
+  <style>
+    :root{--bg:#041326;--panel:#08213c;--panel2:#0b2947;--line:#1d5677;--cyan:#35d9ff;--green:#42e6a4;--yellow:#ffd65a;--text:#f4fbff;--muted:#a9bfd1;--red:#ff6b77}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 15% 0,#0b3454 0,#041326 38%,#020914 100%);color:var(--text);font:15px/1.45 Inter,system-ui,Arial,sans-serif;min-height:100vh}
+    .wrap{max-width:1080px;margin:auto;padding:28px 18px 50px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}.brand small{color:var(--cyan);font-weight:800;letter-spacing:.14em}.brand h1{margin:4px 0 0;font-size:clamp(25px,5vw,40px)}.back{color:var(--text);text-decoration:none;border:1px solid var(--line);padding:10px 14px;border-radius:12px;background:#071c31}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric,.panel{background:linear-gradient(180deg,rgba(11,41,71,.96),rgba(5,23,42,.96));border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.25)}.metric{padding:18px}.metric b{display:block;font-size:29px;color:var(--cyan)}.metric span{color:var(--muted)}.panel{padding:20px;margin-top:16px}.panel h2{margin:0 0 8px}.muted{color:var(--muted)}.form{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-top:15px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}.field select{width:100%;background:#051b30;color:#fff;border:1px solid #285c7d;border-radius:11px;padding:11px}.btn{border:0;border-radius:11px;padding:12px 16px;font-weight:800;cursor:pointer;background:var(--cyan);color:#02111a}.btn.alt{background:#183b56;color:#fff;border:1px solid #2c6688}.btn.disc{background:var(--yellow);color:#2b2100}.btn:disabled{opacity:.5;cursor:not-allowed}.msg{display:none;margin:12px 0;padding:12px 14px;border-radius:12px}.msg.show{display:block}.msg.ok{background:#0b3e31;border:1px solid #238f68}.msg.err{background:#4a1720;border:1px solid #9b3546}.credits{display:grid;gap:10px;margin-top:14px}.credit{padding:13px 14px;border-radius:13px;border:1px solid #1e4b68;background:#061b31;display:flex;justify-content:space-between;gap:12px;align-items:center}.tag{font-size:11px;padding:5px 8px;border-radius:999px;background:#143954;color:#cdefff;white-space:nowrap}.tag.ok{background:#0f4939;color:#9ef1ca}.tag.wait{background:#4b3810;color:#ffe695}.notice{margin-top:13px;padding:13px;border:1px dashed #3b7595;border-radius:12px;color:#c9dce9}.empty{padding:18px;text-align:center;color:var(--muted)}
+    @media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.credit{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top"><div class="brand"><small>AXORIIN EVENTOS • II CORRIDA ESCOLAR</small><h1>Meus Pontos da Corrida</h1><div class="muted" id="alunoNome">Carregando seu cadastro...</div></div><a class="back" href="/painel-aluno.html">Portal do Aluno</a></div>
+    <div id="msg" class="msg"></div><div id="liberacao" class="notice" style="display:none"></div>
+    <section class="grid">
+      <div class="metric"><b id="mTotal">—</b><span>créditos conquistados</span></div>
+      <div class="metric"><b id="mDisponiveis">—</b><span>disponíveis</span></div>
+      <div class="metric"><b id="mDestinados">—</b><span>aguardando lançamento</span></div>
+      <div class="metric"><b id="mProcessados">—</b><span>lançamentos confirmados</span></div>
+    </section>
+    <section class="panel">
+      <h2>Destinar 1 ponto</h2>
+      <p class="muted">Você pode utilizar no máximo <b>1 ponto por disciplina</b>. Turno, turma e disciplina são validados pelo Axoriin.</p>
+      <div class="form">
+        <div class="field"><label>Turno</label><select id="turno"></select></div>
+        <div class="field"><label>Turma</label><select id="turma"></select></div>
+        <div class="field"><label>Disciplina</label><select id="disciplina"><option value="">Selecione...</option></select></div>
+        <button class="btn" id="btnEnviar">Enviar ao professor</button>
+      </div>
+      <div class="notice"><b>Nota Disciplinar:</b> se desejar utilizar um crédito na sua nota disciplinar, ele será enviado diretamente à Monitoria. <button class="btn disc" id="btnDisciplinar" style="margin-left:8px">Usar 1 ponto na Nota Disciplinar</button></div>
+    </section>
+    <section class="panel"><h2>Origem e situação dos seus créditos</h2><div id="credits" class="credits"><div class="empty">Carregando...</div></div></section>
+  </main>
+<script src="/portal-aluno/portal-runtime.js"></script>
+<script>
+(() => {
+  const A = window.AxoriinAluno;
+  const msg = document.getElementById('msg');
+  const turno = document.getElementById('turno');
+  const turma = document.getElementById('turma');
+  const disciplina = document.getElementById('disciplina');
+  let contexto = null;
+
+  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+  function show(text, ok=false){msg.textContent=text;msg.className='msg show '+(ok?'ok':'err');setTimeout(()=>{msg.className='msg'},5000)}
+  function data(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('pt-BR')}
+  function labelStatus(c){if(c.status==='disponivel')return '<span class="tag ok">Disponível</span>';if(c.status==='destinado')return '<span class="tag wait">Aguardando lançamento</span>';if(c.status==='processado')return '<span class="tag ok">Lançamento confirmado</span>';return '<span class="tag">'+esc(c.status)+'</span>'}
+  function labelOrigem(c){return c.origem==='inscricao_propria'?'Sua própria inscrição':('Inscrição de '+(c.origemParticipante||'parente'))}
+  function login(){const t=A?.getTenant?.()||localStorage.getItem('axoriin_tenant')||'cmdpii';const redirect=location.pathname+(location.search||'');location.replace('/login-aluno.html?redirect='+encodeURIComponent(redirect)+'&t='+encodeURIComponent(t))}
+
+  async function carregar(){
+    if(!A || !A.garantirSessao || !A.garantirSessao()) return;
+    try{
+      const carregados=await Promise.all([A.apiFetch('/api/corrida-creditos/contexto'),A.apiFetch('/api/corrida-creditos/aluno/resumo')]);
+      contexto=carregados[0]; const resumo=carregados[1];
+      const a=contexto.aluno;
+      document.getElementById('alunoNome').textContent=`${a.nome} • ${a.turma} • ${a.turnoNome}`;
+      turno.innerHTML=`<option value="${esc(a.turno)}">${esc(a.turnoNome)}</option>`;
+      turma.innerHTML=`<option value="${esc(a.turma)}">${esc(a.turma)}</option>`;
+      disciplina.innerHTML='<option value="">Selecione...</option>'+a.disciplinas.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+      document.getElementById('mTotal').textContent=resumo.saldo.total;
+      document.getElementById('mDisponiveis').textContent=resumo.saldo.disponiveis;
+      document.getElementById('mDestinados').textContent=resumo.saldo.destinados;
+      document.getElementById('mProcessados').textContent=resumo.saldo.processados;
+      const box=document.getElementById('credits');
+      box.innerHTML=resumo.creditos.length?resumo.creditos.map(c=>`<div class="credit"><div><b>${esc(labelOrigem(c))}</b><div class="muted">Deferido em ${esc(data(c.deferidaEm))}${c.destino?` • Destino: ${esc(c.destino.disciplina||'Nota Disciplinar')}`:''}</div></div>${labelStatus(c)}</div>`).join(''):'<div class="empty">Nenhum crédito foi localizado para este aluno. Se existem inscrições deferidas, a gestão deve executar a sincronização dos créditos.</div>';
+      const bloqueado=contexto.ativo===false;
+      const liberacao=document.getElementById('liberacao');
+      if(bloqueado){liberacao.style.display='block';liberacao.textContent='A consulta dos creditos ja esta disponivel, mas a destinacao ainda nao foi liberada pela Gestao.'}else{liberacao.style.display='none'}
+      const semSaldo=resumo.saldo.disponiveis<=0;
+      document.getElementById('btnEnviar').disabled=semSaldo||bloqueado;
+      document.getElementById('btnDisciplinar').disabled=semSaldo||bloqueado;
+    }catch(e){if(e.status===401||e.status===403){login();return}show(e.message||'Não foi possível carregar seus pontos.')}
+  }
+
+  async function destinar(tipo){
+    if(tipo==='disciplina'&&!disciplina.value){show('Selecione a disciplina.');return}
+    const alvo=tipo==='disciplinar'?'Nota Disciplinar':disciplina.value;
+    if(!confirm(`Confirmar o uso de 1 crédito para ${alvo}? Após confirmar, o crédito ficará aguardando o lançamento.`))return;
+    try{
+      const body=tipo==='disciplinar'?{tipo:'disciplinar'}:{tipo:'disciplina',turno:turno.value,turma:turma.value,disciplina:disciplina.value};
+      const r=await A.apiFetch('/api/corrida-creditos/aluno/destinar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      show(r.mensagem||'Ponto destinado.',true);await carregar();
+    }catch(e){show(e.message||'Não foi possível destinar o ponto.')}
+  }
+  document.getElementById('btnEnviar').onclick=()=>destinar('disciplina');
+  document.getElementById('btnDisciplinar').onclick=()=>destinar('disciplinar');
+  carregar();
+})();
+</script>
+</body>
+</html>

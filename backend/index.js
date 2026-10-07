@@ -289,6 +289,7 @@ const professorOnboardingGuard = require('./middleware/professorOnboardingGuard'
 const associacaoRoutes = require('./routes/api/associacao');
 const masterAssociacoesRoutes = require('./routes/api/masterAssociacoes');
 const eventosCorridaRoutes = require('./routes/api/eventosCorrida');
+const corridaCreditosRoutes = require('./routes/api/corridaCreditos');
 const { carregarContextoAssociacao } = require('./middleware/associacaoAuth');
 
 let masterInstituicoesRoutes = null;
@@ -973,6 +974,7 @@ mountIf('/api/master/instituicoes', masterInstituicoesRoutes, requireSuperAdmin)
 mountIf('/api/master/associacoes', masterAssociacoesRoutes, requireSuperAdmin);
 mountIf('/api/eventos', eventosCorridaRoutes.router);
 mountIf('/eventos-admin/corrida-cmdpii-2026', eventosCorridaRoutes.adminUiRouter);
+mountIf('/api/corrida-creditos', corridaCreditosRoutes);
 
 /* =========================
    âœ… FIX TEMPORÃRIO DE INSTITUIÃ‡ÃƒO LEGADA (SuperAdmin)

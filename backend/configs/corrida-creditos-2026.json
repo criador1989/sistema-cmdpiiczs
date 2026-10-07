@@ -1,0 +1,68 @@
+{
+  "eventSlug": "corrida-cmdpii-2026",
+  "ativo": false,
+  "prazoDestinacao": null,
+  "prazoProcessamento": null,
+  "disciplinas": {
+    "fundamental2": [
+      "Língua Portuguesa",
+      "Matemática",
+      "Ciências",
+      "História",
+      "Geografia",
+      "Língua Inglesa",
+      "Língua Espanhola",
+      "Arte",
+      "Educação Física"
+    ],
+    "1serie": [
+      "Língua Portuguesa",
+      "Matemática",
+      "Biologia",
+      "Física",
+      "Química",
+      "História",
+      "Geografia",
+      "Filosofia",
+      "Sociologia",
+      "Língua Inglesa",
+      "Língua Espanhola",
+      "Arte",
+      "Educação Física",
+      "Trilha de Linguagens"
+    ],
+    "2serie": [
+      "Língua Portuguesa",
+      "Matemática",
+      "Biologia",
+      "Física",
+      "Química",
+      "História",
+      "Geografia",
+      "Filosofia",
+      "Sociologia",
+      "Língua Inglesa",
+      "Língua Espanhola",
+      "Arte",
+      "Educação Física",
+      "Trilha de Ciências Humanas"
+    ],
+    "3serie": [
+      "Língua Portuguesa",
+      "Redação",
+      "Matemática",
+      "Biologia",
+      "Física",
+      "Química",
+      "História",
+      "Geografia",
+      "Filosofia",
+      "Sociologia",
+      "Língua Inglesa",
+      "Língua Espanhola",
+      "Arte",
+      "Educação Física",
+      "Trilha de Ciências Humanas e Sociais Aplicadas"
+    ]
+  }
+}
